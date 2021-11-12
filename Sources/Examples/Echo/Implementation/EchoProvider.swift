@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 import EchoModel
-import Foundation
 import GRPC
-import NIO
+import NIOCore
 import SwiftProtobuf
 
 public class EchoProvider: Echo_EchoProvider {

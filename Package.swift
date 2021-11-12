@@ -80,8 +80,14 @@ let package = Package(
         .target(name: "GRPCInteroperabilityTestsImplementation"),
         .target(name: "HelloWorldModel"),
         .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
         .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOTLS", package: "swift-nio"),
+        .product(name: "NIOHTTP1", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
         .product(name: "NIOEmbedded", package: "swift-nio"),
+        .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
+        .product(name: "Logging", package: "swift-log"),
       ]
     ),
 
@@ -107,6 +113,11 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "GRPCInteroperabilityTestModels"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
+        .product(name: "NIOSSL", package: "swift-nio-ssl"),
+        .product(name: "Logging", package: "swift-log"),
       ]
     ),
 
@@ -116,7 +127,6 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .product(name: "NIO", package: "swift-nio"),
-        .product(name: "NIOHTTP1", package: "swift-nio"),
         .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ]
     ),
@@ -125,7 +135,11 @@ let package = Package(
     .target(
       name: "GRPCInteroperabilityTests",
       dependencies: [
+        .target(name: "GRPC"),
         .target(name: "GRPCInteroperabilityTestsImplementation"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "Logging", package: "swift-log"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
@@ -136,6 +150,8 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "GRPCInteroperabilityTestModels"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "Logging", package: "swift-log"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
@@ -146,7 +162,10 @@ let package = Package(
       name: "GRPCPerformanceTests",
       dependencies: [
         .target(name: "GRPC"),
-        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOEmbedded", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
@@ -167,7 +186,10 @@ let package = Package(
         .target(name: "EchoImplementation"),
         .target(name: "GRPC"),
         .target(name: "GRPCSampleData"),
-        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOSSL", package: "swift-nio-ssl"),
+        .product(name: "Logging", package: "swift-log"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/Echo/Runtime"
@@ -179,6 +201,8 @@ let package = Package(
       dependencies: [
         .target(name: "EchoModel"),
         .target(name: "GRPC"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
         .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/Echo/Implementation"
@@ -212,6 +236,8 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "HelloWorldModel"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/HelloWorld/Client"
@@ -222,8 +248,9 @@ let package = Package(
       name: "HelloWorldServer",
       dependencies: [
         .target(name: "GRPC"),
-        .product(name: "NIO", package: "swift-nio"),
         .target(name: "HelloWorldModel"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/HelloWorld/Server"
@@ -246,6 +273,8 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "RouteGuideModel"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/RouteGuide/Client"
@@ -256,8 +285,10 @@ let package = Package(
       name: "RouteGuideServer",
       dependencies: [
         .target(name: "GRPC"),
-        .product(name: "NIO", package: "swift-nio"),
         .target(name: "RouteGuideModel"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/RouteGuide/Server"
@@ -269,8 +300,10 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "EchoModel"),
-        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "NIOExtras", package: "swift-nio-extras"),
+        .product(name: "Logging", package: "swift-log"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/PacketCapture"

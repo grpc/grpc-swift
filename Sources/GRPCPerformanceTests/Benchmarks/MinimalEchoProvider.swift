@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import GRPC
-import NIO
+import NIOCore
 
 /// The echo provider that comes with the example does some string processing, we'll avoid some of
 /// that here so we're looking at the right things.

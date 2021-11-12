@@ -18,8 +18,8 @@ import Foundation
 import GRPC
 import GRPCInteroperabilityTestsImplementation
 import Logging
-import NIO
-import NIOSSL
+import NIOCore
+import NIOPosix
 
 // Reduce stdout noise.
 LoggingSystem.bootstrap(StreamLogHandler.standardError)

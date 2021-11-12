@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 import ArgumentParser
-import Foundation
+import struct Foundation.Date
 import GRPC
 import GRPCInteroperabilityTestModels
 import Logging
-import NIO
+import NIOCore
+import NIOPosix
 
 // Notes from the test procedure are inline.
 // See: https://github.com/grpc/grpc/blob/master/doc/connection-backoff-interop-test-description.md

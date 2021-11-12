@@ -17,8 +17,9 @@ import EchoImplementation
 import EchoModel
 import GRPC
 import GRPCSampleData
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
+import NIOPosix
 import NIOSSL
 import XCTest
 

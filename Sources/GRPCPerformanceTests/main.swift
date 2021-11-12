@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 import ArgumentParser
-import Foundation
 import GRPC
 import Logging
-import NIO
-import NIOSSL
 
 let smallRequest = String(repeating: "x", count: 8)
 let largeRequest = String(repeating: "x", count: 1 << 16) // 65k

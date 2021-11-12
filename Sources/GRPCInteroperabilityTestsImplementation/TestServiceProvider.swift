@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
+import struct Foundation.Data
 import GRPC
 import GRPCInteroperabilityTestModels
-import NIO
+import NIOCore
 
 /// A service provider for the gRPC interoperability test suite.
 ///

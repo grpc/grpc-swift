@@ -15,7 +15,8 @@
  */
 import GRPC
 import Logging
-import NIO
+import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import NIOHTTP2
 

@@ -16,8 +16,8 @@
 import ArgumentParser
 import GRPC
 import HelloWorldModel
-import Logging
-import NIO
+import NIOCore
+import NIOPosix
 
 func greet(name: String?, client greeter: Helloworld_GreeterClient) {
   // Form the request with the name, if one was provided.
