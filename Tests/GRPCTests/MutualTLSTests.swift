@@ -70,12 +70,12 @@ class MutualTLSTests: GRPCTestCase {
 
     self.server = try! Server.start(configuration: serverConfiguration).wait()
 
-    let port = server!.channel.localAddress!.port!
+    let port = self.server!.channel.localAddress!.port!
 
     // Setup the client.
     var clientConfiguration = ClientConnection.Configuration.default(
       target: .hostAndPort("localhost", port),
-      eventLoopGroup: clientEventLoopGroup
+      eventLoopGroup: self.clientEventLoopGroup
     )
     clientConfiguration.tlsConfiguration = clientTLSConfiguration
     clientConfiguration.connectionBackoff = nil
@@ -96,21 +96,31 @@ class MutualTLSTests: GRPCTestCase {
     self.wait(for: [clientErrorExpectation, serverErrorExpectation], timeout: 1)
 
     if !expectServerHandshakeError {
-      XCTAssert(serverErrorDelegate.errors.isEmpty, "Unexpected server errors: \(serverErrorDelegate.errors)")
+      XCTAssert(
+        serverErrorDelegate.errors.isEmpty,
+        "Unexpected server errors: \(serverErrorDelegate.errors)"
+      )
     } else if case .handshakeFailed = serverErrorDelegate.errors.first as? NIOSSLError {
       // This is the expected error.
     } else {
-      XCTFail("Expected NIOSSLError.handshakeFailed, actual error(s): \(serverErrorDelegate.errors)")
+      XCTFail(
+        "Expected NIOSSLError.handshakeFailed, actual error(s): \(serverErrorDelegate.errors)"
+      )
     }
 
     switch expectedClientError {
     case .none:
-      XCTAssert(clientErrorDelegate.errors.isEmpty, "Unexpected client errors: \(clientErrorDelegate.errors)")
+      XCTAssert(
+        clientErrorDelegate.errors.isEmpty,
+        "Unexpected client errors: \(clientErrorDelegate.errors)"
+      )
     case .some(.handshakeError):
       if case .handshakeFailed = clientErrorDelegate.errors.first as? NIOSSLError {
         // This is the expected error.
       } else {
-        XCTFail("Expected NIOSSLError.handshakeFailed, actual error(s): \(clientErrorDelegate.errors)")
+        XCTFail(
+          "Expected NIOSSLError.handshakeFailed, actual error(s): \(clientErrorDelegate.errors)"
+        )
       }
     case .some(.alertCertRequired):
       if let error = clientErrorDelegate.errors.first, error is BoringSSLError {
@@ -126,7 +136,7 @@ class MutualTLSTests: GRPCTestCase {
       }
     }
 
-    if !expectServerHandshakeError && expectedClientError == nil {
+    if !expectServerHandshakeError, expectedClientError == nil {
       // Verify response.
       let response = try call.response.wait()
       XCTAssertEqual(response.text, "Swift echo get: mumble")
