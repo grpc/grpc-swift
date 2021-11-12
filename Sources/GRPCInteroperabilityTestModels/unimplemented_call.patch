@@ -1,8 +1,6 @@
-diff --git a/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift b/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift
-index 6a5f3099..ae0ba123 100644
 --- a/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift
 +++ b/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift
-@@ -485,10 +485,6 @@ public protocol Grpc_Testing_TestServiceProvider: CallHandlerProvider {
+@@ -931,10 +931,6 @@
    /// stream of responses are returned to the client when the server starts with
    /// first request.
    func halfDuplexCall(context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void>
@@ -13,19 +11,48 @@ index 6a5f3099..ae0ba123 100644
  }
  
  extension Grpc_Testing_TestServiceProvider {
-@@ -565,16 +561,6 @@ extension Grpc_Testing_TestServiceProvider {
-         self.halfDuplexCall(context: context)
-       }
+@@ -1010,15 +1006,6 @@
+         observerFactory: self.halfDuplexCall(context:)
+       )
  
 -    case "UnimplementedCall":
--      return CallHandlerFactory.makeUnary(
--        callHandlerContext: callHandlerContext,
--        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
--      ) { context in
--        return { request in
--          self.unimplementedCall(request: request, context: context)
--        }
--      }
+-      return UnaryServerHandler(
+-        context: context,
+-        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+-        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+-        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? [],
+-        userFunction: self.unimplementedCall(request:context:)
+-      )
+-
+     default:
+       return nil
+     }
+@@ -1123,13 +1110,6 @@
+     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
+     context: GRPCAsyncServerCallContext
+   ) async throws
+-
+-  /// The test server will not implement this method. It will be used
+-  /// to test the behavior when clients call unimplemented methods.
+-  @Sendable func unimplementedCall(
+-    request: Grpc_Testing_Empty,
+-    context: GRPCAsyncServerCallContext
+-  ) async throws -> Grpc_Testing_Empty
+ }
+ 
+ @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@@ -1210,15 +1190,6 @@
+         wrapping: self.halfDuplexCall(requests:responseStream:context:)
+       )
+ 
+-    case "UnimplementedCall":
+-      return GRPCAsyncServerHandler(
+-        context: context,
+-        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+-        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+-        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? [],
+-        wrapping: self.unimplementedCall(request:context:)
+-      )
 -
      default:
        return nil
