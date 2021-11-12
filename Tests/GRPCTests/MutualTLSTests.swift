@@ -81,8 +81,15 @@ class MutualTLSTests: GRPCTestCase {
     clientConfiguration.connectionBackoff = nil
     clientConfiguration.backgroundActivityLogger = self.clientLogger
     let clientErrorExpectation = self.expectation(description: "client error")
-    clientErrorExpectation.isInverted = expectedClientError == nil
-    clientErrorExpectation.assertForOverFulfill = false
+    switch expectedClientError {
+    case .none:
+      clientErrorExpectation.isInverted = true
+    case .handshakeError, .alertCertRequired:
+      // After the SSL error, the connection being closed also presents as an error.
+      clientErrorExpectation.expectedFulfillmentCount = 2
+    case .dropped:
+      clientErrorExpectation.expectedFulfillmentCount = 1
+    }
     let clientErrorDelegate = ErrorRecordingDelegate(expectation: clientErrorExpectation)
     clientConfiguration.errorDelegate = clientErrorDelegate
 
