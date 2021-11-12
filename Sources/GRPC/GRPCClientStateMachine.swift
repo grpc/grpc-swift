@@ -131,41 +131,7 @@ struct GRPCClientStateMachine {
   }
 
   /// The current state of the state machine.
-  internal private(set) var state: State {
-    didSet {
-      switch (oldValue, self.state) {
-      // Any modifying transitions are fine.
-      case (.modifying, _),
-           (_, .modifying):
-        break
-
-      // All valid transitions:
-      case (.clientIdleServerIdle, .clientActiveServerIdle),
-           (.clientIdleServerIdle, .clientClosedServerClosed),
-           (.clientActiveServerIdle, .clientActiveServerActive),
-           (.clientActiveServerIdle, .clientClosedServerIdle),
-           (.clientActiveServerIdle, .clientClosedServerClosed),
-           (.clientClosedServerIdle, .clientClosedServerActive),
-           (.clientClosedServerIdle, .clientClosedServerClosed),
-           (.clientActiveServerActive, .clientClosedServerActive),
-           (.clientActiveServerActive, .clientClosedServerClosed),
-           (.clientClosedServerActive, .clientClosedServerClosed):
-        break
-
-      // Self transitions, also valid:
-      case (.clientIdleServerIdle, .clientIdleServerIdle),
-           (.clientActiveServerIdle, .clientActiveServerIdle),
-           (.clientClosedServerIdle, .clientClosedServerIdle),
-           (.clientActiveServerActive, .clientActiveServerActive),
-           (.clientClosedServerActive, .clientClosedServerActive),
-           (.clientClosedServerClosed, .clientClosedServerClosed):
-        break
-
-      default:
-        preconditionFailure("invalid state transition from '\(oldValue)' to '\(self.state)'")
-      }
-    }
-  }
+  internal private(set) var state: State
 
   /// The default user-agent string.
   private static let userAgent = "grpc-swift-nio/\(Version.versionString)"
