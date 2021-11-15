@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 import struct Foundation.Date
 import NIOSSL
 
@@ -367,3 +368,5 @@ YyVRAgEBoUQDQgAE+YMhPzGDLJuuMxB+ICQKWvPjbTEsRXgbq3Hmrds6x/1QY14e
 /xh4TqpAEW6M0R5xhqg7ZU7O8NHtuiCyxPzCog==
 -----END EC PRIVATE KEY-----
 """
+
+#endif // canImport(NIOSSL)

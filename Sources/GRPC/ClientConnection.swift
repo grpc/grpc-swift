@@ -18,7 +18,9 @@ import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 import NIOTLS
 import NIOTransportServices
 import SwiftProtobuf
@@ -360,6 +362,7 @@ extension ClientConnection {
     /// provided but the queue is `nil` then one will be created by gRPC. Defaults to `nil`.
     public var connectivityStateDelegateQueue: DispatchQueue?
 
+    #if canImport(NIOSSL)
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     ///
     /// - Important: `tls` is deprecated; use `tlsConfiguration` or one of
@@ -373,6 +376,7 @@ extension ClientConnection {
         self.tlsConfiguration = newValue.map { .init(transforming: $0) }
       }
     }
+    #endif // canImport(NIOSSL)
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tlsConfiguration: GRPCTLSConfiguration?
@@ -441,6 +445,7 @@ extension ClientConnection {
     /// - Warning: The initializer closure may be invoked *multiple times*.
     public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
 
+    #if canImport(NIOSSL)
     /// Create a `Configuration` with some pre-defined defaults. Prefer using
     /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
     /// `ClientConnection.insecure(group:)` to build a plaintext connection.
@@ -496,6 +501,7 @@ extension ClientConnection {
       self.backgroundActivityLogger = backgroundActivityLogger
       self.debugChannelInitializer = debugChannelInitializer
     }
+    #endif // canImport(NIOSSL)
 
     private init(eventLoopGroup: EventLoopGroup, target: ConnectionTarget) {
       self.eventLoopGroup = eventLoopGroup
@@ -538,6 +544,7 @@ extension ClientBootstrapProtocol {
   }
 }
 
+#if canImport(NIOSSL)
 extension ChannelPipeline.SynchronousOperations {
   internal func configureNIOSSLForGRPCClient(
     sslContext: Result<NIOSSLContext, Error>,
@@ -564,7 +571,10 @@ extension ChannelPipeline.SynchronousOperations {
     try self.addHandler(sslClientHandler)
     try self.addHandler(TLSVerificationHandler(logger: logger))
   }
+}
+#endif // canImport(NIOSSL)
 
+extension ChannelPipeline.SynchronousOperations {
   internal func configureHTTP2AndGRPCHandlersForGRPCClient(
     channel: Channel,
     connectionManager: ConnectionManager,

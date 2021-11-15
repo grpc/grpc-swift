@@ -165,6 +165,8 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
   }
 }
 
+#if canImport(NIOSSL)
 class GRPCSecureInteroperabilityTests: GRPCInsecureInteroperabilityTests {
   override var useTLS: Bool { return true }
 }
+#endif // canImport(NIOSSL)

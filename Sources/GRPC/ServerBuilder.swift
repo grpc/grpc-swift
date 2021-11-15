@@ -15,7 +15,6 @@
  */
 import Logging
 import NIOCore
-import NIOSSL
 
 #if canImport(Network)
 import Security
@@ -37,12 +36,12 @@ extension Server {
     }
 
     public class Secure: Builder {
-      private var tls: GRPCTLSConfiguration
+      internal var tls: GRPCTLSConfiguration
       override var maybeTLS: GRPCTLSConfiguration? {
         return self.tls
       }
 
-      fileprivate init(group: EventLoopGroup, tlsConfiguration: GRPCTLSConfiguration) {
+      internal init(group: EventLoopGroup, tlsConfiguration: GRPCTLSConfiguration) {
         group.preconditionCompatible(with: tlsConfiguration)
         self.tls = tlsConfiguration
         super.init(group: group)
@@ -116,26 +115,6 @@ extension Server.Builder {
 }
 
 extension Server.Builder.Secure {
-  /// Sets the trust roots to use to validate certificates. This only needs to be provided if you
-  /// intend to validate certificates. Defaults to the system provided trust store (`.default`) if
-  /// not set.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLS(trustRoots: NIOSSLTrustRoots) -> Self {
-    self.tls.updateNIOTrustRoots(to: trustRoots)
-    return self
-  }
-
-  /// Sets whether certificates should be verified. Defaults to `.none` if not set.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLS(certificateVerification: CertificateVerification) -> Self {
-    self.tls.updateNIOCertificateVerification(to: certificateVerification)
-    return self
-  }
-
   /// Sets whether the server's TLS handshake requires a protocol to be negotiated via ALPN. This
   /// defaults to `true` if not otherwise set.
   ///
@@ -211,41 +190,6 @@ extension Server {
   /// Returns an insecure `Server` builder which is *not configured with TLS*.
   public static func insecure(group: EventLoopGroup) -> Builder {
     return Builder(group: group)
-  }
-
-  /// Returns a `Server` builder configured with TLS.
-  @available(
-    *, deprecated,
-    message: "Use one of 'usingTLSBackedByNIOSSL(on:certificateChain:privateKey:)', 'usingTLSBackedByNetworkFramework(on:with:)' or 'usingTLS(with:on:)'"
-  )
-  public static func secure(
-    group: EventLoopGroup,
-    certificateChain: [NIOSSLCertificate],
-    privateKey: NIOSSLPrivateKey
-  ) -> Builder.Secure {
-    return Server.usingTLSBackedByNIOSSL(
-      on: group,
-      certificateChain: certificateChain,
-      privateKey: privateKey
-    )
-  }
-
-  /// Returns a `Server` builder configured with the 'NIOSSL' TLS backend.
-  ///
-  /// This builder may use either a `MultiThreadedEventLoopGroup` or a `NIOTSEventLoopGroup` (or an
-  /// `EventLoop` from either group).
-  public static func usingTLSBackedByNIOSSL(
-    on group: EventLoopGroup,
-    certificateChain: [NIOSSLCertificate],
-    privateKey: NIOSSLPrivateKey
-  ) -> Builder.Secure {
-    return Builder.Secure(
-      group: group,
-      tlsConfiguration: .makeServerConfigurationBackedByNIOSSL(
-        certificateChain: certificateChain.map { .certificate($0) },
-        privateKey: .privateKey(privateKey)
-      )
-    )
   }
 
   #if canImport(Network)

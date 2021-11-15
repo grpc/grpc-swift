@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 
 #if canImport(Network)
 import Network
@@ -28,8 +30,10 @@ import Security
 /// the gRPC specification.
 public struct GRPCTLSConfiguration {
   fileprivate enum Backend {
+    #if canImport(NIOSSL)
     /// Configuration for NIOSSSL.
     case nio(NIOConfiguration)
+    #endif
     #if canImport(Network)
     /// Configuration for Network.framework.
     case network(NetworkConfiguration)
@@ -39,12 +43,21 @@ public struct GRPCTLSConfiguration {
   /// The TLS backend.
   private var backend: Backend
 
-  private init(backend: Backend) {
-    self.backend = backend
+  #if canImport(NIOSSL)
+  fileprivate init(nio: NIOConfiguration) {
+    self.backend = .nio(nio)
   }
+  #endif
+
+  #if canImport(Network)
+  fileprivate init(network: NetworkConfiguration) {
+    self.backend = .network(network)
+  }
+  #endif
 
   /// Return the configuration for NIOSSL or `nil` if Network.framework is being used as the
   /// TLS backend.
+  #if canImport(NIOSSL)
   internal var nioConfiguration: NIOConfiguration? {
     switch self.backend {
     case let .nio(configuration):
@@ -55,11 +68,14 @@ public struct GRPCTLSConfiguration {
     #endif
     }
   }
+  #endif // canImport(NIOSSL)
 
   internal var isNetworkFrameworkTLSBackend: Bool {
     switch self.backend {
+    #if canImport(NIOSSL)
     case .nio:
       return false
+    #endif
     #if canImport(Network)
     case .network:
       return true
@@ -75,8 +91,10 @@ public struct GRPCTLSConfiguration {
   internal var hostnameOverride: String? {
     get {
       switch self.backend {
+      #if canImport(NIOSSL)
       case let .nio(config):
         return config.hostnameOverride
+      #endif
 
       #if canImport(Network)
       case let .network(config):
@@ -87,9 +105,11 @@ public struct GRPCTLSConfiguration {
 
     set {
       switch self.backend {
+      #if canImport(NIOSSL)
       case var .nio(config):
         config.hostnameOverride = newValue
         self.backend = .nio(config)
+      #endif
 
       #if canImport(Network)
       case var .network(config):
@@ -118,8 +138,10 @@ public struct GRPCTLSConfiguration {
   internal var requireALPN: Bool {
     get {
       switch self.backend {
+      #if canImport(NIOSSL)
       case let .nio(config):
         return config.requireALPN
+      #endif
 
       #if canImport(Network)
       case .network:
@@ -129,9 +151,11 @@ public struct GRPCTLSConfiguration {
     }
     set {
       switch self.backend {
+      #if canImport(NIOSSL)
       case var .nio(config):
         config.requireALPN = newValue
         self.backend = .nio(config)
+      #endif
 
       #if canImport(Network)
       case .network:
@@ -141,6 +165,7 @@ public struct GRPCTLSConfiguration {
     }
   }
 
+  #if canImport(NIOSSL)
   // Marked to silence the deprecation warning
   @available(*, deprecated)
   internal init(transforming deprecated: ClientConnection.Configuration.TLS) {
@@ -183,10 +208,12 @@ public struct GRPCTLSConfiguration {
     }
     return nil
   }
+  #endif // canImport(NIOSSL)
 }
 
 // MARK: - NIO Backend
 
+#if canImport(NIOSSL)
 extension GRPCTLSConfiguration {
   internal struct NIOConfiguration {
     var configuration: TLSConfiguration
@@ -262,7 +289,7 @@ extension GRPCTLSConfiguration {
       requireALPN: false // We don't currently support this.
     )
 
-    return GRPCTLSConfiguration(backend: .nio(nioConfiguration))
+    return GRPCTLSConfiguration(nio: nioConfiguration)
   }
 
   /// TLS Configuration with suitable defaults for servers.
@@ -326,7 +353,7 @@ extension GRPCTLSConfiguration {
       requireALPN: requireALPN
     )
 
-    return GRPCTLSConfiguration(backend: .nio(nioConfiguration))
+    return GRPCTLSConfiguration(nio: nioConfiguration)
   }
 
   @usableFromInline
@@ -398,6 +425,7 @@ extension GRPCTLSConfiguration {
     }
   }
 }
+#endif // canImport(NIOSSL)
 
 // MARK: - Network Backend
 
@@ -496,7 +524,7 @@ extension GRPCTLSConfiguration {
     hostnameOverride: String? = nil
   ) -> GRPCTLSConfiguration {
     let network = NetworkConfiguration(options: options, hostnameOverride: hostnameOverride)
-    return GRPCTLSConfiguration(backend: .network(network))
+    return GRPCTLSConfiguration(network: network)
   }
 
   @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
@@ -531,7 +559,7 @@ extension GRPCTLSConfiguration {
     options: NWProtocolTLS.Options
   ) -> GRPCTLSConfiguration {
     let network = NetworkConfiguration(options: options, hostnameOverride: nil)
-    return GRPCTLSConfiguration(backend: .network(network))
+    return GRPCTLSConfiguration(network: network)
   }
 
   @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
@@ -565,8 +593,10 @@ extension GRPCTLSConfiguration {
     case var .network(_configuration):
       modify(&_configuration)
       self.backend = .network(_configuration)
+    #if canImport(NIOSSL)
     case .nio:
       preconditionFailure()
+    #endif // canImport(NIOSSL)
     }
   }
 }
@@ -582,10 +612,12 @@ extension GRPCTLSConfiguration {
     case let .network(_configuration):
       return bootstrap.tlsOptions(_configuration.options)
 
+    #if canImport(NIOSSL)
     case .nio:
       // We're using NIOSSL with Network.framework; that's okay and permitted for backwards
       // compatibility.
       return bootstrap
+    #endif // canImport(NIOSSL)
     }
   }
 
@@ -597,10 +629,12 @@ extension GRPCTLSConfiguration {
     case let .network(_configuration):
       return bootstrap.tlsOptions(_configuration.options)
 
+    #if canImport(NIOSSL)
     case .nio:
       // We're using NIOSSL with Network.framework; that's okay and permitted for backwards
       // compatibility.
       return bootstrap
+    #endif // canImport(NIOSSL)
     }
   }
 }

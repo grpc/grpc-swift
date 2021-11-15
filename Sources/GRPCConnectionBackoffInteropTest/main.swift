@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 import ArgumentParser
 import struct Foundation.Date
 import GRPC
@@ -118,3 +119,4 @@ struct ConnectionBackoffInteropTest: ParsableCommand {
 }
 
 ConnectionBackoffInteropTest.main()
+#endif // canImport(NIOSSL)

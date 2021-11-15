@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 import Foundation
 @testable import GRPC
 import Logging
@@ -43,3 +44,5 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
     XCTAssertEqual(delegate.errors[0] as? NIOSSLError, .writeDuringTLSShutdown)
   }
 }
+
+#endif // canImport(NIOSSL)

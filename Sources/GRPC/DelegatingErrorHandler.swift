@@ -16,7 +16,6 @@
 import Foundation
 import Logging
 import NIOCore
-import NIOSSL
 
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This
 /// handler is intended to be used in the client channel pipeline after the HTTP/2 stream
@@ -43,7 +42,7 @@ internal final class DelegatingErrorHandler: ChannelInboundHandler {
     //
     // Without this we would unnecessarily log when we're communicating with peers which don't
     // send `close_notify`.
-    if let sslError = error as? NIOSSLError, case .uncleanShutdown = sslError {
+    if error.isNIOSSLUncleanShutdown {
       return
     }
 

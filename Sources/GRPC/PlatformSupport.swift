@@ -16,7 +16,6 @@
 import Logging
 import NIOCore
 import NIOPosix
-import NIOSSL
 import NIOTransportServices
 
 /// How a network implementation should be chosen.
@@ -352,7 +351,11 @@ extension GRPCTLSConfiguration {
       #endif
 
     case .posix:
+      #if canImport(NIOSSL)
       return .makeClientConfigurationBackedByNIOSSL()
+      #else
+      fatalError("Default client TLS configuration for '.posix' requires NIOSSL")
+      #endif
     }
   }
 }

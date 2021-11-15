@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 @testable import GRPC
 import NIOSSL
 import XCTest
@@ -100,3 +101,4 @@ class ALPNConfigurationTests: GRPCTestCase {
     XCTAssertEqual(config.nioConfiguration!.configuration.applicationProtocols, ["foo"])
   }
 }
+#endif // canImport(NIOSSL)
