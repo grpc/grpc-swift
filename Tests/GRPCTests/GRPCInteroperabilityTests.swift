@@ -39,6 +39,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
       host: "localhost",
       port: 0,
       eventLoopGroup: self.serverEventLoopGroup!,
+      serviceProviders: [self.makeProvider()],
       useTLS: self.useTLS,
       logger: self.serverLogger
     ).wait()
@@ -67,6 +68,10 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     self.serverEventLoopGroup = nil
 
     super.tearDown()
+  }
+
+  internal func makeProvider() -> CallHandlerProvider {
+    return TestServiceProvider()
   }
 
   private func doRunTest(_ testCase: InteroperabilityTestCase, line: UInt = #line) {
@@ -170,3 +175,19 @@ class GRPCSecureInteroperabilityTests: GRPCInsecureInteroperabilityTests {
   override var useTLS: Bool { return true }
 }
 #endif // canImport(NIOSSL)
+
+#if compiler(>=5.5)
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+class GRPCInsecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityTests {
+  override func makeProvider() -> CallHandlerProvider {
+    return TestServiceAsyncProvider()
+  }
+}
+
+#if canImport(NIOSSL)
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+class GRPCSecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityAsyncTests {
+  override var useTLS: Bool { return true }
+}
+#endif // canImport(NIOSSL)
+#endif // compiler(>=5.5)

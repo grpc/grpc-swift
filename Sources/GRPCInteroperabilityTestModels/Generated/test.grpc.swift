@@ -292,6 +292,288 @@ public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClien
   }
 }
 
+#if compiler(>=5.5)
+/// A simple service to test the various types of RPCs and experiment with
+/// performance with various types of payload.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Grpc_Testing_TestServiceAsyncClientProtocol: GRPCClient {
+  var serviceName: String { get }
+  var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? { get }
+
+  func makeEmptyCallCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+
+  func makeUnaryCallCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func makeCacheableUnaryCallCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func makeStreamingOutputCallCall(
+    _ request: Grpc_Testing_StreamingOutputCallRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+
+  func makeStreamingInputCallCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>
+
+  func makeFullDuplexCallCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+
+  func makeHalfDuplexCallCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+
+  func makeUnimplementedCallCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_TestServiceAsyncClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.TestService"
+  }
+
+  public var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeEmptyCallCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.TestService/EmptyCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeUnaryCallCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.TestService/UnaryCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeCacheableUnaryCallCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.TestService/CacheableUnaryCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeStreamingOutputCallCall(
+    _ request: Grpc_Testing_StreamingOutputCallRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+    return self.makeAsyncServerStreamingCall(
+      path: "/grpc.testing.TestService/StreamingOutputCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeStreamingInputCallCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
+    return self.makeAsyncClientStreamingCall(
+      path: "/grpc.testing.TestService/StreamingInputCall",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeFullDuplexCallCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/FullDuplexCall",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeHalfDuplexCallCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/HalfDuplexCall",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeUnimplementedCallCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.TestService/UnimplementedCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_TestServiceAsyncClientProtocol {
+  public func emptyCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_Empty {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.TestService/EmptyCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func unaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_SimpleResponse {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.TestService/UnaryCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func cacheableUnaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_SimpleResponse {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.TestService/CacheableUnaryCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func streamingOutputCall(
+    _ request: Grpc_Testing_StreamingOutputCallRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> {
+    return self.performAsyncServerStreamingCall(
+      path: "/grpc.testing.TestService/StreamingOutputCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func streamingInputCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_StreamingInputCallResponse where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_StreamingInputCallRequest {
+    return try await self.performAsyncClientStreamingCall(
+      path: "/grpc.testing.TestService/StreamingInputCall",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func streamingInputCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_StreamingInputCallResponse where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_StreamingInputCallRequest {
+    return try await self.performAsyncClientStreamingCall(
+      path: "/grpc.testing.TestService/StreamingInputCall",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func fullDuplexCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/FullDuplexCall",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func fullDuplexCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/FullDuplexCall",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func halfDuplexCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/HalfDuplexCall",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func halfDuplexCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/HalfDuplexCall",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func unimplementedCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_Empty {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.TestService/UnimplementedCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.5)
+
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 ///
@@ -357,6 +639,75 @@ public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimple
     self.interceptors = interceptors
   }
 }
+
+#if compiler(>=5.5)
+/// A simple service NOT implemented at servers so clients can test for
+/// that case.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Grpc_Testing_UnimplementedServiceAsyncClientProtocol: GRPCClient {
+  var serviceName: String { get }
+  var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? { get }
+
+  func makeUnimplementedCallCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.UnimplementedService"
+  }
+
+  public var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeUnimplementedCallCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.UnimplementedService/UnimplementedCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
+  public func unimplementedCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_Empty {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.UnimplementedService/UnimplementedCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.5)
 
 /// A service used to control reconnect server.
 ///
@@ -448,6 +799,101 @@ public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectSe
     self.interceptors = interceptors
   }
 }
+
+#if compiler(>=5.5)
+/// A service used to control reconnect server.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Grpc_Testing_ReconnectServiceAsyncClientProtocol: GRPCClient {
+  var serviceName: String { get }
+  var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? { get }
+
+  func makeStartCall(
+    _ request: Grpc_Testing_ReconnectParams,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>
+
+  func makeStopCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.ReconnectService"
+  }
+
+  public var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeStartCall(
+    _ request: Grpc_Testing_ReconnectParams,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.ReconnectService/Start",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeStopCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo> {
+    return self.makeAsyncUnaryCall(
+      path: "/grpc.testing.ReconnectService/Stop",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
+  public func start(
+    _ request: Grpc_Testing_ReconnectParams,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_Empty {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.ReconnectService/Start",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func stop(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_ReconnectInfo {
+    return try await self.performAsyncUnaryCall(
+      path: "/grpc.testing.ReconnectService/Stop",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectServiceAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.5)
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
@@ -600,6 +1046,158 @@ public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
+
+#if compiler(>=5.5)
+
+/// A simple service to test the various types of RPCs and experiment with
+/// performance with various types of payload.
+///
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
+  var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? { get }
+
+  /// One empty request followed by one empty response.
+  @Sendable func emptyCall(
+    request: Grpc_Testing_Empty,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_Empty
+
+  /// One request followed by one response.
+  @Sendable func unaryCall(
+    request: Grpc_Testing_SimpleRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_SimpleResponse
+
+  /// One request followed by one response. Response has cache control
+  /// headers set such that a caching HTTP proxy (such as GFE) can
+  /// satisfy subsequent requests.
+  @Sendable func cacheableUnaryCall(
+    request: Grpc_Testing_SimpleRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_SimpleResponse
+
+  /// One request followed by a sequence of responses (streamed download).
+  /// The server returns the payload with client desired type and sizes.
+  @Sendable func streamingOutputCall(
+    request: Grpc_Testing_StreamingOutputCallRequest,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// A sequence of requests followed by one response (streamed upload).
+  /// The server returns the aggregated size of client payload as the result.
+  @Sendable func streamingInputCall(
+    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingInputCallRequest>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_StreamingInputCallResponse
+
+  /// A sequence of requests with each request served by the server immediately.
+  /// As one request could lead to multiple responses, this interface
+  /// demonstrates the idea of full duplexing.
+  @Sendable func fullDuplexCall(
+    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// A sequence of requests followed by a sequence of responses.
+  /// The server buffers all the client requests and then serves them in order. A
+  /// stream of responses are returned to the client when the server starts with
+  /// first request.
+  @Sendable func halfDuplexCall(
+    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_TestServiceAsyncProvider {
+  public var serviceName: Substring {
+    return "grpc.testing.TestService"
+  }
+
+  public var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "EmptyCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+        interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? [],
+        wrapping: self.emptyCall(request:context:)
+      )
+
+    case "UnaryCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? [],
+        wrapping: self.unaryCall(request:context:)
+      )
+
+    case "CacheableUnaryCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? [],
+        wrapping: self.cacheableUnaryCall(request:context:)
+      )
+
+    case "StreamingOutputCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
+        interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? [],
+        wrapping: self.streamingOutputCall(request:responseStream:context:)
+      )
+
+    case "StreamingInputCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingInputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingInputCallResponse>(),
+        interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? [],
+        wrapping: self.streamingInputCall(requests:context:)
+      )
+
+    case "FullDuplexCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
+        interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? [],
+        wrapping: self.fullDuplexCall(requests:responseStream:context:)
+      )
+
+    case "HalfDuplexCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
+        interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? [],
+        wrapping: self.halfDuplexCall(requests:responseStream:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.5)
+
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 ///
@@ -642,6 +1240,56 @@ public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtoco
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
+
+#if compiler(>=5.5)
+
+/// A simple service NOT implemented at servers so clients can test for
+/// that case.
+///
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Grpc_Testing_UnimplementedServiceAsyncProvider: CallHandlerProvider {
+  var interceptors: Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol? { get }
+
+  /// A call that no server should implement
+  @Sendable func unimplementedCall(
+    request: Grpc_Testing_Empty,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_Empty
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_UnimplementedServiceAsyncProvider {
+  public var serviceName: Substring {
+    return "grpc.testing.UnimplementedService"
+  }
+
+  public var interceptors: Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "UnimplementedCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? [],
+        wrapping: self.unimplementedCall(request:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.5)
+
 /// A service used to control reconnect server.
 ///
 /// To build a server, implement a class that conforms to this protocol.
@@ -697,3 +1345,65 @@ public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeStopInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>]
 }
+
+#if compiler(>=5.5)
+
+/// A service used to control reconnect server.
+///
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Grpc_Testing_ReconnectServiceAsyncProvider: CallHandlerProvider {
+  var interceptors: Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol? { get }
+
+  @Sendable func start(
+    request: Grpc_Testing_ReconnectParams,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_Empty
+
+  @Sendable func stop(
+    request: Grpc_Testing_Empty,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_ReconnectInfo
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Grpc_Testing_ReconnectServiceAsyncProvider {
+  public var serviceName: Substring {
+    return "grpc.testing.ReconnectService"
+  }
+
+  public var interceptors: Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "Start":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_ReconnectParams>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+        interceptors: self.interceptors?.makeStartInterceptors() ?? [],
+        wrapping: self.start(request:context:)
+      )
+
+    case "Stop":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_ReconnectInfo>(),
+        interceptors: self.interceptors?.makeStopInterceptors() ?? [],
+        wrapping: self.stop(request:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.5)
+
