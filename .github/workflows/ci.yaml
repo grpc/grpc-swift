@@ -24,6 +24,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:5.5-focal
+            swift-test-flags: "--enable-test-discovery --sanitize=thread"
           - image: swift:5.4-focal
             swift-test-flags: "--enable-test-discovery --sanitize=thread"
           - image: swift:5.3-focal
@@ -49,6 +51,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:5.5-focal
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 504000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 216000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 205000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 212000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 212000
           - image: swift:5.4-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 504000
@@ -94,6 +106,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:5.5-focal
           - image: swift:5.4-focal
           - image: swift:5.3-focal
           - image: swift:5.2-bionic
