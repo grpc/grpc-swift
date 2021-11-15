@@ -17,7 +17,7 @@
 import Foundation
 import GRPC
 import GRPCInteroperabilityTestModels
-import NIO
+import NIOCore
 
 /// An async service provider for the gRPC interoperability test suite.
 ///
