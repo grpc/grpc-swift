@@ -67,7 +67,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     return try self.serverBuilder(group: group, secure: secure, debugInitializer: debugInitializer)
       .withServiceProviders([self.makeEchoProvider()])
       .withLogger(self.serverLogger)
-      .bind(host: "localhost", port: 0)
+      .bind(host: "127.0.0.1", port: 0)
       .wait()
   }
 
@@ -79,7 +79,8 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   ) throws -> ClientConnection {
     return self.clientBuilder(group: group, secure: secure, debugInitializer: debugInitializer)
       .withBackgroundActivityLogger(self.clientLogger)
-      .connect(host: "localhost", port: port)
+      .withConnectionReestablishment(enabled: false)
+      .connect(host: "127.0.0.1", port: port)
   }
 
   func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }
