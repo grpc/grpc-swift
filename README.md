@@ -144,6 +144,23 @@ the following line to your `Podfile`:
 
 The plugins are available in the `Pods/gRPC-Swift-Plugins/` folder afterwards.
 
+
+### Easy Files Generation: 
+
+When you have *.proto files in "Data/gRPC_Schema" in Xcode directory
+You can add Build Phase Script for automatic generation for swift fils  *.pb.swift and *.grpc.swift files on the same directory "Data/gRPC_Schema"
+
+```bash
+cd "${SRCROOT}/${TARGET_NAME}/Data/gRPC_Schema"
+currentPath = "${SRCROOT}/${TARGET_NAME}/Data/gRPC_Schema"
+for i in $(ls | egrep '\.proto$'); 
+    do echo "$i";
+    protoc "$i" \
+             --swift_out=Visibility=Public:. \
+             --grpc-swift_out=Visibility=Public,Client=true,Server=false:.;
+    
+done; 
+```
 ## Examples
 
 gRPC Swift has a number of tutorials and examples available. They are split
