@@ -133,7 +133,7 @@ the following line to your `Podfile`:
     pod 'gRPC-Swift-Plugins'
 ```
 
-#### Homebrew (Easy Installation)
+#### Homebrew (Easy Installation):
 
 The plugins are available from homebrew and can be installed with :
 1. Installing Swift Protobuf : (swift-protobuf is installed as a dependency of grpc-swift)
