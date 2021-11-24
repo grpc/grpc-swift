@@ -130,6 +130,7 @@ the following line to your `Podfile`:
 ```ruby
     pod 'gRPC-Swift-Plugins'
 ```
+The plugins are available in the `Pods/gRPC-Swift-Plugins/` folder afterwards.
 
 #### Homebrew
 
@@ -137,8 +138,6 @@ The plugins are available from [homebrew](https://brew.sh) and can be installed 
 ```bash
     $ brew install swift-protobuf grpc-swift
 ```
-
-The plugins are available in the `Pods/gRPC-Swift-Plugins/` folder afterwards.
 
 ## Examples
 
