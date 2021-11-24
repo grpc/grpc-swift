@@ -17,8 +17,6 @@ all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
 Bidirectional Streaming) and connections can be made either over secure (TLS) or
 insecure channels.
 
-
-
 ## Versions
 
 gRPC Swift has recently been rewritten on top of [SwiftNIO][swift-nio] as
