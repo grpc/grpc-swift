@@ -60,7 +60,6 @@ jobs:
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 204000
           - image: swift:5.4-focal
->>>>>>> f0bdce9d (Prepare CI for async/await. (#1238))
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 504000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 216000
