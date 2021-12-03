@@ -29,7 +29,7 @@ extension Generator {
     self.printAvailabilityForAsyncAwait()
     self.println("\(self.access) protocol \(self.asyncClientProtocolName): GRPCClient {")
     self.withIndentation {
-      self.println("var serviceName: String { get }")
+      self.println("static var serviceDescriptor: GRPCServiceDescriptor { get }")
       self.println("var interceptors: \(self.clientInterceptorProtocolName)? { get }")
 
       for method in service.methods {
@@ -71,10 +71,14 @@ extension Generator {
   internal func printAsyncClientProtocolExtension() {
     self.printAvailabilityForAsyncAwait()
     self.withIndentation("extension \(self.asyncClientProtocolName)", braces: .curly) {
-      // Service name. TODO: use static metadata.
-      self.withIndentation("\(self.access) var serviceName: String", braces: .curly) {
-        self.println("return \"\(self.servicePath)\"")
+      // Service descriptor.
+      self.withIndentation(
+        "\(self.access) static var serviceDescriptor: GRPCServiceDescriptor",
+        braces: .curly
+      ) {
+        self.println("return \(self.serviceClientMetadata).serviceDescriptor")
       }
+
       self.println()
 
       // Interceptor factory.
@@ -106,7 +110,7 @@ extension Generator {
             access: self.access
           ) {
             self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
-              self.println("path: \(self.methodPath),")
+              self.println("path: \(self.methodPathUsingClientMetadata),")
               self.println("request: request,")
               self.println("callOptions: callOptions ?? self.defaultCallOptions,")
               self.println(
@@ -123,7 +127,7 @@ extension Generator {
             access: self.access
           ) {
             self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
-              self.println("path: \(self.methodPath),")
+              self.println("path: \(self.methodPathUsingClientMetadata),")
               self.println("callOptions: callOptions ?? self.defaultCallOptions,")
               self.println(
                 "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
@@ -185,7 +189,7 @@ extension Generator {
               "return\(!streamsResponses ? " try await" : "") self.perform\(callTypeWithoutPrefix)",
               braces: .round
             ) {
-              self.println("path: \(self.methodPath),")
+              self.println("path: \(self.methodPathUsingClientMetadata),")
               self.println("\(requestParamName): \(requestParamName),")
               self.println("callOptions: callOptions ?? self.defaultCallOptions,")
               self.println(

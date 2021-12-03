@@ -67,7 +67,7 @@ extension Echo_EchoClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeUnaryCall(
-      path: "/echo.Echo/Get",
+      path: Echo_EchoClientMetadata.Methods.get.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeGetInterceptors() ?? []
@@ -87,7 +87,7 @@ extension Echo_EchoClientProtocol {
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeServerStreamingCall(
-      path: "/echo.Echo/Expand",
+      path: Echo_EchoClientMetadata.Methods.expand.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeExpandInterceptors() ?? [],
@@ -107,7 +107,7 @@ extension Echo_EchoClientProtocol {
     callOptions: CallOptions? = nil
   ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeClientStreamingCall(
-      path: "/echo.Echo/Collect",
+      path: Echo_EchoClientMetadata.Methods.collect.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeCollectInterceptors() ?? []
     )
@@ -127,27 +127,12 @@ extension Echo_EchoClientProtocol {
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
+      path: Echo_EchoClientMetadata.Methods.update.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
       handler: handler
     )
   }
-}
-
-public protocol Echo_EchoClientInterceptorFactoryProtocol {
-
-  /// - Returns: Interceptors to use when invoking 'get'.
-  func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'expand'.
-  func makeExpandInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'collect'.
-  func makeCollectInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'update'.
-  func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 }
 
 public final class Echo_EchoClient: Echo_EchoClientProtocol {
@@ -175,7 +160,7 @@ public final class Echo_EchoClient: Echo_EchoClientProtocol {
 #if compiler(>=5.5) && canImport(_Concurrency)
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
-  var serviceName: String { get }
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Echo_EchoClientInterceptorFactoryProtocol? { get }
 
   func makeGetCall(
@@ -199,8 +184,8 @@ public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension Echo_EchoAsyncClientProtocol {
-  public var serviceName: String {
-    return "echo.Echo"
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Echo_EchoClientMetadata.serviceDescriptor
   }
 
   public var interceptors: Echo_EchoClientInterceptorFactoryProtocol? {
@@ -212,7 +197,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeAsyncUnaryCall(
-      path: "/echo.Echo/Get",
+      path: Echo_EchoClientMetadata.Methods.get.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeGetInterceptors() ?? []
@@ -224,7 +209,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeAsyncServerStreamingCall(
-      path: "/echo.Echo/Expand",
+      path: Echo_EchoClientMetadata.Methods.expand.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeExpandInterceptors() ?? []
@@ -235,7 +220,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeAsyncClientStreamingCall(
-      path: "/echo.Echo/Collect",
+      path: Echo_EchoClientMetadata.Methods.collect.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeCollectInterceptors() ?? []
     )
@@ -245,7 +230,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeAsyncBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
+      path: Echo_EchoClientMetadata.Methods.update.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
     )
@@ -259,7 +244,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse {
     return try await self.performAsyncUnaryCall(
-      path: "/echo.Echo/Get",
+      path: Echo_EchoClientMetadata.Methods.get.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeGetInterceptors() ?? []
@@ -271,7 +256,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> {
     return self.performAsyncServerStreamingCall(
-      path: "/echo.Echo/Expand",
+      path: Echo_EchoClientMetadata.Methods.expand.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeExpandInterceptors() ?? []
@@ -283,7 +268,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse where RequestStream: Sequence, RequestStream.Element == Echo_EchoRequest {
     return try await self.performAsyncClientStreamingCall(
-      path: "/echo.Echo/Collect",
+      path: Echo_EchoClientMetadata.Methods.collect.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeCollectInterceptors() ?? []
@@ -295,7 +280,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
     return try await self.performAsyncClientStreamingCall(
-      path: "/echo.Echo/Collect",
+      path: Echo_EchoClientMetadata.Methods.collect.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeCollectInterceptors() ?? []
@@ -307,7 +292,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: Sequence, RequestStream.Element == Echo_EchoRequest {
     return self.performAsyncBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
+      path: Echo_EchoClientMetadata.Methods.update.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
@@ -319,7 +304,7 @@ extension Echo_EchoAsyncClientProtocol {
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
     return self.performAsyncBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
+      path: Echo_EchoClientMetadata.Methods.update.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
@@ -345,6 +330,60 @@ public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
 }
 
 #endif // compiler(>=5.5) && canImport(_Concurrency)
+
+public protocol Echo_EchoClientInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when invoking 'get'.
+  func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'expand'.
+  func makeExpandInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'collect'.
+  func makeCollectInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'update'.
+  func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+}
+
+public enum Echo_EchoClientMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "Echo",
+    fullName: "echo.Echo",
+    methods: [
+      Echo_EchoClientMetadata.Methods.get,
+      Echo_EchoClientMetadata.Methods.expand,
+      Echo_EchoClientMetadata.Methods.collect,
+      Echo_EchoClientMetadata.Methods.update,
+    ]
+  )
+
+  public enum Methods {
+    public static let get = GRPCMethodDescriptor(
+      name: "Get",
+      path: "/echo.Echo/Get",
+      type: GRPCCallType.unary
+    )
+
+    public static let expand = GRPCMethodDescriptor(
+      name: "Expand",
+      path: "/echo.Echo/Expand",
+      type: GRPCCallType.serverStreaming
+    )
+
+    public static let collect = GRPCMethodDescriptor(
+      name: "Collect",
+      path: "/echo.Echo/Collect",
+      type: GRPCCallType.clientStreaming
+    )
+
+    public static let update = GRPCMethodDescriptor(
+      name: "Update",
+      path: "/echo.Echo/Update",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+  }
+}
 
 public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   private let fakeChannel: FakeChannel
@@ -372,7 +411,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func makeGetResponseStream(
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeUnaryResponse<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.fakeChannel.makeFakeUnaryResponse(path: "/echo.Echo/Get", requestHandler: requestHandler)
+    return self.fakeChannel.makeFakeUnaryResponse(path: Echo_EchoClientMetadata.Methods.get.path, requestHandler: requestHandler)
   }
 
   public func enqueueGetResponse(
@@ -386,7 +425,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
 
   /// Returns true if there are response streams enqueued for 'Get'
   public var hasGetResponsesRemaining: Bool {
-    return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Get")
+    return self.fakeChannel.hasFakeResponseEnqueued(forPath: Echo_EchoClientMetadata.Methods.get.path)
   }
 
   /// Make a streaming response for the Expand RPC. This must be called
@@ -396,7 +435,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func makeExpandResponseStream(
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeStreamingResponse<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.fakeChannel.makeFakeStreamingResponse(path: "/echo.Echo/Expand", requestHandler: requestHandler)
+    return self.fakeChannel.makeFakeStreamingResponse(path: Echo_EchoClientMetadata.Methods.expand.path, requestHandler: requestHandler)
   }
 
   public func enqueueExpandResponses(
@@ -411,7 +450,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
 
   /// Returns true if there are response streams enqueued for 'Expand'
   public var hasExpandResponsesRemaining: Bool {
-    return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Expand")
+    return self.fakeChannel.hasFakeResponseEnqueued(forPath: Echo_EchoClientMetadata.Methods.expand.path)
   }
 
   /// Make a unary response for the Collect RPC. This must be called
@@ -421,7 +460,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func makeCollectResponseStream(
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeUnaryResponse<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.fakeChannel.makeFakeUnaryResponse(path: "/echo.Echo/Collect", requestHandler: requestHandler)
+    return self.fakeChannel.makeFakeUnaryResponse(path: Echo_EchoClientMetadata.Methods.collect.path, requestHandler: requestHandler)
   }
 
   public func enqueueCollectResponse(
@@ -435,7 +474,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
 
   /// Returns true if there are response streams enqueued for 'Collect'
   public var hasCollectResponsesRemaining: Bool {
-    return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Collect")
+    return self.fakeChannel.hasFakeResponseEnqueued(forPath: Echo_EchoClientMetadata.Methods.collect.path)
   }
 
   /// Make a streaming response for the Update RPC. This must be called
@@ -445,7 +484,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func makeUpdateResponseStream(
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeStreamingResponse<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.fakeChannel.makeFakeStreamingResponse(path: "/echo.Echo/Update", requestHandler: requestHandler)
+    return self.fakeChannel.makeFakeStreamingResponse(path: Echo_EchoClientMetadata.Methods.update.path, requestHandler: requestHandler)
   }
 
   public func enqueueUpdateResponses(
@@ -460,7 +499,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
 
   /// Returns true if there are response streams enqueued for 'Update'
   public var hasUpdateResponsesRemaining: Bool {
-    return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Update")
+    return self.fakeChannel.hasFakeResponseEnqueued(forPath: Echo_EchoClientMetadata.Methods.update.path)
   }
 }
 
@@ -482,7 +521,9 @@ public protocol Echo_EchoProvider: CallHandlerProvider {
 }
 
 extension Echo_EchoProvider {
-  public var serviceName: Substring { return "echo.Echo" }
+  public var serviceName: Substring {
+    return Echo_EchoServerMetadata.serviceDescriptor.fullName[...]
+  }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
@@ -532,31 +573,12 @@ extension Echo_EchoProvider {
     }
   }
 }
-
-public protocol Echo_EchoServerInterceptorFactoryProtocol {
-
-  /// - Returns: Interceptors to use when handling 'get'.
-  ///   Defaults to calling `self.makeInterceptors()`.
-  func makeGetInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-
-  /// - Returns: Interceptors to use when handling 'expand'.
-  ///   Defaults to calling `self.makeInterceptors()`.
-  func makeExpandInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-
-  /// - Returns: Interceptors to use when handling 'collect'.
-  ///   Defaults to calling `self.makeInterceptors()`.
-  func makeCollectInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-
-  /// - Returns: Interceptors to use when handling 'update'.
-  ///   Defaults to calling `self.makeInterceptors()`.
-  func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-}
-
 #if compiler(>=5.5) && canImport(_Concurrency)
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { get }
 
   /// Immediately returns an echo of a request.
@@ -588,8 +610,12 @@ public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension Echo_EchoAsyncProvider {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Echo_EchoServerMetadata.serviceDescriptor
+  }
+
   public var serviceName: Substring {
-    return "echo.Echo"
+    return Echo_EchoServerMetadata.serviceDescriptor.fullName[...]
   }
 
   public var interceptors: Echo_EchoServerInterceptorFactoryProtocol? {
@@ -645,3 +671,60 @@ extension Echo_EchoAsyncProvider {
 
 #endif // compiler(>=5.5) && canImport(_Concurrency)
 
+public protocol Echo_EchoServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'get'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeGetInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when handling 'expand'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeExpandInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when handling 'collect'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCollectInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when handling 'update'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+}
+
+public enum Echo_EchoServerMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "Echo",
+    fullName: "echo.Echo",
+    methods: [
+      Echo_EchoServerMetadata.Methods.get,
+      Echo_EchoServerMetadata.Methods.expand,
+      Echo_EchoServerMetadata.Methods.collect,
+      Echo_EchoServerMetadata.Methods.update,
+    ]
+  )
+
+  public enum Methods {
+    public static let get = GRPCMethodDescriptor(
+      name: "Get",
+      path: "/echo.Echo/Get",
+      type: GRPCCallType.unary
+    )
+
+    public static let expand = GRPCMethodDescriptor(
+      name: "Expand",
+      path: "/echo.Echo/Expand",
+      type: GRPCCallType.serverStreaming
+    )
+
+    public static let collect = GRPCMethodDescriptor(
+      name: "Collect",
+      path: "/echo.Echo/Collect",
+      type: GRPCCallType.clientStreaming
+    )
+
+    public static let update = GRPCMethodDescriptor(
+      name: "Update",
+      path: "/echo.Echo/Update",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+  }
+}

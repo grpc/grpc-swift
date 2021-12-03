@@ -25,8 +25,6 @@ extension Generator {
       self.println()
       self.printClientProtocolExtension()
       self.println()
-      self.printServiceClientInterceptorFactoryProtocol()
-      self.println()
       self.printServiceClientImplementation()
     }
 
@@ -42,6 +40,14 @@ extension Generator {
       self.printAsyncServiceClientImplementation()
       self.println()
       self.printEndCompilerGuardForAsyncAwait()
+    }
+
+    // Both implementations share definitions for interceptors and metadata.
+    if self.options.generateClient || self.options.generateAsyncClient {
+      self.println()
+      self.printServiceClientInterceptorFactoryProtocol()
+      self.println()
+      self.printClientMetadata()
     }
 
     if self.options.generateTestClient {
@@ -254,7 +260,7 @@ extension Generator {
     ) {
       self.println("return self.makeUnaryCall(")
       self.withIndentation {
-        self.println("path: \(self.methodPath),")
+        self.println("path: \(self.methodPathUsingClientMetadata),")
         self.println("request: request,")
         self.println("callOptions: callOptions ?? self.defaultCallOptions,")
         self.println(
@@ -281,7 +287,7 @@ extension Generator {
     ) {
       self.println("return self.makeServerStreamingCall(")
       self.withIndentation {
-        self.println("path: \(self.methodPath),")
+        self.println("path: \(self.methodPathUsingClientMetadata),")
         self.println("request: request,")
         self.println("callOptions: callOptions ?? self.defaultCallOptions,")
         self.println(
@@ -312,7 +318,7 @@ extension Generator {
     ) {
       self.println("return self.makeClientStreamingCall(")
       self.withIndentation {
-        self.println("path: \(self.methodPath),")
+        self.println("path: \(self.methodPathUsingClientMetadata),")
         self.println("callOptions: callOptions ?? self.defaultCallOptions,")
         self.println(
           "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
@@ -339,7 +345,7 @@ extension Generator {
     ) {
       self.println("return self.makeBidirectionalStreamingCall(")
       self.withIndentation {
-        self.println("path: \(self.methodPath),")
+        self.println("path: \(self.methodPathUsingClientMetadata),")
         self.println("callOptions: callOptions ?? self.defaultCallOptions,")
         self.println(
           "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? [],"
@@ -462,7 +468,7 @@ extension Generator {
     ) {
       self
         .println(
-          "return self.fakeChannel.\(factory)(path: \(self.methodPath), requestHandler: requestHandler)"
+          "return self.fakeChannel.\(factory)(path: \(self.methodPathUsingClientMetadata), requestHandler: requestHandler)"
         )
     }
   }
@@ -472,7 +478,9 @@ extension Generator {
       .println("/// Returns true if there are response streams enqueued for '\(self.method.name)'")
     self.println("\(self.access) var has\(self.method.name)ResponsesRemaining: Bool {")
     self.withIndentation {
-      self.println("return self.fakeChannel.hasFakeResponseEnqueued(forPath: \(self.methodPath))")
+      self.println(
+        "return self.fakeChannel.hasFakeResponseEnqueued(forPath: \(self.methodPathUsingClientMetadata))"
+      )
     }
     self.println("}")
   }
