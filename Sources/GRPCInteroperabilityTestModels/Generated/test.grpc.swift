@@ -292,7 +292,7 @@ public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClien
   }
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
@@ -355,7 +355,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.TestService/EmptyCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? []
     )
   }
 
@@ -366,7 +367,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.TestService/UnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
     )
   }
 
@@ -377,7 +379,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.TestService/CacheableUnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? []
     )
   }
 
@@ -388,7 +391,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.makeAsyncServerStreamingCall(
       path: "/grpc.testing.TestService/StreamingOutputCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? []
     )
   }
 
@@ -397,7 +401,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   ) -> GRPCAsyncClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
     return self.makeAsyncClientStreamingCall(
       path: "/grpc.testing.TestService/StreamingInputCall",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? []
     )
   }
 
@@ -406,7 +411,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
     return self.makeAsyncBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/FullDuplexCall",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? []
     )
   }
 
@@ -415,7 +421,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
     return self.makeAsyncBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/HalfDuplexCall",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? []
     )
   }
 
@@ -426,7 +433,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.TestService/UnimplementedCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
     )
   }
 }
@@ -440,7 +448,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.TestService/EmptyCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? []
     )
   }
 
@@ -451,7 +460,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.TestService/UnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
     )
   }
 
@@ -462,7 +472,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.TestService/CacheableUnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? []
     )
   }
 
@@ -473,7 +484,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.performAsyncServerStreamingCall(
       path: "/grpc.testing.TestService/StreamingOutputCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? []
     )
   }
 
@@ -484,7 +496,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return try await self.performAsyncClientStreamingCall(
       path: "/grpc.testing.TestService/StreamingInputCall",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? []
     )
   }
 
@@ -495,7 +508,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return try await self.performAsyncClientStreamingCall(
       path: "/grpc.testing.TestService/StreamingInputCall",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? []
     )
   }
 
@@ -506,7 +520,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.performAsyncBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/FullDuplexCall",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? []
     )
   }
 
@@ -517,7 +532,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.performAsyncBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/FullDuplexCall",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? []
     )
   }
 
@@ -528,7 +544,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.performAsyncBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/HalfDuplexCall",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? []
     )
   }
 
@@ -539,7 +556,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return self.performAsyncBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/HalfDuplexCall",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? []
     )
   }
 
@@ -550,7 +568,8 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.TestService/UnimplementedCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
     )
   }
 }
@@ -572,7 +591,7 @@ public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsync
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
@@ -640,7 +659,7 @@ public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimple
   }
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
@@ -671,7 +690,8 @@ extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.UnimplementedService/UnimplementedCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
     )
   }
 }
@@ -685,7 +705,8 @@ extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.UnimplementedService/UnimplementedCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
     )
   }
 }
@@ -707,7 +728,7 @@ public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_Unimple
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 /// A service used to control reconnect server.
 ///
@@ -800,7 +821,7 @@ public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 /// A service used to control reconnect server.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol Grpc_Testing_ReconnectServiceAsyncClientProtocol: GRPCClient {
@@ -835,7 +856,8 @@ extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.ReconnectService/Start",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStartInterceptors() ?? []
     )
   }
 
@@ -846,7 +868,8 @@ extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/grpc.testing.ReconnectService/Stop",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStopInterceptors() ?? []
     )
   }
 }
@@ -860,7 +883,8 @@ extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.ReconnectService/Start",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStartInterceptors() ?? []
     )
   }
 
@@ -871,7 +895,8 @@ extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/grpc.testing.ReconnectService/Stop",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStopInterceptors() ?? []
     )
   }
 }
@@ -893,7 +918,7 @@ public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
@@ -1047,7 +1072,7 @@ public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
@@ -1088,7 +1113,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   /// A sequence of requests followed by one response (streamed upload).
   /// The server returns the aggregated size of client payload as the result.
   @Sendable func streamingInputCall(
-    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingInputCallRequest>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingInputCallRequest>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_StreamingInputCallResponse
 
@@ -1096,7 +1121,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   /// As one request could lead to multiple responses, this interface
   /// demonstrates the idea of full duplexing.
   @Sendable func fullDuplexCall(
-    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws
@@ -1106,7 +1131,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   /// stream of responses are returned to the client when the server starts with
   /// first request.
   @Sendable func halfDuplexCall(
-    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws
@@ -1169,7 +1194,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingInputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingInputCallResponse>(),
         interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? [],
-        wrapping: self.streamingInputCall(requests:context:)
+        wrapping: self.streamingInputCall(requestStream:context:)
       )
 
     case "FullDuplexCall":
@@ -1178,7 +1203,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? [],
-        wrapping: self.fullDuplexCall(requests:responseStream:context:)
+        wrapping: self.fullDuplexCall(requestStream:responseStream:context:)
       )
 
     case "HalfDuplexCall":
@@ -1187,7 +1212,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? [],
-        wrapping: self.halfDuplexCall(requests:responseStream:context:)
+        wrapping: self.halfDuplexCall(requestStream:responseStream:context:)
       )
 
     default:
@@ -1196,7 +1221,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
@@ -1241,7 +1266,7 @@ public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtoco
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
@@ -1288,7 +1313,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 /// A service used to control reconnect server.
 ///
@@ -1346,7 +1371,7 @@ public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol {
   func makeStopInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>]
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 
 /// A service used to control reconnect server.
 ///
@@ -1405,5 +1430,5 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 

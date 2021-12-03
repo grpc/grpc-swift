@@ -28,7 +28,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   public let requestStream: GRPCAsyncRequestStreamWriter<Request>
 
   /// The stream of responses from the server.
-  public let responses: GRPCAsyncResponseStream<Response>
+  public let responseStream: GRPCAsyncResponseStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -79,7 +79,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
     self.call = call
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
     self.responseSource = PassthroughMessageSource<Response, Error>()
-    self.responses = .init(PassthroughMessageSequence(consuming: self.responseSource))
+    self.responseStream = .init(PassthroughMessageSequence(consuming: self.responseSource))
     self.requestStream = call.makeRequestStreamWriter()
   }
 

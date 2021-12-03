@@ -117,7 +117,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     await assertThat(try await expand.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
 
-    let numResponses = try await expand.responses.map { _ in 1 }.reduce(0, +)
+    let numResponses = try await expand.responseStream.map { _ in 1 }.reduce(0, +)
 
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(try await expand.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
@@ -137,7 +137,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     }
     try await update.requestStream.finish()
 
-    let numResponses = try await update.responses.map { _ in 1 }.reduce(0, +)
+    let numResponses = try await update.responseStream.map { _ in 1 }.reduce(0, +)
 
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
@@ -154,7 +154,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     await assertThat(try await update.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
 
-    var responseStreamIterator = update.responses.makeAsyncIterator()
+    var responseStreamIterator = update.responseStream.makeAsyncIterator()
     for word in ["boyle", "jeffers", "holt"] {
       try await update.requestStream.send(.with { $0.text = word })
       await assertThat(try await responseStreamIterator.next(), .is(.notNil()))
@@ -192,7 +192,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       }
       // Get responses in a separate task.
       taskGroup.addTask {
-        for try await _ in update.responses {
+        for try await _ in update.responseStream {
           await counter.incrementResponses()
         }
       }

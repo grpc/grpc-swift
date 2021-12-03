@@ -45,10 +45,10 @@ public final class EchoAsyncProvider: Echo_EchoAsyncProvider {
   }
 
   public func collect(
-    requests: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Echo_EchoResponse {
-    let text = try await requests.reduce(into: "Swift echo collect:") { result, request in
+    let text = try await requestStream.reduce(into: "Swift echo collect:") { result, request in
       result += " \(request.text)"
     }
 
@@ -56,12 +56,12 @@ public final class EchoAsyncProvider: Echo_EchoAsyncProvider {
   }
 
   public func update(
-    requests: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws {
     var counter = 0
-    for try await request in requests {
+    for try await request in requestStream {
       let text = "Swift echo update (\(counter)): \(request.text)"
       try await responseStream.send(.with { $0.text = text })
       counter += 1

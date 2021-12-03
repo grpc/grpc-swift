@@ -574,13 +574,13 @@ public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
 
   /// Collects a stream of messages and returns them concatenated when the caller closes.
   @Sendable func collect(
-    requests: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Echo_EchoResponse
 
   /// Streams back messages as they are received in an input stream.
   @Sendable func update(
-    requests: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws
@@ -625,7 +625,7 @@ extension Echo_EchoAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeCollectInterceptors() ?? [],
-        wrapping: self.collect(requests:context:)
+        wrapping: self.collect(requestStream:context:)
       )
 
     case "Update":
@@ -634,7 +634,7 @@ extension Echo_EchoAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
-        wrapping: self.update(requests:responseStream:context:)
+        wrapping: self.update(requestStream:responseStream:context:)
       )
 
     default:
