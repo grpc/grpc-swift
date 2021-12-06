@@ -123,7 +123,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
       let initialMetadata = try await expand.initialMetadata
       initialMetadata.assertFirst("200", forName: ":status")
 
-      let responses = try await expand.responses.map { $0.text }.collect()
+      let responses = try await expand.responseStream.map { $0.text }.collect()
       XCTAssertEqual(responses, [
         "Swift echo expand (0): boyle",
         "Swift echo expand (1): jeffers",
@@ -154,7 +154,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
     XCTAsyncTest {
       let update = self.echo.makeUpdateCall()
 
-      var responseIterator = update.responses.map { $0.text }.makeAsyncIterator()
+      var responseIterator = update.responseStream.map { $0.text }.makeAsyncIterator()
 
       for (i, name) in ["boyle", "jeffers", "holt"].enumerated() {
         try await update.requestStream.send(.with { $0.text = name })
@@ -200,7 +200,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
     XCTAsyncTest {
       let update = self.echo.makeUpdateCall()
       try await update.requestStream.send(.with { $0.text = "hello" })
-      _ = try await update.responses.first(where: { _ in true })
+      _ = try await update.responseStream.first(where: { _ in true })
       XCTAssertNoThrow(try self.server.close().wait())
       self.server = nil // So that tearDown() does not call close() again.
       try await update.requestStream.finish()

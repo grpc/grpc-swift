@@ -197,7 +197,7 @@ extension GRPCClient {
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
-    ).responses
+    ).responseStream
   }
 
   public func performAsyncServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
@@ -212,7 +212,7 @@ extension GRPCClient {
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
-    ).responses
+    ).responseStream
   }
 
   public func performAsyncClientStreamingCall<
@@ -441,7 +441,7 @@ extension GRPCClient {
         }
       }
     }
-    return call.responses
+    return call.responseStream
   }
 }
 

@@ -25,7 +25,7 @@ public struct GRPCAsyncServerStreamingCall<Request, Response> {
   private let responseSource: PassthroughMessageSource<Response, Error>
 
   /// The stream of responses from the server.
-  public let responses: GRPCAsyncResponseStream<Response>
+  public let responseStream: GRPCAsyncResponseStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -78,7 +78,7 @@ public struct GRPCAsyncServerStreamingCall<Request, Response> {
     // invoke the `call`.
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
     self.responseSource = PassthroughMessageSource<Response, Error>()
-    self.responses = .init(PassthroughMessageSequence(consuming: self.responseSource))
+    self.responseStream = .init(PassthroughMessageSequence(consuming: self.responseSource))
   }
 
   /// We expose this as the only non-private initializer so that the caller

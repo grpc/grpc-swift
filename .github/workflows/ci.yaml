@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, async-await, 1.4.1-async-await]
+    branches: [main, 1.6.0-async-await]
 jobs:
   preflight:
     name: License Header and Formatting Checks
@@ -25,7 +25,7 @@ jobs:
       matrix:
         include:
           - image: swift:5.5-focal
-            swift-test-flags: "--enable-test-discovery --sanitize=thread"
+            swift-test-flags: "--enable-test-discovery"
           - image: swift:5.4-focal
             swift-test-flags: "--enable-test-discovery --sanitize=thread"
           - image: swift:5.3-focal
@@ -52,14 +52,6 @@ jobs:
       matrix:
         include:
           - image: swift:5.5-focal
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 503000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 215000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 204000
-          - image: swift:5.4-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 504000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 216000

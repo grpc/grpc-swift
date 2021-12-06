@@ -151,12 +151,12 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
   /// `StreamingInputCallResponse` where `aggregatedPayloadSize` is the sum of all request payload
   /// bodies received.
   public func streamingInputCall(
-    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingInputCallRequest>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingInputCallRequest>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_StreamingInputCallResponse {
     var aggregatePayloadSize = 0
 
-    for try await request in requests {
+    for try await request in requestStream {
       if request.expectCompressed.value {
         guard context.requestMetadata.contains(name: "grpc-encoding") else {
           throw GRPCStatus(
@@ -178,7 +178,7 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
   /// of size `ResponseParameter.size` bytes, as specified by its respective `ResponseParameter`s.
   /// After receiving half close and sending all responses, it closes with OK.
   public func fullDuplexCall(
-    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws {
@@ -187,7 +187,7 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
       throw Self.echoMetadataNotImplemented
     }
 
-    for try await request in requests {
+    for try await request in requestStream {
       if request.shouldEchoStatus {
         let code = GRPCStatus.Code(rawValue: numericCast(request.responseStatus.code))
         let status = GRPCStatus(code: code ?? .unknown, message: request.responseStatus.message)
@@ -207,7 +207,7 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md
   public func halfDuplexCall(
-    requests: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws {

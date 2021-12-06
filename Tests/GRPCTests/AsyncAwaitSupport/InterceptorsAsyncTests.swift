@@ -123,7 +123,7 @@ class InterceptorsAsyncTests: GRPCTestCase {
 
   func testMakingCallServerStreaming() { XCTAsyncTest {
     let call = self.echo.makeExpandCall(.with { $0.text = "hello" }, callOptions: .init())
-    for try await response in call.responses {
+    for try await response in call.responseStream {
       // Expand splits on spaces, so we only expect one response.
       await assertThat(response, .is(.with { $0.text = "hello :)0( dnapxe ohce tfiwS" }))
     }
@@ -156,7 +156,7 @@ class InterceptorsAsyncTests: GRPCTestCase {
     try await call.requestStream.finish()
 
     var count = 0
-    for try await response in call.responses {
+    for try await response in call.responseStream {
       switch count {
       case 0:
         await assertThat(response, .is(.with { $0.text = "1 2 :)0( etadpu ohce tfiwS" }))

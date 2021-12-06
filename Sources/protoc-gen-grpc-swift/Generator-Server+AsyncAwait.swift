@@ -59,7 +59,7 @@ extension Generator {
 
     case .clientStreaming:
       arguments = [
-        "requests: \(Types.requestStream(of: self.methodInputName))",
+        "requestStream: \(Types.requestStream(of: self.methodInputName))",
         "context: \(Types.serverContext)",
       ]
       returnType = self.methodOutputName
@@ -74,7 +74,7 @@ extension Generator {
 
     case .bidirectionalStreaming:
       arguments = [
-        "requests: \(Types.requestStream(of: self.methodInputName))",
+        "requestStream: \(Types.requestStream(of: self.methodInputName))",
         "responseStream: \(Types.responseStreamWriter(of: self.methodOutputName))",
         "context: \(Types.serverContext)",
       ]
@@ -145,13 +145,15 @@ extension Generator {
                 self.println("wrapping: self.\(functionName)(request:context:)")
 
               case .clientStreaming:
-                self.println("wrapping: self.\(functionName)(requests:context:)")
+                self.println("wrapping: self.\(functionName)(requestStream:context:)")
 
               case .serverStreaming:
                 self.println("wrapping: self.\(functionName)(request:responseStream:context:)")
 
               case .bidirectionalStreaming:
-                self.println("wrapping: self.\(functionName)(requests:responseStream:context:)")
+                self.println(
+                  "wrapping: self.\(functionName)(requestStream:responseStream:context:)"
+                )
               }
             }
           }
