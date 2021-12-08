@@ -147,6 +147,14 @@ extension Generator {
   }
 
   internal var methodPath: String {
-    return "\"/" + self.servicePath + "/" + method.name + "\""
+    return "/" + self.fullMethodName
   }
+
+  internal var fullMethodName: String {
+    return self.servicePath + "/" + self.method.name
+  }
+}
+
+internal func quoted(_ str: String) -> String {
+  return "\"" + str + "\""
 }

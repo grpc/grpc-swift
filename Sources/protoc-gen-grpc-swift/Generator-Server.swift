@@ -23,9 +23,6 @@ extension Generator {
       self.printServerProtocol()
       self.println()
       self.printServerProtocolExtension()
-      self.println()
-      self.printServerInterceptorFactoryProtocol()
-      self.println()
     }
 
     if self.options.generateAsyncServer {
@@ -36,13 +33,14 @@ extension Generator {
       self.printServerProtocolExtensionAsyncAwait()
       self.println()
       self.printEndCompilerGuardForAsyncAwait()
-      self.println()
     }
 
-    // If we generate only the async server we need to print the interceptor factory protocol (as
-    // it is used by both).
-    if self.options.generateAsyncServer, !self.options.generateServer {
+    // Both implementations share definitions for interceptors and metadata.
+    if self.options.generateServer || self.options.generateAsyncServer {
+      self.println()
       self.printServerInterceptorFactoryProtocol()
+      self.println()
+      self.printServerMetadata()
     }
   }
 
@@ -91,7 +89,10 @@ extension Generator {
   private func printServerProtocolExtension() {
     self.println("extension \(self.providerName) {")
     self.withIndentation {
-      self.println("\(self.access) var serviceName: Substring { return \"\(self.servicePath)\" }")
+      self.withIndentation("\(self.access) var serviceName: Substring", braces: .curly) {
+        /// This API returns a Substring (hence the '[...]')
+        self.println("return \(self.serviceServerMetadata).serviceDescriptor.fullName[...]")
+      }
       self.println()
       self.println(
         "/// Determines, calls and returns the appropriate request handler, depending on the request's method."

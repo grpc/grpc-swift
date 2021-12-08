@@ -32,6 +32,7 @@ extension Generator {
       "\(self.access) protocol \(self.asyncProviderName): CallHandlerProvider",
       braces: .curly
     ) {
+      self.println("static var serviceDescriptor: GRPCServiceDescriptor { get }")
       self.println("var interceptors: \(self.serverInterceptorProtocolName)? { get }")
 
       for method in service.methods {
@@ -100,8 +101,19 @@ extension Generator {
     // Default extension to provide the service name and routing for methods.
     self.printAvailabilityForAsyncAwait()
     self.withIndentation("extension \(self.asyncProviderName)", braces: .curly) {
+      self.withIndentation(
+        "\(self.access) static var serviceDescriptor: GRPCServiceDescriptor",
+        braces: .curly
+      ) {
+        self.println("return \(self.serviceServerMetadata).serviceDescriptor")
+      }
+
+      self.println()
+
+      // This fulfils a requirement from 'CallHandlerProvider'
       self.withIndentation("\(self.access) var serviceName: Substring", braces: .curly) {
-        self.println("return \"\(self.servicePath)\"")
+        /// This API returns a Substring (hence the '[...]')
+        self.println("return \(self.serviceServerMetadata).serviceDescriptor.fullName[...]")
       }
 
       self.println()
