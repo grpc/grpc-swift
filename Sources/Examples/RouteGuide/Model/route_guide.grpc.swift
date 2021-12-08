@@ -74,7 +74,7 @@ extension Routeguide_RouteGuideClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<Routeguide_Point, Routeguide_Feature> {
     return self.makeUnaryCall(
-      path: "/routeguide.RouteGuide/GetFeature",
+      path: Routeguide_RouteGuideClientMetadata.Methods.getFeature.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? []
@@ -99,7 +99,7 @@ extension Routeguide_RouteGuideClientProtocol {
     handler: @escaping (Routeguide_Feature) -> Void
   ) -> ServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature> {
     return self.makeServerStreamingCall(
-      path: "/routeguide.RouteGuide/ListFeatures",
+      path: Routeguide_RouteGuideClientMetadata.Methods.listFeatures.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? [],
@@ -122,7 +122,7 @@ extension Routeguide_RouteGuideClientProtocol {
     callOptions: CallOptions? = nil
   ) -> ClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary> {
     return self.makeClientStreamingCall(
-      path: "/routeguide.RouteGuide/RecordRoute",
+      path: Routeguide_RouteGuideClientMetadata.Methods.recordRoute.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? []
     )
@@ -145,27 +145,12 @@ extension Routeguide_RouteGuideClientProtocol {
     handler: @escaping (Routeguide_RouteNote) -> Void
   ) -> BidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote> {
     return self.makeBidirectionalStreamingCall(
-      path: "/routeguide.RouteGuide/RouteChat",
+      path: Routeguide_RouteGuideClientMetadata.Methods.routeChat.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeRouteChatInterceptors() ?? [],
       handler: handler
     )
   }
-}
-
-public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
-
-  /// - Returns: Interceptors to use when invoking 'getFeature'.
-  func makeGetFeatureInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_Feature>]
-
-  /// - Returns: Interceptors to use when invoking 'listFeatures'.
-  func makeListFeaturesInterceptors() -> [ClientInterceptor<Routeguide_Rectangle, Routeguide_Feature>]
-
-  /// - Returns: Interceptors to use when invoking 'recordRoute'.
-  func makeRecordRouteInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_RouteSummary>]
-
-  /// - Returns: Interceptors to use when invoking 'routeChat'.
-  func makeRouteChatInterceptors() -> [ClientInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>]
 }
 
 public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProtocol {
@@ -187,6 +172,60 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
     self.interceptors = interceptors
+  }
+}
+
+public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when invoking 'getFeature'.
+  func makeGetFeatureInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_Feature>]
+
+  /// - Returns: Interceptors to use when invoking 'listFeatures'.
+  func makeListFeaturesInterceptors() -> [ClientInterceptor<Routeguide_Rectangle, Routeguide_Feature>]
+
+  /// - Returns: Interceptors to use when invoking 'recordRoute'.
+  func makeRecordRouteInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_RouteSummary>]
+
+  /// - Returns: Interceptors to use when invoking 'routeChat'.
+  func makeRouteChatInterceptors() -> [ClientInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>]
+}
+
+public enum Routeguide_RouteGuideClientMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "RouteGuide",
+    fullName: "routeguide.RouteGuide",
+    methods: [
+      Routeguide_RouteGuideClientMetadata.Methods.getFeature,
+      Routeguide_RouteGuideClientMetadata.Methods.listFeatures,
+      Routeguide_RouteGuideClientMetadata.Methods.recordRoute,
+      Routeguide_RouteGuideClientMetadata.Methods.routeChat,
+    ]
+  )
+
+  public enum Methods {
+    public static let getFeature = GRPCMethodDescriptor(
+      name: "GetFeature",
+      path: "/routeguide.RouteGuide/GetFeature",
+      type: GRPCCallType.unary
+    )
+
+    public static let listFeatures = GRPCMethodDescriptor(
+      name: "ListFeatures",
+      path: "/routeguide.RouteGuide/ListFeatures",
+      type: GRPCCallType.serverStreaming
+    )
+
+    public static let recordRoute = GRPCMethodDescriptor(
+      name: "RecordRoute",
+      path: "/routeguide.RouteGuide/RecordRoute",
+      type: GRPCCallType.clientStreaming
+    )
+
+    public static let routeChat = GRPCMethodDescriptor(
+      name: "RouteChat",
+      path: "/routeguide.RouteGuide/RouteChat",
+      type: GRPCCallType.bidirectionalStreaming
+    )
   }
 }
 
@@ -226,7 +265,9 @@ public protocol Routeguide_RouteGuideProvider: CallHandlerProvider {
 }
 
 extension Routeguide_RouteGuideProvider {
-  public var serviceName: Substring { return "routeguide.RouteGuide" }
+  public var serviceName: Substring {
+    return Routeguide_RouteGuideServerMetadata.serviceDescriptor.fullName[...]
+  }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
@@ -296,3 +337,41 @@ public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
   func makeRouteChatInterceptors() -> [ServerInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>]
 }
 
+public enum Routeguide_RouteGuideServerMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "RouteGuide",
+    fullName: "routeguide.RouteGuide",
+    methods: [
+      Routeguide_RouteGuideServerMetadata.Methods.getFeature,
+      Routeguide_RouteGuideServerMetadata.Methods.listFeatures,
+      Routeguide_RouteGuideServerMetadata.Methods.recordRoute,
+      Routeguide_RouteGuideServerMetadata.Methods.routeChat,
+    ]
+  )
+
+  public enum Methods {
+    public static let getFeature = GRPCMethodDescriptor(
+      name: "GetFeature",
+      path: "/routeguide.RouteGuide/GetFeature",
+      type: GRPCCallType.unary
+    )
+
+    public static let listFeatures = GRPCMethodDescriptor(
+      name: "ListFeatures",
+      path: "/routeguide.RouteGuide/ListFeatures",
+      type: GRPCCallType.serverStreaming
+    )
+
+    public static let recordRoute = GRPCMethodDescriptor(
+      name: "RecordRoute",
+      path: "/routeguide.RouteGuide/RecordRoute",
+      type: GRPCCallType.clientStreaming
+    )
+
+    public static let routeChat = GRPCMethodDescriptor(
+      name: "RouteChat",
+      path: "/routeguide.RouteGuide/RouteChat",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+  }
+}

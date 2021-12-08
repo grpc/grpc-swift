@@ -54,18 +54,12 @@ extension Helloworld_GreeterClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
     return self.makeUnaryCall(
-      path: "/helloworld.Greeter/SayHello",
+      path: Helloworld_GreeterClientMetadata.Methods.sayHello.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeSayHelloInterceptors() ?? []
     )
   }
-}
-
-public protocol Helloworld_GreeterClientInterceptorFactoryProtocol {
-
-  /// - Returns: Interceptors to use when invoking 'sayHello'.
-  func makeSayHelloInterceptors() -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
 }
 
 public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
@@ -90,6 +84,30 @@ public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
   }
 }
 
+public protocol Helloworld_GreeterClientInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when invoking 'sayHello'.
+  func makeSayHelloInterceptors() -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
+}
+
+public enum Helloworld_GreeterClientMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "Greeter",
+    fullName: "helloworld.Greeter",
+    methods: [
+      Helloworld_GreeterClientMetadata.Methods.sayHello,
+    ]
+  )
+
+  public enum Methods {
+    public static let sayHello = GRPCMethodDescriptor(
+      name: "SayHello",
+      path: "/helloworld.Greeter/SayHello",
+      type: GRPCCallType.unary
+    )
+  }
+}
+
 /// The greeting service definition.
 ///
 /// To build a server, implement a class that conforms to this protocol.
@@ -101,7 +119,9 @@ public protocol Helloworld_GreeterProvider: CallHandlerProvider {
 }
 
 extension Helloworld_GreeterProvider {
-  public var serviceName: Substring { return "helloworld.Greeter" }
+  public var serviceName: Substring {
+    return Helloworld_GreeterServerMetadata.serviceDescriptor.fullName[...]
+  }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
@@ -132,3 +152,20 @@ public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
   func makeSayHelloInterceptors() -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
 }
 
+public enum Helloworld_GreeterServerMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "Greeter",
+    fullName: "helloworld.Greeter",
+    methods: [
+      Helloworld_GreeterServerMetadata.Methods.sayHello,
+    ]
+  )
+
+  public enum Methods {
+    public static let sayHello = GRPCMethodDescriptor(
+      name: "SayHello",
+      path: "/helloworld.Greeter/SayHello",
+      type: GRPCCallType.unary
+    )
+  }
+}
