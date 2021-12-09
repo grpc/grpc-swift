@@ -492,11 +492,9 @@ internal final class AsyncServerHandler<
       case .accepted(queueDepth: _):
         break
       case .dropped:
-        /// If we are in the `.active` state then we have yet to encounter an error. Therefore
-        /// if the request stream source has already terminated then it must have been the result of
-        /// receiving `.end`. Therefore this `.end` must have been sent by the client after it
-        /// already sent `.end`, which is a protocol violation.
-        self.handleError(GRPCError.ProtocolViolation("Message duplicate end of stream"))
+        // The task executing the user handler will finish the request stream source after the
+        // user handler completes. If that's the case we will drop the end-of-stream here.
+        break
       }
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
