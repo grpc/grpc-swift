@@ -66,7 +66,7 @@ ${XCODEPROJ}:
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
-		--grpc-swift_opt=Visibility=Public \
+		--grpc-swift_opt=Visibility=Public,ExperimentalAsyncClient=true,ExperimentalAsyncServer=true \
 		--grpc-swift_out=$(dir $<)
 
 ECHO_PROTO=Sources/Examples/Echo/Model/echo.proto
