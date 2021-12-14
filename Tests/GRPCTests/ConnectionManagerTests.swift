@@ -800,6 +800,7 @@ extension ConnectionManagerTests {
         payload: .goAway(lastStreamID: 1, errorCode: .noError, opaqueData: nil)
       )
       XCTAssertNoThrow(try channel.writeInbound(goAway))
+      self.loop.run()
     }
 
     self.loop.run()
