@@ -133,6 +133,7 @@ extension CallOptions {
       self.source = source
     }
 
+    @usableFromInline
     internal func requestID() -> String? {
       switch self.source {
       case .none:
