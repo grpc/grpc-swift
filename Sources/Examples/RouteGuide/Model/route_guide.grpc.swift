@@ -175,6 +175,181 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   }
 }
 
+#if compiler(>=5.5) && canImport(_Concurrency)
+/// Interface exported by the server.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Routeguide_RouteGuideAsyncClientProtocol: GRPCClient {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? { get }
+
+  func makeGetFeatureCall(
+    _ request: Routeguide_Point,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Routeguide_Point, Routeguide_Feature>
+
+  func makeListFeaturesCall(
+    _ request: Routeguide_Rectangle,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature>
+
+  func makeRecordRouteCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary>
+
+  func makeRouteChatCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote>
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Routeguide_RouteGuideAsyncClientProtocol {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Routeguide_RouteGuideClientMetadata.serviceDescriptor
+  }
+
+  public var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeGetFeatureCall(
+    _ request: Routeguide_Point,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Routeguide_Point, Routeguide_Feature> {
+    return self.makeAsyncUnaryCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.getFeature.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? []
+    )
+  }
+
+  public func makeListFeaturesCall(
+    _ request: Routeguide_Rectangle,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature> {
+    return self.makeAsyncServerStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.listFeatures.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? []
+    )
+  }
+
+  public func makeRecordRouteCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary> {
+    return self.makeAsyncClientStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.recordRoute.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? []
+    )
+  }
+
+  public func makeRouteChatCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.routeChat.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRouteChatInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Routeguide_RouteGuideAsyncClientProtocol {
+  public func getFeature(
+    _ request: Routeguide_Point,
+    callOptions: CallOptions? = nil
+  ) async throws -> Routeguide_Feature {
+    return try await self.performAsyncUnaryCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.getFeature.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? []
+    )
+  }
+
+  public func listFeatures(
+    _ request: Routeguide_Rectangle,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Routeguide_Feature> {
+    return self.performAsyncServerStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.listFeatures.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? []
+    )
+  }
+
+  public func recordRoute<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Routeguide_RouteSummary where RequestStream: Sequence, RequestStream.Element == Routeguide_Point {
+    return try await self.performAsyncClientStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.recordRoute.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? []
+    )
+  }
+
+  public func recordRoute<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Routeguide_RouteSummary where RequestStream: AsyncSequence, RequestStream.Element == Routeguide_Point {
+    return try await self.performAsyncClientStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.recordRoute.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? []
+    )
+  }
+
+  public func routeChat<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Routeguide_RouteNote> where RequestStream: Sequence, RequestStream.Element == Routeguide_RouteNote {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.routeChat.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRouteChatInterceptors() ?? []
+    )
+  }
+
+  public func routeChat<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Routeguide_RouteNote> where RequestStream: AsyncSequence, RequestStream.Element == Routeguide_RouteNote {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Routeguide_RouteGuideClientMetadata.Methods.routeChat.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRouteChatInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public struct Routeguide_RouteGuideAsyncClient: Routeguide_RouteGuideAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.5) && canImport(_Concurrency)
+
 public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
 
   /// - Returns: Interceptors to use when invoking 'getFeature'.
@@ -317,6 +492,121 @@ extension Routeguide_RouteGuideProvider {
     }
   }
 }
+#if compiler(>=5.5) && canImport(_Concurrency)
+
+/// Interface exported by the server.
+///
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol? { get }
+
+  /// A simple RPC.
+  ///
+  /// Obtains the feature at a given position.
+  ///
+  /// A feature with an empty name is returned if there's no feature at the given
+  /// position.
+  @Sendable func getFeature(
+    request: Routeguide_Point,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Routeguide_Feature
+
+  /// A server-to-client streaming RPC.
+  ///
+  /// Obtains the Features available within the given Rectangle.  Results are
+  /// streamed rather than returned at once (e.g. in a response message with a
+  /// repeated field), as the rectangle may cover a large area and contain a
+  /// huge number of features.
+  @Sendable func listFeatures(
+    request: Routeguide_Rectangle,
+    responseStream: GRPCAsyncResponseStreamWriter<Routeguide_Feature>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// A client-to-server streaming RPC.
+  ///
+  /// Accepts a stream of Points on a route being traversed, returning a
+  /// RouteSummary when traversal is completed.
+  @Sendable func recordRoute(
+    requestStream: GRPCAsyncRequestStream<Routeguide_Point>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Routeguide_RouteSummary
+
+  /// A Bidirectional streaming RPC.
+  ///
+  /// Accepts a stream of RouteNotes sent while a route is being traversed,
+  /// while receiving other RouteNotes (e.g. from other users).
+  @Sendable func routeChat(
+    requestStream: GRPCAsyncRequestStream<Routeguide_RouteNote>,
+    responseStream: GRPCAsyncResponseStreamWriter<Routeguide_RouteNote>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Routeguide_RouteGuideAsyncProvider {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Routeguide_RouteGuideServerMetadata.serviceDescriptor
+  }
+
+  public var serviceName: Substring {
+    return Routeguide_RouteGuideServerMetadata.serviceDescriptor.fullName[...]
+  }
+
+  public var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "GetFeature":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
+        responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
+        interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? [],
+        wrapping: self.getFeature(request:context:)
+      )
+
+    case "ListFeatures":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_Rectangle>(),
+        responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
+        interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? [],
+        wrapping: self.listFeatures(request:responseStream:context:)
+      )
+
+    case "RecordRoute":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
+        responseSerializer: ProtobufSerializer<Routeguide_RouteSummary>(),
+        interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? [],
+        wrapping: self.recordRoute(requestStream:context:)
+      )
+
+    case "RouteChat":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_RouteNote>(),
+        responseSerializer: ProtobufSerializer<Routeguide_RouteNote>(),
+        interceptors: self.interceptors?.makeRouteChatInterceptors() ?? [],
+        wrapping: self.routeChat(requestStream:responseStream:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
 
