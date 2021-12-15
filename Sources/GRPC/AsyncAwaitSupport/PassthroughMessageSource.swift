@@ -27,9 +27,11 @@ import NIOCore
 ///
 /// The source must be finished exactly once by calling ``finish()`` or ``finish(throwing:)`` to
 /// indicate that the sequence should end with an error.
+///
+/// This class '@unchecked Sendable' as mutable state is protected by a lock.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 @usableFromInline
-internal final class PassthroughMessageSource<Element, Failure: Error> {
+internal final class PassthroughMessageSource<Element, Failure: Error>: @unchecked Sendable {
   @usableFromInline
   internal typealias _ContinuationResult = Result<Element?, Error>
 

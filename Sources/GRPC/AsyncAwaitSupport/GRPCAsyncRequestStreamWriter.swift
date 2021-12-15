@@ -31,12 +31,12 @@
 /// try await stream.finish()
 /// ```
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct GRPCAsyncRequestStreamWriter<Request> {
+public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   @usableFromInline
-  internal let asyncWriter: AsyncWriter<Delegate<Request>>
+  internal let asyncWriter: AsyncWriter<Delegate>
 
   @inlinable
-  internal init(asyncWriter: AsyncWriter<Delegate<Request>>) {
+  internal init(asyncWriter: AsyncWriter<Delegate>) {
     self.asyncWriter = asyncWriter
   }
 
@@ -78,7 +78,7 @@ public struct GRPCAsyncRequestStreamWriter<Request> {
 extension GRPCAsyncRequestStreamWriter {
   /// A delegate for the writer which writes messages to an underlying receiver.`
   @usableFromInline
-  internal final class Delegate<Request>: AsyncWriterDelegate {
+  internal final class Delegate: AsyncWriterDelegate {
     @usableFromInline
     internal typealias Element = (Request, Compression)
 
@@ -89,16 +89,16 @@ extension GRPCAsyncRequestStreamWriter {
     internal let _compressionEnabled: Bool
 
     @usableFromInline
-    internal let _send: (Request, MessageMetadata) -> Void
+    internal let _send: @Sendable(Request, MessageMetadata) -> Void
 
     @usableFromInline
-    internal let _finish: () -> Void
+    internal let _finish: @Sendable() -> Void
 
     @inlinable
     internal init(
       compressionEnabled: Bool,
-      send: @escaping (Request, MessageMetadata) -> Void,
-      finish: @escaping () -> Void
+      send: @Sendable @escaping (Request, MessageMetadata) -> Void,
+      finish: @Sendable @escaping () -> Void
     ) {
       self._compressionEnabled = compressionEnabled
       self._send = send

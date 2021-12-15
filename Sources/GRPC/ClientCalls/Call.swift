@@ -37,7 +37,7 @@ import protocol SwiftProtobuf.Message
 ///
 /// Callers are not able to create `Call` objects directly, rather they must be created via an
 /// object conforming to `GRPCChannel` such as `ClientConnection`.
-public class Call<Request, Response> {
+public class Call<Request: GRPCSendable, Response: GRPCSendable> {
   @usableFromInline
   internal enum State {
     /// Idle, waiting to be invoked.
@@ -417,3 +417,8 @@ extension Call {
     self._send(.metadata(self.options.customMetadata), promise: nil)
   }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+// Unchecked is okay: synchronisation is on an event loop.
+extension Call: @unchecked Sendable {}
+#endif // compiler(>=5.5) && canImport(_Concurrency)

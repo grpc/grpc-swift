@@ -227,7 +227,7 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) async throws -> Response
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -248,7 +248,7 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) async throws -> Response
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -302,7 +302,7 @@ extension GRPCClient {
   public func performAsyncBidirectionalStreamingCall<
     Request: SwiftProtobuf.Message,
     Response: SwiftProtobuf.Message,
-    RequestStream: AsyncSequence
+    RequestStream: AsyncSequence & Sendable
   >(
     path: String,
     requests: RequestStream,
@@ -323,7 +323,7 @@ extension GRPCClient {
   public func performAsyncBidirectionalStreamingCall<
     Request: GRPCPayload,
     Response: GRPCPayload,
-    RequestStream: AsyncSequence
+    RequestStream: AsyncSequence & Sendable
   >(
     path: String,
     requests: RequestStream,
@@ -391,7 +391,7 @@ extension GRPCClient {
     _ call: GRPCAsyncClientStreamingCall<Request, Response>,
     with requests: RequestStream
   ) async throws -> Response
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Request {
     // We use a detached task because we use cancellation to signal early, but successful exit.
     let requestsTask = Task.detached {
       try Task.checkCancellation()
@@ -423,9 +423,8 @@ extension GRPCClient {
   internal func perform<Request, Response, RequestStream>(
     _ call: GRPCAsyncBidirectionalStreamingCall<Request, Response>,
     with requests: RequestStream
-  )
-    -> GRPCAsyncResponseStream<Response>
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+  ) -> GRPCAsyncResponseStream<Response>
+    where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Request {
     Task {
       try await withTaskCancellationHandler {
         try Task.checkCancellation()

@@ -111,6 +111,11 @@ public struct GRPCStatus: Error {
   )
 }
 
+#if compiler(>=5.5) && canImport(_Concurrency)
+// Unchecked because `GRPCStatus` has CoW semantics using a backing storage which is not `Sendable`.
+extension GRPCStatus: @unchecked Sendable {}
+#endif // compiler(>=5.5) && canImport(_Concurrency)
+
 extension GRPCStatus: Equatable {
   public static func == (lhs: GRPCStatus, rhs: GRPCStatus) -> Bool {
     return lhs.code == rhs.code && lhs.message == rhs.message
@@ -136,7 +141,7 @@ extension GRPCStatus {
 extension GRPCStatus {
   /// Status codes for gRPC operations (replicated from `status_code_enum.h` in the
   /// [gRPC core library](https://github.com/grpc/grpc)).
-  public struct Code: Hashable, CustomStringConvertible {
+  public struct Code: Hashable, CustomStringConvertible, GRPCSendable {
     // `rawValue` must be an `Int` for API reasons and we don't need (or want) to store anything so
     // wide, a `UInt8` is fine.
     private let _rawValue: UInt8

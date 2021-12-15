@@ -190,3 +190,9 @@ extension Error {
     }
   }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+// '@unchecked' as synchronisation is done via an Event Loop.
+extension UnaryResponseParts: @unchecked Sendable {}
+extension StreamingResponseParts: @unchecked Sendable {}
+#endif // compiler(>=5.5) && canImport(_Concurrency)

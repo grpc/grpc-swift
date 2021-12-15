@@ -154,9 +154,10 @@ extension GRPCAsyncServerHandler {
 internal final class AsyncServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
->: GRPCServerHandlerProtocol {
+>: GRPCServerHandlerProtocol where Deserializer.Output: Sendable, Serializer.Input: Sendable {
   @usableFromInline
   internal typealias Request = Deserializer.Output
+
   @usableFromInline
   internal typealias Response = Serializer.Input
 
@@ -182,7 +183,7 @@ internal final class AsyncServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let userHandler: (
+  internal let userHandler: @Sendable(
     GRPCAsyncRequestStream<Request>,
     GRPCAsyncResponseStreamWriter<Response>,
     GRPCAsyncServerCallContext
@@ -371,15 +372,15 @@ internal final class AsyncServerHandler<
       let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
 
       // TODO: In future use `AsyncWriter.init(maxPendingElements:maxWritesBeforeYield:delegate:)`?
-      let responseStreamWriter =
-        GRPCAsyncResponseStreamWriter(
-          wrapping: AsyncWriter(delegate: AsyncResponseStreamWriterDelegate(
-            context: context,
-            compressionIsEnabled: self.context.encoding.isEnabled,
-            send: self.interceptResponse(_:metadata:),
-            finish: self.responseStreamDrained(_:)
-          ))
-        )
+      let writerDelegate = AsyncResponseStreamWriterDelegate(
+        context: context,
+        compressionIsEnabled: self.context.encoding.isEnabled,
+        send: self.interceptResponse(_:metadata:),
+        finish: self.responseStreamDrained(_:)
+      )
+
+      let asyncWriter = AsyncWriter(delegate: writerDelegate)
+      let responseStreamWriter = GRPCAsyncResponseStreamWriter(wrapping: asyncWriter)
 
       // Set the state to active and bundle in all the associated data.
       self.state = .active(.init(
@@ -392,14 +393,19 @@ internal final class AsyncServerHandler<
       // Register callback for the completion of the user handler.
       userHandlerPromise.futureResult.whenComplete(self.userHandlerCompleted(_:))
 
+      let userHandler = self.userHandler
+
       // Spin up a task to call the async user handler.
       self.userHandlerTask = userHandlerPromise.completeWithTask {
         return try await withTaskCancellationHandler {
           do {
             // When the user handler completes we invalidate the request stream source.
-            defer { requestStreamSource.finish() }
+            defer {
+              requestStreamSource.finish()
+            }
+
             // Call the user handler.
-            try await self.userHandler(requestStream, responseStreamWriter, context)
+            try await userHandler(requestStream, responseStreamWriter, context)
           } catch let status as GRPCStatus where status.isOk {
             // The user handler throwing `GRPCStatus.ok` is considered to be invalid.
             await responseStreamWriter.asyncWriter.cancel()
@@ -415,12 +421,12 @@ internal final class AsyncServerHandler<
           try await responseStreamWriter.asyncWriter.finish(.ok)
         } onCancel: {
           /// The task being cancelled from outside is the signal to this task that an error has
-          /// occured and we should abort the user handler.
+          /// occurred and we should abort the user handler.
           ///
           /// Adopters are encouraged to cooperatively check for cancellation in their handlers but
           /// we cannot rely on this.
           ///
-          /// We additionally signal the handler that an error has occured by terminating the source
+          /// We additionally signal the handler that an error has occurred by terminating the source
           /// backing the request stream that the user handler is consuming.
           ///
           /// - NOTE: This handler has different semantics from the extant non-async-await handlers
@@ -439,7 +445,7 @@ internal final class AsyncServerHandler<
           ///
           /// - NOTE: Currently we _have_ added `GRPCStatusTransformable` conformance to
           /// `CancellationError` to convert it into `GRPCStatus.unavailable` and expect to
-          /// document that user handlers should always rethrow `CacellationError` if handled, after
+          /// document that user handlers should always rethrow `CancellationError` if handled, after
           /// optional cleanup.
           requestStreamSource.finish(throwing: CancellationError())
           /// Cancel the writer here to drop any pending responses.
@@ -531,6 +537,7 @@ internal final class AsyncServerHandler<
     }
   }
 
+  @Sendable
   @inlinable
   internal func interceptResponse(_ response: Response, metadata: MessageMetadata) {
     if self.context.eventLoop.inEventLoop {
@@ -587,6 +594,7 @@ internal final class AsyncServerHandler<
     }
   }
 
+  @Sendable
   @inlinable
   internal func responseStreamDrained(_ status: GRPCStatus) {
     if self.context.eventLoop.inEventLoop {

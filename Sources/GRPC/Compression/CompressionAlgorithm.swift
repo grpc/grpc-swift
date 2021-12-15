@@ -18,7 +18,7 @@
 ///
 /// These algorithms are indicated in the "grpc-encoding" header. As such, a lack of "grpc-encoding"
 /// header indicates that there is no message compression.
-public struct CompressionAlgorithm: Equatable {
+public struct CompressionAlgorithm: Equatable, GRPCSendable {
   /// Identity compression; "no" compression but indicated via the "grpc-encoding" header.
   public static let identity = CompressionAlgorithm(.identity)
   public static let deflate = CompressionAlgorithm(.deflate)

@@ -18,7 +18,7 @@
 /// An ``AsyncSequence`` adapter for a ``PassthroughMessageSource``.`
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 @usableFromInline
-internal struct PassthroughMessageSequence<Element, Failure: Error>: AsyncSequence {
+internal struct PassthroughMessageSequence<Element, Failure: Error>: AsyncSequence, Sendable {
   @usableFromInline
   internal typealias Element = Element
 
