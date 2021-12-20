@@ -55,156 +55,138 @@ final class AsyncIntegrationTests: GRPCTestCase {
     super.tearDown()
   }
 
-  func testUnary() {
-    XCTAsyncTest {
-      let get = self.echo.makeGetCall(.with { $0.text = "hello" })
+  func testUnary() async throws {
+    let get = self.echo.makeGetCall(.with { $0.text = "hello" })
 
-      let initialMetadata = try await get.initialMetadata
-      initialMetadata.assertFirst("200", forName: ":status")
+    let initialMetadata = try await get.initialMetadata
+    initialMetadata.assertFirst("200", forName: ":status")
 
-      let response = try await get.response
-      XCTAssertEqual(response.text, "Swift echo get: hello")
+    let response = try await get.response
+    XCTAssertEqual(response.text, "Swift echo get: hello")
 
-      let trailingMetadata = try await get.trailingMetadata
-      trailingMetadata.assertFirst("0", forName: "grpc-status")
+    let trailingMetadata = try await get.trailingMetadata
+    trailingMetadata.assertFirst("0", forName: "grpc-status")
 
-      let status = await get.status
-      XCTAssertTrue(status.isOk)
-    }
+    let status = await get.status
+    XCTAssertTrue(status.isOk)
   }
 
-  func testUnaryWrapper() {
-    XCTAsyncTest {
-      let response = try await self.echo.get(.with { $0.text = "hello" })
-      XCTAssertEqual(response.text, "Swift echo get: hello")
-    }
+  func testUnaryWrapper() async throws {
+    let response = try await self.echo.get(.with { $0.text = "hello" })
+    XCTAssertEqual(response.text, "Swift echo get: hello")
   }
 
-  func testClientStreaming() {
-    XCTAsyncTest {
-      let collect = self.echo.makeCollectCall()
+  func testClientStreaming() async throws {
+    let collect = self.echo.makeCollectCall()
 
-      try await collect.requestStream.send(.with { $0.text = "boyle" })
-      try await collect.requestStream.send(.with { $0.text = "jeffers" })
-      try await collect.requestStream.send(.with { $0.text = "holt" })
-      try await collect.requestStream.finish()
+    try await collect.requestStream.send(.with { $0.text = "boyle" })
+    try await collect.requestStream.send(.with { $0.text = "jeffers" })
+    try await collect.requestStream.send(.with { $0.text = "holt" })
+    try await collect.requestStream.finish()
 
-      let initialMetadata = try await collect.initialMetadata
-      initialMetadata.assertFirst("200", forName: ":status")
+    let initialMetadata = try await collect.initialMetadata
+    initialMetadata.assertFirst("200", forName: ":status")
 
-      let response = try await collect.response
-      XCTAssertEqual(response.text, "Swift echo collect: boyle jeffers holt")
+    let response = try await collect.response
+    XCTAssertEqual(response.text, "Swift echo collect: boyle jeffers holt")
 
-      let trailingMetadata = try await collect.trailingMetadata
-      trailingMetadata.assertFirst("0", forName: "grpc-status")
+    let trailingMetadata = try await collect.trailingMetadata
+    trailingMetadata.assertFirst("0", forName: "grpc-status")
 
-      let status = await collect.status
-      XCTAssertTrue(status.isOk)
-    }
+    let status = await collect.status
+    XCTAssertTrue(status.isOk)
   }
 
-  func testClientStreamingWrapper() {
-    XCTAsyncTest {
-      let requests: [Echo_EchoRequest] = [
-        .with { $0.text = "boyle" },
-        .with { $0.text = "jeffers" },
-        .with { $0.text = "holt" },
-      ]
+  func testClientStreamingWrapper() async throws {
+    let requests: [Echo_EchoRequest] = [
+      .with { $0.text = "boyle" },
+      .with { $0.text = "jeffers" },
+      .with { $0.text = "holt" },
+    ]
 
-      let response = try await self.echo.collect(requests)
-      XCTAssertEqual(response.text, "Swift echo collect: boyle jeffers holt")
-    }
+    let response = try await self.echo.collect(requests)
+    XCTAssertEqual(response.text, "Swift echo collect: boyle jeffers holt")
   }
 
-  func testServerStreaming() {
-    XCTAsyncTest {
-      let expand = self.echo.makeExpandCall(.with { $0.text = "boyle jeffers holt" })
+  func testServerStreaming() async throws {
+    let expand = self.echo.makeExpandCall(.with { $0.text = "boyle jeffers holt" })
 
-      let initialMetadata = try await expand.initialMetadata
-      initialMetadata.assertFirst("200", forName: ":status")
+    let initialMetadata = try await expand.initialMetadata
+    initialMetadata.assertFirst("200", forName: ":status")
 
-      let responses = try await expand.responseStream.map { $0.text }.collect()
-      XCTAssertEqual(responses, [
-        "Swift echo expand (0): boyle",
-        "Swift echo expand (1): jeffers",
-        "Swift echo expand (2): holt",
-      ])
+    let responses = try await expand.responseStream.map { $0.text }.collect()
+    XCTAssertEqual(responses, [
+      "Swift echo expand (0): boyle",
+      "Swift echo expand (1): jeffers",
+      "Swift echo expand (2): holt",
+    ])
 
-      let trailingMetadata = try await expand.trailingMetadata
-      trailingMetadata.assertFirst("0", forName: "grpc-status")
+    let trailingMetadata = try await expand.trailingMetadata
+    trailingMetadata.assertFirst("0", forName: "grpc-status")
 
-      let status = await expand.status
-      XCTAssertTrue(status.isOk)
-    }
+    let status = await expand.status
+    XCTAssertTrue(status.isOk)
   }
 
-  func testServerStreamingWrapper() {
-    XCTAsyncTest {
-      let responseStream = self.echo.expand(.with { $0.text = "boyle jeffers holt" })
-      let responses = try await responseStream.map { $0.text }.collect()
-      XCTAssertEqual(responses, [
-        "Swift echo expand (0): boyle",
-        "Swift echo expand (1): jeffers",
-        "Swift echo expand (2): holt",
-      ])
-    }
+  func testServerStreamingWrapper() async throws {
+    let responseStream = self.echo.expand(.with { $0.text = "boyle jeffers holt" })
+    let responses = try await responseStream.map { $0.text }.collect()
+    XCTAssertEqual(responses, [
+      "Swift echo expand (0): boyle",
+      "Swift echo expand (1): jeffers",
+      "Swift echo expand (2): holt",
+    ])
   }
 
-  func testBidirectionalStreaming() {
-    XCTAsyncTest {
-      let update = self.echo.makeUpdateCall()
+  func testBidirectionalStreaming() async throws {
+    let update = self.echo.makeUpdateCall()
 
-      var responseIterator = update.responseStream.map { $0.text }.makeAsyncIterator()
+    var responseIterator = update.responseStream.map { $0.text }.makeAsyncIterator()
 
-      for (i, name) in ["boyle", "jeffers", "holt"].enumerated() {
-        try await update.requestStream.send(.with { $0.text = name })
-        let response = try await responseIterator.next()
-        XCTAssertEqual(response, "Swift echo update (\(i)): \(name)")
-      }
-
-      try await update.requestStream.finish()
-
-      // This isn't right after we make the call as servers are not guaranteed to send metadata back
-      // immediately. Concretely, we don't send initial metadata back until the first response
-      // message is sent by the server.
-      let initialMetadata = try await update.initialMetadata
-      initialMetadata.assertFirst("200", forName: ":status")
-
-      let trailingMetadata = try await update.trailingMetadata
-      trailingMetadata.assertFirst("0", forName: "grpc-status")
-
-      let status = await update.status
-      XCTAssertTrue(status.isOk)
+    for (i, name) in ["boyle", "jeffers", "holt"].enumerated() {
+      try await update.requestStream.send(.with { $0.text = name })
+      let response = try await responseIterator.next()
+      XCTAssertEqual(response, "Swift echo update (\(i)): \(name)")
     }
+
+    try await update.requestStream.finish()
+
+    // This isn't right after we make the call as servers are not guaranteed to send metadata back
+    // immediately. Concretely, we don't send initial metadata back until the first response
+    // message is sent by the server.
+    let initialMetadata = try await update.initialMetadata
+    initialMetadata.assertFirst("200", forName: ":status")
+
+    let trailingMetadata = try await update.trailingMetadata
+    trailingMetadata.assertFirst("0", forName: "grpc-status")
+
+    let status = await update.status
+    XCTAssertTrue(status.isOk)
   }
 
-  func testBidirectionalStreamingWrapper() {
-    XCTAsyncTest {
-      let requests: [Echo_EchoRequest] = [
-        .with { $0.text = "boyle" },
-        .with { $0.text = "jeffers" },
-        .with { $0.text = "holt" },
-      ]
+  func testBidirectionalStreamingWrapper() async throws {
+    let requests: [Echo_EchoRequest] = [
+      .with { $0.text = "boyle" },
+      .with { $0.text = "jeffers" },
+      .with { $0.text = "holt" },
+    ]
 
-      let responseStream = self.echo.update(requests)
-      let responses = try await responseStream.map { $0.text }.collect()
-      XCTAssertEqual(responses, [
-        "Swift echo update (0): boyle",
-        "Swift echo update (1): jeffers",
-        "Swift echo update (2): holt",
-      ])
-    }
+    let responseStream = self.echo.update(requests)
+    let responses = try await responseStream.map { $0.text }.collect()
+    XCTAssertEqual(responses, [
+      "Swift echo update (0): boyle",
+      "Swift echo update (1): jeffers",
+      "Swift echo update (2): holt",
+    ])
   }
 
-  func testServerCloseAfterMessage() {
-    XCTAsyncTest {
-      let update = self.echo.makeUpdateCall()
-      try await update.requestStream.send(.with { $0.text = "hello" })
-      _ = try await update.responseStream.first(where: { _ in true })
-      XCTAssertNoThrow(try self.server.close().wait())
-      self.server = nil // So that tearDown() does not call close() again.
-      try await update.requestStream.finish()
-    }
+  func testServerCloseAfterMessage() async throws {
+    let update = self.echo.makeUpdateCall()
+    try await update.requestStream.send(.with { $0.text = "hello" })
+    _ = try await update.responseStream.first(where: { _ in true })
+    XCTAssertNoThrow(try self.server.close().wait())
+    self.server = nil // So that tearDown() does not call close() again.
+    try await update.requestStream.finish()
   }
 }
 
