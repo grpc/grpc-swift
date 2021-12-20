@@ -157,8 +157,12 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     }
 
     // Close the channel, if necessary.
-    if operations.shouldCloseChannel {
-      self.context?.close(mode: .all, promise: nil)
+    if operations.shouldCloseChannel, let context = self.context {
+      // Close on the next event-loop tick so we don't drop any events which are
+      // currently being processed.
+      context.eventLoop.execute {
+        context.close(mode: .all, promise: nil)
+      }
     }
   }
 
