@@ -68,7 +68,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     XCTFail("This observer should never be called")
   }
 
-  func testHappyPath() { XCTAsyncTest {
+  func testHappyPath() async throws {
     let handler = self.makeHandler(
       observer: self.echo(requests:responseStreamWriter:context:)
     )
@@ -92,9 +92,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false, false]))
     await assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
     await assertThat(self.recorder.trailers, .is([:]))
-  } }
+  }
 
-  func testHappyPathWithCompressionEnabled() { XCTAsyncTest {
+  func testHappyPathWithCompressionEnabled() async throws {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
       observer: self.echo(requests:responseStreamWriter:context:)
@@ -114,9 +114,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
     )
     await assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([true, true, true]))
-  } }
+  }
 
-  func testHappyPathWithCompressionEnabledButDisabledByCaller() { XCTAsyncTest {
+  func testHappyPathWithCompressionEnabledButDisabledByCaller() async throws {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { requests, responseStreamWriter, context in
@@ -142,9 +142,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
     )
     await assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false, false]))
-  } }
+  }
 
-  func testResponseHeadersAndTrailersSentFromContext() { XCTAsyncTest {
+  func testResponseHeadersAndTrailersSentFromContext() async throws {
     let handler = self.makeHandler { _, responseStreamWriter, context in
       context.initialResponseMetadata = ["pontiac": "bandit"]
       try await responseStreamWriter.send("1")
@@ -158,9 +158,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     await assertThat(self.recorder.metadata, .is(["pontiac": "bandit"]))
     await assertThat(self.recorder.trailers, .is(["disco": "strangler"]))
-  } }
+  }
 
-  func testResponseHeadersDroppedIfSetAfterFirstResponse() { XCTAsyncTest {
+  func testResponseHeadersDroppedIfSetAfterFirstResponse() async throws {
     let handler = self.makeHandler { _, responseStreamWriter, context in
       try await responseStreamWriter.send("1")
       context.initialResponseMetadata = ["pontiac": "bandit"]
@@ -174,9 +174,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     await assertThat(self.recorder.metadata, .is([:]))
     await assertThat(self.recorder.trailers, .is(["disco": "strangler"]))
-  } }
+  }
 
-  func testTaskOnlyCreatedAfterHeaders() { XCTAsyncTest {
+  func testTaskOnlyCreatedAfterHeaders() async throws {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
     await assertThat(handler.userHandlerTask, .nil())
@@ -184,9 +184,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMetadata([:])
 
     await assertThat(handler.userHandlerTask, .notNil())
-  } }
+  }
 
-  func testThrowingDeserializer() { XCTAsyncTest {
+  func testThrowingDeserializer() async throws {
     let handler = AsyncServerHandler(
       context: self.makeCallHandlerContext(),
       requestDeserializer: ThrowingStringDeserializer(),
@@ -204,9 +204,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
-  } }
+  }
 
-  func testThrowingSerializer() { XCTAsyncTest {
+  func testThrowingSerializer() async throws {
     let handler = AsyncServerHandler(
       context: self.makeCallHandlerContext(),
       requestDeserializer: StringDeserializer(),
@@ -225,9 +225,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.metadata, .is([:]))
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
-  } }
+  }
 
-  func testReceiveMessageBeforeHeaders() { XCTAsyncTest {
+  func testReceiveMessageBeforeHeaders() async throws {
     let handler = self
       .makeHandler(observer: self.neverCalled(requests:responseStreamWriter:context:))
 
@@ -239,9 +239,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
-  } }
+  }
 
-  func testReceiveMultipleHeaders() { XCTAsyncTest {
+  func testReceiveMultipleHeaders() async throws {
     let handler = self
       .makeHandler(observer: self.neverReceivesMessage(requests:responseStreamWriter:context:))
 
@@ -254,9 +254,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
-  } }
+  }
 
-  func testFinishBeforeStarting() { XCTAsyncTest {
+  func testFinishBeforeStarting() async throws {
     let handler = self
       .makeHandler(observer: self.neverCalled(requests:responseStreamWriter:context:))
 
@@ -265,9 +265,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .nil())
     await assertThat(self.recorder.trailers, .nil())
-  } }
+  }
 
-  func testFinishAfterHeaders() { XCTAsyncTest {
+  func testFinishAfterHeaders() async throws {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
     handler.receiveMetadata([:])
@@ -280,9 +280,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .nil())
     await assertThat(self.recorder.trailers, .nil())
-  } }
+  }
 
-  func testFinishAfterMessage() { XCTAsyncTest {
+  func testFinishAfterMessage() async throws {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
     handler.receiveMetadata([:])
@@ -299,9 +299,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "hello")))
     await assertThat(self.recorder.status, .nil())
     await assertThat(self.recorder.trailers, .nil())
-  } }
+  }
 
-  func testErrorAfterHeaders() { XCTAsyncTest {
+  func testErrorAfterHeaders() async throws {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
     handler.receiveMetadata([:])
@@ -312,9 +312,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
     await assertThat(self.recorder.trailers, .is([:]))
-  } }
+  }
 
-  func testErrorAfterMessage() { XCTAsyncTest {
+  func testErrorAfterMessage() async throws {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
     handler.receiveMetadata([:])
@@ -331,9 +331,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "hello")))
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
     await assertThat(self.recorder.trailers, .is([:]))
-  } }
+  }
 
-  func testHandlerThrowsGRPCStatusOKResultsInUnknownStatus() { XCTAsyncTest {
+  func testHandlerThrowsGRPCStatusOKResultsInUnknownStatus() async throws {
     // Create a user function that immediately throws GRPCStatus.ok.
     let handler = self.makeHandler { _, _, _ in
       throw GRPCStatus.ok
@@ -347,9 +347,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Check the status is `.unknown`.
     await assertThat(self.recorder.status, .notNil(.hasCode(.unknown)))
-  } }
+  }
 
-  func testResponseStreamDrain() { XCTAsyncTest {
+  func testResponseStreamDrain() async throws {
     // Set up echo handler.
     let handler = self.makeHandler(
       observer: self.echo(requests:responseStreamWriter:context:)
@@ -379,6 +379,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       ByteBuffer(string: "santiago"),
     ]))
     await assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
-  } }
+  }
 }
 #endif

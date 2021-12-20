@@ -72,7 +72,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     super.tearDown()
   }
 
-  func testAsyncUnaryCall() throws { XCTAsyncTest {
+  func testAsyncUnaryCall() async throws {
     let channel = try self.setUpServerAndChannel()
     let get: GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncUnaryCall(
       path: "/echo.Echo/Get",
@@ -85,9 +85,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     await assertThat(try await get.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await get.status, .hasCode(.ok))
     print(try await get.trailingMetadata)
-  } }
+  }
 
-  func testAsyncClientStreamingCall() throws { XCTAsyncTest {
+  func testAsyncClientStreamingCall() async throws {
     let channel = try self.setUpServerAndChannel()
     let collect: GRPCAsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncClientStreamingCall(
@@ -104,9 +104,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     await assertThat(try await collect.response, .doesNotThrow())
     await assertThat(try await collect.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await collect.status, .hasCode(.ok))
-  } }
+  }
 
-  func testAsyncServerStreamingCall() throws { XCTAsyncTest {
+  func testAsyncServerStreamingCall() async throws {
     let channel = try self.setUpServerAndChannel()
     let expand: GRPCAsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncServerStreamingCall(
@@ -122,9 +122,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(try await expand.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await expand.status, .hasCode(.ok))
-  } }
+  }
 
-  func testAsyncBidirectionalStreamingCall() throws { XCTAsyncTest {
+  func testAsyncBidirectionalStreamingCall() async throws {
     let channel = try self.setUpServerAndChannel()
     let update: GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncBidirectionalStreamingCall(
@@ -142,9 +142,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
-  } }
+  }
 
-  func testAsyncBidirectionalStreamingCall_InterleavedRequestsAndResponses() throws { XCTAsyncTest {
+  func testAsyncBidirectionalStreamingCall_InterleavedRequestsAndResponses() async throws {
     let channel = try self.setUpServerAndChannel()
     let update: GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncBidirectionalStreamingCall(
@@ -166,9 +166,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
-  } }
+  }
 
-  func testAsyncBidirectionalStreamingCall_ConcurrentTasks() throws { XCTAsyncTest {
+  func testAsyncBidirectionalStreamingCall_ConcurrentTasks() async throws {
     let channel = try self.setUpServerAndChannel()
     let update: GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncBidirectionalStreamingCall(
@@ -202,7 +202,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     await assertThat(await counter.numResponses, .is(.equalTo(3)))
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
-  } }
+  }
 }
 
 // Workaround https://bugs.swift.org/browse/SR-15070 (compiler crashes when defining a class/actor
