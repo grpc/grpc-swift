@@ -157,8 +157,8 @@ public final class Echo_EchoClient: Echo_EchoClientProtocol {
   }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Echo_EchoClientInterceptorFactoryProtocol? { get }
@@ -182,7 +182,7 @@ public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
   ) -> GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Echo_EchoAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Echo_EchoClientMetadata.serviceDescriptor
@@ -237,7 +237,7 @@ extension Echo_EchoAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Echo_EchoAsyncClientProtocol {
   public func get(
     _ request: Echo_EchoRequest,
@@ -312,7 +312,7 @@ extension Echo_EchoAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
@@ -329,7 +329,7 @@ public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Echo_EchoClientInterceptorFactoryProtocol {
 
@@ -573,10 +573,10 @@ extension Echo_EchoProvider {
     }
   }
 }
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 /// To implement a server, implement an object which conforms to this protocol.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { get }
@@ -608,7 +608,7 @@ public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
   ) async throws
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Echo_EchoAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Echo_EchoServerMetadata.serviceDescriptor
@@ -669,7 +669,7 @@ extension Echo_EchoAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Echo_EchoServerInterceptorFactoryProtocol {
 

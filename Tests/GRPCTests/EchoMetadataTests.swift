@@ -81,8 +81,8 @@ internal final class EchoMetadataTests: GRPCTestCase {
     self.testServiceDescriptor(Echo_EchoClientMetadata.serviceDescriptor)
     self.testServiceDescriptor(Echo_EchoServerMetadata.serviceDescriptor)
 
-    #if swift(>=5.5)
-    if #available(macOS 12, *) {
+    #if swift(>=5.5.2)
+    if #available(macOS 10.15, *) {
       self.testServiceDescriptor(Echo_EchoAsyncClient.serviceDescriptor)
     }
     #endif

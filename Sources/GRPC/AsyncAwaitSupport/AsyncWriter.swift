@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 import NIOCore
 
 /// An asynchronous writer which forwards messages to a delegate.
@@ -25,7 +25,7 @@ import NIOCore
 ///
 /// The writer must also be "finished" with a final value: as for writing, calls to ``finish(_:)``
 /// may suspend if the writer has been paused.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
   @usableFromInline
@@ -291,7 +291,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncWriter where End == Void {
   @inlinable
   internal func finish() async throws {
@@ -334,4 +334,4 @@ internal protocol AsyncWriterDelegate: AnyObject {
   func writeEnd(_ end: End)
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)

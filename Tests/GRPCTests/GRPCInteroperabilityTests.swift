@@ -176,8 +176,8 @@ class GRPCSecureInteroperabilityTests: GRPCInsecureInteroperabilityTests {
 }
 #endif // canImport(NIOSSL)
 
-#if compiler(>=5.5)
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+#if compiler(>=5.5.2)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 class GRPCInsecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityTests {
   override func makeProvider() -> CallHandlerProvider {
     return TestServiceAsyncProvider()
@@ -185,7 +185,7 @@ class GRPCInsecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityTests 
 }
 
 #if canImport(NIOSSL)
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 class GRPCSecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityAsyncTests {
   override var useTLS: Bool { return true }
 }

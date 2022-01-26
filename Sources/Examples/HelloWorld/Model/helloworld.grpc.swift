@@ -84,6 +84,76 @@ public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
   }
 }
 
+#if compiler(>=5.5.2) && canImport(_Concurrency)
+/// The greeting service definition.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public protocol Helloworld_GreeterAsyncClientProtocol: GRPCClient {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol? { get }
+
+  func makeSayHelloCall(
+    _ request: Helloworld_HelloRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply>
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Helloworld_GreeterAsyncClientProtocol {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Helloworld_GreeterClientMetadata.serviceDescriptor
+  }
+
+  public var interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeSayHelloCall(
+    _ request: Helloworld_HelloRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
+    return self.makeAsyncUnaryCall(
+      path: Helloworld_GreeterClientMetadata.Methods.sayHello.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeSayHelloInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Helloworld_GreeterAsyncClientProtocol {
+  public func sayHello(
+    _ request: Helloworld_HelloRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Helloworld_HelloReply {
+    return try await self.performAsyncUnaryCall(
+      path: Helloworld_GreeterClientMetadata.Methods.sayHello.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeSayHelloInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public struct Helloworld_GreeterAsyncClient: Helloworld_GreeterAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+
 public protocol Helloworld_GreeterClientInterceptorFactoryProtocol {
 
   /// - Returns: Interceptors to use when invoking 'sayHello'.
@@ -144,6 +214,58 @@ extension Helloworld_GreeterProvider {
     }
   }
 }
+#if compiler(>=5.5.2) && canImport(_Concurrency)
+
+/// The greeting service definition.
+///
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public protocol Helloworld_GreeterAsyncProvider: CallHandlerProvider {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? { get }
+
+  /// Sends a greeting.
+  @Sendable func sayHello(
+    request: Helloworld_HelloRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Helloworld_HelloReply
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Helloworld_GreeterAsyncProvider {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Helloworld_GreeterServerMetadata.serviceDescriptor
+  }
+
+  public var serviceName: Substring {
+    return Helloworld_GreeterServerMetadata.serviceDescriptor.fullName[...]
+  }
+
+  public var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "SayHello":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Helloworld_HelloRequest>(),
+        responseSerializer: ProtobufSerializer<Helloworld_HelloReply>(),
+        interceptors: self.interceptors?.makeSayHelloInterceptors() ?? [],
+        wrapping: self.sayHello(request:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
 

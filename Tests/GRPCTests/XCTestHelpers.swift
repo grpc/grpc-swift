@@ -660,9 +660,9 @@ struct ExpressionMatcher<Value> {
   }
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5.2)
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () async throws -> Value,
   _ matcher: Matcher<Value>,
@@ -673,7 +673,7 @@ func assertThat<Value>(
   await assertThat(try await expression(), .doesNotThrow(matcher), file: file, line: line)
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () async throws -> Value,
   _ matcher: ExpressionMatcher<Value>,
