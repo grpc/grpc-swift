@@ -53,7 +53,7 @@ jobs:
         include:
           - image: swift:5.5-focal
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 504000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 504001
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 216000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
