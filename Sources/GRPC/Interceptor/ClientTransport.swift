@@ -850,7 +850,7 @@ extension ClientTransport {
     promise: EventLoopPromise<Void>?
   ) {
     self.callEventLoop.assertInEventLoop()
-    self.logger.debug("buffering request part", metadata: [
+    self.logger.trace("buffering request part", metadata: [
       "request_part": "\(part.name)",
       "call_state": self.stateForLogging,
     ])
@@ -868,7 +868,7 @@ extension ClientTransport {
     // Save any flushing until we're done writing.
     var shouldFlush = false
 
-    self.logger.debug("unbuffering request parts", metadata: [
+    self.logger.trace("unbuffering request parts", metadata: [
       "request_parts": "\(self.writeBuffer.count)",
     ])
 
@@ -878,7 +878,7 @@ extension ClientTransport {
     while self.state.isUnbuffering, !self.writeBuffer.isEmpty {
       // Pull out as many writes as possible.
       while let write = self.writeBuffer.popFirst() {
-        self.logger.debug("unbuffering request part", metadata: [
+        self.logger.trace("unbuffering request part", metadata: [
           "request_part": "\(write.request.name)",
         ])
 
@@ -897,7 +897,7 @@ extension ClientTransport {
     }
 
     if self.writeBuffer.isEmpty {
-      self.logger.debug("request buffer drained")
+      self.logger.trace("request buffer drained")
     } else {
       self.logger.notice("unbuffering aborted", metadata: ["call_state": self.stateForLogging])
     }
@@ -914,7 +914,7 @@ extension ClientTransport {
   /// Fails any promises that come with buffered writes with `error`.
   /// - Parameter error: The `Error` to fail promises with.
   private func failBufferedWrites(with error: Error) {
-    self.logger.debug("failing buffered writes", metadata: ["call_state": self.stateForLogging])
+    self.logger.trace("failing buffered writes", metadata: ["call_state": self.stateForLogging])
 
     while let write = self.writeBuffer.popFirst() {
       write.promise?.fail(error)
