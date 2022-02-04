@@ -81,16 +81,6 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 195000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 202000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 202000
-          - image: swift:5.2-bionic
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 492000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 204000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 196000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 203000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 203000
     name: Performance Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
