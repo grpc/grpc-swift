@@ -24,31 +24,59 @@ let largeRequest = String(repeating: "x", count: 1 << 16) // 65k
 func runBenchmarks(spec: TestSpec) {
   measureAndPrint(
     description: "unary_10k_small_requests",
-    benchmark: Unary(requests: 10000, text: smallRequest),
+    benchmark: Unary(
+      requests: 10000,
+      text: smallRequest,
+      useNIOTSIfAvailable: spec.useNIOTransportServices,
+      useTLS: spec.useTLS
+    ),
     spec: spec
   )
 
   measureAndPrint(
     description: "unary_10k_long_requests",
-    benchmark: Unary(requests: 10000, text: largeRequest),
+    benchmark: Unary(
+      requests: 10000,
+      text: largeRequest,
+      useNIOTSIfAvailable: spec.useNIOTransportServices,
+      useTLS: spec.useTLS
+    ),
     spec: spec
   )
 
   measureAndPrint(
     description: "bidi_10k_small_requests_in_batches_of_1",
-    benchmark: Bidi(requests: 10000, text: smallRequest, batchSize: 1),
+    benchmark: Bidi(
+      requests: 10000,
+      text: smallRequest,
+      batchSize: 1,
+      useNIOTSIfAvailable: spec.useNIOTransportServices,
+      useTLS: spec.useTLS
+    ),
     spec: spec
   )
 
   measureAndPrint(
     description: "bidi_10k_small_requests_in_batches_of_5",
-    benchmark: Bidi(requests: 10000, text: smallRequest, batchSize: 5),
+    benchmark: Bidi(
+      requests: 10000,
+      text: smallRequest,
+      batchSize: 5,
+      useNIOTSIfAvailable: spec.useNIOTransportServices,
+      useTLS: spec.useTLS
+    ),
     spec: spec
   )
 
   measureAndPrint(
     description: "bidi_1k_large_requests_in_batches_of_5",
-    benchmark: Bidi(requests: 1000, text: largeRequest, batchSize: 1),
+    benchmark: Bidi(
+      requests: 1000,
+      text: largeRequest,
+      batchSize: 1,
+      useNIOTSIfAvailable: spec.useNIOTransportServices,
+      useTLS: spec.useTLS
+    ),
     spec: spec
   )
 
@@ -153,10 +181,14 @@ func runBenchmarks(spec: TestSpec) {
 struct TestSpec {
   var action: Action
   var repeats: Int
+  var useNIOTransportServices: Bool
+  var useTLS: Bool
 
-  init(action: Action, repeats: Int = 10) {
+  init(action: Action, repeats: Int, useNIOTransportServices: Bool, useTLS: Bool) {
     self.action = action
     self.repeats = repeats
+    self.useNIOTransportServices = useNIOTransportServices
+    self.useTLS = useTLS
   }
 
   enum Action {
@@ -190,6 +222,15 @@ struct PerformanceTests: ParsableCommand {
   @Flag(name: .shortAndLong, help: "Run all tests")
   var all: Bool = false
 
+  @Flag(help: "Use NIO Transport Services (if available)")
+  var useNIOTransportServices: Bool = false
+
+  @Flag(help: "Use TLS for tests which support it")
+  var useTLS: Bool = false
+
+  @Option(help: "The number of times to run each test")
+  var repeats: Int = 10
+
   @Argument(help: "The tests to run")
   var tests: [String] = []
 
@@ -197,11 +238,26 @@ struct PerformanceTests: ParsableCommand {
     let spec: TestSpec
 
     if self.list {
-      spec = TestSpec(action: .list)
+      spec = TestSpec(
+        action: .list,
+        repeats: self.repeats,
+        useNIOTransportServices: self.useNIOTransportServices,
+        useTLS: self.useTLS
+      )
     } else if self.all {
-      spec = TestSpec(action: .run(.all))
+      spec = TestSpec(
+        action: .run(.all),
+        repeats: self.repeats,
+        useNIOTransportServices: self.useNIOTransportServices,
+        useTLS: self.useTLS
+      )
     } else {
-      spec = TestSpec(action: .run(.some(self.tests)))
+      spec = TestSpec(
+        action: .run(.some(self.tests)),
+        repeats: self.repeats,
+        useNIOTransportServices: self.useNIOTransportServices,
+        useTLS: self.useTLS
+      )
     }
 
     runBenchmarks(spec: spec)
