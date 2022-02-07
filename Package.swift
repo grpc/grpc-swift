@@ -232,6 +232,7 @@ extension Target {
     name: "GRPCPerformanceTests",
     dependencies: [
       .grpc,
+      .grpcSampleData,
       .nioCore,
       .nioEmbedded,
       .nioPosix,
