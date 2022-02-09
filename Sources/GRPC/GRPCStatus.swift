@@ -114,7 +114,6 @@ public struct GRPCStatus: Error {
       cause: cause
     )
   }
-
 }
 
 extension GRPCStatus: Equatable {
