@@ -124,9 +124,14 @@ extension GRPCStatus: Equatable {
 
 extension GRPCStatus: CustomStringConvertible {
   public var description: String {
-    if let message = message {
+    switch (self.message, self.cause) {
+    case (.some(let message), .some(let cause)):
+      return "\(self.code): \(message), cause: \(cause)"
+    case (.some(let message), .none):
       return "\(self.code): \(message)"
-    } else {
+    case (.none, .some(let cause)):
+      return "\(self.code), cause: \(cause)"
+    case (.none, .none):
       return "\(self.code)"
     }
   }
