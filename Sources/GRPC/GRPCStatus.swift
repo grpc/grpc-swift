@@ -105,9 +105,9 @@ public struct GRPCStatus: Error {
   ///   status code. Use `GRPCStatus.isOk` or check the code directly.
   public static let ok = GRPCStatus(code: .ok, message: nil)
   /// "Internal server error" status.
-  public static let processingError = Self.processingError()
+  public static let processingError = Self.processingError(cause: nil)
 
-  public static func processingError(cause: Error? = nil) -> GRPCStatus {
+  public static func processingError(cause: Error?) -> GRPCStatus {
     return GRPCStatus(
       code: .internalError,
       message: "unknown error processing request",
