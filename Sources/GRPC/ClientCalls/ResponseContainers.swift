@@ -98,7 +98,7 @@ internal class StreamingResponseParts<Response> {
   private let eventLoop: EventLoop
 
   /// A callback for response messages.
-  private var responseCallback: ((Response) -> Void)?
+  private var responseCallback: Optional<(Response) -> Void>
 
   /// Lazy promises for the status, initial-, and trailing-metadata.
   private var initialMetadataPromise: LazyEventLoopPromise<HPACKHeaders>
