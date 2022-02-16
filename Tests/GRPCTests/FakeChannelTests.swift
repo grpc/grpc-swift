@@ -16,7 +16,6 @@
 import EchoModel
 import GRPC
 import NIOCore
-import SwiftProtobuf
 import XCTest
 
 class FakeChannelTests: GRPCTestCase {
