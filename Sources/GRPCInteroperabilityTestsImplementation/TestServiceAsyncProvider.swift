@@ -22,7 +22,7 @@ import NIOCore
 /// An async service provider for the gRPC interoperability test suite.
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
   public var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol?
 

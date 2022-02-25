@@ -19,9 +19,9 @@ import NIOConcurrencyHelpers
 import NIOCore
 import RouteGuideModel
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class RouteGuideProvider: Routeguide_RouteGuideAsyncProvider {
   private let features: [Routeguide_Feature]
   private let notes: Notes
@@ -111,7 +111,7 @@ internal final class RouteGuideProvider: Routeguide_RouteGuideAsyncProvider {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final actor Notes {
   private var recordedNotes: [Routeguide_Point: [Routeguide_RouteNote]]
 
@@ -130,7 +130,7 @@ internal final actor Notes {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 private func degreesToRadians(_ degrees: Double) -> Double {
   return degrees * .pi / 180.0

@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 import NIOHPACK
 
 /// Async-await variant of BidirectionalStreamingCall.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
@@ -103,7 +103,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal enum AsyncCall {
   internal static func makeResponsePartHandler<Response>(
     responseParts: StreamingResponseParts<Response>,

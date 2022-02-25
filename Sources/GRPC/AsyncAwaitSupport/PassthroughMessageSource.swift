@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 import NIOConcurrencyHelpers
 import NIOCore
 
@@ -27,7 +27,7 @@ import NIOCore
 ///
 /// The source must be finished exactly once by calling ``finish()`` or ``finish(throwing:)`` to
 /// indicate that the sequence should end with an error.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 internal final class PassthroughMessageSource<Element, Failure: Error> {
   @usableFromInline
@@ -160,4 +160,4 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)

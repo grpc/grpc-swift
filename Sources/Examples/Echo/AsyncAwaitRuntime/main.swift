@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 import ArgumentParser
 import EchoImplementation
@@ -36,7 +36,7 @@ enum RPC: String, ExpressibleByArgument {
   case update
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct Echo: ParsableCommand {
   static var configuration = CommandConfiguration(
     abstract: "An example to run and call a simple gRPC service for echoing messages.",
@@ -115,7 +115,7 @@ struct Echo: ParsableCommand {
 
 // MARK: - Server
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) async throws {
   let builder: Server.Builder
 
@@ -157,7 +157,7 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) async throw
 
 // MARK: - Client
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func makeClient(
   group: EventLoopGroup,
   port: Int,
@@ -196,7 +196,7 @@ func makeClient(
   )
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func callRPC(_ rpc: RPC, using client: Echo_EchoAsyncClient, message: String) async {
   do {
     switch rpc {
@@ -214,13 +214,13 @@ func callRPC(_ rpc: RPC, using client: Echo_EchoAsyncClient, message: String) as
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func echoGet(client: Echo_EchoAsyncClient, message: String) async throws {
   let response = try await client.get(.with { $0.text = message })
   print("get received: \(response.text)")
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func echoCollect(client: Echo_EchoAsyncClient, message: String) async throws {
   let messages = message.components(separatedBy: " ").map { part in
     Echo_EchoRequest.with { $0.text = part }
@@ -229,14 +229,14 @@ func echoCollect(client: Echo_EchoAsyncClient, message: String) async throws {
   print("collect received: \(response.text)")
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func echoExpand(client: Echo_EchoAsyncClient, message: String) async throws {
   for try await response in client.expand((.with { $0.text = message })) {
     print("expand received: \(response.text)")
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func echoUpdate(client: Echo_EchoAsyncClient, message: String) async throws {
   let requests = message.components(separatedBy: " ").map { word in
     Echo_EchoRequest.with { $0.text = word }
@@ -254,7 +254,7 @@ func echoUpdate(client: Echo_EchoAsyncClient, message: String) async throws {
 import Dispatch
 let dg = DispatchGroup()
 dg.enter()
-if #available(macOS 12, iOS 15, tvOS 15, watchOS 8, *) {
+if #available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *) {
   Task {
     await Echo.main()
     dg.leave()
