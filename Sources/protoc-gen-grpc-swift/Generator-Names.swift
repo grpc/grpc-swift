@@ -119,6 +119,19 @@ extension Generator {
     return self.sanitize(fieldName: name)
   }
 
+  internal var methodMakeFunctionCallName: String {
+    let name: String
+
+    if self.options.keepMethodCasing {
+      name = self.method.name
+    } else {
+      name = NamingUtils.toUpperCamelCase(self.method.name)
+    }
+
+    let fnName = "make\(name)Call"
+    return self.sanitize(fieldName: fnName)
+  }
+
   internal func sanitize(fieldName string: String) -> String {
     if quotableFieldNames.contains(string) {
       return "`\(string)`"
