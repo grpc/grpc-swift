@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 import ArgumentParser
 import struct Foundation.Data
 import struct Foundation.URL
@@ -33,7 +33,7 @@ func loadFeatures() throws -> [Routeguide_Feature] {
   return try Routeguide_Feature.array(fromJSONUTF8Data: data)
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct RouteGuide: ParsableCommand {
   @Option(help: "The port to listen on for new connections")
   var port = 1234
@@ -76,4 +76,4 @@ if #available(macOS 12, *) {
 }
 #else
 fatalError("The RouteGuide example requires Swift concurrency support.")
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)

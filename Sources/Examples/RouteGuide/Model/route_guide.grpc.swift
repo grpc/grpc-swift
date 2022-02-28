@@ -175,9 +175,9 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 /// Interface exported by the server.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Routeguide_RouteGuideAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? { get }
@@ -201,7 +201,7 @@ public protocol Routeguide_RouteGuideAsyncClientProtocol: GRPCClient {
   ) -> GRPCAsyncBidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote>
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Routeguide_RouteGuideAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Routeguide_RouteGuideClientMetadata.serviceDescriptor
@@ -256,7 +256,7 @@ extension Routeguide_RouteGuideAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Routeguide_RouteGuideAsyncClientProtocol {
   public func getFeature(
     _ request: Routeguide_Point,
@@ -331,7 +331,7 @@ extension Routeguide_RouteGuideAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct Routeguide_RouteGuideAsyncClient: Routeguide_RouteGuideAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
@@ -348,7 +348,7 @@ public struct Routeguide_RouteGuideAsyncClient: Routeguide_RouteGuideAsyncClient
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
 
@@ -492,12 +492,12 @@ extension Routeguide_RouteGuideProvider {
     }
   }
 }
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 /// Interface exported by the server.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol? { get }
@@ -545,7 +545,7 @@ public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
   ) async throws
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Routeguide_RouteGuideAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Routeguide_RouteGuideServerMetadata.serviceDescriptor
@@ -606,7 +606,7 @@ extension Routeguide_RouteGuideAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
 

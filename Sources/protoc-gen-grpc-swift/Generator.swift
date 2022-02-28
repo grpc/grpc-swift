@@ -166,14 +166,14 @@ class Generator {
   }
 
   func printAvailabilityForAsyncAwait() {
-    self.println("@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)")
+    self.println("@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)")
   }
 
   func printIfCompilerGuardForAsyncAwait() {
-    self.println("#if compiler(>=5.5) && canImport(_Concurrency)")
+    self.println("#if compiler(>=5.5.2) && canImport(_Concurrency)")
   }
 
   func printEndCompilerGuardForAsyncAwait() {
-    self.println("#endif // compiler(>=5.5) && canImport(_Concurrency)")
+    self.println("#endif // compiler(>=5.5.2) && canImport(_Concurrency)")
   }
 }

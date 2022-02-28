@@ -265,10 +265,10 @@ public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClien
   }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_TestServiceAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? { get }
@@ -311,7 +311,7 @@ public protocol Grpc_Testing_TestServiceAsyncClientProtocol: GRPCClient {
   ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_TestServiceAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Grpc_Testing_TestServiceClientMetadata.serviceDescriptor
@@ -412,7 +412,7 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_TestServiceAsyncClientProtocol {
   public func emptyCall(
     _ request: Grpc_Testing_Empty,
@@ -547,7 +547,7 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
@@ -564,7 +564,7 @@ public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsync
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol {
 
@@ -720,10 +720,10 @@ public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimple
   }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_UnimplementedServiceAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? { get }
@@ -734,7 +734,7 @@ public protocol Grpc_Testing_UnimplementedServiceAsyncClientProtocol: GRPCClient
   ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Grpc_Testing_UnimplementedServiceClientMetadata.serviceDescriptor
@@ -757,7 +757,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
   public func unimplementedCall(
     _ request: Grpc_Testing_Empty,
@@ -772,7 +772,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_UnimplementedServiceAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
@@ -789,7 +789,7 @@ public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_Unimple
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol {
 
@@ -897,9 +897,9 @@ public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 /// A service used to control reconnect server.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_ReconnectServiceAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? { get }
@@ -915,7 +915,7 @@ public protocol Grpc_Testing_ReconnectServiceAsyncClientProtocol: GRPCClient {
   ) -> GRPCAsyncUnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Grpc_Testing_ReconnectServiceClientMetadata.serviceDescriptor
@@ -950,7 +950,7 @@ extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
   public func start(
     _ request: Grpc_Testing_ReconnectParams,
@@ -977,7 +977,7 @@ extension Grpc_Testing_ReconnectServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectServiceAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
@@ -994,7 +994,7 @@ public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol {
 
@@ -1148,13 +1148,13 @@ extension Grpc_Testing_TestServiceProvider {
     }
   }
 }
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? { get }
@@ -1214,7 +1214,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   ) async throws
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_TestServiceAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Grpc_Testing_TestServiceServerMetadata.serviceDescriptor
@@ -1302,7 +1302,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
 
@@ -1442,13 +1442,13 @@ extension Grpc_Testing_UnimplementedServiceProvider {
     }
   }
 }
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_UnimplementedServiceAsyncProvider: CallHandlerProvider {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol? { get }
@@ -1460,7 +1460,7 @@ public protocol Grpc_Testing_UnimplementedServiceAsyncProvider: CallHandlerProvi
   ) async throws -> Grpc_Testing_Empty
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_UnimplementedServiceAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Grpc_Testing_UnimplementedServiceServerMetadata.serviceDescriptor
@@ -1494,7 +1494,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol {
 
@@ -1566,12 +1566,12 @@ extension Grpc_Testing_ReconnectServiceProvider {
     }
   }
 }
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 /// A service used to control reconnect server.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_ReconnectServiceAsyncProvider: CallHandlerProvider {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol? { get }
@@ -1587,7 +1587,7 @@ public protocol Grpc_Testing_ReconnectServiceAsyncProvider: CallHandlerProvider 
   ) async throws -> Grpc_Testing_ReconnectInfo
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Grpc_Testing_ReconnectServiceAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Grpc_Testing_ReconnectServiceServerMetadata.serviceDescriptor
@@ -1630,7 +1630,7 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5) && canImport(_Concurrency)
+#endif // compiler(>=5.5.2) && canImport(_Concurrency)
 
 public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol {
 

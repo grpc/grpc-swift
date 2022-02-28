@@ -17,23 +17,23 @@
 /// NOTE: This file should be removed when the `async` branch of `swift-argument-parser` has been
 ///       released: https://github.com/apple/swift-argument-parser/tree/async
 
-#if compiler(>=5.5) && canImport(_Concurrency)
+#if compiler(>=5.5.2) && canImport(_Concurrency)
 
 import ArgumentParser
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 protocol AsyncParsableCommand: ParsableCommand {
   mutating func runAsync() async throws
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncParsableCommand {
   public mutating func run() throws {
     throw CleanExit.helpRequest(self)
   }
 }
 
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ParsableCommand {
   static func main(_ arguments: [String]? = nil) async {
     do {
