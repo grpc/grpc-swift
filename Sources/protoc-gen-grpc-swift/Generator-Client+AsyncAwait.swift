@@ -54,7 +54,7 @@ extension Generator {
         }
 
         self.printFunction(
-          name: "make\(self.method.name)Call",
+          name: self.methodMakeFunctionCallName,
           arguments: arguments,
           returnType: "\(callType)<\(self.methodInputName), \(self.methodOutputName)>",
           bodyBuilder: nil
@@ -101,7 +101,7 @@ extension Generator {
         switch rpcType {
         case .unary, .serverStreaming:
           self.printFunction(
-            name: "make\(self.method.name)Call",
+            name: self.methodMakeFunctionCallName,
             arguments: [
               "_ request: \(self.methodInputName)",
               "callOptions: \(Types.clientCallOptions)? = nil",
@@ -121,7 +121,7 @@ extension Generator {
 
         case .clientStreaming, .bidirectionalStreaming:
           self.printFunction(
-            name: "make\(self.method.name)Call",
+            name: self.methodMakeFunctionCallName,
             arguments: ["callOptions: \(Types.clientCallOptions)? = nil"],
             returnType: "\(callType)<\(self.methodInputName), \(self.methodOutputName)>",
             access: self.access
