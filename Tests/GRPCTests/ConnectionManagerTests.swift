@@ -1120,6 +1120,28 @@ extension ConnectionManagerTests {
 
     XCTAssertEqual(http2.streamsClosed, 4)
   }
+
+  func testChannelErrorWhenConnecting() throws {
+    let channelPromise = self.loop.makePromise(of: Channel.self)
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
+    }
+
+    let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> = self.waitForStateChange(
+      from: .idle,
+      to: .connecting
+    ) {
+      let channel = manager.getHTTP2Multiplexer()
+      self.loop.run()
+      return channel
+    }
+
+    self.waitForStateChange(from: .connecting, to: .shutdown) {
+      manager.channelError(EventLoopError.shutdown)
+    }
+
+    XCTAssertThrowsError(try multiplexer.wait())
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {

@@ -36,7 +36,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
-    from: "1.18.2"
+    from: "1.19.2"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-transport-services.git",
@@ -232,6 +232,7 @@ extension Target {
     name: "GRPCPerformanceTests",
     dependencies: [
       .grpc,
+      .grpcSampleData,
       .nioCore,
       .nioEmbedded,
       .nioPosix,

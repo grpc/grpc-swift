@@ -105,10 +105,15 @@ public struct GRPCStatus: Error {
   ///   status code. Use `GRPCStatus.isOk` or check the code directly.
   public static let ok = GRPCStatus(code: .ok, message: nil)
   /// "Internal server error" status.
-  public static let processingError = GRPCStatus(
-    code: .internalError,
-    message: "unknown error processing request"
-  )
+  public static let processingError = Self.processingError(cause: nil)
+
+  public static func processingError(cause: Error?) -> GRPCStatus {
+    return GRPCStatus(
+      code: .internalError,
+      message: "unknown error processing request",
+      cause: cause
+    )
+  }
 }
 
 extension GRPCStatus: Equatable {
@@ -119,9 +124,14 @@ extension GRPCStatus: Equatable {
 
 extension GRPCStatus: CustomStringConvertible {
   public var description: String {
-    if let message = message {
+    switch (self.message, self.cause) {
+    case let (.some(message), .some(cause)):
+      return "\(self.code): \(message), cause: \(cause)"
+    case let (.some(message), .none):
       return "\(self.code): \(message)"
-    } else {
+    case let (.none, .some(cause)):
+      return "\(self.code), cause: \(cause)"
+    case (.none, .none):
       return "\(self.code)"
     }
   }

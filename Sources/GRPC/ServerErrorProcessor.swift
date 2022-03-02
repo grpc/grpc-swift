@@ -44,7 +44,7 @@ internal enum ServerErrorProcessor {
       trailers = [:]
     } else {
       // Eh... well, we don't what status to use. Use a generic one.
-      status = .processingError
+      status = .processingError(cause: error)
       trailers = [:]
     }
 
@@ -84,7 +84,7 @@ internal enum ServerErrorProcessor {
       mergedTrailers = trailers
     } else {
       // Eh... well, we don't what status to use. Use a generic one.
-      status = .processingError
+      status = .processingError(cause: error)
       mergedTrailers = trailers
     }
 

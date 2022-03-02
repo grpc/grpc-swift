@@ -591,7 +591,7 @@ internal final class ConnectionManager {
       ])
 
     case .connecting:
-      self.invalidState()
+      self.connectionFailed(withError: error)
 
     case var .active(state):
       state.error = error

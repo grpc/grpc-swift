@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, 1.6.0-async-await]
+    branches: [main, 1.7.1-async-await]
 jobs:
   preflight:
     name: License Header and Formatting Checks

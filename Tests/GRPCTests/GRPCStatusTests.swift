@@ -34,7 +34,7 @@ class GRPCStatusTests: GRPCTestCase {
     )
   }
 
-  func testStatusDescriptionWithMessage() {
+  func testStatusDescriptionWithWithMessageWithoutCause() {
     XCTAssertEqual(
       "ok (0): OK",
       String(describing: GRPCStatus(code: .ok, message: "OK"))
@@ -48,6 +48,36 @@ class GRPCStatusTests: GRPCTestCase {
     XCTAssertEqual(
       "failed precondition (9): invalid state",
       String(describing: GRPCStatus(code: .failedPrecondition, message: "invalid state"))
+    )
+  }
+
+  func testStatusDescriptionWithMessageWithCause() {
+    struct UnderlyingError: Error, CustomStringConvertible {
+      var description: String { "underlying error description" }
+    }
+    let cause = UnderlyingError()
+    XCTAssertEqual(
+      "internal error (13): unknown error processing request, cause: \(cause.description)",
+      String(describing: GRPCStatus(
+        code: .internalError,
+        message: "unknown error processing request",
+        cause: cause
+      ))
+    )
+  }
+
+  func testStatusDescriptionWithoutMessageWithCause() {
+    struct UnderlyingError: Error, CustomStringConvertible {
+      var description: String { "underlying error description" }
+    }
+    let cause = UnderlyingError()
+    XCTAssertEqual(
+      "internal error (13), cause: \(cause.description)",
+      String(describing: GRPCStatus(
+        code: .internalError,
+        message: nil,
+        cause: cause
+      ))
     )
   }
 

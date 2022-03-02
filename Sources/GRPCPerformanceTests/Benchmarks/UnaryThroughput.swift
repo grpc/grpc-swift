@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import GRPC
+import GRPCSampleData
 import NIOCore
 import NIOPosix
 
@@ -22,23 +23,50 @@ import NIOPosix
 /// Requests are sent in batches of (up-to) 100 requests. This is due to
 /// https://github.com/apple/swift-nio-http2/issues/87#issuecomment-483542401.
 class Unary: ServerProvidingBenchmark {
+  private let useNIOTSIfAvailable: Bool
+  private let useTLS: Bool
   private var group: EventLoopGroup!
   private(set) var client: Echo_EchoClient!
 
   let requestCount: Int
   let requestText: String
 
-  init(requests: Int, text: String) {
+  init(requests: Int, text: String, useNIOTSIfAvailable: Bool, useTLS: Bool) {
+    self.useNIOTSIfAvailable = useNIOTSIfAvailable
+    self.useTLS = useTLS
     self.requestCount = requests
     self.requestText = text
-    super.init(providers: [MinimalEchoProvider()])
+    super.init(
+      providers: [MinimalEchoProvider()],
+      useNIOTSIfAvailable: useNIOTSIfAvailable,
+      useTLS: useTLS
+    )
   }
 
   override func setUp() throws {
     try super.setUp()
-    self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    let channel = ClientConnection.insecure(group: self.group)
-      .connect(host: "127.0.0.1", port: self.server.channel.localAddress!.port!)
+
+    if self.useNIOTSIfAvailable {
+      self.group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
+    } else {
+      self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    }
+
+    let channel: ClientConnection
+
+    if self.useTLS {
+      #if canImport(NIOSSL)
+      channel = ClientConnection.usingTLSBackedByNIOSSL(on: self.group)
+        .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+        .withTLS(serverHostnameOverride: "localhost")
+        .connect(host: "127.0.0.1", port: self.server.channel.localAddress!.port!)
+      #else
+      fatalError("NIOSSL must be imported to use TLS")
+      #endif
+    } else {
+      channel = ClientConnection.insecure(group: self.group)
+        .connect(host: "127.0.0.1", port: self.server.channel.localAddress!.port!)
+    }
 
     self.client = .init(channel: channel)
   }
@@ -72,9 +100,14 @@ class Unary: ServerProvidingBenchmark {
 class Bidi: Unary {
   let batchSize: Int
 
-  init(requests: Int, text: String, batchSize: Int) {
+  init(requests: Int, text: String, batchSize: Int, useNIOTSIfAvailable: Bool, useTLS: Bool) {
     self.batchSize = batchSize
-    super.init(requests: requests, text: text)
+    super.init(
+      requests: requests,
+      text: text,
+      useNIOTSIfAvailable: useNIOTSIfAvailable,
+      useTLS: useTLS
+    )
   }
 
   override func run() throws -> Int {
