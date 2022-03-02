@@ -14,26 +14,56 @@
  * limitations under the License.
  */
 import GRPC
+import GRPCSampleData
 import NIOCore
 import NIOPosix
 
 class ServerProvidingBenchmark: Benchmark {
   private let providers: [CallHandlerProvider]
   private let threadCount: Int
+  private let useNIOTSIfAvailable: Bool
+  private let useTLS: Bool
   private var group: EventLoopGroup!
   private(set) var server: Server!
 
-  init(providers: [CallHandlerProvider], threadCount: Int = 1) {
+  init(
+    providers: [CallHandlerProvider],
+    useNIOTSIfAvailable: Bool,
+    useTLS: Bool,
+    threadCount: Int = 1
+  ) {
     self.providers = providers
+    self.useNIOTSIfAvailable = useNIOTSIfAvailable
+    self.useTLS = useTLS
     self.threadCount = threadCount
   }
 
   func setUp() throws {
-    self.group = MultiThreadedEventLoopGroup(numberOfThreads: self.threadCount)
-    self.server = try Server.insecure(group: self.group)
-      .withServiceProviders(self.providers)
-      .bind(host: "127.0.0.1", port: 0)
-      .wait()
+    if self.useNIOTSIfAvailable {
+      self.group = PlatformSupport.makeEventLoopGroup(loopCount: self.threadCount)
+    } else {
+      self.group = MultiThreadedEventLoopGroup(numberOfThreads: self.threadCount)
+    }
+
+    if self.useTLS {
+      #if canImport(NIOSSL)
+      self.server = try Server.usingTLSBackedByNIOSSL(
+        on: self.group,
+        certificateChain: [SampleCertificate.server.certificate],
+        privateKey: SamplePrivateKey.server
+      ).withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+        .withServiceProviders(self.providers)
+        .bind(host: "127.0.0.1", port: 0)
+        .wait()
+      #else
+      fatalError("NIOSSL must be imported to use TLS")
+      #endif
+    } else {
+      self.server = try Server.insecure(group: self.group)
+        .withServiceProviders(self.providers)
+        .bind(host: "127.0.0.1", port: 0)
+        .wait()
+    }
   }
 
   func tearDown() throws {

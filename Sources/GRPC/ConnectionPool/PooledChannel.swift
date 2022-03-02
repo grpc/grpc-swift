@@ -132,6 +132,11 @@ internal final class PooledChannel: GRPCChannel {
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>]
   ) -> Call<Request, Response> where Request: Message, Response: Message {
+    var callOptions = callOptions
+    if let requestID = callOptions.requestIDProvider.requestID() {
+      callOptions.applyRequestID(requestID)
+    }
+
     let (stream, eventLoop) = self._makeStreamChannel(callOptions: callOptions)
 
     return Call(
@@ -157,6 +162,11 @@ internal final class PooledChannel: GRPCChannel {
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>]
   ) -> Call<Request, Response> where Request: GRPCPayload, Response: GRPCPayload {
+    var callOptions = callOptions
+    if let requestID = callOptions.requestIDProvider.requestID() {
+      callOptions.applyRequestID(requestID)
+    }
+
     let (stream, eventLoop) = self._makeStreamChannel(callOptions: callOptions)
 
     return Call(
@@ -190,5 +200,16 @@ internal final class PooledChannel: GRPCChannel {
   @usableFromInline
   internal func closeGracefully(deadline: NIODeadline, promise: EventLoopPromise<Void>) {
     self._pool.shutdown(mode: .graceful(deadline), promise: promise)
+  }
+}
+
+extension CallOptions {
+  @usableFromInline
+  mutating func applyRequestID(_ requestID: String) {
+    self.logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
+    // Add the request ID header too.
+    if let requestIDHeader = self.requestIDHeader {
+      self.customMetadata.add(name: requestIDHeader, value: requestID)
+    }
   }
 }
