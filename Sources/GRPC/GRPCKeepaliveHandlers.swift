@@ -17,8 +17,11 @@ import NIOCore
 import NIOHTTP2
 
 struct PingHandler {
-  /// Code for ping
-  private let pingCode: UInt64
+  /// Opaque ping data used for keep-alive pings.
+  private let pingData: HTTP2PingData
+
+  /// Opaque ping data used for a ping sent after a GOAWAY frame.
+  internal let pingDataGoAway: HTTP2PingData
 
   /// The amount of time to wait before sending a keepalive ping.
   private let interval: TimeAmount
@@ -90,6 +93,7 @@ struct PingHandler {
     case schedulePing(delay: TimeAmount, timeout: TimeAmount)
     case cancelScheduledTimeout
     case reply(HTTP2Frame.FramePayload)
+    case ratchetDownLastSeenStreamID
   }
 
   init(
@@ -102,7 +106,8 @@ struct PingHandler {
     minimumReceivedPingIntervalWithoutData: TimeAmount? = nil,
     maximumPingStrikes: UInt? = nil
   ) {
-    self.pingCode = pingCode
+    self.pingData = HTTP2PingData(withInteger: pingCode)
+    self.pingDataGoAway = HTTP2PingData(withInteger: ~pingCode)
     self.interval = interval
     self.timeout = timeout
     self.permitWithoutCalls = permitWithoutCalls
@@ -137,8 +142,12 @@ struct PingHandler {
   }
 
   private func handlePong(_ pingData: HTTP2PingData) -> Action {
-    if pingData.integer == self.pingCode {
+    if pingData == self.pingData {
       return .cancelScheduledTimeout
+    } else if pingData == self.pingDataGoAway {
+      // We received a pong for a ping we sent to trail a GOAWAY frame: this means we can now
+      // send another GOAWAY frame with a (possibly) lower stream ID.
+      return .ratchetDownLastSeenStreamID
     } else {
       return .none
     }
@@ -161,14 +170,14 @@ struct PingHandler {
         // This is a valid ping, reset our strike count and reply with a pong.
         self.pingStrikes = 0
         self.lastReceivedPingDate = self.now()
-        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+        return .reply(self.generatePingFrame(data: pingData, ack: true))
       }
     } else {
       // We don't support ping strikes. We'll just reply with a pong.
       //
       // Note: we don't need to update `pingStrikes` or `lastReceivedPingDate` as we don't
       // support ping strikes.
-      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      return .reply(self.generatePingFrame(data: pingData, ack: true))
     }
   }
 
@@ -176,17 +185,20 @@ struct PingHandler {
     if self.shouldBlockPing {
       return .none
     } else {
-      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))
+      return .reply(self.generatePingFrame(data: self.pingData, ack: false))
     }
   }
 
-  private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+  private mutating func generatePingFrame(
+    data: HTTP2PingData,
+    ack: Bool
+  ) -> HTTP2Frame.FramePayload {
     if self.activeStreams == 0 {
       self.sentPingsWithoutData += 1
     }
 
     self.lastSentPingDate = self.now()
-    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+    return HTTP2Frame.FramePayload.ping(data, ack: ack)
   }
 
   /// Returns true if, on receipt of a ping, the ping should be regarded as a ping strike.
