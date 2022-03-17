@@ -24,6 +24,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:5.6-focal
+            swift-test-flags: "--enable-test-discovery --sanitize=thread"
           - image: swift:5.5-focal
             swift-test-flags: "--enable-test-discovery --sanitize=thread"
           - image: swift:5.4-focal
@@ -44,6 +46,8 @@ jobs:
       run: swift build ${{ matrix.swift-build-flags }}
       timeout-minutes: 20
     - name: 🧪 Test
+      # Skip tests on 5.6: https://bugs.swift.org/browse/SR-15955
+      if: ${{ matrix.image != 'swift:5.6-focal' }}
       run: swift test ${{ matrix.swift-test-flags }}
       timeout-minutes: 20
   performance-tests:
@@ -51,6 +55,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:5.6-focal
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 450000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 189000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 183000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 190000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 190000
           - image: swift:5.5-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 480000
@@ -96,6 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:5.6-focal
           - image: swift:5.5-focal
           - image: swift:5.4-focal
           - image: swift:5.3-focal
@@ -112,6 +127,8 @@ jobs:
         GRPC_NO_NIO_SSL: 1
       timeout-minutes: 20
     - name: Test without NIOSSL
+      # Skip tests on 5.6: https://bugs.swift.org/browse/SR-15955
+      if: ${{ matrix.image != 'swift:5.6-focal' }}
       run: swift test --enable-test-discovery
       env:
         GRPC_NO_NIO_SSL: 1
