@@ -57,14 +57,14 @@ jobs:
         include:
           - image: swift:5.6-focal
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 480000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 201000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 450000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 189000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 194000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 201000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 201000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 183000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 190000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 190000
           - image: swift:5.5-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 480000
