@@ -347,6 +347,12 @@ class GRPCPingHandlerTests: GRPCTestCase {
     )
   }
 
+  func testPongWithGoAwayPingData() {
+    self.setupPingHandler()
+    let response = self.pingHandler.read(pingData: self.pingHandler.pingDataGoAway, ack: true)
+    XCTAssertEqual(response, .ratchetDownLastSeenStreamID)
+  }
+
   private func setupPingHandler(
     pingCode: UInt64 = 1,
     interval: TimeAmount = .seconds(15),
@@ -378,6 +384,8 @@ extension PingHandler.Action: Equatable {
     case (let .schedulePing(lhsDelay, lhsTimeout), let .schedulePing(rhsDelay, rhsTimeout)):
       return lhsDelay == rhsDelay && lhsTimeout == rhsTimeout
     case (.cancelScheduledTimeout, .cancelScheduledTimeout):
+      return true
+    case (.ratchetDownLastSeenStreamID, .ratchetDownLastSeenStreamID):
       return true
     case let (.reply(lhsPayload), .reply(rhsPayload)):
       switch (lhsPayload, rhsPayload) {

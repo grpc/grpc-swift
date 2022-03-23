@@ -153,7 +153,19 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
         streamID: .rootStream,
         payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
       )
-      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+
+      self.context?.write(self.wrapOutboundOut(goAwayFrame), promise: nil)
+
+      // We emit a ping after some GOAWAY frames.
+      if operations.shouldPingAfterGoAway {
+        let pingFrame = HTTP2Frame(
+          streamID: .rootStream,
+          payload: .ping(self.pingHandler.pingDataGoAway, ack: false)
+        )
+        self.context?.write(self.wrapOutboundOut(pingFrame), promise: nil)
+      }
+
+      self.context?.flush()
     }
 
     // Close the channel, if necessary.
@@ -181,6 +193,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     case let .reply(framePayload):
       let frame = HTTP2Frame(streamID: .rootStream, payload: framePayload)
       self.context?.writeAndFlush(self.wrapOutboundOut(frame), promise: nil)
+
+    case .ratchetDownLastSeenStreamID:
+      self.perform(operations: self.stateMachine.ratchetDownGoAwayStreamID())
     }
   }
 

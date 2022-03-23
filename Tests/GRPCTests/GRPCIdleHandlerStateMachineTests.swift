@@ -24,6 +24,10 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     return GRPCIdleHandlerStateMachine(role: .client, logger: self.clientLogger)
   }
 
+  private func makeServerStateMachine() -> GRPCIdleHandlerStateMachine {
+    return GRPCIdleHandlerStateMachine(role: .server, logger: self.serverLogger)
+  }
+
   private func makeNoOpScheduled() -> Scheduled<Void> {
     let loop = EmbeddedEventLoop()
     return loop.scheduleTask(deadline: .distantFuture) { return () }
@@ -469,6 +473,43 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     // The peer initiated shutdown by sending GOAWAY, we'll idle.
     op6.assertConnectionManager(.idle)
   }
+
+  func testClientSendsGoAwayAndOpensStream() {
+    var stateMachine = self.makeServerStateMachine()
+
+    let op1 = stateMachine.receiveSettings([])
+    op1.assertConnectionManager(.ready)
+    op1.assertScheduleIdleTimeout()
+
+    // Schedule the idle timeout.
+    let op2 = stateMachine.scheduledIdleTimeoutTask(self.makeNoOpScheduled())
+    op2.assertDoNothing()
+
+    // Create a stream to cancel the task.
+    let op3 = stateMachine.streamCreated(withID: 1)
+    op3.assertCancelIdleTimeout()
+
+    // Receive a GOAWAY frame from the client.
+    let op4 = stateMachine.receiveGoAway()
+    op4.assertGoAway(streamID: .maxID)
+    op4.assertShouldPingAfterGoAway()
+
+    // Create another stream. This is fine, the client hasn't ack'd the ping yet.
+    let op5 = stateMachine.streamCreated(withID: 7)
+    op5.assertDoNothing()
+
+    // Receiving the ping is handled by a different state machine which will tell us to ratchet
+    // down the go away stream ID.
+    let op6 = stateMachine.ratchetDownGoAwayStreamID()
+    op6.assertGoAway(streamID: 7)
+    op6.assertShouldNotPingAfterGoAway()
+
+    let op7 = stateMachine.streamClosed(withID: 7)
+    op7.assertDoNothing()
+
+    let op8 = stateMachine.streamClosed(withID: 1)
+    op8.assertShouldClose()
+  }
 }
 
 extension GRPCIdleHandlerStateMachine.Operations {
@@ -477,6 +518,7 @@ extension GRPCIdleHandlerStateMachine.Operations {
     XCTAssertNil(self.idleTask)
     XCTAssertNil(self.sendGoAwayWithLastPeerInitiatedStreamID)
     XCTAssertFalse(self.shouldCloseChannel)
+    XCTAssertFalse(self.shouldPingAfterGoAway)
   }
 
   func assertGoAway(streamID: HTTP2StreamID) {
@@ -523,5 +565,13 @@ extension GRPCIdleHandlerStateMachine.Operations {
 
   func assertShouldNotClose() {
     XCTAssertFalse(self.shouldCloseChannel)
+  }
+
+  func assertShouldPingAfterGoAway() {
+    XCTAssert(self.shouldPingAfterGoAway)
+  }
+
+  func assertShouldNotPingAfterGoAway() {
+    XCTAssertFalse(self.shouldPingAfterGoAway)
   }
 }
