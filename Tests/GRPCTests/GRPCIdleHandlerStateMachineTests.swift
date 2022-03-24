@@ -510,6 +510,29 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     let op8 = stateMachine.streamClosed(withID: 1)
     op8.assertShouldClose()
   }
+
+  func testRatchetDownStreamIDWhenNotQuiescing() {
+    var stateMachine = self.makeServerStateMachine()
+    _ = stateMachine.receiveSettings([])
+
+    // from the 'operating' state.
+    stateMachine.ratchetDownGoAwayStreamID().assertDoNothing()
+
+    // move to the 'waiting to idle' state.
+    let promise = EmbeddedEventLoop().makePromise(of: Void.self)
+    let task = Scheduled(promise: promise, cancellationTask: {})
+    stateMachine.scheduledIdleTimeoutTask(task).assertDoNothing()
+    promise.succeed(())
+    stateMachine.ratchetDownGoAwayStreamID().assertDoNothing()
+
+    // move to 'closing'
+    _ = stateMachine.idleTimeoutTaskFired()
+    stateMachine.ratchetDownGoAwayStreamID().assertDoNothing()
+
+    // move to 'closed'
+    _ = stateMachine.channelInactive()
+    stateMachine.ratchetDownGoAwayStreamID().assertDoNothing()
+  }
 }
 
 extension GRPCIdleHandlerStateMachine.Operations {
