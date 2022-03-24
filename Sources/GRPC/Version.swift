@@ -22,7 +22,7 @@ internal enum Version {
   internal static let minor = 7
 
   /// The patch version.
-  internal static let patch = 2
+  internal static let patch = 3
 
   /// The version string.
   internal static let versionString = "\(major).\(minor).\(patch)"
