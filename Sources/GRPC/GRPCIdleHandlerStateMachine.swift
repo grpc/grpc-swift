@@ -516,10 +516,8 @@ struct GRPCIdleHandlerStateMachine {
     case let .quiescing(state):
       let streamID = state.lastPeerInitiatedStreamID
       operations.sendGoAwayFrame(lastPeerInitiatedStreamID: streamID)
-    case .operating, .waitingToIdle:
-      // We can only ratchet down the stream ID if we're already quiescing.
-      preconditionFailure()
-    case .closing, .closed:
+    case .operating, .waitingToIdle, .closing, .closed:
+      // We can only need to ratchet down the stream ID if we're already quiescing.
       ()
     }
 
