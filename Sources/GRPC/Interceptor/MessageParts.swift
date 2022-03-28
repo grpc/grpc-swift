@@ -60,7 +60,7 @@ public enum GRPCServerResponsePart<Response> {
 }
 
 /// Metadata associated with a request or response message.
-public struct MessageMetadata: Equatable {
+public struct MessageMetadata: Equatable, GRPCSendable {
   /// Whether the message should be compressed. If compression has not been enabled on the RPC
   /// then this setting is ignored.
   public var compress: Bool

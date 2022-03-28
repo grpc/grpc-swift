@@ -15,9 +15,9 @@
  */
 
 /// Whether compression should be enabled for the message.
-public struct Compression: Hashable {
+public struct Compression: Hashable, GRPCSendable {
   @usableFromInline
-  internal enum _Wrapped: Hashable {
+  internal enum _Wrapped: Hashable, GRPCSendable {
     case enabled
     case disabled
     case deferToCallDefault

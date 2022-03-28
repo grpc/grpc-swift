@@ -21,10 +21,12 @@ import NIOHPACK
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncServerHandler<
   Serializer: MessageSerializer,
-  Deserializer: MessageDeserializer
->: GRPCServerHandlerProtocol {
+  Deserializer: MessageDeserializer,
+  Request: Sendable,
+  Response: Sendable
+>: GRPCServerHandlerProtocol where Serializer.Input == Response, Deserializer.Output == Request {
   @usableFromInline
-  internal let _handler: AsyncServerHandler<Serializer, Deserializer>
+  internal let _handler: AsyncServerHandler<Serializer, Deserializer, Request, Response>
 
   public func receiveMetadata(_ metadata: HPACKHeaders) {
     self._handler.receiveMetadata(metadata)
@@ -153,13 +155,10 @@ extension GRPCAsyncServerHandler {
 @usableFromInline
 internal final class AsyncServerHandler<
   Serializer: MessageSerializer,
-  Deserializer: MessageDeserializer
->: GRPCServerHandlerProtocol {
-  @usableFromInline
-  internal typealias Request = Deserializer.Output
-  @usableFromInline
-  internal typealias Response = Serializer.Input
-
+  Deserializer: MessageDeserializer,
+  Request: Sendable,
+  Response: Sendable
+>: GRPCServerHandlerProtocol where Serializer.Input == Response, Deserializer.Output == Request {
   /// A response serializer.
   @usableFromInline
   internal let serializer: Serializer
@@ -182,7 +181,7 @@ internal final class AsyncServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let userHandler: (
+  internal let userHandler: @Sendable(
     GRPCAsyncRequestStream<Request>,
     GRPCAsyncResponseStreamWriter<Response>,
     GRPCAsyncServerCallContext
@@ -531,6 +530,7 @@ internal final class AsyncServerHandler<
     }
   }
 
+  @Sendable
   @inlinable
   internal func interceptResponse(_ response: Response, metadata: MessageMetadata) {
     if self.context.eventLoop.inEventLoop {
@@ -587,6 +587,7 @@ internal final class AsyncServerHandler<
     }
   }
 
+  @Sendable
   @inlinable
   internal func responseStreamDrained(_ status: GRPCStatus) {
     if self.context.eventLoop.inEventLoop {
