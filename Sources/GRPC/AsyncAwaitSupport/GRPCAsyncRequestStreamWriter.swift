@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// An object allowing the holder -- a client -- to send requests on an RPC.
 ///
@@ -124,4 +124,4 @@ extension GRPCAsyncRequestStreamWriter {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)

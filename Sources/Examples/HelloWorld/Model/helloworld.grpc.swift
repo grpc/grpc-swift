@@ -84,7 +84,7 @@ public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 /// The greeting service definition.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Helloworld_GreeterAsyncClientProtocol: GRPCClient {
@@ -152,7 +152,7 @@ public struct Helloworld_GreeterAsyncClient: Helloworld_GreeterAsyncClientProtoc
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Helloworld_GreeterClientInterceptorFactoryProtocol {
 
@@ -214,7 +214,7 @@ extension Helloworld_GreeterProvider {
     }
   }
 }
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// The greeting service definition.
 ///
@@ -265,7 +265,7 @@ extension Helloworld_GreeterAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
 

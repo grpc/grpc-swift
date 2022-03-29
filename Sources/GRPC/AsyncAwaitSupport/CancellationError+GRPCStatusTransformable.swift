@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension CancellationError: GRPCStatusTransformable {

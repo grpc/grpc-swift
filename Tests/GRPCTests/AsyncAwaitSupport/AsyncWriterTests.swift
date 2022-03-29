@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5)
+#if compiler(>=5.6)
 @testable import GRPC
 import NIOConcurrencyHelpers
 import XCTest
@@ -271,4 +271,4 @@ fileprivate final class CollectingDelegate<Element, End>: AsyncWriterDelegate {
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.6)

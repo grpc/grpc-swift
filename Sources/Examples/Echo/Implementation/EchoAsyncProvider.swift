@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 import EchoModel
 import GRPC
 
@@ -69,4 +69,4 @@ public final class EchoAsyncProvider: Echo_EchoAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)

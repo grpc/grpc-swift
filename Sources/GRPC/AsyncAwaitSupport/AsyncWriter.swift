@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 import NIOCore
 
 /// An asynchronous writer which forwards messages to a delegate.
@@ -334,4 +334,4 @@ internal protocol AsyncWriterDelegate: AnyObject {
   func writeEnd(_ end: End)
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)

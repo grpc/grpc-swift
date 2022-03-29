@@ -175,7 +175,7 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 /// Interface exported by the server.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Routeguide_RouteGuideAsyncClientProtocol: GRPCClient {
@@ -348,7 +348,7 @@ public struct Routeguide_RouteGuideAsyncClient: Routeguide_RouteGuideAsyncClient
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
 
@@ -492,7 +492,7 @@ extension Routeguide_RouteGuideProvider {
     }
   }
 }
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// Interface exported by the server.
 ///
@@ -606,7 +606,7 @@ extension Routeguide_RouteGuideAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
 
