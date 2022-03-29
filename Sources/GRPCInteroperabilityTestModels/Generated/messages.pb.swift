@@ -407,6 +407,22 @@ public struct Grpc_Testing_ReconnectInfo {
   public init() {}
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Grpc_Testing_PayloadType: @unchecked Sendable {}
+extension Grpc_Testing_BoolValue: @unchecked Sendable {}
+extension Grpc_Testing_Payload: @unchecked Sendable {}
+extension Grpc_Testing_EchoStatus: @unchecked Sendable {}
+extension Grpc_Testing_SimpleRequest: @unchecked Sendable {}
+extension Grpc_Testing_SimpleResponse: @unchecked Sendable {}
+extension Grpc_Testing_StreamingInputCallRequest: @unchecked Sendable {}
+extension Grpc_Testing_StreamingInputCallResponse: @unchecked Sendable {}
+extension Grpc_Testing_ResponseParameters: @unchecked Sendable {}
+extension Grpc_Testing_StreamingOutputCallRequest: @unchecked Sendable {}
+extension Grpc_Testing_StreamingOutputCallResponse: @unchecked Sendable {}
+extension Grpc_Testing_ReconnectParams: @unchecked Sendable {}
+extension Grpc_Testing_ReconnectInfo: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.testing"

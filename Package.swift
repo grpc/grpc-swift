@@ -49,7 +49,7 @@ let packageDependencies: [Package.Dependency] = [
   .package(
     name: "SwiftProtobuf",
     url: "https://github.com/apple/swift-protobuf.git",
-    from: "1.9.0"
+    from: "1.19.0"
   ),
   .package(
     url: "https://github.com/apple/swift-log.git",
