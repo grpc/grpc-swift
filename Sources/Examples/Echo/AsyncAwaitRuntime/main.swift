@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 import ArgumentParser
 import EchoImplementation

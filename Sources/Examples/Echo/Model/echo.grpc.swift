@@ -157,7 +157,7 @@ public final class Echo_EchoClient: Echo_EchoClientProtocol {
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
@@ -329,7 +329,7 @@ public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Echo_EchoClientInterceptorFactoryProtocol {
 
@@ -573,7 +573,7 @@ extension Echo_EchoProvider {
     }
   }
 }
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -669,7 +669,7 @@ extension Echo_EchoAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Echo_EchoServerInterceptorFactoryProtocol {
 

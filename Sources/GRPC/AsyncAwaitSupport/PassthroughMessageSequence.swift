@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// An ``AsyncSequence`` adapter for a ``PassthroughMessageSource``.`
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -55,4 +55,4 @@ internal struct PassthroughMessageSequence<Element, Failure: Error>: AsyncSequen
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)

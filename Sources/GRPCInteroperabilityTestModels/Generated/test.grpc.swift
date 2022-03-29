@@ -265,7 +265,7 @@ public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClien
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -564,7 +564,7 @@ public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsync
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol {
 
@@ -720,7 +720,7 @@ public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimple
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -789,7 +789,7 @@ public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_Unimple
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol {
 
@@ -897,7 +897,7 @@ public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 /// A service used to control reconnect server.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_ReconnectServiceAsyncClientProtocol: GRPCClient {
@@ -994,7 +994,7 @@ public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol {
 
@@ -1148,7 +1148,7 @@ extension Grpc_Testing_TestServiceProvider {
     }
   }
 }
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
@@ -1302,7 +1302,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
 
@@ -1442,7 +1442,7 @@ extension Grpc_Testing_UnimplementedServiceProvider {
     }
   }
 }
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
@@ -1494,7 +1494,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol {
 
@@ -1566,7 +1566,7 @@ extension Grpc_Testing_ReconnectServiceProvider {
     }
   }
 }
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 
 /// A service used to control reconnect server.
 ///
@@ -1630,7 +1630,7 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol {
 
