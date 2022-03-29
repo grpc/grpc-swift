@@ -660,7 +660,7 @@ struct ExpressionMatcher<Value> {
   }
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.6)
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 func assertThat<Value>(

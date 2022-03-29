@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.5)
+#if compiler(>=5.6)
 import XCTest
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
@@ -31,4 +31,4 @@ internal func XCTAssertThrowsError<T>(
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.6)
