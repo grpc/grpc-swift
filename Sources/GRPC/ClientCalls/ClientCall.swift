@@ -115,8 +115,11 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   ///   - promise: A promise to be fulfilled when all messages have been sent successfully.
-  func sendMessages<S: Sequence>(_ messages: S, compression: Compression,
-                                 promise: EventLoopPromise<Void>?) where S.Element == RequestPayload
+  func sendMessages<S: Sequence>(
+    _ messages: S,
+    compression: Compression,
+    promise: EventLoopPromise<Void>?
+  ) where S.Element == RequestPayload
 
   /// Terminates a stream of messages sent to the service.
   ///
@@ -132,8 +135,10 @@ public protocol StreamingRequestClientCall: ClientCall {
 }
 
 extension StreamingRequestClientCall {
-  public func sendMessage(_ message: RequestPayload,
-                          compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
+  public func sendMessage(
+    _ message: RequestPayload,
+    compression: Compression = .deferToCallDefault
+  ) -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
     self.sendMessage(message, compression: compression, promise: promise)
     return promise.futureResult

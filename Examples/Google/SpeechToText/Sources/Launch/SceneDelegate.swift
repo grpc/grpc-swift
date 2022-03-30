@@ -35,7 +35,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     self.navController?.navigationBar.prefersLargeTitles = false
 
     let viewController: UIViewController = ViewController()
-    navController?.pushViewController(viewController, animated: false)
+    self.navController?.pushViewController(viewController, animated: false)
 
     self.window = UIWindow(windowScene: windowScene)
     self.window!.rootViewController = self.navController

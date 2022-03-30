@@ -65,16 +65,16 @@ public protocol ServerErrorDelegate: AnyObject {
   ) -> GRPCStatusAndTrailers?
 }
 
-public extension ServerErrorDelegate {
-  func observeLibraryError(_ error: Error) {}
+extension ServerErrorDelegate {
+  public func observeLibraryError(_ error: Error) {}
 
-  func transformLibraryError(_ error: Error) -> GRPCStatusAndTrailers? {
+  public func transformLibraryError(_ error: Error) -> GRPCStatusAndTrailers? {
     return nil
   }
 
-  func observeRequestHandlerError(_ error: Error, headers: HPACKHeaders) {}
+  public func observeRequestHandlerError(_ error: Error, headers: HPACKHeaders) {}
 
-  func transformRequestHandlerError(
+  public func transformRequestHandlerError(
     _ error: Error,
     headers: HPACKHeaders
   ) -> GRPCStatusAndTrailers? {

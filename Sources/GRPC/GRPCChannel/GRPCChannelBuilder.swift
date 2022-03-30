@@ -312,8 +312,8 @@ extension ClientConnection.Builder {
   }
 }
 
-private extension Double {
-  static func seconds(from amount: TimeAmount) -> Double {
+extension Double {
+  fileprivate static func seconds(from amount: TimeAmount) -> Double {
     return Double(amount.nanoseconds) / 1_000_000_000
   }
 }

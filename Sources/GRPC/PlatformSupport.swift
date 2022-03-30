@@ -237,7 +237,7 @@ public enum PlatformSupport {
 
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
-      let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
+       let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
       return transportServicesBootstrap.tlsOptions(from: tlsConfigruation)
     }
     #endif

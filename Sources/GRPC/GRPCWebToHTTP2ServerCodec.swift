@@ -737,8 +737,8 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.InboundState {
     let action: GRPCWebToHTTP2ServerCodec.StateMachine.Action
 
     if bytesToRead > 0,
-      let base64Encoded = self.requestBuffer!.readString(length: bytesToRead),
-      let base64Decoded = Data(base64Encoded: base64Encoded) {
+       let base64Encoded = self.requestBuffer!.readString(length: bytesToRead),
+       let base64Decoded = Data(base64Encoded: base64Encoded) {
       // Recycle the input buffer and restore the request buffer.
       buffer.clear()
       buffer.writeContiguousBytes(base64Decoded)

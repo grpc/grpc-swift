@@ -37,3 +37,6 @@
 
 # Don't prefer using key paths for trivial closures.
 --disable preferKeyPath
+
+# Put ACLs on declarations within an extension rather than the extension itself.
+--extensionacl on-declarations

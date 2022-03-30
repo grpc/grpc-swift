@@ -118,7 +118,7 @@ class ServerTLSErrorTests: GRPCTestCase {
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(1))
 
     if let nioSSLError = errorDelegate.errors.first as? NIOSSLError,
-      case .failedToLoadCertificate = nioSSLError {
+       case .failedToLoadCertificate = nioSSLError {
       // Expected case.
     } else {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")

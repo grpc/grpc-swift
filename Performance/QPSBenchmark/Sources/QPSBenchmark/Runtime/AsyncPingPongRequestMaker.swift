@@ -39,11 +39,13 @@ final class AsyncPingPongRequestMaker: RequestMaker {
   ///    - requestMessage: Pre-made request message to use possibly repeatedly.
   ///    - logger: Where to log useful diagnostics.
   ///    - stats: Where to record statistics on latency.
-  init(config: Grpc_Testing_ClientConfig,
-       client: Grpc_Testing_BenchmarkServiceClient,
-       requestMessage: Grpc_Testing_SimpleRequest,
-       logger: Logger,
-       stats: StatsWithLock) {
+  init(
+    config: Grpc_Testing_ClientConfig,
+    client: Grpc_Testing_BenchmarkServiceClient,
+    requestMessage: Grpc_Testing_SimpleRequest,
+    logger: Logger,
+    stats: StatsWithLock
+  ) {
     self.client = client
     self.requestMessage = requestMessage
     self.logger = logger
@@ -70,7 +72,7 @@ final class AsyncPingPongRequestMaker: RequestMaker {
       let endTime = grpcTimeNow()
       self.stats.add(latency: endTime - startTime)
       if !self.stopRequested,
-        self.messagesPerStream == 0 || messagesSent < self.messagesPerStream {
+         self.messagesPerStream == 0 || messagesSent < self.messagesPerStream {
         messagesSent += 1
         startTime = endTime // Use end of previous request as the start of the next.
         streamingCall!.sendMessage(self.requestMessage, promise: nil)

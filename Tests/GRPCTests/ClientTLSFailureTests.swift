@@ -127,7 +127,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
 
     if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
-      case .handshakeFailed(.sslError) = nioSSLError {
+       case .handshakeFailed(.sslError) = nioSSLError {
       // Expected case.
     } else {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
@@ -209,7 +209,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
 
     if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
-      case .handshakeFailed(.sslError) = nioSSLError {
+       case .handshakeFailed(.sslError) = nioSSLError {
       // Expected case.
     } else {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")

@@ -311,7 +311,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     }
 
     guard let callPath = CallPath(requestURI: path),
-      let service = services[Substring(callPath.service)] else {
+          let service = services[Substring(callPath.service)] else {
       return self.methodNotImplemented(path, contentType: contentType)
     }
 
@@ -1292,8 +1292,8 @@ extension HTTP2ToRawGRPCStateMachine {
   ]
 }
 
-private extension HPACKHeaders {
-  mutating func add(contentsOf other: HPACKHeaders, normalize: Bool) {
+extension HPACKHeaders {
+  fileprivate mutating func add(contentsOf other: HPACKHeaders, normalize: Bool) {
     if normalize {
       self.add(contentsOf: other.lazy.map { name, value, indexable in
         (name: name.lowercased(), value: value, indexable: indexable)

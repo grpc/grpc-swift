@@ -165,8 +165,8 @@ private func degreesToRadians(_ degrees: Double) -> Double {
   return degrees * .pi / 180.0
 }
 
-private extension Routeguide_Point {
-  func distance(to other: Routeguide_Point) -> Double {
+extension Routeguide_Point {
+  fileprivate func distance(to other: Routeguide_Point) -> Double {
     // Radius of Earth in meters
     let radius = 6_371_000.0
     // Points are in the E7 representation (degrees multiplied by 10**7 and rounded to the nearest
