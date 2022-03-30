@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
-public typealias GRPCSendable = Swift.Sendable
+#if compiler(>=5.6)
+@preconcurrency public typealias GRPCSendable = Swift.Sendable
 #else
 public typealias GRPCSendable = Any
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
