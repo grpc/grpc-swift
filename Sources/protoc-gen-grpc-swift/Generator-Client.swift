@@ -341,7 +341,7 @@ extension Generator {
 }
 
 extension Generator {
-  fileprivate func printFakeResponseStreams() {
+  private func printFakeResponseStreams() {
     for method in self.service.methods {
       self.println()
 
@@ -356,7 +356,7 @@ extension Generator {
     }
   }
 
-  fileprivate func printUnaryResponse() {
+  private func printUnaryResponse() {
     self.printResponseStream(isUnary: true)
     self.println()
     self.printEnqueueUnaryResponse(isUnary: true)
@@ -364,7 +364,7 @@ extension Generator {
     self.printHasResponseStreamEnqueued()
   }
 
-  fileprivate func printStreamingResponse() {
+  private func printStreamingResponse() {
     self.printResponseStream(isUnary: false)
     self.println()
     self.printEnqueueUnaryResponse(isUnary: false)
@@ -443,7 +443,7 @@ extension Generator {
     self.println("}")
   }
 
-  fileprivate func printTestClient() {
+  private func printTestClient() {
     self
       .println(
         "\(self.access) final class \(self.testClientClassName): \(self.clientProtocolName) {"
@@ -482,14 +482,14 @@ extension Generator {
   }
 }
 
-private extension Generator {
-  var streamType: StreamingType {
+extension Generator {
+  private var streamType: StreamingType {
     return streamingType(self.method)
   }
 }
 
 extension Generator {
-  fileprivate var methodArguments: [String] {
+  private var methodArguments: [String] {
     switch self.streamType {
     case .unary:
       return [
@@ -514,7 +514,7 @@ extension Generator {
     }
   }
 
-  fileprivate var methodArgumentsWithoutDefaults: [String] {
+  private var methodArgumentsWithoutDefaults: [String] {
     return self.methodArguments.map { arg in
       // Remove default arg from call options.
       if arg == "callOptions: CallOptions? = nil" {
@@ -525,13 +525,13 @@ extension Generator {
     }
   }
 
-  fileprivate var methodArgumentsWithoutCallOptions: [String] {
+  private var methodArgumentsWithoutCallOptions: [String] {
     return self.methodArguments.filter {
       !$0.hasPrefix("callOptions: ")
     }
   }
 
-  fileprivate var methodReturnType: String {
+  private var methodReturnType: String {
     switch self.streamType {
     case .unary:
       return "UnaryCall<\(self.methodInputName), \(self.methodOutputName)>"
@@ -548,8 +548,8 @@ extension Generator {
   }
 }
 
-private extension StreamingType {
-  var name: String {
+extension StreamingType {
+  fileprivate var name: String {
     switch self {
     case .unary:
       return "Unary"

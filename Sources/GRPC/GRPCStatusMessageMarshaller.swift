@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// swiftformat:disable:next enumNamespaces
 public struct GRPCStatusMessageMarshaller {
   /// Adds percent encoding to the given message.
   ///
@@ -130,8 +131,8 @@ extension GRPCStatusMessageMarshaller {
       switch byte {
       case UInt8(ascii: "%"):
         guard let (nextIndex, nextNextIndex) = utf8.nextTwoIndices(after: currentIndex),
-          let nextHex = fromHex(utf8[nextIndex]),
-          let nextNextHex = fromHex(utf8[nextNextIndex])
+              let nextHex = fromHex(utf8[nextIndex]),
+              let nextNextHex = fromHex(utf8[nextNextIndex])
         else {
           // If we can't decode the message, aborting and returning the encoded message is fine
           // according to the spec.

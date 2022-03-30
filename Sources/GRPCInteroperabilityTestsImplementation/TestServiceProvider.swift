@@ -168,7 +168,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
       switch event {
       case let .message(request):
         if request.expectCompressed.value,
-          !context.headers.contains(name: "grpc-encoding") {
+           !context.headers.contains(name: "grpc-encoding") {
           context.responseStatus = GRPCStatus(
             code: .invalidArgument,
             message: "Expected compressed request, but 'grpc-encoding' was missing"

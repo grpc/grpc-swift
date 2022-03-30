@@ -405,7 +405,7 @@ struct HTTPVersionParser {
 
     // Read off the Method and Request-URI (and spaces).
     guard readableBytesView.trimPrefix(to: UInt8(ascii: " ")) != nil,
-      readableBytesView.trimPrefix(to: UInt8(ascii: " ")) != nil else {
+          readableBytesView.trimPrefix(to: UInt8(ascii: " ")) != nil else {
       return false
     }
 

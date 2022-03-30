@@ -119,7 +119,7 @@ public final class Server {
     #if canImport(Network)
     if let tlsConfiguration = configuration.tlsConfiguration {
       if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
-        let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
+         let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
         _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
       }
     }
@@ -157,7 +157,7 @@ public final class Server {
             hasTLS: configuration.tlsConfiguration != nil
           )
           if requiresZeroLengthWorkaround,
-            #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+             #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
             try sync.addHandler(NIOFilterEmptyWritesHandler())
           }
         } catch {
@@ -451,8 +451,8 @@ extension Server {
   }
 }
 
-private extension ServerBootstrapProtocol {
-  func bind(to target: BindTarget) -> EventLoopFuture<Channel> {
+extension ServerBootstrapProtocol {
+  fileprivate func bind(to target: BindTarget) -> EventLoopFuture<Channel> {
     switch target.wrapped {
     case let .hostAndPort(host, port):
       return self.bind(host: host, port: port)
