@@ -846,6 +846,25 @@ final class ConnectionPoolTests: GRPCTestCase {
       }
     }
   }
+
+  func testWaiterStoresItsScheduledTask() throws {
+    let deadline = NIODeadline.uptimeNanoseconds(42)
+    let promise = self.eventLoop.makePromise(of: Channel.self)
+    let waiter = ConnectionPool.Waiter(deadline: deadline, promise: promise) {
+      return $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    XCTAssertNil(waiter._scheduledTimeout)
+
+    waiter.scheduleTimeout(on: self.eventLoop) {
+      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: nil))
+    }
+
+    XCTAssertNotNil(waiter._scheduledTimeout)
+    self.eventLoop.advanceTime(to: deadline)
+    XCTAssertThrowsError(try promise.futureResult.wait())
+    XCTAssertNil(waiter._scheduledTimeout)
+  }
 }
 
 extension ConnectionPool {

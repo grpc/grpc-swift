@@ -71,7 +71,7 @@ extension ConnectionPool {
       execute body: @escaping () -> Void
     ) {
       assert(self._scheduledTimeout == nil)
-      eventLoop.scheduleTask(deadline: self._deadline, body)
+      self._scheduledTimeout = eventLoop.scheduleTask(deadline: self._deadline, body)
     }
 
     /// Returns a boolean value indicating whether the deadline for this waiter occurs after the
