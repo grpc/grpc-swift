@@ -22,7 +22,7 @@ import NIOPosix
 import XCTest
 
 class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {
-  struct Constants {
+  enum Constants {
     static let testTimeout: TimeInterval = 10
 
     static let defaultMaxNumberOfConcurrentStreams =

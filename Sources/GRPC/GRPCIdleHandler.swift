@@ -127,7 +127,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     // Max concurrent streams changed.
     if let manager = self.mode.connectionManager,
-      let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
+       let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
       manager.maxConcurrentStreamsChanged(maxConcurrentStreams)
     }
 

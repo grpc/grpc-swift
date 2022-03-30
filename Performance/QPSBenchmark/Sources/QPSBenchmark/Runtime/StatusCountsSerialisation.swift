@@ -20,7 +20,7 @@ extension StatusCounts {
   /// Convert status count to a protobuf for sending to the driver process.
   /// - returns: The protobuf message for sending.
   public func toRequestResultCounts() -> [Grpc_Testing_RequestResultCount] {
-    return counts.map { (key, value) -> Grpc_Testing_RequestResultCount in
+    return counts.map { key, value -> Grpc_Testing_RequestResultCount in
       var grpc = Grpc_Testing_RequestResultCount()
       grpc.count = value
       grpc.statusCode = Int32(key)

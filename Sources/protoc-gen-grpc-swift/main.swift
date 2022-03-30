@@ -61,8 +61,11 @@ enum FileNaming: String {
   case DropPath
 }
 
-func outputFileName(component: String, fileDescriptor: FileDescriptor,
-                    fileNamingOption: FileNaming) -> String {
+func outputFileName(
+  component: String,
+  fileDescriptor: FileDescriptor,
+  fileNamingOption: FileNaming
+) -> String {
   let ext = "." + component + ".swift"
   let pathParts = splitPath(pathname: fileDescriptor.name)
   switch fileNamingOption {

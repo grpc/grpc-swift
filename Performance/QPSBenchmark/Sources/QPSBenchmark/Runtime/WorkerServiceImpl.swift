@@ -75,16 +75,20 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   }
 
   /// Just return the core count - unary call
-  func coreCount(request: Grpc_Testing_CoreRequest,
-                 context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_CoreResponse> {
+  func coreCount(
+    request: Grpc_Testing_CoreRequest,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<Grpc_Testing_CoreResponse> {
     context.logger.notice("coreCount queried")
     let cores = Grpc_Testing_CoreResponse.with { $0.cores = Int32(System.coreCount) }
     return context.eventLoop.makeSucceededFuture(cores)
   }
 
   /// Quit this worker
-  func quitWorker(request: Grpc_Testing_Void,
-                  context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Void> {
+  func quitWorker(
+    request: Grpc_Testing_Void,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<Grpc_Testing_Void> {
     context.logger.warning("quitWorker called")
     self.finishedPromise.succeed(())
     return context.eventLoop.makeSucceededFuture(Grpc_Testing_Void())
@@ -109,8 +113,10 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
 
   /// Handle a request to setup a server.
   /// Makes a new server and sets it running.
-  private func handleServerSetup(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
-                                 config: Grpc_Testing_ServerConfig) {
+  private func handleServerSetup(
+    context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
+    config: Grpc_Testing_ServerConfig
+  ) {
     context.logger.info("server setup requested")
     guard self.runningServer == nil else {
       context.logger.error("server already running")
@@ -159,8 +165,10 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   // MARK: Create Server
 
   /// Start a server running of the requested type.
-  private func runServerBody(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
-                             serverConfig: Grpc_Testing_ServerConfig) {
+  private func runServerBody(
+    context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
+    serverConfig: Grpc_Testing_ServerConfig
+  ) {
     var serverConfig = serverConfig
     self.serverPortOverride.map { serverConfig.port = Int32($0) }
 
@@ -228,8 +236,10 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   }
 
   /// Setup a client as described by the message from the driver.
-  private func handleClientSetup(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
-                                 config: Grpc_Testing_ClientConfig) {
+  private func handleClientSetup(
+    context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
+    config: Grpc_Testing_ClientConfig
+  ) {
     context.logger.info("client setup requested")
     guard self.runningClient == nil else {
       context.logger.error("client already running")
@@ -282,8 +292,10 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   // MARK: Create Client
 
   /// Setup and run a client of the requested type.
-  private func runClientBody(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
-                             clientConfig: Grpc_Testing_ClientConfig) {
+  private func runClientBody(
+    context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
+    clientConfig: Grpc_Testing_ClientConfig
+  ) {
     do {
       self.runningClient = try WorkerServiceImpl.makeClient(
         context: context,

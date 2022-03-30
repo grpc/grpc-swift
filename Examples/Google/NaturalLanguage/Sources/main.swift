@@ -56,7 +56,7 @@ func getAuthToken(
   do {
     try provider.withToken { token, error in
       if let token = token,
-        let accessToken = token.AccessToken {
+         let accessToken = token.AccessToken {
         promise.succeed(accessToken)
       } else if let error = error {
         promise.fail(error)

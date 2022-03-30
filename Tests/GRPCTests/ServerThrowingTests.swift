@@ -34,8 +34,10 @@ let transformedMetadata = HPACKHeaders([("transformed", "header")])
 class ImmediateThrowingEchoProvider: Echo_EchoProvider {
   var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { return nil }
 
-  func get(request: Echo_EchoRequest,
-           context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(
+    request: Echo_EchoRequest,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 
@@ -69,8 +71,10 @@ extension EventLoop {
 class DelayedThrowingEchoProvider: Echo_EchoProvider {
   let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil
 
-  func get(request: Echo_EchoRequest,
-           context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(
+    request: Echo_EchoRequest,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
@@ -120,8 +124,10 @@ class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
 }
 
 private class ErrorTransformingDelegate: ServerErrorDelegate {
-  func transformRequestHandlerError(_ error: Error,
-                                    headers: HPACKHeaders) -> GRPCStatusAndTrailers? {
+  func transformRequestHandlerError(
+    _ error: Error,
+    headers: HPACKHeaders
+  ) -> GRPCStatusAndTrailers? {
     return GRPCStatusAndTrailers(status: transformedError, trailers: transformedMetadata)
   }
 }

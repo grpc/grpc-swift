@@ -70,7 +70,9 @@ class EmbeddedClientThroughput: Benchmark {
 
     self.responseDataChunks = []
     while buffer.readableBytes > 0,
-      let slice = buffer.readSlice(length: min(maximumResponseFrameSize, buffer.readableBytes)) {
+          let slice = buffer.readSlice(
+            length: min(maximumResponseFrameSize, buffer.readableBytes)
+          ) {
       self.responseDataChunks.append(slice)
     }
   }

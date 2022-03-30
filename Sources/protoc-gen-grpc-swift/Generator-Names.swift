@@ -17,8 +17,10 @@ import Foundation
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
-internal func nameForPackageService(_ file: FileDescriptor,
-                                    _ service: ServiceDescriptor) -> String {
+internal func nameForPackageService(
+  _ file: FileDescriptor,
+  _ service: ServiceDescriptor
+) -> String {
   if !file.package.isEmpty {
     return SwiftProtobufNamer().typePrefix(forFile: file) + service.name
   } else {
@@ -26,9 +28,11 @@ internal func nameForPackageService(_ file: FileDescriptor,
   }
 }
 
-internal func nameForPackageServiceMethod(_ file: FileDescriptor,
-                                          _ service: ServiceDescriptor,
-                                          _ method: MethodDescriptor) -> String {
+internal func nameForPackageServiceMethod(
+  _ file: FileDescriptor,
+  _ service: ServiceDescriptor,
+  _ method: MethodDescriptor
+) -> String {
   return nameForPackageService(file, service) + method.name
 }
 
