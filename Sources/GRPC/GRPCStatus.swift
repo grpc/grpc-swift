@@ -316,11 +316,11 @@ extension GRPCStatus {
   }
 }
 
-#if compiler(>=5.5.2) && canImport(_Concurrency)
+#if compiler(>=5.6)
 // `GRPCStatus` has CoW semantics so it is inherently `Sendable`. Rather than marking `GRPCStatus`
 // as `@unchecked Sendable` we only mark `Storage` as such.
 extension GRPCStatus.Storage: @unchecked Sendable {}
-#endif // compiler(>=5.5.2) && canImport(_Concurrency)
+#endif // compiler(>=5.6)
 
 /// This protocol serves as a customisation point for error types so that gRPC calls may be
 /// terminated with an appropriate status.
