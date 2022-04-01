@@ -157,7 +157,7 @@ class Generator {
     }
     self.println()
 
-    if self.options.generateServer || self.options.generateAsyncServer {
+    if self.options.generateServer {
       for service in self.file.services {
         self.service = service
         printServer()

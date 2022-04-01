@@ -23,9 +23,7 @@ extension Generator {
       self.printServerProtocol()
       self.println()
       self.printServerProtocolExtension()
-    }
-
-    if self.options.generateAsyncServer {
+      self.println()
       self.printIfCompilerGuardForAsyncAwait()
       self.println()
       self.printServerProtocolAsyncAwait()
@@ -33,11 +31,8 @@ extension Generator {
       self.printServerProtocolExtensionAsyncAwait()
       self.println()
       self.printEndCompilerGuardForAsyncAwait()
-    }
-
-    // Both implementations share definitions for interceptors and metadata.
-    if self.options.generateServer || self.options.generateAsyncServer {
       self.println()
+      // Both implementations share definitions for interceptors and metadata.
       self.printServerInterceptorFactoryProtocol()
       self.println()
       self.printServerMetadata()

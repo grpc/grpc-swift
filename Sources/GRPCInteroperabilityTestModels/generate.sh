@@ -18,7 +18,7 @@ VISIBILITY="Public"
   --swift_out=${OUTPUT} \
   --swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY} \
   --grpc-swift_out=${OUTPUT} \
-  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY},ExperimentalAsyncClient=true,ExperimentalAsyncServer=true)
+  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY})
 
 (cd "${CURRENT_SCRIPT_DIR}" && protoc "src/proto/grpc/testing/empty.proto" \
   --plugin=${PLUGIN_SWIFT} \
@@ -26,7 +26,7 @@ VISIBILITY="Public"
   --swift_out=${OUTPUT} \
   --swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY} \
   --grpc-swift_out=${OUTPUT} \
-  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY},ExperimentalAsyncClient=true,ExperimentalAsyncServer=true)
+  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY})
 
 (cd "${CURRENT_SCRIPT_DIR}" && protoc "src/proto/grpc/testing/messages.proto" \
   --plugin=${PLUGIN_SWIFT} \
@@ -34,7 +34,7 @@ VISIBILITY="Public"
   --swift_out=${OUTPUT} \
   --swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY} \
   --grpc-swift_out=${OUTPUT} \
-  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY},ExperimentalAsyncClient=true,ExperimentalAsyncServer=true)
+  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY})
 
 # The generated code needs to be modified to support testing an unimplemented method.
 # On the server side, the generated code needs to be removed so the server has no
