@@ -130,7 +130,7 @@ final class ServerInterceptorStateMachineTests: GRPCTestCase {
   func testAllOperationsDropWhenFinished() {
     var stateMachine = ServerInterceptorStateMachine()
     // Get to the finished state.
-    stateMachine.cancel().assertNilOutInterceptorPipeline()
+    stateMachine.cancel().assertSendStatusThenNilOutInterceptorPipeline()
 
     stateMachine.interceptRequestMetadata().assertDrop()
     stateMachine.interceptedRequestMetadata().assertDrop()
@@ -177,6 +177,10 @@ extension ServerInterceptorStateMachine.InterceptedAction {
 }
 
 extension ServerInterceptorStateMachine.CancelAction {
+  func assertSendStatusThenNilOutInterceptorPipeline() {
+    XCTAssertEqual(self, .sendStatusThenNilOutInterceptorPipeline)
+  }
+
   func assertNilOutInterceptorPipeline() {
     XCTAssertEqual(self, .nilOutInterceptorPipeline)
   }

@@ -19,59 +19,73 @@ extension ServerInterceptorStateMachine {
   /// state.
   @usableFromInline
   struct Finished {
+    @usableFromInline
     typealias NextStateAndOutput<Output> =
       ServerInterceptorStateMachine.NextStateAndOutput<Self.NextState, Output>
 
     init(from state: ServerInterceptorStateMachine.Intercepting) {}
 
+    @inlinable
     mutating func interceptRequestMetadata() -> Self.NextStateAndOutput<InterceptAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptRequestMessage() -> Self.NextStateAndOutput<InterceptAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptRequestEnd() -> Self.NextStateAndOutput<InterceptAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptedRequestMetadata() -> Self.NextStateAndOutput<InterceptedAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptedRequestMessage() -> Self.NextStateAndOutput<InterceptedAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptedRequestEnd() -> Self.NextStateAndOutput<InterceptedAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptResponseMetadata() -> Self.NextStateAndOutput<InterceptAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptResponseMessage() -> Self.NextStateAndOutput<InterceptAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptResponseStatus() -> Self.NextStateAndOutput<InterceptAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptedResponseMetadata() -> Self.NextStateAndOutput<InterceptedAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptedResponseMessage() -> Self.NextStateAndOutput<InterceptedAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func interceptedResponseStatus() -> Self.NextStateAndOutput<InterceptedAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func cancel() -> Self.NextStateAndOutput<CancelAction> {
       return .init(nextState: .finished(self), output: .nilOutInterceptorPipeline)
     }

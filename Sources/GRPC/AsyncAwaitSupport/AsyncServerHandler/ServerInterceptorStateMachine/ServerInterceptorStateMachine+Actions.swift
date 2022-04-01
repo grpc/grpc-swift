@@ -15,6 +15,7 @@
  */
 #if compiler(>=5.6)
 extension ServerInterceptorStateMachine {
+  @usableFromInline
   enum InterceptAction: Hashable {
     /// Forward the message to the interceptor pipeline.
     case intercept
@@ -23,6 +24,7 @@ extension ServerInterceptorStateMachine {
     /// Drop the message.
     case drop
 
+    @inlinable
     init(from streamFilter: ServerInterceptorStateMachine.StreamFilter) {
       switch streamFilter {
       case .accept:
@@ -33,6 +35,7 @@ extension ServerInterceptorStateMachine {
     }
   }
 
+  @usableFromInline
   enum InterceptedAction: Hashable {
     /// Forward the message to the network or user handler.
     case forward
@@ -41,6 +44,7 @@ extension ServerInterceptorStateMachine {
     /// Drop the message.
     case drop
 
+    @inlinable
     init(from streamFilter: ServerInterceptorStateMachine.StreamFilter) {
       switch streamFilter {
       case .accept:
@@ -51,7 +55,10 @@ extension ServerInterceptorStateMachine {
     }
   }
 
+  @usableFromInline
   enum CancelAction: Hashable {
+    /// Write a status then nil out the interceptor pipeline.
+    case sendStatusThenNilOutInterceptorPipeline
     /// Nil out the interceptor pipeline.
     case nilOutInterceptorPipeline
     /// Do nothing.

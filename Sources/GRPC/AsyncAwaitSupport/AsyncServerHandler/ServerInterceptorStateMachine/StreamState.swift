@@ -15,16 +15,19 @@
  */
 #if compiler(>=5.6)
 extension ServerInterceptorStateMachine {
+  @usableFromInline
   internal enum StreamFilter: Hashable {
     case accept
     case reject
   }
 
+  @usableFromInline
   internal enum InboundStreamState: Hashable {
     case idle
     case receivingMessages
     case done
 
+    @inlinable
     mutating func receiveMetadata() -> StreamFilter {
       switch self {
       case .idle:
@@ -35,6 +38,7 @@ extension ServerInterceptorStateMachine {
       }
     }
 
+    @inlinable
     func receiveMessage() -> StreamFilter {
       switch self {
       case .receivingMessages:
@@ -44,6 +48,7 @@ extension ServerInterceptorStateMachine {
       }
     }
 
+    @inlinable
     mutating func receiveEnd() -> StreamFilter {
       switch self {
       case .idle, .receivingMessages:
@@ -55,11 +60,13 @@ extension ServerInterceptorStateMachine {
     }
   }
 
+  @usableFromInline
   internal enum OutboundStreamState: Hashable {
     case idle
     case writingMessages
     case done
 
+    @inlinable
     mutating func sendMetadata() -> StreamFilter {
       switch self {
       case .idle:
@@ -70,6 +77,7 @@ extension ServerInterceptorStateMachine {
       }
     }
 
+    @inlinable
     func sendMessage() -> StreamFilter {
       switch self {
       case .writingMessages:
@@ -79,6 +87,7 @@ extension ServerInterceptorStateMachine {
       }
     }
 
+    @inlinable
     mutating func sendEnd() -> StreamFilter {
       switch self {
       case .idle, .writingMessages:

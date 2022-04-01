@@ -77,6 +77,7 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
   }
 
   @inlinable
+  @discardableResult
   internal func yield(_ element: Element) -> YieldResult {
     let continuationResult: _ContinuationResult = .success(element)
     return self._yield(continuationResult, isTerminator: false)

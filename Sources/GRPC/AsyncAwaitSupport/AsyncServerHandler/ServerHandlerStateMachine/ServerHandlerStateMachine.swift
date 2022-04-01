@@ -16,13 +16,17 @@
 #if compiler(>=5.6)
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@usableFromInline
 internal struct ServerHandlerStateMachine {
-  private var state: Self.State
+  @usableFromInline
+  internal private(set) var state: Self.State
 
+  @inlinable
   init(userInfoRef: Ref<UserInfo>, context: CallHandlerContext) {
     self.state = .idle(.init(userInfoRef: userInfoRef, context: context))
   }
 
+  @inlinable
   mutating func handleMetadata() -> HandleMetadataAction {
     switch self.state {
     case var .idle(idle):
@@ -44,6 +48,7 @@ internal struct ServerHandlerStateMachine {
     }
   }
 
+  @inlinable
   mutating func handleMessage() -> HandleMessageAction {
     switch self.state {
     case var .idle(idle):
@@ -65,6 +70,7 @@ internal struct ServerHandlerStateMachine {
     }
   }
 
+  @inlinable
   mutating func handleEnd() -> HandleEndAction {
     switch self.state {
     case var .idle(idle):
@@ -86,6 +92,7 @@ internal struct ServerHandlerStateMachine {
     }
   }
 
+  @inlinable
   mutating func sendMessage() -> SendMessageAction {
     switch self.state {
     case var .handling(handling):
@@ -105,6 +112,7 @@ internal struct ServerHandlerStateMachine {
     }
   }
 
+  @inlinable
   mutating func sendStatus() -> SendStatusAction {
     switch self.state {
     case var .handling(handling):
@@ -124,6 +132,7 @@ internal struct ServerHandlerStateMachine {
     }
   }
 
+  @inlinable
   mutating func cancel() -> CancelAction {
     switch self.state {
     case var .idle(idle):
@@ -145,6 +154,7 @@ internal struct ServerHandlerStateMachine {
     }
   }
 
+  @inlinable
   mutating func handlerInvoked(context: GRPCAsyncServerCallContext) {
     switch self.state {
     case var .idle(idle):
@@ -164,7 +174,8 @@ internal struct ServerHandlerStateMachine {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine {
   /// The possible states the state machine may be in.
-  fileprivate enum State {
+  @usableFromInline
+  internal enum State {
     case idle(ServerHandlerStateMachine.Idle)
     case handling(ServerHandlerStateMachine.Handling)
     case draining(ServerHandlerStateMachine.Draining)
@@ -176,10 +187,14 @@ extension ServerHandlerStateMachine {
 extension ServerHandlerStateMachine {
   /// The next state to transition to and any output which may be produced as a
   /// result of a substate handling an action.
+  @usableFromInline
   internal struct NextStateAndOutput<NextState, Output> {
+    @usableFromInline
     internal var nextState: NextState
+    @usableFromInline
     internal var output: Output
 
+    @inlinable
     internal init(nextState: NextState, output: Output) {
       self.nextState = nextState
       self.output = output
@@ -189,6 +204,7 @@ extension ServerHandlerStateMachine {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine.NextStateAndOutput where Output == Void {
+  @inlinable
   internal init(nextState: NextState) {
     self.nextState = nextState
     self.output = ()
@@ -198,26 +214,32 @@ extension ServerHandlerStateMachine.NextStateAndOutput where Output == Void {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine.Idle {
   /// States which can be reached directly from 'Idle'.
+  @usableFromInline
   internal struct NextState {
-    fileprivate let state: ServerHandlerStateMachine.State
+    @usableFromInline
+    let state: ServerHandlerStateMachine.State
 
-    private init(_ state: ServerHandlerStateMachine.State) {
-      self.state = state
+    @inlinable
+    internal init(_state: ServerHandlerStateMachine.State) {
+      self.state = _state
     }
 
+    @inlinable
     internal static func idle(_ state: ServerHandlerStateMachine.Idle) -> Self {
-      return Self(.idle(state))
+      return Self(_state: .idle(state))
     }
 
+    @inlinable
     internal static func handling(
       from: ServerHandlerStateMachine.Idle,
       context: GRPCAsyncServerCallContext
     ) -> Self {
-      return Self(.handling(.init(from: from, context: context)))
+      return Self(_state: .handling(.init(from: from, context: context)))
     }
 
+    @inlinable
     internal static func finished(from: ServerHandlerStateMachine.Idle) -> Self {
-      return Self(.finished(.init(from: from)))
+      return Self(_state: .finished(.init(from: from)))
     }
   }
 }
@@ -225,23 +247,29 @@ extension ServerHandlerStateMachine.Idle {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine.Handling {
   /// States which can be reached directly from 'Handling'.
+  @usableFromInline
   internal struct NextState {
-    fileprivate let state: ServerHandlerStateMachine.State
+    @usableFromInline
+    let state: ServerHandlerStateMachine.State
 
-    private init(_ state: ServerHandlerStateMachine.State) {
-      self.state = state
+    @inlinable
+    internal init(_state: ServerHandlerStateMachine.State) {
+      self.state = _state
     }
 
+    @inlinable
     internal static func handling(_ state: ServerHandlerStateMachine.Handling) -> Self {
-      return Self(.handling(state))
+      return Self(_state: .handling(state))
     }
 
+    @inlinable
     internal static func draining(from: ServerHandlerStateMachine.Handling) -> Self {
-      return Self(.draining(.init(from: from)))
+      return Self(_state: .draining(.init(from: from)))
     }
 
+    @inlinable
     internal static func finished(from: ServerHandlerStateMachine.Handling) -> Self {
-      return Self(.finished(.init(from: from)))
+      return Self(_state: .finished(.init(from: from)))
     }
   }
 }
@@ -249,19 +277,24 @@ extension ServerHandlerStateMachine.Handling {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine.Draining {
   /// States which can be reached directly from 'Draining'.
+  @usableFromInline
   internal struct NextState {
-    fileprivate let state: ServerHandlerStateMachine.State
+    @usableFromInline
+    let state: ServerHandlerStateMachine.State
 
-    private init(_ state: ServerHandlerStateMachine.State) {
-      self.state = state
+    @inlinable
+    internal init(_state: ServerHandlerStateMachine.State) {
+      self.state = _state
     }
 
+    @inlinable
     internal static func draining(_ state: ServerHandlerStateMachine.Draining) -> Self {
-      return Self(.draining(state))
+      return Self(_state: .draining(state))
     }
 
+    @inlinable
     internal static func finished(from: ServerHandlerStateMachine.Draining) -> Self {
-      return Self(.finished(.init(from: from)))
+      return Self(_state: .finished(.init(from: from)))
     }
   }
 }
@@ -269,15 +302,19 @@ extension ServerHandlerStateMachine.Draining {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine.Finished {
   /// States which can be reached directly from 'Finished'.
+  @usableFromInline
   internal struct NextState {
-    fileprivate let state: ServerHandlerStateMachine.State
+    @usableFromInline
+    let state: ServerHandlerStateMachine.State
 
-    private init(_ state: ServerHandlerStateMachine.State) {
-      self.state = state
+    @inlinable
+    init(_state: ServerHandlerStateMachine.State) {
+      self.state = _state
     }
 
+    @inlinable
     internal static func finished(_ state: ServerHandlerStateMachine.Finished) -> Self {
-      return Self(.finished(state))
+      return Self(_state: .finished(state))
     }
   }
 }
