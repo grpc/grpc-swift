@@ -1148,6 +1148,7 @@ extension Grpc_Testing_TestServiceProvider {
     }
   }
 }
+
 #if compiler(>=5.6)
 
 /// A simple service to test the various types of RPCs and experiment with
@@ -1442,6 +1443,7 @@ extension Grpc_Testing_UnimplementedServiceProvider {
     }
   }
 }
+
 #if compiler(>=5.6)
 
 /// A simple service NOT implemented at servers so clients can test for
@@ -1566,6 +1568,7 @@ extension Grpc_Testing_ReconnectServiceProvider {
     }
   }
 }
+
 #if compiler(>=5.6)
 
 /// A service used to control reconnect server.

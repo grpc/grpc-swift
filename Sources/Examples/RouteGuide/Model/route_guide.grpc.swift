@@ -492,6 +492,7 @@ extension Routeguide_RouteGuideProvider {
     }
   }
 }
+
 #if compiler(>=5.6)
 
 /// Interface exported by the server.

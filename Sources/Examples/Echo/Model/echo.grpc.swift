@@ -573,6 +573,7 @@ extension Echo_EchoProvider {
     }
   }
 }
+
 #if compiler(>=5.6)
 
 /// To implement a server, implement an object which conforms to this protocol.
