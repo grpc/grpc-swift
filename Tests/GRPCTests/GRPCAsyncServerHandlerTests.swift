@@ -30,7 +30,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       GRPCAsyncResponseStreamWriter<String>,
       GRPCAsyncServerCallContext
     ) async throws -> Void
-  ) -> AsyncServerHandler<StringSerializer, StringDeserializer> {
+  ) -> AsyncServerHandler<StringSerializer, StringDeserializer, String, String> {
     return AsyncServerHandler(
       context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),

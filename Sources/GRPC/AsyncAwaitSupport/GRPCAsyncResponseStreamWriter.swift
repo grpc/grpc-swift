@@ -18,7 +18,7 @@
 
 /// Writer for server-streaming RPC handlers to provide responses.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncResponseStreamWriter<Response> {
+public struct GRPCAsyncResponseStreamWriter<Response: Sendable> {
   @usableFromInline
   internal typealias Element = (Response, Compression)
 
@@ -44,7 +44,7 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDelegate {
+internal final class AsyncResponseStreamWriterDelegate<Response: Sendable>: AsyncWriterDelegate {
   @usableFromInline
   internal typealias Element = (Response, Compression)
 
@@ -55,10 +55,10 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
   internal let _context: GRPCAsyncServerCallContext
 
   @usableFromInline
-  internal let _send: (Response, MessageMetadata) -> Void
+  internal let _send: @Sendable(Response, MessageMetadata) -> Void
 
   @usableFromInline
-  internal let _finish: (GRPCStatus) -> Void
+  internal let _finish: @Sendable(GRPCStatus) -> Void
 
   @usableFromInline
   internal let _compressionEnabledOnServer: Bool
@@ -70,8 +70,8 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
   internal init(
     context: GRPCAsyncServerCallContext,
     compressionIsEnabled: Bool,
-    send: @escaping (Response, MessageMetadata) -> Void,
-    finish: @escaping (GRPCStatus) -> Void
+    send: @escaping @Sendable(Response, MessageMetadata) -> Void,
+    finish: @escaping @Sendable(GRPCStatus) -> Void
   ) {
     self._context = context
     self._compressionEnabledOnServer = compressionIsEnabled

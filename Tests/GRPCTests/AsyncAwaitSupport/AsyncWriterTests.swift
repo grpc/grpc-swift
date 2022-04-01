@@ -245,7 +245,10 @@ internal class AsyncWriterTests: GRPCTestCase {
   }
 }
 
-fileprivate final class CollectingDelegate<Element, End>: AsyncWriterDelegate {
+fileprivate final class CollectingDelegate<
+  Element: Sendable,
+  End: Sendable
+>: AsyncWriterDelegate, @unchecked Sendable {
   private let lock = Lock()
   private var _elements: [Element] = []
   private var _end: End?

@@ -19,7 +19,7 @@
 /// This is currently a wrapper around AsyncThrowingStream because we want to be
 /// able to swap out the implementation for something else in the future.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncRequestStream<Element>: AsyncSequence {
+public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
   @usableFromInline
   internal typealias _WrappedStream = PassthroughMessageSequence<Element, Error>
 

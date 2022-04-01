@@ -27,7 +27,7 @@ import NIOCore
 /// may suspend if the writer has been paused.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
+internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
   @usableFromInline
   internal typealias Element = Delegate.Element
 
@@ -36,7 +36,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
 
   /// A value pending a write.
   @usableFromInline
-  internal struct _Pending<Value> {
+  internal struct _Pending<Value: Sendable>: Sendable {
     @usableFromInline
     var value: Value
 
@@ -323,9 +323,9 @@ public struct GRPCAsyncWriterError: Error, Hashable {
 }
 
 @usableFromInline
-internal protocol AsyncWriterDelegate: AnyObject {
-  associatedtype Element
-  associatedtype End
+internal protocol AsyncWriterDelegate: AnyObject, Sendable {
+  associatedtype Element: Sendable
+  associatedtype End: Sendable
 
   @inlinable
   func write(_ element: Element)

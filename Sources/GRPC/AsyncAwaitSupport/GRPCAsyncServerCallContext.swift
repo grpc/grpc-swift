@@ -28,10 +28,12 @@ import NIOHPACK
 // make for a surprising API.
 //
 // We also considered an `actor` but that felt clunky at the point of use since adopters would need
-// to `await` the retrieval of a logger or the updating of the trailers and each would requrie a
+// to `await` the retrieval of a logger or the updating of the trailers and each would require a
 // promise to glue the NIO and async-await paradigms in the handler.
+//
+// Note: this is `@unchecked Sendable`; all mutable state is protected by a lock.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public final class GRPCAsyncServerCallContext {
+public final class GRPCAsyncServerCallContext: @unchecked Sendable {
   private let lock = Lock()
 
   /// Metadata for this request.
