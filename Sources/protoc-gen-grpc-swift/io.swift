@@ -33,7 +33,7 @@ enum PluginError: Error {
 // Alias clib's write() so Stdout.write(bytes:) can call it.
 private let _write = write
 
-class Stdin {
+enum Stdin {
   static func readall() throws -> Data {
     let fd: Int32 = 0
     let buffSize = 32
@@ -53,9 +53,9 @@ class Stdin {
   }
 }
 
-class Stdout {
+enum Stdout {
   static func write(bytes: Data) {
-    bytes.withUnsafeBytes { (p: UnsafeRawBufferPointer) -> Void in
+    bytes.withUnsafeBytes { (p: UnsafeRawBufferPointer) in
       _ = _write(1, p.baseAddress, p.count)
     }
   }

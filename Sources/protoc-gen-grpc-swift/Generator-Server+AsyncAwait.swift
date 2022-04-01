@@ -43,7 +43,7 @@ extension Generator {
     }
   }
 
-  fileprivate func printRPCProtocolRequirement() {
+  private func printRPCProtocolRequirement() {
     // Print any comments; skip the newline as source comments include them already.
     self.println(self.method.protoSourceComments(), newline: false)
 

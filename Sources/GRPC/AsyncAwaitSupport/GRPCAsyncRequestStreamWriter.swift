@@ -89,10 +89,10 @@ extension GRPCAsyncRequestStreamWriter {
     internal let _compressionEnabled: Bool
 
     @usableFromInline
-    internal let _send: @Sendable(Request, MessageMetadata) -> Void
+    internal let _send: @Sendable (Request, MessageMetadata) -> Void
 
     @usableFromInline
-    internal let _finish: @Sendable() -> Void
+    internal let _finish: @Sendable () -> Void
 
     @inlinable
     internal init(

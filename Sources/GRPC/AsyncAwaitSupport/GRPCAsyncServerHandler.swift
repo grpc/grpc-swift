@@ -60,7 +60,7 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping unary: @escaping @Sendable(Request, GRPCAsyncServerCallContext) async throws
+    wrapping unary: @escaping @Sendable (Request, GRPCAsyncServerCallContext) async throws
       -> Response
   ) {
     self._handler = .init(
@@ -85,7 +85,7 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping clientStreaming: @escaping @Sendable(
+    wrapping clientStreaming: @escaping @Sendable (
       GRPCAsyncRequestStream<Request>,
       GRPCAsyncServerCallContext
     ) async throws -> Response
@@ -108,7 +108,7 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping serverStreaming: @escaping @Sendable(
+    wrapping serverStreaming: @escaping @Sendable (
       Request,
       GRPCAsyncResponseStreamWriter<Response>,
       GRPCAsyncServerCallContext
@@ -135,7 +135,7 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping bidirectional: @escaping @Sendable(
+    wrapping bidirectional: @escaping @Sendable (
       GRPCAsyncRequestStream<Request>,
       GRPCAsyncResponseStreamWriter<Response>,
       GRPCAsyncServerCallContext
@@ -181,7 +181,7 @@ internal final class AsyncServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let userHandler: @Sendable(
+  internal let userHandler: @Sendable (
     GRPCAsyncRequestStream<Request>,
     GRPCAsyncResponseStreamWriter<Response>,
     GRPCAsyncServerCallContext
@@ -263,7 +263,7 @@ internal final class AsyncServerHandler<
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    userHandler: @escaping @Sendable(
+    userHandler: @escaping @Sendable (
       GRPCAsyncRequestStream<Request>,
       GRPCAsyncResponseStreamWriter<Response>,
       GRPCAsyncServerCallContext
