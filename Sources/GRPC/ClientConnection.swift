@@ -308,7 +308,7 @@ public struct ConnectionTarget {
       return address.host
     case let .socketAddress(.v6(address)):
       return address.host
-    case .unixDomainSocket, .socketAddress(.unixDomainSocket), .connectedSocket(_):
+    case .unixDomainSocket, .socketAddress(.unixDomainSocket), .connectedSocket:
       return "localhost"
     }
   }

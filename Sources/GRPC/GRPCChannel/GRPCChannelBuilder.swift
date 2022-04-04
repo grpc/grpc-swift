@@ -86,7 +86,7 @@ extension ClientConnection {
       return ClientConnection(configuration: self.configuration)
     }
 
-    public func withConnectedSocket(socket: NIOBSDSocket.Handle) -> ClientConnection {
+    public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> ClientConnection {
       precondition(
         !PlatformSupport.isTransportServicesEventLoopGroup(self.configuration.eventLoopGroup),
         "'\(#function)' requires 'group' to not be a 'NIOTransportServices.NIOTSEventLoopGroup' or 'NIOTransportServices.QoSEventLoop' (but was '\(type(of: self.configuration.eventLoopGroup))'"

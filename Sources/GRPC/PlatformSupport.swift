@@ -124,6 +124,12 @@ public protocol ClientBootstrapProtocol {
   func channelInitializer(_ handler: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
 }
 
+extension ClientBootstrapProtocol {
+  public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
+    preconditionFailure("withConnectedSocket(_:) is not implemented")
+  }
+}
+
 extension ClientBootstrap: ClientBootstrapProtocol {}
 
 #if canImport(Network)
@@ -148,6 +154,12 @@ public protocol ServerBootstrapProtocol {
 
   func childChannelInitializer(_ initializer: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
   func childChannelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
+}
+
+extension ServerBootstrapProtocol {
+  public func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
+    preconditionFailure("withBoundSocket(_:) is not implemented")
+  }
 }
 
 extension ServerBootstrap: ServerBootstrapProtocol {}
