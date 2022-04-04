@@ -55,10 +55,10 @@ internal final class AsyncResponseStreamWriterDelegate<Response: Sendable>: Asyn
   internal let _context: GRPCAsyncServerCallContext
 
   @usableFromInline
-  internal let _send: @Sendable(Response, MessageMetadata) -> Void
+  internal let _send: @Sendable (Response, MessageMetadata) -> Void
 
   @usableFromInline
-  internal let _finish: @Sendable(GRPCStatus) -> Void
+  internal let _finish: @Sendable (GRPCStatus) -> Void
 
   @usableFromInline
   internal let _compressionEnabledOnServer: Bool
@@ -70,8 +70,8 @@ internal final class AsyncResponseStreamWriterDelegate<Response: Sendable>: Asyn
   internal init(
     context: GRPCAsyncServerCallContext,
     compressionIsEnabled: Bool,
-    send: @escaping @Sendable(Response, MessageMetadata) -> Void,
-    finish: @escaping @Sendable(GRPCStatus) -> Void
+    send: @escaping @Sendable (Response, MessageMetadata) -> Void,
+    finish: @escaping @Sendable (GRPCStatus) -> Void
   ) {
     self._context = context
     self._compressionEnabledOnServer = compressionIsEnabled

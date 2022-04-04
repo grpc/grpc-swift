@@ -747,7 +747,7 @@ extension GRPCClientStateMachine.State {
     // missing then we should avoid the error and propagate the status code and message sent by
     // the server instead.
     if let contentTypeHeader = trailers.first(name: "content-type"),
-      ContentType(value: contentTypeHeader) == nil {
+       ContentType(value: contentTypeHeader) == nil {
       return .failure(.invalidContentType(contentTypeHeader))
     }
 

@@ -82,8 +82,11 @@ internal struct LengthPrefixedMessageWriter {
   ///   - compressed: Whether the bytes should be compressed. This is ignored if not compression
   ///     mechanism was configured on this writer.
   /// - Returns: A buffer containing the length prefixed bytes.
-  func write(buffer: ByteBuffer, allocator: ByteBufferAllocator,
-             compressed: Bool = true) throws -> ByteBuffer {
+  func write(
+    buffer: ByteBuffer,
+    allocator: ByteBufferAllocator,
+    compressed: Bool = true
+  ) throws -> ByteBuffer {
     if compressed, let compressor = self.compressor {
       return try self.compress(buffer: buffer, using: compressor, allocator: allocator)
     } else if buffer.readerIndex >= 5 {
@@ -130,8 +133,11 @@ internal struct LengthPrefixedMessageWriter {
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
-  func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer,
-             compressed: Bool = true) throws {
+  func write(
+    _ payload: GRPCPayload,
+    into buffer: inout ByteBuffer,
+    compressed: Bool = true
+  ) throws {
     buffer.reserveCapacity(buffer.writerIndex + LengthPrefixedMessageWriter.metadataLength)
 
     if compressed, let compressor = self.compressor {

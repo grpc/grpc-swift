@@ -56,8 +56,10 @@ final class ViewController: UIViewController {
   private let speechService: SpeechService
   private let audioStreamManager: AudioStreamManager
 
-  init(speechService: SpeechService,
-       audioStreamManager: AudioStreamManager) {
+  init(
+    speechService: SpeechService,
+    audioStreamManager: AudioStreamManager
+  ) {
     self.speechService = speechService
     self.audioStreamManager = audioStreamManager
 

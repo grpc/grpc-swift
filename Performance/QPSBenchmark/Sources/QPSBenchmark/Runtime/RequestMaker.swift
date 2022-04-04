@@ -27,11 +27,13 @@ protocol RequestMaker {
   ///    - requestMessage: Pre-made request message to use possibly repeatedly.
   ///    - logger: Where to log useful diagnostics.
   ///    - stats: Where to record statistics on latency.
-  init(config: Grpc_Testing_ClientConfig,
-       client: Grpc_Testing_BenchmarkServiceClient,
-       requestMessage: Grpc_Testing_SimpleRequest,
-       logger: Logger,
-       stats: StatsWithLock)
+  init(
+    config: Grpc_Testing_ClientConfig,
+    client: Grpc_Testing_BenchmarkServiceClient,
+    requestMessage: Grpc_Testing_SimpleRequest,
+    logger: Logger,
+    stats: StatsWithLock
+  )
 
   /// Initiate a request sequence to the server.
   /// - returns: A future which completes when the request-response sequence is complete.

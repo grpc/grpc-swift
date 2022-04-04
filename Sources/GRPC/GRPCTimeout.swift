@@ -112,12 +112,12 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
   }
 }
 
-private extension Int64 {
+extension Int64 {
   /// Returns the quotient of this value when divided by `divisor` rounded up to the nearest
   /// multiple of `divisor` if the remainder is non-zero.
   ///
   /// - Parameter divisor: The value to divide this value by.
-  func quotientRoundedUp(dividingBy divisor: Int64) -> Int64 {
+  fileprivate func quotientRoundedUp(dividingBy divisor: Int64) -> Int64 {
     let (quotient, remainder) = self.quotientAndRemainder(dividingBy: divisor)
     return quotient + (remainder != 0 ? 1 : 0)
   }

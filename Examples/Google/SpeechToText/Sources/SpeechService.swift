@@ -66,8 +66,10 @@ final class SpeechService {
     )
   }
 
-  func stream(_ data: Data,
-              completion: ((Google_Cloud_Speech_V1_StreamingRecognizeResponse) -> Void)? = nil) {
+  func stream(
+    _ data: Data,
+    completion: ((Google_Cloud_Speech_V1_StreamingRecognizeResponse) -> Void)? = nil
+  ) {
     switch self.state {
     case .idle:
       // Initialize the bidirectional stream

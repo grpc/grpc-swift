@@ -45,7 +45,6 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
   /// received. However, it is not necessary for the response to have been consumed before reading
   /// this property.
   public var initialMetadata: HPACKHeaders {
-    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.initialMetadata.get()
     }
@@ -55,7 +54,6 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
   ///
   /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var trailingMetadata: HPACKHeaders {
-    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.trailingMetadata.get()
     }
@@ -65,7 +63,6 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
   ///
   /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var status: GRPCStatus {
-    // swiftformat:disable:next redundantGet
     get async {
       // force-try acceptable because any error is encapsulated in a successful GRPCStatus future.
       try! await self.responseParts.status.get()

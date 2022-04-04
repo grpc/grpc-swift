@@ -200,9 +200,12 @@ class FakeResponseStreamTests: GRPCTestCase {
   }
 }
 
-private extension EmbeddedChannel {
-  func verifyInbound<Inbound>(as: Inbound.Type = Inbound.self, _ verify: (Inbound) -> Void = { _ in
-  }) {
+extension EmbeddedChannel {
+  fileprivate func verifyInbound<Inbound>(
+    as: Inbound.Type = Inbound.self,
+    _ verify: (Inbound) -> Void = { _ in
+    }
+  ) {
     do {
       if let inbound = try self.readInbound(as: Inbound.self) {
         verify(inbound)
@@ -215,8 +218,8 @@ private extension EmbeddedChannel {
   }
 }
 
-private extension _GRPCClientResponsePart {
-  func assertInitialMetadata(_ verify: (HPACKHeaders) -> Void = { _ in }) {
+extension _GRPCClientResponsePart {
+  fileprivate func assertInitialMetadata(_ verify: (HPACKHeaders) -> Void = { _ in }) {
     switch self {
     case let .initialMetadata(headers):
       verify(headers)
@@ -225,7 +228,7 @@ private extension _GRPCClientResponsePart {
     }
   }
 
-  func assertMessage(_ verify: (Response) -> Void = { _ in }) {
+  fileprivate func assertMessage(_ verify: (Response) -> Void = { _ in }) {
     switch self {
     case let .message(context):
       verify(context.message)
@@ -234,7 +237,7 @@ private extension _GRPCClientResponsePart {
     }
   }
 
-  func assertTrailingMetadata(_ verify: (HPACKHeaders) -> Void = { _ in }) {
+  fileprivate func assertTrailingMetadata(_ verify: (HPACKHeaders) -> Void = { _ in }) {
     switch self {
     case let .trailingMetadata(headers):
       verify(headers)
@@ -243,7 +246,7 @@ private extension _GRPCClientResponsePart {
     }
   }
 
-  func assertStatus(_ verify: (GRPCStatus) -> Void = { _ in }) {
+  fileprivate func assertStatus(_ verify: (GRPCStatus) -> Void = { _ in }) {
     switch self {
     case let .status(status):
       verify(status)

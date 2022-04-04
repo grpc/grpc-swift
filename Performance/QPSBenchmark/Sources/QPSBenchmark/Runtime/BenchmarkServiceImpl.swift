@@ -24,8 +24,10 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
 
   /// One request followed by one response.
   /// The server returns the client payload as-is.
-  func unaryCall(request: Grpc_Testing_SimpleRequest,
-                 context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
+  func unaryCall(
+    request: Grpc_Testing_SimpleRequest,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
     do {
       return context.eventLoop
         .makeSucceededFuture(try AsyncQPSServerImpl.processSimpleRPC(request: request))
@@ -93,8 +95,10 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   }
 
   /// Make a payload for sending back to the client.
-  private static func makePayload(type: Grpc_Testing_PayloadType,
-                                  size: Int) throws -> Grpc_Testing_Payload {
+  private static func makePayload(
+    type: Grpc_Testing_PayloadType,
+    size: Int
+  ) throws -> Grpc_Testing_Payload {
     if type != .compressable {
       // Making a payload which is not compressable is hard - and not implemented in
       // other implementations too.

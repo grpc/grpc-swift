@@ -1182,8 +1182,10 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     }
   }
 
-  func connectivityStateDidChange(from oldState: ConnectivityState,
-                                  to newState: ConnectivityState) {
+  func connectivityStateDidChange(
+    from oldState: ConnectivityState,
+    to newState: ConnectivityState
+  ) {
     self.serialQueue.async {
       switch self.expectation {
       case let .one(verify):
@@ -1261,8 +1263,8 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
   }
 }
 
-private extension ConnectionBackoff {
-  static let oneSecondFixed = ConnectionBackoff(
+extension ConnectionBackoff {
+  fileprivate static let oneSecondFixed = ConnectionBackoff(
     initialBackoff: 1.0,
     maximumBackoff: 1.0,
     multiplier: 1.0,

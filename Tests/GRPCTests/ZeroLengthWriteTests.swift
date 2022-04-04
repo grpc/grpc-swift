@@ -116,8 +116,9 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     return expectation
   }
 
-  func debugPipelineExpectation(_ callback: @escaping (Result<NIOFilterEmptyWritesHandler, Error>)
-    -> Void) -> (Channel) -> EventLoopFuture<Void> {
+  func debugPipelineExpectation(
+    _ callback: @escaping (Result<NIOFilterEmptyWritesHandler, Error>) -> Void
+  ) -> (Channel) -> EventLoopFuture<Void> {
     return { channel in
       channel.pipeline.handler(type: NIOFilterEmptyWritesHandler.self).always { result in
         callback(result)

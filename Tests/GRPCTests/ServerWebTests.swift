@@ -86,7 +86,7 @@ extension ServerWebTests {
 
     let completionHandlerExpectation = expectation(description: "completion handler called")
 
-    sendOverHTTP1(rpcMethod: "Get", message: message) { data, error in
+    self.sendOverHTTP1(rpcMethod: "Get", message: message) { data, error in
       XCTAssertNil(error)
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
@@ -109,7 +109,7 @@ extension ServerWebTests {
 
     let completionHandlerExpectation = expectation(description: "completion handler called")
 
-    sendOverHTTP1(rpcMethod: "Get", message: nil) { data, error in
+    self.sendOverHTTP1(rpcMethod: "Get", message: nil) { data, error in
       XCTAssertNil(error)
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
@@ -164,7 +164,7 @@ extension ServerWebTests {
     let expectedResponse = expectedData.base64EncodedString()
     let completionHandlerExpectation = expectation(description: "completion handler called")
 
-    sendOverHTTP1(rpcMethod: "Expand", message: message) { data, error in
+    self.sendOverHTTP1(rpcMethod: "Expand", message: message) { data, error in
       XCTAssertNil(error)
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)

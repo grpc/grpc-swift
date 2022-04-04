@@ -25,7 +25,7 @@ import XCTest
 class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
-    observer: @escaping @Sendable(
+    observer: @escaping @Sendable (
       GRPCAsyncRequestStream<String>,
       GRPCAsyncResponseStreamWriter<String>,
       GRPCAsyncServerCallContext

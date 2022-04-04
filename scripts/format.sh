@@ -21,8 +21,8 @@ REPO="$HERE/.."
 SWIFTFORMAT_DIR="$HERE/.swiftformat-source"
 
 # Important: if this is changed then make sure to update the version
-# in .travis-install.sh as well!
-SWIFTFORMAT_VERSION=0.46.3
+# in the .github/workflows/ci.yaml as well!
+SWIFTFORMAT_VERSION=0.49.4
 
 # Clone SwiftFormat if we don't already have it.
 if [ ! -d "$SWIFTFORMAT_DIR" ]; then
