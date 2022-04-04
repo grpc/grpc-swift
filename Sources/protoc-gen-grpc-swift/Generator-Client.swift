@@ -26,9 +26,6 @@ extension Generator {
       self.printClientProtocolExtension()
       self.println()
       self.printServiceClientImplementation()
-    }
-
-    if self.options.generateAsyncClient {
       self.println()
       self.printIfCompilerGuardForAsyncAwait()
       self.printAsyncServiceClientProtocol()
@@ -40,11 +37,8 @@ extension Generator {
       self.printAsyncServiceClientImplementation()
       self.println()
       self.printEndCompilerGuardForAsyncAwait()
-    }
-
-    // Both implementations share definitions for interceptors and metadata.
-    if self.options.generateClient || self.options.generateAsyncClient {
       self.println()
+      // Both implementations share definitions for interceptors and metadata.
       self.printServiceClientInterceptorFactoryProtocol()
       self.println()
       self.printClientMetadata()

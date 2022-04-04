@@ -75,7 +75,7 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     handler: @escaping (Grpc_Testing_ServerStatus) -> Void
   ) -> BidirectionalStreamingCall<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus> {
     return self.makeBidirectionalStreamingCall(
-      path: "/grpc.testing.WorkerService/RunServer",
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runServer.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeRunServerInterceptors() ?? [],
       handler: handler
@@ -101,7 +101,7 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     handler: @escaping (Grpc_Testing_ClientStatus) -> Void
   ) -> BidirectionalStreamingCall<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus> {
     return self.makeBidirectionalStreamingCall(
-      path: "/grpc.testing.WorkerService/RunClient",
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runClient.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeRunClientInterceptors() ?? [],
       handler: handler
@@ -119,7 +119,7 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse> {
     return self.makeUnaryCall(
-      path: "/grpc.testing.WorkerService/CoreCount",
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.coreCount.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeCoreCountInterceptors() ?? []
@@ -137,27 +137,12 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<Grpc_Testing_Void, Grpc_Testing_Void> {
     return self.makeUnaryCall(
-      path: "/grpc.testing.WorkerService/QuitWorker",
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.quitWorker.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeQuitWorkerInterceptors() ?? []
     )
   }
-}
-
-public protocol Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol {
-
-  /// - Returns: Interceptors to use when invoking 'runServer'.
-  func makeRunServerInterceptors() -> [ClientInterceptor<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus>]
-
-  /// - Returns: Interceptors to use when invoking 'runClient'.
-  func makeRunClientInterceptors() -> [ClientInterceptor<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus>]
-
-  /// - Returns: Interceptors to use when invoking 'coreCount'.
-  func makeCoreCountInterceptors() -> [ClientInterceptor<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'quitWorker'.
-  func makeQuitWorkerInterceptors() -> [ClientInterceptor<Grpc_Testing_Void, Grpc_Testing_Void>]
 }
 
 public final class Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerServiceClientProtocol {
@@ -179,6 +164,234 @@ public final class Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerServiceC
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
     self.interceptors = interceptors
+  }
+}
+
+#if compiler(>=5.6)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public protocol Grpc_Testing_WorkerServiceAsyncClientProtocol: GRPCClient {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? { get }
+
+  func makeRunServerCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus>
+
+  func makeRunClientCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus>
+
+  func makeCoreCountCall(
+    _ request: Grpc_Testing_CoreRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse>
+
+  func makeQuitWorkerCall(
+    _ request: Grpc_Testing_Void,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Void, Grpc_Testing_Void>
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Grpc_Testing_WorkerServiceAsyncClientProtocol {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Grpc_Testing_WorkerServiceClientMetadata.serviceDescriptor
+  }
+
+  public var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeRunServerCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runServer.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunServerInterceptors() ?? []
+    )
+  }
+
+  public func makeRunClientCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runClient.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunClientInterceptors() ?? []
+    )
+  }
+
+  public func makeCoreCountCall(
+    _ request: Grpc_Testing_CoreRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse> {
+    return self.makeAsyncUnaryCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.coreCount.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCoreCountInterceptors() ?? []
+    )
+  }
+
+  public func makeQuitWorkerCall(
+    _ request: Grpc_Testing_Void,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_Void, Grpc_Testing_Void> {
+    return self.makeAsyncUnaryCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.quitWorker.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeQuitWorkerInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Grpc_Testing_WorkerServiceAsyncClientProtocol {
+  public func runServer<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_ServerStatus> where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_ServerArgs {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runServer.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunServerInterceptors() ?? []
+    )
+  }
+
+  public func runServer<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_ServerStatus> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_ServerArgs {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runServer.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunServerInterceptors() ?? []
+    )
+  }
+
+  public func runClient<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_ClientStatus> where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_ClientArgs {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runClient.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunClientInterceptors() ?? []
+    )
+  }
+
+  public func runClient<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_ClientStatus> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_ClientArgs {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runClient.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunClientInterceptors() ?? []
+    )
+  }
+
+  public func coreCount(
+    _ request: Grpc_Testing_CoreRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_CoreResponse {
+    return try await self.performAsyncUnaryCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.coreCount.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCoreCountInterceptors() ?? []
+    )
+  }
+
+  public func quitWorker(
+    _ request: Grpc_Testing_Void,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_Void {
+    return try await self.performAsyncUnaryCall(
+      path: Grpc_Testing_WorkerServiceClientMetadata.Methods.quitWorker.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeQuitWorkerInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public struct Grpc_Testing_WorkerServiceAsyncClient: Grpc_Testing_WorkerServiceAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.6)
+
+public protocol Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when invoking 'runServer'.
+  func makeRunServerInterceptors() -> [ClientInterceptor<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus>]
+
+  /// - Returns: Interceptors to use when invoking 'runClient'.
+  func makeRunClientInterceptors() -> [ClientInterceptor<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus>]
+
+  /// - Returns: Interceptors to use when invoking 'coreCount'.
+  func makeCoreCountInterceptors() -> [ClientInterceptor<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'quitWorker'.
+  func makeQuitWorkerInterceptors() -> [ClientInterceptor<Grpc_Testing_Void, Grpc_Testing_Void>]
+}
+
+public enum Grpc_Testing_WorkerServiceClientMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "WorkerService",
+    fullName: "grpc.testing.WorkerService",
+    methods: [
+      Grpc_Testing_WorkerServiceClientMetadata.Methods.runServer,
+      Grpc_Testing_WorkerServiceClientMetadata.Methods.runClient,
+      Grpc_Testing_WorkerServiceClientMetadata.Methods.coreCount,
+      Grpc_Testing_WorkerServiceClientMetadata.Methods.quitWorker,
+    ]
+  )
+
+  public enum Methods {
+    public static let runServer = GRPCMethodDescriptor(
+      name: "RunServer",
+      path: "/grpc.testing.WorkerService/RunServer",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    public static let runClient = GRPCMethodDescriptor(
+      name: "RunClient",
+      path: "/grpc.testing.WorkerService/RunClient",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    public static let coreCount = GRPCMethodDescriptor(
+      name: "CoreCount",
+      path: "/grpc.testing.WorkerService/CoreCount",
+      type: GRPCCallType.unary
+    )
+
+    public static let quitWorker = GRPCMethodDescriptor(
+      name: "QuitWorker",
+      path: "/grpc.testing.WorkerService/QuitWorker",
+      type: GRPCCallType.unary
+    )
   }
 }
 
@@ -210,7 +423,9 @@ public protocol Grpc_Testing_WorkerServiceProvider: CallHandlerProvider {
 }
 
 extension Grpc_Testing_WorkerServiceProvider {
-  public var serviceName: Substring { return "grpc.testing.WorkerService" }
+  public var serviceName: Substring {
+    return Grpc_Testing_WorkerServiceServerMetadata.serviceDescriptor.fullName[...]
+  }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
@@ -261,6 +476,114 @@ extension Grpc_Testing_WorkerServiceProvider {
   }
 }
 
+#if compiler(>=5.6)
+
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public protocol Grpc_Testing_WorkerServiceAsyncProvider: CallHandlerProvider {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol? { get }
+
+  /// Start server with specified workload.
+  /// First request sent specifies the ServerConfig followed by ServerStatus
+  /// response. After that, a "Mark" can be sent anytime to request the latest
+  /// stats. Closing the stream will initiate shutdown of the test server
+  /// and once the shutdown has finished, the OK status is sent to terminate
+  /// this RPC.
+  @Sendable func runServer(
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_ServerArgs>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_ServerStatus>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// Start client with specified workload.
+  /// First request sent specifies the ClientConfig followed by ClientStatus
+  /// response. After that, a "Mark" can be sent anytime to request the latest
+  /// stats. Closing the stream will initiate shutdown of the test client
+  /// and once the shutdown has finished, the OK status is sent to terminate
+  /// this RPC.
+  @Sendable func runClient(
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_ClientArgs>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_ClientStatus>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// Just return the core count - unary call
+  @Sendable func coreCount(
+    request: Grpc_Testing_CoreRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_CoreResponse
+
+  /// Quit this worker
+  @Sendable func quitWorker(
+    request: Grpc_Testing_Void,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_Void
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Grpc_Testing_WorkerServiceAsyncProvider {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Grpc_Testing_WorkerServiceServerMetadata.serviceDescriptor
+  }
+
+  public var serviceName: Substring {
+    return Grpc_Testing_WorkerServiceServerMetadata.serviceDescriptor.fullName[...]
+  }
+
+  public var interceptors: Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "RunServer":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_ServerArgs>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_ServerStatus>(),
+        interceptors: self.interceptors?.makeRunServerInterceptors() ?? [],
+        wrapping: self.runServer(requestStream:responseStream:context:)
+      )
+
+    case "RunClient":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_ClientArgs>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_ClientStatus>(),
+        interceptors: self.interceptors?.makeRunClientInterceptors() ?? [],
+        wrapping: self.runClient(requestStream:responseStream:context:)
+      )
+
+    case "CoreCount":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_CoreRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_CoreResponse>(),
+        interceptors: self.interceptors?.makeCoreCountInterceptors() ?? [],
+        wrapping: self.coreCount(request:context:)
+      )
+
+    case "QuitWorker":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Void>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Void>(),
+        interceptors: self.interceptors?.makeQuitWorkerInterceptors() ?? [],
+        wrapping: self.quitWorker(request:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.6)
+
 public protocol Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol {
 
   /// - Returns: Interceptors to use when handling 'runServer'.
@@ -278,4 +601,43 @@ public protocol Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol {
   /// - Returns: Interceptors to use when handling 'quitWorker'.
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeQuitWorkerInterceptors() -> [ServerInterceptor<Grpc_Testing_Void, Grpc_Testing_Void>]
+}
+
+public enum Grpc_Testing_WorkerServiceServerMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "WorkerService",
+    fullName: "grpc.testing.WorkerService",
+    methods: [
+      Grpc_Testing_WorkerServiceServerMetadata.Methods.runServer,
+      Grpc_Testing_WorkerServiceServerMetadata.Methods.runClient,
+      Grpc_Testing_WorkerServiceServerMetadata.Methods.coreCount,
+      Grpc_Testing_WorkerServiceServerMetadata.Methods.quitWorker,
+    ]
+  )
+
+  public enum Methods {
+    public static let runServer = GRPCMethodDescriptor(
+      name: "RunServer",
+      path: "/grpc.testing.WorkerService/RunServer",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    public static let runClient = GRPCMethodDescriptor(
+      name: "RunClient",
+      path: "/grpc.testing.WorkerService/RunClient",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    public static let coreCount = GRPCMethodDescriptor(
+      name: "CoreCount",
+      path: "/grpc.testing.WorkerService/CoreCount",
+      type: GRPCCallType.unary
+    )
+
+    public static let quitWorker = GRPCMethodDescriptor(
+      name: "QuitWorker",
+      path: "/grpc.testing.WorkerService/QuitWorker",
+      type: GRPCCallType.unary
+    )
+  }
 }

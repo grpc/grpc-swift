@@ -54,10 +54,8 @@ final class GeneratorOptions {
   private(set) var visibility = Visibility.internal
 
   private(set) var generateServer = true
-  private(set) var generateAsyncServer = false
 
   private(set) var generateClient = true
-  private(set) var generateAsyncClient = false
   private(set) var generateTestClient = false
 
   private(set) var keepMethodCasing = false
@@ -84,23 +82,9 @@ final class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
-      case "ExperimentalAsyncServer":
-        if let value = Bool(pair.value) {
-          self.generateAsyncServer = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-
       case "Client":
         if let value = Bool(pair.value) {
           self.generateClient = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-
-      case "ExperimentalAsyncClient":
-        if let value = Bool(pair.value) {
-          self.generateAsyncClient = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

@@ -66,7 +66,7 @@ ${XCODEPROJ}:
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
-		--grpc-swift_opt=Visibility=Public,ExperimentalAsyncClient=true,ExperimentalAsyncServer=true \
+		--grpc-swift_opt=Visibility=Public \
 		--grpc-swift_out=$(dir $<)
 
 ECHO_PROTO=Sources/Examples/Echo/Model/echo.proto
@@ -78,7 +78,7 @@ ${ECHO_GRPC}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
-		--grpc-swift_opt=Visibility=Public,TestClient=true,ExperimentalAsyncClient=true,ExperimentalAsyncServer=true \
+		--grpc-swift_opt=Visibility=Public,TestClient=true \
 		--grpc-swift_out=$(dir $<)
 
 # Generates protobufs and gRPC client and server for the Echo example

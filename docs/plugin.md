@@ -48,22 +48,6 @@ protocol.
 - **Possible values:** true, false
 - **Default value:** true
 
-### ExperimentalAsyncServer
-
-The **ExperimentalAsyncServer** option determines whether async/await style
-server code is generated. See also [README.md](../README.md).
-
-- **Possible values:** true, false
-- **Default value:** false
-
-### ExperimentalAsyncClient
-
-The **ExperimentalAsyncClient** option determines whether async/await style
-client code is generated. See also [README.md](../README.md).
-
-- **Possible values:** true, false
-- **Default value:** false
-
 ### TestClient
 
 The **TestClient** option determines whether test client code is generated.
