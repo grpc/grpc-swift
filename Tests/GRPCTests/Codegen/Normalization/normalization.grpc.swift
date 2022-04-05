@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -233,8 +234,45 @@ extension Normalization_NormalizationClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Normalization_NormalizationClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Normalization_NormalizationNIOClient")
 internal final class Normalization_NormalizationClient: Normalization_NormalizationClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol?
   internal let channel: GRPCChannel
+  internal var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the normalization.Normalization service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+internal struct Normalization_NormalizationNIOClient: Normalization_NormalizationClientProtocol {
+  internal var channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
   internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol?
 
@@ -563,7 +601,7 @@ internal struct Normalization_NormalizationAsyncClient: Normalization_Normalizat
 
 #endif // compiler(>=5.6)
 
-internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol {
+internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'Unary'.
   func makeUnaryInterceptors() -> [ClientInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]

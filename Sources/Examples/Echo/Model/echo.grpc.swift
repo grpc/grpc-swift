@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -135,8 +136,45 @@ extension Echo_EchoClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Echo_EchoClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Echo_EchoNIOClient")
 public final class Echo_EchoClient: Echo_EchoClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Echo_EchoClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Echo_EchoClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the echo.Echo service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Echo_EchoClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Echo_EchoNIOClient: Echo_EchoClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Echo_EchoClientInterceptorFactoryProtocol?
 
@@ -331,7 +369,7 @@ public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
 
 #endif // compiler(>=5.6)
 
-public protocol Echo_EchoClientInterceptorFactoryProtocol {
+public protocol Echo_EchoClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'get'.
   func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
@@ -385,6 +423,12 @@ public enum Echo_EchoClientMetadata {
   }
 }
 
+#if compiler(>=5.6)
+@available(swift, deprecated: 5.6)
+extension Echo_EchoTestClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(swift, deprecated: 5.6, message: "Test clients are not Sendable but the 'GRPCClient' API requires clients to be Sendable. Using a localhost client and server is the recommended alternative.")
 public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   private let fakeChannel: FakeChannel
   public var defaultCallOptions: CallOptions

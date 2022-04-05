@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -167,8 +168,45 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Grpc_Testing_BenchmarkServiceClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Grpc_Testing_BenchmarkServiceNIOClient")
 public final class Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServiceClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the grpc.testing.BenchmarkService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Grpc_Testing_BenchmarkServiceNIOClient: Grpc_Testing_BenchmarkServiceClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol?
 
@@ -401,7 +439,7 @@ public struct Grpc_Testing_BenchmarkServiceAsyncClient: Grpc_Testing_BenchmarkSe
 
 #endif // compiler(>=5.6)
 
-public protocol Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol {
+public protocol Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'unaryCall'.
   func makeUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]

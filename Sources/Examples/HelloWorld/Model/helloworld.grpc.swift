@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -62,8 +63,45 @@ extension Helloworld_GreeterClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Helloworld_GreeterClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Helloworld_GreeterNIOClient")
 public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the helloworld.Greeter service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Helloworld_GreeterNIOClient: Helloworld_GreeterClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol?
 
@@ -154,7 +192,7 @@ public struct Helloworld_GreeterAsyncClient: Helloworld_GreeterAsyncClientProtoc
 
 #endif // compiler(>=5.6)
 
-public protocol Helloworld_GreeterClientInterceptorFactoryProtocol {
+public protocol Helloworld_GreeterClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'sayHello'.
   func makeSayHelloInterceptors() -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
