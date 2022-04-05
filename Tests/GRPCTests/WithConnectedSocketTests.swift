@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, gRPC Authors All rights reserved.
+ * Copyright 2022, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import EchoImplementation
 import EchoModel
 @testable import GRPC
 import NIOCore
-@testable import NIOPosix
+import NIOPosix
 import XCTest
 
 class WithConnectedSockettests: GRPCTestCase {
@@ -38,35 +38,27 @@ class WithConnectedSockettests: GRPCTestCase {
       XCTAssertNoThrow(try server.close().wait())
     }
 
-    let socket = try Socket(protocolFamily: .unix, type: .stream)
-    XCTAssert(try socket.connect(to: .init(unixDomainSocketPath: path)))
+    let clientSocket = socket(AF_UNIX, SOCK_STREAM, 0)
+    XCTAssert(clientSocket != -1)
+    let addr = try SocketAddress(unixDomainSocketPath: path)
+    addr.withSockAddr { (addr, size) in
+      let ret = connect(clientSocket, addr, UInt32(size))
+      XCTAssert(ret != -1)
+    }
+    let flags = fcntl(clientSocket, F_GETFL, 0)
+    XCTAssert(flags != -1)
+    XCTAssert(fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) == 0);
 
-    // Setup a connection. We'll add a handler to drop all reads, this is somewhat equivalent to
-    // simulating bad network conditions and allows us to setup a connection and have our keepalive
-    // timeout expire.
     let connection = ClientConnection.insecure(group: group)
       .withBackgroundActivityLogger(self.clientLogger)
-      // See above comments for why we need this.
-      .withCallStartBehavior(.fastFailure)
       .withKeepalive(.init(interval: .seconds(1), timeout: .milliseconds(100)))
-      .withDebugChannelInitializer { channel in
-        channel.pipeline.addHandler(ReadDroppingHandler(), position: .first)
-      }
-      .withConnectedSocket(try socket.takeDescriptorOwnership())
+      .withConnectedSocket(clientSocket)
     defer {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
     let client = Echo_EchoClient(channel: connection)
-    let get = client.get(.with { $0.text = "Hello" })
-    XCTAssertThrowsError(try get.response.wait())
-    XCTAssertEqual(try get.status.map { $0.code }.wait(), .unavailable)
-  }
-
-  class ReadDroppingHandler: ChannelDuplexHandler {
-    typealias InboundIn = Any
-    typealias OutboundIn = Any
-
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {}
+    let resp = try client.get(Echo_EchoRequest(text: "Hello")).response.wait()
+    XCTAssertEqual(resp.text, "Swift echo get: Hello")
   }
 }
