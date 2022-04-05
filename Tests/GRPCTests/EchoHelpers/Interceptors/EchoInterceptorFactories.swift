@@ -19,15 +19,16 @@ import GRPC
 // MARK: - Client
 
 internal final class EchoClientInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
+  #if swift(>=5.6)
+  internal typealias Factory = @Sendable ()
+    -> ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>
+  #else
   internal typealias Factory = () -> ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>
-  private var factories: [Factory] = []
+  #endif // swift(>=5.6)
+  private let factories: [Factory]
 
   internal init(_ factories: Factory...) {
     self.factories = factories
-  }
-
-  internal func register(_ factory: @escaping Factory) {
-    self.factories.append(factory)
   }
 
   private func makeInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {

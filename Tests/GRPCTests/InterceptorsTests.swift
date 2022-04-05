@@ -148,6 +148,10 @@ class HelloWorldProvider: Helloworld_GreeterProvider {
   }
 }
 
+#if swift(>=5.6)
+extension HelloWorldClientInterceptorFactory: @unchecked Sendable {}
+#endif // swift(>=5.6)
+
 private class HelloWorldClientInterceptorFactory:
   Helloworld_GreeterClientInterceptorFactoryProtocol {
   var client: Helloworld_GreeterClient
@@ -306,7 +310,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
   }
 }
 
-class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+final class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
   override func send(
     _ part: GRPCClientRequestPart<Echo_EchoRequest>,
     promise: EventLoopPromise<Void>?,
@@ -335,7 +339,7 @@ class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoRespo
   }
 }
 
-class ReversingInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
+final class ReversingInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
   // This interceptor is stateless, let's just share it.
   private let interceptors = [EchoReverseInterceptor()]
 

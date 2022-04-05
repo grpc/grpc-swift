@@ -97,3 +97,10 @@ open class ClientInterceptor<Request, Response> {
     context.cancel(promise: promise)
   }
 }
+
+#if compiler(>=5.6)
+// Interceptors sendability is unchecked: they have their own documented rules for thread safety
+// which we can't check. We require them to be sendable in order for interceptor factories to be
+// sendable and in turn, clients.
+extension ClientInterceptor: @unchecked Sendable {}
+#endif // compiler(>=5.6)

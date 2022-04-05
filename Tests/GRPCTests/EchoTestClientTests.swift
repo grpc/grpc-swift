@@ -104,6 +104,7 @@ class EchoTestClientTests: GRPCTestCase {
     super.tearDown()
   }
 
+  @available(swift, deprecated: 5.6)
   func testGetWithTestClient() {
     let client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
@@ -148,6 +149,7 @@ class EchoTestClientTests: GRPCTestCase {
     self.wait(for: [completed], timeout: 10.0)
   }
 
+  @available(swift, deprecated: 5.6)
   func testUpdateWithTestClient() {
     let client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)

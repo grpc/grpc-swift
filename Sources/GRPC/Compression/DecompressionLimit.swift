@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-public struct DecompressionLimit: Equatable {
-  private enum Limit: Equatable {
+public struct DecompressionLimit: Equatable, GRPCSendable {
+  private enum Limit: Equatable, GRPCSendable {
     case ratio(Int)
     case absolute(Int)
   }

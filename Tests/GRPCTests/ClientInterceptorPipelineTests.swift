@@ -241,7 +241,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
   }
 
   func testErrorDelegateIsCalled() throws {
-    class Delegate: ClientErrorDelegate {
+    final class Delegate: ClientErrorDelegate {
       let expectedError: GRPCError.InvalidState
       let file: StaticString?
       let line: Int?

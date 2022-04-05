@@ -29,7 +29,7 @@ import NIOPosix
 
 // Since this is a long running test, print connectivity state changes to stdout with timestamps.
 // We'll redirect logs to stderr so that stdout contains information only relevant to the test.
-class PrintingConnectivityStateDelegate: ConnectivityStateDelegate {
+final class PrintingConnectivityStateDelegate: ConnectivityStateDelegate {
   func connectivityStateDidChange(
     from oldState: ConnectivityState,
     to newState: ConnectivityState

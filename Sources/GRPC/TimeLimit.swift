@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 import Dispatch
+#if swift(>=5.6)
+@preconcurrency import NIOCore
+#else
 import NIOCore
+#endif // swift(>=5.6)
 
 /// A time limit for an RPC.
 ///
@@ -24,9 +28,9 @@ import NIOCore
 ///
 /// - Note: Servers may impose a time limit on an RPC independent of the client's time limit; RPCs
 ///   may therefore complete with `.deadlineExceeded` even if no time limit was set by the client.
-public struct TimeLimit: Equatable, CustomStringConvertible {
+public struct TimeLimit: Equatable, CustomStringConvertible, GRPCSendable {
   // private but for shimming.
-  private enum Wrapped: Equatable {
+  private enum Wrapped: Equatable, GRPCSendable {
     case none
     case timeout(TimeAmount)
     case deadline(NIODeadline)

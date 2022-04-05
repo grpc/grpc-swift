@@ -47,7 +47,7 @@ public enum ConnectivityState {
   case shutdown
 }
 
-public protocol ConnectivityStateDelegate: AnyObject {
+public protocol ConnectivityStateDelegate: AnyObject, GRPCSendable {
   /// Called when a change in `ConnectivityState` has occurred.
   ///
   /// - Parameter oldState: The old connectivity state.
@@ -67,6 +67,11 @@ public protocol ConnectivityStateDelegate: AnyObject {
 extension ConnectivityStateDelegate {
   public func connectionStartedQuiescing() {}
 }
+
+#if compiler(>=5.6)
+// Unchecked because all mutable state is protected by locks.
+extension ConnectivityStateMonitor: @unchecked Sendable {}
+#endif // compiler(>=5.6)
 
 public class ConnectivityStateMonitor {
   private let stateLock = Lock()

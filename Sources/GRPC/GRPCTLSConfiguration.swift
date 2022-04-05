@@ -28,8 +28,8 @@ import Security
 /// This structure allow configuring TLS for a wide range of TLS implementations. Some
 /// options are removed from the user's control to ensure the configuration complies with
 /// the gRPC specification.
-public struct GRPCTLSConfiguration {
-  fileprivate enum Backend {
+public struct GRPCTLSConfiguration: GRPCSendable {
+  fileprivate enum Backend: GRPCSendable {
     #if canImport(NIOSSL)
     /// Configuration for NIOSSSL.
     case nio(NIOConfiguration)

@@ -17,6 +17,11 @@ import Logging
 import NIOConcurrencyHelpers
 import NIOCore
 
+#if compiler(>=5.6)
+// Unchecked because all mutable state is protected by a lock.
+extension PooledChannel: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
 @usableFromInline
 internal final class PoolManager {
   /// Configuration used for each connection pool.
