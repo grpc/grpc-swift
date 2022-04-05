@@ -131,15 +131,15 @@ public struct CallOptions: GRPCSendable {
 extension CallOptions {
   public struct RequestIDProvider: GRPCSendable {
     #if swift(>=5.6)
-    internal typealias StringFactory = @Sendable () -> String
+    public typealias RequestIDGenerator = @Sendable () -> String
     #else
-    internal typealias StringFactory = () -> String
+    public typealias RequestIDGenerator = () -> String
     #endif // swift(>=5.6)
 
     private enum RequestIDSource: GRPCSendable {
       case none
       case `static`(String)
-      case generated(StringFactory)
+      case generated(RequestIDGenerator)
     }
 
     private var source: RequestIDSource
@@ -174,17 +174,11 @@ extension CallOptions {
     }
 
     /// Provide a factory to generate request IDs.
-    #if swift(>=5.6)
     public static func generated(
-      _ requestIDFactory: @escaping @Sendable () -> String
+      _ requestIDFactory: @escaping RequestIDGenerator
     ) -> RequestIDProvider {
       return RequestIDProvider(.generated(requestIDFactory))
     }
-    #else
-    public static func generated(_ requestIDFactory: @escaping () -> String) -> RequestIDProvider {
-      return RequestIDProvider(.generated(requestIDFactory))
-    }
-    #endif // swift(>=5.6)
   }
 }
 
