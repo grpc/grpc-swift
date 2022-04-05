@@ -107,7 +107,7 @@ struct PCAP: ParsableCommand {
       .connect(host: "localhost", port: self.port)
 
     // Create a client.
-    let echo = Echo_EchoClient(channel: channel)
+    let echo = Echo_EchoNIOClient(channel: channel)
 
     // Start an RPC.
     let update = echo.update { response in

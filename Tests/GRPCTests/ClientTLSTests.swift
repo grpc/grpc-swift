@@ -42,7 +42,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
   }
 
   func doTestUnary() throws {
-    let client = Echo_EchoClient(
+    let client = Echo_EchoNIOClient(
       channel: self.connection,
       defaultCallOptions: self.callOptionsWithLogger
     )

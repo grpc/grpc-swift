@@ -27,7 +27,7 @@ class InterceptorsTests: GRPCTestCase {
   private var group: EventLoopGroup!
   private var server: Server!
   private var connection: ClientConnection!
-  private var echo: Echo_EchoClient!
+  private var echo: Echo_EchoNIOClient!
 
   override func setUp() {
     super.setUp()
@@ -46,7 +46,7 @@ class InterceptorsTests: GRPCTestCase {
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
-    self.echo = Echo_EchoClient(
+    self.echo = Echo_EchoNIOClient(
       channel: self.connection,
       defaultCallOptions: CallOptions(logger: self.clientLogger),
       interceptors: ReversingInterceptors()
@@ -94,7 +94,7 @@ class InterceptorsTests: GRPCTestCase {
   }
 
   func testSayHello() {
-    let greeter = Helloworld_GreeterClient(
+    var greeter = Helloworld_GreeterNIOClient(
       channel: self.connection,
       defaultCallOptions: CallOptions(logger: self.clientLogger)
     )
@@ -154,9 +154,9 @@ extension HelloWorldClientInterceptorFactory: @unchecked Sendable {}
 
 private class HelloWorldClientInterceptorFactory:
   Helloworld_GreeterClientInterceptorFactoryProtocol {
-  var client: Helloworld_GreeterClient
+  var client: Helloworld_GreeterNIOClient
 
-  init(client: Helloworld_GreeterClient) {
+  init(client: Helloworld_GreeterNIOClient) {
     self.client = client
   }
 
@@ -209,7 +209,7 @@ class HelloWorldServerInterceptorFactory: Helloworld_GreeterServerInterceptorFac
 
 class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
   ClientInterceptor<Request, Response> {
-  private let client: Helloworld_GreeterClient
+  private let client: Helloworld_GreeterNIOClient
 
   private enum State {
     // We're trying the call, these are the parts we've sent so far.
@@ -220,7 +220,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
 
   private var state: State = .trying([])
 
-  init(client: Helloworld_GreeterClient) {
+  init(client: Helloworld_GreeterNIOClient) {
     self.client = client
   }
 

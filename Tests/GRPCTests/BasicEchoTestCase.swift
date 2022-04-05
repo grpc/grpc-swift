@@ -58,7 +58,7 @@ class EchoTestCaseBase: GRPCTestCase {
   var transportSecurity: TransportSecurity { return .none }
 
   var server: Server!
-  var client: Echo_EchoClient!
+  var client: Echo_EchoNIOClient!
   var port: Int!
 
   // Prefer POSIX: subclasses can override this and add availability checks to ensure NIOTS
@@ -142,8 +142,8 @@ class EchoTestCaseBase: GRPCTestCase {
 
   func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
-  func makeEchoClient(port: Int) throws -> Echo_EchoClient {
-    return Echo_EchoClient(
+  func makeEchoClient(port: Int) throws -> Echo_EchoNIOClient {
+    return Echo_EchoNIOClient(
       channel: try self.makeClientConnection(port: port),
       defaultCallOptions: self.callOptionsWithLogger
     )

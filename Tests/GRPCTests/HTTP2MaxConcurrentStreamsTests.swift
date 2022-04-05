@@ -50,7 +50,7 @@ class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {
 
     defer { XCTAssertNoThrow(try clientConnection.close().wait()) }
 
-    let echoClient = Echo_EchoClient(
+    let echoClient = Echo_EchoNIOClient(
       channel: clientConnection,
       defaultCallOptions: CallOptions(logger: self.clientLogger)
     )

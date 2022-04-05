@@ -72,7 +72,7 @@ internal final class RequestIDTests: GRPCTestCase {
   }
 
   func _testRequestIDIsPopulated(channel: GRPCChannel) throws {
-    let echo = Echo_EchoClient(channel: channel)
+    let echo = Echo_EchoNIOClient(channel: channel)
     let options = CallOptions(
       requestIDProvider: .userDefined("foo"),
       requestIDHeader: "request-id-header"

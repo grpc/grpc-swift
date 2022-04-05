@@ -43,7 +43,7 @@ class ServerQuiescingTests: GRPCTestCase {
       assertThat(try connection.close().wait(), .doesNotThrow())
     }
 
-    let echo = Echo_EchoClient(channel: connection)
+    let echo = Echo_EchoNIOClient(channel: connection)
 
     // Expect the connection to setup as normal.
     connectivityStateDelegate.expectChanges(2) { changes in

@@ -52,7 +52,7 @@ final class NormalizationTests: GRPCTestCase {
   }
 
   func testUnary() throws {
-    let client = Normalization_NormalizationClient(channel: channel)
+    let client = Normalization_NormalizationNIOClient(channel: channel)
 
     let unary1 = client.unary(.init())
     let response1 = try unary1.response.wait()
@@ -64,7 +64,7 @@ final class NormalizationTests: GRPCTestCase {
   }
 
   func testClientStreaming() throws {
-    let client = Normalization_NormalizationClient(channel: channel)
+    let client = Normalization_NormalizationNIOClient(channel: channel)
 
     let clientStreaming1 = client.clientStreaming()
     clientStreaming1.sendEnd(promise: nil)
@@ -78,7 +78,7 @@ final class NormalizationTests: GRPCTestCase {
   }
 
   func testServerStreaming() throws {
-    let client = Normalization_NormalizationClient(channel: channel)
+    let client = Normalization_NormalizationNIOClient(channel: channel)
 
     let serverStreaming1 = client.serverStreaming(.init()) {
       XCTAssert($0.functionName.starts(with: "serverStreaming"))
@@ -92,7 +92,7 @@ final class NormalizationTests: GRPCTestCase {
   }
 
   func testBidirectionalStreaming() throws {
-    let client = Normalization_NormalizationClient(channel: channel)
+    let client = Normalization_NormalizationNIOClient(channel: channel)
 
     let bidirectionalStreaming1 = client.bidirectionalStreaming {
       XCTAssert($0.functionName.starts(with: "bidirectionalStreaming"))

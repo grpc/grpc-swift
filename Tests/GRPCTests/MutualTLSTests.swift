@@ -95,7 +95,7 @@ class MutualTLSTests: GRPCTestCase {
     clientConfiguration.errorDelegate = clientErrorDelegate
 
     self.channel = ClientConnection(configuration: clientConfiguration)
-    let client = Echo_EchoClient(channel: channel!)
+    let client = Echo_EchoNIOClient(channel: channel!)
 
     // Make the call.
     let call = client.get(.with { $0.text = "mumble" })

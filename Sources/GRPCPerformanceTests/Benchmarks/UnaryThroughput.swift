@@ -26,7 +26,7 @@ class Unary: ServerProvidingBenchmark {
   private let useNIOTSIfAvailable: Bool
   private let useTLS: Bool
   private var group: EventLoopGroup!
-  private(set) var client: Echo_EchoClient!
+  private(set) var client: Echo_EchoNIOClient!
 
   let requestCount: Int
   let requestText: String

@@ -55,7 +55,7 @@ final class InterceptedRPCCancellationTests: GRPCTestCase {
       return MagicAddingClientInterceptor(channel: connection)
     }
 
-    let echo = Echo_EchoClient(channel: connection, interceptors: clientInterceptors)
+    let echo = Echo_EchoNIOClient(channel: connection, interceptors: clientInterceptors)
 
     let receivedFirstResponse = connection.eventLoop.makePromise(of: Void.self)
     let update = echo.update { _ in

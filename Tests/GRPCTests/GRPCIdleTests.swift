@@ -72,7 +72,7 @@ class GRPCIdleTests: GRPCTestCase {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
-    let client = Echo_EchoClient(channel: connection)
+    let client = Echo_EchoNIOClient(channel: connection)
 
     // Make a call; this will trigger channel creation.
     let get = client.get(.with { $0.text = "ignored" })

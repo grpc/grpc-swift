@@ -90,8 +90,8 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     secure: Bool,
     port: Int,
     debugInitializer: @escaping GRPCChannelInitializer
-  ) throws -> Echo_EchoClient {
-    return Echo_EchoClient(
+  ) throws -> Echo_EchoNIOClient {
+    return Echo_EchoNIOClient(
       channel: try self.makeClientConnection(
         group: group,
         secure: secure,

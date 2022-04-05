@@ -108,7 +108,7 @@ class ServerTLSErrorTests: GRPCTestCase {
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    let echo = Echo_EchoNIOClient(channel: ClientConnection(configuration: configuration))
     defer {
       XCTAssertNoThrow(try echo.channel.close().wait())
     }

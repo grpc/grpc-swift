@@ -25,8 +25,8 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
   private var server: Server!
   private var connection: ClientConnection!
 
-  private var echo: Echo_EchoClient {
-    return Echo_EchoClient(channel: self.connection)
+  private var echo: Echo_EchoNIOClient {
+    return Echo_EchoNIOClient(channel: self.connection)
   }
 
   override func setUp() {

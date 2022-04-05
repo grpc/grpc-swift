@@ -189,7 +189,7 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
       )
 
       let logger = Logger(label: "ChannelRepeater")
-      let client = Grpc_Testing_BenchmarkServiceClient(channel: self.channel)
+      let client = Grpc_Testing_BenchmarkServiceNIOClient(channel: self.channel)
       self.maxPermittedOutstandingRequests = Int(config.outstandingRpcsPerChannel)
       self.stopComplete = eventLoop.makePromise()
       self.stats = StatsWithLock()
