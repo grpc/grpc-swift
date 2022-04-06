@@ -38,20 +38,25 @@ class WithConnectedSockettests: GRPCTestCase {
       XCTAssertNoThrow(try server.close().wait())
     }
 
-    let clientSocket = socket(AF_UNIX, SOCK_STREAM, 0)
+    #if os(Linux)
+    let sockStream = CInt(SOCK_STREAM.rawValue)
+    #else
+    let sockStream = SOCK_STREAM
+    #endif
+    let clientSocket = socket(AF_UNIX, sockStream, 0)
+
     XCTAssert(clientSocket != -1)
     let addr = try SocketAddress(unixDomainSocketPath: path)
-    addr.withSockAddr { (addr, size) in
+    addr.withSockAddr { addr, size in
       let ret = connect(clientSocket, addr, UInt32(size))
       XCTAssert(ret != -1)
     }
     let flags = fcntl(clientSocket, F_GETFL, 0)
     XCTAssert(flags != -1)
-    XCTAssert(fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) == 0);
+    XCTAssert(fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) == 0)
 
     let connection = ClientConnection.insecure(group: group)
       .withBackgroundActivityLogger(self.clientLogger)
-      .withKeepalive(.init(interval: .seconds(1), timeout: .milliseconds(100)))
       .withConnectedSocket(clientSocket)
     defer {
       XCTAssertNoThrow(try connection.close().wait())
