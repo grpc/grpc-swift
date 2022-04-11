@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 import struct Foundation.UUID
+
+#if swift(>=5.6)
+@preconcurrency import Logging
+@preconcurrency import NIOCore
+@preconcurrency import NIOHPACK
+#else
 import Logging
 import NIOCore
 import NIOHPACK
+#endif // swift(>=5.6)
+
 import NIOHTTP1
 import NIOHTTP2
 
 /// Options to use for GRPC calls.
-public struct CallOptions {
+public struct CallOptions: GRPCSendable {
   /// Additional metadata to send to the service.
   public var customMetadata: HPACKHeaders
 
@@ -121,11 +129,17 @@ public struct CallOptions {
 }
 
 extension CallOptions {
-  public struct RequestIDProvider {
-    private enum RequestIDSource {
+  public struct RequestIDProvider: GRPCSendable {
+    #if swift(>=5.6)
+    public typealias RequestIDGenerator = @Sendable () -> String
+    #else
+    public typealias RequestIDGenerator = () -> String
+    #endif // swift(>=5.6)
+
+    private enum RequestIDSource: GRPCSendable {
       case none
       case `static`(String)
-      case generated(() -> String)
+      case generated(RequestIDGenerator)
     }
 
     private var source: RequestIDSource
@@ -160,14 +174,16 @@ extension CallOptions {
     }
 
     /// Provide a factory to generate request IDs.
-    public static func generated(_ requestIDFactory: @escaping () -> String) -> RequestIDProvider {
+    public static func generated(
+      _ requestIDFactory: @escaping RequestIDGenerator
+    ) -> RequestIDProvider {
       return RequestIDProvider(.generated(requestIDFactory))
     }
   }
 }
 
 extension CallOptions {
-  public struct EventLoopPreference {
+  public struct EventLoopPreference: GRPCSendable {
     /// No preference. The framework will assign an `EventLoop`.
     public static let indifferent = EventLoopPreference(.indifferent)
 
@@ -177,7 +193,7 @@ extension CallOptions {
     }
 
     @usableFromInline
-    internal enum Preference {
+    internal enum Preference: GRPCSendable {
       case indifferent
       case exact(EventLoop)
     }

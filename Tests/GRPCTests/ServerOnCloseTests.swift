@@ -25,7 +25,7 @@ final class ServerOnCloseTests: GRPCTestCase {
   private var group: EventLoopGroup?
   private var server: Server?
   private var client: ClientConnection?
-  private var echo: Echo_EchoClient!
+  private var echo: Echo_EchoNIOClient!
 
   private var eventLoop: EventLoop {
     return self.group!.next()
@@ -55,7 +55,7 @@ final class ServerOnCloseTests: GRPCTestCase {
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: self.server!.channel.localAddress!.port!)
 
-    self.echo = Echo_EchoClient(
+    self.echo = Echo_EchoNIOClient(
       channel: self.client!,
       defaultCallOptions: CallOptions(logger: self.clientLogger)
     )

@@ -156,7 +156,7 @@ func makeClient(
   port: Int,
   useTLS: Bool,
   useInterceptor: Bool
-) throws -> Echo_EchoClient {
+) throws -> Echo_EchoNIOClient {
   let security: GRPCChannelPool.Configuration.TransportSecurity
 
   if useTLS {
@@ -189,13 +189,13 @@ func makeClient(
     eventLoopGroup: group
   )
 
-  return Echo_EchoClient(
+  return Echo_EchoNIOClient(
     channel: channel,
     interceptors: useInterceptor ? ExampleClientInterceptorFactory() : nil
   )
 }
 
-func callRPC(_ rpc: RPC, using client: Echo_EchoClient, message: String) {
+func callRPC(_ rpc: RPC, using client: Echo_EchoNIOClient, message: String) {
   do {
     switch rpc {
     case .get:
@@ -212,7 +212,7 @@ func callRPC(_ rpc: RPC, using client: Echo_EchoClient, message: String) {
   }
 }
 
-func echoGet(client: Echo_EchoClient, message: String) throws {
+func echoGet(client: Echo_EchoNIOClient, message: String) throws {
   // Get is a unary call.
   let get = client.get(.with { $0.text = message })
 
@@ -231,7 +231,7 @@ func echoGet(client: Echo_EchoClient, message: String) throws {
   print("get completed with status: \(status.code)")
 }
 
-func echoCollect(client: Echo_EchoClient, message: String) throws {
+func echoCollect(client: Echo_EchoNIOClient, message: String) throws {
   // Collect is a client streaming call
   let collect = client.collect()
 
@@ -260,7 +260,7 @@ func echoCollect(client: Echo_EchoClient, message: String) throws {
   print("collect completed with status: \(status.code)")
 }
 
-func echoExpand(client: Echo_EchoClient, message: String) throws {
+func echoExpand(client: Echo_EchoNIOClient, message: String) throws {
   // Expand is a server streaming call; provide a response handler.
   let expand = client.expand(.with { $0.text = message }) { response in
     print("expand received: \(response.text)")
@@ -271,7 +271,7 @@ func echoExpand(client: Echo_EchoClient, message: String) throws {
   print("expand completed with status: \(status.code)")
 }
 
-func echoUpdate(client: Echo_EchoClient, message: String) throws {
+func echoUpdate(client: Echo_EchoNIOClient, message: String) throws {
   // Update is a bidirectional streaming call; provide a response handler.
   let update = client.update { response in
     print("update received: \(response.text)")

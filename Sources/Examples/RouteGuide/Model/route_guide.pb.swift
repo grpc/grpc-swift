@@ -168,6 +168,14 @@ public struct Routeguide_RouteSummary {
   public init() {}
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Routeguide_Point: @unchecked Sendable {}
+extension Routeguide_Rectangle: @unchecked Sendable {}
+extension Routeguide_Feature: @unchecked Sendable {}
+extension Routeguide_RouteNote: @unchecked Sendable {}
+extension Routeguide_RouteSummary: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "routeguide"

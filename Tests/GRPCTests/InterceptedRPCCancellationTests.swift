@@ -50,13 +50,12 @@ final class InterceptedRPCCancellationTests: GRPCTestCase {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
-    let clientInterceptors = EchoClientInterceptors()
     // Retries an RPC with a "magic" header if it fails with the permission denied status code.
-    clientInterceptors.register {
-      MagicAddingClientInterceptor(channel: connection)
+    let clientInterceptors = EchoClientInterceptors {
+      return MagicAddingClientInterceptor(channel: connection)
     }
 
-    let echo = Echo_EchoClient(channel: connection, interceptors: clientInterceptors)
+    let echo = Echo_EchoNIOClient(channel: connection, interceptors: clientInterceptors)
 
     let receivedFirstResponse = connection.eventLoop.makePromise(of: Void.self)
     let update = echo.update { _ in

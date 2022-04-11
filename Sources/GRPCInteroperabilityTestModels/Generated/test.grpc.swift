@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -243,8 +244,45 @@ extension Grpc_Testing_TestServiceClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Grpc_Testing_TestServiceClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Grpc_Testing_TestServiceNIOClient")
 public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the grpc.testing.TestService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Grpc_Testing_TestServiceNIOClient: Grpc_Testing_TestServiceClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol?
 
@@ -566,7 +604,7 @@ public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsync
 
 #endif // compiler(>=5.6)
 
-public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol {
+public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'emptyCall'.
   func makeEmptyCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
@@ -698,8 +736,45 @@ extension Grpc_Testing_UnimplementedServiceClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Grpc_Testing_UnimplementedServiceClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Grpc_Testing_UnimplementedServiceNIOClient")
 public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedServiceClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the grpc.testing.UnimplementedService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Grpc_Testing_UnimplementedServiceNIOClient: Grpc_Testing_UnimplementedServiceClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol?
 
@@ -791,7 +866,7 @@ public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_Unimple
 
 #endif // compiler(>=5.6)
 
-public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol {
+public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'unimplementedCall'.
   func makeUnimplementedCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
@@ -875,8 +950,45 @@ extension Grpc_Testing_ReconnectServiceClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Grpc_Testing_ReconnectServiceClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Grpc_Testing_ReconnectServiceNIOClient")
 public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectServiceClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the grpc.testing.ReconnectService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Grpc_Testing_ReconnectServiceNIOClient: Grpc_Testing_ReconnectServiceClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol?
 
@@ -996,7 +1108,7 @@ public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectSe
 
 #endif // compiler(>=5.6)
 
-public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol {
+public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'start'.
   func makeStartInterceptors() -> [ClientInterceptor<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>]

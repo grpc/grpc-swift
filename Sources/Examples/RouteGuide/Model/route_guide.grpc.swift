@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -153,8 +154,45 @@ extension Routeguide_RouteGuideClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Routeguide_RouteGuideClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Routeguide_RouteGuideNIOClient")
 public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the routeguide.RouteGuide service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Routeguide_RouteGuideNIOClient: Routeguide_RouteGuideClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol?
 
@@ -350,7 +388,7 @@ public struct Routeguide_RouteGuideAsyncClient: Routeguide_RouteGuideAsyncClient
 
 #endif // compiler(>=5.6)
 
-public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
+public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'getFeature'.
   func makeGetFeatureInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_Feature>]

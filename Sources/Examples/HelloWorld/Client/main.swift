@@ -19,7 +19,7 @@ import HelloWorldModel
 import NIOCore
 import NIOPosix
 
-func greet(name: String?, client greeter: Helloworld_GreeterClient) {
+func greet(name: String?, client greeter: Helloworld_GreeterNIOClient) {
   // Form the request with the name, if one was provided.
   let request = Helloworld_HelloRequest.with {
     $0.name = name ?? ""
@@ -68,7 +68,7 @@ struct HelloWorld: ParsableCommand {
     }
 
     // Provide the connection to the generated client.
-    let greeter = Helloworld_GreeterClient(channel: channel)
+    let greeter = Helloworld_GreeterNIOClient(channel: channel)
 
     // Do the greeting.
     greet(name: self.name, client: greeter)

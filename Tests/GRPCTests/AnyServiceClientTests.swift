@@ -19,8 +19,8 @@ import GRPC
 import XCTest
 
 class AnyServiceClientTests: EchoTestCaseBase {
-  var anyServiceClient: AnyServiceClient {
-    return AnyServiceClient(
+  var anyServiceClient: GRPCAnyServiceClient {
+    return GRPCAnyServiceClient(
       channel: self.client.channel,
       defaultCallOptions: self.callOptionsWithLogger
     )

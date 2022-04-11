@@ -29,7 +29,7 @@ protocol RequestMaker {
   ///    - stats: Where to record statistics on latency.
   init(
     config: Grpc_Testing_ClientConfig,
-    client: Grpc_Testing_BenchmarkServiceClient,
+    client: Grpc_Testing_BenchmarkServiceNIOClient,
     requestMessage: Grpc_Testing_SimpleRequest,
     logger: Logger,
     stats: StatsWithLock

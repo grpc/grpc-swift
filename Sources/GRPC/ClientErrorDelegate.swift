@@ -22,7 +22,7 @@ import Logging
 /// The intended use of this protocol is with `ClientConnection`. In order to avoid retain
 /// cycles, classes implementing this delegate **must not** maintain a strong reference to the
 /// `ClientConnection`.
-public protocol ClientErrorDelegate: AnyObject {
+public protocol ClientErrorDelegate: AnyObject, GRPCSendable {
   /// Called when the client catches an error.
   ///
   /// - Parameters:

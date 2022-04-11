@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if compiler(>=5.6)
 import ArgumentParser
 import Dispatch
 import EchoModel
@@ -42,6 +43,7 @@ defer {
 ///
 /// - Parameter channel: The channel to add the PCAP handler to.
 /// - Returns: An `EventLoopFuture` indicating whether the PCAP handler was successfully added.
+@Sendable
 func addPCAPHandler(toChannel channel: Channel) -> EventLoopFuture<Void> {
   // The debug initializer can be called multiple times. We'll use the object ID of the channel
   // to disambiguate between the files.
@@ -105,7 +107,7 @@ struct PCAP: ParsableCommand {
       .connect(host: "localhost", port: self.port)
 
     // Create a client.
-    let echo = Echo_EchoClient(channel: channel)
+    let echo = Echo_EchoNIOClient(channel: channel)
 
     // Start an RPC.
     let update = echo.update { response in
@@ -139,3 +141,6 @@ struct PCAP: ParsableCommand {
 }
 
 PCAP.main()
+#else
+fatalError("This example requires Swift 5.6.")
+#endif // compiler(>=5.6)

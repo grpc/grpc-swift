@@ -86,7 +86,11 @@ extension Generator {
     return nameForPackageService(file, service) + "Client"
   }
 
-  internal var asyncClientClassName: String {
+  internal var clientStructName: String {
+    return nameForPackageService(file, service) + "NIOClient"
+  }
+
+  internal var asyncClientStructName: String {
     return nameForPackageService(file, service) + "AsyncClient"
   }
 

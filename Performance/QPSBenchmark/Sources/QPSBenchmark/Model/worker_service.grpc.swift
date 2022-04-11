@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -145,8 +146,45 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
   }
 }
 
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Grpc_Testing_WorkerServiceClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Grpc_Testing_WorkerServiceNIOClient")
 public final class Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerServiceClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the grpc.testing.WorkerService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+public struct Grpc_Testing_WorkerServiceNIOClient: Grpc_Testing_WorkerServiceClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol?
 
@@ -341,7 +379,7 @@ public struct Grpc_Testing_WorkerServiceAsyncClient: Grpc_Testing_WorkerServiceA
 
 #endif // compiler(>=5.6)
 
-public protocol Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol {
+public protocol Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'runServer'.
   func makeRunServerInterceptors() -> [ClientInterceptor<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus>]

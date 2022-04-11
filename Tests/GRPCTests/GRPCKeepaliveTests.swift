@@ -67,7 +67,7 @@ class GRPCClientKeepaliveTests: GRPCTestCase {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
-    let client = Echo_EchoClient(channel: connection)
+    let client = Echo_EchoNIOClient(channel: connection)
     let get = client.get(.with { $0.text = "Hello" })
     XCTAssertThrowsError(try get.response.wait())
     XCTAssertEqual(try get.status.map { $0.code }.wait(), .unavailable)

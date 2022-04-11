@@ -209,7 +209,7 @@ extension Generator {
   internal func printAsyncServiceClientImplementation() {
     self.printAvailabilityForAsyncAwait()
     self.withIndentation(
-      "\(self.access) struct \(self.asyncClientClassName): \(self.asyncClientProtocolName)",
+      "\(self.access) struct \(self.asyncClientStructName): \(self.asyncClientProtocolName)",
       braces: .curly
     ) {
       self.println("\(self.access) var channel: GRPCChannel")
