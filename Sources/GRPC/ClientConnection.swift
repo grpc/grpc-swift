@@ -266,6 +266,7 @@ public struct ConnectionTarget {
     case hostAndPort(String, Int)
     case unixDomainSocket(String)
     case socketAddress(SocketAddress)
+    case connectedSocket(NIOBSDSocket.Handle)
   }
 
   internal var wrapped: Wrapped
@@ -293,6 +294,11 @@ public struct ConnectionTarget {
     return ConnectionTarget(.socketAddress(address))
   }
 
+  /// A connected NIO socket.
+  public static func connectedSocket(_ socket: NIOBSDSocket.Handle) -> ConnectionTarget {
+    return ConnectionTarget(.connectedSocket(socket))
+  }
+
   @usableFromInline
   var host: String {
     switch self.wrapped {
@@ -302,7 +308,7 @@ public struct ConnectionTarget {
       return address.host
     case let .socketAddress(.v6(address)):
       return address.host
-    case .unixDomainSocket, .socketAddress(.unixDomainSocket):
+    case .unixDomainSocket, .socketAddress(.unixDomainSocket), .connectedSocket:
       return "localhost"
     }
   }
@@ -540,6 +546,8 @@ extension ClientBootstrapProtocol {
 
     case let .socketAddress(address):
       return self.connect(to: address)
+    case let .connectedSocket(socket):
+      return self.withConnectedSocket(socket)
     }
   }
 }

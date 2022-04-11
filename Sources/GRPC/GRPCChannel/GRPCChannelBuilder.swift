@@ -85,6 +85,18 @@ extension ClientConnection {
       self.configuration.tlsConfiguration = self.maybeTLS
       return ClientConnection(configuration: self.configuration)
     }
+
+    public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> ClientConnection {
+      precondition(
+        !PlatformSupport.isTransportServicesEventLoopGroup(self.configuration.eventLoopGroup),
+        "'\(#function)' requires 'group' to not be a 'NIOTransportServices.NIOTSEventLoopGroup' or 'NIOTransportServices.QoSEventLoop' (but was '\(type(of: self.configuration.eventLoopGroup))'"
+      )
+      self.configuration.target = .connectedSocket(socket)
+      self.configuration.connectionBackoff =
+        self.connectionBackoffIsEnabled ? self.connectionBackoff : nil
+      self.configuration.tlsConfiguration = self.maybeTLS
+      return ClientConnection(configuration: self.configuration)
+    }
   }
 }
 

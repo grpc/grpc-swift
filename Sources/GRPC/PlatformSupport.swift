@@ -117,17 +117,28 @@ public protocol ClientBootstrapProtocol {
   func connect(to: SocketAddress) -> EventLoopFuture<Channel>
   func connect(host: String, port: Int) -> EventLoopFuture<Channel>
   func connect(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
+  func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel>
 
   func connectTimeout(_ timeout: TimeAmount) -> Self
   func channelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
   func channelInitializer(_ handler: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
 }
 
+extension ClientBootstrapProtocol {
+  public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
+    preconditionFailure("withConnectedSocket(_:) is not implemented")
+  }
+}
+
 extension ClientBootstrap: ClientBootstrapProtocol {}
 
 #if canImport(Network)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
-extension NIOTSConnectionBootstrap: ClientBootstrapProtocol {}
+extension NIOTSConnectionBootstrap: ClientBootstrapProtocol {
+  public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
+    preconditionFailure("NIOTSConnectionBootstrap does not support withConnectedSocket(_:)")
+  }
+}
 #endif
 
 /// This protocol is intended as a layer of abstraction over `ServerBootstrap` and
@@ -136,6 +147,7 @@ public protocol ServerBootstrapProtocol {
   func bind(to: SocketAddress) -> EventLoopFuture<Channel>
   func bind(host: String, port: Int) -> EventLoopFuture<Channel>
   func bind(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
+  func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel>
 
   func serverChannelInitializer(_ initializer: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
   func serverChannelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
@@ -144,11 +156,21 @@ public protocol ServerBootstrapProtocol {
   func childChannelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
 }
 
+extension ServerBootstrapProtocol {
+  public func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
+    preconditionFailure("withBoundSocket(_:) is not implemented")
+  }
+}
+
 extension ServerBootstrap: ServerBootstrapProtocol {}
 
 #if canImport(Network)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
-extension NIOTSListenerBootstrap: ServerBootstrapProtocol {}
+extension NIOTSListenerBootstrap: ServerBootstrapProtocol {
+  public func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
+    preconditionFailure("NIOTSListenerBootstrap does not support withConnectedSocket(_:)")
+  }
+}
 #endif
 
 // MARK: - Bootstrap / EventLoopGroup helpers

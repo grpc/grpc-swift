@@ -462,6 +462,9 @@ extension ServerBootstrapProtocol {
 
     case let .socketAddress(address):
       return self.bind(to: address)
+
+    case let .connectedSocket(socket):
+      return self.withBoundSocket(socket)
     }
   }
 }

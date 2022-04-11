@@ -54,6 +54,12 @@ extension Server {
       self.configuration.tlsConfiguration = self.maybeTLS
       return Server.start(configuration: self.configuration)
     }
+
+    public func bind(unixDomainSocketPath path: String) -> EventLoopFuture<Server> {
+      self.configuration.target = .unixDomainSocket(path)
+      self.configuration.tlsConfiguration = self.maybeTLS
+      return Server.start(configuration: self.configuration)
+    }
   }
 }
 
