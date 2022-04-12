@@ -6,7 +6,6 @@ gRPC Swift supports compression.
 
 You can configure compression via the messageEncoding property on CallOptions:
 
-
 ```swift
 // Configure encoding
 let encodingConfiguration = ClientMessageEncoding.Configuration(
