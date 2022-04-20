@@ -25,7 +25,7 @@ jobs:
       matrix:
         include:
           - image: swift:5.6-focal
-            swift-test-flags: "--enable-test-discovery --sanitize=thread"
+            swift-test-flags: "--enable-test-discovery"
           - image: swift:5.5-focal
             swift-test-flags: "--enable-test-discovery"
           - image: swift:5.4-focal
@@ -46,8 +46,6 @@ jobs:
       run: swift build ${{ matrix.swift-build-flags }}
       timeout-minutes: 20
     - name: 🧪 Test
-      # Skip tests on 5.6: https://bugs.swift.org/browse/SR-15955
-      if: ${{ matrix.image != 'swift:5.6-focal' }}
       run: swift test ${{ matrix.swift-test-flags }}
       timeout-minutes: 20
   performance-tests:
@@ -127,8 +125,6 @@ jobs:
         GRPC_NO_NIO_SSL: 1
       timeout-minutes: 20
     - name: Test without NIOSSL
-      # Skip tests on 5.6: https://bugs.swift.org/browse/SR-15955
-      if: ${{ matrix.image != 'swift:5.6-focal' }}
       run: swift test --enable-test-discovery
       env:
         GRPC_NO_NIO_SSL: 1
