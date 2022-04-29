@@ -9,8 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v3
+
       - name: Extract release version
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
@@ -20,7 +20,7 @@ jobs:
       - name: Zip the plugins
         run: |
           zip protoc-grpc-swift-plugins-linux-x86_64-${{ env.RELEASE_VERSION }}.zip protoc-gen-swift protoc-gen-grpc-swift
-      
+
       - name: Upload artifacts
         uses: softprops/action-gh-release@v1
         with:
