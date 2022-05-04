@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.4
 /*
  * Copyright 2021, gRPC Authors All rights reserved.
  *
@@ -23,7 +23,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio.git", from: "2.27.0"),
   ],
   targets: [
-    .target(
+    .executableTarget(
       name: "ServerFuzzer",
       dependencies: [
         .product(name: "GRPC", package: "grpc-swift"),
@@ -35,6 +35,9 @@ let package = Package(
       name: "EchoModel",
       dependencies: [
         .product(name: "GRPC", package: "grpc-swift"),
+      ],
+      exclude: [
+        "echo.proto",
       ]
     ),
     .target(
