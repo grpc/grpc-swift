@@ -52,7 +52,8 @@ servers are described in [`docs/plugin.md`][docs-plugin].
 gRPC Swift's platform support is identical to the [platform support of Swift
 NIO][swift-nio-platforms].
 
-Note that gRPC Swift uses NIO 2 and requires Swift to be version 5.2 or higher.
+The earliest supported Swift version for gRPC Swift 1.8.x and newer is 5.4.
+For 1.7.x and earlier the oldest supported Swift version is 5.2.
 
 ## Getting gRPC Swift
 

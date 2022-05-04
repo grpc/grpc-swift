@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.4
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -149,11 +149,14 @@ extension Target {
     ]
   )
 
-  static let protocGenGRPCSwift: Target = .target(
+  static let protocGenGRPCSwift: Target = .executableTarget(
     name: "protoc-gen-grpc-swift",
     dependencies: [
       .protobuf,
       .protobufPluginLibrary,
+    ],
+    exclude: [
+      "README.md",
     ]
   )
 
@@ -178,7 +181,10 @@ extension Target {
       .logging,
     ].appending(
       .nioSSL, if: includeNIOSSL
-    )
+    ),
+    exclude: [
+      "Codegen/Normalization/normalization.proto",
+    ]
   )
 
   static let interopTestModels: Target = .target(
@@ -187,6 +193,15 @@ extension Target {
       .grpc,
       .nio,
       .protobuf,
+    ],
+    exclude: [
+      "README.md",
+      "generate.sh",
+      "src/proto/grpc/testing/empty.proto",
+      "src/proto/grpc/testing/empty_service.proto",
+      "src/proto/grpc/testing/messages.proto",
+      "src/proto/grpc/testing/test.proto",
+      "unimplemented_call.patch",
     ]
   )
 
@@ -204,7 +219,7 @@ extension Target {
     )
   )
 
-  static let interopTests: Target = .target(
+  static let interopTests: Target = .executableTarget(
     name: "GRPCInteroperabilityTests",
     dependencies: [
       .grpc,
@@ -216,7 +231,7 @@ extension Target {
     ]
   )
 
-  static let backoffInteropTest: Target = .target(
+  static let backoffInteropTest: Target = .executableTarget(
     name: "GRPCConnectionBackoffInteropTest",
     dependencies: [
       .grpc,
@@ -225,10 +240,13 @@ extension Target {
       .nioPosix,
       .logging,
       .argumentParser,
+    ],
+    exclude: [
+      "README.md",
     ]
   )
 
-  static let perfTests: Target = .target(
+  static let perfTests: Target = .executableTarget(
     name: "GRPCPerformanceTests",
     dependencies: [
       .grpc,
@@ -243,7 +261,10 @@ extension Target {
 
   static let grpcSampleData: Target = .target(
     name: "GRPCSampleData",
-    dependencies: includeNIOSSL ? [.nioSSL] : []
+    dependencies: includeNIOSSL ? [.nioSSL] : [],
+    exclude: [
+      "bundle.p12",
+    ]
   )
 
   static let echoModel: Target = .target(
@@ -253,7 +274,10 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/Echo/Model"
+    path: "Sources/Examples/Echo/Model",
+    exclude: [
+      "echo.proto",
+    ]
   )
 
   static let echoImplementation: Target = .target(
@@ -268,7 +292,7 @@ extension Target {
     path: "Sources/Examples/Echo/Implementation"
   )
 
-  static let echo: Target = .target(
+  static let echo: Target = .executableTarget(
     name: "Echo",
     dependencies: [
       .grpc,
@@ -292,10 +316,13 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/HelloWorld/Model"
+    path: "Sources/Examples/HelloWorld/Model",
+    exclude: [
+      "helloworld.proto",
+    ]
   )
 
-  static let helloWorldClient: Target = .target(
+  static let helloWorldClient: Target = .executableTarget(
     name: "HelloWorldClient",
     dependencies: [
       .grpc,
@@ -307,7 +334,7 @@ extension Target {
     path: "Sources/Examples/HelloWorld/Client"
   )
 
-  static let helloWorldServer: Target = .target(
+  static let helloWorldServer: Target = .executableTarget(
     name: "HelloWorldServer",
     dependencies: [
       .grpc,
@@ -326,10 +353,13 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/RouteGuide/Model"
+    path: "Sources/Examples/RouteGuide/Model",
+    exclude: [
+      "route_guide.proto",
+    ]
   )
 
-  static let routeGuideClient: Target = .target(
+  static let routeGuideClient: Target = .executableTarget(
     name: "RouteGuideClient",
     dependencies: [
       .grpc,
@@ -341,7 +371,7 @@ extension Target {
     path: "Sources/Examples/RouteGuide/Client"
   )
 
-  static let routeGuideServer: Target = .target(
+  static let routeGuideServer: Target = .executableTarget(
     name: "RouteGuideServer",
     dependencies: [
       .grpc,
@@ -354,7 +384,7 @@ extension Target {
     path: "Sources/Examples/RouteGuide/Server"
   )
 
-  static let packetCapture: Target = .target(
+  static let packetCapture: Target = .executableTarget(
     name: "PacketCapture",
     dependencies: [
       .grpc,
@@ -365,7 +395,10 @@ extension Target {
       .logging,
       .argumentParser,
     ],
-    path: "Sources/Examples/PacketCapture"
+    path: "Sources/Examples/PacketCapture",
+    exclude: [
+      "README.md",
+    ]
   )
 }
 

@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.4
 /*
  * Copyright 2020, gRPC Authors All rights reserved.
  *
@@ -38,7 +38,7 @@ let package = Package(
     ),
   ],
   targets: [
-    .target(
+    .executableTarget(
       name: "QPSBenchmark",
       dependencies: [
         .product(name: "GRPC", package: "grpc-swift"),
@@ -50,6 +50,15 @@ let package = Package(
         .product(name: "Lifecycle", package: "swift-service-lifecycle"),
         .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
         .target(name: "BenchmarkUtils"),
+      ],
+      exclude: [
+        "Model/benchmark_service.proto",
+        "Model/control.proto",
+        "Model/core_stats.proto",
+        "Model/messages.proto",
+        "Model/payloads.proto",
+        "Model/stats.proto",
+        "Model/worker_service.proto",
       ]
     ),
     .target(
