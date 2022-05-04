@@ -37,7 +37,7 @@ let package = Package(
         .product(name: "GRPC", package: "grpc-swift"),
       ],
       exclude: [
-        "echo.proto"
+        "echo.proto",
       ]
     ),
     .target(

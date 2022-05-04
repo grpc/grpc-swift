@@ -58,7 +58,7 @@ let package = Package(
         "Model/messages.proto",
         "Model/payloads.proto",
         "Model/stats.proto",
-        "Model/worker_service.proto"
+        "Model/worker_service.proto",
       ]
     ),
     .target(

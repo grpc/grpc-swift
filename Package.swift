@@ -156,7 +156,7 @@ extension Target {
       .protobufPluginLibrary,
     ],
     exclude: [
-      "README.md"
+      "README.md",
     ]
   )
 
@@ -183,7 +183,7 @@ extension Target {
       .nioSSL, if: includeNIOSSL
     ),
     exclude: [
-      "Codegen/Normalization/normalization.proto"
+      "Codegen/Normalization/normalization.proto",
     ]
   )
 
@@ -201,7 +201,7 @@ extension Target {
       "src/proto/grpc/testing/empty_service.proto",
       "src/proto/grpc/testing/messages.proto",
       "src/proto/grpc/testing/test.proto",
-      "unimplemented_call.patch"
+      "unimplemented_call.patch",
     ]
   )
 
@@ -242,7 +242,7 @@ extension Target {
       .argumentParser,
     ],
     exclude: [
-      "README.md"
+      "README.md",
     ]
   )
 
@@ -263,7 +263,7 @@ extension Target {
     name: "GRPCSampleData",
     dependencies: includeNIOSSL ? [.nioSSL] : [],
     exclude: [
-      "bundle.p12"
+      "bundle.p12",
     ]
   )
 
@@ -276,7 +276,7 @@ extension Target {
     ],
     path: "Sources/Examples/Echo/Model",
     exclude: [
-      "echo.proto"
+      "echo.proto",
     ]
   )
 
@@ -318,7 +318,7 @@ extension Target {
     ],
     path: "Sources/Examples/HelloWorld/Model",
     exclude: [
-      "helloworld.proto"
+      "helloworld.proto",
     ]
   )
 
@@ -355,7 +355,7 @@ extension Target {
     ],
     path: "Sources/Examples/RouteGuide/Model",
     exclude: [
-      "route_guide.proto"
+      "route_guide.proto",
     ]
   )
 
@@ -397,7 +397,7 @@ extension Target {
     ],
     path: "Sources/Examples/PacketCapture",
     exclude: [
-      "README.md"
+      "README.md",
     ]
   )
 }
