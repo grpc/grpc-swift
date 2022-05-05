@@ -139,27 +139,7 @@ class ServerThrowingTests: EchoTestCaseBase {
   }
 
   override func makeEchoProvider() -> Echo_EchoProvider { return ImmediateThrowingEchoProvider() }
-}
 
-class ServerDelayedThrowingTests: ServerThrowingTests {
-  override func makeEchoProvider() -> Echo_EchoProvider { return DelayedThrowingEchoProvider() }
-}
-
-class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
-  override func makeEchoProvider() -> Echo_EchoProvider { return ErrorReturningEchoProvider() }
-}
-
-class ServerErrorTransformingTests: ServerThrowingTests {
-  override var expectedError: GRPCStatus { return transformedError }
-  override var expectedMetadata: HPACKHeaders? {
-    return HPACKHeaders([("grpc-status", "10"), ("grpc-message", "transformed error"),
-                         ("transformed", "header")])
-  }
-
-  override func makeErrorDelegate() -> ServerErrorDelegate? { return ErrorTransformingDelegate() }
-}
-
-extension ServerThrowingTests {
   func testUnary() throws {
     let call = client.get(Echo_EchoRequest(text: "foo"))
     XCTAssertEqual(self.expectedError, try call.status.wait())
@@ -220,5 +200,71 @@ extension ServerThrowingTests {
         XCTAssertTrue(trailers[name].contains(value))
       }
     }
+  }
+}
+
+class ServerDelayedThrowingTests: ServerThrowingTests {
+  override func makeEchoProvider() -> Echo_EchoProvider { return DelayedThrowingEchoProvider() }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testClientStreaming() throws {
+    try super.testClientStreaming()
+  }
+
+  override func testServerStreaming() throws {
+    try super.testServerStreaming()
+  }
+
+  override func testBidirectionalStreaming() throws {
+    try super.testBidirectionalStreaming()
+  }
+}
+
+class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
+  override func makeEchoProvider() -> Echo_EchoProvider { return ErrorReturningEchoProvider() }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testClientStreaming() throws {
+    try super.testClientStreaming()
+  }
+
+  override func testServerStreaming() throws {
+    try super.testServerStreaming()
+  }
+
+  override func testBidirectionalStreaming() throws {
+    try super.testBidirectionalStreaming()
+  }
+}
+
+class ServerErrorTransformingTests: ServerThrowingTests {
+  override var expectedError: GRPCStatus { return transformedError }
+  override var expectedMetadata: HPACKHeaders? {
+    return HPACKHeaders([("grpc-status", "10"), ("grpc-message", "transformed error"),
+                         ("transformed", "header")])
+  }
+
+  override func makeErrorDelegate() -> ServerErrorDelegate? { return ErrorTransformingDelegate() }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testClientStreaming() throws {
+    try super.testClientStreaming()
+  }
+
+  override func testServerStreaming() throws {
+    try super.testServerStreaming()
+  }
+
+  override func testBidirectionalStreaming() throws {
+    try super.testBidirectionalStreaming()
   }
 }

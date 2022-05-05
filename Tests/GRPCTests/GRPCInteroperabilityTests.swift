@@ -168,5 +168,81 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
 #if canImport(NIOSSL)
 class GRPCSecureInteroperabilityTests: GRPCInsecureInteroperabilityTests {
   override var useTLS: Bool { return true }
+
+  override func testEmptyUnary() {
+    super.testEmptyUnary()
+  }
+
+  override func testCacheableUnary() {
+    super.testCacheableUnary()
+  }
+
+  override func testLargeUnary() {
+    super.testLargeUnary()
+  }
+
+  override func testClientCompressedUnary() {
+    super.testClientCompressedUnary()
+  }
+
+  override func testServerCompressedUnary() {
+    super.testServerCompressedUnary()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testClientCompressedStreaming() {
+    super.testClientCompressedStreaming()
+  }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testServerCompressedStreaming() {
+    super.testServerCompressedStreaming()
+  }
+
+  override func testPingPong() {
+    super.testPingPong()
+  }
+
+  override func testEmptyStream() {
+    super.testEmptyStream()
+  }
+
+  override func testCustomMetadata() {
+    super.testCustomMetadata()
+  }
+
+  override func testStatusCodeAndMessage() {
+    super.testStatusCodeAndMessage()
+  }
+
+  override func testSpecialStatusAndMessage() {
+    super.testSpecialStatusAndMessage()
+  }
+
+  override func testUnimplementedMethod() {
+    super.testUnimplementedMethod()
+  }
+
+  override func testUnimplementedService() {
+    super.testUnimplementedService()
+  }
+
+  override func testCancelAfterBegin() {
+    super.testCancelAfterBegin()
+  }
+
+  override func testCancelAfterFirstResponse() {
+    super.testCancelAfterFirstResponse()
+  }
+
+  override func testTimeoutOnSleepingServer() {
+    super.testTimeoutOnSleepingServer()
+  }
 }
 #endif // canImport(NIOSSL)

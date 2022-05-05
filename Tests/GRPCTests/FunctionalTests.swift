@@ -259,11 +259,107 @@ class FunctionalTestsAnonymousClient: FunctionalTestsInsecureTransport {
   override var transportSecurity: TransportSecurity {
     return .anonymousClient
   }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testUnaryLotsOfRequests() throws {
+    try super.testUnaryLotsOfRequests()
+  }
+
+  override func testUnaryWithLargeData() throws {
+    try super.testUnaryWithLargeData()
+  }
+
+  override func testUnaryEmptyRequest() throws {
+    try super.testUnaryEmptyRequest()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testClientStreamingLotsOfMessages() throws {
+    try super.testClientStreamingLotsOfMessages()
+  }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testServerStreamingLotsOfMessages() {
+    super.testServerStreamingLotsOfMessages()
+  }
+
+  override func testBidirectionalStreamingBatched() throws {
+    try super.testBidirectionalStreamingBatched()
+  }
+
+  override func testBidirectionalStreamingPingPong() throws {
+    try super.testBidirectionalStreamingPingPong()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesBatched()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesPingPong()
+  }
 }
 
 class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
   override var transportSecurity: TransportSecurity {
     return .mutualAuthentication
+  }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testUnaryLotsOfRequests() throws {
+    try super.testUnaryLotsOfRequests()
+  }
+
+  override func testUnaryWithLargeData() throws {
+    try super.testUnaryWithLargeData()
+  }
+
+  override func testUnaryEmptyRequest() throws {
+    try super.testUnaryEmptyRequest()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testClientStreamingLotsOfMessages() throws {
+    try super.testClientStreamingLotsOfMessages()
+  }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testServerStreamingLotsOfMessages() {
+    super.testServerStreamingLotsOfMessages()
+  }
+
+  override func testBidirectionalStreamingBatched() throws {
+    try super.testBidirectionalStreamingBatched()
+  }
+
+  override func testBidirectionalStreamingPingPong() throws {
+    try super.testBidirectionalStreamingPingPong()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesBatched()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesPingPong()
   }
 }
 #endif // canImport(NIOSSL)
@@ -364,12 +460,108 @@ class FunctionalTestsAnonymousClientNIOTS: FunctionalTestsInsecureTransportNIOTS
   override var transportSecurity: TransportSecurity {
     return .anonymousClient
   }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testUnaryLotsOfRequests() throws {
+    try super.testUnaryLotsOfRequests()
+  }
+
+  override func testUnaryWithLargeData() throws {
+    try super.testUnaryWithLargeData()
+  }
+
+  override func testUnaryEmptyRequest() throws {
+    try super.testUnaryEmptyRequest()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testClientStreamingLotsOfMessages() throws {
+    try super.testClientStreamingLotsOfMessages()
+  }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testServerStreamingLotsOfMessages() {
+    super.testServerStreamingLotsOfMessages()
+  }
+
+  override func testBidirectionalStreamingBatched() throws {
+    try super.testBidirectionalStreamingBatched()
+  }
+
+  override func testBidirectionalStreamingPingPong() throws {
+    try super.testBidirectionalStreamingPingPong()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesBatched()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesPingPong()
+  }
 }
 
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 class FunctionalTestsMutualAuthenticationNIOTS: FunctionalTestsInsecureTransportNIOTS {
   override var transportSecurity: TransportSecurity {
     return .mutualAuthentication
+  }
+
+  override func testUnary() throws {
+    try super.testUnary()
+  }
+
+  override func testUnaryLotsOfRequests() throws {
+    try super.testUnaryLotsOfRequests()
+  }
+
+  override func testUnaryWithLargeData() throws {
+    try super.testUnaryWithLargeData()
+  }
+
+  override func testUnaryEmptyRequest() throws {
+    try super.testUnaryEmptyRequest()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testClientStreamingLotsOfMessages() throws {
+    try super.testClientStreamingLotsOfMessages()
+  }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testServerStreamingLotsOfMessages() {
+    super.testServerStreamingLotsOfMessages()
+  }
+
+  override func testBidirectionalStreamingBatched() throws {
+    try super.testBidirectionalStreamingBatched()
+  }
+
+  override func testBidirectionalStreamingPingPong() throws {
+    try super.testBidirectionalStreamingPingPong()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesBatched()
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    try super.testBidirectionalStreamingLotsOfMessagesPingPong()
   }
 }
 #endif // canImport(NIOSSL)
