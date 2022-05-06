@@ -19,6 +19,12 @@ jobs:
         swift build --package-path "$HOME/SwiftFormat" --product swiftformat
         export PATH=$PATH:"$(swift build --package-path "$HOME/SwiftFormat" --show-bin-path)"
         ./scripts/sanity.sh
+    - name: "Checking all tests are present"
+      run: |
+        swift build --build-tests
+        ./scripts/list_tests_in_xctest_bin.sh .build/debug/grpc-swiftPackageTests.xctest GRPCTests > extracted_tests
+        ./scripts/list_tests_spm.sh > generated_tests
+        diff generated_tests extracted_tests
   unit-tests:
     strategy:
       fail-fast: false
