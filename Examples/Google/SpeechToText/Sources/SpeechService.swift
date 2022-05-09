@@ -16,6 +16,7 @@
 
 import GRPC
 import Logging
+import Foundation
 
 typealias Request = Google_Cloud_Speech_V1_StreamingRecognizeRequest
 typealias Response = Google_Cloud_Speech_V1_StreamingRecognizeResponse
