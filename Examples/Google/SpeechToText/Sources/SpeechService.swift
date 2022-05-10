@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import Foundation
 import GRPC
 import Logging
-import Foundation
 
 typealias Request = Google_Cloud_Speech_V1_StreamingRecognizeRequest
 typealias Response = Google_Cloud_Speech_V1_StreamingRecognizeResponse
@@ -51,7 +51,7 @@ final class SpeechService {
 
     // Create a connection secured with TLS to Google's speech service running on our `EventLoopGroup`
     let channel = ClientConnection
-      .secure(group: group)
+      .usingPlatformAppropriateTLS(for: group)
       .withBackgroundActivityLogger(logger)
       .connect(host: "speech.googleapis.com", port: 443)
 
