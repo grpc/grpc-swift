@@ -18,7 +18,7 @@
 
 /// Writer for server-streaming RPC handlers to provide responses.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncResponseStreamWriter<Response: Sendable> {
+public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
   @usableFromInline
   internal typealias Element = (Response, Compression)
 

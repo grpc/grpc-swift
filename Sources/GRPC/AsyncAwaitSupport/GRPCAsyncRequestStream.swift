@@ -52,4 +52,9 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension GRPCAsyncRequestStream: Sendable where Element: Sendable {}
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension GRPCAsyncRequestStream.Iterator: Sendable where Element: Sendable {}
+
 #endif

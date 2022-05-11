@@ -160,4 +160,8 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+// @unchecked is ok: mutable state is accessed/modified via a lock.
+extension PassthroughMessageSource: @unchecked Sendable where Element: Sendable {}
+
 #endif // compiler(>=5.6)

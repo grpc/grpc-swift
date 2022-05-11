@@ -37,7 +37,7 @@ import protocol SwiftProtobuf.Message
 ///
 /// Callers are not able to create `Call` objects directly, rather they must be created via an
 /// object conforming to `GRPCChannel` such as `ClientConnection`.
-public class Call<Request, Response> {
+public final class Call<Request, Response> {
   @usableFromInline
   internal enum State {
     /// Idle, waiting to be invoked.
@@ -417,3 +417,8 @@ extension Call {
     self._send(.metadata(self.options.customMetadata), promise: nil)
   }
 }
+
+#if compiler(>=5.6)
+// @unchecked is ok: all mutable state is accessed/modified from the appropriate event loop.
+extension Call: @unchecked Sendable where Request: Sendable, Response: Sendable {}
+#endif

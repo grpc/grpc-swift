@@ -55,4 +55,9 @@ internal struct PassthroughMessageSequence<Element, Failure: Error>: AsyncSequen
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension PassthroughMessageSequence: Sendable where Element: Sendable {}
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension PassthroughMessageSequence.Iterator: Sendable where Element: Sendable {}
+
 #endif // compiler(>=5.6)

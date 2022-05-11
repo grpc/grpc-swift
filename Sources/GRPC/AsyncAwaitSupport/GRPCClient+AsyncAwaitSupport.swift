@@ -19,7 +19,7 @@ import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCClient {
-  public func makeAsyncUnaryCall<Request: Message, Response: Message>(
+  public func makeAsyncUnaryCall<Request: Message & Sendable, Response: Message & Sendable>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -34,7 +34,7 @@ extension GRPCClient {
     )
   }
 
-  public func makeAsyncUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+  public func makeAsyncUnaryCall<Request: GRPCPayload & Sendable, Response: GRPCPayload & Sendable>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -50,8 +50,8 @@ extension GRPCClient {
   }
 
   public func makeAsyncServerStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     request: Request,
@@ -67,7 +67,10 @@ extension GRPCClient {
     )
   }
 
-  public func makeAsyncServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  public func makeAsyncServerStreamingCall<
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -83,8 +86,8 @@ extension GRPCClient {
   }
 
   public func makeAsyncClientStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     callOptions: CallOptions? = nil,
@@ -99,7 +102,10 @@ extension GRPCClient {
     )
   }
 
-  public func makeAsyncClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  public func makeAsyncClientStreamingCall<
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable
+  >(
     path: String,
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
@@ -114,8 +120,8 @@ extension GRPCClient {
   }
 
   public func makeAsyncBidirectionalStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     callOptions: CallOptions? = nil,
@@ -131,8 +137,8 @@ extension GRPCClient {
   }
 
   public func makeAsyncBidirectionalStreamingCall<
-    Request: GRPCPayload,
-    Response: GRPCPayload
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable
   >(
     path: String,
     callOptions: CallOptions? = nil,
@@ -152,7 +158,7 @@ extension GRPCClient {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCClient {
-  public func performAsyncUnaryCall<Request: Message, Response: Message>(
+  public func performAsyncUnaryCall<Request: Message & Sendable, Response: Message & Sendable>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -167,7 +173,10 @@ extension GRPCClient {
     ).response
   }
 
-  public func performAsyncUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+  public func performAsyncUnaryCall<
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -183,8 +192,8 @@ extension GRPCClient {
   }
 
   public func performAsyncServerStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     request: Request,
@@ -200,7 +209,10 @@ extension GRPCClient {
     ).responseStream
   }
 
-  public func performAsyncServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  public func performAsyncServerStreamingCall<
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -216,9 +228,9 @@ extension GRPCClient {
   }
 
   public func performAsyncClientStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message,
-    RequestStream
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable,
+    RequestStream: AsyncSequence & Sendable
   >(
     path: String,
     requests: RequestStream,
@@ -226,8 +238,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) async throws -> Response
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+  ) async throws -> Response where RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -237,9 +248,9 @@ extension GRPCClient {
   }
 
   public func performAsyncClientStreamingCall<
-    Request: GRPCPayload,
-    Response: GRPCPayload,
-    RequestStream
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable,
+    RequestStream: AsyncSequence & Sendable
   >(
     path: String,
     requests: RequestStream,
@@ -247,8 +258,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) async throws -> Response
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+  ) async throws -> Response where RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -258,92 +268,8 @@ extension GRPCClient {
   }
 
   public func performAsyncClientStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message,
-    RequestStream
-  >(
-    path: String,
-    requests: RequestStream,
-    callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = [],
-    requestType: Request.Type = Request.self,
-    responseType: Response.Type = Response.self
-  ) async throws -> Response
-    where RequestStream: Sequence, RequestStream.Element == Request {
-    let call = self.channel.makeAsyncClientStreamingCall(
-      path: path,
-      callOptions: callOptions ?? self.defaultCallOptions,
-      interceptors: interceptors
-    )
-    return try await self.perform(call, with: AsyncStream(wrapping: requests))
-  }
-
-  public func performAsyncClientStreamingCall<
-    Request: GRPCPayload,
-    Response: GRPCPayload,
-    RequestStream
-  >(
-    path: String,
-    requests: RequestStream,
-    callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = [],
-    requestType: Request.Type = Request.self,
-    responseType: Response.Type = Response.self
-  ) async throws -> Response
-    where RequestStream: Sequence, RequestStream.Element == Request {
-    let call = self.channel.makeAsyncClientStreamingCall(
-      path: path,
-      callOptions: callOptions ?? self.defaultCallOptions,
-      interceptors: interceptors
-    )
-    return try await self.perform(call, with: AsyncStream(wrapping: requests))
-  }
-
-  public func performAsyncBidirectionalStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message,
-    RequestStream: AsyncSequence
-  >(
-    path: String,
-    requests: RequestStream,
-    callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = [],
-    requestType: Request.Type = Request.self,
-    responseType: Response.Type = Response.self
-  ) -> GRPCAsyncResponseStream<Response>
-    where RequestStream.Element == Request {
-    let call = self.channel.makeAsyncBidirectionalStreamingCall(
-      path: path,
-      callOptions: callOptions ?? self.defaultCallOptions,
-      interceptors: interceptors
-    )
-    return self.perform(call, with: requests)
-  }
-
-  public func performAsyncBidirectionalStreamingCall<
-    Request: GRPCPayload,
-    Response: GRPCPayload,
-    RequestStream: AsyncSequence
-  >(
-    path: String,
-    requests: RequestStream,
-    callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = [],
-    requestType: Request.Type = Request.self,
-    responseType: Response.Type = Response.self
-  ) -> GRPCAsyncResponseStream<Response>
-    where RequestStream.Element == Request {
-    let call = self.channel.makeAsyncBidirectionalStreamingCall(
-      path: path,
-      callOptions: callOptions ?? self.defaultCallOptions,
-      interceptors: interceptors
-    )
-    return self.perform(call, with: requests)
-  }
-
-  public func performAsyncBidirectionalStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message,
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable,
     RequestStream: Sequence
   >(
     path: String,
@@ -352,8 +278,89 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
+  ) async throws -> Response where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncClientStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return try await self.perform(call, with: AsyncStream(wrapping: requests))
+  }
+
+  public func performAsyncClientStreamingCall<
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable,
+    RequestStream: Sequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
+  ) async throws -> Response where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncClientStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return try await self.perform(call, with: AsyncStream(wrapping: requests))
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable,
+    RequestStream: AsyncSequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
     where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncBidirectionalStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return self.perform(call, with: requests)
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable,
+    RequestStream: AsyncSequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
+  ) -> GRPCAsyncResponseStream<Response>
+    where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncBidirectionalStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return self.perform(call, with: requests)
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable,
+    RequestStream: Sequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
+  ) -> GRPCAsyncResponseStream<Response> where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -363,8 +370,8 @@ extension GRPCClient {
   }
 
   public func performAsyncBidirectionalStreamingCall<
-    Request: GRPCPayload,
-    Response: GRPCPayload,
+    Request: GRPCPayload & Sendable,
+    Response: GRPCPayload & Sendable,
     RequestStream: Sequence
   >(
     path: String,
@@ -373,8 +380,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> GRPCAsyncResponseStream<Response>
-    where RequestStream.Element == Request {
+  ) -> GRPCAsyncResponseStream<Response> where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -387,11 +393,14 @@ extension GRPCClient {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCClient {
   @inlinable
-  internal func perform<Request, Response, RequestStream>(
+  internal func perform<
+    Request: Sendable,
+    Response: Sendable,
+    RequestStream: AsyncSequence & Sendable
+  >(
     _ call: GRPCAsyncClientStreamingCall<Request, Response>,
     with requests: RequestStream
-  ) async throws -> Response
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+  ) async throws -> Response where RequestStream.Element == Request {
     // We use a detached task because we use cancellation to signal early, but successful exit.
     let requestsTask = Task.detached {
       try Task.checkCancellation()
@@ -420,12 +429,14 @@ extension GRPCClient {
   }
 
   @inlinable
-  internal func perform<Request, Response, RequestStream>(
+  internal func perform<
+    Request: Sendable,
+    Response: Sendable,
+    RequestStream: AsyncSequence & Sendable
+  >(
     _ call: GRPCAsyncBidirectionalStreamingCall<Request, Response>,
     with requests: RequestStream
-  )
-    -> GRPCAsyncResponseStream<Response>
-    where RequestStream: AsyncSequence, RequestStream.Element == Request {
+  ) -> GRPCAsyncResponseStream<Response> where RequestStream.Element == Request {
     Task {
       try await withTaskCancellationHandler {
         try Task.checkCancellation()

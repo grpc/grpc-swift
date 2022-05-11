@@ -500,7 +500,7 @@ extension Normalization_NormalizationAsyncClientProtocol {
   internal func ClientStreaming<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Normalization_FunctionName where RequestStream: AsyncSequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+  ) async throws -> Normalization_FunctionName where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
     return try await self.performAsyncClientStreamingCall(
       path: Normalization_NormalizationClientMetadata.Methods.ClientStreaming.path,
       requests: requests,
@@ -524,7 +524,7 @@ extension Normalization_NormalizationAsyncClientProtocol {
   internal func clientStreaming<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Normalization_FunctionName where RequestStream: AsyncSequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+  ) async throws -> Normalization_FunctionName where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
     return try await self.performAsyncClientStreamingCall(
       path: Normalization_NormalizationClientMetadata.Methods.clientStreaming.path,
       requests: requests,
@@ -548,7 +548,7 @@ extension Normalization_NormalizationAsyncClientProtocol {
   internal func BidirectionalStreaming<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: AsyncSequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
     return self.performAsyncBidirectionalStreamingCall(
       path: Normalization_NormalizationClientMetadata.Methods.BidirectionalStreaming.path,
       requests: requests,
@@ -572,7 +572,7 @@ extension Normalization_NormalizationAsyncClientProtocol {
   internal func bidirectionalStreaming<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: AsyncSequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
     return self.performAsyncBidirectionalStreamingCall(
       path: Normalization_NormalizationClientMetadata.Methods.bidirectionalStreaming.path,
       requests: requests,

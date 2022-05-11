@@ -57,7 +57,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
   typealias PendingEnd = _Pending<End>
 
   @usableFromInline
-  internal enum _CompletionState {
+  internal enum _CompletionState: Sendable {
     /// Finish hasn't been called yet. May move to `pending` or `completed`.
     case incomplete
     /// Finish has been called but the writer is paused. May move to `completed`.

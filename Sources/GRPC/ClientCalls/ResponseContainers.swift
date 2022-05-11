@@ -190,3 +190,9 @@ extension Error {
     }
   }
 }
+
+#if compiler(>=5.6)
+// @unchecked is ok: all mutable state is accessed/modified from an appropriate event loop.
+extension UnaryResponseParts: @unchecked Sendable where Response: Sendable {}
+extension StreamingResponseParts: @unchecked Sendable where Response: Sendable {}
+#endif
