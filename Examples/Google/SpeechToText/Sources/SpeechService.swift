@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import Foundation
 import GRPC
 import Logging
 
@@ -50,7 +51,7 @@ final class SpeechService {
 
     // Create a connection secured with TLS to Google's speech service running on our `EventLoopGroup`
     let channel = ClientConnection
-      .secure(group: group)
+      .usingPlatformAppropriateTLS(for: group)
       .withBackgroundActivityLogger(logger)
       .connect(host: "speech.googleapis.com", port: 443)
 

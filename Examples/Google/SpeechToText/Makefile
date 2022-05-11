@@ -13,6 +13,7 @@ protos:
 generate:
 	protoc \
 	googleapis/google/cloud/speech/v1/cloud_speech.proto \
+	googleapis/google/cloud/speech/v1/resource.proto \
 	googleapis/google/rpc/status.proto \
 	googleapis/google/api/client.proto \
 	googleapis/google/api/annotations.proto \
@@ -25,9 +26,8 @@ generate:
 	mkdir -p Sources/Generated
 	find google/ -name \*.swift -exec cp {} Sources/Generated/ \;
 
-## clean	     : Clean workspace and start from scratch (remove googleapis, generated swift, pods, etc.)
+## clean	     : Clean workspace and start from scratch (remove googleapis, generated swift, etc.)
 clean:
-	rm -rf Pods/
 	rm -rf googleapis/
 	rm -rf google/
 	rm Sources/Generated/*
