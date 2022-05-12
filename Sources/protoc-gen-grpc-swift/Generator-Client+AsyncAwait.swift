@@ -155,7 +155,10 @@ extension Generator {
         let streamsResponses = [.serverStreaming, .bidirectionalStreaming].contains(rpcType)
         let streamsRequests = [.clientStreaming, .bidirectionalStreaming].contains(rpcType)
 
-        let sequenceProtocols = streamsRequests ? ["Sequence", "AsyncSequence"] : [nil]
+        // (protocol, requires sendable)
+        let sequenceProtocols: [(String, Bool)?] = streamsRequests
+          ? [("Sequence", false), ("AsyncSequence", true)]
+          : [nil]
 
         for (j, sequenceProtocol) in sequenceProtocols.enumerated() {
           // Print a new line if this is not the first function in the extension.
@@ -170,8 +173,13 @@ extension Generator {
           let returnType = streamsResponses
             ? Types.responseStream(of: self.methodOutputName)
             : self.methodOutputName
-          let maybeWhereClause = sequenceProtocol.map {
-            "where RequestStream: \($0), RequestStream.Element == \(self.methodInputName)"
+          let maybeWhereClause = sequenceProtocol.map { protocolName, mustBeSendable -> String in
+            let constraints = [
+              "RequestStream: \(protocolName)" + (mustBeSendable ? " & Sendable" : ""),
+              "RequestStream.Element == \(self.methodInputName)",
+            ]
+
+            return "where " + constraints.joined(separator: ", ")
           }
           self.printFunction(
             name: functionName,

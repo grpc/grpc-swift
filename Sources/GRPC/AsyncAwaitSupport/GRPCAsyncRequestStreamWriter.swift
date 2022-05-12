@@ -31,7 +31,7 @@
 /// try await stream.finish()
 /// ```
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncRequestStreamWriter<Request: Sendable> {
+public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   @usableFromInline
   internal let asyncWriter: AsyncWriter<Delegate<Request>>
 

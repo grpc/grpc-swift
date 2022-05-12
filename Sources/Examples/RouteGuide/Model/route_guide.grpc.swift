@@ -335,7 +335,7 @@ extension Routeguide_RouteGuideAsyncClientProtocol {
   public func recordRoute<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Routeguide_RouteSummary where RequestStream: AsyncSequence, RequestStream.Element == Routeguide_Point {
+  ) async throws -> Routeguide_RouteSummary where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Routeguide_Point {
     return try await self.performAsyncClientStreamingCall(
       path: Routeguide_RouteGuideClientMetadata.Methods.recordRoute.path,
       requests: requests,
@@ -359,7 +359,7 @@ extension Routeguide_RouteGuideAsyncClientProtocol {
   public func routeChat<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Routeguide_RouteNote> where RequestStream: AsyncSequence, RequestStream.Element == Routeguide_RouteNote {
+  ) -> GRPCAsyncResponseStream<Routeguide_RouteNote> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Routeguide_RouteNote {
     return self.performAsyncBidirectionalStreamingCall(
       path: Routeguide_RouteGuideClientMetadata.Methods.routeChat.path,
       requests: requests,

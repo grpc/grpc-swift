@@ -19,7 +19,7 @@ import NIOHPACK
 
 /// Async-await variant of BidirectionalStreamingCall.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: Sendable> {
+public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: Sendable>: Sendable {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
   private let responseSource: PassthroughMessageSource<Response, Error>
