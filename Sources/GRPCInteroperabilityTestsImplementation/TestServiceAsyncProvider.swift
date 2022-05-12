@@ -74,7 +74,7 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
     // We can't validate messages at the wire-encoding layer (i.e. where the compression byte is
     // set), so we have to check via the encoding header. Note that it is possible for the header
     // to be set and for the message to not be compressed.
-    if request.expectCompressed.value, !context.requestMetadata.contains(name: "grpc-encoding") {
+    if request.expectCompressed.value, !context.request.headers.contains(name: "grpc-encoding") {
       throw GRPCStatus(
         code: .invalidArgument,
         message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -83,14 +83,14 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
 
     // Should we enable compression? The C++ interoperability client only expects compression if
     // explicitly requested; we'll do the same.
-    context.compressionEnabled = request.responseCompressed.value
+    try await context.response.compressResponses(request.responseCompressed.value)
 
     if request.shouldEchoStatus {
       let code = GRPCStatus.Code(rawValue: numericCast(request.responseStatus.code)) ?? .unknown
       throw GRPCStatus(code: code, message: request.responseStatus.message)
     }
 
-    if context.requestMetadata.shouldEchoMetadata {
+    if context.request.headers.shouldEchoMetadata {
       throw Self.echoMetadataNotImplemented
     }
 
@@ -158,7 +158,7 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
 
     for try await request in requestStream {
       if request.expectCompressed.value {
-        guard context.requestMetadata.contains(name: "grpc-encoding") else {
+        guard context.request.headers.contains(name: "grpc-encoding") else {
           throw GRPCStatus(
             code: .invalidArgument,
             message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -183,7 +183,7 @@ public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
     context: GRPCAsyncServerCallContext
   ) async throws {
     // We don't have support for this yet so just fail the call.
-    if context.requestMetadata.shouldEchoMetadata {
+    if context.request.headers.shouldEchoMetadata {
       throw Self.echoMetadataNotImplemented
     }
 

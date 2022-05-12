@@ -52,39 +52,21 @@ internal final class AsyncResponseStreamWriterDelegate<Response: Sendable>: Asyn
   internal typealias End = GRPCStatus
 
   @usableFromInline
-  internal let _context: GRPCAsyncServerCallContext
-
-  @usableFromInline
-  internal let _send: @Sendable (Response, MessageMetadata) -> Void
+  internal let _send: @Sendable (Response, Compression) -> Void
 
   @usableFromInline
   internal let _finish: @Sendable (GRPCStatus) -> Void
-
-  @usableFromInline
-  internal let _compressionEnabledOnServer: Bool
 
   // Create a new AsyncResponseStreamWriterDelegate.
   //
   // - Important: the `send` and `finish` closures must be thread-safe.
   @inlinable
   internal init(
-    context: GRPCAsyncServerCallContext,
-    compressionIsEnabled: Bool,
-    send: @escaping @Sendable (Response, MessageMetadata) -> Void,
+    send: @escaping @Sendable (Response, Compression) -> Void,
     finish: @escaping @Sendable (GRPCStatus) -> Void
   ) {
-    self._context = context
-    self._compressionEnabledOnServer = compressionIsEnabled
     self._send = send
     self._finish = finish
-  }
-
-  @inlinable
-  internal func _shouldCompress(_ compression: Compression) -> Bool {
-    guard self._compressionEnabledOnServer else {
-      return false
-    }
-    return compression.isEnabled(callDefault: self._context.compressionEnabled)
   }
 
   @inlinable
@@ -92,8 +74,7 @@ internal final class AsyncResponseStreamWriterDelegate<Response: Sendable>: Asyn
     _ response: Response,
     compression: Compression = .deferToCallDefault
   ) {
-    let compress = self._shouldCompress(compression)
-    self._send(response, .init(compress: compress, flush: true))
+    self._send(response, compression)
   }
 
   // MARK: - AsyncWriterDelegate conformance.

@@ -173,7 +173,7 @@ class AsyncServerHandlerTests: GRPCTestCase {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { requests, responseStreamWriter, context in
-      context.compressionEnabled = false
+      try await context.response.compressResponses(false)
       return try await Self.echo(
         requests: requests,
         responseStreamWriter: responseStreamWriter,
@@ -206,9 +206,9 @@ class AsyncServerHandlerTests: GRPCTestCase {
 
   func testResponseHeadersAndTrailersSentFromContext() async throws {
     let handler = self.makeHandler { _, responseStreamWriter, context in
-      context.initialResponseMetadata = ["pontiac": "bandit"]
+      try await context.response.setHeaders(["pontiac": "bandit"])
       try await responseStreamWriter.send("1")
-      context.trailingResponseMetadata = ["disco": "strangler"]
+      try await context.response.setTrailers(["disco": "strangler"])
     }
     defer {
       XCTAssertNoThrow(try self.loop.submit { handler.finish() }.wait())
@@ -228,34 +228,6 @@ class AsyncServerHandlerTests: GRPCTestCase {
       XCTAssertEqual(trailers, ["disco": "strangler"])
     }
     try await responseStream.next().assertNil()
-  }
-
-  func testResponseHeadersDroppedIfSetAfterFirstResponse() async throws {
-    throw XCTSkip("Setting metadata is racy. This test will not reliably pass until that is fixed.")
-    // let handler = self.makeHandler { _, responseStreamWriter, context in
-    //   // try await context.sendHeaders(...)
-    //   try await responseStreamWriter.send("1")
-    //   context.initialResponseMetadata = ["pontiac": "bandit"]
-    //   context.trailingResponseMetadata = ["disco": "strangler"]
-    // }
-    // defer {
-    //   XCTAssertNoThrow(try self.loop.submit { handler.finish() }.wait())
-    // }
-    //
-    // self.loop.execute {
-    //   handler.receiveMetadata([:])
-    //   handler.receiveEnd()
-    // }
-    //
-    // let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    // try await responseStream.next().assertMetadata { headers in
-    //   XCTAssertEqual(headers, [:])
-    // }
-    // try await responseStream.next().assertMessage()
-    // try await responseStream.next().assertStatus { _, trailers in
-    //   XCTAssertEqual(trailers, ["disco": "strangler"])
-    // }
-    // try await responseStream.next().assertNil()
   }
 
   func testThrowingDeserializer() async throws {

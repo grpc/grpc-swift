@@ -19,9 +19,9 @@ import NIOHPACK
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine {
   @usableFromInline
-  enum HandleMetadataAction {
+  enum HandleMetadataAction: Hashable {
     /// Invoke the user handler.
-    case invokeHandler(Ref<UserInfo>, CallHandlerContext)
+    case invokeHandler
     /// Cancel the RPC, the metadata was not expected.
     case cancel
   }
@@ -61,6 +61,37 @@ extension ServerHandlerStateMachine {
     case cancelAndNilOutHandlerComponents
     /// Don't do anything.
     case none
+  }
+
+  /// Tracks whether response metadata has been written.
+  @usableFromInline
+  internal enum ResponseMetadata {
+    case notWritten(HPACKHeaders)
+    case written
+
+    /// Update the metadata. It must not have been written yet.
+    @inlinable
+    mutating func update(_ metadata: HPACKHeaders) {
+      switch self {
+      case .notWritten:
+        self = .notWritten(metadata)
+      case .written:
+        assertionFailure("Metadata must not be set after it has been sent")
+      }
+    }
+
+    /// Returns the metadata if it has not been written and moves the state to
+    /// `written`. Returns `nil` if it has already been written.
+    @inlinable
+    mutating func getIfNotWritten() -> HPACKHeaders? {
+      switch self {
+      case let .notWritten(metadata):
+        self = .written
+        return metadata
+      case .written:
+        return nil
+      }
+    }
   }
 }
 #endif // compiler(>=5.6)

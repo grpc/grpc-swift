@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import Logging
 import NIOCore
 import NIOHPACK
 
@@ -182,8 +183,29 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal let allocator: ByteBufferAllocator
 
+  /// A user-provided error delegate which, if provided, is used to transform errors and potentially
+  /// pack errors into trailers.
   @usableFromInline
   internal let errorDelegate: ServerErrorDelegate?
+
+  /// A logger.
+  @usableFromInline
+  internal let logger: Logger
+
+  /// A reference to the user info. This is shared with the interceptor pipeline and may be accessed
+  /// from the async call context. `UserInfo` is _not_ `Sendable` and must always be accessed from
+  /// an appropriate event loop.
+  @usableFromInline
+  internal let userInfoRef: Ref<UserInfo>
+
+  /// Whether compression is enabled on the server and an algorithm has been negotiated with
+  /// the client
+  @usableFromInline
+  internal let compressionEnabledOnRPC: Bool
+
+  /// Whether the RPC method would like to compress responses (if possible). Defaults to true.
+  @usableFromInline
+  internal var compressResponsesIfPossible: Bool
 
   /// A state machine for the interceptor pipeline.
   @usableFromInline
@@ -232,9 +254,12 @@ internal final class AsyncServerHandler<
     self.allocator = context.allocator
     self.responseWriter = context.responseWriter
     self.errorDelegate = context.errorDelegate
+    self.compressionEnabledOnRPC = context.encoding.isEnabled
+    self.compressResponsesIfPossible = true
+    self.logger = context.logger
 
-    let userInfoRef = Ref(UserInfo())
-    self.handlerStateMachine = .init(userInfoRef: userInfoRef, context: context)
+    self.userInfoRef = Ref(UserInfo())
+    self.handlerStateMachine = .init()
     self.handlerComponents = nil
 
     self.userHandler = userHandler
@@ -247,7 +272,7 @@ internal final class AsyncServerHandler<
       path: context.path,
       callType: callType,
       remoteAddress: context.remoteAddress,
-      userInfoRef: userInfoRef,
+      userInfoRef: self.userInfoRef,
       interceptors: interceptors,
       onRequestPart: self.receiveInterceptedPart(_:),
       onResponsePart: self.sendInterceptedPart(_:promise:)
@@ -377,7 +402,7 @@ internal final class AsyncServerHandler<
     }
 
     switch self.handlerStateMachine.handleMetadata() {
-    case let .invokeHandler(userInfoRef, callHandlerContext):
+    case .invokeHandler:
       // We're going to invoke the handler. We need to create a handful of things in order to do
       // that:
       //
@@ -393,16 +418,14 @@ internal final class AsyncServerHandler<
       // as a result of an error or when `self.finish()` is called).
       let handlerContext = GRPCAsyncServerCallContext(
         headers: headers,
-        logger: callHandlerContext.logger,
-        userInfoRef: userInfoRef
+        logger: self.logger,
+        contextProvider: self
       )
 
       let requestSource = PassthroughMessageSource<Request, Error>()
 
       let writerDelegate = AsyncResponseStreamWriterDelegate(
-        context: handlerContext,
-        compressionIsEnabled: callHandlerContext.encoding.isEnabled,
-        send: self.interceptResponseMessage(_:metadata:),
+        send: self.interceptResponseMessage(_:compression:),
         finish: self.interceptResponseStatus(_:)
       )
       let writer = AsyncWriter(delegate: writerDelegate)
@@ -423,7 +446,7 @@ internal final class AsyncServerHandler<
       }
 
       // Update our state before invoke the handler.
-      self.handlerStateMachine.handlerInvoked(context: handlerContext)
+      self.handlerStateMachine.handlerInvoked(requestHeaders: headers)
       self.handlerComponents = ServerHandlerComponents(
         requestSource: requestSource,
         responseWriter: writer,
@@ -540,7 +563,7 @@ internal final class AsyncServerHandler<
   // MARK: - User Function To Interceptors
 
   @inlinable
-  internal func _interceptResponseMessage(_ response: Response, metadata: MessageMetadata) {
+  internal func _interceptResponseMessage(_ response: Response, compression: Compression) {
     self.eventLoop.assertInEventLoop()
 
     switch self.handlerStateMachine.sendMessage() {
@@ -559,6 +582,13 @@ internal final class AsyncServerHandler<
     case .intercept(.none):
       switch self.interceptorStateMachine.interceptResponseMessage() {
       case .intercept:
+        let senderWantsCompression = compression.isEnabled(
+          callDefault: self.compressResponsesIfPossible
+        )
+
+        let compress = self.compressionEnabledOnRPC && senderWantsCompression
+
+        let metadata = MessageMetadata(compress: compress, flush: true)
         self.interceptors?.send(.message(response, metadata), promise: nil)
       case .cancel:
         return self.cancel(error: nil)
@@ -573,12 +603,12 @@ internal final class AsyncServerHandler<
 
   @Sendable
   @inlinable
-  internal func interceptResponseMessage(_ response: Response, metadata: MessageMetadata) {
+  internal func interceptResponseMessage(_ response: Response, compression: Compression) {
     if self.eventLoop.inEventLoop {
-      self._interceptResponseMessage(response, metadata: metadata)
+      self._interceptResponseMessage(response, compression: compression)
     } else {
       self.eventLoop.execute {
-        self._interceptResponseMessage(response, metadata: metadata)
+        self._interceptResponseMessage(response, compression: compression)
       }
     }
   }
@@ -696,6 +726,74 @@ internal final class AsyncServerHandler<
       ()
     }
   }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension AsyncServerHandler: AsyncServerCallContextProvider {
+  @usableFromInline
+  internal func setResponseHeaders(_ headers: HPACKHeaders) async throws {
+    let completed = self.eventLoop.submit {
+      self.handlerStateMachine.setResponseHeaders(headers)
+    }
+    try await completed.get()
+  }
+
+  @usableFromInline
+  internal func setResponseTrailers(_ headers: HPACKHeaders) async throws {
+    let completed = self.eventLoop.submit {
+      self.handlerStateMachine.setResponseTrailers(headers)
+    }
+    try await completed.get()
+  }
+
+  @usableFromInline
+  internal func setResponseCompression(_ enabled: Bool) async throws {
+    let completed = self.eventLoop.submit {
+      self.compressResponsesIfPossible = enabled
+    }
+    try await completed.get()
+  }
+
+  @usableFromInline
+  func withUserInfo<Result: Sendable>(
+    _ modify: @Sendable @escaping (UserInfo) throws -> Result
+  ) async throws -> Result {
+    let result = self.eventLoop.submit {
+      try modify(self.userInfoRef.value)
+    }
+    return try await result.get()
+  }
+
+  @usableFromInline
+  func withMutableUserInfo<Result: Sendable>(
+    _ modify: @Sendable @escaping (inout UserInfo) throws -> Result
+  ) async throws -> Result {
+    let result = self.eventLoop.submit {
+      try modify(&self.userInfoRef.value)
+    }
+    return try await result.get()
+  }
+}
+
+/// This protocol exists so that the generic server handler can be erased from the
+/// `GRPCAsyncServerCallContext`.
+///
+/// It provides methods which update context on the async handler by first executing onto the
+/// correct event loop.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@usableFromInline
+protocol AsyncServerCallContextProvider {
+  func setResponseHeaders(_ headers: HPACKHeaders) async throws
+  func setResponseTrailers(_ trailers: HPACKHeaders) async throws
+  func setResponseCompression(_ enabled: Bool) async throws
+
+  func withUserInfo<Result: Sendable>(
+    _ modify: @Sendable @escaping (UserInfo) throws -> Result
+  ) async throws -> Result
+
+  func withMutableUserInfo<Result: Sendable>(
+    _ modify: @Sendable @escaping (inout UserInfo) throws -> Result
+  ) async throws -> Result
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)

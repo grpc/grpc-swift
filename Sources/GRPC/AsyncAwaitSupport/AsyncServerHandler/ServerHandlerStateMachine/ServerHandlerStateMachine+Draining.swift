@@ -31,16 +31,37 @@ extension ServerHandlerStateMachine {
         Output
       >
 
-    /// Whether the response headers have been written yet.
+    /// The response headers.
     @usableFromInline
-    internal private(set) var headersWritten: Bool
+    internal private(set) var responseHeaders: ResponseMetadata
+    /// The response trailers.
     @usableFromInline
-    internal let context: GRPCAsyncServerCallContext
+    internal private(set) var responseTrailers: ResponseMetadata
+    /// The request headers.
+    @usableFromInline
+    internal let requestHeaders: HPACKHeaders
 
     @inlinable
     init(from state: ServerHandlerStateMachine.Handling) {
-      self.headersWritten = state.headersWritten
-      self.context = state.context
+      self.responseHeaders = state.responseHeaders
+      self.responseTrailers = state.responseTrailers
+      self.requestHeaders = state.requestHeaders
+    }
+
+    @inlinable
+    mutating func setResponseHeaders(
+      _ metadata: HPACKHeaders
+    ) -> Self.NextStateAndOutput<Void> {
+      self.responseHeaders.update(metadata)
+      return .init(nextState: .draining(self))
+    }
+
+    @inlinable
+    mutating func setResponseTrailers(
+      _ metadata: HPACKHeaders
+    ) -> Self.NextStateAndOutput<Void> {
+      self.responseTrailers.update(metadata)
+      return .init(nextState: .draining(self))
     }
 
     @inlinable
@@ -63,24 +84,20 @@ extension ServerHandlerStateMachine {
 
     @inlinable
     mutating func sendMessage() -> Self.NextStateAndOutput<SendMessageAction> {
-      let headers: HPACKHeaders?
-
-      if self.headersWritten {
-        headers = nil
-      } else {
-        self.headersWritten = true
-        headers = self.context.initialResponseMetadata
-      }
-
+      let headers = self.responseHeaders.getIfNotWritten()
       return .init(nextState: .draining(self), output: .intercept(headers: headers))
     }
 
     @inlinable
     mutating func sendStatus() -> Self.NextStateAndOutput<SendStatusAction> {
-      let trailers = self.context.trailingResponseMetadata
       return .init(
         nextState: .finished(from: self),
-        output: .intercept(requestHeaders: self.context.requestMetadata, trailers: trailers)
+        output: .intercept(
+          requestHeaders: self.requestHeaders,
+          // If trailers had been written we'd already be in the finished state so
+          // the force unwrap is okay here.
+          trailers: self.responseTrailers.getIfNotWritten()!
+        )
       )
     }
 
