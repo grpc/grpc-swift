@@ -309,7 +309,7 @@ extension Target {
     path: "Sources/Examples/Echo/Runtime"
   )
 
-  static let echoAsync: Target = .target(
+  static let echoAsync: Target = .executableTarget(
     name: "AsyncAwaitEcho",
     dependencies: [
       .grpc,
