@@ -321,16 +321,16 @@ internal final class AsyncServerHandler<
       self.handlerComponents = nil
 
       // We don't distinguish between having sent the status or not; we just tell the interceptor
-      // state machine that we want to cancel. It will inform us whether to generate and send a
-      // status or not.
-      switch self.interceptorStateMachine.interceptResponseStatus() {
-      case .intercept:
+      // state machine that we want to send a response status. It will inform us whether to
+      // generate and send one or not.
+      switch self.interceptorStateMachine.interceptedResponseStatus() {
+      case .forward:
         let error = error ?? GRPCStatus.processingError
         let (status, trailers) = ServerErrorProcessor.processLibraryError(
           error,
           delegate: self.errorDelegate
         )
-        self.interceptors?.send(.end(status, trailers), promise: nil)
+        self.responseWriter?.sendEnd(status: status, trailers: trailers, promise: nil)
       case .drop, .cancel:
         ()
       }
