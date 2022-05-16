@@ -21,25 +21,31 @@ extension ServerHandlerStateMachine {
   /// the request headers) and invoke the handler, or we are cancelled.
   @usableFromInline
   internal struct Idle {
+    @usableFromInline
     typealias NextStateAndOutput<Output> = ServerHandlerStateMachine.NextStateAndOutput<
       ServerHandlerStateMachine.Idle.NextState,
       Output
     >
 
     /// A ref to the `UserInfo`. We hold on to this until we're ready to invoke the handler.
+    @usableFromInline
     let userInfoRef: Ref<UserInfo>
     /// A bag of bits required to construct a context passed to the user handler when it is invoked.
+    @usableFromInline
     let callHandlerContext: CallHandlerContext
 
     /// The state of the inbound stream, i.e. the request stream.
+    @usableFromInline
     internal private(set) var inboundState: ServerInterceptorStateMachine.InboundStreamState
 
+    @inlinable
     init(userInfoRef: Ref<UserInfo>, context: CallHandlerContext) {
       self.userInfoRef = userInfoRef
       self.callHandlerContext = context
       self.inboundState = .idle
     }
 
+    @inlinable
     mutating func handleMetadata() -> Self.NextStateAndOutput<HandleMetadataAction> {
       let action: HandleMetadataAction
 
@@ -55,16 +61,19 @@ extension ServerHandlerStateMachine {
       return .init(nextState: .idle(self), output: action)
     }
 
+    @inlinable
     mutating func handleMessage() -> Self.NextStateAndOutput<HandleMessageAction> {
       // We can't receive a message before the metadata, doing so is a protocol violation.
       return .init(nextState: .idle(self), output: .cancel)
     }
 
+    @inlinable
     mutating func handleEnd() -> Self.NextStateAndOutput<HandleEndAction> {
       // Receiving 'end' before we start is odd but okay, just cancel.
       return .init(nextState: .idle(self), output: .cancel)
     }
 
+    @inlinable
     mutating func handlerInvoked(
       context: GRPCAsyncServerCallContext
     ) -> Self.NextStateAndOutput<Void> {
@@ -72,6 +81,7 @@ extension ServerHandlerStateMachine {
       return .init(nextState: .handling(from: self, context: context))
     }
 
+    @inlinable
     mutating func cancel() -> Self.NextStateAndOutput<CancelAction> {
       // There's no handler to cancel. Move straight to finished.
       return .init(nextState: .finished(from: self), output: .none)

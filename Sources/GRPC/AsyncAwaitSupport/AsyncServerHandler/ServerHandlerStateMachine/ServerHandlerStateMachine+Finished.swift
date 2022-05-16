@@ -17,36 +17,47 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine {
+  @usableFromInline
   internal struct Finished {
+    @usableFromInline
     typealias NextStateAndOutput<Output> = ServerHandlerStateMachine.NextStateAndOutput<
       ServerHandlerStateMachine.Finished.NextState,
       Output
     >
 
+    @inlinable
     internal init(from state: ServerHandlerStateMachine.Idle) {}
+    @inlinable
     internal init(from state: ServerHandlerStateMachine.Handling) {}
+    @inlinable
     internal init(from state: ServerHandlerStateMachine.Draining) {}
 
+    @inlinable
     mutating func handleMetadata() -> Self.NextStateAndOutput<HandleMetadataAction> {
       return .init(nextState: .finished(self), output: .cancel)
     }
 
+    @inlinable
     mutating func handleMessage() -> Self.NextStateAndOutput<HandleMessageAction> {
       return .init(nextState: .finished(self), output: .cancel)
     }
 
+    @inlinable
     mutating func handleEnd() -> Self.NextStateAndOutput<HandleEndAction> {
       return .init(nextState: .finished(self), output: .cancel)
     }
 
+    @inlinable
     mutating func sendMessage() -> Self.NextStateAndOutput<SendMessageAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func sendStatus() -> Self.NextStateAndOutput<SendStatusAction> {
       return .init(nextState: .finished(self), output: .drop)
     }
 
+    @inlinable
     mutating func cancel() -> Self.NextStateAndOutput<CancelAction> {
       return .init(nextState: .finished(self), output: .cancelAndNilOutHandlerComponents)
     }

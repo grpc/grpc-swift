@@ -269,7 +269,7 @@ extension ServerHandlerStateMachine.SendMessageAction {
 
 extension ServerHandlerStateMachine.SendStatusAction {
   func assertIntercept() {
-    XCTAssertEqual(self, .intercept(trailers: [:]))
+    XCTAssertEqual(self, .intercept(requestHeaders: [:], trailers: [:]))
   }
 
   func assertDrop() {

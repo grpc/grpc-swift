@@ -22,7 +22,9 @@ extension ServerHandlerStateMachine {
   /// closed (i.e. we have seen 'end' but it has not necessarily been consumed by the user handler).
   /// We can transition to a new state either by sending the end of the response stream or by
   /// cancelling.
+  @usableFromInline
   internal struct Draining {
+    @usableFromInline
     typealias NextStateAndOutput<Output> =
       ServerHandlerStateMachine.NextStateAndOutput<
         ServerHandlerStateMachine.Draining.NextState,
@@ -30,29 +32,36 @@ extension ServerHandlerStateMachine {
       >
 
     /// Whether the response headers have been written yet.
-    private var headersWritten: Bool
+    @usableFromInline
+    internal private(set) var headersWritten: Bool
+    @usableFromInline
     internal let context: GRPCAsyncServerCallContext
 
+    @inlinable
     init(from state: ServerHandlerStateMachine.Handling) {
       self.headersWritten = state.headersWritten
       self.context = state.context
     }
 
+    @inlinable
     mutating func handleMetadata() -> Self.NextStateAndOutput<HandleMetadataAction> {
       // We're already draining, i.e. the inbound stream is closed, cancel the RPC.
       return .init(nextState: .draining(self), output: .cancel)
     }
 
+    @inlinable
     mutating func handleMessage() -> Self.NextStateAndOutput<HandleMessageAction> {
       // We're already draining, i.e. the inbound stream is closed, cancel the RPC.
       return .init(nextState: .draining(self), output: .cancel)
     }
 
+    @inlinable
     mutating func handleEnd() -> Self.NextStateAndOutput<HandleEndAction> {
       // We're already draining, i.e. the inbound stream is closed, cancel the RPC.
       return .init(nextState: .draining(self), output: .cancel)
     }
 
+    @inlinable
     mutating func sendMessage() -> Self.NextStateAndOutput<SendMessageAction> {
       let headers: HPACKHeaders?
 
@@ -66,11 +75,16 @@ extension ServerHandlerStateMachine {
       return .init(nextState: .draining(self), output: .intercept(headers: headers))
     }
 
+    @inlinable
     mutating func sendStatus() -> Self.NextStateAndOutput<SendStatusAction> {
       let trailers = self.context.trailingResponseMetadata
-      return .init(nextState: .finished(from: self), output: .intercept(trailers: trailers))
+      return .init(
+        nextState: .finished(from: self),
+        output: .intercept(requestHeaders: self.context.requestMetadata, trailers: trailers)
+      )
     }
 
+    @inlinable
     mutating func cancel() -> Self.NextStateAndOutput<CancelAction> {
       return .init(nextState: .finished(from: self), output: .cancelAndNilOutHandlerComponents)
     }

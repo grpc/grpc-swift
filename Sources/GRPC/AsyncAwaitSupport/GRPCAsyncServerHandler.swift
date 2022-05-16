@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
-
 import NIOCore
 import NIOHPACK
 
@@ -49,6 +48,8 @@ public struct GRPCAsyncServerHandler<
   }
 }
 
+// MARK: - RPC Adapters
+
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCAsyncServerHandler {
   public typealias Request = Deserializer.Output
@@ -67,6 +68,7 @@ extension GRPCAsyncServerHandler {
       context: context,
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
+      callType: .unary,
       interceptors: interceptors,
       userHandler: { requestStream, responseStreamWriter, context in
         var iterator = requestStream.makeAsyncIterator()
@@ -94,6 +96,7 @@ extension GRPCAsyncServerHandler {
       context: context,
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
+      callType: .clientStreaming,
       interceptors: interceptors,
       userHandler: { requestStream, responseStreamWriter, context in
         let response = try await clientStreaming(requestStream, context)
@@ -118,6 +121,7 @@ extension GRPCAsyncServerHandler {
       context: context,
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
+      callType: .serverStreaming,
       interceptors: interceptors,
       userHandler: { requestStream, responseStreamWriter, context in
         var iterator = requestStream.makeAsyncIterator()
@@ -145,11 +149,14 @@ extension GRPCAsyncServerHandler {
       context: context,
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
+      callType: .bidirectionalStreaming,
       interceptors: interceptors,
       userHandler: bidirectional
     )
   }
 }
+
+// MARK: - Server Handler
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
@@ -167,17 +174,36 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal let deserializer: Deserializer
 
-  /// A pipeline of user provided interceptors.
+  /// The event loop that this handler executes on.
   @usableFromInline
-  internal var interceptors: ServerInterceptorPipeline<Request, Response>!
+  internal let eventLoop: EventLoop
 
-  /// The context required in order create the function.
+  /// A `ByteBuffer` allocator provided by the underlying `Channel`.
   @usableFromInline
-  internal let context: CallHandlerContext
+  internal let allocator: ByteBufferAllocator
 
-  /// A reference to a `UserInfo`.
   @usableFromInline
-  internal let userInfoRef: Ref<UserInfo>
+  internal let errorDelegate: ServerErrorDelegate?
+
+  /// A state machine for the interceptor pipeline.
+  @usableFromInline
+  internal private(set) var interceptorStateMachine: ServerInterceptorStateMachine
+  /// The interceptor pipeline.
+  @usableFromInline
+  internal private(set) var interceptors: Optional<ServerInterceptorPipeline<Request, Response>>
+  /// An object for writing intercepted responses to the channel.
+  @usableFromInline
+  internal private(set) var responseWriter: Optional<GRPCServerResponseWriter>
+
+  /// A state machine for the user implemented function.
+  @usableFromInline
+  internal private(set) var handlerStateMachine: ServerHandlerStateMachine
+  /// A bag of components used by the user handler.
+  @usableFromInline
+  internal private(set) var handlerComponents: Optional<ServerHandlerComponents<
+    Request,
+    AsyncResponseStreamWriterDelegate<Response>
+  >>
 
   /// The user provided function to execute.
   @usableFromInline
@@ -187,81 +213,12 @@ internal final class AsyncServerHandler<
     GRPCAsyncServerCallContext
   ) async throws -> Void
 
-  /// The state of the handler.
-  @usableFromInline
-  internal var state: State = .idle
-
-  /// The task used to run the async user handler.
-  ///
-  /// - TODO: I'd like it if this was part of the assoc data for the .active state but doing so may introduce a race condition.
-  @usableFromInline
-  internal var userHandlerTask: Task<Void, Never>? = nil
-
-  @usableFromInline
-  internal enum State {
-    /// No headers have been received.
-    case idle
-
-    @usableFromInline
-    internal struct ActiveState {
-      /// The source backing the request stream that is being consumed by the user handler.
-      @usableFromInline
-      let requestStreamSource: PassthroughMessageSource<Request, Error>
-
-      /// The call context that was passed to the user handler.
-      @usableFromInline
-      let context: GRPCAsyncServerCallContext
-
-      /// The response stream writer that is being used by the user handler.
-      ///
-      /// Because this is pausable, it may contain responses after the user handler has completed
-      /// that have yet to be written. However we will remain in the `.active` state until the
-      /// response stream writer has completed.
-      @usableFromInline
-      let responseStreamWriter: GRPCAsyncResponseStreamWriter<Response>
-
-      /// The response headers have been sent back to the client via the interceptors.
-      @usableFromInline
-      var haveSentResponseHeaders: Bool = false
-
-      /// The promise we are using to bridge the NIO and async-await worlds.
-      ///
-      /// It is the mechanism that we use to run a callback when the user handler has completed.
-      /// The promise is not passed to the user handler directly. Instead it is fulfilled with the
-      /// result of the async `Task` executing the user handler using `completeWithTask(_:)`.
-      ///
-      /// - TODO: It shouldn't really be necessary to stash this promise here. Specifically it is
-      /// never used anywhere when the `.active` enum value is accessed. However, if we do not store
-      /// it here then the tests periodically segfault. This appears to be a reference counting bug
-      /// in Swift and/or NIO since it should have been captured by `completeWithTask(_:)`.
-      let _userHandlerPromise: EventLoopPromise<Void>
-
-      @usableFromInline
-      internal init(
-        requestStreamSource: PassthroughMessageSource<Request, Error>,
-        context: GRPCAsyncServerCallContext,
-        responseStreamWriter: GRPCAsyncResponseStreamWriter<Response>,
-        userHandlerPromise: EventLoopPromise<Void>
-      ) {
-        self.requestStreamSource = requestStreamSource
-        self.context = context
-        self.responseStreamWriter = responseStreamWriter
-        self._userHandlerPromise = userHandlerPromise
-      }
-    }
-
-    /// Headers have been received and an async `Task` has been created to execute the user handler.
-    case active(ActiveState)
-
-    /// The handler has completed.
-    case completed
-  }
-
   @inlinable
-  public init(
+  internal init(
     context: CallHandlerContext,
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
+    callType: GRPCCallType,
     interceptors: [ServerInterceptor<Request, Response>],
     userHandler: @escaping @Sendable (
       GRPCAsyncRequestStream<Request>,
@@ -271,17 +228,24 @@ internal final class AsyncServerHandler<
   ) {
     self.serializer = responseSerializer
     self.deserializer = requestDeserializer
-    self.context = context
-    self.userHandler = userHandler
+    self.eventLoop = context.eventLoop
+    self.allocator = context.allocator
+    self.responseWriter = context.responseWriter
+    self.errorDelegate = context.errorDelegate
 
     let userInfoRef = Ref(UserInfo())
-    self.userInfoRef = userInfoRef
+    self.handlerStateMachine = .init(userInfoRef: userInfoRef, context: context)
+    self.handlerComponents = nil
 
+    self.userHandler = userHandler
+
+    self.interceptorStateMachine = .init()
+    self.interceptors = nil
     self.interceptors = ServerInterceptorPipeline(
       logger: context.logger,
       eventLoop: context.eventLoop,
       path: context.path,
-      callType: .bidirectionalStreaming,
+      callType: callType,
       remoteAddress: context.remoteAddress,
       userInfoRef: userInfoRef,
       interceptors: interceptors,
@@ -294,44 +258,96 @@ internal final class AsyncServerHandler<
 
   @inlinable
   internal func receiveMetadata(_ headers: HPACKHeaders) {
-    self.interceptors.receive(.metadata(headers))
+    switch self.interceptorStateMachine.interceptRequestMetadata() {
+    case .intercept:
+      self.interceptors?.receive(.metadata(headers))
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
+      ()
+    }
   }
 
   @inlinable
   internal func receiveMessage(_ bytes: ByteBuffer) {
+    let request: Request
+
     do {
-      let message = try self.deserializer.deserialize(byteBuffer: bytes)
-      self.interceptors.receive(.message(message))
+      request = try self.deserializer.deserialize(byteBuffer: bytes)
     } catch {
-      self.handleError(error)
+      return self.cancel(error: error)
+    }
+
+    switch self.interceptorStateMachine.interceptRequestMessage() {
+    case .intercept:
+      self.interceptors?.receive(.message(request))
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
+      ()
     }
   }
 
   @inlinable
   internal func receiveEnd() {
-    self.interceptors.receive(.end)
+    switch self.interceptorStateMachine.interceptRequestEnd() {
+    case .intercept:
+      self.interceptors?.receive(.end)
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
+      ()
+    }
   }
 
   @inlinable
   internal func receiveError(_ error: Error) {
-    self.handleError(error)
-    self.finish()
+    self.cancel(error: error)
   }
 
   @inlinable
   internal func finish() {
-    switch self.state {
-    case .idle:
-      self.interceptors = nil
-      self.state = .completed
+    self.cancel(error: nil)
+  }
 
-    case .active:
-      self.state = .completed
-      self.interceptors = nil
-      self.userHandlerTask?.cancel()
+  @usableFromInline
+  internal func cancel(error: Error?) {
+    self.eventLoop.assertInEventLoop()
 
-    case .completed:
+    switch self.handlerStateMachine.cancel() {
+    case .cancelAndNilOutHandlerComponents:
+      // Cancel handler related things (task, response writer).
+      self.handlerComponents?.cancel()
+      self.handlerComponents = nil
+
+      // We don't distinguish between having sent the status or not; we just tell the interceptor
+      // state machine that we want to send a response status. It will inform us whether to
+      // generate and send one or not.
+      switch self.interceptorStateMachine.interceptedResponseStatus() {
+      case .forward:
+        let error = error ?? GRPCStatus.processingError
+        let (status, trailers) = ServerErrorProcessor.processLibraryError(
+          error,
+          delegate: self.errorDelegate
+        )
+        self.responseWriter?.sendEnd(status: status, trailers: trailers, promise: nil)
+      case .drop, .cancel:
+        ()
+      }
+
+    case .none:
+      ()
+    }
+
+    switch self.interceptorStateMachine.cancel() {
+    case .sendStatusThenNilOutInterceptorPipeline:
+      self.responseWriter?.sendEnd(status: .processingError, trailers: [:], promise: nil)
+      fallthrough
+    case .nilOutInterceptorPipeline:
       self.interceptors = nil
+      self.responseWriter = nil
+    case .none:
+      ()
     }
   }
 
@@ -351,153 +367,172 @@ internal final class AsyncServerHandler<
 
   @inlinable
   internal func receiveInterceptedMetadata(_ headers: HPACKHeaders) {
-    switch self.state {
-    case .idle:
-      // Make a context to invoke the user handler with.
-      let context = GRPCAsyncServerCallContext(
+    switch self.interceptorStateMachine.interceptedRequestMetadata() {
+    case .forward:
+      () // continue
+    case .cancel:
+      return self.cancel(error: nil)
+    case .drop:
+      return
+    }
+
+    switch self.handlerStateMachine.handleMetadata() {
+    case let .invokeHandler(userInfoRef, callHandlerContext):
+      // We're going to invoke the handler. We need to create a handful of things in order to do
+      // that:
+      //
+      // - A context which allows the handler to set response headers/trailers and provides them
+      //   with a logger amongst other things.
+      // - A request source; we push request messages into this which the handler consumes via
+      //   an async sequence.
+      // - An async writer and delegate. The delegate calls us back with responses. The writer is
+      //   passed to the handler.
+      //
+      // All of these components are held in a bundle ("handler components") outside of the state
+      // machine. We release these when we eventually call cancel (either when we `self.cancel()`
+      // as a result of an error or when `self.finish()` is called).
+      let handlerContext = GRPCAsyncServerCallContext(
         headers: headers,
-        logger: self.context.logger,
-        userInfoRef: self.userInfoRef
+        logger: callHandlerContext.logger,
+        userInfoRef: userInfoRef
       )
 
-      // Create a source for our request stream.
-      let requestStreamSource = PassthroughMessageSource<Request, Error>()
+      let requestSource = PassthroughMessageSource<Request, Error>()
 
-      // Create a promise to hang a callback off when the user handler completes.
-      let userHandlerPromise: EventLoopPromise<Void> = self.context.eventLoop.makePromise()
+      let writerDelegate = AsyncResponseStreamWriterDelegate(
+        context: handlerContext,
+        compressionIsEnabled: callHandlerContext.encoding.isEnabled,
+        send: self.interceptResponseMessage(_:metadata:),
+        finish: self.interceptResponseStatus(_:)
+      )
+      let writer = AsyncWriter(delegate: writerDelegate)
 
-      // Create a request stream from our stream source to pass to the user handler.
-      let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
-
-      // TODO: In future use `AsyncWriter.init(maxPendingElements:maxWritesBeforeYield:delegate:)`?
-      let responseStreamWriter =
-        GRPCAsyncResponseStreamWriter(
-          wrapping: AsyncWriter(delegate: AsyncResponseStreamWriterDelegate(
-            context: context,
-            compressionIsEnabled: self.context.encoding.isEnabled,
-            send: self.interceptResponse(_:metadata:),
-            finish: self.responseStreamDrained(_:)
-          ))
-        )
-
-      // Set the state to active and bundle in all the associated data.
-      self.state = .active(.init(
-        requestStreamSource: requestStreamSource,
-        context: context,
-        responseStreamWriter: responseStreamWriter,
-        userHandlerPromise: userHandlerPromise
-      ))
-
-      // Register callback for the completion of the user handler.
-      userHandlerPromise.futureResult.whenComplete(self.userHandlerCompleted(_:))
-
-      // Spin up a task to call the async user handler.
-      self.userHandlerTask = userHandlerPromise.completeWithTask {
-        return try await withTaskCancellationHandler {
-          do {
-            // When the user handler completes we invalidate the request stream source.
-            defer { requestStreamSource.finish() }
-            // Call the user handler.
-            try await self.userHandler(requestStream, responseStreamWriter, context)
-          } catch let status as GRPCStatus where status.isOk {
-            // The user handler throwing `GRPCStatus.ok` is considered to be invalid.
-            await responseStreamWriter.asyncWriter.cancel()
-            throw GRPCStatus(
-              code: .unknown,
-              message: "Handler threw GRPCStatus error with code .ok"
-            )
-          } catch {
-            await responseStreamWriter.asyncWriter.cancel()
-            throw error
-          }
-          // Wait for the response stream writer to finish writing its responses.
-          try await responseStreamWriter.asyncWriter.finish(.ok)
-        } onCancel: {
-          /// The task being cancelled from outside is the signal to this task that an error has
-          /// occured and we should abort the user handler.
-          ///
-          /// Adopters are encouraged to cooperatively check for cancellation in their handlers but
-          /// we cannot rely on this.
-          ///
-          /// We additionally signal the handler that an error has occured by terminating the source
-          /// backing the request stream that the user handler is consuming.
-          ///
-          /// - NOTE: This handler has different semantics from the extant non-async-await handlers
-          /// where the `statusPromise` was explicitly failed with `GRPCStatus.unavailable` from
-          /// _outside_ the user handler. Here we terminate the request stream with a
-          /// `CancellationError` which manifests _inside_ the user handler when it tries to access
-          /// the next request in the stream. We have no control over the implementation of the user
-          /// handler. It may choose to handle this error or not. In the event that the handler
-          /// either rethrows or does not handle the error, this will be converted to a
-          /// `GRPCStatus.unknown` by `handleError(_:)`. Yielding a `CancellationError` _inside_
-          /// the user handler feels like the clearest semantics of what we want--"the RPC has an
-          /// error, cancel whatever you're doing." If we want to preserve the API of the
-          /// non-async-await handlers in this error flow we could add conformance to
-          /// `GRPCStatusTransformable` to `CancellationError`, but we still cannot control _how_
-          /// the user handler will handle the `CancellationError` which could even be swallowed.
-          ///
-          /// - NOTE: Currently we _have_ added `GRPCStatusTransformable` conformance to
-          /// `CancellationError` to convert it into `GRPCStatus.unavailable` and expect to
-          /// document that user handlers should always rethrow `CacellationError` if handled, after
-          /// optional cleanup.
-          requestStreamSource.finish(throwing: CancellationError())
-          /// Cancel the writer here to drop any pending responses.
-          responseStreamWriter.asyncWriter.cancelAsynchronously()
-        }
+      // The user handler has two exit modes:
+      // 1. It completes successfully (the async user function completes without throwing), or
+      // 2. It throws an error.
+      //
+      // On the happy path the 'ok' status is queued up on the async writer. On the error path
+      // the writer queue is drained and promise below is completed. When the promise is failed
+      // it processes the error (possibly via a delegate) and sends back an appropriate status.
+      // We require separate paths as the failure path needs to execute on the event loop to process
+      // the error.
+      let promise = self.eventLoop.makePromise(of: Void.self)
+      // The success path is taken care of by the Task.
+      promise.futureResult.whenFailure { error in
+        self.userHandlerThrewError(error)
       }
 
-    case .active:
-      self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
+      // Update our state before invoke the handler.
+      self.handlerStateMachine.handlerInvoked(context: handlerContext)
+      self.handlerComponents = ServerHandlerComponents(
+        requestSource: requestSource,
+        responseWriter: writer,
+        task: promise.completeWithTask {
+          // We don't have a task cancellation handler here: we do it in `self.cancel()`.
+          try await self.invokeUserHandler(
+            requestStreamSource: requestSource,
+            responseStreamWriter: writer,
+            callContext: handlerContext
+          )
+        }
+      )
 
-    case .completed:
-      // We may receive headers from the interceptor pipeline if we have already finished (i.e. due
-      // to an error or otherwise) and an interceptor doing some async work later emitting headers.
-      // Dropping them is fine.
+    case .cancel:
+      self.cancel(error: nil)
+    }
+  }
+
+  @Sendable
+  @usableFromInline
+  internal func invokeUserHandler(
+    requestStreamSource: PassthroughMessageSource<Request, Error>,
+    responseStreamWriter: AsyncWriter<AsyncResponseStreamWriterDelegate<Response>>,
+    callContext: GRPCAsyncServerCallContext
+  ) async throws {
+    defer {
+      // It's possible the user handler completed before the end of the request stream. We
+      // explicitly finish it to drop any unconsumed inbound messages.
+      requestStreamSource.finish()
+    }
+
+    do {
+      let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
+      let responseStream = GRPCAsyncResponseStreamWriter(wrapping: responseStreamWriter)
+      try await self.userHandler(requestStream, responseStream, callContext)
+
+      // Done successfully. Queue up and send back an 'ok' status.
+      try await responseStreamWriter.finish(.ok)
+    } catch {
+      // Drop pending writes as we're on the error path.
+      await responseStreamWriter.cancel()
+
+      if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
+        throw GRPCStatus(code: .unknown, message: "Handler threw error with status code 'ok'.")
+      } else {
+        throw error
+      }
+    }
+  }
+
+  @usableFromInline
+  internal func userHandlerThrewError(_ error: Error) {
+    self.eventLoop.assertInEventLoop()
+
+    switch self.handlerStateMachine.sendStatus() {
+    case let .intercept(requestHeaders, trailers):
+      let (status, processedTrailers) = ServerErrorProcessor.processObserverError(
+        error,
+        headers: requestHeaders,
+        trailers: trailers,
+        delegate: self.errorDelegate
+      )
+
+      switch self.interceptorStateMachine.interceptResponseStatus() {
+      case .intercept:
+        self.interceptors?.send(.end(status, processedTrailers), promise: nil)
+      case .cancel:
+        self.cancel(error: nil)
+      case .drop:
+        ()
+      }
+
+    case .drop:
       ()
     }
   }
 
   @inlinable
   internal func receiveInterceptedMessage(_ request: Request) {
-    switch self.state {
-    case .idle:
-      self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
-    case let .active(activeState):
-      switch activeState.requestStreamSource.yield(request) {
-      case .accepted(queueDepth: _):
-        // TODO: In future we will potentially issue a read request to the channel based on the value of `queueDepth`.
-        break
-      case .dropped:
-        /// If we are in the `.active` state then we have yet to encounter an error. Therefore
-        /// if the request stream source has already terminated then it must have been the result of
-        /// receiving `.end`. Therefore this `.message` must have been sent by the client after it
-        /// sent `.end`, which is a protocol violation.
-        self.handleError(GRPCError.ProtocolViolation("Message received after end of stream"))
+    switch self.interceptorStateMachine.interceptedRequestMessage() {
+    case .forward:
+      switch self.handlerStateMachine.handleMessage() {
+      case .forward:
+        self.handlerComponents?.requestSource.yield(request)
+      case .cancel:
+        self.cancel(error: nil)
       }
-    case .completed:
-      // We received a message but we're already done: this may happen if we terminate the RPC
-      // due to a channel error, for example.
+
+    case .cancel:
+      self.cancel(error: nil)
+
+    case .drop:
       ()
     }
   }
 
   @inlinable
   internal func receiveInterceptedEnd() {
-    switch self.state {
-    case .idle:
-      self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
-    case let .active(activeState):
-      switch activeState.requestStreamSource.finish() {
-      case .accepted(queueDepth: _):
-        break
-      case .dropped:
-        // The task executing the user handler will finish the request stream source after the
-        // user handler completes. If that's the case we will drop the end-of-stream here.
-        break
+    switch self.interceptorStateMachine.interceptedRequestEnd() {
+    case .forward:
+      switch self.handlerStateMachine.handleEnd() {
+      case .forward:
+        self.handlerComponents?.requestSource.finish()
+      case .cancel:
+        self.cancel(error: nil)
       }
-    case .completed:
-      // We received a message but we're already done: this may happen if we terminate the RPC
-      // due to a channel error, for example.
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
       ()
     }
   }
@@ -505,141 +540,78 @@ internal final class AsyncServerHandler<
   // MARK: - User Function To Interceptors
 
   @inlinable
-  internal func _interceptResponse(_ response: Response, metadata: MessageMetadata) {
-    self.context.eventLoop.assertInEventLoop()
-    switch self.state {
-    case .idle:
-      // The user handler cannot send responses before it has been invoked.
-      preconditionFailure()
+  internal func _interceptResponseMessage(_ response: Response, metadata: MessageMetadata) {
+    self.eventLoop.assertInEventLoop()
 
-    case var .active(activeState):
-      if !activeState.haveSentResponseHeaders {
-        activeState.haveSentResponseHeaders = true
-        self.state = .active(activeState)
-        // Send response headers back via the interceptors.
-        self.interceptors.send(.metadata(activeState.context.initialResponseMetadata), promise: nil)
+    switch self.handlerStateMachine.sendMessage() {
+    case let .intercept(.some(headers)):
+      switch self.interceptorStateMachine.interceptResponseMetadata() {
+      case .intercept:
+        self.interceptors?.send(.metadata(headers), promise: nil)
+      case .cancel:
+        return self.cancel(error: nil)
+      case .drop:
+        ()
       }
-      // Send the response back via the interceptors.
-      self.interceptors.send(.message(response, metadata), promise: nil)
+      // Fall through to the next case to send the response message.
+      fallthrough
 
-    case .completed:
-      /// If we are in the completed state then the async writer delegate will have been cancelled,
-      /// however the cancellation is asynchronous so there's a chance that we receive this callback
-      /// after that has happened. We can drop the response.
+    case .intercept(.none):
+      switch self.interceptorStateMachine.interceptResponseMessage() {
+      case .intercept:
+        self.interceptors?.send(.message(response, metadata), promise: nil)
+      case .cancel:
+        return self.cancel(error: nil)
+      case .drop:
+        ()
+      }
+
+    case .drop:
       ()
     }
   }
 
   @Sendable
   @inlinable
-  internal func interceptResponse(_ response: Response, metadata: MessageMetadata) {
-    if self.context.eventLoop.inEventLoop {
-      self._interceptResponse(response, metadata: metadata)
+  internal func interceptResponseMessage(_ response: Response, metadata: MessageMetadata) {
+    if self.eventLoop.inEventLoop {
+      self._interceptResponseMessage(response, metadata: metadata)
     } else {
-      self.context.eventLoop.execute {
-        self._interceptResponse(response, metadata: metadata)
+      self.eventLoop.execute {
+        self._interceptResponseMessage(response, metadata: metadata)
       }
     }
   }
 
   @inlinable
-  internal func userHandlerCompleted(_ result: Result<Void, Error>) {
-    switch self.state {
-    case .idle:
-      // The user handler cannot complete before it is invoked.
-      preconditionFailure()
+  internal func _interceptResponseStatus(_ status: GRPCStatus) {
+    self.eventLoop.assertInEventLoop()
 
-    case .active:
-      switch result {
-      case .success:
-        /// The user handler has completed successfully.
-        /// We don't take any action here; the state transition and termination of the message
-        /// stream happen when the response stream has drained, in the response stream writer
-        /// delegate callback, `responseStreamDrained(_:)`.
-        break
-
-      case let .failure(error):
-        self.handleError(error, thrownFromHandler: true)
+    switch self.handlerStateMachine.sendStatus() {
+    case let .intercept(_, trailers):
+      switch self.interceptorStateMachine.interceptResponseStatus() {
+      case .intercept:
+        self.interceptors?.send(.end(status, trailers), promise: nil)
+      case .cancel:
+        return self.cancel(error: nil)
+      case .drop:
+        ()
       }
 
-    case .completed:
-      ()
-    }
-  }
-
-  @inlinable
-  internal func _responseStreamDrained(_ status: GRPCStatus) {
-    self.context.eventLoop.assertInEventLoop()
-    switch self.state {
-    case .idle:
-      preconditionFailure()
-
-    case let .active(activeState):
-      // Now we have drained the response stream writer from the user handler we can send end.
-      self.state = .completed
-      self.interceptors.send(
-        .end(status, activeState.context.trailingResponseMetadata),
-        promise: nil
-      )
-
-    case .completed:
+    case .drop:
       ()
     }
   }
 
   @Sendable
   @inlinable
-  internal func responseStreamDrained(_ status: GRPCStatus) {
-    if self.context.eventLoop.inEventLoop {
-      self._responseStreamDrained(status)
+  internal func interceptResponseStatus(_ status: GRPCStatus) {
+    if self.eventLoop.inEventLoop {
+      self._interceptResponseStatus(status)
     } else {
-      self.context.eventLoop.execute {
-        self._responseStreamDrained(status)
+      self.eventLoop.execute {
+        self._interceptResponseStatus(status)
       }
-    }
-  }
-
-  @inlinable
-  internal func handleError(_ error: Error, thrownFromHandler isHandlerError: Bool = false) {
-    switch self.state {
-    case .idle:
-      assert(!isHandlerError)
-      self.state = .completed
-      let (status, trailers) = ServerErrorProcessor.processLibraryError(
-        error,
-        delegate: self.context.errorDelegate
-      )
-      self.interceptors.send(.end(status, trailers), promise: nil)
-
-    case let .active(activeState):
-      self.state = .completed
-
-      // If we have an async task, then cancel it, which will terminate the request stream from
-      // which it is reading and give the user handler an opportunity to cleanup.
-      self.userHandlerTask?.cancel()
-
-      let status: GRPCStatus
-      let trailers: HPACKHeaders
-
-      if isHandlerError {
-        (status, trailers) = ServerErrorProcessor.processObserverError(
-          error,
-          headers: activeState.context.requestMetadata,
-          trailers: activeState.context.trailingResponseMetadata,
-          delegate: self.context.errorDelegate
-        )
-      } else {
-        (status, trailers) = ServerErrorProcessor.processLibraryError(
-          error,
-          delegate: self.context.errorDelegate
-        )
-      }
-
-      // TODO: This doesn't go via the user handler task.
-      self.interceptors.send(.end(status, trailers), promise: nil)
-
-    case .completed:
-      ()
     }
   }
 
@@ -650,27 +622,115 @@ internal final class AsyncServerHandler<
   ) {
     switch part {
     case let .metadata(headers):
-      self.context.responseWriter.sendMetadata(headers, flush: true, promise: promise)
+      self.sendInterceptedMetadata(headers, promise: promise)
 
     case let .message(message, metadata):
       do {
         let bytes = try self.serializer.serialize(message, allocator: ByteBufferAllocator())
-        self.context.responseWriter.sendMessage(bytes, metadata: metadata, promise: promise)
+        self.sendInterceptedResponse(bytes, metadata: metadata, promise: promise)
       } catch {
-        // Serialization failed: fail the promise and send end.
         promise?.fail(error)
-        let (status, trailers) = ServerErrorProcessor.processLibraryError(
-          error,
-          delegate: self.context.errorDelegate
-        )
-        // Loop back via the interceptors.
-        self.interceptors.send(.end(status, trailers), promise: nil)
+        self.cancel(error: error)
       }
 
     case let .end(status, trailers):
-      self.context.responseWriter.sendEnd(status: status, trailers: trailers, promise: promise)
+      self.sendInterceptedStatus(status, metadata: trailers, promise: promise)
+    }
+  }
+
+  @inlinable
+  internal func sendInterceptedMetadata(
+    _ metadata: HPACKHeaders,
+    promise: EventLoopPromise<Void>?
+  ) {
+    switch self.interceptorStateMachine.interceptedResponseMetadata() {
+    case .forward:
+      if let responseWriter = self.responseWriter {
+        responseWriter.sendMetadata(metadata, flush: false, promise: promise)
+      } else if let promise = promise {
+        promise.fail(GRPCStatus.processingError)
+      }
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
+      ()
+    }
+  }
+
+  @inlinable
+  internal func sendInterceptedResponse(
+    _ bytes: ByteBuffer,
+    metadata: MessageMetadata,
+    promise: EventLoopPromise<Void>?
+  ) {
+    switch self.interceptorStateMachine.interceptedResponseMessage() {
+    case .forward:
+      if let responseWriter = self.responseWriter {
+        responseWriter.sendMessage(bytes, metadata: metadata, promise: promise)
+      } else if let promise = promise {
+        promise.fail(GRPCStatus.processingError)
+      }
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
+      ()
+    }
+  }
+
+  @inlinable
+  internal func sendInterceptedStatus(
+    _ status: GRPCStatus,
+    metadata: HPACKHeaders,
+    promise: EventLoopPromise<Void>?
+  ) {
+    switch self.interceptorStateMachine.interceptedResponseStatus() {
+    case .forward:
+      if let responseWriter = self.responseWriter {
+        responseWriter.sendEnd(status: status, trailers: metadata, promise: promise)
+      } else if let promise = promise {
+        promise.fail(GRPCStatus.processingError)
+      }
+    case .cancel:
+      self.cancel(error: nil)
+    case .drop:
+      ()
     }
   }
 }
 
-#endif
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@usableFromInline
+internal struct ServerHandlerComponents<Request, Delegate: AsyncWriterDelegate> {
+  @usableFromInline
+  internal let task: Task<Void, Never>
+  @usableFromInline
+  internal let responseWriter: AsyncWriter<Delegate>
+  @usableFromInline
+  internal let requestSource: PassthroughMessageSource<Request, Error>
+
+  @inlinable
+  init(
+    requestSource: PassthroughMessageSource<Request, Error>,
+    responseWriter: AsyncWriter<Delegate>,
+    task: Task<Void, Never>
+  ) {
+    self.task = task
+    self.responseWriter = responseWriter
+    self.requestSource = requestSource
+  }
+
+  func cancel() {
+    // Cancel the request and response streams.
+    //
+    // The user handler is encouraged to check for cancellation, however, we should assume
+    // they do not. Cancelling the request source stops any more requests from being delivered
+    // to the request stream, and cancelling the writer will ensure no more responses are
+    // written. This should reduce how long the user handler runs for as it can no longer do
+    // anything useful.
+    self.requestSource.finish(throwing: CancellationError())
+    self.responseWriter.cancelAsynchronously()
+    self.task.cancel()
+  }
+}
+
+#endif // compiler(>=5.6)

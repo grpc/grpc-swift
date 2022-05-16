@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+@usableFromInline
 internal struct ServerInterceptorStateMachine {
-  private var state: Self.State
+  @usableFromInline
+  internal private(set) var state: Self.State
 
+  @inlinable
   init() {
     self.state = .intercepting(.init())
   }
 
+  @inlinable
   mutating func interceptRequestMetadata() -> InterceptAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -34,6 +38,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptRequestMessage() -> InterceptAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -47,6 +52,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptRequestEnd() -> InterceptAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -60,6 +66,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptedRequestMetadata() -> InterceptedAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -73,6 +80,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptedRequestMessage() -> InterceptedAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -86,6 +94,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptedRequestEnd() -> InterceptedAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -99,6 +108,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptResponseMetadata() -> InterceptAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -112,6 +122,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptResponseMessage() -> InterceptAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -125,6 +136,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptResponseStatus() -> InterceptAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -138,6 +150,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptedResponseMetadata() -> InterceptedAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -151,6 +164,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptedResponseMessage() -> InterceptedAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -164,6 +178,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func interceptedResponseStatus() -> InterceptedAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -177,6 +192,7 @@ internal struct ServerInterceptorStateMachine {
     }
   }
 
+  @inlinable
   mutating func cancel() -> CancelAction {
     switch self.state {
     case var .intercepting(intercepting):
@@ -193,7 +209,8 @@ internal struct ServerInterceptorStateMachine {
 
 extension ServerInterceptorStateMachine {
   /// The possible states the state machine may be in.
-  fileprivate enum State {
+  @usableFromInline
+  internal enum State {
     case intercepting(ServerInterceptorStateMachine.Intercepting)
     case finished(ServerInterceptorStateMachine.Finished)
   }
@@ -202,10 +219,14 @@ extension ServerInterceptorStateMachine {
 extension ServerInterceptorStateMachine {
   /// The next state to transition to and any output which may be produced as a
   /// result of a substate handling an action.
+  @usableFromInline
   internal struct NextStateAndOutput<NextState, Output> {
+    @usableFromInline
     internal var nextState: NextState
+    @usableFromInline
     internal var output: Output
 
+    @inlinable
     internal init(nextState: NextState, output: Output) {
       self.nextState = nextState
       self.output = output
@@ -222,34 +243,43 @@ extension ServerInterceptorStateMachine.NextStateAndOutput where Output == Void 
 
 extension ServerInterceptorStateMachine.Intercepting {
   /// States which can be reached directly from 'Intercepting'.
+  @usableFromInline
   internal struct NextState {
-    fileprivate let state: ServerInterceptorStateMachine.State
+    @usableFromInline
+    let state: ServerInterceptorStateMachine.State
 
-    private init(_ state: ServerInterceptorStateMachine.State) {
-      self.state = state
+    @inlinable
+    init(_state: ServerInterceptorStateMachine.State) {
+      self.state = _state
     }
 
+    @usableFromInline
     internal static func intercepting(_ state: ServerInterceptorStateMachine.Intercepting) -> Self {
-      return Self(.intercepting(state))
+      return Self(_state: .intercepting(state))
     }
 
+    @usableFromInline
     internal static func finished(from: ServerInterceptorStateMachine.Intercepting) -> Self {
-      return Self(.finished(.init(from: from)))
+      return Self(_state: .finished(.init(from: from)))
     }
   }
 }
 
 extension ServerInterceptorStateMachine.Finished {
   /// States which can be reached directly from 'Finished'.
+  @usableFromInline
   internal struct NextState {
-    fileprivate let state: ServerInterceptorStateMachine.State
+    @usableFromInline
+    let state: ServerInterceptorStateMachine.State
 
-    private init(_ state: ServerInterceptorStateMachine.State) {
-      self.state = state
+    @inlinable
+    internal init(_state: ServerInterceptorStateMachine.State) {
+      self.state = _state
     }
 
+    @usableFromInline
     internal static func finished(_ state: ServerInterceptorStateMachine.Finished) -> Self {
-      return Self(.finished(state))
+      return Self(_state: .finished(state))
     }
   }
 }

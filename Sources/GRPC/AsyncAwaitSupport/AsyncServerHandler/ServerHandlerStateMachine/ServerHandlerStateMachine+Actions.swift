@@ -18,6 +18,7 @@ import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine {
+  @usableFromInline
   enum HandleMetadataAction {
     /// Invoke the user handler.
     case invokeHandler(Ref<UserInfo>, CallHandlerContext)
@@ -25,6 +26,7 @@ extension ServerHandlerStateMachine {
     case cancel
   }
 
+  @usableFromInline
   enum HandleMessageAction: Hashable {
     /// Forward the message to the interceptors, via the interceptor state machine.
     case forward
@@ -33,8 +35,10 @@ extension ServerHandlerStateMachine {
   }
 
   /// The same as 'HandleMessageAction.
+  @usableFromInline
   typealias HandleEndAction = HandleMessageAction
 
+  @usableFromInline
   enum SendMessageAction: Equatable {
     /// Intercept the message, but first intercept the headers if they are non-nil. Must go via
     /// the interceptor state machine first.
@@ -43,13 +47,15 @@ extension ServerHandlerStateMachine {
     case drop
   }
 
+  @usableFromInline
   enum SendStatusAction: Equatable {
     /// Intercept the status, providing the given trailers.
-    case intercept(trailers: HPACKHeaders)
+    case intercept(requestHeaders: HPACKHeaders, trailers: HPACKHeaders)
     /// Drop the status.
     case drop
   }
 
+  @usableFromInline
   enum CancelAction: Hashable {
     /// Cancel and nil out the handler 'bits'.
     case cancelAndNilOutHandlerComponents
