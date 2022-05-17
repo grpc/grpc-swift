@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine {
@@ -31,6 +32,20 @@ extension ServerHandlerStateMachine {
     internal init(from state: ServerHandlerStateMachine.Handling) {}
     @inlinable
     internal init(from state: ServerHandlerStateMachine.Draining) {}
+
+    @inlinable
+    mutating func setResponseHeaders(
+      _ headers: HPACKHeaders
+    ) -> Self.NextStateAndOutput<Void> {
+      return .init(nextState: .finished(self))
+    }
+
+    @inlinable
+    mutating func setResponseTrailers(
+      _ metadata: HPACKHeaders
+    ) -> Self.NextStateAndOutput<Void> {
+      return .init(nextState: .finished(self))
+    }
 
     @inlinable
     mutating func handleMetadata() -> Self.NextStateAndOutput<HandleMetadataAction> {

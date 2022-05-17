@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerHandlerStateMachine {
@@ -27,21 +28,12 @@ extension ServerHandlerStateMachine {
       Output
     >
 
-    /// A ref to the `UserInfo`. We hold on to this until we're ready to invoke the handler.
-    @usableFromInline
-    let userInfoRef: Ref<UserInfo>
-    /// A bag of bits required to construct a context passed to the user handler when it is invoked.
-    @usableFromInline
-    let callHandlerContext: CallHandlerContext
-
     /// The state of the inbound stream, i.e. the request stream.
     @usableFromInline
     internal private(set) var inboundState: ServerInterceptorStateMachine.InboundStreamState
 
     @inlinable
-    init(userInfoRef: Ref<UserInfo>, context: CallHandlerContext) {
-      self.userInfoRef = userInfoRef
-      self.callHandlerContext = context
+    init() {
       self.inboundState = .idle
     }
 
@@ -53,7 +45,7 @@ extension ServerHandlerStateMachine {
       case .accept:
         // We tell the caller to invoke the handler immediately: they should then call
         // 'handlerInvoked' on the state machine which will cause a transition to the next state.
-        action = .invokeHandler(self.userInfoRef, self.callHandlerContext)
+        action = .invokeHandler
       case .reject:
         action = .cancel
       }
@@ -74,11 +66,9 @@ extension ServerHandlerStateMachine {
     }
 
     @inlinable
-    mutating func handlerInvoked(
-      context: GRPCAsyncServerCallContext
-    ) -> Self.NextStateAndOutput<Void> {
+    mutating func handlerInvoked(requestHeaders: HPACKHeaders) -> Self.NextStateAndOutput<Void> {
       // The handler was invoked as a result of receiving metadata. Move to the next state.
-      return .init(nextState: .handling(from: self, context: context))
+      return .init(nextState: .handling(from: self, requestHeaders: requestHeaders))
     }
 
     @inlinable

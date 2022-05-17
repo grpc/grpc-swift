@@ -30,21 +30,18 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
   }
 
   private func makeStateMachine(inState state: InitialState = .idle) -> ServerHandlerStateMachine {
-    var stateMachine = ServerHandlerStateMachine(
-      userInfoRef: Ref(UserInfo()),
-      context: self.makeCallHandlerContext()
-    )
+    var stateMachine = ServerHandlerStateMachine()
 
     switch state {
     case .idle:
       return stateMachine
     case .handling:
       stateMachine.handleMetadata().assertInvokeHandler()
-      stateMachine.handlerInvoked(context: self.makeAsyncServerContext())
+      stateMachine.handlerInvoked(requestHeaders: [:])
       return stateMachine
     case .draining:
       stateMachine.handleMetadata().assertInvokeHandler()
-      stateMachine.handlerInvoked(context: self.makeAsyncServerContext())
+      stateMachine.handlerInvoked(requestHeaders: [:])
       stateMachine.handleEnd().assertForward()
       return stateMachine
     case .finished:
@@ -69,14 +66,6 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
     )
   }
 
-  private func makeAsyncServerContext() -> GRPCAsyncServerCallContext {
-    return GRPCAsyncServerCallContext(
-      headers: [:],
-      logger: self.logger,
-      userInfoRef: Ref(UserInfo())
-    )
-  }
-
   // MARK: - Test Cases
 
   func testHandleMetadataWhenIdle() {
@@ -84,7 +73,7 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
     // Receiving metadata is the signal to invoke the user handler.
     stateMachine.handleMetadata().assertInvokeHandler()
     // On invoking the handler we move to the next state. No output.
-    stateMachine.handlerInvoked(context: self.makeAsyncServerContext())
+    stateMachine.handlerInvoked(requestHeaders: [:])
   }
 
   func testHandleMetadataWhenHandling() {
@@ -219,27 +208,70 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
     var stateMachine = self.makeStateMachine(inState: .finished)
     stateMachine.cancel().assertDoCancel()
   }
+
+  func testSetResponseHeadersWhenHandling() {
+    var stateMachine = self.makeStateMachine(inState: .handling)
+    stateMachine.setResponseHeaders(["foo": "bar"])
+    stateMachine.sendMessage().assertInterceptHeadersThenMessage { headers in
+      XCTAssertEqual(headers, ["foo": "bar"])
+    }
+  }
+
+  func testSetResponseHeadersWhenHandlingAreMovedToDraining() {
+    var stateMachine = self.makeStateMachine(inState: .handling)
+    stateMachine.setResponseHeaders(["foo": "bar"])
+    stateMachine.handleEnd().assertForward()
+    stateMachine.sendMessage().assertInterceptHeadersThenMessage { headers in
+      XCTAssertEqual(headers, ["foo": "bar"])
+    }
+  }
+
+  func testSetResponseHeadersWhenDraining() {
+    var stateMachine = self.makeStateMachine(inState: .draining)
+    stateMachine.setResponseHeaders(["foo": "bar"])
+    stateMachine.sendMessage().assertInterceptHeadersThenMessage { headers in
+      XCTAssertEqual(headers, ["foo": "bar"])
+    }
+  }
+
+  func testSetResponseHeadersWhenFinished() {
+    var stateMachine = self.makeStateMachine(inState: .finished)
+    stateMachine.setResponseHeaders(["foo": "bar"])
+    // Nothing we can assert on, only that we don't crash.
+  }
+
+  func testSetResponseTrailersWhenHandling() {
+    var stateMachine = self.makeStateMachine(inState: .handling)
+    stateMachine.setResponseTrailers(["foo": "bar"])
+    stateMachine.sendStatus().assertIntercept { trailers in
+      XCTAssertEqual(trailers, ["foo": "bar"])
+    }
+  }
+
+  func testSetResponseTrailersWhenDraining() {
+    var stateMachine = self.makeStateMachine(inState: .draining)
+    stateMachine.setResponseTrailers(["foo": "bar"])
+    stateMachine.sendStatus().assertIntercept { trailers in
+      XCTAssertEqual(trailers, ["foo": "bar"])
+    }
+  }
+
+  func testSetResponseTrailersWhenFinished() {
+    var stateMachine = self.makeStateMachine(inState: .finished)
+    stateMachine.setResponseTrailers(["foo": "bar"])
+    // Nothing we can assert on, only that we don't crash.
+  }
 }
 
 // MARK: - Action Assertions
 
 extension ServerHandlerStateMachine.HandleMetadataAction {
   func assertInvokeHandler() {
-    switch self {
-    case .invokeHandler:
-      ()
-    case .cancel:
-      XCTFail("Expected 'invokeHandler' but got \(self)")
-    }
+    XCTAssertEqual(self, .invokeHandler)
   }
 
   func assertInvokeCancel() {
-    switch self {
-    case .cancel:
-      ()
-    case .invokeHandler:
-      XCTFail("Expected 'cancel' but got \(self)")
-    }
+    XCTAssertEqual(self, .cancel)
   }
 }
 
@@ -254,8 +286,13 @@ extension ServerHandlerStateMachine.HandleMessageAction {
 }
 
 extension ServerHandlerStateMachine.SendMessageAction {
-  func assertInterceptHeadersThenMessage() {
-    XCTAssertEqual(self, .intercept(headers: [:]))
+  func assertInterceptHeadersThenMessage(_ verify: (HPACKHeaders) -> Void = { _ in }) {
+    switch self {
+    case let .intercept(headers: .some(headers)):
+      verify(headers)
+    default:
+      XCTFail("Expected .intercept(.some) but got \(self)")
+    }
   }
 
   func assertInterceptMessage() {
@@ -268,8 +305,13 @@ extension ServerHandlerStateMachine.SendMessageAction {
 }
 
 extension ServerHandlerStateMachine.SendStatusAction {
-  func assertIntercept() {
-    XCTAssertEqual(self, .intercept(requestHeaders: [:], trailers: [:]))
+  func assertIntercept(_ verify: (HPACKHeaders) -> Void = { _ in }) {
+    switch self {
+    case let .intercept(_, trailers: trailers):
+      verify(trailers)
+    case .drop:
+      XCTFail("Expected .intercept but got .drop")
+    }
   }
 
   func assertDrop() {

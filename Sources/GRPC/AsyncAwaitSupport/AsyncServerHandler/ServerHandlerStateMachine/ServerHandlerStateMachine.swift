@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
@@ -22,8 +23,48 @@ internal struct ServerHandlerStateMachine {
   internal private(set) var state: Self.State
 
   @inlinable
-  init(userInfoRef: Ref<UserInfo>, context: CallHandlerContext) {
-    self.state = .idle(.init(userInfoRef: userInfoRef, context: context))
+  init() {
+    self.state = .idle(.init())
+  }
+
+  @inlinable
+  mutating func setResponseHeaders(_ headers: HPACKHeaders) {
+    switch self.state {
+    case var .handling(handling):
+      let nextStateAndOutput = handling.setResponseHeaders(headers)
+      self.state = nextStateAndOutput.nextState.state
+      return nextStateAndOutput.output
+    case var .draining(draining):
+      let nextStateAndOutput = draining.setResponseHeaders(headers)
+      self.state = nextStateAndOutput.nextState.state
+      return nextStateAndOutput.output
+    case var .finished(finished):
+      let nextStateAndOutput = finished.setResponseHeaders(headers)
+      self.state = nextStateAndOutput.nextState.state
+      return nextStateAndOutput.output
+    case .idle:
+      preconditionFailure()
+    }
+  }
+
+  @inlinable
+  mutating func setResponseTrailers(_ trailers: HPACKHeaders) {
+    switch self.state {
+    case var .handling(handling):
+      let nextStateAndOutput = handling.setResponseTrailers(trailers)
+      self.state = nextStateAndOutput.nextState.state
+      return nextStateAndOutput.output
+    case var .draining(draining):
+      let nextStateAndOutput = draining.setResponseTrailers(trailers)
+      self.state = nextStateAndOutput.nextState.state
+      return nextStateAndOutput.output
+    case var .finished(finished):
+      let nextStateAndOutput = finished.setResponseTrailers(trailers)
+      self.state = nextStateAndOutput.nextState.state
+      return nextStateAndOutput.output
+    case .idle:
+      preconditionFailure()
+    }
   }
 
   @inlinable
@@ -155,10 +196,10 @@ internal struct ServerHandlerStateMachine {
   }
 
   @inlinable
-  mutating func handlerInvoked(context: GRPCAsyncServerCallContext) {
+  mutating func handlerInvoked(requestHeaders: HPACKHeaders) {
     switch self.state {
     case var .idle(idle):
-      let nextStateAndOutput = idle.handlerInvoked(context: context)
+      let nextStateAndOutput = idle.handlerInvoked(requestHeaders: requestHeaders)
       self.state = nextStateAndOutput.nextState.state
       return nextStateAndOutput.output
     case .handling:
@@ -232,9 +273,9 @@ extension ServerHandlerStateMachine.Idle {
     @inlinable
     internal static func handling(
       from: ServerHandlerStateMachine.Idle,
-      context: GRPCAsyncServerCallContext
+      requestHeaders: HPACKHeaders
     ) -> Self {
-      return Self(_state: .handling(.init(from: from, context: context)))
+      return Self(_state: .handling(.init(from: from, requestHeaders: requestHeaders)))
     }
 
     @inlinable

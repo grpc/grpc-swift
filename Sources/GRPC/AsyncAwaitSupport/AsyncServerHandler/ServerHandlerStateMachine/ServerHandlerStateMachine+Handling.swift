@@ -30,20 +30,38 @@ extension ServerHandlerStateMachine {
       Output
     >
 
-    /// Whether response headers have been written (they are written lazily rather than on receipt
-    /// of the request headers).
+    /// The response headers.
     @usableFromInline
-    internal private(set) var headersWritten: Bool
-
-    /// A context held by user handler which may be used to alter the response headers or trailers.
+    internal private(set) var responseHeaders: ResponseMetadata
+    /// The response trailers.
     @usableFromInline
-    internal let context: GRPCAsyncServerCallContext
+    internal private(set) var responseTrailers: ResponseMetadata
+    /// The request headers.
+    @usableFromInline
+    internal let requestHeaders: HPACKHeaders
 
     /// Transition from the 'Idle' state.
     @inlinable
-    init(from state: ServerHandlerStateMachine.Idle, context: GRPCAsyncServerCallContext) {
-      self.headersWritten = false
-      self.context = context
+    init(from state: ServerHandlerStateMachine.Idle, requestHeaders: HPACKHeaders) {
+      self.responseHeaders = .notWritten([:])
+      self.responseTrailers = .notWritten([:])
+      self.requestHeaders = requestHeaders
+    }
+
+    @inlinable
+    mutating func setResponseHeaders(
+      _ metadata: HPACKHeaders
+    ) -> Self.NextStateAndOutput<Void> {
+      self.responseHeaders.update(metadata)
+      return .init(nextState: .handling(self))
+    }
+
+    @inlinable
+    mutating func setResponseTrailers(
+      _ metadata: HPACKHeaders
+    ) -> Self.NextStateAndOutput<Void> {
+      self.responseTrailers.update(metadata)
+      return .init(nextState: .handling(self))
     }
 
     @inlinable
@@ -69,27 +87,20 @@ extension ServerHandlerStateMachine {
 
     @inlinable
     mutating func sendMessage() -> Self.NextStateAndOutput<SendMessageAction> {
-      let headers: HPACKHeaders?
-
-      // We send headers once, lazily, when the first message is sent back.
-      if self.headersWritten {
-        headers = nil
-      } else {
-        self.headersWritten = true
-        headers = self.context.initialResponseMetadata
-      }
-
+      let headers = self.responseHeaders.getIfNotWritten()
       return .init(nextState: .handling(self), output: .intercept(headers: headers))
     }
 
     @inlinable
     mutating func sendStatus() -> Self.NextStateAndOutput<SendStatusAction> {
-      // Sending the status is the final action taken by the user handler. We can always send
-      // them from this state and doing so means the user handler has completed.
-      let trailers = self.context.trailingResponseMetadata
       return .init(
         nextState: .finished(from: self),
-        output: .intercept(requestHeaders: self.context.requestMetadata, trailers: trailers)
+        output: .intercept(
+          requestHeaders: self.requestHeaders,
+          // If trailers had been written we'd already be in the finished state so
+          // the force unwrap is okay here.
+          trailers: self.responseTrailers.getIfNotWritten()!
+        )
       )
     }
 

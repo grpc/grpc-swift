@@ -15,114 +15,104 @@
  */
 #if compiler(>=5.6)
 
-import Logging
+@preconcurrency import Logging
 import NIOConcurrencyHelpers
-import NIOHPACK
+@preconcurrency import NIOHPACK
 
-// We use a `class` here because we do not want copy-on-write semantics. The instance that the async
-// handler holds must not diverge from the instance the implementor of the RPC holds. They hold these
-// instances on different threads (EventLoop vs Task).
-//
-// We considered wrapping this in a `struct` and pass it `inout` to the RPC. This would communicate
-// explicitly that it stores mutable state. However, without copy-on-write semantics, this could
-// make for a surprising API.
-//
-// We also considered an `actor` but that felt clunky at the point of use since adopters would need
-// to `await` the retrieval of a logger or the updating of the trailers and each would require a
-// promise to glue the NIO and async-await paradigms in the handler.
-//
-// Note: this is `@unchecked Sendable`; all mutable state is protected by a lock.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public final class GRPCAsyncServerCallContext: @unchecked Sendable {
-  private let lock = Lock()
-
-  /// Metadata for this request.
-  public let requestMetadata: HPACKHeaders
-
-  /// The logger used for this call.
-  public var logger: Logger {
-    get { self.lock.withLock {
-      self._logger
-    } }
-    set { self.lock.withLock {
-      self._logger = newValue
-    } }
-  }
-
+public struct GRPCAsyncServerCallContext {
   @usableFromInline
-  internal var _logger: Logger
+  let contextProvider: AsyncServerCallContextProvider
 
-  /// Whether compression should be enabled for responses, defaulting to `true`. Note that for
-  /// this value to take effect compression must have been enabled on the server and a compression
-  /// algorithm must have been negotiated with the client.
-  public var compressionEnabled: Bool {
-    get { self.lock.withLock {
-      self._compressionEnabled
-    } }
-    set { self.lock.withLock {
-      self._compressionEnabled = newValue
-    } }
+  /// Details of the request, including request headers and a logger.
+  public var request: Request
+
+  /// A response context which may be used to set response headers and trailers.
+  public var response: Response {
+    Response(contextProvider: self.contextProvider)
   }
 
-  private var _compressionEnabled: Bool = true
-
-  /// A `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
+  /// Access the `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
   ///
-  /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a
-  ///   reference wrapped `UserInfo`. The contexts passed to interceptors provide the same
-  ///   reference. As such this may be used as a mechanism to pass information between interceptors
-  ///   and service providers.
-  public var userInfo: UserInfo {
-    get { self.lock.withLock {
-      self.userInfoRef.value
-    } }
-    set { self.lock.withLock {
-      self.userInfoRef.value = newValue
-    } }
+  /// - Important: While `UserInfo` has value-semantics, this function accesses a reference
+  ///   wrapped `UserInfo`. The contexts passed to interceptors provide the same reference. As such
+  ///   this may be used as a mechanism to pass information between interceptors and service
+  ///   providers.
+  public func withUserInfo<Result: Sendable>(
+    _ body: @Sendable @escaping (UserInfo) throws -> Result
+  ) async throws -> Result {
+    return try await self.contextProvider.withUserInfo(body)
   }
 
-  /// A reference to an underlying `UserInfo`. We share this with the interceptors.
-  @usableFromInline
-  internal let userInfoRef: Ref<UserInfo>
-
-  /// Metadata to return at the start of the RPC.
+  /// Modify the `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
   ///
-  /// - Important: If this is required it should be updated _before_ the first response is sent via
-  /// the response stream writer. Any updates made after the first response will be ignored.
-  public var initialResponseMetadata: HPACKHeaders {
-    get { self.lock.withLock {
-      return self._initialResponseMetadata
-    } }
-    set { self.lock.withLock {
-      self._initialResponseMetadata = newValue
-    } }
+  /// - Important: While `UserInfo` has value-semantics, this function accesses a reference
+  ///   wrapped `UserInfo`. The contexts passed to interceptors provide the same reference. As such
+  ///   this may be used as a mechanism to pass information between interceptors and service
+  ///   providers.
+  public func withMutableUserInfo<Result: Sendable>(
+    _ modify: @Sendable @escaping (inout UserInfo) -> Result
+  ) async throws -> Result {
+    return try await self.contextProvider.withMutableUserInfo(modify)
   }
-
-  private var _initialResponseMetadata: HPACKHeaders = [:]
-
-  /// Metadata to return at the end of the RPC.
-  ///
-  /// If this is required it should be updated before returning from the handler.
-  public var trailingResponseMetadata: HPACKHeaders {
-    get { self.lock.withLock {
-      return self._trailingResponseMetadata
-    } }
-    set { self.lock.withLock {
-      self._trailingResponseMetadata = newValue
-    } }
-  }
-
-  private var _trailingResponseMetadata: HPACKHeaders = [:]
 
   @inlinable
   internal init(
     headers: HPACKHeaders,
     logger: Logger,
-    userInfoRef: Ref<UserInfo>
+    contextProvider: AsyncServerCallContextProvider
   ) {
-    self.requestMetadata = headers
-    self.userInfoRef = userInfoRef
-    self._logger = logger
+    self.request = Request(headers: headers, logger: logger)
+    self.contextProvider = contextProvider
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension GRPCAsyncServerCallContext {
+  public struct Request: Sendable {
+    /// The request headers received from the client at the start of the RPC.
+    public var headers: HPACKHeaders
+
+    /// A logger.
+    public var logger: Logger
+
+    @usableFromInline
+    init(headers: HPACKHeaders, logger: Logger) {
+      self.headers = headers
+      self.logger = logger
+    }
+  }
+
+  public struct Response {
+    private let contextProvider: AsyncServerCallContextProvider
+
+    /// Set the metadata to return at the start of the RPC.
+    ///
+    /// - Important: If this is required it should be updated _before_ the first response is sent
+    ///   via the response stream writer. Updates must not be made after the first response has
+    ///   been sent.
+    public func setHeaders(_ headers: HPACKHeaders) async throws {
+      try await self.contextProvider.setResponseHeaders(headers)
+    }
+
+    /// Set the metadata to return at the end of the RPC.
+    ///
+    /// If this is required it must be updated before returning from the handler.
+    public func setTrailers(_ trailers: HPACKHeaders) async throws {
+      try await self.contextProvider.setResponseTrailers(trailers)
+    }
+
+    /// Whether compression should be enabled for responses, defaulting to `true`. Note that for
+    /// this value to take effect compression must have been enabled on the server and a compression
+    /// algorithm must have been negotiated with the client.
+    public func compressResponses(_ compress: Bool) async throws {
+      try await self.contextProvider.setResponseCompression(compress)
+    }
+
+    @usableFromInline
+    internal init(contextProvider: AsyncServerCallContextProvider) {
+      self.contextProvider = contextProvider
+    }
   }
 }
 
