@@ -26,7 +26,8 @@ extension Call {
       self.send(.end, promise: nil)
     }
 
-    return GRPCAsyncRequestStreamWriter(asyncWriter: .init(delegate: delegate))
+    // Start as not-writable; writability will be toggled when the stream comes up.
+    return GRPCAsyncRequestStreamWriter(asyncWriter: .init(isWritable: false, delegate: delegate))
   }
 }
 

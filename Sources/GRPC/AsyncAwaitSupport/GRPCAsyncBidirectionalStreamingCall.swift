@@ -86,6 +86,9 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
     let asyncCall = Self(call: call)
 
     asyncCall.call.invokeStreamingRequests(
+      onStart: {
+        asyncCall.requestStream.asyncWriter.toggleWritabilityAsynchronously()
+      },
       onError: { error in
         asyncCall.responseParts.handleError(error)
         asyncCall.responseSource.finish(throwing: error)

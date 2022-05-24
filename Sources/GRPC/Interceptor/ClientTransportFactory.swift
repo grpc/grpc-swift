@@ -140,6 +140,7 @@ internal struct ClientTransportFactory<Request, Response> {
     withOptions options: CallOptions,
     onEventLoop eventLoop: EventLoop,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
@@ -151,6 +152,7 @@ internal struct ClientTransportFactory<Request, Response> {
         withOptions: options,
         onEventLoop: eventLoop,
         interceptedBy: interceptors,
+        onStart: onStart,
         onError: onError,
         onResponsePart: onResponsePart
       )
@@ -220,6 +222,7 @@ internal struct HTTP2ClientTransportFactory<Request, Response> {
     withOptions options: CallOptions,
     onEventLoop eventLoop: EventLoop,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
@@ -230,6 +233,7 @@ internal struct HTTP2ClientTransportFactory<Request, Response> {
       serializer: self.serializer,
       deserializer: self.deserializer,
       errorDelegate: self.errorDelegate,
+      onStart: onStart,
       onError: onError,
       onResponsePart: onResponsePart
     )
@@ -333,6 +337,7 @@ internal struct FakeClientTransportFactory<Request, Response> {
       serializer: self.requestSerializer,
       deserializer: self.responseDeserializer,
       errorDelegate: nil,
+      onStart: {},
       onError: onError,
       onResponsePart: onResponsePart
     )
