@@ -94,7 +94,9 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,
-        responseSource: asyncCall.responseSource
+        responseSource: asyncCall.responseSource,
+        requestStream: nil,
+        requestType: Request.self
       )
     )
 

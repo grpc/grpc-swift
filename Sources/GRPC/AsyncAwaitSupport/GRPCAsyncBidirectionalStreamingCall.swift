@@ -89,10 +89,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
       onError: { error in
         asyncCall.responseParts.handleError(error)
         asyncCall.responseSource.finish(throwing: error)
+        asyncCall.requestStream.asyncWriter.cancelAsynchronously()
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,
-        responseSource: asyncCall.responseSource
+        responseSource: asyncCall.responseSource,
+        requestStream: asyncCall.requestStream
       )
     )
 
@@ -102,9 +104,11 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal enum AsyncCall {
-  internal static func makeResponsePartHandler<Response>(
+  internal static func makeResponsePartHandler<Response, Request>(
     responseParts: StreamingResponseParts<Response>,
-    responseSource: PassthroughMessageSource<Response, Error>
+    responseSource: PassthroughMessageSource<Response, Error>,
+    requestStream: GRPCAsyncRequestStreamWriter<Request>?,
+    requestType: Request.Type = Request.self
   ) -> (GRPCClientResponsePart<Response>) -> Void {
     return { responsePart in
       // Handle the metadata, trailers and status.
@@ -125,6 +129,28 @@ internal enum AsyncCall {
         } else {
           responseSource.finish(throwing: status)
         }
+
+        requestStream?.asyncWriter.cancelAsynchronously()
+      }
+    }
+  }
+
+  internal static func makeResponsePartHandler<Response, Request>(
+    responseParts: UnaryResponseParts<Response>,
+    requestStream: GRPCAsyncRequestStreamWriter<Request>?,
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
+  ) -> (GRPCClientResponsePart<Response>) -> Void {
+    return { responsePart in
+      // Handle (most of) all parts.
+      responseParts.handle(responsePart)
+
+      // Handle the status.
+      switch responsePart {
+      case .metadata, .message:
+        ()
+      case .end:
+        requestStream?.asyncWriter.cancelAsynchronously()
       }
     }
   }
