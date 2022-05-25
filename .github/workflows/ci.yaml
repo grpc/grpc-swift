@@ -25,7 +25,8 @@ jobs:
       matrix:
         include:
           - image: swift:5.6-focal
-            swift-test-flags: "--sanitize=thread"
+            # No TSAN because of: https://github.com/apple/swift/issues/59068
+            # swift-test-flags: "--sanitize=thread"
           - image: swift:5.5-focal
             swift-test-flags: "--sanitize=thread"
           - image: swift:5.4-focal

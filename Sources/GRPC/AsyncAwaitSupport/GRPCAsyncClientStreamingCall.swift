@@ -85,6 +85,9 @@ public struct GRPCAsyncClientStreamingCall<Request: Sendable, Response: Sendable
     let asyncCall = Self(call: call)
 
     asyncCall.call.invokeStreamingRequests(
+      onStart: {
+        asyncCall.requestStream.asyncWriter.toggleWritabilityAsynchronously()
+      },
       onError: { error in
         asyncCall.responseParts.handleError(error)
         asyncCall.requestStream.asyncWriter.cancelAsynchronously()

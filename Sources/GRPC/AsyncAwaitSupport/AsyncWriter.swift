@@ -109,7 +109,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
 
   /// Whether the writer is paused.
   @usableFromInline
-  internal var _isPaused: Bool = false
+  internal var _isPaused: Bool
 
   /// The delegate to process elements. By convention we call the delegate before resuming any
   /// continuation.
@@ -120,12 +120,14 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
   internal init(
     maxPendingElements: Int = 16,
     maxWritesBeforeYield: Int = 5,
+    isWritable: Bool = true,
     delegate: Delegate
   ) {
     self._maxPendingElements = maxPendingElements
     self._maxWritesBeforeYield = maxWritesBeforeYield
     self._pendingElements = CircularBuffer(initialCapacity: maxPendingElements)
     self._completionState = .incomplete
+    self._isPaused = !isWritable
     self._delegate = delegate
   }
 

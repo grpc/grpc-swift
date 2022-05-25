@@ -122,6 +122,7 @@ class ClientCallTests: GRPCTestCase {
     let promise = self.makeStatusPromise()
     get.invokeUnaryRequest(
       .with { $0.text = "get" },
+      onStart: {},
       onError: promise.fail(_:),
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
@@ -134,6 +135,7 @@ class ClientCallTests: GRPCTestCase {
 
     let promise = self.makeStatusPromise()
     collect.invokeStreamingRequests(
+      onStart: {},
       onError: promise.fail(_:),
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
@@ -152,6 +154,7 @@ class ClientCallTests: GRPCTestCase {
     let promise = self.makeStatusPromise()
     expand.invokeUnaryRequest(
       .with { $0.text = "expand" },
+      onStart: {},
       onError: promise.fail(_:),
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
@@ -164,6 +167,7 @@ class ClientCallTests: GRPCTestCase {
 
     let promise = self.makeStatusPromise()
     update.invokeStreamingRequests(
+      onStart: {},
       onError: promise.fail(_:),
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )

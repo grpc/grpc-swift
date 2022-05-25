@@ -88,6 +88,7 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
 
     asyncCall.call.invokeUnaryRequest(
       request,
+      onStart: {},
       onError: { error in
         asyncCall.responseParts.handleError(error)
         asyncCall.responseSource.finish(throwing: error)

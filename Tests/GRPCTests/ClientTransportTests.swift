@@ -56,6 +56,7 @@ class ClientTransportTests: GRPCTestCase {
       serializer: AnySerializer(wrapping: StringSerializer()),
       deserializer: AnyDeserializer(wrapping: StringDeserializer()),
       errorDelegate: nil,
+      onStart: {},
       onError: onError,
       onResponsePart: onResponsePart
     )
