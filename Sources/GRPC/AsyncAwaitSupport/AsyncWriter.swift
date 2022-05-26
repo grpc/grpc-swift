@@ -245,50 +245,45 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
   ///   have been suspended.
   @inlinable
   internal func write(_ element: Element) async throws {
-    try await withCheckedThrowingContinuation { continuation in
-      self._write(element, continuation: continuation)
-    }
-  }
-
-  @inlinable
-  internal func _write(_ element: Element, continuation: CheckedContinuation<Void, Error>) {
     // There are three outcomes of writing:
     // - write the element directly (if the writer isn't paused and no writes are pending)
     // - queue the element (the writer is paused or there are writes already pending)
     // - error (the writer is complete or the queue is full).
-
-    if self._completionState.isPendingOrCompleted {
-      continuation.resume(throwing: GRPCAsyncWriterError.alreadyFinished)
-    } else if !self._isPaused, self._pendingElements.isEmpty {
-      self._delegate.write(element)
-      continuation.resume()
-    } else if self._pendingElements.count < self._maxPendingElements {
-      // The continuation will be resumed later.
-      self._pendingElements.append(PendingElement(element, continuation: continuation))
-    } else {
-      continuation.resume(throwing: GRPCAsyncWriterError.tooManyPendingWrites)
+    return try await withTaskCancellationHandler {
+      if self._completionState.isPendingOrCompleted {
+        throw GRPCAsyncWriterError.alreadyFinished
+      } else if !self._isPaused, self._pendingElements.isEmpty {
+        self._delegate.write(element)
+      } else if self._pendingElements.count < self._maxPendingElements {
+        // The continuation will be resumed later.
+        try await withCheckedThrowingContinuation { continuation in
+          self._pendingElements.append(PendingElement(element, continuation: continuation))
+        }
+      } else {
+        throw GRPCAsyncWriterError.tooManyPendingWrites
+      }
+    } onCancel: {
+      self.cancelAsynchronously()
     }
   }
 
   /// Write the final element
   @inlinable
   internal func finish(_ end: End) async throws {
-    try await withCheckedThrowingContinuation { continuation in
-      self._finish(end, continuation: continuation)
-    }
-  }
-
-  @inlinable
-  internal func _finish(_ end: End, continuation: CheckedContinuation<Void, Error>) {
-    if self._completionState.isPendingOrCompleted {
-      continuation.resume(throwing: GRPCAsyncWriterError.alreadyFinished)
-    } else if !self._isPaused, self._pendingElements.isEmpty {
-      self._completionState = .completed
-      self._delegate.writeEnd(end)
-      continuation.resume()
-    } else {
-      // Either we're paused or there are pending writes which must be consumed first.
-      self._completionState = .pending(PendingEnd(end, continuation: continuation))
+    return try await withTaskCancellationHandler {
+      if self._completionState.isPendingOrCompleted {
+        throw GRPCAsyncWriterError.alreadyFinished
+      } else if !self._isPaused, self._pendingElements.isEmpty {
+        self._completionState = .completed
+        self._delegate.writeEnd(end)
+      } else {
+        try await withCheckedThrowingContinuation { continuation in
+          // Either we're paused or there are pending writes which must be consumed first.
+          self._completionState = .pending(PendingEnd(end, continuation: continuation))
+        }
+      }
+    } onCancel: {
+      self.cancelAsynchronously()
     }
   }
 }

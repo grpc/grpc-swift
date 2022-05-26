@@ -126,6 +126,33 @@ class PassthroughMessageSourceTests: GRPCTestCase {
       }
     }
   }
+
+  func testCooperativeCancellationOfSourceOnNext() async throws {
+    let source = PassthroughMessageSource<String, TestError>()
+    try await withTaskCancelledAfter(nanoseconds: 100_000) {
+      do {
+        _ = try await source.consumeNextElement()
+        XCTFail("consumeNextElement() should throw CancellationError")
+      } catch {
+        XCTAssert(error is CancellationError)
+      }
+    }
+  }
+
+  func testCooperativeCancellationOfSequenceOnNext() async throws {
+    let source = PassthroughMessageSource<String, TestError>()
+    let sequence = PassthroughMessageSequence(consuming: source)
+    try await withTaskCancelledAfter(nanoseconds: 100_000) {
+      do {
+        for try await _ in sequence {
+          XCTFail("consumeNextElement() should throw CancellationError")
+        }
+        XCTFail("consumeNextElement() should throw CancellationError")
+      } catch {
+        XCTAssert(error is CancellationError)
+      }
+    }
+  }
 }
 
 fileprivate struct TestError: Error {}

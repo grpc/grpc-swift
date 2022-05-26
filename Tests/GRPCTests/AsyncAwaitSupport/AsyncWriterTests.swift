@@ -243,6 +243,34 @@ internal class AsyncWriterTests: GRPCTestCase {
     XCTAssertTrue(delegate.elements.isEmpty)
     XCTAssertNil(delegate.end)
   }
+
+  func testCooperativeCancellationOnWrite() async throws {
+    let delegate = CollectingDelegate<String, Void>()
+    let writer = AsyncWriter(isWritable: false, delegate: delegate)
+    try await withTaskCancelledAfter(nanoseconds: 100_000) {
+      do {
+        // Without co-operative cancellation then this will suspend indefinitely.
+        try await writer.write("I should be cancelled")
+        XCTFail("write(_:) should throw CancellationError")
+      } catch {
+        XCTAssert(error is CancellationError)
+      }
+    }
+  }
+
+  func testCooperativeCancellationOnFinish() async throws {
+    let delegate = CollectingDelegate<String, Void>()
+    let writer = AsyncWriter(isWritable: false, delegate: delegate)
+    try await withTaskCancelledAfter(nanoseconds: 100_000) {
+      do {
+        // Without co-operative cancellation then this will suspend indefinitely.
+        try await writer.finish()
+        XCTFail("finish() should throw CancellationError")
+      } catch {
+        XCTAssert(error is CancellationError)
+      }
+    }
+  }
 }
 
 fileprivate final class CollectingDelegate<
