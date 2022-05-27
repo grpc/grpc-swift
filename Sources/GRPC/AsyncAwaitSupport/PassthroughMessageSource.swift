@@ -158,7 +158,7 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
         self._lock.unlock()
       }
     } onCancel: {
-      let continuation = self._lock.withLock {
+      let continuation: CheckedContinuation<Element?, Error>? = self._lock.withLock {
         let cont = self._continuation
         self._continuation = nil
         return cont
