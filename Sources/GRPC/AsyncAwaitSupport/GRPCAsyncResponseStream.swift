@@ -44,7 +44,8 @@ public struct GRPCAsyncResponseStream<Element>: AsyncSequence {
 
     @inlinable
     public mutating func next() async throws -> Element? {
-      try await self.iterator.next()
+      if Task.isCancelled { throw GRPCStatus(code: .cancelled) }
+      return try await self.iterator.next()
     }
   }
 }

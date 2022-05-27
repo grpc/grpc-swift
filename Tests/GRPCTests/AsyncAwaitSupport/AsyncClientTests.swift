@@ -83,13 +83,40 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     let echo = try self.startServerAndClient(service: NeverResolvingEchoProvider())
 
     let get = echo.makeGetCall(.with { $0.text = "foo bar baz" })
-    try await get.cancel()
+    get.cancel()
 
-    await XCTAssertThrowsError(try await get.response)
+    do {
+      _ = try await get.response
+      XCTFail("Expected to throw a status with code .cancelled")
+    } catch let status as GRPCStatus {
+      XCTAssertEqual(status.code, .cancelled)
+    } catch {
+      XCTFail("Expected to throw a status with code .cancelled")
+    }
 
     // Status should be 'cancelled'.
     let status = await get.status
     XCTAssertEqual(status.code, .cancelled)
+  }
+
+  func testCancelFailsUnaryResponseForWrappedCall() async throws {
+    // We don't want the RPC to complete before we cancel it so use the never resolving service.
+    let echo = try self.startServerAndClient(service: NeverResolvingEchoProvider())
+
+    let task = Task {
+      try await echo.get(.with { $0.text = "I'll be cancelled" })
+    }
+
+    task.cancel()
+
+    do {
+      _ = try await task.value
+      XCTFail("Expected to throw a status with code .cancelled")
+    } catch let status as GRPCStatus {
+      XCTAssertEqual(status.code, .cancelled)
+    } catch {
+      XCTFail("Expected to throw a status with code .cancelled")
+    }
   }
 
   func testCancelServerStreamingClosesResponseStream() async throws {
@@ -97,14 +124,43 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     let echo = try self.startServerAndClient(service: NeverResolvingEchoProvider())
 
     let expand = echo.makeExpandCall(.with { $0.text = "foo bar baz" })
-    try await expand.cancel()
+    expand.cancel()
 
     var responseStream = expand.responseStream.makeAsyncIterator()
-    await XCTAssertThrowsError(try await responseStream.next())
+
+    do {
+      _ = try await responseStream.next()
+      XCTFail("Expected to throw a status with code .cancelled")
+    } catch let status as GRPCStatus {
+      XCTAssertEqual(status.code, .cancelled)
+    } catch {
+      XCTFail("Expected to throw a status with code .cancelled")
+    }
 
     // Status should be 'cancelled'.
     let status = await expand.status
     XCTAssertEqual(status.code, .cancelled)
+  }
+
+  func testCancelServerStreamingClosesResponseStreamForWrappedCall() async throws {
+    // We don't want the RPC to complete before we cancel it so use the never resolving service.
+    let echo = try self.startServerAndClient(service: NeverResolvingEchoProvider())
+
+    let task = Task {
+      let responseStream = echo.expand(.with { $0.text = "foo bar baz" })
+      var responseIterator = responseStream.makeAsyncIterator()
+      do {
+        _ = try await responseIterator.next()
+        XCTFail("Expected to throw a status with code .cancelled")
+      } catch let status as GRPCStatus {
+        XCTAssertEqual(status.code, .cancelled)
+      } catch {
+        XCTFail("Expected to throw a status with code .cancelled")
+      }
+    }
+
+    task.cancel()
+    await task.value
   }
 
   func testCancelClientStreamingClosesRequestStreamAndFailsResponse() async throws {
@@ -113,16 +169,47 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     let collect = echo.makeCollectCall()
     // Make sure the stream is up before we cancel it.
     try await collect.requestStream.send(.with { $0.text = "foo" })
-    try await collect.cancel()
+    collect.cancel()
 
-    // The next send should fail.
-    await XCTAssertThrowsError(try await collect.requestStream.send(.with { $0.text = "foo" }))
+    // Cancellation is async so loop until we error.
+    while true {
+      do {
+        try await collect.requestStream.send(.with { $0.text = "foo" })
+        try await Task.sleep(nanoseconds: 1000)
+      } catch {
+        break
+      }
+    }
+
     // There should be no response.
     await XCTAssertThrowsError(try await collect.response)
 
     // Status should be 'cancelled'.
     let status = await collect.status
     XCTAssertEqual(status.code, .cancelled)
+  }
+
+  func testCancelClientStreamingClosesRequestStreamAndFailsResponseForWrappedCall() async throws {
+    let echo = try self.startServerAndClient(service: NeverResolvingEchoProvider())
+    let requests = (0 ..< 10).map { i in
+      Echo_EchoRequest.with {
+        $0.text = String(i)
+      }
+    }
+
+    let task = Task {
+      do {
+        let _ = try await echo.collect(requests)
+        XCTFail("Expected to throw a status with code .cancelled")
+      } catch let status as GRPCStatus {
+        XCTAssertEqual(status.code, .cancelled)
+      } catch {
+        XCTFail("Expected to throw a status with code .cancelled")
+      }
+    }
+
+    task.cancel()
+    await task.value
   }
 
   func testClientStreamingClosesRequestStreamOnEnd() async throws {
@@ -154,14 +241,47 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     var responseStream = update.responseStream.makeAsyncIterator()
     _ = try await responseStream.next()
 
-    // Now cancel. The next send should fail and we shouldn't receive any more responses.
-    try await update.cancel()
-    await XCTAssertThrowsError(try await update.requestStream.send(.with { $0.text = "foo" }))
-    await XCTAssertThrowsError(try await responseStream.next())
+    update.cancel()
+
+    // Cancellation is async so loop until we error.
+    while true {
+      do {
+        try await update.requestStream.send(.with { $0.text = "foo" })
+        try await Task.sleep(nanoseconds: 1000)
+      } catch {
+        break
+      }
+    }
 
     // Status should be 'cancelled'.
     let status = await update.status
     XCTAssertEqual(status.code, .cancelled)
+  }
+
+  func testCancelBidiStreamingClosesRequestStreamAndResponseStreamForWrappedCall() async throws {
+    let echo = try self.startServerAndClient(service: EchoProvider())
+    let requests = (0 ..< 10).map { i in
+      Echo_EchoRequest.with {
+        $0.text = String(i)
+      }
+    }
+
+    let task = Task {
+      let responseStream = echo.update(requests)
+      var responseIterator = responseStream.makeAsyncIterator()
+
+      do {
+        _ = try await responseIterator.next()
+        XCTFail("Expected to throw a status with code .cancelled")
+      } catch let status as GRPCStatus {
+        XCTAssertEqual(status.code, .cancelled)
+      } catch {
+        XCTFail("Expected to throw a status with code .cancelled")
+      }
+    }
+
+    task.cancel()
+    await task.value
   }
 
   func testBidiStreamingClosesRequestStreamOnEnd() async throws {
@@ -204,11 +324,9 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     func cancel() {
       switch self {
       case let .clientStreaming(call):
-        // TODO: this should be async
-        Task { try await call.cancel() }
+        call.cancel()
       case let .bidirectionalStreaming(call):
-        // TODO: this should be async
-        Task { try await call.cancel() }
+        call.cancel()
       }
     }
   }

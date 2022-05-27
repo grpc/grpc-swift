@@ -165,12 +165,18 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     responseType: Response.Type = Response.self
   ) async throws -> Response {
-    return try await self.channel.makeAsyncUnaryCall(
+    let call = self.channel.makeAsyncUnaryCall(
       path: path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
-    ).response
+    )
+
+    return try await withTaskCancellationHandler {
+      try await call.response
+    } onCancel: {
+      call.cancel()
+    }
   }
 
   public func performAsyncUnaryCall<
@@ -183,12 +189,18 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     responseType: Response.Type = Response.self
   ) async throws -> Response {
-    return try await self.channel.makeAsyncUnaryCall(
+    let call = self.channel.makeAsyncUnaryCall(
       path: path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
-    ).response
+    )
+
+    return try await withTaskCancellationHandler {
+      try await call.response
+    } onCancel: {
+      call.cancel()
+    }
   }
 
   public func performAsyncServerStreamingCall<
@@ -401,30 +413,25 @@ extension GRPCClient {
     _ call: GRPCAsyncClientStreamingCall<Request, Response>,
     with requests: RequestStream
   ) async throws -> Response where RequestStream.Element == Request {
-    // We use a detached task because we use cancellation to signal early, but successful exit.
-    let requestsTask = Task.detached {
-      try Task.checkCancellation()
-      for try await request in requests {
-        try Task.checkCancellation()
-        try await call.requestStream.send(request)
-      }
-      try Task.checkCancellation()
-      try await call.requestStream.finish()
-      try Task.checkCancellation()
-    }
     return try await withTaskCancellationHandler {
-      // Await the response, which may come before the request stream is exhausted.
-      let response = try await call.response
-      // If we have a response, we can stop sending requests.
-      requestsTask.cancel()
-      // Return the response.
-      return response
-    } onCancel: {
-      requestsTask.cancel()
-      // If this outer task is cancelled then we should also cancel the RPC.
-      Task.detached {
-        try await call.cancel()
+      Task {
+        do {
+          // `AsyncSequence`s are encouraged to co-operatively check for cancellation, and we will
+          // cancel the call `onCancel` anyway, so there's no need to check here too.
+          for try await request in requests {
+            try await call.requestStream.send(request)
+          }
+          try await call.requestStream.finish()
+        } catch {
+          // If we throw then cancel the call. We will rely on the response throwing an appropriate
+          // error below.
+          call.cancel()
+        }
       }
+
+      return try await call.response
+    } onCancel: {
+      call.cancel()
     }
   }
 
@@ -438,20 +445,22 @@ extension GRPCClient {
     with requests: RequestStream
   ) -> GRPCAsyncResponseStream<Response> where RequestStream.Element == Request {
     Task {
-      try await withTaskCancellationHandler {
-        try Task.checkCancellation()
-        for try await request in requests {
-          try Task.checkCancellation()
-          try await call.requestStream.send(request)
+      do {
+        try await withTaskCancellationHandler {
+          // `AsyncSequence`s are encouraged to co-operatively check for cancellation, and we will
+          // cancel the call `onCancel` anyway, so there's no need to check here too.
+          for try await request in requests {
+            try await call.requestStream.send(request)
+          }
+          try await call.requestStream.finish()
+        } onCancel: {
+          call.cancel()
         }
-        try Task.checkCancellation()
-        try await call.requestStream.finish()
-      } onCancel: {
-        Task.detached {
-          try await call.cancel()
-        }
+      } catch {
+        call.cancel()
       }
     }
+
     return call.responseStream
   }
 }

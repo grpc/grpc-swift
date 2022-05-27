@@ -32,8 +32,8 @@ public struct GRPCAsyncClientStreamingCall<Request: Sendable, Response: Sendable
   }
 
   /// Cancel this RPC if it hasn't already completed.
-  public func cancel() async throws {
-    try await self.call.cancel().get()
+  public func cancel() {
+    self.call.cancel(promise: nil)
   }
 
   // MARK: - Response Parts

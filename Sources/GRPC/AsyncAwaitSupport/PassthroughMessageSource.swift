@@ -109,6 +109,7 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
       if self._isTerminated {
         return .alreadyTerminated
       } else if let continuation = self._continuation {
+        self._isTerminated = isTerminator
         self._continuation = nil
         return .resume(continuation)
       } else {
@@ -147,9 +148,11 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
     let continuationResult: _ContinuationResult? = self._lock.withLock {
       if let nextResult = self._continuationResults.popFirst() {
         return nextResult
+      } else if self._isTerminated {
+        return .success(nil)
       } else {
         // Nothing buffered and not terminated yet: save the continuation for later.
-        assert(self._continuation == nil)
+        precondition(self._continuation == nil)
         self._continuation = continuation
         return nil
       }
