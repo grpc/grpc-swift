@@ -190,7 +190,7 @@ final class AsyncClientCancellationTests: GRPCTestCase {
   }
 
   func testCancelClientStreamingClosesRequestStreamAndFailsResponseForWrappedCall() async throws {
-    let echo = try self.startServerAndClient(service: EchoProvider())
+    let echo = try self.startServerAndClient(service: NeverResolvingEchoProvider())
     let requests = (0 ..< 10).map { i in
       Echo_EchoRequest.with {
         $0.text = String(i)

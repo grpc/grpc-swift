@@ -413,27 +413,25 @@ extension GRPCClient {
     _ call: GRPCAsyncClientStreamingCall<Request, Response>,
     with requests: RequestStream
   ) async throws -> Response where RequestStream.Element == Request {
-    return try await withThrowingTaskGroup(of: Void.self, returning: Response.self) { group in
-      group.addTask {
-        await withTaskCancellationHandler {
-          do {
-            // `AsyncSequence`s are encouraged to co-operatively check for cancellation, and we will
-            // cancel the call `onCancel` anyway, so there's no need to check here too.
-            for try await request in requests {
-              try await call.requestStream.send(request)
-            }
-            try await call.requestStream.finish()
-          } catch {
-            // If we throw then cancel the call. We will rely on the response throwing an appropriate
-            // error below.
-            call.cancel()
+    return try await withTaskCancellationHandler {
+      Task {
+        do {
+          // `AsyncSequence`s are encouraged to co-operatively check for cancellation, and we will
+          // cancel the call `onCancel` anyway, so there's no need to check here too.
+          for try await request in requests {
+            try await call.requestStream.send(request)
           }
-        } onCancel: {
+          try await call.requestStream.finish()
+        } catch {
+          // If we throw then cancel the call. We will rely on the response throwing an appropriate
+          // error below.
           call.cancel()
         }
       }
 
       return try await call.response
+    } onCancel: {
+      call.cancel()
     }
   }
 
