@@ -50,6 +50,7 @@ internal struct PassthroughMessageSequence<Element, Failure: Error>: AsyncSequen
 
     @inlinable
     internal func next() async throws -> Element? {
+      // The storage handles co-operative cancellation, so we don't bother checking here.
       return try await self._storage.consumeNextElement()
     }
   }

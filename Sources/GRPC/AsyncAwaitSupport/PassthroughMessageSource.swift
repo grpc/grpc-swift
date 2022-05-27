@@ -108,12 +108,14 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
     let result: _YieldResult = self._lock.withLock {
       if self._isTerminated {
         return .alreadyTerminated
-      } else if let continuation = self._continuation {
+      } else {
         self._isTerminated = isTerminator
+      }
+
+      if let continuation = self._continuation {
         self._continuation = nil
         return .resume(continuation)
       } else {
-        self._isTerminated = isTerminator
         self._continuationResults.append(continuationResult)
         return .queued(self._continuationResults.count)
       }
@@ -138,28 +140,31 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
 
   @inlinable
   internal func consumeNextElement() async throws -> Element? {
-    return try await withCheckedThrowingContinuation {
-      self._consumeNextElement(continuation: $0)
+    self._lock.lock()
+    if let nextResult = self._continuationResults.popFirst() {
+      self._lock.unlock()
+      return try nextResult.get()
+    } else if self._isTerminated {
+      self._lock.unlock()
+      return nil
     }
-  }
 
-  @inlinable
-  internal func _consumeNextElement(continuation: CheckedContinuation<Element?, Error>) {
-    let continuationResult: _ContinuationResult? = self._lock.withLock {
-      if let nextResult = self._continuationResults.popFirst() {
-        return nextResult
-      } else if self._isTerminated {
-        return .success(nil)
-      } else {
+    // Slow path; we need a continuation.
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
         // Nothing buffered and not terminated yet: save the continuation for later.
         precondition(self._continuation == nil)
         self._continuation = continuation
-        return nil
+        self._lock.unlock()
       }
-    }
+    } onCancel: {
+      let continuation: CheckedContinuation<Element?, Error>? = self._lock.withLock {
+        let cont = self._continuation
+        self._continuation = nil
+        return cont
+      }
 
-    if let continuationResult = continuationResult {
-      continuation.resume(with: continuationResult)
+      continuation?.resume(throwing: CancellationError())
     }
   }
 }
