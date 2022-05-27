@@ -308,10 +308,8 @@ extension Call {
 
     switch self._state {
     case .idle:
-      // This is weird: does it make sense to cancel before invoking it?
-      let error = GRPCError.InvalidState("Call must be invoked before cancelling it")
-      promise?.fail(error)
-      self.channelPromise?.fail(error)
+      promise?.succeed(())
+      self.channelPromise?.fail(GRPCStatus(code: .cancelled))
 
     case let .invoked(transport):
       transport.cancel(promise: promise)
