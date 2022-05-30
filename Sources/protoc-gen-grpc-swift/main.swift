@@ -80,12 +80,11 @@ func outputFileName(
   }
 }
 
-var generatedFiles: [String: Int] = [:]
-
 func uniqueOutputFileName(
   component: String,
   fileDescriptor: FileDescriptor,
-  fileNamingOption: FileNaming
+  fileNamingOption: FileNaming,
+  generatedFiles: inout [String: Int]
 ) -> String {
   let defaultName = outputFileName(
     component: component,
@@ -121,6 +120,9 @@ func main() throws {
   // Build the SwiftProtobufPluginLibrary model of the plugin input
   let descriptorSet = DescriptorSet(protos: request.protoFile)
 
+  // A count of generated files by desired name (actual name may differ to avoid collisions).
+  var generatedFiles: [String: Int] = [:]
+
   // Only generate output for services.
   for name in request.fileToGenerate {
     let fileDescriptor = descriptorSet.lookupFileDescriptor(protoName: name)
@@ -128,7 +130,8 @@ func main() throws {
       let grpcFileName = uniqueOutputFileName(
         component: "grpc",
         fileDescriptor: fileDescriptor,
-        fileNamingOption: options.fileNaming
+        fileNamingOption: options.fileNaming,
+        generatedFiles: &generatedFiles
       )
       let grpcGenerator = Generator(fileDescriptor, options: options)
       var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()

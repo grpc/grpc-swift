@@ -296,11 +296,11 @@ extension AsyncWriter where End == Void {
   }
 }
 
-public struct GRPCAsyncWriterError: Error, Hashable {
+public struct GRPCAsyncWriterError: Error, Sendable, Hashable {
   private let wrapped: Wrapped
 
   @usableFromInline
-  internal enum Wrapped {
+  internal enum Wrapped: Sendable {
     case tooManyPendingWrites
     case alreadyFinished
   }

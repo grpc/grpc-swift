@@ -18,7 +18,7 @@
 /// This is currently a wrapper around AsyncThrowingStream because we want to be
 /// able to swap out the implementation for something else in the future.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncResponseStream<Element>: AsyncSequence {
+public struct GRPCAsyncResponseStream<Element: Sendable>: AsyncSequence {
   @usableFromInline
   internal typealias WrappedStream = PassthroughMessageSequence<Element, Error>
 
@@ -51,8 +51,8 @@ public struct GRPCAsyncResponseStream<Element>: AsyncSequence {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension GRPCAsyncResponseStream: Sendable where Element: Sendable {}
+extension GRPCAsyncResponseStream: Sendable {}
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension GRPCAsyncResponseStream.Iterator: Sendable where Element: Sendable {}
+extension GRPCAsyncResponseStream.Iterator: Sendable {}
 
 #endif

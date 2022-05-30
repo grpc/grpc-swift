@@ -728,6 +728,11 @@ internal final class AsyncServerHandler<
   }
 }
 
+// Sendability is unchecked as all mutable state is accessed/modified from an appropriate event
+// loop.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension AsyncServerHandler: @unchecked Sendable {}
+
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncServerHandler: AsyncServerCallContextProvider {
   @usableFromInline
@@ -782,7 +787,7 @@ extension AsyncServerHandler: AsyncServerCallContextProvider {
 /// correct event loop.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-protocol AsyncServerCallContextProvider {
+protocol AsyncServerCallContextProvider: Sendable {
   func setResponseHeaders(_ headers: HPACKHeaders) async throws
   func setResponseTrailers(_ trailers: HPACKHeaders) async throws
   func setResponseCompression(_ enabled: Bool) async throws
@@ -798,7 +803,7 @@ protocol AsyncServerCallContextProvider {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-internal struct ServerHandlerComponents<Request, Delegate: AsyncWriterDelegate> {
+internal struct ServerHandlerComponents<Request: Sendable, Delegate: AsyncWriterDelegate> {
   @usableFromInline
   internal let task: Task<Void, Never>
   @usableFromInline
