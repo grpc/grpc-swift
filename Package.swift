@@ -409,7 +409,6 @@ extension Target {
       .nioCore,
       .nioPosix,
       .nioExtras,
-      .logging,
       .argumentParser,
     ],
     path: "Sources/Examples/PacketCapture",
