@@ -296,7 +296,7 @@ extension AsyncWriter where End == Void {
   }
 }
 
-public struct GRPCAsyncWriterError: Error, Sendable, Hashable {
+public struct GRPCAsyncWriterError: Error, Hashable {
   private let wrapped: Wrapped
 
   @usableFromInline
