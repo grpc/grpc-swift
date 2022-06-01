@@ -20,7 +20,7 @@ import NIOCore
 
 /// The connectivity state of a client connection. Note that this is heavily lifted from the gRPC
 /// documentation: https://github.com/grpc/grpc/blob/master/doc/connectivity-semantics-and-api.md.
-public enum ConnectivityState {
+public enum ConnectivityState: GRPCSendable {
   /// This is the state where the channel has not yet been created.
   case idle
 

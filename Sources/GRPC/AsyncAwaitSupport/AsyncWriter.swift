@@ -300,7 +300,7 @@ public struct GRPCAsyncWriterError: Error, Hashable {
   private let wrapped: Wrapped
 
   @usableFromInline
-  internal enum Wrapped {
+  internal enum Wrapped: Sendable {
     case tooManyPendingWrites
     case alreadyFinished
   }
