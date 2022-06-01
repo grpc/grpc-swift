@@ -37,7 +37,7 @@ enum RPC: String, ExpressibleByArgument {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct Echo: ParsableCommand {
+struct Echo: AsyncParsableCommand {
   static var configuration = CommandConfiguration(
     abstract: "An example to run and call a simple gRPC service for echoing messages.",
     subcommands: [Server.self, Client.self]
@@ -54,7 +54,7 @@ struct Echo: ParsableCommand {
     @Flag(help: "Whether TLS should be used or not")
     var tls = false
 
-    func runAsync() async throws {
+    func run() async throws {
       let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
       defer {
         try! group.syncShutdownGracefully()
@@ -90,7 +90,7 @@ struct Echo: ParsableCommand {
     @Argument(help: "Message to echo")
     var message: String
 
-    func runAsync() async throws {
+    func run() async throws {
       let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
       defer {
         try! group.syncShutdownGracefully()
@@ -246,28 +246,6 @@ func echoUpdate(client: Echo_EchoAsyncClient, message: String) async throws {
   }
 }
 
-// MARK: - "Main"
-
-/// NOTE: We would like to be able to rename this file from `main.swift` to something else and just
-/// use `@main` but I cannot get this to work with the current combination of this repo and Xcode on
-/// macOS.
-import Dispatch
-let dg = DispatchGroup()
-dg.enter()
-if #available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *) {
-  Task {
-    await Echo.main()
-    dg.leave()
-  }
-} else {
-  print("ERROR: Concurrency only supported on Swift >= 5.5.")
-  dg.leave()
-}
-
-dg.wait()
-
 #else
-
 print("ERROR: Concurrency only supported on Swift >= 5.5.")
-
 #endif
