@@ -84,4 +84,11 @@ struct PCAP: AsyncParsableCommand {
     try await echo.channel.close().get()
   }
 }
+#else
+@main
+struct PCAP {
+  static func main() {
+    print("This example requires Swift >= 5.6")
+  }
+}
 #endif // compiler(>=5.6)
