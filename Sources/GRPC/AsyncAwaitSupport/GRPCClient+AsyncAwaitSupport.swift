@@ -322,7 +322,7 @@ extension GRPCClient {
   public func performAsyncBidirectionalStreamingCall<
     Request: SwiftProtobuf.Message & Sendable,
     Response: SwiftProtobuf.Message & Sendable,
-    RequestStream: AsyncSequence
+    RequestStream: AsyncSequence & Sendable
   >(
     path: String,
     requests: RequestStream,
@@ -343,7 +343,7 @@ extension GRPCClient {
   public func performAsyncBidirectionalStreamingCall<
     Request: GRPCPayload & Sendable,
     Response: GRPCPayload & Sendable,
-    RequestStream: AsyncSequence
+    RequestStream: AsyncSequence & Sendable
   >(
     path: String,
     requests: RequestStream,

@@ -16,7 +16,7 @@
 #if compiler(>=5.6)
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension Call {
+extension Call where Request: Sendable, Response: Sendable {
   internal func makeRequestStreamWriter() -> GRPCAsyncRequestStreamWriter<Request> {
     let delegate = GRPCAsyncRequestStreamWriter<Request>.Delegate(
       compressionEnabled: self.options.messageEncoding.enabledForRequests

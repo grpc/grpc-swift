@@ -20,7 +20,7 @@ import NIOConcurrencyHelpers
 @preconcurrency import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCAsyncServerCallContext {
+public struct GRPCAsyncServerCallContext: Sendable {
   @usableFromInline
   let contextProvider: AsyncServerCallContextProvider
 
@@ -83,7 +83,7 @@ extension GRPCAsyncServerCallContext {
     }
   }
 
-  public struct Response {
+  public struct Response: Sendable {
     private let contextProvider: AsyncServerCallContextProvider
 
     /// Set the metadata to return at the start of the RPC.
