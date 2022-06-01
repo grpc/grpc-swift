@@ -44,7 +44,7 @@ struct PCAP: AsyncParsableCommand {
 
     // Ensure that we close the file sink when we're done with it.
     defer {
-      try? fileSink.syncClose()
+      try! fileSink.syncClose()
     }
 
     let channel = try GRPCChannelPool.with(
