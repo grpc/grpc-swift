@@ -86,7 +86,7 @@ struct PCAP: AsyncParsableCommand {
 }
 #else
 @main
-struct PCAP {
+enum PCAP {
   static func main() {
     print("This example requires Swift >= 5.6")
   }
