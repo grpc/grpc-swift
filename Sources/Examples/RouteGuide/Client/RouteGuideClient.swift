@@ -58,7 +58,7 @@ internal struct RouteGuideExample {
     )
 
     // Record a few randomly selected points from the features file.
-    await self.recordRoute(features: features, featuresToVisit: 10)
+    await self.recordRoute(features: self.features, featuresToVisit: 10)
 
     // Send and receive some notes.
     await self.routeChat()
