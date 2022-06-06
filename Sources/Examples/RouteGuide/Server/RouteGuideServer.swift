@@ -64,6 +64,4 @@ struct RouteGuide: AsyncParsableCommand {
     try await server.onClose.get()
   }
 }
-#else
-fatalError("The RouteGuide example requires Swift >= 5.6.")
 #endif // compiler(>=5.6)

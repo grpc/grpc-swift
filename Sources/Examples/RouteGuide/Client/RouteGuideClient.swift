@@ -247,6 +247,4 @@ extension Routeguide_Feature: CustomStringConvertible {
     return "\(self.name) at \(self.location)"
   }
 }
-#else
-fatalError("The RouteGuide example requires Swift >= 5.6.")
 #endif // compiler(>=5.6)
