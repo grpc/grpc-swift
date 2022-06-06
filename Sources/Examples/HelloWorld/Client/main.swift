@@ -13,38 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if compiler(>=5.6)
 import ArgumentParser
 import GRPC
 import HelloWorldModel
 import NIOCore
 import NIOPosix
 
-func greet(name: String?, client greeter: Helloworld_GreeterNIOClient) {
-  // Form the request with the name, if one was provided.
-  let request = Helloworld_HelloRequest.with {
-    $0.name = name ?? ""
-  }
-
-  // Make the RPC call to the server.
-  let sayHello = greeter.sayHello(request)
-
-  // wait() on the response to stop the program from exiting before the response is received.
-  do {
-    let response = try sayHello.response.wait()
-    print("Greeter received: \(response.message)")
-  } catch {
-    print("Greeter failed: \(error)")
-  }
-}
-
-struct HelloWorld: ParsableCommand {
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+struct HelloWorld: AsyncParsableCommand {
   @Option(help: "The port to connect to")
   var port: Int = 1234
 
   @Argument(help: "The name to greet")
   var name: String?
 
-  func run() throws {
+  func run() async throws {
     // Setup an `EventLoopGroup` for the connection to run on.
     //
     // See: https://github.com/apple/swift-nio#eventloops-and-eventloopgroups
@@ -68,11 +52,20 @@ struct HelloWorld: ParsableCommand {
     }
 
     // Provide the connection to the generated client.
-    let greeter = Helloworld_GreeterNIOClient(channel: channel)
+    let greeter = Helloworld_GreeterAsyncClient(channel: channel)
 
-    // Do the greeting.
-    greet(name: self.name, client: greeter)
+    // Form the request with the name, if one was provided.
+    let request = Helloworld_HelloRequest.with {
+      $0.name = self.name ?? ""
+    }
+
+    do {
+      let greeting = try await greeter.sayHello(request)
+      print("Greeter received: \(greeting.message)")
+    } catch {
+      print("Greeter failed: \(error)")
+    }
   }
 }
 
-HelloWorld.main()
+#endif // compiler(>=5.6)
