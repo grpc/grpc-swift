@@ -67,5 +67,4 @@ struct HelloWorld: AsyncParsableCommand {
     }
   }
 }
-
 #endif // compiler(>=5.6)

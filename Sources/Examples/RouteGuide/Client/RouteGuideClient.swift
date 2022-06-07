@@ -32,20 +32,8 @@ func loadFeatures() throws -> [Routeguide_Feature] {
   return try Routeguide_Feature.array(fromJSONUTF8Data: data)
 }
 
-/// Makes a `RouteGuide` client for a service hosted on "localhost" and listening on the given port.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-func makeClient(port: Int, group: EventLoopGroup) throws -> Routeguide_RouteGuideAsyncClient {
-  let channel = try GRPCChannelPool.with(
-    target: .host("localhost", port: port),
-    transportSecurity: .plaintext,
-    eventLoopGroup: group
-  )
-
-  return Routeguide_RouteGuideAsyncClient(channel: channel)
-}
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal struct RouteGuideExample: @unchecked Sendable {
+internal struct RouteGuideExample {
   private let routeGuide: Routeguide_RouteGuideAsyncClient
   private let features: [Routeguide_Feature]
 
@@ -54,37 +42,26 @@ internal struct RouteGuideExample: @unchecked Sendable {
     self.features = features
   }
 
-  func runAndBlockUntilCompletion() {
-    let group = DispatchGroup()
-    group.enter()
+  func run() async {
+    // Look for a valid feature.
+    await self.getFeature(latitude: 409_146_138, longitude: -746_188_906)
 
-    Task {
-      defer {
-        group.leave()
-      }
+    // Look for a missing feature.
+    await self.getFeature(latitude: 0, longitude: 0)
 
-      // Look for a valid feature.
-      await self.getFeature(latitude: 409_146_138, longitude: -746_188_906)
+    // Looking for features between 40, -75 and 42, -73.
+    await self.listFeatures(
+      lowLatitude: 400_000_000,
+      lowLongitude: -750_000_000,
+      highLatitude: 420_000_000,
+      highLongitude: -730_000_000
+    )
 
-      // Look for a missing feature.
-      await self.getFeature(latitude: 0, longitude: 0)
+    // Record a few randomly selected points from the features file.
+    await self.recordRoute(features: self.features, featuresToVisit: 10)
 
-      // Looking for features between 40, -75 and 42, -73.
-      await self.listFeatures(
-        lowLatitude: 400_000_000,
-        lowLongitude: -750_000_000,
-        highLatitude: 420_000_000,
-        highLongitude: -730_000_000
-      )
-
-      // Record a few randomly selected points from the features file.
-      await self.recordRoute(features: features, featuresToVisit: 10)
-
-      // Send and receive some notes.
-      await self.routeChat()
-    }
-
-    group.wait()
+    // Send and receive some notes.
+    await self.routeChat()
   }
 }
 
@@ -229,12 +206,13 @@ extension RouteGuideExample {
   }
 }
 
+@main
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct RouteGuide: ParsableCommand {
+struct RouteGuide: AsyncParsableCommand {
   @Option(help: "The port to connect to")
   var port: Int = 1234
 
-  func run() throws {
+  func run() async throws {
     // Load the features.
     let features = try loadFeatures()
 
@@ -243,15 +221,18 @@ struct RouteGuide: ParsableCommand {
       try? group.syncShutdownGracefully()
     }
 
-    let routeGuide = try makeClient(port: self.port, group: group)
+    let channel = try GRPCChannelPool.with(
+      target: .host("localhost", port: self.port),
+      transportSecurity: .plaintext,
+      eventLoopGroup: group
+    )
     defer {
-      try? routeGuide.channel.close().wait()
+      try? channel.close().wait()
     }
 
-    // ArgumentParser did not support async/await at the point in time this was written. Block
-    // this thread while the example runs.
+    let routeGuide = Routeguide_RouteGuideAsyncClient(channel: channel)
     let example = RouteGuideExample(routeGuide: routeGuide, features: features)
-    example.runAndBlockUntilCompletion()
+    await example.run()
   }
 }
 
@@ -266,12 +247,11 @@ extension Routeguide_Feature: CustomStringConvertible {
     return "\(self.name) at \(self.location)"
   }
 }
-
-if #available(macOS 12, *) {
-  RouteGuide.main()
-} else {
-  fatalError("The RouteGuide example requires macOS 12 or newer.")
-}
 #else
-fatalError("The RouteGuide example requires Swift concurrency features.")
+@main
+enum NotAvailable {
+  static func main() {
+    print("This example requires Swift >= 5.6")
+  }
+}
 #endif // compiler(>=5.6)

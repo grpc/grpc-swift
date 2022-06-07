@@ -33,12 +33,13 @@ func loadFeatures() throws -> [Routeguide_Feature] {
   return try Routeguide_Feature.array(fromJSONUTF8Data: data)
 }
 
+@main
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct RouteGuide: ParsableCommand {
+struct RouteGuide: AsyncParsableCommand {
   @Option(help: "The port to listen on for new connections")
   var port = 1234
 
-  func run() throws {
+  func run() async throws {
     // Create an event loop group for the server to run on.
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     defer {
@@ -52,28 +53,22 @@ struct RouteGuide: ParsableCommand {
     let provider = RouteGuideProvider(features: features)
 
     // Start the server and print its address once it has started.
-    let server = Server.insecure(group: group)
+    let server = try await Server.insecure(group: group)
       .withServiceProviders([provider])
       .bind(host: "localhost", port: self.port)
+      .get()
 
-    server.map {
-      $0.channel.localAddress
-    }.whenSuccess { address in
-      print("server started on port \(address!.port!)")
-    }
+    print("server started on port \(server.channel.localAddress!.port!)")
 
     // Wait on the server's `onClose` future to stop the program from exiting.
-    _ = try server.flatMap {
-      $0.onClose
-    }.wait()
+    try await server.onClose.get()
   }
 }
-
-if #available(macOS 12, *) {
-  RouteGuide.main()
-} else {
-  fatalError("The RouteGuide example requires macOS 12 or newer.")
-}
 #else
-fatalError("The RouteGuide example requires Swift concurrency support.")
+@main
+enum RouteGuide {
+  static func main() {
+    print("This example requires Swift >= 5.6")
+  }
+}
 #endif // compiler(>=5.6)

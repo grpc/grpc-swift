@@ -43,5 +43,4 @@ struct HelloWorld: AsyncParsableCommand {
     try await server.onClose.get()
   }
 }
-
 #endif // compiler(>=5.6)
