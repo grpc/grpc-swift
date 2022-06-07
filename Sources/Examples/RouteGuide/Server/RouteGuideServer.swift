@@ -64,4 +64,11 @@ struct RouteGuide: AsyncParsableCommand {
     try await server.onClose.get()
   }
 }
+#else
+@main
+enum RouteGuide {
+  static func main() {
+    print("This example requires Swift >= 5.6")
+  }
+}
 #endif // compiler(>=5.6)

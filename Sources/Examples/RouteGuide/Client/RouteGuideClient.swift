@@ -247,4 +247,11 @@ extension Routeguide_Feature: CustomStringConvertible {
     return "\(self.name) at \(self.location)"
   }
 }
+#else
+@main
+enum NotAvailable {
+  static func main() {
+    print("This example requires Swift >= 5.6")
+  }
+}
 #endif // compiler(>=5.6)
