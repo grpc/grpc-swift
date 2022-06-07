@@ -27,8 +27,8 @@ internal final class ClientQuiescingTests: GRPCTestCase {
   private var server: Server!
   private let tracker = RPCTracker()
 
-  private var echo: Echo_EchoClient {
-    return Echo_EchoClient(channel: self.channel)
+  private var echo: Echo_EchoNIOClient {
+    return Echo_EchoNIOClient(channel: self.channel)
   }
 
   override func setUp() {

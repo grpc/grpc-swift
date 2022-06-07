@@ -26,17 +26,7 @@ In a separate shell run:
 $ swift run PacketCapture
 ```
 
-Some logs should be emitted similar to below, including the path of the
-*.pcap* file:
-
-```sh
-2020-07-24T10:48:50+0100 info gRPC PCAP Demo : Creating fileSink for path './channel-ObjectIdentifier(0x00007f8a25604c40).pcap'
-2020-07-24T10:48:50+0100 info gRPC PCAP Demo : ✅ Successfully created fileSink for path './channel-ObjectIdentifier(0x00007f8a25604c40).pcap'
-...
-2020-07-24T10:48:50+0100 info gRPC PCAP Demo : ✅ RPC completed successfully
-...
-2020-07-24T10:48:50+0100 info gRPC PCAP Demo : Done!
-```
+The pcap file will be written to 'packet-capture-example.pcap'.
 
 The *.pcap* file can be opened with either: [Wireshark][wireshark] or `tcpdump
 -r <PCAP_FILE>`.

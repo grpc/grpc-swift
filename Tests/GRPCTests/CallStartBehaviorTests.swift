@@ -36,7 +36,7 @@ class CallStartBehaviorTests: GRPCTestCase {
       XCTAssertNoThrow(try channel.close().wait())
     }
 
-    let echo = Echo_EchoClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
+    let echo = Echo_EchoNIOClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
     let get = echo.get(.with { $0.text = "Is anyone out there?" })
 
     XCTAssertThrowsError(try get.response.wait())

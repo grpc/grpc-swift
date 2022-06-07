@@ -84,6 +84,7 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
 
   internal func invoke() {
     self.call.invokeStreamingRequests(
+      onStart: {},
       onError: self.responseParts.handleError(_:),
       onResponsePart: self.responseParts.handle(_:)
     )

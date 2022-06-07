@@ -120,7 +120,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    let echo = Echo_EchoNIOClient(channel: ClientConnection(configuration: configuration))
     _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
@@ -157,7 +157,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    let echo = Echo_EchoNIOClient(channel: ClientConnection(configuration: configuration))
     _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
@@ -202,7 +202,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    let echo = Echo_EchoNIOClient(channel: ClientConnection(configuration: configuration))
     _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)

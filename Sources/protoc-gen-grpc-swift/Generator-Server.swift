@@ -19,11 +19,24 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   internal func printServer() {
-    self.printServerProtocol()
-    self.println()
-    self.printServerProtocolExtension()
-    self.println()
-    self.printServerInterceptorFactoryProtocol()
+    if self.options.generateServer {
+      self.printServerProtocol()
+      self.println()
+      self.printServerProtocolExtension()
+      self.println()
+      self.printIfCompilerGuardForAsyncAwait()
+      self.println()
+      self.printServerProtocolAsyncAwait()
+      self.println()
+      self.printServerProtocolExtensionAsyncAwait()
+      self.println()
+      self.printEndCompilerGuardForAsyncAwait()
+      self.println()
+      // Both implementations share definitions for interceptors and metadata.
+      self.printServerInterceptorFactoryProtocol()
+      self.println()
+      self.printServerMetadata()
+    }
   }
 
   private func printServerProtocol() {
@@ -71,7 +84,10 @@ extension Generator {
   private func printServerProtocolExtension() {
     self.println("extension \(self.providerName) {")
     self.withIndentation {
-      self.println("\(self.access) var serviceName: Substring { return \"\(self.servicePath)\" }")
+      self.withIndentation("\(self.access) var serviceName: Substring", braces: .curly) {
+        /// This API returns a Substring (hence the '[...]')
+        self.println("return \(self.serviceServerMetadata).serviceDescriptor.fullName[...]")
+      }
       self.println()
       self.println(
         "/// Determines, calls and returns the appropriate request handler, depending on the request's method."

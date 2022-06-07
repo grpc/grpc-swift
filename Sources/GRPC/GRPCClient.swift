@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import NIOConcurrencyHelpers
 import NIOCore
 import NIOHTTP2
 import SwiftProtobuf
 
 /// A gRPC client.
-public protocol GRPCClient {
+public protocol GRPCClient: GRPCSendable {
   /// The gRPC channel over which RPCs are sent and received. Note that this is distinct
   /// from `NIO.Channel`.
   var channel: GRPCChannel { get }
@@ -176,8 +177,50 @@ extension GRPCClient {
 ///   request: .with { ... },
 /// }
 /// ```
+@available(*, deprecated, renamed: "GRPCAnyServiceClient")
 public final class AnyServiceClient: GRPCClient {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+
   /// The gRPC channel over which RPCs are sent and received.
+  public let channel: GRPCChannel
+
+  /// The default options passed to each RPC unless passed for each RPC.
+  public var defaultCallOptions: CallOptions {
+    get { return self.lock.withLock { self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+
+  /// Creates a client which may be used to call any service.
+  ///
+  /// - Parameters:
+  ///   - connection: `ClientConnection` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+  }
+}
+
+#if swift(>=5.6)
+// Unchecked because mutable state is protected by a lock.
+@available(*, deprecated, renamed: "GRPCAnyServiceClient")
+extension AnyServiceClient: @unchecked GRPCSendable {}
+#endif // swift(>=5.6)
+
+/// A client which has no generated stubs and may be used to create gRPC calls manually.
+/// See `GRPCClient` for details.
+///
+/// Example:
+///
+/// ```
+/// let client = GRPCAnyServiceClient(channel: channel)
+/// let rpc: UnaryCall<Request, Response> = client.makeUnaryCall(
+///   path: "/serviceName/methodName",
+///   request: .with { ... },
+/// }
+/// ```
+public struct GRPCAnyServiceClient: GRPCClient {
   public let channel: GRPCChannel
 
   /// The default options passed to each RPC unless passed for each RPC.

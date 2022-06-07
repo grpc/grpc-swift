@@ -51,6 +51,10 @@ public struct Grpc_Testing_Empty {
   public init() {}
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Grpc_Testing_Empty: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.testing"

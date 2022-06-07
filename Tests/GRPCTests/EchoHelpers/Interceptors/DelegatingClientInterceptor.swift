@@ -56,7 +56,7 @@ final class DelegatingClientInterceptor<
   }
 }
 
-class DelegatingEchoClientInterceptorFactory: Echo_EchoClientInterceptorFactoryProtocol {
+final class DelegatingEchoClientInterceptorFactory: Echo_EchoClientInterceptorFactoryProtocol {
   typealias OnSend = DelegatingClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>.OnSend
   let interceptor: DelegatingClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>
 

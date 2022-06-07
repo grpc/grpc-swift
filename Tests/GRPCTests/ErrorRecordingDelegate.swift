@@ -18,7 +18,12 @@ import Logging
 import NIOConcurrencyHelpers
 import XCTest
 
-class ErrorRecordingDelegate: ClientErrorDelegate {
+#if compiler(>=5.6)
+// Unchecked as all mutable state is accessed and modified behind a lock.
+extension ErrorRecordingDelegate: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+final class ErrorRecordingDelegate: ClientErrorDelegate {
   private let lock: Lock
   private var _errors: [Error] = []
 

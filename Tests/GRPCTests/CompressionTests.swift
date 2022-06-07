@@ -27,7 +27,7 @@ class MessageCompressionTests: GRPCTestCase {
   var client: ClientConnection!
   var defaultTimeout: TimeInterval = 1.0
 
-  var echo: Echo_EchoClient!
+  var echo: Echo_EchoNIOClient!
 
   override func setUp() {
     super.setUp()
@@ -55,7 +55,7 @@ class MessageCompressionTests: GRPCTestCase {
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
-    self.echo = Echo_EchoClient(
+    self.echo = Echo_EchoNIOClient(
       channel: self.client,
       defaultCallOptions: CallOptions(messageEncoding: encoding, logger: self.clientLogger)
     )

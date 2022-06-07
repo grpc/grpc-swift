@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if swift(>=5.6)
+@preconcurrency import Foundation
+@preconcurrency import Logging
+@preconcurrency import NIOCore
+#else
 import Foundation
 import Logging
 import NIOCore
+#endif // swift(>=5.6)
+
 import NIOHPACK
 import NIOHTTP2
 #if canImport(NIOSSL)
@@ -78,7 +85,7 @@ import SwiftProtobuf
 /// The 'GRPCIdleHandler' intercepts HTTP/2 frames and various events and is responsible for
 /// informing and controlling the state of the connection (idling and keepalive). The HTTP/2 streams
 /// are used to handle individual RPCs.
-public class ClientConnection {
+public final class ClientConnection: GRPCSendable {
   private let connectionManager: ConnectionManager
 
   /// HTTP multiplexer from the underlying channel handling gRPC calls.
@@ -261,7 +268,7 @@ extension ClientConnection: GRPCChannel {
 // MARK: - Configuration structures
 
 /// A target to connect to.
-public struct ConnectionTarget {
+public struct ConnectionTarget: GRPCSendable {
   internal enum Wrapped {
     case hostAndPort(String, Int)
     case unixDomainSocket(String)
@@ -315,8 +322,8 @@ public struct ConnectionTarget {
 }
 
 /// The connectivity behavior to use when starting an RPC.
-public struct CallStartBehavior: Hashable {
-  internal enum Behavior: Hashable {
+public struct CallStartBehavior: Hashable, GRPCSendable {
+  internal enum Behavior: Hashable, GRPCSendable {
     case waitsForConnectivity
     case fastFailure
   }
@@ -349,7 +356,7 @@ public struct CallStartBehavior: Hashable {
 extension ClientConnection {
   /// Configuration for a `ClientConnection`. Users should prefer using one of the
   /// `ClientConnection` builders: `ClientConnection.secure(_:)` or `ClientConnection.insecure(_:)`.
-  public struct Configuration {
+  public struct Configuration: GRPCSendable {
     /// The target to connect to.
     public var target: ConnectionTarget
 
@@ -449,7 +456,7 @@ extension ClientConnection {
     /// used to add additional handlers to the pipeline and is intended for debugging.
     ///
     /// - Warning: The initializer closure may be invoked *multiple times*.
-    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+    public var debugChannelInitializer: GRPCChannelInitializer?
 
     #if canImport(NIOSSL)
     /// Create a `Configuration` with some pre-defined defaults. Prefer using
@@ -491,7 +498,7 @@ extension ClientConnection {
         label: "io.grpc",
         factory: { _ in SwiftLogNoOpLogHandler() }
       ),
-      debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
+      debugChannelInitializer: GRPCChannelInitializer? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup

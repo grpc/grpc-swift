@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -87,7 +88,7 @@ extension Normalization_NormalizationClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeUnaryCall(
-      path: "/normalization.Normalization/Unary",
+      path: Normalization_NormalizationClientMetadata.Methods.Unary.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeUnaryInterceptors() ?? []
@@ -105,7 +106,7 @@ extension Normalization_NormalizationClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeUnaryCall(
-      path: "/normalization.Normalization/unary",
+      path: Normalization_NormalizationClientMetadata.Methods.unary.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeunaryInterceptors() ?? []
@@ -125,7 +126,7 @@ extension Normalization_NormalizationClientProtocol {
     handler: @escaping (Normalization_FunctionName) -> Void
   ) -> ServerStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeServerStreamingCall(
-      path: "/normalization.Normalization/ServerStreaming",
+      path: Normalization_NormalizationClientMetadata.Methods.ServerStreaming.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeServerStreamingInterceptors() ?? [],
@@ -146,7 +147,7 @@ extension Normalization_NormalizationClientProtocol {
     handler: @escaping (Normalization_FunctionName) -> Void
   ) -> ServerStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeServerStreamingCall(
-      path: "/normalization.Normalization/serverStreaming",
+      path: Normalization_NormalizationClientMetadata.Methods.serverStreaming.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeserverStreamingInterceptors() ?? [],
@@ -166,7 +167,7 @@ extension Normalization_NormalizationClientProtocol {
     callOptions: CallOptions? = nil
   ) -> ClientStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeClientStreamingCall(
-      path: "/normalization.Normalization/ClientStreaming",
+      path: Normalization_NormalizationClientMetadata.Methods.ClientStreaming.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? []
     )
@@ -184,7 +185,7 @@ extension Normalization_NormalizationClientProtocol {
     callOptions: CallOptions? = nil
   ) -> ClientStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeClientStreamingCall(
-      path: "/normalization.Normalization/clientStreaming",
+      path: Normalization_NormalizationClientMetadata.Methods.clientStreaming.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? []
     )
@@ -204,7 +205,7 @@ extension Normalization_NormalizationClientProtocol {
     handler: @escaping (Normalization_FunctionName) -> Void
   ) -> BidirectionalStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeBidirectionalStreamingCall(
-      path: "/normalization.Normalization/BidirectionalStreaming",
+      path: Normalization_NormalizationClientMetadata.Methods.BidirectionalStreaming.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? [],
       handler: handler
@@ -225,7 +226,7 @@ extension Normalization_NormalizationClientProtocol {
     handler: @escaping (Normalization_FunctionName) -> Void
   ) -> BidirectionalStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
     return self.makeBidirectionalStreamingCall(
-      path: "/normalization.Normalization/bidirectionalStreaming",
+      path: Normalization_NormalizationClientMetadata.Methods.bidirectionalStreaming.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? [],
       handler: handler
@@ -233,7 +234,374 @@ extension Normalization_NormalizationClientProtocol {
   }
 }
 
-internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol {
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Normalization_NormalizationClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+@available(*, deprecated, renamed: "Normalization_NormalizationNIOClient")
+internal final class Normalization_NormalizationClient: Normalization_NormalizationClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol?
+  internal let channel: GRPCChannel
+  internal var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
+
+  /// Creates a client for the normalization.Normalization service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
+}
+
+internal struct Normalization_NormalizationNIOClient: Normalization_NormalizationClientProtocol {
+  internal var channel: GRPCChannel
+  internal var defaultCallOptions: CallOptions
+  internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol?
+
+  /// Creates a client for the normalization.Normalization service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#if compiler(>=5.6)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+internal protocol Normalization_NormalizationAsyncClientProtocol: GRPCClient {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? { get }
+
+  func makeUnaryCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makeunaryCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makeServerStreamingCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makeserverStreamingCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makeClientStreamingCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncClientStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makeclientStreamingCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncClientStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makeBidirectionalStreamingCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+
+  func makebidirectionalStreamingCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Normalization_NormalizationAsyncClientProtocol {
+  internal static var serviceDescriptor: GRPCServiceDescriptor {
+    return Normalization_NormalizationClientMetadata.serviceDescriptor
+  }
+
+  internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  internal func makeUnaryCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncUnaryCall(
+      path: Normalization_NormalizationClientMetadata.Methods.Unary.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryInterceptors() ?? []
+    )
+  }
+
+  internal func makeunaryCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncUnaryCall(
+      path: Normalization_NormalizationClientMetadata.Methods.unary.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeunaryInterceptors() ?? []
+    )
+  }
+
+  internal func makeServerStreamingCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncServerStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.ServerStreaming.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeServerStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func makeserverStreamingCall(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncServerStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.serverStreaming.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeserverStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func makeClientStreamingCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncClientStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncClientStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.ClientStreaming.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func makeclientStreamingCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncClientStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncClientStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.clientStreaming.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func makeBidirectionalStreamingCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.BidirectionalStreaming.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func makebidirectionalStreamingCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.bidirectionalStreaming.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Normalization_NormalizationAsyncClientProtocol {
+  internal func Unary(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) async throws -> Normalization_FunctionName {
+    return try await self.performAsyncUnaryCall(
+      path: Normalization_NormalizationClientMetadata.Methods.Unary.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryInterceptors() ?? []
+    )
+  }
+
+  internal func unary(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) async throws -> Normalization_FunctionName {
+    return try await self.performAsyncUnaryCall(
+      path: Normalization_NormalizationClientMetadata.Methods.unary.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeunaryInterceptors() ?? []
+    )
+  }
+
+  internal func ServerStreaming(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> {
+    return self.performAsyncServerStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.ServerStreaming.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeServerStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func serverStreaming(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> {
+    return self.performAsyncServerStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.serverStreaming.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeserverStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func ClientStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Normalization_FunctionName where RequestStream: Sequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return try await self.performAsyncClientStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.ClientStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func ClientStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Normalization_FunctionName where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return try await self.performAsyncClientStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.ClientStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func clientStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Normalization_FunctionName where RequestStream: Sequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return try await self.performAsyncClientStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.clientStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func clientStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Normalization_FunctionName where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return try await self.performAsyncClientStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.clientStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func BidirectionalStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: Sequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.BidirectionalStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func BidirectionalStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.BidirectionalStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func bidirectionalStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: Sequence, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.bidirectionalStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? []
+    )
+  }
+
+  internal func bidirectionalStreaming<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Normalization_FunctionName> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == SwiftProtobuf.Google_Protobuf_Empty {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Normalization_NormalizationClientMetadata.Methods.bidirectionalStreaming.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+internal struct Normalization_NormalizationAsyncClient: Normalization_NormalizationAsyncClientProtocol {
+  internal var channel: GRPCChannel
+  internal var defaultCallOptions: CallOptions
+  internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol?
+
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.6)
+
+internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol: GRPCSendable {
 
   /// - Returns: Interceptors to use when invoking 'Unary'.
   func makeUnaryInterceptors() -> [ClientInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
@@ -260,25 +628,70 @@ internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol {
   func makebidirectionalStreamingInterceptors() -> [ClientInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 }
 
-internal final class Normalization_NormalizationClient: Normalization_NormalizationClientProtocol {
-  internal let channel: GRPCChannel
-  internal var defaultCallOptions: CallOptions
-  internal var interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol?
+internal enum Normalization_NormalizationClientMetadata {
+  internal static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "Normalization",
+    fullName: "normalization.Normalization",
+    methods: [
+      Normalization_NormalizationClientMetadata.Methods.Unary,
+      Normalization_NormalizationClientMetadata.Methods.unary,
+      Normalization_NormalizationClientMetadata.Methods.ServerStreaming,
+      Normalization_NormalizationClientMetadata.Methods.serverStreaming,
+      Normalization_NormalizationClientMetadata.Methods.ClientStreaming,
+      Normalization_NormalizationClientMetadata.Methods.clientStreaming,
+      Normalization_NormalizationClientMetadata.Methods.BidirectionalStreaming,
+      Normalization_NormalizationClientMetadata.Methods.bidirectionalStreaming,
+    ]
+  )
 
-  /// Creates a client for the normalization.Normalization service.
-  ///
-  /// - Parameters:
-  ///   - channel: `GRPCChannel` to the service host.
-  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  ///   - interceptors: A factory providing interceptors for each RPC.
-  internal init(
-    channel: GRPCChannel,
-    defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Normalization_NormalizationClientInterceptorFactoryProtocol? = nil
-  ) {
-    self.channel = channel
-    self.defaultCallOptions = defaultCallOptions
-    self.interceptors = interceptors
+  internal enum Methods {
+    internal static let Unary = GRPCMethodDescriptor(
+      name: "Unary",
+      path: "/normalization.Normalization/Unary",
+      type: GRPCCallType.unary
+    )
+
+    internal static let unary = GRPCMethodDescriptor(
+      name: "unary",
+      path: "/normalization.Normalization/unary",
+      type: GRPCCallType.unary
+    )
+
+    internal static let ServerStreaming = GRPCMethodDescriptor(
+      name: "ServerStreaming",
+      path: "/normalization.Normalization/ServerStreaming",
+      type: GRPCCallType.serverStreaming
+    )
+
+    internal static let serverStreaming = GRPCMethodDescriptor(
+      name: "serverStreaming",
+      path: "/normalization.Normalization/serverStreaming",
+      type: GRPCCallType.serverStreaming
+    )
+
+    internal static let ClientStreaming = GRPCMethodDescriptor(
+      name: "ClientStreaming",
+      path: "/normalization.Normalization/ClientStreaming",
+      type: GRPCCallType.clientStreaming
+    )
+
+    internal static let clientStreaming = GRPCMethodDescriptor(
+      name: "clientStreaming",
+      path: "/normalization.Normalization/clientStreaming",
+      type: GRPCCallType.clientStreaming
+    )
+
+    internal static let BidirectionalStreaming = GRPCMethodDescriptor(
+      name: "BidirectionalStreaming",
+      path: "/normalization.Normalization/BidirectionalStreaming",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    internal static let bidirectionalStreaming = GRPCMethodDescriptor(
+      name: "bidirectionalStreaming",
+      path: "/normalization.Normalization/bidirectionalStreaming",
+      type: GRPCCallType.bidirectionalStreaming
+    )
   }
 }
 
@@ -304,7 +717,9 @@ internal protocol Normalization_NormalizationProvider: CallHandlerProvider {
 }
 
 extension Normalization_NormalizationProvider {
-  internal var serviceName: Substring { return "normalization.Normalization" }
+  internal var serviceName: Substring {
+    return Normalization_NormalizationServerMetadata.serviceDescriptor.fullName[...]
+  }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
@@ -391,6 +806,158 @@ extension Normalization_NormalizationProvider {
   }
 }
 
+#if compiler(>=5.6)
+
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+internal protocol Normalization_NormalizationAsyncProvider: CallHandlerProvider {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Normalization_NormalizationServerInterceptorFactoryProtocol? { get }
+
+  @Sendable func Unary(
+    request: SwiftProtobuf.Google_Protobuf_Empty,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Normalization_FunctionName
+
+  @Sendable func unary(
+    request: SwiftProtobuf.Google_Protobuf_Empty,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Normalization_FunctionName
+
+  @Sendable func ServerStreaming(
+    request: SwiftProtobuf.Google_Protobuf_Empty,
+    responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  @Sendable func serverStreaming(
+    request: SwiftProtobuf.Google_Protobuf_Empty,
+    responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  @Sendable func ClientStreaming(
+    requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Normalization_FunctionName
+
+  @Sendable func clientStreaming(
+    requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Normalization_FunctionName
+
+  @Sendable func BidirectionalStreaming(
+    requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
+    responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  @Sendable func bidirectionalStreaming(
+    requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
+    responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Normalization_NormalizationAsyncProvider {
+  internal static var serviceDescriptor: GRPCServiceDescriptor {
+    return Normalization_NormalizationServerMetadata.serviceDescriptor
+  }
+
+  internal var serviceName: Substring {
+    return Normalization_NormalizationServerMetadata.serviceDescriptor.fullName[...]
+  }
+
+  internal var interceptors: Normalization_NormalizationServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  internal func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "Unary":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeUnaryInterceptors() ?? [],
+        wrapping: self.Unary(request:context:)
+      )
+
+    case "unary":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeunaryInterceptors() ?? [],
+        wrapping: self.unary(request:context:)
+      )
+
+    case "ServerStreaming":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeServerStreamingInterceptors() ?? [],
+        wrapping: self.ServerStreaming(request:responseStream:context:)
+      )
+
+    case "serverStreaming":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeserverStreamingInterceptors() ?? [],
+        wrapping: self.serverStreaming(request:responseStream:context:)
+      )
+
+    case "ClientStreaming":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? [],
+        wrapping: self.ClientStreaming(requestStream:context:)
+      )
+
+    case "clientStreaming":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? [],
+        wrapping: self.clientStreaming(requestStream:context:)
+      )
+
+    case "BidirectionalStreaming":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? [],
+        wrapping: self.BidirectionalStreaming(requestStream:responseStream:context:)
+      )
+
+    case "bidirectionalStreaming":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
+        responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
+        interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? [],
+        wrapping: self.bidirectionalStreaming(requestStream:responseStream:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.6)
+
 internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol {
 
   /// - Returns: Interceptors to use when handling 'Unary'.
@@ -424,4 +991,71 @@ internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol {
   /// - Returns: Interceptors to use when handling 'bidirectionalStreaming'.
   ///   Defaults to calling `self.makeInterceptors()`.
   func makebidirectionalStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
+}
+
+internal enum Normalization_NormalizationServerMetadata {
+  internal static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "Normalization",
+    fullName: "normalization.Normalization",
+    methods: [
+      Normalization_NormalizationServerMetadata.Methods.Unary,
+      Normalization_NormalizationServerMetadata.Methods.unary,
+      Normalization_NormalizationServerMetadata.Methods.ServerStreaming,
+      Normalization_NormalizationServerMetadata.Methods.serverStreaming,
+      Normalization_NormalizationServerMetadata.Methods.ClientStreaming,
+      Normalization_NormalizationServerMetadata.Methods.clientStreaming,
+      Normalization_NormalizationServerMetadata.Methods.BidirectionalStreaming,
+      Normalization_NormalizationServerMetadata.Methods.bidirectionalStreaming,
+    ]
+  )
+
+  internal enum Methods {
+    internal static let Unary = GRPCMethodDescriptor(
+      name: "Unary",
+      path: "/normalization.Normalization/Unary",
+      type: GRPCCallType.unary
+    )
+
+    internal static let unary = GRPCMethodDescriptor(
+      name: "unary",
+      path: "/normalization.Normalization/unary",
+      type: GRPCCallType.unary
+    )
+
+    internal static let ServerStreaming = GRPCMethodDescriptor(
+      name: "ServerStreaming",
+      path: "/normalization.Normalization/ServerStreaming",
+      type: GRPCCallType.serverStreaming
+    )
+
+    internal static let serverStreaming = GRPCMethodDescriptor(
+      name: "serverStreaming",
+      path: "/normalization.Normalization/serverStreaming",
+      type: GRPCCallType.serverStreaming
+    )
+
+    internal static let ClientStreaming = GRPCMethodDescriptor(
+      name: "ClientStreaming",
+      path: "/normalization.Normalization/ClientStreaming",
+      type: GRPCCallType.clientStreaming
+    )
+
+    internal static let clientStreaming = GRPCMethodDescriptor(
+      name: "clientStreaming",
+      path: "/normalization.Normalization/clientStreaming",
+      type: GRPCCallType.clientStreaming
+    )
+
+    internal static let BidirectionalStreaming = GRPCMethodDescriptor(
+      name: "BidirectionalStreaming",
+      path: "/normalization.Normalization/BidirectionalStreaming",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    internal static let bidirectionalStreaming = GRPCMethodDescriptor(
+      name: "bidirectionalStreaming",
+      path: "/normalization.Normalization/bidirectionalStreaming",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+  }
 }

@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 1.7.1-async-await]
 jobs:
   preflight:
     name: License Header and Formatting Checks
@@ -25,7 +25,8 @@ jobs:
       matrix:
         include:
           - image: swift:5.6-focal
-            swift-test-flags: "--sanitize=thread"
+            # No TSAN because of: https://github.com/apple/swift/issues/59068
+            # swift-test-flags: "--sanitize=thread"
           - image: swift:5.5-focal
             swift-test-flags: "--sanitize=thread"
           - image: swift:5.4-focal
@@ -109,8 +110,6 @@ jobs:
         GRPC_NO_NIO_SSL: 1
       timeout-minutes: 20
     - name: Test without NIOSSL
-      # Skip tests on 5.6: https://bugs.swift.org/browse/SR-15955
-      if: ${{ matrix.image != 'swift:5.6-focal' }}
       run: swift test
       env:
         GRPC_NO_NIO_SSL: 1

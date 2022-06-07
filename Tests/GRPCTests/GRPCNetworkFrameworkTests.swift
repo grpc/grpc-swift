@@ -94,7 +94,7 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   }
 
   private func doEchoGet() throws {
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoNIOClient(channel: self.client)
     let get = echo.get(.with { $0.text = "hello" })
     XCTAssertNoThrow(try get.response.wait())
   }

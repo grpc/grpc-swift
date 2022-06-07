@@ -104,6 +104,7 @@ class EchoTestClientTests: GRPCTestCase {
     super.tearDown()
   }
 
+  @available(swift, deprecated: 5.6)
   func testGetWithTestClient() {
     let client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
@@ -129,7 +130,10 @@ class EchoTestClientTests: GRPCTestCase {
 
   func testGetWithRealClientAndServer() throws {
     let channel = try self.setUpServerAndChannel()
-    let client = Echo_EchoClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
+    let client = Echo_EchoNIOClient(
+      channel: channel,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     let model = EchoModel(client: client)
 
     let completed = self.expectation(description: "'Get' completed")
@@ -148,6 +152,7 @@ class EchoTestClientTests: GRPCTestCase {
     self.wait(for: [completed], timeout: 10.0)
   }
 
+  @available(swift, deprecated: 5.6)
   func testUpdateWithTestClient() {
     let client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
@@ -178,7 +183,10 @@ class EchoTestClientTests: GRPCTestCase {
 
   func testUpdateWithRealClientAndServer() throws {
     let channel = try self.setUpServerAndChannel()
-    let client = Echo_EchoClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
+    let client = Echo_EchoNIOClient(
+      channel: channel,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     let model = EchoModel(client: client)
 
     let completed = self.expectation(description: "'Update' completed")

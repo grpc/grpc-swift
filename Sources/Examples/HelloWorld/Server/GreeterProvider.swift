@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if compiler(>=5.6)
 import GRPC
 import HelloWorldModel
 import NIOCore
 
-class GreeterProvider: Helloworld_GreeterProvider {
-  var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol?
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+final class GreeterProvider: Helloworld_GreeterAsyncProvider {
+  let interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? = nil
 
   func sayHello(
     request: Helloworld_HelloRequest,
-    context: StatusOnlyCallContext
-  ) -> EventLoopFuture<Helloworld_HelloReply> {
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Helloworld_HelloReply {
     let recipient = request.name.isEmpty ? "stranger" : request.name
-    let response = Helloworld_HelloReply.with {
+    return Helloworld_HelloReply.with {
       $0.message = "Hello \(recipient)!"
     }
-    return context.eventLoop.makeSucceededFuture(response)
   }
 }
+#endif // compiler(>=5.6)

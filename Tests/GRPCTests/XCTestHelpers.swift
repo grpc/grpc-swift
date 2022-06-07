@@ -659,3 +659,41 @@ struct ExpressionMatcher<Value> {
     }
   }
 }
+
+#if compiler(>=5.6)
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+func assertThat<Value>(
+  _ expression: @autoclosure @escaping () async throws -> Value,
+  _ matcher: Matcher<Value>,
+  file: StaticString = #file,
+  line: UInt = #line
+) async {
+  // For value matchers we'll assert that we don't throw by default.
+  await assertThat(try await expression(), .doesNotThrow(matcher), file: file, line: line)
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+func assertThat<Value>(
+  _ expression: @autoclosure @escaping () async throws -> Value,
+  _ matcher: ExpressionMatcher<Value>,
+  file: StaticString = #file,
+  line: UInt = #line
+) async {
+  // Create a shim here from async-await world...
+  let result: Result<Value, Error>
+  do {
+    let value = try await expression()
+    result = .success(value)
+  } catch {
+    result = .failure(error)
+  }
+  switch matcher.evaluate(result.get) {
+  case .match:
+    ()
+  case let .noMatch(actual: actual, expected: expected):
+    XCTFail("ACTUAL: \(actual), EXPECTED: \(expected)", file: file, line: line)
+  }
+}
+
+#endif

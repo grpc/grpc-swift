@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if swift(>=5.6)
+@preconcurrency import Logging
+@preconcurrency import NIOCore
+#else
 import Logging
 import NIOCore
+#endif // swift(>=5.6)
 import NIOPosix
 
 public enum GRPCChannelPool {
@@ -87,7 +92,7 @@ public enum GRPCChannelPool {
 }
 
 extension GRPCChannelPool {
-  public struct Configuration {
+  public struct Configuration: GRPCSendable {
     @inlinable
     internal init(
       target: ConnectionTarget,
@@ -167,7 +172,7 @@ extension GRPCChannelPool {
     /// This may be used to add additional handlers to the pipeline and is intended for debugging.
     ///
     /// - Warning: The initializer closure may be invoked *multiple times*.
-    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+    public var debugChannelInitializer: GRPCChannelInitializer?
 
     /// An error delegate which is called when errors are caught.
     public var errorDelegate: ClientErrorDelegate?
@@ -183,7 +188,7 @@ extension GRPCChannelPool {
 }
 
 extension GRPCChannelPool.Configuration {
-  public struct TransportSecurity {
+  public struct TransportSecurity: GRPCSendable {
     private init(_ configuration: GRPCTLSConfiguration?) {
       self.tlsConfiguration = configuration
     }
@@ -210,7 +215,7 @@ extension GRPCChannelPool.Configuration {
 }
 
 extension GRPCChannelPool.Configuration {
-  public struct HTTP2: Hashable {
+  public struct HTTP2: Hashable, GRPCSendable {
     private static let allowedTargetWindowSizes = (1 ... Int(Int32.max))
     private static let allowedMaxFrameSizes = (1 << 14) ... ((1 << 24) - 1)
 
@@ -243,7 +248,7 @@ extension GRPCChannelPool.Configuration {
 }
 
 extension GRPCChannelPool.Configuration {
-  public struct ConnectionPool: Hashable {
+  public struct ConnectionPool: Hashable, GRPCSendable {
     /// Default connection pool configuration.
     public static let defaults = ConnectionPool()
 
