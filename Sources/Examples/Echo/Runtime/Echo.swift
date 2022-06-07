@@ -36,6 +36,7 @@ enum RPC: String, ExpressibleByArgument {
   case update
 }
 
+@main
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct Echo: AsyncParsableCommand {
   static var configuration = CommandConfiguration(
@@ -247,5 +248,10 @@ func echoUpdate(client: Echo_EchoAsyncClient, message: String) async throws {
 }
 
 #else
-print("ERROR: Concurrency only supported on Swift >= 5.5.")
+@main
+enum Echo {
+  static func main() {
+    print("This example requires Swift >= 5.6")
+  }
+}
 #endif
