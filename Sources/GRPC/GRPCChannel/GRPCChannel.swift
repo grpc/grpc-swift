@@ -17,7 +17,7 @@ import NIOCore
 import NIOHTTP2
 import SwiftProtobuf
 
-public protocol GRPCChannel: GRPCSendable {
+public protocol GRPCChannel: GRPCPreconcurrencySendable {
   /// Makes a gRPC call on the channel with requests and responses conforming to
   /// `SwiftProtobuf.Message`.
   ///
