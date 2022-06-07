@@ -8,25 +8,8 @@ There are four subdirectories:
 * `Model/` containing the service and model definitions and generated code,
 * `Implementation/` containing the server implementation of the generated model,
 * `Runtime/` containing a CLI for the server and client using the NIO-based APIs.
-* `AsyncAwaitRuntime/` containing a CLI for the server and client using the
-    async-await–based APIs.
 
 ### CLI implementation
-
-The SwiftPM targets for the NIO-based CLI and the async-await–based CLI are
-`Echo` and `AsyncAwaitEcho` respectively.
-
-The below examples make use the former, with commands of the form:
-
-```sh
-swift run Echo ...
-```
-
-To use the CLI using the async-await APIs, replace these commands with:
-
-```sh
-swift run AsyncAwaitEcho ...
-```
 
 ### Server
 
