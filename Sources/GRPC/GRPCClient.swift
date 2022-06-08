@@ -19,7 +19,7 @@ import NIOHTTP2
 import SwiftProtobuf
 
 /// A gRPC client.
-public protocol GRPCClient: GRPCSendable {
+public protocol GRPCClient: GRPCPreconcurrencySendable {
   /// The gRPC channel over which RPCs are sent and received. Note that this is distinct
   /// from `NIO.Channel`.
   var channel: GRPCChannel { get }
