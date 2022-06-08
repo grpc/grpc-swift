@@ -93,6 +93,9 @@ internal final class ClientTransport<Request, Response> {
   /// The `NIO.Channel` used by the transport, if it is available.
   private var channel: Channel?
 
+  /// A callback which is invoked once when the stream channel becomes active.
+  private let onStart: () -> Void
+
   /// Our current state as logging metadata.
   private var stateForLogging: Logger.MetadataValue {
     if self.state.mayBuffer {
@@ -109,11 +112,13 @@ internal final class ClientTransport<Request, Response> {
     serializer: AnySerializer<Request>,
     deserializer: AnyDeserializer<Response>,
     errorDelegate: ClientErrorDelegate?,
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.callEventLoop = eventLoop
     self.callDetails = details
+    self.onStart = onStart
     let logger = GRPCLogger(wrapping: details.options.logger)
     self.logger = logger
     self.serializer = serializer
@@ -332,6 +337,7 @@ extension ClientTransport {
       self._pipeline?.logger = self.logger
       self.logger.debug("activated stream channel")
       self.channel = channel
+      self.onStart()
       self.unbuffer()
 
     case .close:

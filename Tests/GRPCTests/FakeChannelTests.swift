@@ -18,6 +18,7 @@ import GRPC
 import NIOCore
 import XCTest
 
+@available(swift, deprecated: 5.6)
 class FakeChannelTests: GRPCTestCase {
   typealias Request = Echo_EchoRequest
   typealias Response = Echo_EchoResponse

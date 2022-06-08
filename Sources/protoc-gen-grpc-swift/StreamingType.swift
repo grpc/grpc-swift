@@ -22,6 +22,21 @@ internal enum StreamingType {
   case bidirectionalStreaming
 }
 
+extension StreamingType {
+  internal var asGRPCCallTypeCase: String {
+    switch self {
+    case .unary:
+      return "GRPCCallType.unary"
+    case .clientStreaming:
+      return "GRPCCallType.clientStreaming"
+    case .serverStreaming:
+      return "GRPCCallType.serverStreaming"
+    case .bidirectionalStreaming:
+      return "GRPCCallType.bidirectionalStreaming"
+    }
+  }
+}
+
 internal func streamingType(_ method: MethodDescriptor) -> StreamingType {
   if method.proto.clientStreaming {
     if method.proto.serverStreaming {

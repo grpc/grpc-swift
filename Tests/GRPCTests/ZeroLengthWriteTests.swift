@@ -29,7 +29,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func clientBuilder(
     group: EventLoopGroup,
     secure: Bool,
-    debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+    debugInitializer: @escaping GRPCChannelInitializer
   ) -> ClientConnection.Builder {
     if secure {
       return ClientConnection.usingTLSBackedByNIOSSL(on: group)
@@ -75,7 +75,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     group: EventLoopGroup,
     secure: Bool,
     port: Int,
-    debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+    debugInitializer: @escaping GRPCChannelInitializer
   ) throws -> ClientConnection {
     return self.clientBuilder(group: group, secure: secure, debugInitializer: debugInitializer)
       .withBackgroundActivityLogger(self.clientLogger)
@@ -89,9 +89,9 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     group: EventLoopGroup,
     secure: Bool,
     port: Int,
-    debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
-  ) throws -> Echo_EchoClient {
-    return Echo_EchoClient(
+    debugInitializer: @escaping GRPCChannelInitializer
+  ) throws -> Echo_EchoNIOClient {
+    return Echo_EchoNIOClient(
       channel: try self.makeClientConnection(
         group: group,
         secure: secure,
@@ -118,7 +118,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
 
   func debugPipelineExpectation(
     _ callback: @escaping (Result<NIOFilterEmptyWritesHandler, Error>) -> Void
-  ) -> (Channel) -> EventLoopFuture<Void> {
+  ) -> GRPCChannelInitializer {
     return { channel in
       channel.pipeline.handler(type: NIOFilterEmptyWritesHandler.self).always { result in
         callback(result)

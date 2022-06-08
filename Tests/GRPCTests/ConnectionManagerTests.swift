@@ -1153,6 +1153,11 @@ internal struct Change: Hashable, CustomStringConvertible {
   }
 }
 
+#if compiler(>=5.6)
+// Unchecked as all mutable state is modified from a serial queue.
+extension RecordingConnectivityDelegate: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
 internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
   private let serialQueue = DispatchQueue(label: "io.grpc.testing")
   private let semaphore = DispatchSemaphore(value: 0)

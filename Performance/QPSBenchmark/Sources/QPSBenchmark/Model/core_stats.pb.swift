@@ -126,6 +126,14 @@ public struct Grpc_Core_Stats {
   public init() {}
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Grpc_Core_Bucket: @unchecked Sendable {}
+extension Grpc_Core_Histogram: @unchecked Sendable {}
+extension Grpc_Core_Metric: @unchecked Sendable {}
+extension Grpc_Core_Metric.OneOf_Value: @unchecked Sendable {}
+extension Grpc_Core_Stats: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.core"
@@ -216,19 +224,25 @@ extension Grpc_Core_Metric: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
       case 10: try {
-        if self.value != nil {try decoder.handleConflictingOneOf()}
         var v: UInt64?
         try decoder.decodeSingularUInt64Field(value: &v)
-        if let v = v {self.value = .count(v)}
+        if let v = v {
+          if self.value != nil {try decoder.handleConflictingOneOf()}
+          self.value = .count(v)
+        }
       }()
       case 11: try {
         var v: Grpc_Core_Histogram?
+        var hadOneofValue = false
         if let current = self.value {
-          try decoder.handleConflictingOneOf()
+          hadOneofValue = true
           if case .histogram(let m) = current {v = m}
         }
         try decoder.decodeSingularMessageField(value: &v)
-        if let v = v {self.value = .histogram(v)}
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.value = .histogram(v)
+        }
       }()
       default: break
       }
@@ -236,12 +250,13 @@ extension Grpc_Core_Metric: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.name.isEmpty {
       try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
     }
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every case branch when no optimizations are
-    // enabled. https://github.com/apple/swift-protobuf/issues/1034
     switch self.value {
     case .count?: try {
       guard case .count(let v)? = self.value else { preconditionFailure() }

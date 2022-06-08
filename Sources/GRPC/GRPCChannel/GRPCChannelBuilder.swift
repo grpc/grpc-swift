@@ -317,7 +317,7 @@ extension ClientConnection.Builder {
   /// - Warning: The initializer closure may be invoked *multiple times*.
   @discardableResult
   public func withDebugChannelInitializer(
-    _ debugChannelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+    _ debugChannelInitializer: @escaping GRPCChannelInitializer
   ) -> Self {
     self.configuration.debugChannelInitializer = debugChannelInitializer
     return self

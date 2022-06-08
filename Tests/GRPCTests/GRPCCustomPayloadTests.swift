@@ -23,7 +23,7 @@ import XCTest
 class GRPCCustomPayloadTests: GRPCTestCase {
   var group: EventLoopGroup!
   var server: Server!
-  var client: AnyServiceClient!
+  var client: GRPCAnyServiceClient!
 
   override func setUp() {
     super.setUp()
@@ -39,7 +39,10 @@ class GRPCCustomPayloadTests: GRPCTestCase {
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
-    self.client = AnyServiceClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
+    self.client = GRPCAnyServiceClient(
+      channel: channel,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
   }
 
   override func tearDown() {

@@ -80,6 +80,7 @@ public struct ServerStreamingCall<RequestPayload, ResponsePayload>: ClientCall {
   internal func invoke(_ request: RequestPayload) {
     self.call.invokeUnaryRequest(
       request,
+      onStart: {},
       onError: self.responseParts.handleError(_:),
       onResponsePart: self.responseParts.handle(_:)
     )

@@ -29,7 +29,7 @@ import NIOPosix
 
 // Since this is a long running test, print connectivity state changes to stdout with timestamps.
 // We'll redirect logs to stderr so that stdout contains information only relevant to the test.
-class PrintingConnectivityStateDelegate: ConnectivityStateDelegate {
+final class PrintingConnectivityStateDelegate: ConnectivityStateDelegate {
   func connectivityStateDidChange(
     from oldState: ConnectivityState,
     to newState: ConnectivityState
@@ -52,7 +52,7 @@ func runTest(controlPort: Int, retryPort: Int) throws {
   //    finish and check it succeeded.
   let controlConnection = ClientConnection.insecure(group: group)
     .connect(host: "localhost", port: controlPort)
-  let controlClient = Grpc_Testing_ReconnectServiceClient(channel: controlConnection)
+  let controlClient = Grpc_Testing_ReconnectServiceNIOClient(channel: controlConnection)
   print("[\(Date())] Control 'Start' call started")
   let controlStart = controlClient.start(.init(), callOptions: .init(timeLimit: .none))
   let controlStartStatus = try controlStart.status.wait()
@@ -66,7 +66,7 @@ func runTest(controlPort: Int, retryPort: Int) throws {
   let retryConnection = ClientConnection.usingTLSBackedByNIOSSL(on: group)
     .withConnectivityStateDelegate(PrintingConnectivityStateDelegate())
     .connect(host: "localhost", port: retryPort)
-  let retryClient = Grpc_Testing_ReconnectServiceClient(
+  let retryClient = Grpc_Testing_ReconnectServiceNIOClient(
     channel: retryConnection,
     defaultCallOptions: CallOptions(timeLimit: .timeout(.seconds(540)))
   )

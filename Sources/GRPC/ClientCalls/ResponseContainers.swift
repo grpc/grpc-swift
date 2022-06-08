@@ -73,7 +73,7 @@ internal class UnaryResponseParts<Response> {
 
     case let .end(status, trailers):
       // In case of a "Trailers-Only" RPC (i.e. just the trailers and status), fail the initial
-      // metadata and trailers.
+      // metadata and status.
       self.initialMetadataPromise.fail(status)
       self.responsePromise.fail(status)
 
@@ -200,3 +200,9 @@ extension Error {
     }
   }
 }
+
+#if compiler(>=5.6)
+// @unchecked is ok: all mutable state is accessed/modified from an appropriate event loop.
+extension UnaryResponseParts: @unchecked Sendable where Response: Sendable {}
+extension StreamingResponseParts: @unchecked Sendable where Response: Sendable {}
+#endif

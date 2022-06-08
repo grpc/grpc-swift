@@ -15,9 +15,9 @@
  */
 
 /// Whether compression should be enabled for the message.
-public struct Compression: Hashable {
+public struct Compression: Hashable, GRPCSendable {
   @usableFromInline
-  internal enum _Wrapped: Hashable {
+  internal enum _Wrapped: Hashable, GRPCSendable {
     case enabled
     case disabled
     case deferToCallDefault
@@ -57,7 +57,7 @@ extension Compression {
 }
 
 /// Whether compression is enabled or disabled for a client.
-public enum ClientMessageEncoding {
+public enum ClientMessageEncoding: GRPCSendable {
   /// Compression is enabled with the given configuration.
   case enabled(Configuration)
   /// Compression is disabled.
@@ -76,7 +76,7 @@ extension ClientMessageEncoding {
 }
 
 extension ClientMessageEncoding {
-  public struct Configuration {
+  public struct Configuration: GRPCSendable {
     public init(
       forRequests outbound: CompressionAlgorithm?,
       acceptableForResponses inbound: [CompressionAlgorithm] = CompressionAlgorithm.all,

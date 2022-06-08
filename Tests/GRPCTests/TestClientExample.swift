@@ -19,6 +19,7 @@ import GRPC
 import NIOCore
 import XCTest
 
+@available(swift, deprecated: 5.6)
 class FakeResponseStreamExampleTests: GRPCTestCase {
   var client: Echo_EchoTestClient!
 
@@ -207,6 +208,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
 }
 
 // These tests demonstrate the finer grained control enabled by the response streams.
+@available(swift, deprecated: 5.6)
 extension FakeResponseStreamExampleTests {
   func testUnaryWithTrailingMetadata() {
     // Create a response stream for the RPC.

@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if swift(>=5.6)
+@preconcurrency import NIOCore
+#else
 import NIOCore
+#endif // swift(>=5.6)
 
 /// Provides keepalive pings.
 ///
 /// The defaults are determined by the gRPC keepalive
 /// [documentation] (https://github.com/grpc/grpc/blob/master/doc/keepalive.md).
-public struct ClientConnectionKeepalive: Hashable {
+public struct ClientConnectionKeepalive: Hashable, GRPCSendable {
   /// The amount of time to wait before sending a keepalive ping.
   public var interval: TimeAmount
 

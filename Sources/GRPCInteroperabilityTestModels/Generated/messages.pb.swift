@@ -407,6 +407,22 @@ public struct Grpc_Testing_ReconnectInfo {
   public init() {}
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Grpc_Testing_PayloadType: @unchecked Sendable {}
+extension Grpc_Testing_BoolValue: @unchecked Sendable {}
+extension Grpc_Testing_Payload: @unchecked Sendable {}
+extension Grpc_Testing_EchoStatus: @unchecked Sendable {}
+extension Grpc_Testing_SimpleRequest: @unchecked Sendable {}
+extension Grpc_Testing_SimpleResponse: @unchecked Sendable {}
+extension Grpc_Testing_StreamingInputCallRequest: @unchecked Sendable {}
+extension Grpc_Testing_StreamingInputCallResponse: @unchecked Sendable {}
+extension Grpc_Testing_ResponseParameters: @unchecked Sendable {}
+extension Grpc_Testing_StreamingOutputCallRequest: @unchecked Sendable {}
+extension Grpc_Testing_StreamingOutputCallResponse: @unchecked Sendable {}
+extension Grpc_Testing_ReconnectParams: @unchecked Sendable {}
+extension Grpc_Testing_ReconnectInfo: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.testing"
@@ -558,30 +574,34 @@ extension Grpc_Testing_SimpleRequest: SwiftProtobuf.Message, SwiftProtobuf._Mess
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.responseType != .compressable {
       try visitor.visitSingularEnumField(value: self.responseType, fieldNumber: 1)
     }
     if self.responseSize != 0 {
       try visitor.visitSingularInt32Field(value: self.responseSize, fieldNumber: 2)
     }
-    if let v = self._payload {
+    try { if let v = self._payload {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    }
+    } }()
     if self.fillUsername != false {
       try visitor.visitSingularBoolField(value: self.fillUsername, fieldNumber: 4)
     }
     if self.fillOauthScope != false {
       try visitor.visitSingularBoolField(value: self.fillOauthScope, fieldNumber: 5)
     }
-    if let v = self._responseCompressed {
+    try { if let v = self._responseCompressed {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
-    }
-    if let v = self._responseStatus {
+    } }()
+    try { if let v = self._responseStatus {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-    }
-    if let v = self._expectCompressed {
+    } }()
+    try { if let v = self._expectCompressed {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -622,9 +642,13 @@ extension Grpc_Testing_SimpleResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._payload {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._payload {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    }
+    } }()
     if !self.username.isEmpty {
       try visitor.visitSingularStringField(value: self.username, fieldNumber: 2)
     }
@@ -664,12 +688,16 @@ extension Grpc_Testing_StreamingInputCallRequest: SwiftProtobuf.Message, SwiftPr
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._payload {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._payload {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    }
-    if let v = self._expectCompressed {
+    } }()
+    try { if let v = self._expectCompressed {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -736,15 +764,19 @@ extension Grpc_Testing_ResponseParameters: SwiftProtobuf.Message, SwiftProtobuf.
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.size != 0 {
       try visitor.visitSingularInt32Field(value: self.size, fieldNumber: 1)
     }
     if self.intervalUs != 0 {
       try visitor.visitSingularInt32Field(value: self.intervalUs, fieldNumber: 2)
     }
-    if let v = self._compressed {
+    try { if let v = self._compressed {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -782,18 +814,22 @@ extension Grpc_Testing_StreamingOutputCallRequest: SwiftProtobuf.Message, SwiftP
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.responseType != .compressable {
       try visitor.visitSingularEnumField(value: self.responseType, fieldNumber: 1)
     }
     if !self.responseParameters.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.responseParameters, fieldNumber: 2)
     }
-    if let v = self._payload {
+    try { if let v = self._payload {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    }
-    if let v = self._responseStatus {
+    } }()
+    try { if let v = self._responseStatus {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -826,9 +862,13 @@ extension Grpc_Testing_StreamingOutputCallResponse: SwiftProtobuf.Message, Swift
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._payload {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._payload {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 

@@ -175,6 +175,14 @@ public struct Grpc_Testing_ClientStats {
   fileprivate var _coreStats: Grpc_Core_Stats? = nil
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Grpc_Testing_ServerStats: @unchecked Sendable {}
+extension Grpc_Testing_HistogramParams: @unchecked Sendable {}
+extension Grpc_Testing_HistogramData: @unchecked Sendable {}
+extension Grpc_Testing_RequestResultCount: @unchecked Sendable {}
+extension Grpc_Testing_ClientStats: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.testing"
@@ -210,6 +218,10 @@ extension Grpc_Testing_ServerStats: SwiftProtobuf.Message, SwiftProtobuf._Messag
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.timeElapsed != 0 {
       try visitor.visitSingularDoubleField(value: self.timeElapsed, fieldNumber: 1)
     }
@@ -228,9 +240,9 @@ extension Grpc_Testing_ServerStats: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if self.cqPollCount != 0 {
       try visitor.visitSingularUInt64Field(value: self.cqPollCount, fieldNumber: 6)
     }
-    if let v = self._coreStats {
+    try { if let v = self._coreStats {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -416,9 +428,13 @@ extension Grpc_Testing_ClientStats: SwiftProtobuf.Message, SwiftProtobuf._Messag
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._latencies {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._latencies {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    }
+    } }()
     if self.timeElapsed != 0 {
       try visitor.visitSingularDoubleField(value: self.timeElapsed, fieldNumber: 2)
     }
@@ -434,9 +450,9 @@ extension Grpc_Testing_ClientStats: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if self.cqPollCount != 0 {
       try visitor.visitSingularUInt64Field(value: self.cqPollCount, fieldNumber: 6)
     }
-    if let v = self._coreStats {
+    try { if let v = self._coreStats {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 

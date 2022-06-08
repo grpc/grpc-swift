@@ -89,7 +89,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
+    let echo = Echo_EchoNIOClient(
+      channel: self.client,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     _ = echo.get(.with { $0.text = "foo" })
 
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
@@ -110,7 +113,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
+    let echo = Echo_EchoNIOClient(
+      channel: self.client,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     _ = echo.get(.with { $0.text = "foo" })
 
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
@@ -129,7 +135,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
+    let echo = Echo_EchoNIOClient(
+      channel: self.client,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     _ = echo.get(.with { $0.text = "foo" })
 
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
@@ -170,7 +179,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     // Start an RPC to trigger creating a channel, it's a streaming RPC so that when the server is
     // killed, the client still has one active RPC and transitions to transient failure (rather than
     // idle if there were no active RPCs).
-    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
+    let echo = Echo_EchoNIOClient(
+      channel: self.client,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     _ = echo.update { _ in }
 
     // Wait for the connection to be ready.

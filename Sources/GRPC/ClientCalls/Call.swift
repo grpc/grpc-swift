@@ -37,7 +37,7 @@ import protocol SwiftProtobuf.Message
 ///
 /// Callers are not able to create `Call` objects directly, rather they must be created via an
 /// object conforming to `GRPCChannel` such as `ClientConnection`.
-public class Call<Request, Response> {
+public final class Call<Request, Response> {
   @usableFromInline
   internal enum State {
     /// Idle, waiting to be invoked.
@@ -123,10 +123,10 @@ public class Call<Request, Response> {
     self.options.logger.debug("starting rpc", metadata: ["path": "\(self.path)"], source: "GRPC")
 
     if self.eventLoop.inEventLoop {
-      self._invoke(onError: onError, onResponsePart: onResponsePart)
+      self._invoke(onStart: {}, onError: onError, onResponsePart: onResponsePart)
     } else {
       self.eventLoop.execute {
-        self._invoke(onError: onError, onResponsePart: onResponsePart)
+        self._invoke(onStart: {}, onError: onError, onResponsePart: onResponsePart)
       }
     }
   }
@@ -262,6 +262,7 @@ extension Call {
   /// - Important: This *must* to be called from the `eventLoop`.
   @usableFromInline
   internal func _invoke(
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
@@ -275,6 +276,7 @@ extension Call {
         withOptions: self.options,
         onEventLoop: self.eventLoop,
         interceptedBy: self._interceptors,
+        onStart: onStart,
         onError: onError,
         onResponsePart: onResponsePart
       )
@@ -352,14 +354,25 @@ extension Call {
   @inlinable
   internal func invokeUnaryRequest(
     _ request: Request,
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     if self.eventLoop.inEventLoop {
-      self._invokeUnaryRequest(request: request, onError: onError, onResponsePart: onResponsePart)
+      self._invokeUnaryRequest(
+        request: request,
+        onStart: onStart,
+        onError: onError,
+        onResponsePart: onResponsePart
+      )
     } else {
       self.eventLoop.execute {
-        self._invokeUnaryRequest(request: request, onError: onError, onResponsePart: onResponsePart)
+        self._invokeUnaryRequest(
+          request: request,
+          onStart: onStart,
+          onError: onError,
+          onResponsePart: onResponsePart
+        )
       }
     }
   }
@@ -371,14 +384,23 @@ extension Call {
   ///   - onResponsePart: A callback invoked for each response part received.
   @inlinable
   internal func invokeStreamingRequests(
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     if self.eventLoop.inEventLoop {
-      self._invokeStreamingRequests(onError: onError, onResponsePart: onResponsePart)
+      self._invokeStreamingRequests(
+        onStart: onStart,
+        onError: onError,
+        onResponsePart: onResponsePart
+      )
     } else {
       self.eventLoop.execute {
-        self._invokeStreamingRequests(onError: onError, onResponsePart: onResponsePart)
+        self._invokeStreamingRequests(
+          onStart: onStart,
+          onError: onError,
+          onResponsePart: onResponsePart
+        )
       }
     }
   }
@@ -387,13 +409,14 @@ extension Call {
   @usableFromInline
   internal func _invokeUnaryRequest(
     request: Request,
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()
     assert(self.type == .unary || self.type == .serverStreaming)
 
-    self._invoke(onError: onError, onResponsePart: onResponsePart)
+    self._invoke(onStart: onStart, onError: onError, onResponsePart: onResponsePart)
     self._send(.metadata(self.options.customMetadata), promise: nil)
     self._send(
       .message(request, .init(compress: self.isCompressionEnabled, flush: false)),
@@ -405,13 +428,19 @@ extension Call {
   /// On-`EventLoop` implementation of `invokeStreamingRequests(_:)`.
   @usableFromInline
   internal func _invokeStreamingRequests(
+    onStart: @escaping () -> Void,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()
     assert(self.type == .clientStreaming || self.type == .bidirectionalStreaming)
 
-    self._invoke(onError: onError, onResponsePart: onResponsePart)
+    self._invoke(onStart: onStart, onError: onError, onResponsePart: onResponsePart)
     self._send(.metadata(self.options.customMetadata), promise: nil)
   }
 }
+
+#if compiler(>=5.6)
+// @unchecked is ok: all mutable state is accessed/modified from the appropriate event loop.
+extension Call: @unchecked Sendable where Request: Sendable, Response: Sendable {}
+#endif

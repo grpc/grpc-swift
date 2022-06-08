@@ -33,8 +33,8 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     return self.server?.channel.localAddress?.port
   }
 
-  private var echo: Echo_EchoClient {
-    return Echo_EchoClient(channel: self.channel!)
+  private var echo: Echo_EchoNIOClient {
+    return Echo_EchoNIOClient(channel: self.channel!)
   }
 
   override func tearDown() {
@@ -257,7 +257,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
       $0.connectionPool.maxWaitTime = .hours(1)
     }
 
-    let echo = self.echo
+    var echo = self.echo
     echo.defaultCallOptions.eventLoopPreference = .indifferent
 
     let rpcs = (0 ..< 40).map { _ in echo.update { _ in } }

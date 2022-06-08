@@ -61,6 +61,52 @@ class Generator {
     self.outdent()
   }
 
+  internal enum Braces {
+    case none
+    case curly
+    case round
+
+    var open: String {
+      switch self {
+      case .none:
+        return ""
+      case .curly:
+        return "{"
+      case .round:
+        return "("
+      }
+    }
+
+    var close: String {
+      switch self {
+      case .none:
+        return ""
+      case .curly:
+        return "}"
+      case .round:
+        return ")"
+      }
+    }
+  }
+
+  internal func withIndentation(
+    _ header: String,
+    braces: Braces,
+    _ body: () -> Void
+  ) {
+    let spaceBeforeOpeningBrace: Bool
+    switch braces {
+    case .curly:
+      spaceBeforeOpeningBrace = true
+    case .round, .none:
+      spaceBeforeOpeningBrace = false
+    }
+
+    self.println(header + "\(spaceBeforeOpeningBrace ? " " : "")" + "\(braces.open)")
+    self.withIndentation(body: body)
+    self.println(braces.close)
+  }
+
   private func printMain() {
     self.printer.print("""
     //
@@ -90,6 +136,7 @@ class Generator {
     let moduleNames = [
       self.options.gRPCModuleName,
       "NIO",
+      "NIOConcurrencyHelpers",
       self.options.swiftProtobufModuleName,
     ]
 
@@ -117,5 +164,17 @@ class Generator {
         printServer()
       }
     }
+  }
+
+  func printAvailabilityForAsyncAwait() {
+    self.println("@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)")
+  }
+
+  func printIfCompilerGuardForAsyncAwait() {
+    self.println("#if compiler(>=5.6)")
+  }
+
+  func printEndCompilerGuardForAsyncAwait() {
+    self.println("#endif // compiler(>=5.6)")
   }
 }

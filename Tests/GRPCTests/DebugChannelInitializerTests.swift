@@ -53,7 +53,7 @@ class DebugChannelInitializerTests: GRPCTestCase {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
-    let echo = Echo_EchoClient(channel: connection)
+    let echo = Echo_EchoNIOClient(channel: connection)
     // Make an RPC to trigger channel creation.
     let get = echo.get(.with { $0.text = "Hello!" })
     XCTAssertTrue(try get.status.map { $0.isOk }.wait())

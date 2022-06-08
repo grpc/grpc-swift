@@ -16,13 +16,16 @@
 import EchoModel
 import Foundation
 @testable import GRPC
+import Logging
 import NIOCore
 import NIOEmbedded
+import NIOHTTP2
+import SwiftProtobuf
 import XCTest
 
 class ClientTimeoutTests: GRPCTestCase {
   var channel: EmbeddedChannel!
-  var client: Echo_EchoClient!
+  var client: Echo_EchoNIOClient!
 
   let timeout = TimeAmount.milliseconds(100)
   var callOptions: CallOptions {
@@ -46,7 +49,7 @@ class ClientTimeoutTests: GRPCTestCase {
       try connection.embeddedChannel
         .connect(to: SocketAddress(unixDomainSocketPath: "/foo"))
     )
-    let client = Echo_EchoClient(channel: connection, defaultCallOptions: self.callOptions)
+    let client = Echo_EchoNIOClient(channel: connection, defaultCallOptions: self.callOptions)
 
     self.channel = connection.embeddedChannel
     self.client = client
@@ -158,5 +161,102 @@ class ClientTimeoutTests: GRPCTestCase {
     self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
+  }
+}
+
+#if compiler(>=5.6)
+// Unchecked as it uses an 'EmbeddedChannel'.
+extension EmbeddedGRPCChannel: @unchecked Sendable {}
+#endif // compiler(>=5.6)
+
+private final class EmbeddedGRPCChannel: GRPCChannel {
+  let embeddedChannel: EmbeddedChannel
+  let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>
+
+  let logger: Logger
+  let scheme: String
+  let authority: String
+  let errorDelegate: ClientErrorDelegate?
+
+  func close() -> EventLoopFuture<Void> {
+    return self.embeddedChannel.close()
+  }
+
+  var eventLoop: EventLoop {
+    return self.embeddedChannel.eventLoop
+  }
+
+  init(
+    logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),
+    errorDelegate: ClientErrorDelegate? = nil
+  ) {
+    let embeddedChannel = EmbeddedChannel()
+    self.embeddedChannel = embeddedChannel
+    self.logger = logger
+    self.multiplexer = embeddedChannel.configureGRPCClient(
+      errorDelegate: errorDelegate,
+      logger: logger
+    ).flatMap {
+      embeddedChannel.pipeline.handler(type: HTTP2StreamMultiplexer.self)
+    }
+    self.scheme = "http"
+    self.authority = "localhost"
+    self.errorDelegate = errorDelegate
+  }
+
+  internal func makeCall<Request: Message, Response: Message>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: self.eventLoop,
+      options: callOptions,
+      interceptors: interceptors,
+      transportFactory: .http2(
+        channel: self.makeStreamChannel(),
+        authority: self.authority,
+        scheme: self.scheme,
+        // This is internal and only for testing, so max is fine here.
+        maximumReceiveMessageLength: .max,
+        errorDelegate: self.errorDelegate
+      )
+    )
+  }
+
+  internal func makeCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: self.eventLoop,
+      options: callOptions,
+      interceptors: interceptors,
+      transportFactory: .http2(
+        channel: self.makeStreamChannel(),
+        authority: self.authority,
+        scheme: self.scheme,
+        // This is internal and only for testing, so max is fine here.
+        maximumReceiveMessageLength: .max,
+        errorDelegate: self.errorDelegate
+      )
+    )
+  }
+
+  private func makeStreamChannel() -> EventLoopFuture<Channel> {
+    let promise = self.eventLoop.makePromise(of: Channel.self)
+    self.multiplexer.whenSuccess {
+      $0.createStreamChannel(promise: promise) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+    }
+    return promise.futureResult
   }
 }

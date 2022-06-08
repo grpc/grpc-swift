@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
@@ -73,7 +74,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     callOptions: CallOptions? = nil
   ) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
     return self.makeUnaryCall(
-      path: "/grpc.testing.BenchmarkService/UnaryCall",
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.unaryCall.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
@@ -96,7 +97,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     handler: @escaping (Grpc_Testing_SimpleResponse) -> Void
   ) -> BidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
     return self.makeBidirectionalStreamingCall(
-      path: "/grpc.testing.BenchmarkService/StreamingCall",
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingCall.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? [],
       handler: handler
@@ -116,7 +117,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     callOptions: CallOptions? = nil
   ) -> ClientStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
     return self.makeClientStreamingCall(
-      path: "/grpc.testing.BenchmarkService/StreamingFromClient",
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromClient.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? []
     )
@@ -136,7 +137,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     handler: @escaping (Grpc_Testing_SimpleResponse) -> Void
   ) -> ServerStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
     return self.makeServerStreamingCall(
-      path: "/grpc.testing.BenchmarkService/StreamingFromServer",
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromServer.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeStreamingFromServerInterceptors() ?? [],
@@ -159,7 +160,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     handler: @escaping (Grpc_Testing_SimpleResponse) -> Void
   ) -> BidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
     return self.makeBidirectionalStreamingCall(
-      path: "/grpc.testing.BenchmarkService/StreamingBothWays",
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingBothWays.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? [],
       handler: handler
@@ -167,26 +168,45 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
   }
 }
 
-public protocol Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol {
+#if compiler(>=5.6)
+@available(*, deprecated)
+extension Grpc_Testing_BenchmarkServiceClient: @unchecked Sendable {}
+#endif // compiler(>=5.6)
 
-  /// - Returns: Interceptors to use when invoking 'unaryCall'.
-  func makeUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+@available(*, deprecated, renamed: "Grpc_Testing_BenchmarkServiceNIOClient")
+public final class Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServiceClientProtocol {
+  private let lock = Lock()
+  private var _defaultCallOptions: CallOptions
+  private var _interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol?
+  public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions {
+    get { self.lock.withLock { return self._defaultCallOptions } }
+    set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
+  }
+  public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? {
+    get { self.lock.withLock { return self._interceptors } }
+    set { self.lock.withLockVoid { self._interceptors = newValue } }
+  }
 
-  /// - Returns: Interceptors to use when invoking 'streamingCall'.
-  func makeStreamingCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'streamingFromClient'.
-  func makeStreamingFromClientInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'streamingFromServer'.
-  func makeStreamingFromServerInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
-
-  /// - Returns: Interceptors to use when invoking 'streamingBothWays'.
-  func makeStreamingBothWaysInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+  /// Creates a client for the grpc.testing.BenchmarkService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self._defaultCallOptions = defaultCallOptions
+    self._interceptors = interceptors
+  }
 }
 
-public final class Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServiceClientProtocol {
-  public let channel: GRPCChannel
+public struct Grpc_Testing_BenchmarkServiceNIOClient: Grpc_Testing_BenchmarkServiceClientProtocol {
+  public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
   public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol?
 
@@ -204,6 +224,282 @@ public final class Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkSe
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
     self.interceptors = interceptors
+  }
+}
+
+#if compiler(>=5.6)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public protocol Grpc_Testing_BenchmarkServiceAsyncClientProtocol: GRPCClient {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? { get }
+
+  func makeUnaryCallCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func makeStreamingCallCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func makeStreamingFromClientCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncClientStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func makeStreamingFromServerCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func makeStreamingBothWaysCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Grpc_Testing_BenchmarkServiceAsyncClientProtocol {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Grpc_Testing_BenchmarkServiceClientMetadata.serviceDescriptor
+  }
+
+  public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeUnaryCallCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncUnaryCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.unaryCall.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
+    )
+  }
+
+  public func makeStreamingCallCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingCall.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? []
+    )
+  }
+
+  public func makeStreamingFromClientCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncClientStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncClientStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromClient.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? []
+    )
+  }
+
+  public func makeStreamingFromServerCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncServerStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromServer.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromServerInterceptors() ?? []
+    )
+  }
+
+  public func makeStreamingBothWaysCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingBothWays.path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Grpc_Testing_BenchmarkServiceAsyncClientProtocol {
+  public func unaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_SimpleResponse {
+    return try await self.performAsyncUnaryCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.unaryCall.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
+    )
+  }
+
+  public func streamingCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingCall.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? []
+    )
+  }
+
+  public func streamingCall<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingCall.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? []
+    )
+  }
+
+  public func streamingFromClient<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_SimpleResponse where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+    return try await self.performAsyncClientStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromClient.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? []
+    )
+  }
+
+  public func streamingFromClient<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Grpc_Testing_SimpleResponse where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+    return try await self.performAsyncClientStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromClient.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? []
+    )
+  }
+
+  public func streamingFromServer(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> {
+    return self.performAsyncServerStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromServer.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromServerInterceptors() ?? []
+    )
+  }
+
+  public func streamingBothWays<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: Sequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingBothWays.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? []
+    )
+  }
+
+  public func streamingBothWays<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingBothWays.path,
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? []
+    )
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public struct Grpc_Testing_BenchmarkServiceAsyncClient: Grpc_Testing_BenchmarkServiceAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.6)
+
+public protocol Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol: GRPCSendable {
+
+  /// - Returns: Interceptors to use when invoking 'unaryCall'.
+  func makeUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingCall'.
+  func makeStreamingCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingFromClient'.
+  func makeStreamingFromClientInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingFromServer'.
+  func makeStreamingFromServerInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingBothWays'.
+  func makeStreamingBothWaysInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+}
+
+public enum Grpc_Testing_BenchmarkServiceClientMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "BenchmarkService",
+    fullName: "grpc.testing.BenchmarkService",
+    methods: [
+      Grpc_Testing_BenchmarkServiceClientMetadata.Methods.unaryCall,
+      Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingCall,
+      Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromClient,
+      Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromServer,
+      Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingBothWays,
+    ]
+  )
+
+  public enum Methods {
+    public static let unaryCall = GRPCMethodDescriptor(
+      name: "UnaryCall",
+      path: "/grpc.testing.BenchmarkService/UnaryCall",
+      type: GRPCCallType.unary
+    )
+
+    public static let streamingCall = GRPCMethodDescriptor(
+      name: "StreamingCall",
+      path: "/grpc.testing.BenchmarkService/StreamingCall",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    public static let streamingFromClient = GRPCMethodDescriptor(
+      name: "StreamingFromClient",
+      path: "/grpc.testing.BenchmarkService/StreamingFromClient",
+      type: GRPCCallType.clientStreaming
+    )
+
+    public static let streamingFromServer = GRPCMethodDescriptor(
+      name: "StreamingFromServer",
+      path: "/grpc.testing.BenchmarkService/StreamingFromServer",
+      type: GRPCCallType.serverStreaming
+    )
+
+    public static let streamingBothWays = GRPCMethodDescriptor(
+      name: "StreamingBothWays",
+      path: "/grpc.testing.BenchmarkService/StreamingBothWays",
+      type: GRPCCallType.bidirectionalStreaming
+    )
   }
 }
 
@@ -234,7 +530,9 @@ public protocol Grpc_Testing_BenchmarkServiceProvider: CallHandlerProvider {
 }
 
 extension Grpc_Testing_BenchmarkServiceProvider {
-  public var serviceName: Substring { return "grpc.testing.BenchmarkService" }
+  public var serviceName: Substring {
+    return Grpc_Testing_BenchmarkServiceServerMetadata.serviceDescriptor.fullName[...]
+  }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
@@ -294,6 +592,126 @@ extension Grpc_Testing_BenchmarkServiceProvider {
   }
 }
 
+#if compiler(>=5.6)
+
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public protocol Grpc_Testing_BenchmarkServiceAsyncProvider: CallHandlerProvider {
+  static var serviceDescriptor: GRPCServiceDescriptor { get }
+  var interceptors: Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol? { get }
+
+  /// One request followed by one response.
+  /// The server returns the client payload as-is.
+  @Sendable func unaryCall(
+    request: Grpc_Testing_SimpleRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_SimpleResponse
+
+  /// Repeated sequence of one request followed by one response.
+  /// Should be called streaming ping-pong
+  /// The server returns the client payload as-is on each response
+  @Sendable func streamingCall(
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_SimpleRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_SimpleResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// Single-sided unbounded streaming from client to server
+  /// The server returns the client payload as-is once the client does WritesDone
+  @Sendable func streamingFromClient(
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_SimpleRequest>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Grpc_Testing_SimpleResponse
+
+  /// Single-sided unbounded streaming from server to client
+  /// The server repeatedly returns the client payload as-is
+  @Sendable func streamingFromServer(
+    request: Grpc_Testing_SimpleRequest,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_SimpleResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// Two-sided unbounded streaming between server to client
+  /// Both sides send the content of their own choice to the other
+  @Sendable func streamingBothWays(
+    requestStream: GRPCAsyncRequestStream<Grpc_Testing_SimpleRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_SimpleResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension Grpc_Testing_BenchmarkServiceAsyncProvider {
+  public static var serviceDescriptor: GRPCServiceDescriptor {
+    return Grpc_Testing_BenchmarkServiceServerMetadata.serviceDescriptor
+  }
+
+  public var serviceName: Substring {
+    return Grpc_Testing_BenchmarkServiceServerMetadata.serviceDescriptor.fullName[...]
+  }
+
+  public var interceptors: Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "UnaryCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? [],
+        wrapping: self.unaryCall(request:context:)
+      )
+
+    case "StreamingCall":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? [],
+        wrapping: self.streamingCall(requestStream:responseStream:context:)
+      )
+
+    case "StreamingFromClient":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? [],
+        wrapping: self.streamingFromClient(requestStream:context:)
+      )
+
+    case "StreamingFromServer":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingFromServerInterceptors() ?? [],
+        wrapping: self.streamingFromServer(request:responseStream:context:)
+      )
+
+    case "StreamingBothWays":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? [],
+        wrapping: self.streamingBothWays(requestStream:responseStream:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.6)
+
 public protocol Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol {
 
   /// - Returns: Interceptors to use when handling 'unaryCall'.
@@ -315,4 +733,50 @@ public protocol Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol {
   /// - Returns: Interceptors to use when handling 'streamingBothWays'.
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeStreamingBothWaysInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+}
+
+public enum Grpc_Testing_BenchmarkServiceServerMetadata {
+  public static let serviceDescriptor = GRPCServiceDescriptor(
+    name: "BenchmarkService",
+    fullName: "grpc.testing.BenchmarkService",
+    methods: [
+      Grpc_Testing_BenchmarkServiceServerMetadata.Methods.unaryCall,
+      Grpc_Testing_BenchmarkServiceServerMetadata.Methods.streamingCall,
+      Grpc_Testing_BenchmarkServiceServerMetadata.Methods.streamingFromClient,
+      Grpc_Testing_BenchmarkServiceServerMetadata.Methods.streamingFromServer,
+      Grpc_Testing_BenchmarkServiceServerMetadata.Methods.streamingBothWays,
+    ]
+  )
+
+  public enum Methods {
+    public static let unaryCall = GRPCMethodDescriptor(
+      name: "UnaryCall",
+      path: "/grpc.testing.BenchmarkService/UnaryCall",
+      type: GRPCCallType.unary
+    )
+
+    public static let streamingCall = GRPCMethodDescriptor(
+      name: "StreamingCall",
+      path: "/grpc.testing.BenchmarkService/StreamingCall",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+
+    public static let streamingFromClient = GRPCMethodDescriptor(
+      name: "StreamingFromClient",
+      path: "/grpc.testing.BenchmarkService/StreamingFromClient",
+      type: GRPCCallType.clientStreaming
+    )
+
+    public static let streamingFromServer = GRPCMethodDescriptor(
+      name: "StreamingFromServer",
+      path: "/grpc.testing.BenchmarkService/StreamingFromServer",
+      type: GRPCCallType.serverStreaming
+    )
+
+    public static let streamingBothWays = GRPCMethodDescriptor(
+      name: "StreamingBothWays",
+      path: "/grpc.testing.BenchmarkService/StreamingBothWays",
+      type: GRPCCallType.bidirectionalStreaming
+    )
+  }
 }

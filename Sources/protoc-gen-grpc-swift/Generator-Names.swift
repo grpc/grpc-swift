@@ -78,8 +78,20 @@ extension Generator {
     return nameForPackageService(file, service) + "Provider"
   }
 
+  internal var asyncProviderName: String {
+    return nameForPackageService(file, service) + "AsyncProvider"
+  }
+
   internal var clientClassName: String {
     return nameForPackageService(file, service) + "Client"
+  }
+
+  internal var clientStructName: String {
+    return nameForPackageService(file, service) + "NIOClient"
+  }
+
+  internal var asyncClientStructName: String {
+    return nameForPackageService(file, service) + "AsyncClient"
   }
 
   internal var testClientClassName: String {
@@ -88,6 +100,10 @@ extension Generator {
 
   internal var clientProtocolName: String {
     return nameForPackageService(file, service) + "ClientProtocol"
+  }
+
+  internal var asyncClientProtocolName: String {
+    return nameForPackageService(file, service) + "AsyncClientProtocol"
   }
 
   internal var clientInterceptorProtocolName: String {
@@ -109,6 +125,19 @@ extension Generator {
     }
 
     return self.sanitize(fieldName: name)
+  }
+
+  internal var methodMakeFunctionCallName: String {
+    let name: String
+
+    if self.options.keepMethodCasing {
+      name = self.method.name
+    } else {
+      name = NamingUtils.toUpperCamelCase(self.method.name)
+    }
+
+    let fnName = "make\(name)Call"
+    return self.sanitize(fieldName: fnName)
   }
 
   internal func sanitize(fieldName string: String) -> String {
@@ -139,6 +168,14 @@ extension Generator {
   }
 
   internal var methodPath: String {
-    return "\"/" + self.servicePath + "/" + method.name + "\""
+    return "/" + self.fullMethodName
   }
+
+  internal var fullMethodName: String {
+    return self.servicePath + "/" + self.method.name
+  }
+}
+
+internal func quoted(_ str: String) -> String {
+  return "\"" + str + "\""
 }

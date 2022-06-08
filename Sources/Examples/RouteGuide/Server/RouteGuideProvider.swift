@@ -19,147 +19,118 @@ import NIOConcurrencyHelpers
 import NIOCore
 import RouteGuideModel
 
-class RouteGuideProvider: Routeguide_RouteGuideProvider {
-  internal var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol?
+#if compiler(>=5.6)
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+internal final class RouteGuideProvider: Routeguide_RouteGuideAsyncProvider {
   private let features: [Routeguide_Feature]
-  private var notes: [Routeguide_Point: [Routeguide_RouteNote]] = [:]
-  private var lock = Lock()
+  private let notes: Notes
 
-  init(features: [Routeguide_Feature]) {
+  internal init(features: [Routeguide_Feature]) {
     self.features = features
+    self.notes = Notes()
   }
 
-  /// A simple RPC.
-  ///
-  /// Obtains the feature at a given position.
-  ///
-  /// A feature with an empty name is returned if there's no feature at the given position.
-  func getFeature(
+  internal func getFeature(
     request point: Routeguide_Point,
-    context: StatusOnlyCallContext
-  ) -> EventLoopFuture<Routeguide_Feature> {
-    return context.eventLoop.makeSucceededFuture(self.checkFeature(at: point))
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Routeguide_Feature {
+    return self.lookupFeature(at: point) ?? .unnamedFeature(at: point)
   }
 
-  /// A server-to-client streaming RPC.
-  ///
-  /// Obtains the Features available within the given Rectangle. Results are streamed rather than
-  /// returned at once (e.g. in a response message with a repeated field), as the rectangle may
-  /// cover a large area and contain a huge number of features.
-  func listFeatures(
+  internal func listFeatures(
     request: Routeguide_Rectangle,
-    context: StreamingResponseCallContext<Routeguide_Feature>
-  ) -> EventLoopFuture<GRPCStatus> {
-    let left = min(request.lo.longitude, request.hi.longitude)
-    let right = max(request.lo.longitude, request.hi.longitude)
-    let top = max(request.lo.latitude, request.hi.latitude)
-    let bottom = max(request.lo.latitude, request.hi.latitude)
+    responseStream: GRPCAsyncResponseStreamWriter<Routeguide_Feature>,
+    context: GRPCAsyncServerCallContext
+  ) async throws {
+    let longitudeRange = request.lo.longitude ... request.hi.longitude
+    let latitudeRange = request.lo.latitude ... request.hi.latitude
 
-    self.features.lazy.filter { feature in
-      !feature.name.isEmpty
-        && feature.location.longitude >= left
-        && feature.location.longitude <= right
-        && feature.location.latitude >= bottom
-        && feature.location.latitude <= top
-    }.forEach {
-      _ = context.sendResponse($0)
+    for feature in self.features where !feature.name.isEmpty {
+      if feature.location.isWithin(latitude: latitudeRange, longitude: longitudeRange) {
+        try await responseStream.send(feature)
+      }
     }
-
-    return context.eventLoop.makeSucceededFuture(.ok)
   }
 
-  /// A client-to-server streaming RPC.
-  ///
-  /// Accepts a stream of Points on a route being traversed, returning a RouteSummary when traversal
-  /// is completed.
-  func recordRoute(
-    context: UnaryResponseCallContext<Routeguide_RouteSummary>
-  ) -> EventLoopFuture<(StreamEvent<Routeguide_Point>) -> Void> {
+  internal func recordRoute(
+    requestStream points: GRPCAsyncRequestStream<Routeguide_Point>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Routeguide_RouteSummary {
     var pointCount: Int32 = 0
     var featureCount: Int32 = 0
     var distance = 0.0
     var previousPoint: Routeguide_Point?
-    let startTime = Date()
+    let startTimeNanos = DispatchTime.now().uptimeNanoseconds
 
-    return context.eventLoop.makeSucceededFuture({ event in
-      switch event {
-      case let .message(point):
-        pointCount += 1
-        if !self.checkFeature(at: point).name.isEmpty {
-          featureCount += 1
-        }
+    for try await point in points {
+      pointCount += 1
 
-        // For each point after the first, add the incremental distance from the previous point to
-        // the total distance value.
-        if let previous = previousPoint {
-          distance += previous.distance(to: point)
-        }
-        previousPoint = point
-
-      case .end:
-        let seconds = Date().timeIntervalSince(startTime)
-        let summary = Routeguide_RouteSummary.with {
-          $0.pointCount = pointCount
-          $0.featureCount = featureCount
-          $0.elapsedTime = Int32(seconds)
-          $0.distance = Int32(distance)
-        }
-        context.responsePromise.succeed(summary)
+      if let feature = self.lookupFeature(at: point), !feature.name.isEmpty {
+        featureCount += 1
       }
-    })
+
+      if let previous = previousPoint {
+        distance += previous.distance(to: point)
+      }
+
+      previousPoint = point
+    }
+
+    let durationInNanos = DispatchTime.now().uptimeNanoseconds - startTimeNanos
+    let durationInSeconds = Double(durationInNanos) / 1e9
+
+    return .with {
+      $0.pointCount = pointCount
+      $0.featureCount = featureCount
+      $0.elapsedTime = Int32(durationInSeconds)
+      $0.distance = Int32(distance)
+    }
   }
 
-  /// A Bidirectional streaming RPC.
-  ///
-  /// Accepts a stream of RouteNotes sent while a route is being traversed, while receiving other
-  /// RouteNotes (e.g. from other users).
-  func routeChat(
-    context: StreamingResponseCallContext<Routeguide_RouteNote>
-  ) -> EventLoopFuture<(StreamEvent<Routeguide_RouteNote>) -> Void> {
-    return context.eventLoop.makeSucceededFuture({ event in
-      switch event {
-      case let .message(note):
-        // Get any notes at the location of request note.
-        var notes = self.lock.withLock {
-          self.notes[note.location, default: []]
-        }
+  internal func routeChat(
+    requestStream: GRPCAsyncRequestStream<Routeguide_RouteNote>,
+    responseStream: GRPCAsyncResponseStreamWriter<Routeguide_RouteNote>,
+    context: GRPCAsyncServerCallContext
+  ) async throws {
+    for try await note in requestStream {
+      let existingNotes = await self.notes.addNote(note, to: note.location)
 
-        // Respond with all previous notes at this location.
-        for note in notes {
-          _ = context.sendResponse(note)
-        }
-
-        // Add the new note and update the stored notes.
-        notes.append(note)
-        self.lock.withLockVoid {
-          self.notes[note.location] = notes
-        }
-
-      case .end:
-        context.statusPromise.succeed(.ok)
+      // Respond with all existing notes.
+      for existingNote in existingNotes {
+        try await responseStream.send(existingNote)
       }
-    })
-  }
-}
-
-extension RouteGuideProvider {
-  private func getOrCreateNotes(for point: Routeguide_Point) -> [Routeguide_RouteNote] {
-    return self.lock.withLock {
-      self.notes[point, default: []]
     }
   }
 
   /// Returns a feature at the given location or an unnamed feature if none exist at that location.
-  private func checkFeature(at location: Routeguide_Point) -> Routeguide_Feature {
+  private func lookupFeature(at location: Routeguide_Point) -> Routeguide_Feature? {
     return self.features.first(where: {
       $0.location.latitude == location.latitude && $0.location.longitude == location.longitude
-    }) ?? Routeguide_Feature.with {
-      $0.name = ""
-      $0.location = location
-    }
+    })
   }
 }
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+internal final actor Notes {
+  private var recordedNotes: [Routeguide_Point: [Routeguide_RouteNote]]
+
+  internal init() {
+    self.recordedNotes = [:]
+  }
+
+  /// Record a note at the given location and return the all notes which were previously recorded
+  /// at the location.
+  internal func addNote(
+    _ note: Routeguide_RouteNote,
+    to location: Routeguide_Point
+  ) -> ArraySlice<Routeguide_RouteNote> {
+    self.recordedNotes[location, default: []].append(note)
+    return self.recordedNotes[location]!.dropLast(1)
+  }
+}
+
+#endif // compiler(>=5.6)
 
 private func degreesToRadians(_ degrees: Double) -> Double {
   return degrees * .pi / 180.0
@@ -186,5 +157,21 @@ extension Routeguide_Point {
     let c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
     return radius * c
+  }
+
+  func isWithin<Range: RangeExpression>(
+    latitude: Range,
+    longitude: Range
+  ) -> Bool where Range.Bound == Int32 {
+    return latitude.contains(self.latitude) && longitude.contains(self.longitude)
+  }
+}
+
+extension Routeguide_Feature {
+  static func unnamedFeature(at location: Routeguide_Point) -> Routeguide_Feature {
+    return .with {
+      $0.name = ""
+      $0.location = location
+    }
   }
 }

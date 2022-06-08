@@ -92,7 +92,7 @@ class LoggingEchoClientInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_Ech
 /// This class is an implementation of a *generated* protocol for the client which has one factory
 /// method per RPC returning the interceptors to use. The relevant factory method is call when
 /// invoking each RPC. An implementation of this protocol can be set on the generated client.
-public class ExampleClientInterceptorFactory: Echo_EchoClientInterceptorFactoryProtocol {
+public final class ExampleClientInterceptorFactory: Echo_EchoClientInterceptorFactoryProtocol {
   public init() {}
 
   // Returns an array of interceptors to use for the 'Get' RPC.

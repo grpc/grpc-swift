@@ -30,13 +30,13 @@ final class ClientEventLoopPreferenceTests: GRPCTestCase {
   private var server: Server!
   private var connection: ClientConnection!
 
-  private var echo: Echo_EchoClient {
+  private var echo: Echo_EchoNIOClient {
     let options = CallOptions(
       eventLoopPreference: .exact(self.clientCallbackLoop),
       logger: self.clientLogger
     )
 
-    return Echo_EchoClient(channel: self.connection, defaultCallOptions: options)
+    return Echo_EchoNIOClient(channel: self.connection, defaultCallOptions: options)
   }
 
   override func setUp() {

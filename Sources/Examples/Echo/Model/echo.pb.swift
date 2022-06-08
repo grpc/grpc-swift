@@ -60,6 +60,11 @@ public struct Echo_EchoResponse {
   public init() {}
 }
 
+#if swift(>=5.5) && canImport(_Concurrency)
+extension Echo_EchoRequest: @unchecked Sendable {}
+extension Echo_EchoResponse: @unchecked Sendable {}
+#endif  // swift(>=5.5) && canImport(_Concurrency)
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "echo"

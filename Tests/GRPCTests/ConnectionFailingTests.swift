@@ -37,7 +37,7 @@ class ConnectionFailingTests: GRPCTestCase {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
-    let echo = Echo_EchoClient(channel: connection)
+    let echo = Echo_EchoNIOClient(channel: connection)
 
     // Set our expectation.
     waiter.expectChanges(2) { changes in
