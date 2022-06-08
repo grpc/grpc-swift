@@ -258,12 +258,164 @@ class GRPCInsecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityTests 
   override func makeProvider() -> CallHandlerProvider {
     return TestServiceAsyncProvider()
   }
+
+  override func testEmptyStream() {
+    super.testEmptyStream()
+  }
+
+  override func testPingPong() {
+    super.testPingPong()
+  }
+
+  override func testEmptyUnary() {
+    super.testEmptyUnary()
+  }
+
+  override func testTimeoutOnSleepingServer() {
+    super.testTimeoutOnSleepingServer()
+  }
+
+  override func testCacheableUnary() {
+    super.testCacheableUnary()
+  }
+
+  override func testLargeUnary() {
+    super.testLargeUnary()
+  }
+
+  override func testServerCompressedUnary() {
+    super.testServerCompressedUnary()
+  }
+
+  override func testStatusCodeAndMessage() {
+    super.testStatusCodeAndMessage()
+  }
+
+  override func testUnimplementedService() {
+    super.testUnimplementedService()
+  }
+
+  override func testCancelAfterBegin() {
+    super.testCancelAfterBegin()
+  }
+
+  override func testCustomMetadata() {
+    super.testCustomMetadata()
+  }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testUnimplementedMethod() {
+    super.testUnimplementedMethod()
+  }
+
+  override func testServerCompressedStreaming() {
+    super.testServerCompressedStreaming()
+  }
+
+  override func testCancelAfterFirstResponse() {
+    super.testCancelAfterFirstResponse()
+  }
+
+  override func testSpecialStatusAndMessage() {
+    super.testSpecialStatusAndMessage()
+  }
+
+  override func testClientCompressedStreaming() {
+    super.testClientCompressedStreaming()
+  }
+
+  override func testClientCompressedUnary() {
+    super.testClientCompressedUnary()
+  }
 }
 
 #if canImport(NIOSSL)
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 class GRPCSecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityAsyncTests {
   override var useTLS: Bool { return true }
+
+  override func testServerStreaming() {
+    super.testServerStreaming()
+  }
+
+  override func testLargeUnary() {
+    super.testLargeUnary()
+  }
+
+  override func testServerCompressedUnary() {
+    super.testServerCompressedUnary()
+  }
+
+  override func testUnimplementedMethod() {
+    super.testUnimplementedMethod()
+  }
+
+  override func testServerCompressedStreaming() {
+    super.testServerCompressedStreaming()
+  }
+
+  override func testCustomMetadata() {
+    super.testCustomMetadata()
+  }
+
+  override func testCancelAfterBegin() {
+    super.testCancelAfterBegin()
+  }
+
+  override func testClientStreaming() {
+    super.testClientStreaming()
+  }
+
+  override func testCacheableUnary() {
+    super.testCacheableUnary()
+  }
+
+  override func testSpecialStatusAndMessage() {
+    super.testSpecialStatusAndMessage()
+  }
+
+  override func testTimeoutOnSleepingServer() {
+    super.testTimeoutOnSleepingServer()
+  }
+
+  override func testClientCompressedUnary() {
+    super.testClientCompressedUnary()
+  }
+
+  override func testStatusCodeAndMessage() {
+    super.testStatusCodeAndMessage()
+  }
+
+  override func testCancelAfterFirstResponse() {
+    super.testCancelAfterFirstResponse()
+  }
+
+  override func testPingPong() {
+    super.testPingPong()
+  }
+
+  override func testEmptyStream() {
+    super.testEmptyStream()
+  }
+
+  override func testEmptyUnary() {
+    super.testEmptyUnary()
+  }
+
+  override func testUnimplementedService() {
+    super.testUnimplementedService()
+  }
+
+  override func testClientCompressedStreaming() {
+    super.testClientCompressedStreaming()
+  }
 }
 #endif // canImport(NIOSSL)
 #endif // compiler(>=5.6)
