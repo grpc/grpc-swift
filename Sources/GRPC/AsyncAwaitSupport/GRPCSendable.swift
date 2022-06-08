@@ -17,9 +17,16 @@
 import NIOCore
 
 #if compiler(>=5.6)
-@preconcurrency public typealias GRPCSendable = Swift.Sendable
+public typealias GRPCSendable = Swift.Sendable
 #else
 public typealias GRPCSendable = Any
+#endif // compiler(>=5.6)
+
+#if compiler(>=5.6)
+@preconcurrency
+public protocol GRPCPreconcurrencySendable: Sendable {}
+#else
+public protocol GRPCPreconcurrencySendable {}
 #endif // compiler(>=5.6)
 
 #if compiler(>=5.6)

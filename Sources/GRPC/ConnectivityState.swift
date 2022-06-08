@@ -47,7 +47,7 @@ public enum ConnectivityState: GRPCSendable {
   case shutdown
 }
 
-public protocol ConnectivityStateDelegate: AnyObject, GRPCSendable {
+public protocol ConnectivityStateDelegate: AnyObject, GRPCPreconcurrencySendable {
   /// Called when a change in `ConnectivityState` has occurred.
   ///
   /// - Parameter oldState: The old connectivity state.
