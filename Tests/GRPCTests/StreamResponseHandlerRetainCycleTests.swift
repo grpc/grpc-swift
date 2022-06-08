@@ -26,7 +26,7 @@ final class StreamResponseHandlerRetainCycleTests: GRPCTestCase {
   var server: Server!
   var client: ClientConnection!
 
-  var echo: Echo_EchoClient!
+  var echo: Echo_EchoNIOClient!
 
   override func setUp() {
     super.setUp()
@@ -42,7 +42,7 @@ final class StreamResponseHandlerRetainCycleTests: GRPCTestCase {
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
-    self.echo = Echo_EchoClient(
+    self.echo = Echo_EchoNIOClient(
       channel: self.client,
       defaultCallOptions: CallOptions(logger: self.clientLogger)
     )

@@ -62,7 +62,7 @@ class WithConnectedSockettests: GRPCTestCase {
       XCTAssertNoThrow(try connection.close().wait())
     }
 
-    let client = Echo_EchoClient(channel: connection)
+    let client = Echo_EchoNIOClient(channel: connection)
     let resp = try client.get(Echo_EchoRequest(text: "Hello")).response.wait()
     XCTAssertEqual(resp.text, "Swift echo get: Hello")
   }
