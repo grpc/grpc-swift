@@ -515,7 +515,7 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   public func streamingInputCall<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Grpc_Testing_StreamingInputCallResponse where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_StreamingInputCallRequest {
+  ) async throws -> Grpc_Testing_StreamingInputCallResponse where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_StreamingInputCallRequest {
     return try await self.performAsyncClientStreamingCall(
       path: Grpc_Testing_TestServiceClientMetadata.Methods.streamingInputCall.path,
       requests: requests,
@@ -539,7 +539,7 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   public func fullDuplexCall<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
     return self.performAsyncBidirectionalStreamingCall(
       path: Grpc_Testing_TestServiceClientMetadata.Methods.fullDuplexCall.path,
       requests: requests,
@@ -563,7 +563,7 @@ extension Grpc_Testing_TestServiceAsyncClientProtocol {
   public func halfDuplexCall<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_StreamingOutputCallResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_StreamingOutputCallRequest {
     return self.performAsyncBidirectionalStreamingCall(
       path: Grpc_Testing_TestServiceClientMetadata.Methods.halfDuplexCall.path,
       requests: requests,
