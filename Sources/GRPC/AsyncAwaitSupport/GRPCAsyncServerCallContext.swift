@@ -17,7 +17,7 @@
 
 @preconcurrency import Logging
 import NIOConcurrencyHelpers
-@preconcurrency import NIOHPACK
+import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncServerCallContext: Sendable {
