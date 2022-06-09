@@ -29,23 +29,6 @@ Version | Implementation | Branch                 | `protoc` Plugin         | Co
 
 The remainder of this README refers to the 1.x version of gRPC Swift.
 
-## Experimental `async`/`await` Support
-
-Swift 5.5 introduces new language features for concurrency. One such feature is
-[`async`/`await`][SE-0296].
-
-gRPC Swift includes **experimental** support for async/await. While support is
-**experimental**, async/await releases of gRPC Swift *do not guarantees a stable
-API*. Features and APIs may change between async/await releases.
-
-To ensure the 1.x release series does maintain a stable API, async/await releases
-will be branched from stable releases and tagged in the following format:
-`X.Y.Z-async-await.N`. Where `X.Y.Z` indicates the tag of the stable release
-from which the branch was created and `N` indicates a release number on that
-branch.
-
-The `protoc-gen-grpc-swift` options for generating async/await style clients and
-servers are described in [`docs/plugin.md`][docs-plugin].
 
 ## Supported Platforms
 
@@ -54,6 +37,9 @@ NIO][swift-nio-platforms].
 
 The earliest supported Swift version for gRPC Swift 1.8.x and newer is 5.4.
 For 1.7.x and earlier the oldest supported Swift version is 5.2.
+
+Versions of clients and services which are use Swift's Concurrency support
+are available from gRPC Swift 1.8.0 and require Swift 5.6 and newer.
 
 ## Getting gRPC Swift
 
@@ -205,4 +191,3 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
 [examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/main/Examples
 [examples-in-source]: https://github.com/grpc/grpc-swift/tree/main/Sources/Examples
-[SE-0296]: https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md
