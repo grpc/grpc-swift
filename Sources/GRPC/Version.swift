@@ -19,11 +19,11 @@ internal enum Version {
   internal static let major = 1
 
   /// The minor version.
-  internal static let minor = 7
+  internal static let minor = 8
 
   /// The patch version.
-  internal static let patch = 3
+  internal static let patch = 0
 
   /// The version string.
-  internal static let versionString = "\(major).\(minor).\(patch)-async-await.1"
+  internal static let versionString = "\(major).\(minor).\(patch)"
 }
