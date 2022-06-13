@@ -96,9 +96,7 @@ desired, and setting `KeepMethodCasing=true` will yield stubs named `Foo`.
 The **GRPCModuleName** option allows the name of the gRPC Swift runtime module
 to be specified. The value, if not specified, defaults to "GRPC".
 
-*Note: most users will not need to use this option. It is intended as a
-workaround for CocoaPods users who may end up with a transitive dependency on
-the gRPC core C library whose module name is also "GRPC".*
+*Note: most users will not need to use this option.*
 
 ### SwiftProtobufModuleName
 

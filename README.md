@@ -22,10 +22,10 @@ insecure channels.
 gRPC Swift has recently been rewritten on top of [SwiftNIO][swift-nio] as
 opposed to the core library provided by the [gRPC project][grpc].
 
-Version | Implementation | Branch                 | `protoc` Plugin         | CocoaPod              | Support
---------|----------------|------------------------|-------------------------|-----------------------|-----------------------------------------
-1.x     | SwiftNIO       | [`main`][branch-new]   | `protoc-gen-grpc-swift` | [gRPC-Swift][pod-new] | Actively developed and supported
-0.x     | gRPC C library | [`cgrpc`][branch-old]  | `protoc-gen-swiftgrpc`  | [SwiftGRPC][pod-old]  | No longer developed; security fixes only
+Version | Implementation | Branch                 | `protoc` Plugin         | Support
+--------|----------------|------------------------|-------------------------|-----------------------------------------
+1.x     | SwiftNIO       | [`main`][branch-new]   | `protoc-gen-grpc-swift` | Actively developed and supported
+0.x     | gRPC C library | [`cgrpc`][branch-old]  | `protoc-gen-swiftgrpc`  | No longer developed; security fixes only
 
 The remainder of this README refers to the 1.x version of gRPC Swift.
 
@@ -81,21 +81,6 @@ Alternatively, gRPC Swift can be manually integrated into a project:
 1. Add the generated project to your own project, and
 1. Add a build dependency on `GRPC`.
 
-#### CocoaPods
-
-gRPC Swift is currently available [from CocoaPods][pod-new]. To integrate, add
-the following line to your `Podfile`:
-
-```ruby
-    pod 'gRPC-Swift', '~> 1.0.0'
-```
-
-Then, run `pod install` from command line and use your project's generated
-`.xcworkspace` file. You might also need to add `use_frameworks!` to your `Podfile`.
-
-*⚠️ If you have conficting modules as a result of having a transitive
-dependency on '[gRPC-Core][grpc-core-pod]' see [grpc/grpc-swift#945][grpc-swift-945].*
-
 ### Getting the `protoc` Plugins
 
 Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
@@ -110,14 +95,6 @@ To install these plugins, just copy the two executables (`protoc-gen-swift` and
 `protoc-gen-grpc-swift`) that show up in the main directory into a directory
 that is part of your `PATH` environment variable. Alternatively the full path to
 the plugins can be specified when using `protoc`.
-
-Alternatively, you can get the latest precompiled version of the plugins by adding
-the following line to your `Podfile`:
-
-```ruby
-    pod 'gRPC-Swift-Plugins'
-```
-The plugins are available in the `Pods/gRPC-Swift-Plugins/` folder afterwards.
 
 #### Homebrew
 
@@ -178,15 +155,11 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [docs-tutorial]: ./docs/basic-tutorial.md
 [docs-interceptors-tutorial]: ./docs/interceptors-tutorial.md
 [grpc]: https://github.com/grpc/grpc
-[grpc-core-pod]: https://cocoapods.org/pods/gRPC-Core
-[grpc-swift-945]: https://github.com/grpc/grpc-swift/pull/945
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [swift-nio-platforms]: https://github.com/apple/swift-nio#supported-platforms
 [swift-nio]: https://github.com/apple/swift-nio
 [swift-protobuf]: https://github.com/apple/swift-protobuf
 [xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
-[pod-new]: https://cocoapods.org/pods/gRPC-Swift
-[pod-old]: https://cocoapods.org/pods/SwiftGRPC
 [branch-new]: https://github.com/grpc/grpc-swift/tree/main
 [branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
 [examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/main/Examples
