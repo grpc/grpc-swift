@@ -29,8 +29,6 @@ This project requires a Google Cloud API Key. Please [register](https://cloud.go
 
 ## Helpful Links
 * [Getting Started with Speech APIs](https://cloud.google.com/speech-to-text/docs/quickstart)
-* [CocoaPods](https://cocoapods.org/)
-* [gRPC-Swift CocoaPod](https://cocoapods.org/pods/gRPC-Swift)
 
 NOTE: Implementation of the AudioStreamManager is based off of [Google's Example Audio Streaming](https://github.com/GoogleCloudPlatform/ios-docs-samples/blob/master/speech/Swift/Speech-gRPC-Streaming/Speech/AudioController.swift)
 

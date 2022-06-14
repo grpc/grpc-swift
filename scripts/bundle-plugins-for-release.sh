@@ -25,9 +25,6 @@ set -eu
 #   └── bin
 #       ├── protoc-gen-grpc-swift
 #       └── protoc-gen-swift
-#
-# Note: the name of the generated zip should match that expected by the
-# buid_podspecs.py script.
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: $0 RELEASE_VERSION"
