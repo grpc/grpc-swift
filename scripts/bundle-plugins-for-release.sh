@@ -45,11 +45,13 @@ stage_bin="${stage}/bin"
 mkdir -p "${stage_bin}"
 
 # Make the plugins.
-make -C "${root}" plugins
+swift build -c release --arch arm64 --arch x86_64 --product protoc-gen-grpc-swift
+swift build -c release --arch arm64 --arch x86_64 --product protoc-gen-swift
+binpath=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)
 
 # Copy them to the stage.
-cp "${root}/protoc-gen-grpc-swift" "${stage_bin}"
-cp "${root}/protoc-gen-swift" "${stage_bin}"
+cp "${binpath}/protoc-gen-grpc-swift" "${stage_bin}"
+cp "${binpath}/protoc-gen-swift" "${stage_bin}"
 
 # Copy the LICENSE to the stage.
 cp "${root}/LICENSE" "${stage}"
