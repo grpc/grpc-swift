@@ -29,7 +29,7 @@ Package.resolved:
 
 .PHONY:
 plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
-	rm protoc-gen-swift protoc-gen-grpc-swift
+	rm protoc-gen-swift protoc-gen-grpc-swift || true
 	cp $^ .
 
 ${PROTOC_GEN_SWIFT}: Package.resolved
