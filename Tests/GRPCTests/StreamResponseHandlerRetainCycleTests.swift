@@ -57,10 +57,19 @@ final class StreamResponseHandlerRetainCycleTests: GRPCTestCase {
 
   func testHandlerClosureIsReleasedOnceStreamEnds() {
     final class Counter {
-      private let atomic = NIOAtomic.makeAtomic(value: 0)
-      func increment() { self.atomic.add(1) }
+      private let lock = Lock()
+      private var _value = 0
+
+      func increment() {
+        self.lock.withLockVoid {
+          self._value += 1
+        }
+      }
+
       var value: Int {
-        self.atomic.load()
+        return self.lock.withLock {
+          self._value
+        }
       }
     }
 
