@@ -2,14 +2,14 @@
 SWIFT:=swift
 # Where products will be built; this is the SPM default.
 SWIFT_BUILD_PATH:=./.build
-SWIFT_BUILD_CONFIGURATION=debug
-SWIFT_FLAGS=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION} --enable-test-discovery
+SWIFT_BUILD_CONFIGURATION=release
+SWIFT_FLAGS=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION}
 # Force release configuration (for plugins)
-SWIFT_FLAGS_RELEASE=$(patsubst --configuration=%,--configuration=release,$(SWIFT_FLAGS))
+SWIFT_FLAGS_RELEASE=$(patsubst --configuration=%,--configuration=${SWIFT_BUILD_CONFIGURATION},$(SWIFT_FLAGS))
 
 # protoc plugins.
-PROTOC_GEN_SWIFT=${SWIFT_BUILD_PATH}/release/protoc-gen-swift
-PROTOC_GEN_GRPC_SWIFT=${SWIFT_BUILD_PATH}/release/protoc-gen-grpc-swift
+PROTOC_GEN_SWIFT=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift
+PROTOC_GEN_GRPC_SWIFT=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-grpc-swift
 
 SWIFT_BUILD:=${SWIFT} build ${SWIFT_FLAGS}
 SWIFT_BUILD_RELEASE:=${SWIFT} build ${SWIFT_FLAGS_RELEASE}
@@ -29,6 +29,7 @@ Package.resolved:
 
 .PHONY:
 plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
+	rm protoc-gen-swift protoc-gen-grpc-swift
 	cp $^ .
 
 ${PROTOC_GEN_SWIFT}: Package.resolved
