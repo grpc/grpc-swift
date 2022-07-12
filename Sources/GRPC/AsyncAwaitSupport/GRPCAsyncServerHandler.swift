@@ -487,7 +487,7 @@ internal final class AsyncServerHandler<
       try await responseStreamWriter.finish(.ok)
     } catch {
       // Drop pending writes as we're on the error path.
-      await responseStreamWriter.cancel()
+      await responseStreamWriter.cancel(withError: error)
 
       if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
         throw GRPCStatus(code: .unknown, message: "Handler threw error with status code 'ok'.")
@@ -831,7 +831,7 @@ internal struct ServerHandlerComponents<Request: Sendable, Delegate: AsyncWriter
     // written. This should reduce how long the user handler runs for as it can no longer do
     // anything useful.
     self.requestSource.finish(throwing: CancellationError())
-    self.responseWriter.cancelAsynchronously()
+    self.responseWriter.cancelAsynchronously(withError: CancellationError())
     self.task.cancel()
   }
 }

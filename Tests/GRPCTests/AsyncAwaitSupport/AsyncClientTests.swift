@@ -64,7 +64,10 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     return try self.makeClient(port: self.server.channel.localAddress!.port!)
   }
 
-  private func makeClient(port: Int) throws -> Echo_EchoAsyncClient {
+  private func makeClient(
+    port: Int,
+    configure: (inout GRPCChannelPool.Configuration) -> Void = { _ in }
+  ) throws -> Echo_EchoAsyncClient {
     precondition(self.pool == nil)
 
     self.pool = try GRPCChannelPool.with(
@@ -73,6 +76,7 @@ final class AsyncClientCancellationTests: GRPCTestCase {
       eventLoopGroup: self.group
     ) {
       $0.backgroundActivityLogger = self.clientLogger
+      configure(&$0)
     }
 
     return Echo_EchoAsyncClient(channel: self.pool)
@@ -392,6 +396,29 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     let echo = try self.makeClient(port: 0)
     try await self.testSendingRequestsSuspendsWhileStreamIsNotReady {
       return .bidirectionalStreaming(echo.makeUpdateCall())
+    }
+  }
+
+  func testConnectionFailureCancelsRequestStreamWithError() async throws {
+    let echo = try self.makeClient(port: 0) {
+      // Configure a short wait time; we will not start a server so fail quickly.
+      $0.connectionPool.maxWaitTime = .milliseconds(10)
+    }
+
+    do {
+      let update = echo.makeUpdateCall()
+      try await update.requestStream.send(.init())
+      XCTFail("Expected an error to be thrown")
+    } catch {
+      XCTAssertFalse(error is CancellationError)
+    }
+
+    do {
+      let collect = echo.makeCollectCall()
+      try await collect.requestStream.send(.init())
+      XCTFail("Expected an error to be thrown")
+    } catch {
+      XCTAssertFalse(error is CancellationError)
     }
   }
 }
