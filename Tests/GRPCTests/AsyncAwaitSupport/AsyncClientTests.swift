@@ -405,19 +405,13 @@ final class AsyncClientCancellationTests: GRPCTestCase {
       $0.connectionPool.maxWaitTime = .milliseconds(10)
     }
 
-    do {
-      let update = echo.makeUpdateCall()
-      try await update.requestStream.send(.init())
-      XCTFail("Expected an error to be thrown")
-    } catch {
+    let update = echo.makeUpdateCall()
+    await XCTAssertThrowsError(try await update.requestStream.send(.init())) { error in
       XCTAssertFalse(error is CancellationError)
     }
 
-    do {
-      let collect = echo.makeCollectCall()
-      try await collect.requestStream.send(.init())
-      XCTFail("Expected an error to be thrown")
-    } catch {
+    let collect = echo.makeCollectCall()
+    await XCTAssertThrowsError(try await collect.requestStream.send(.init())) { error in
       XCTAssertFalse(error is CancellationError)
     }
   }
