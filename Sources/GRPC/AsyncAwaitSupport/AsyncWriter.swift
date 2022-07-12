@@ -198,9 +198,9 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
 
   /// As ``cancel()`` but executed asynchronously.
   @usableFromInline
-  internal nonisolated func cancelAsynchronously() {
+  internal nonisolated func cancelAsynchronously(withError error: Error) {
     Task {
-      await self.cancel()
+      await self.cancel(withError: error)
     }
   }
 
@@ -209,7 +209,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
   /// Any pending writes will be dropped and their continuations will be resumed with
   /// a `CancellationError`. Any writes after cancellation has completed will also fail.
   @usableFromInline
-  internal func cancel() {
+  internal func cancel(withError error: Error) {
     // If there's an end we should fail that last.
     let pendingEnd: PendingEnd?
 
@@ -228,13 +228,11 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
       pendingEnd = nil
     }
 
-    let cancellationError = CancellationError()
-
     while let pending = self._pendingElements.popFirst() {
-      pending.continuation.resume(throwing: cancellationError)
+      pending.continuation.resume(throwing: error)
     }
 
-    pendingEnd?.continuation.resume(throwing: cancellationError)
+    pendingEnd?.continuation.resume(throwing: error)
   }
 
   /// Write an `element`.
@@ -263,7 +261,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
         throw GRPCAsyncWriterError.tooManyPendingWrites
       }
     } onCancel: {
-      self.cancelAsynchronously()
+      self.cancelAsynchronously(withError: CancellationError())
     }
   }
 
@@ -283,7 +281,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate>: Sendable {
         }
       }
     } onCancel: {
-      self.cancelAsynchronously()
+      self.cancelAsynchronously(withError: CancellationError())
     }
   }
 }

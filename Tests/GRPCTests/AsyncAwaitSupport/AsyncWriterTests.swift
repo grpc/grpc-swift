@@ -170,7 +170,7 @@ internal class AsyncWriterTests: GRPCTestCase {
 
     async let pendingWrite: Void = writer.write("foo")
 
-    await writer.cancel()
+    await writer.cancel(withError: CancellationError())
 
     do {
       try await pendingWrite
@@ -202,7 +202,7 @@ internal class AsyncWriterTests: GRPCTestCase {
 
     async let pendingWrite: Void = writer.finish(42)
 
-    await writer.cancel()
+    await writer.cancel(withError: CancellationError())
 
     do {
       try await pendingWrite
@@ -229,13 +229,13 @@ internal class AsyncWriterTests: GRPCTestCase {
     let delegate = CollectingDelegate<String, Int>()
     let writer = AsyncWriter(delegate: delegate)
 
-    await writer.cancel()
+    await writer.cancel(withError: CancellationError())
     await XCTAssertThrowsError(try await writer.write("1")) { error in
       XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
     }
 
     // Fine, no need to throw. Nothing should change.
-    await writer.cancel()
+    await writer.cancel(withError: CancellationError())
     await XCTAssertThrowsError(try await writer.write("2")) { error in
       XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
     }

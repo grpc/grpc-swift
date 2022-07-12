@@ -90,7 +90,7 @@ public struct GRPCAsyncClientStreamingCall<Request: Sendable, Response: Sendable
       },
       onError: { error in
         asyncCall.responseParts.handleError(error)
-        asyncCall.requestStream.asyncWriter.cancelAsynchronously()
+        asyncCall.requestStream.asyncWriter.cancelAsynchronously(withError: error)
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,

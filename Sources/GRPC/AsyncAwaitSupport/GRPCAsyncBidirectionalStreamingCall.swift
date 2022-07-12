@@ -92,7 +92,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
       onError: { error in
         asyncCall.responseParts.handleError(error)
         asyncCall.responseSource.finish(throwing: error)
-        asyncCall.requestStream.asyncWriter.cancelAsynchronously()
+        asyncCall.requestStream.asyncWriter.cancelAsynchronously(withError: error)
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,
@@ -133,7 +133,7 @@ internal enum AsyncCall {
           responseSource.finish(throwing: status)
         }
 
-        requestStream?.asyncWriter.cancelAsynchronously()
+        requestStream?.asyncWriter.cancelAsynchronously(withError: status)
       }
     }
   }
@@ -152,8 +152,8 @@ internal enum AsyncCall {
       switch responsePart {
       case .metadata, .message:
         ()
-      case .end:
-        requestStream?.asyncWriter.cancelAsynchronously()
+      case let .end(status, _):
+        requestStream?.asyncWriter.cancelAsynchronously(withError: status)
       }
     }
   }
