@@ -31,6 +31,11 @@ public struct GRPCAsyncUnaryCall<Request: Sendable, Response: Sendable>: Sendabl
     self.call.options
   }
 
+  /// The path used to make the RPC.
+  public var path: String {
+    self.call.path
+  }
+
   /// Cancel this RPC if it hasn't already completed.
   public func cancel() {
     self.call.cancel(promise: nil)
