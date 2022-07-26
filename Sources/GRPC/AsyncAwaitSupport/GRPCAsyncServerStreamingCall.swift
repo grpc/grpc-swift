@@ -32,6 +32,11 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
     return self.call.options
   }
 
+  /// The path used to make the RPC.
+  public var path: String {
+    return self.call.path
+  }
+
   /// Cancel this RPC if it hasn't already completed.
   public func cancel() {
     self.call.cancel(promise: nil)
