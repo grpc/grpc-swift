@@ -1,6 +1,6 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.4
 /*
- * Copyright 2017, gRPC Authors All rights reserved.
+ * Copyright 2022, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,6 @@ let packageDependencies: [Package.Dependency] = [
   .package(
     url: "https://github.com/apple/swift-argument-parser.git",
     from: argumentParserMinimumVersion
-  ),
-  .package(
-    url: "https://github.com/apple/swift-docc-plugin",
-    from: "1.0.0"
   ),
 ].appending(
   .package(
