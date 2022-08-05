@@ -1,4 +1,4 @@
-// swift-tools-version:5.4
+// swift-tools-version:5.6
 /*
  * Copyright 2020, gRPC Authors All rights reserved.
  *
@@ -19,6 +19,7 @@ import PackageDescription
 
 let package = Package(
   name: "QPSBenchmark",
+  platforms: [.macOS(.v12)],
   products: [
     .executable(name: "QPSBenchmark", targets: ["QPSBenchmark"]),
   ],
