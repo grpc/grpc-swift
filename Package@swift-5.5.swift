@@ -27,14 +27,6 @@ let cgrpcZlibTargetName = cgrpcZlibProductName
 
 let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == nil
 
-#if swift(>=5.6)
-// swift-argument-parser raised its minimum Swift version in 1.1.0 but
-// also accidentally broke API. This was fixed in "1.1.1".
-let argumentParserMinimumVersion: Version = "1.1.1"
-#else
-let argumentParserMinimumVersion: Version = "1.0.0"
-#endif
-
 // MARK: - Package Dependencies
 
 let packageDependencies: [Package.Dependency] = [
@@ -65,7 +57,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-argument-parser.git",
-    from: argumentParserMinimumVersion
+    from: "1.0.0"
   ),
 ].appending(
   .package(
