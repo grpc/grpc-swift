@@ -27,14 +27,6 @@ let cgrpcZlibTargetName = cgrpcZlibProductName
 
 let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == nil
 
-#if swift(>=5.6)
-// swift-argument-parser raised its minimum Swift version in 1.1.0 but
-// also accidentally broke API. This was fixed in "1.1.1".
-let argumentParserMinimumVersion: Version = "1.1.1"
-#else
-let argumentParserMinimumVersion: Version = "1.0.0"
-#endif
-
 // MARK: - Package Dependencies
 
 let packageDependencies: [Package.Dependency] = [
@@ -55,7 +47,6 @@ let packageDependencies: [Package.Dependency] = [
     from: "1.4.0"
   ),
   .package(
-    name: "SwiftProtobuf",
     url: "https://github.com/apple/swift-protobuf.git",
     from: "1.19.0"
   ),
@@ -65,7 +56,9 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-argument-parser.git",
-    from: argumentParserMinimumVersion
+    // Version is higher than in other Package@swift manifests: 1.1.0 raised the minimum Swift
+    // version and indluded async support.
+    from: "1.1.1"
   ),
   .package(
     url: "https://github.com/apple/swift-docc-plugin",
@@ -121,10 +114,10 @@ extension Target.Dependency {
     package: "swift-nio-transport-services"
   )
   static let logging: Self = .product(name: "Logging", package: "swift-log")
-  static let protobuf: Self = .product(name: "SwiftProtobuf", package: "SwiftProtobuf")
+  static let protobuf: Self = .product(name: "SwiftProtobuf", package: "swift-protobuf")
   static let protobufPluginLibrary: Self = .product(
     name: "SwiftProtobufPluginLibrary",
-    package: "SwiftProtobuf"
+    package: "swift-protobuf"
   )
 }
 
