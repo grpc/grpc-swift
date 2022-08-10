@@ -350,7 +350,7 @@ extension Grpc_Testing_BenchmarkServiceAsyncClientProtocol {
   public func streamingCall<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_SimpleRequest {
     return self.performAsyncBidirectionalStreamingCall(
       path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingCall.path,
       requests: requests,
@@ -374,7 +374,7 @@ extension Grpc_Testing_BenchmarkServiceAsyncClientProtocol {
   public func streamingFromClient<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Grpc_Testing_SimpleResponse where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+  ) async throws -> Grpc_Testing_SimpleResponse where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_SimpleRequest {
     return try await self.performAsyncClientStreamingCall(
       path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingFromClient.path,
       requests: requests,
@@ -410,7 +410,7 @@ extension Grpc_Testing_BenchmarkServiceAsyncClientProtocol {
   public func streamingBothWays<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_SimpleRequest {
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_SimpleResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_SimpleRequest {
     return self.performAsyncBidirectionalStreamingCall(
       path: Grpc_Testing_BenchmarkServiceClientMetadata.Methods.streamingBothWays.path,
       requests: requests,

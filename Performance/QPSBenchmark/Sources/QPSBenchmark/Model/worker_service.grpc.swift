@@ -302,7 +302,7 @@ extension Grpc_Testing_WorkerServiceAsyncClientProtocol {
   public func runServer<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Grpc_Testing_ServerStatus> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_ServerArgs {
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_ServerStatus> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_ServerArgs {
     return self.performAsyncBidirectionalStreamingCall(
       path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runServer.path,
       requests: requests,
@@ -326,7 +326,7 @@ extension Grpc_Testing_WorkerServiceAsyncClientProtocol {
   public func runClient<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Grpc_Testing_ClientStatus> where RequestStream: AsyncSequence, RequestStream.Element == Grpc_Testing_ClientArgs {
+  ) -> GRPCAsyncResponseStream<Grpc_Testing_ClientStatus> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Testing_ClientArgs {
     return self.performAsyncBidirectionalStreamingCall(
       path: Grpc_Testing_WorkerServiceClientMetadata.Methods.runClient.path,
       requests: requests,
