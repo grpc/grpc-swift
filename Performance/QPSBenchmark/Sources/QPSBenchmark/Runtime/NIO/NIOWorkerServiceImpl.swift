@@ -18,14 +18,14 @@ import GRPC
 import NIOCore
 
 // Implementation of the control service for communication with the driver process.
-class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
+class NIOWorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   let interceptors: Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol? = nil
 
   private let finishedPromise: EventLoopPromise<Void>
   private let serverPortOverride: Int?
 
-  private var runningServer: QPSServer?
-  private var runningClient: QPSClient?
+  private var runningServer: NIOQPSServer?
+  private var runningClient: NIOQPSClient?
 
   /// Initialise.
   /// - parameters:
@@ -173,7 +173,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     self.serverPortOverride.map { serverConfig.port = Int32($0) }
 
     do {
-      self.runningServer = try WorkerServiceImpl.createServer(
+      self.runningServer = try NIOWorkerServiceImpl.createServer(
         context: context,
         config: serverConfig
       )
@@ -186,7 +186,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   private static func createServer(
     context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
     config: Grpc_Testing_ServerConfig
-  ) throws -> QPSServer {
+  ) throws -> NIOQPSServer {
     context.logger.info(
       "Starting server",
       metadata: ["type": .stringConvertible(config.serverType)]
@@ -196,7 +196,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     case .syncServer:
       throw GRPCStatus(code: .unimplemented, message: "Server Type not implemented")
     case .asyncServer:
-      let asyncServer = AsyncQPSServer(
+      let asyncServer = NIOQPSServerImpl(
         config: config,
         whenBound: { serverInfo in
           var response = Grpc_Testing_ServerStatus()
@@ -297,7 +297,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     clientConfig: Grpc_Testing_ClientConfig
   ) {
     do {
-      self.runningClient = try WorkerServiceImpl.makeClient(
+      self.runningClient = try NIOWorkerServiceImpl.makeClient(
         context: context,
         clientConfig: clientConfig
       )
@@ -310,7 +310,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   private static func makeClient(
     context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
     clientConfig: Grpc_Testing_ClientConfig
-  ) throws -> QPSClient {
+  ) throws -> NIOQPSClient {
     switch clientConfig.clientType {
     case .syncClient:
       throw GRPCStatus(code: .unimplemented, message: "Client Type not implemented")

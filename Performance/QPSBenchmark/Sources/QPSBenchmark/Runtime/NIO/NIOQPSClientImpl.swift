@@ -24,11 +24,11 @@ import NIOCore
 import NIOPosix
 
 /// Client to make a series of asynchronous calls.
-final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
+final class NIOQPSClientImpl<RequestMakerType: NIORequestMaker>: NIOQPSClient {
   private let eventLoopGroup: MultiThreadedEventLoopGroup
   private let threadCount: Int
 
-  private let logger = Logger(label: "AsyncQPSClient")
+  private let logger = Logger(label: "NIOQPSClientImpl")
 
   private let channelRepeaters: [ChannelRepeater]
 
@@ -46,7 +46,7 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
     // Setup threads
     let threadCount = config.threadsToUse()
     self.threadCount = threadCount
-    self.logger.info("Sizing AsyncQPSClient", metadata: ["threads": "\(threadCount)"])
+    self.logger.info("Sizing NIOQPSClientImpl", metadata: ["threads": "\(threadCount)"])
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: threadCount)
     self.eventLoopGroup = eventLoopGroup
 
@@ -54,7 +54,7 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
     self.statsPeriodStart = grpcTimeNow()
     self.cpuStatsPeriodStart = getResourceUsage()
 
-    let requestMessage = try AsyncQPSClient
+    let requestMessage = try NIOQPSClientImpl
       .makeClientRequest(payloadConfig: config.payloadConfig)
 
     // Start the requested number of channels.
@@ -276,12 +276,12 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
 /// - parameters:
 ///     - config: Description of the client required.
 /// - returns: The client created.
-func makeAsyncClient(config: Grpc_Testing_ClientConfig) throws -> QPSClient {
+func makeAsyncClient(config: Grpc_Testing_ClientConfig) throws -> NIOQPSClient {
   switch config.rpcType {
   case .unary:
-    return try AsyncQPSClient<AsyncUnaryRequestMaker>(config: config)
+    return try NIOQPSClientImpl<NIOUnaryRequestMaker>(config: config)
   case .streaming:
-    return try AsyncQPSClient<AsyncPingPongRequestMaker>(config: config)
+    return try NIOQPSClientImpl<NIOPingPongRequestMaker>(config: config)
   case .streamingFromClient:
     throw GRPCStatus(code: .unimplemented, message: "Client Type not implemented")
   case .streamingFromServer:

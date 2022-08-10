@@ -18,13 +18,8 @@ import GRPC
 import Logging
 import NIOCore
 
-/// Makes unary requests to the server and records performance statistics.
-final class AsyncUnaryRequestMaker: RequestMaker {
-  private let client: Grpc_Testing_BenchmarkServiceNIOClient
-  private let requestMessage: Grpc_Testing_SimpleRequest
-  private let logger: Logger
-  private let stats: StatsWithLock
-
+/// Implement to provide a method of making requests to a server from a client.
+protocol NIORequestMaker {
   /// Initialiser to gather requirements.
   /// - Parameters:
   ///    - config: config from the driver describing what to do.
@@ -38,35 +33,12 @@ final class AsyncUnaryRequestMaker: RequestMaker {
     requestMessage: Grpc_Testing_SimpleRequest,
     logger: Logger,
     stats: StatsWithLock
-  ) {
-    self.client = client
-    self.requestMessage = requestMessage
-    self.logger = logger
-    self.stats = stats
-  }
+  )
 
-  /// Initiate a request sequence to the server - in this case a single unary requests and wait for a response.
+  /// Initiate a request sequence to the server.
   /// - returns: A future which completes when the request-response sequence is complete.
-  func makeRequest() -> EventLoopFuture<GRPCStatus> {
-    let startTime = grpcTimeNow()
-    let result = self.client.unaryCall(self.requestMessage)
-    // Log latency stats on completion.
-    result.status.whenSuccess { status in
-      if status.isOk {
-        let endTime = grpcTimeNow()
-        self.stats.add(latency: endTime - startTime)
-      } else {
-        self.logger.error(
-          "Bad status from unary request",
-          metadata: ["status": "\(status)"]
-        )
-      }
-    }
-    return result.status
-  }
+  func makeRequest() -> EventLoopFuture<GRPCStatus>
 
   /// Request termination of the request-response sequence.
-  func requestStop() {
-    // No action here - we could potentially try and cancel the request easiest to just wait.
-  }
+  func requestStop()
 }

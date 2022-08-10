@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, gRPC Authors All rights reserved.
+ * Copyright 2022, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import Atomics
 import Foundation
 import GRPC
 import Logging
@@ -21,8 +22,8 @@ import NIOCore
 
 /// Makes streaming requests and listens to responses ping-pong style.
 /// Iterations can be limited by config.
-final class AsyncPingPongRequestMaker: RequestMaker {
-  private let client: Grpc_Testing_BenchmarkServiceNIOClient
+final class AsyncPingPongRequestMaker: AsyncRequestMaker, @unchecked Sendable {
+  private let client: Grpc_Testing_BenchmarkServiceAsyncClient
   private let requestMessage: Grpc_Testing_SimpleRequest
   private let logger: Logger
   private let stats: StatsWithLock
@@ -30,7 +31,7 @@ final class AsyncPingPongRequestMaker: RequestMaker {
   /// If greater than zero gives a limit to how many messages are exchanged before termination.
   private let messagesPerStream: Int
   /// Stops more requests being made after stop is requested.
-  private var stopRequested = false
+  private let stopRequested = ManagedAtomic<Bool>(false)
 
   /// Initialiser to gather requirements.
   /// - Parameters:
@@ -41,7 +42,7 @@ final class AsyncPingPongRequestMaker: RequestMaker {
   ///    - stats: Where to record statistics on latency.
   init(
     config: Grpc_Testing_ClientConfig,
-    client: Grpc_Testing_BenchmarkServiceNIOClient,
+    client: Grpc_Testing_BenchmarkServiceAsyncClient,
     requestMessage: Grpc_Testing_SimpleRequest,
     logger: Logger,
     stats: StatsWithLock
@@ -56,42 +57,27 @@ final class AsyncPingPongRequestMaker: RequestMaker {
 
   /// Initiate a request sequence to the server - in this case the sequence is streaming requests to the server and waiting
   /// to see responses before repeating ping-pong style.  The number of iterations can be limited by config.
-  /// - returns: A future which completes when the request-response sequence is complete.
-  func makeRequest() -> EventLoopFuture<GRPCStatus> {
+  func makeRequest() async throws {
     var startTime = grpcTimeNow()
-    var messagesSent = 1
-    var streamingCall: BidirectionalStreamingCall<
-      Grpc_Testing_SimpleRequest,
-      Grpc_Testing_SimpleResponse
-    >?
+    var messagesSent = 0
 
-    /// Handle a response from the server - potentially triggers making another request.
-    /// Will execute on the event loop which deals with thread safety concerns.
-    func handleResponse(response: Grpc_Testing_SimpleResponse) {
-      streamingCall!.eventLoop.preconditionInEventLoop()
+    let streamingCall = self.client.makeStreamingCallCall()
+    var responseStream = streamingCall.responseStream.makeAsyncIterator()
+    while !self.stopRequested.load(ordering: .relaxed),
+          self.messagesPerStream == 0 || messagesSent < self.messagesPerStream {
+      try await streamingCall.requestStream.send(self.requestMessage)
+      let _ = try await responseStream.next()
       let endTime = grpcTimeNow()
       self.stats.add(latency: endTime - startTime)
-      if !self.stopRequested,
-         self.messagesPerStream == 0 || messagesSent < self.messagesPerStream {
-        messagesSent += 1
-        startTime = endTime // Use end of previous request as the start of the next.
-        streamingCall!.sendMessage(self.requestMessage, promise: nil)
-      } else {
-        streamingCall!.sendEnd(promise: nil)
-      }
+      messagesSent += 1
+      startTime = endTime
     }
-
-    // Setup the call.
-    streamingCall = self.client.streamingCall(handler: handleResponse)
-    // Kick start with initial request
-    streamingCall!.sendMessage(self.requestMessage, promise: nil)
-
-    return streamingCall!.status
   }
 
   /// Request termination of the request-response sequence.
   func requestStop() {
+    self.logger.info("AsyncPingPongRequestMaker stop requested")
     // Flag stop as requested - this will prevent any more requests being made.
-    self.stopRequested = true
+    self.stopRequested.store(true, ordering: .relaxed)
   }
 }

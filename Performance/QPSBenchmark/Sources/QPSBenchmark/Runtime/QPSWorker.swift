@@ -22,16 +22,18 @@ import NIOPosix
 /// Sets up and runs a worker service which listens for instructions on what tests to run.
 /// Currently doesn't understand TLS for communication with the driver.
 class QPSWorker {
-  private var driverPort: Int
-  private var serverPort: Int?
+  private let driverPort: Int
+  private let serverPort: Int?
+  private let useAsync: Bool
 
   /// Initialise.
   /// - parameters:
   ///     - driverPort: Port to listen for instructions on.
   ///     - serverPort: Possible override for the port the testing will actually occur on - usually supplied by the driver process.
-  init(driverPort: Int, serverPort: Int?) {
+  init(driverPort: Int, serverPort: Int?, useAsync: Bool) {
     self.driverPort = driverPort
     self.serverPort = serverPort
+    self.useAsync = useAsync
   }
 
   private let logger = Logger(label: "QPSWorker")
@@ -49,12 +51,20 @@ class QPSWorker {
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.eventLoopGroup = eventLoopGroup
 
+    let workerService: CallHandlerProvider
     let workEndPromise: EventLoopPromise<Void> = eventLoopGroup.next().makePromise()
     workEndPromise.futureResult.whenSuccess(onQuit)
-    let workerService = WorkerServiceImpl(
-      finishedPromise: workEndPromise,
-      serverPortOverride: self.serverPort
-    )
+    if self.useAsync {
+      workerService = AsyncWorkerServiceImpl(
+        finishedPromise: workEndPromise,
+        serverPortOverride: self.serverPort
+      )
+    } else {
+      workerService = NIOWorkerServiceImpl(
+        finishedPromise: workEndPromise,
+        serverPortOverride: self.serverPort
+      )
+    }
 
     // Start the server.
     self.logger.info("Binding to localhost", metadata: ["driverPort": "\(self.driverPort)"])

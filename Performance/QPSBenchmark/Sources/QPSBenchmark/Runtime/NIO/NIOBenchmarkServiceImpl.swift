@@ -19,7 +19,7 @@ import GRPC
 import NIOCore
 
 /// Implementation of asynchronous service for benchmarking.
-final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
+final class NIOBenchmarkServiceImpl: Grpc_Testing_BenchmarkServiceProvider {
   let interceptors: Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol? = nil
 
   /// One request followed by one response.
@@ -30,7 +30,7 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   ) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
     do {
       return context.eventLoop
-        .makeSucceededFuture(try AsyncQPSServerImpl.processSimpleRPC(request: request))
+        .makeSucceededFuture(try NIOBenchmarkServiceImpl.processSimpleRPC(request: request))
     } catch {
       return context.eventLoop.makeFailedFuture(error)
     }
@@ -46,7 +46,7 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
       switch event {
       case let .message(request):
         do {
-          let response = try AsyncQPSServerImpl.processSimpleRPC(request: request)
+          let response = try NIOBenchmarkServiceImpl.processSimpleRPC(request: request)
           context.sendResponse(response, promise: nil)
         } catch {
           context.statusPromise.fail(error)
