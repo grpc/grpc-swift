@@ -136,8 +136,9 @@ final class AsyncQPSClientImpl<RequestMakerType: AsyncRequestMaker>: AsyncQPSCli
   }
 
   /// Make a request which can be sent to the server.
-  private static func makeClientRequest(payloadConfig: Grpc_Testing_PayloadConfig) throws
-    -> Grpc_Testing_SimpleRequest {
+  private static func makeClientRequest(
+    payloadConfig: Grpc_Testing_PayloadConfig
+  ) throws -> Grpc_Testing_SimpleRequest {
     if let payload = payloadConfig.payload {
       switch payload {
       case .bytebufParams:
@@ -168,6 +169,8 @@ final class AsyncQPSClientImpl<RequestMakerType: AsyncRequestMaker>: AsyncQPSCli
   }
 
   /// Class to manage a channel.  Repeatedly makes requests on that channel and records what happens.
+  /// /// Class is marked as `@unchecked Sendable` because `ManagedAtomic<Bool>` doesn't conform
+  /// to `Sendable`, but we know it's safe.
   private final class ChannelRepeater: @unchecked Sendable {
     private let channel: GRPCChannel
     private let eventLoop: EventLoop
@@ -214,12 +217,6 @@ final class AsyncQPSClientImpl<RequestMakerType: AsyncRequestMaker>: AsyncQPSCli
 
     /// Launch as many requests as allowed on the channel. Must only be called once.
     private func launchRequests() async throws {
-      // The plan here is:
-      // - store the max number of outstanding requests in an atomic
-      // - start that many requests asynchronously
-      // - when a request finishes it will either start a new request or decrement the
-      //   the atomic counter (if we've been told to stop)
-      // - if the counter drops to zero we're finished.
       let exchangedRunning = self.running.compareExchange(
         expected: false,
         desired: true,
@@ -234,6 +231,9 @@ final class AsyncQPSClientImpl<RequestMakerType: AsyncRequestMaker>: AsyncQPSCli
           }
         }
 
+        /// While `running` is true, we'll keep launching new requests to
+        /// maintain `maxPermittedOutstandingRequests` running
+        /// at any given time.
         for try await _ in group {
           if self.running.load(ordering: .relaxed) {
             group.addTask {

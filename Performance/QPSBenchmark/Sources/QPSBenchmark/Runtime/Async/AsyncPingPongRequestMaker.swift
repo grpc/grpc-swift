@@ -22,6 +22,8 @@ import NIOCore
 
 /// Makes streaming requests and listens to responses ping-pong style.
 /// Iterations can be limited by config.
+/// Class is marked as `@unchecked Sendable` because `ManagedAtomic<Bool>` doesn't conform
+/// to `Sendable`, but we know it's safe.
 final class AsyncPingPongRequestMaker: AsyncRequestMaker, @unchecked Sendable {
   private let client: Grpc_Testing_BenchmarkServiceAsyncClient
   private let requestMessage: Grpc_Testing_SimpleRequest
