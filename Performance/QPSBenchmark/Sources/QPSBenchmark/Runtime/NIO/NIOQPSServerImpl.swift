@@ -20,8 +20,8 @@ import Logging
 import NIOCore
 import NIOPosix
 
-/// Server setup for asynchronous requests.
-final class AsyncQPSServer: QPSServer {
+/// Server setup for asynchronous requests (using EventLoopFutures).
+final class NIOQPSServerImpl: NIOQPSServer {
   private let eventLoopGroup: MultiThreadedEventLoopGroup
   private let server: EventLoopFuture<Server>
   private let threadCount: Int
@@ -48,7 +48,7 @@ final class AsyncQPSServer: QPSServer {
     self.statsPeriodStart = grpcTimeNow()
     self.cpuStatsPeriodStart = getResourceUsage()
 
-    let workerService = AsyncQPSServerImpl()
+    let workerService = NIOBenchmarkServiceImpl()
 
     // Start the server.
     // TODO: Support TLS if requested.

@@ -25,16 +25,15 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../../"),
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.32.0"),
-    .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
-    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.41.0"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.4.3"),
+    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.1.1"),
     .package(url: "https://github.com/apple/swift-atomics.git", from: "1.0.2"),
     .package(
       url: "https://github.com/swift-server/swift-service-lifecycle.git",
       from: "1.0.0-alpha"
     ),
     .package(
-      name: "SwiftProtobuf",
       url: "https://github.com/apple/swift-protobuf.git",
       from: "1.19.0"
     ),
@@ -51,7 +50,7 @@ let package = Package(
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         .product(name: "Logging", package: "swift-log"),
         .product(name: "Lifecycle", package: "swift-service-lifecycle"),
-        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .product(name: "SwiftProtobuf", package: "swift-protobuf"),
         .target(name: "BenchmarkUtils"),
       ],
       exclude: [

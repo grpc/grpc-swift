@@ -21,7 +21,7 @@ import NIOCore
 
 /// Makes streaming requests and listens to responses ping-pong style.
 /// Iterations can be limited by config.
-final class AsyncPingPongRequestMaker: RequestMaker {
+final class NIOPingPongRequestMaker: NIORequestMaker {
   private let client: Grpc_Testing_BenchmarkServiceNIOClient
   private let requestMessage: Grpc_Testing_SimpleRequest
   private let logger: Logger

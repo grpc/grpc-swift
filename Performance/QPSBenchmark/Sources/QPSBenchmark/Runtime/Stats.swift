@@ -28,7 +28,8 @@ struct Stats {
 /// Stats with access controlled by a lock -
 /// Needs locking rather than event loop hopping as the driver refuses to wait shutting
 /// the connection immediately after the request.
-class StatsWithLock {
+/// Marked `@unchecked Sendable` since we control access to `data` via a Lock.
+final class StatsWithLock: @unchecked Sendable {
   private var data = Stats()
   private let lock = Lock()
 

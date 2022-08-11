@@ -26,11 +26,8 @@ final class QPSWorkerApp: ParsableCommand {
   @Option(name: .customLong("server_port"), help: "Port for operation as a server.")
   var serverPort: Int?
 
-  @Option(
-    name: .customLong("credential_type"),
-    help: "Credential type for communication with driver."
-  )
-  var credentialType: String = "todo" // TODO: Default to kInsecureCredentialsType
+  @Flag
+  var useAsync: Bool = false
 
   /// Run the application and wait for completion to be signalled.
   func run() throws {
@@ -47,11 +44,13 @@ final class QPSWorkerApp: ParsableCommand {
     // This installs backtrace.
     let lifecycle = ServiceLifecycle()
 
+    logger.info("Initializing QPSWorker - useAsync: \(self.useAsync)")
     let qpsWorker = QPSWorker(
       driverPort: self.driverPort,
-      serverPort: self.serverPort
+      serverPort: self.serverPort,
+      useAsync: self.useAsync
     )
-    // credentialType: self.credentialType)
+
     qpsWorker.start {
       lifecycle.shutdown()
     }

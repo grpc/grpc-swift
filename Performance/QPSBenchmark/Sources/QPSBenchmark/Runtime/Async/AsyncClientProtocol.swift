@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, gRPC Authors All rights reserved.
+ * Copyright 2022, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,20 @@
 import GRPC
 import NIOCore
 
-/// Interface server types must implement.
-protocol QPSServer {
+/// Protocol which async clients must implement.
+protocol AsyncQPSClient {
+  /// Start the execution of the client.
+  func startClient()
+
   /// Send the status of the current test
   /// - parameters:
   ///     - reset: Indicates if the stats collection should be reset after publication or not.
-  ///     - context: Context to describe where to send the status to.
-  func sendStatus(reset: Bool, context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>)
+  ///     - responseStream: the response stream to write the response to.
+  func sendStatus(
+    reset: Bool,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_ClientStatus>
+  ) async throws
 
-  /// Shutdown the service.
-  /// - parameters:
-  ///     - callbackLoop: Which eventloop should be called back on completion.
-  /// - returns: A future on the `callbackLoop` which will succeed on completion of shutdown.
-  func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void>
+  /// Shut down the client.
+  func shutdown() async throws
 }
