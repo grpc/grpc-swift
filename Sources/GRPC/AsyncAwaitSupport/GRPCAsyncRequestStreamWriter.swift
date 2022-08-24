@@ -46,7 +46,7 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   /// before sending another request. Callers who do not need this guarantee do not have to `await`
   /// the completion of this call and may send messages concurrently from multiple ``Task``s.
   /// However, it is important to note that no more than 16 writes may be pending at any one time
-  /// and attempting to exceed this will result in an ``GRPCAsyncWriterError.tooManyPendingWrites``
+  /// and attempting to exceed this will result in an ``GRPCAsyncWriterError/tooManyPendingWrites``
   /// error being thrown.
   ///
   /// Callers must call ``finish()`` when they have no more requests left to send.

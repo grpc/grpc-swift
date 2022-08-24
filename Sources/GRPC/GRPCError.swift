@@ -325,7 +325,7 @@ extension GRPCError {
   }
 }
 
-/// Requirements for `GRPCError` types.
+/// Requirements for ``GRPCError`` types.
 public protocol GRPCErrorProtocol: GRPCStatusTransformable, Equatable, CustomStringConvertible {}
 
 extension GRPCErrorProtocol {

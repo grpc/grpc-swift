@@ -166,7 +166,7 @@ extension GRPCClient {
 }
 
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
-/// See `GRPCClient` for details.
+/// See ``GRPCClient`` for details.
 ///
 /// Example:
 ///
@@ -194,7 +194,7 @@ public final class AnyServiceClient: GRPCClient {
   /// Creates a client which may be used to call any service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - connection: ``ClientConnection`` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
   public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
@@ -209,7 +209,7 @@ extension AnyServiceClient: @unchecked GRPCSendable {}
 #endif // swift(>=5.6)
 
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
-/// See `GRPCClient` for details.
+/// See ``GRPCClient`` for details.
 ///
 /// Example:
 ///
@@ -229,7 +229,7 @@ public struct GRPCAnyServiceClient: GRPCClient {
   /// Creates a client which may be used to call any service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - connection: ``ClientConnection`` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
   public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel

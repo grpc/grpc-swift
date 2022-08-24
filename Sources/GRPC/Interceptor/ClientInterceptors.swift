@@ -21,24 +21,24 @@ import NIOCore
 /// The default behaviour for this base class is to forward any events to the next interceptor.
 ///
 /// Interceptors may observe a number of different events:
-/// - receiving response parts with `receive(_:context:)`,
-/// - receiving errors with `errorCaught(_:context:)`,
-/// - sending request parts with `send(_:promise:context:)`, and
-/// - RPC cancellation with `cancel(context:)`.
+/// - receiving response parts with ``receive(_:context:)-5v1ih``,
+/// - receiving errors with ``errorCaught(_:context:)-6pncp``,
+/// - sending request parts with ``send(_:promise:context:)-4igtj``, and
+/// - RPC cancellation with ``cancel(promise:context:)-5tkf5``.
 ///
 /// These events flow through a pipeline of interceptors for each RPC. Request parts sent from the
-/// call object (e.g. `UnaryCall`, `BidirectionalStreamingCall`) will traverse the pipeline in the
-/// outbound direction from its tail via `send(_:context:)` eventually reaching the head of the
+/// call object (e.g. ``UnaryCall``, ``BidirectionalStreamingCall``) will traverse the pipeline in the
+/// outbound direction from its tail via ``send(_:promise:context:)-4igtj`` eventually reaching the head of the
 /// pipeline where it will be sent sent to the server.
 ///
 /// Response parts, or errors, received from the transport fill be fired in the inbound direction
-/// back through the interceptor pipeline via `receive(_:context:)` and `errorCaught(_:context:)`,
+/// back through the interceptor pipeline via ``receive(_:context:)-5v1ih`` and ``errorCaught(_:context:)-6pncp``,
 /// respectively. Note that the `end` response part and any error received are terminal: the
 /// pipeline will be torn down once these parts reach the the tail and are a signal that the
 /// interceptor should free up any resources it may be using.
 ///
 /// Each of the interceptor functions is provided with a `context` which exposes analogous functions
-/// (`receive(_:)`, `errorCaught(_:)`, `send(_:promise:)`, and `cancel(promise:)`) which may be
+/// (``receive(_:context:)-5v1ih``, ``errorCaught(_:context:)-6pncp``, ``send(_:promise:context:)-4igtj``, and ``cancel(promise:context:)-5tkf5``) which may be
 /// called to forward events to the next interceptor in the appropriate direction.
 ///
 /// ### Thread Safety

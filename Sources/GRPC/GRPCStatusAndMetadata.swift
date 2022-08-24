@@ -16,7 +16,7 @@
 import NIOHPACK
 import NIOHTTP1
 
-/// A simple struct holding a `GRPCStatus` and optionally trailers in the form of
+/// A simple struct holding a ``GRPCStatus`` and optionally trailers in the form of
 /// `HPACKHeaders`.
 public struct GRPCStatusAndTrailers: Equatable {
   /// The status.

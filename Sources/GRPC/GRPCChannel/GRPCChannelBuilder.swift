@@ -18,12 +18,12 @@ import Logging
 import NIOCore
 
 extension ClientConnection {
-  /// Returns an insecure `ClientConnection` builder which is *not configured with TLS*.
+  /// Returns an insecure ``ClientConnection`` builder which is *not configured with TLS*.
   public static func insecure(group: EventLoopGroup) -> ClientConnection.Builder {
     return Builder(group: group)
   }
 
-  /// Returns a `ClientConnection` builder configured with a TLS backend appropriate for the
+  /// Returns a ``ClientConnection`` builder configured with a TLS backend appropriate for the
   /// given `EventLoopGroup`.
   ///
   /// gRPC Swift offers two TLS 'backends'. The 'NIOSSL' backend is available on Darwin and Linux
@@ -50,7 +50,7 @@ extension ClientConnection {
     )
   }
 
-  /// Returns a `ClientConnection` builder configured with the TLS backend appropriate for the
+  /// Returns a ``ClientConnection`` builder configured with the TLS backend appropriate for the
   /// provided configuration and `EventLoopGroup`.
   ///
   /// - Important: The caller is responsible for ensuring the provided `configuration` may be used

@@ -309,13 +309,13 @@ extension Server {
     /// The compression configuration for requests and responses.
     ///
     /// If compression is enabled for the server it may be disabled for responses on any RPC by
-    /// setting `compressionEnabled` to `false` on the context of the call.
+    /// setting  `compressionEnabled` to `false` on the context of the call.
     ///
     /// Compression may also be disabled at the message-level for streaming responses (i.e. server
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
     /// in `sendResponse(_:compression)`.
     ///
-    /// Defaults to `.disabled`.
+    /// Defaults to ``ServerMessageEncoding/disabled``.
     public var messageEncoding: ServerMessageEncoding = .disabled
 
     /// The maximum size in bytes of a message which may be received from a client. Defaults to 4MB.

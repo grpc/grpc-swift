@@ -33,7 +33,7 @@ public enum ConnectivityState: GRPCSendable {
   case ready
 
   /// There has been some transient failure (such as a TCP 3-way handshake timing out or a socket
-  /// error). Channels in this state will eventually switch to the `.connecting` state and try to
+  /// error). Channels in this state will eventually switch to the ``connecting`` state and try to
   /// establish a connection again. Since retries are done with exponential backoff, channels that
   /// fail to connect will start out spending very little time in this state but as the attempts
   /// fail repeatedly, the channel will spend increasingly large amounts of time in this state.
@@ -48,7 +48,7 @@ public enum ConnectivityState: GRPCSendable {
 }
 
 public protocol ConnectivityStateDelegate: AnyObject, GRPCPreconcurrencySendable {
-  /// Called when a change in `ConnectivityState` has occurred.
+  /// Called when a change in ``ConnectivityState`` has occurred.
   ///
   /// - Parameter oldState: The old connectivity state.
   /// - Parameter newState: The new connectivity state.

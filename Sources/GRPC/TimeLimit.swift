@@ -24,10 +24,10 @@ import NIOCore
 ///
 /// RPCs may have a time limit imposed on them by a caller which may be timeout or deadline based.
 /// If the RPC has not completed before the limit is reached then the call will be cancelled and
-/// completed with a `.deadlineExceeded` status code.
+/// completed with a ``GRPCStatus/Code-swift.struct/deadlineExceeded`` status code.
 ///
 /// - Note: Servers may impose a time limit on an RPC independent of the client's time limit; RPCs
-///   may therefore complete with `.deadlineExceeded` even if no time limit was set by the client.
+///   may therefore complete with ``GRPCStatus/Code-swift.struct/deadlineExceeded`` even if no time limit was set by the client.
 public struct TimeLimit: Equatable, CustomStringConvertible, GRPCSendable {
   // private but for shimming.
   private enum Wrapped: Equatable, GRPCSendable {

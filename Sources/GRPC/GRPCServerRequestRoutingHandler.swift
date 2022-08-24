@@ -20,7 +20,7 @@ import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
 
-/// Provides `GRPCServerHandlerProtocol` objects for the methods on a particular service name.
+/// Provides ``GRPCServerHandlerProtocol`` objects for the methods on a particular service name.
 ///
 /// Implemented by the generated code.
 public protocol CallHandlerProvider: AnyObject {

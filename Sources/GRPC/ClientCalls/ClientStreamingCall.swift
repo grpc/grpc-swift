@@ -20,10 +20,10 @@ import NIOHTTP2
 
 /// A client-streaming gRPC call.
 ///
-/// Messages should be sent via the `sendMessage` and `sendMessages` methods; the stream of messages
-/// must be terminated by calling `sendEnd` to indicate the final message has been sent.
+/// Messages should be sent via the ``sendMessage(_:compression:)`` and ``sendMessages(_:compression:)`` methods; the stream of messages
+/// must be terminated by calling ``sendEnd()`` to indicate the final message has been sent.
 ///
-/// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
+/// Note: while this object is a `struct`, its implementation delegates to ``Call``. It therefore
 /// has reference semantics.
 public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall,
   UnaryResponseClientCall {
@@ -94,8 +94,8 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
 
   /// Sends a message to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or
-  ///   `sendEnd(promise:)`.
+  /// - Important: Callers must terminate the stream of messages by calling ``sendEnd()`` or
+  ///   ``sendEnd(promise:)``.
   ///
   /// - Parameters:
   ///   - message: The message to send.
@@ -113,8 +113,8 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
 
   /// Sends a sequence of messages to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or
-  ///   `sendEnd(promise:)`.
+  /// - Important: Callers must terminate the stream of messages by calling ``sendEnd()`` or
+  ///   ``sendEnd(promise:)``.
   ///
   /// - Parameters:
   ///   - messages: The sequence of messages to send.

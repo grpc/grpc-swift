@@ -19,7 +19,7 @@ import NIOCore
 import Security
 
 extension ClientConnection {
-  /// Returns a `ClientConnection` builder configured with the Network.framework TLS backend.
+  /// Returns a ``ClientConnection`` builder configured with the Network.framework TLS backend.
   ///
   /// This builder must use a `NIOTSEventLoopGroup` (or an `EventLoop` from a
   /// `NIOTSEventLoopGroup`).

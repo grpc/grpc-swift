@@ -19,9 +19,9 @@ import Logging
 /// Delegate called when errors are caught by the client on individual HTTP/2 streams and errors in
 /// the underlying HTTP/2 connection.
 ///
-/// The intended use of this protocol is with `ClientConnection`. In order to avoid retain
+/// The intended use of this protocol is with ``ClientConnection``. In order to avoid retain
 /// cycles, classes implementing this delegate **must not** maintain a strong reference to the
-/// `ClientConnection`.
+/// ``ClientConnection``.
 public protocol ClientErrorDelegate: AnyObject, GRPCPreconcurrencySendable {
   /// Called when the client catches an error.
   ///
@@ -34,14 +34,14 @@ public protocol ClientErrorDelegate: AnyObject, GRPCPreconcurrencySendable {
 }
 
 extension ClientErrorDelegate {
-  /// Calls `didCatchError(_:logger:file:line:)` with appropriate context placeholders when no
+  /// Calls ``didCatchError(_:logger:file:line:)`` with appropriate context placeholders when no
   /// context is available.
   internal func didCatchErrorWithoutContext(_ error: Error, logger: Logger) {
     self.didCatchError(error, logger: logger, file: "<unknown>", line: 0)
   }
 }
 
-/// A `ClientErrorDelegate` which logs errors.
+/// A ``ClientErrorDelegate`` which logs errors.
 public final class LoggingClientErrorDelegate: ClientErrorDelegate {
   /// A shared instance of this class.
   public static let shared = LoggingClientErrorDelegate()

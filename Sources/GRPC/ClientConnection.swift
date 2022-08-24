@@ -41,15 +41,15 @@ import SwiftProtobuf
 /// passed (5 minutes, by default) -- the underlying channel will be closed. The client will not
 /// idle the connection if any RPC exists, even if there has been no activity on the RPC for the
 /// idle timeout. Long-lived, low activity RPCs may benefit from configuring keepalive (see
-/// `ClientConnectionKeepalive`) which periodically pings the server to ensure that the connection
+/// ``ClientConnectionKeepalive``) which periodically pings the server to ensure that the connection
 /// is not dropped. If the connection is idle a new channel will be created on-demand when the next
 /// RPC is made.
 ///
-/// The state of the connection can be observed using a `ConnectivityStateDelegate`.
+/// The state of the connection can be observed using a ``ConnectivityStateDelegate``.
 ///
 /// Since the connection is managed, and may potentially spend long periods of time waiting for a
 /// connection to come up (cellular connections, for example), different behaviors may be used when
-/// starting a call. The different behaviors are detailed in the `CallStartBehavior` documentation.
+/// starting a call. The different behaviors are detailed in the ``CallStartBehavior`` documentation.
 ///
 /// ### Channel Pipeline
 ///
@@ -111,11 +111,11 @@ public final class ClientConnection: GRPCSendable {
   }
 
   /// Creates a new connection from the given configuration. Prefer using
-  /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
-  /// `ClientConnection.insecure(group:)` to build a plaintext connection.
+  /// ``ClientConnection/secure(group:)`` to build a connection secured with TLS or
+  /// ``ClientConnection/insecure(group:)`` to build a plaintext connection.
   ///
-  /// - Important: Users should prefer using `ClientConnection.secure(group:)` to build a connection
-  ///   with TLS, or `ClientConnection.insecure(group:)` to build a connection without TLS.
+  /// - Important: Users should prefer using ``ClientConnection/secure(group:)`` to build a connection
+  ///   with TLS, or ``ClientConnection/insecure(group:)`` to build a connection without TLS.
   public init(configuration: Configuration) {
     self.configuration = configuration
     self.scheme = configuration.tlsConfiguration == nil ? "http" : "https"
@@ -354,8 +354,8 @@ public struct CallStartBehavior: Hashable, GRPCSendable {
 }
 
 extension ClientConnection {
-  /// Configuration for a `ClientConnection`. Users should prefer using one of the
-  /// `ClientConnection` builders: `ClientConnection.secure(_:)` or `ClientConnection.insecure(_:)`.
+  /// Configuration for a ``ClientConnection``. Users should prefer using one of the
+  /// ``ClientConnection`` builders: ``ClientConnection/secure(group:)`` or ``ClientConnection/insecure(group:)``.
   public struct Configuration: GRPCSendable {
     /// The target to connect to.
     public var target: ConnectionTarget
@@ -365,7 +365,7 @@ extension ClientConnection {
 
     /// An error delegate which is called when errors are caught. Provided delegates **must not
     /// maintain a strong reference to this `ClientConnection`**. Doing so will cause a retain
-    /// cycle. Defaults to `LoggingClientErrorDelegate`.
+    /// cycle. Defaults to ``LoggingClientErrorDelegate``.
     public var errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate.shared
 
     /// A delegate which is called when the connectivity state is changed. Defaults to `nil`.
@@ -378,8 +378,8 @@ extension ClientConnection {
     #if canImport(NIOSSL)
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     ///
-    /// - Important: `tls` is deprecated; use `tlsConfiguration` or one of
-    ///   the `ClientConnection.withTLS` builder functions.
+    /// - Important: `tls` is deprecated; use ``tlsConfiguration`` or one of
+    ///   the ``ClientConnection/usingTLS(with:on:)`` builder functions.
     @available(*, deprecated, renamed: "tlsConfiguration")
     public var tls: TLS? {
       get {
@@ -412,7 +412,7 @@ extension ClientConnection {
     /// The behavior used to determine when an RPC should start. That is, whether it should wait for
     /// an active connection or fail quickly if no connection is currently available.
     ///
-    /// Defaults to `waitsForConnectivity`.
+    /// Defaults to ``CallStartBehavior/waitsForConnectivity``.
     public var callStartBehavior: CallStartBehavior = .waitsForConnectivity
 
     /// The HTTP/2 flow control target window size. Defaults to 8MB. Values are clamped between

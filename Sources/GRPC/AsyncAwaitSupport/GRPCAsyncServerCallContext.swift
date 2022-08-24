@@ -32,10 +32,10 @@ public struct GRPCAsyncServerCallContext: Sendable {
     Response(contextProvider: self.contextProvider)
   }
 
-  /// Access the `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
+  /// Access the ``UserInfo`` dictionary which is shared with the interceptor contexts for this RPC.
   ///
-  /// - Important: While `UserInfo` has value-semantics, this function accesses a reference
-  ///   wrapped `UserInfo`. The contexts passed to interceptors provide the same reference. As such
+  /// - Important: While ``UserInfo`` has value-semantics, this function accesses a reference
+  ///   wrapped ``UserInfo``. The contexts passed to interceptors provide the same reference. As such
   ///   this may be used as a mechanism to pass information between interceptors and service
   ///   providers.
   public func withUserInfo<Result: Sendable>(
@@ -44,10 +44,10 @@ public struct GRPCAsyncServerCallContext: Sendable {
     return try await self.contextProvider.withUserInfo(body)
   }
 
-  /// Modify the `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
+  /// Modify the ``UserInfo`` dictionary which is shared with the interceptor contexts for this RPC.
   ///
-  /// - Important: While `UserInfo` has value-semantics, this function accesses a reference
-  ///   wrapped `UserInfo`. The contexts passed to interceptors provide the same reference. As such
+  /// - Important: While ``UserInfo`` has value-semantics, this function accesses a reference
+  ///   wrapped ``UserInfo``. The contexts passed to interceptors provide the same reference. As such
   ///   this may be used as a mechanism to pass information between interceptors and service
   ///   providers.
   public func withMutableUserInfo<Result: Sendable>(

@@ -22,21 +22,21 @@ import protocol SwiftProtobuf.Message
 /// An object representing a single RPC from the perspective of a client. It allows the caller to
 /// send request parts, request a cancellation, and receive response parts in a provided callback.
 ///
-/// The call object sits atop an interceptor pipeline (see `ClientInterceptor`) which allows for
+/// The call object sits atop an interceptor pipeline (see ``ClientInterceptor``) which allows for
 /// request and response streams to be arbitrarily transformed or observed. Requests sent via this
 /// call will traverse the pipeline before reaching the network, and responses received will
 /// traverse the pipeline having been received from the network.
 ///
-/// This object is a lower-level API than the equivalent wrapped calls (such as `UnaryCall` and
-/// `BidirectionalStreamingCall`). The caller is therefore required to do more in order to use this
-/// object correctly. Callers must call `invoke(_:)` to start the call and ensure that the correct
+/// This object is a lower-level API than the equivalent wrapped calls (such as ``UnaryCall`` and
+/// ``BidirectionalStreamingCall``). The caller is therefore required to do more in order to use this
+/// object correctly. Callers must call ``invoke(onError:onResponsePart:)`` to start the call and ensure that the correct
 /// number of request parts are sent in the correct order (exactly one `metadata`, followed
 /// by at most one `message` for unary and server streaming calls, and any number of `message` parts
 /// for client streaming and bidirectional streaming calls. All call types must terminate their
 /// request stream by sending one `end` message.
 ///
-/// Callers are not able to create `Call` objects directly, rather they must be created via an
-/// object conforming to `GRPCChannel` such as `ClientConnection`.
+/// Callers are not able to create ``Call`` objects directly, rather they must be created via an
+/// object conforming to ``GRPCChannel`` such as ``ClientConnection``.
 public final class Call<Request, Response> {
   @usableFromInline
   internal enum State {
@@ -109,7 +109,7 @@ public final class Call<Request, Response> {
   /// Starts the call and provides a callback which is invoked on every response part received from
   /// the server.
   ///
-  /// This must be called prior to `send(_:promise:)` or `cancel(promise:)`.
+  /// This must be called prior to ``send(_:)`` or ``cancel()``.
   ///
   /// - Parameters:
   ///   - onError: A callback invoked when an error is received.
@@ -135,7 +135,7 @@ public final class Call<Request, Response> {
   /// - Parameters:
   ///   - part: The request part to send.
   ///   - promise: A promise which will be completed when the request part has been handled.
-  /// - Note: Sending will always fail if `invoke(_:)` has not been called.
+  /// - Note: Sending will always fail if ``invoke(onError:onResponsePart:)`` has not been called.
   @inlinable
   public func send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     if self.eventLoop.inEventLoop {
@@ -150,7 +150,7 @@ public final class Call<Request, Response> {
   /// Attempt to cancel the RPC.
   /// - Parameter promise: A promise which will be completed once the cancellation request has been
   ///   dealt with.
-  /// - Note: Cancellation will always fail if `invoke(_:)` has not been called.
+  /// - Note: Cancellation will always fail if ``invoke(onError:onResponsePart:)`` has not been called.
   public func cancel(promise: EventLoopPromise<Void>?) {
     if self.eventLoop.inEventLoop {
       self._cancel(promise: promise)
@@ -166,7 +166,7 @@ extension Call {
   /// Send a request part on the RPC.
   /// - Parameter part: The request part to send.
   /// - Returns: A future which will be resolved when the request has been handled.
-  /// - Note: Sending will always fail if `invoke(_:)` has not been called.
+  /// - Note: Sending will always fail if ``invoke(onError:onResponsePart:)`` has not been called.
   @inlinable
   public func send(_ part: GRPCClientRequestPart<Request>) -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
@@ -175,7 +175,7 @@ extension Call {
   }
 
   /// Attempt to cancel the RPC.
-  /// - Note: Cancellation will always fail if `invoke(_:)` has not been called.
+  /// - Note: Cancellation will always fail if ``invoke(onError:onResponsePart:)`` has not been called.
   /// - Returns: A future which will be resolved when the cancellation request has been cancelled.
   public func cancel() -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
