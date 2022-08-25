@@ -59,7 +59,7 @@ public struct CallOptions: GRPCSendable {
   /// The request ID is used for logging and will be added to the headers of a call if
   /// `requestIDHeader` is specified.
   ///
-  /// - Important: When setting  ``CallOptions`` at the client level,  ``RequestIDProvider-swift.struct/userDefined(_:)`` should __not__ be
+  /// - Important: When setting ``CallOptions`` at the client level, ``RequestIDProvider-swift.struct/userDefined(_:)`` should __not__ be
   /// used otherwise each request will have the same ID.
   public var requestIDProvider: RequestIDProvider
 

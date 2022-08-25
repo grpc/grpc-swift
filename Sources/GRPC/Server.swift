@@ -309,7 +309,7 @@ extension Server {
     /// The compression configuration for requests and responses.
     ///
     /// If compression is enabled for the server it may be disabled for responses on any RPC by
-    /// setting  `compressionEnabled` to `false` on the context of the call.
+    /// setting `compressionEnabled` to `false` on the context of the call.
     ///
     /// Compression may also be disabled at the message-level for streaming responses (i.e. server
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
