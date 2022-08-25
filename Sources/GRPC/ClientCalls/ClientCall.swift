@@ -43,7 +43,7 @@ public protocol ClientCall {
   ///
   /// The client may populate the status if, for example, it was not possible to connect to the service.
   ///
-  /// Note: despite `GRPCStatus` conforming to `Error`, the value will be __always__ delivered as a __success__
+  /// Note: despite ``GRPCStatus`` conforming to `Error`, the value will be __always__ delivered as a __success__
   /// result even if the status represents a __negative__ outcome. This future will __never__ be fulfilled
   /// with an error.
   var status: EventLoopFuture<GRPCStatus> { get }
@@ -54,7 +54,7 @@ public protocol ClientCall {
   /// Cancel the current call.
   ///
   /// Closes the HTTP/2 stream once it becomes available. Additional writes to the channel will be ignored.
-  /// Any unfulfilled promises will be failed with a cancelled status (excepting `status` which will be
+  /// Any unfulfilled promises will be failed with a cancelled status (excepting ``status`` which will be
   /// succeeded, if not already succeeded).
   func cancel(promise: EventLoopPromise<Void>?)
 }
@@ -67,11 +67,12 @@ extension ClientCall {
   }
 }
 
-/// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
+/// A ``ClientCall`` with request streaming; i.e. client-streaming and bidirectional-streaming.
 public protocol StreamingRequestClientCall: ClientCall {
   /// Sends a message to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  /// - Important: Callers must terminate the stream of messages by calling <doc:/documentation/GRPC/StreamingRequestClientCall/sendEnd()-7zuxl>
+  /// or ``sendEnd(promise:)``.
   ///
   /// - Parameters:
   ///   - message: The message to send.
@@ -82,7 +83,7 @@ public protocol StreamingRequestClientCall: ClientCall {
 
   /// Sends a message to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  /// - Important: Callers must terminate the stream of messages by calling ``sendEnd()-7bhdp`` or ``sendEnd(promise:)``.
   ///
   /// - Parameters:
   ///   - message: The message to send.
@@ -97,7 +98,8 @@ public protocol StreamingRequestClientCall: ClientCall {
 
   /// Sends a sequence of messages to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  /// - Important: Callers must terminate the stream of messages by calling <doc:/documentation/GRPC/StreamingRequestClientCall/sendEnd()-7bhdp>
+  /// or ``sendEnd(promise:)``.
   ///
   /// - Parameters:
   ///   - messages: The sequence of messages to send.
@@ -108,7 +110,7 @@ public protocol StreamingRequestClientCall: ClientCall {
 
   /// Sends a sequence of messages to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  /// - Important: Callers must terminate the stream of messages by calling ``sendEnd()-7bhdp`` or ``sendEnd(promise:)``.
   ///
   /// - Parameters:
   ///   - messages: The sequence of messages to send.
@@ -161,7 +163,7 @@ extension StreamingRequestClientCall {
   }
 }
 
-/// A `ClientCall` with a unary response; i.e. unary and client-streaming.
+/// A ``ClientCall`` with a unary response; i.e. unary and client-streaming.
 public protocol UnaryResponseClientCall: ClientCall {
   /// The response message returned from the service if the call is successful. This may be failed
   /// if the call encounters an error.

@@ -19,7 +19,7 @@ import NIOHPACK
 
 /// A unary gRPC call. The request is sent on initialization.
 ///
-/// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
+/// Note: while this object is a `struct`, its implementation delegates to ``Call``. It therefore
 /// has reference semantics.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncUnaryCall<Request: Sendable, Response: Sendable>: Sendable {

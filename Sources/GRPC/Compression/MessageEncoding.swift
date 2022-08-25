@@ -37,7 +37,7 @@ public struct Compression: Hashable, GRPCSendable {
   /// Disable compression.
   public static let disabled = Compression(.disabled)
 
-  /// Defer to the call (the `CallOptions` for the client, and the context for the server) to
+  /// Defer to the call (the ``CallOptions`` for the client, and the context for the server) to
   /// determine whether compression should be used for the message.
   public static let deferToCallDefault = Compression(.deferToCallDefault)
 }

@@ -21,18 +21,18 @@ public protocol GRPCChannel: GRPCPreconcurrencySendable {
   /// Makes a gRPC call on the channel with requests and responses conforming to
   /// `SwiftProtobuf.Message`.
   ///
-  /// Note: this is a lower-level construct that any of `UnaryCall`, `ClientStreamingCall`,
-  /// `ServerStreamingCall` or `BidirectionalStreamingCall` and does not have an API to protect
+  /// Note: this is a lower-level construct that any of ``UnaryCall``, ``ClientStreamingCall``,
+  /// ``ServerStreamingCall`` or ``BidirectionalStreamingCall`` and does not have an API to protect
   /// users against protocol violations (such as sending to requests on a unary call).
   ///
-  /// After making the `Call`, users must `invoke` the call with a callback which is invoked
-  /// for each response part (or error) received. Any call to `send(_:promise:)` prior to calling
-  /// `invoke` will fail and not be sent. Users are also responsible for closing the request stream
+  /// After making the ``Call``, users must ``Call/invoke(onError:onResponsePart:)`` the call with a callback which is invoked
+  /// for each response part (or error) received. Any call to ``Call/send(_:)`` prior to calling
+  /// ``Call/invoke(onError:onResponsePart:)`` will fail and not be sent. Users are also responsible for closing the request stream
   /// by sending the `.end` request part.
   ///
   /// - Parameters:
   ///   - path: The path of the RPC, e.g. "/echo.Echo/get".
-  ///   - type: The type of the RPC, e.g. `.unary`.
+  ///   - type: The type of the RPC, e.g. ``GRPCCallType/unary``.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
   func makeCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
@@ -42,20 +42,20 @@ public protocol GRPCChannel: GRPCPreconcurrencySendable {
     interceptors: [ClientInterceptor<Request, Response>]
   ) -> Call<Request, Response>
 
-  /// Makes a gRPC call on the channel with requests and responses conforming to `GRPCPayload`.
+  /// Makes a gRPC call on the channel with requests and responses conforming to ``GRPCPayload``.
   ///
-  /// Note: this is a lower-level construct that any of `UnaryCall`, `ClientStreamingCall`,
-  /// `ServerStreamingCall` or `BidirectionalStreamingCall` and does not have an API to protect
+  /// Note: this is a lower-level construct that any of ``UnaryCall``, ``ClientStreamingCall``,
+  /// ``ServerStreamingCall`` or ``BidirectionalStreamingCall`` and does not have an API to protect
   /// users against protocol violations (such as sending to requests on a unary call).
   ///
-  /// After making the `Call`, users must `invoke` the call with a callback which is invoked
-  /// for each response part (or error) received. Any call to `send(_:promise:)` prior to calling
-  /// `invoke` will fail and not be sent. Users are also responsible for closing the request stream
+  /// After making the ``Call``, users must ``Call/invoke(onError:onResponsePart:)`` the call with a callback which is invoked
+  /// for each response part (or error) received. Any call to ``Call/send(_:)`` prior to calling
+  /// ``Call/invoke(onError:onResponsePart:)`` will fail and not be sent. Users are also responsible for closing the request stream
   /// by sending the `.end` request part.
   ///
   /// - Parameters:
   ///   - path: The path of the RPC, e.g. "/echo.Echo/get".
-  ///   - type: The type of the RPC, e.g. `.unary`.
+  ///   - type: The type of the RPC, e.g. ``GRPCCallType/unary``.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
   func makeCall<Request: GRPCPayload, Response: GRPCPayload>(

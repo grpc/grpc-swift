@@ -22,8 +22,8 @@ import NIOCore
 /// interceptor.
 ///
 /// Interceptors may observe two different types of event:
-/// - receiving request parts with `receive(_:context:)`,
-/// - sending response parts with `send(_:promise:context:)`.
+/// - receiving request parts with ``receive(_:context:)``,
+/// - sending response parts with ``send(_:promise:context:)``.
 ///
 /// These events flow through a pipeline of interceptors for each RPC. Request parts will enter
 /// the head of the interceptor pipeline once the request router has determined that there is a
@@ -32,7 +32,7 @@ import NIOCore
 /// traversing the pipeline through to the head.
 ///
 /// Each of the interceptor functions is provided with a `context` which exposes analogous functions
-/// (`receive(_:)` and `send(_:promise:)`) which may be called to forward events to the next
+/// (``receive(_:context:)`` and ``send(_:promise:context:)``) which may be called to forward events to the next
 /// interceptor.
 ///
 /// ### Thread Safety

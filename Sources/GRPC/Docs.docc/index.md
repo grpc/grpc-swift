@@ -1,10 +1,8 @@
-[![CI](https://img.shields.io/github/workflow/status/grpc/grpc-swift/CI?event=push)](https://github.com/grpc/grpc-swift/actions/workflows/ci.yaml)
-[![Latest Version](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)
-[![sswg:graduated|104x20](https://img.shields.io/badge/sswg-graduated-green.svg)](https://github.com/swift-server/sswg/blob/main/process/incubation.md#graduated-level)
+# ``GRPC``
 
-# gRPC Swift
+gRPC for Swift.
 
-This repository contains a gRPC Swift API and code generator.
+grpc-swift is a Swift package that contains a gRPC Swift API and code generator.
 
 It is intended for use with Apple's [SwiftProtobuf][swift-protobuf] support for
 Protocol Buffers. Both projects contain code generation plugins for `protoc`,
@@ -16,19 +14,6 @@ be built either with Xcode or the Swift Package Manager. Support is provided for
 all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
 Bidirectional Streaming) and connections can be made either over secure (TLS) or
 insecure channels.
-
-## Versions
-
-gRPC Swift has recently been rewritten on top of [SwiftNIO][swift-nio] as
-opposed to the core library provided by the [gRPC project][grpc].
-
-Version | Implementation | Branch                 | `protoc` Plugin         | Support
---------|----------------|------------------------|-------------------------|-----------------------------------------
-1.x     | SwiftNIO       | [`main`][branch-new]   | `protoc-gen-grpc-swift` | Actively developed and supported
-0.x     | gRPC C library | [`cgrpc`][branch-old]  | `protoc-gen-swiftgrpc`  | No longer developed; security fixes only
-
-The remainder of this README refers to the 1.x version of gRPC Swift.
-
 
 ## Supported Platforms
 
@@ -46,8 +31,6 @@ are available from gRPC Swift 1.8.0 and require Swift 5.6 and newer.
 There are two parts to gRPC Swift: the gRPC library and an API code generator.
 
 ### Getting the gRPC library
-
-#### Swift Package Manager
 
 The Swift Package Manager is the preferred way to get gRPC Swift. Simply add the
 package dependency to your `Package.swift`:
@@ -67,21 +50,7 @@ dependencies: [
 ]
 ```
 
-##### Xcode
-
-From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
-projects][xcode-spm] and link targets to products of those packages; this is the
-easiest way to integrate gRPC Swift with an existing `xcodeproj`.
-
-##### Manual Integration
-
-Alternatively, gRPC Swift can be manually integrated into a project:
-
-1. Build an Xcode project: `swift package generate-xcodeproj`,
-1. Add the generated project to your own project, and
-1. Add a build dependency on `GRPC`.
-
-### Getting the `protoc` Plugins
+### Getting the protoc Plugins
 
 Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
 [GitHub][protobuf-releases].
@@ -124,9 +93,7 @@ Some of the examples are accompanied by tutorials, including:
 - An [interceptors][docs-interceptors-tutorial] tutorial covering how to create
   and use interceptors with gRPC Swift.
 
-## Documentation
-
-The `docs` directory contains documentation, including:
+## Additional documentation
 
 - Options for the `protoc` plugin in [`docs/plugin.md`][docs-plugin]
 - How to configure TLS in [`docs/tls.md`][docs-tls]
@@ -134,26 +101,13 @@ The `docs` directory contains documentation, including:
 - Support for Apple Platforms and NIO Transport Services in
   [`docs/apple-platforms.md`][docs-apple]
 
-## Security
-
-Please see [SECURITY.md](SECURITY.md).
-
-## License
-
-gRPC Swift is released under the same license as [gRPC][grpc], repeated in
-[LICENSE](LICENSE).
-
-## Contributing
-
-Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
-
-[docs-apple]: ./docs/apple-platforms.md
-[docs-plugin]: ./docs/plugin.md
-[docs-quickstart]: ./docs/quick-start.md
-[docs-tls]: ./docs/tls.md
-[docs-keepalive]: ./docs/keepalive.md
-[docs-tutorial]: ./docs/basic-tutorial.md
-[docs-interceptors-tutorial]: ./docs/interceptors-tutorial.md
+[docs-apple]: https://github.com/grpc/grpc-swift/tree/main/docs/apple-platforms.md
+[docs-plugin]: https://github.com/grpc/grpc-swift/tree/main/docs/plugin.md
+[docs-quickstart]: https://github.com/grpc/grpc-swift/tree/main/docs/quick-start.md
+[docs-tls]: https://github.com/grpc/grpc-swift/tree/main/docs/tls.md
+[docs-keepalive]: https://github.com/grpc/grpc-swift/tree/main/docs/keepalive.md
+[docs-tutorial]: https://github.com/grpc/grpc-swift/tree/main/docs/basic-tutorial.md
+[docs-interceptors-tutorial]: https://github.com/grpc/grpc-swift/tree/main/docs/interceptors-tutorial.md
 [grpc]: https://github.com/grpc/grpc
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [swift-nio-platforms]: https://github.com/apple/swift-nio#supported-platforms

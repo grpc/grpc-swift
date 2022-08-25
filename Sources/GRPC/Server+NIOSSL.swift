@@ -17,7 +17,7 @@
 import NIOSSL
 
 extension Server.Configuration {
-  /// TLS configuration for a `Server`.
+  /// TLS configuration for a ``Server``.
   ///
   /// Note that this configuration is a subset of `NIOSSL.TLSConfiguration` where certain options
   /// are removed from the users control to ensure the configuration complies with the gRPC

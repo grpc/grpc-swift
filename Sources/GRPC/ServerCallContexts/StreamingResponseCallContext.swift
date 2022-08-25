@@ -23,7 +23,7 @@ import SwiftProtobuf
 /// An abstract base class for a context provided to handlers for RPCs which may return multiple
 /// responses, i.e. server streaming and bidirectional streaming RPCs.
 open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase {
-  /// A promise for the `GRPCStatus`, the end of the response stream. This must be completed by
+  /// A promise for the ``GRPCStatus``, the end of the response stream. This must be completed by
   /// bidirectional streaming RPC handlers to end the RPC.
   ///
   /// Note that while this is also present for server streaming RPCs, it is not necessary to

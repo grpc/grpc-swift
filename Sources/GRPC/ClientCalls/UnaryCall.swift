@@ -23,7 +23,7 @@ import SwiftProtobuf
 
 /// A unary gRPC call. The request is sent on initialization.
 ///
-/// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
+/// Note: while this object is a `struct`, its implementation delegates to ``Call``. It therefore
 /// has reference semantics.
 public struct UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCall {
   private let call: Call<RequestPayload, ResponsePayload>

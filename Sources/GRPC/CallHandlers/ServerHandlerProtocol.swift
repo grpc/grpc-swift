@@ -20,7 +20,7 @@ import NIOHPACK
 /// On receiving a new RPC, gRPC will ask all available service providers for an instance of this
 /// protocol in order to handle the RPC.
 ///
-/// See also: `CallHandlerProvider.handle(method:context:)`
+/// See also: ``CallHandlerProvider/handle(method:context:)``.
 public protocol GRPCServerHandlerProtocol {
   /// Called when request headers have been received at the start of an RPC.
   /// - Parameter metadata: The request headers.

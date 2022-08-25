@@ -25,11 +25,11 @@ import SwiftProtobuf
 ///
 /// For client streaming RPCs the handler must complete the `responsePromise` to return the response
 /// to the client. Unary RPCs do complete the promise directly: they are provided an
-/// `StatusOnlyCallContext` view of this context where the `responsePromise` is not exposed. Instead
+/// ``StatusOnlyCallContext`` view of this context where the `responsePromise` is not exposed. Instead
 /// they must return an `EventLoopFuture<Response>` from the method they are implementing.
 open class UnaryResponseCallContext<Response>: ServerCallContextBase, StatusOnlyCallContext {
   /// A promise for a single response message. This must be completed to send a response back to the
-  /// client. If the promise is failed, the failure value will be converted to `GRPCStatus` and
+  /// client. If the promise is failed, the failure value will be converted to ``GRPCStatus`` and
   /// used as the final status for the RPC.
   public let responsePromise: EventLoopPromise<Response>
 
@@ -102,7 +102,7 @@ open class UnaryResponseCallContext<Response>: ServerCallContextBase, StatusOnly
   }
 }
 
-/// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` and `trailingMetadata`
+/// Protocol variant of ``UnaryResponseCallContext`` that only exposes the ``responseStatus`` and ``trailers``
 /// fields, but not `responsePromise`.
 ///
 /// We can use a protocol (instead of an abstract base class) here because removing the generic

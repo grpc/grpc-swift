@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-/// `UserInfo` is a dictionary for heterogeneously typed values with type safe access to the stored
+/// ``UserInfo`` is a dictionary for heterogeneously typed values with type safe access to the stored
 /// values.
 ///
-/// `UserInfo` is shared between server interceptor contexts and server handlers, this is on a
-/// per-RPC basis. `UserInfo` is *not* shared across a connection.
+/// ``UserInfo`` is shared between server interceptor contexts and server handlers, this is on a
+/// per-RPC basis. ``UserInfo`` is *not* shared across a connection.
 ///
-/// Values are keyed by a type conforming to the `UserInfo.Key` protocol. The protocol requires an
+/// Values are keyed by a type conforming to the ``UserInfo/Key`` protocol. The protocol requires an
 /// `associatedtype`: the type of the value the key is paired with. A key can be created using a
 /// caseless `enum`, for example:
 ///
@@ -30,7 +30,7 @@
 /// }
 /// ```
 ///
-/// Values can be set and retrieved from `UserInfo` by subscripting with the key:
+/// Values can be set and retrieved from ``UserInfo`` by subscripting with the key:
 ///
 /// ```
 /// userInfo[IDKey.self] = 42
@@ -39,7 +39,7 @@
 /// userInfo[IDKey.self] = nil
 /// ```
 ///
-/// More convenient access can be provided with helper extensions on `UserInfo`:
+/// More convenient access can be provided with helper extensions on ``UserInfo``:
 ///
 /// ```
 /// extension UserInfo {

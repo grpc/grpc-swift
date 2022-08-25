@@ -29,7 +29,7 @@ public struct ClientConnectionKeepalive: Hashable, GRPCSendable {
 
   /// The amount of time to wait for an acknowledgment.
   /// If it does not receive an acknowledgment within this time, it will close the connection
-  /// This value must be less than `interval`
+  /// This value must be less than ``interval``.
   public var timeout: TimeAmount
 
   /// Send keepalive pings even if there are no calls in flight.
@@ -64,7 +64,7 @@ public struct ServerConnectionKeepalive: Hashable {
 
   /// The amount of time to wait for an acknowledgment.
   /// If it does not receive an acknowledgment within this time, it will close the connection
-  /// This value must be less than `interval`
+  /// This value must be less than ``interval``.
   public var timeout: TimeAmount
 
   /// Send keepalive pings even if there are no calls in flight.

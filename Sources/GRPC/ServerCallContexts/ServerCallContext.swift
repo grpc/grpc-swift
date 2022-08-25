@@ -90,8 +90,8 @@ open class ServerCallContextBase: ServerCallContext {
 
   /// A `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
   ///
-  /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a
-  ///   reference wrapped `UserInfo`. The contexts passed to interceptors provide the same
+  /// - Important: While ``UserInfo`` has value-semantics, this property retrieves from, and sets a
+  ///   reference wrapped ``UserInfo``. The contexts passed to interceptors provide the same
   ///   reference. As such this may be used as a mechanism to pass information between interceptors
   ///   and service providers.
   /// - Important: This  *must* be accessed from the context's `eventLoop` in order to ensure
@@ -107,7 +107,7 @@ open class ServerCallContextBase: ServerCallContext {
     }
   }
 
-  /// A reference to an underlying `UserInfo`. We share this with the interceptors.
+  /// A reference to an underlying ``UserInfo``. We share this with the interceptors.
   @usableFromInline
   internal let userInfoRef: Ref<UserInfo>
 

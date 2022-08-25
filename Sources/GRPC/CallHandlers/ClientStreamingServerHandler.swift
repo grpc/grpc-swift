@@ -43,7 +43,7 @@ public final class ClientStreamingServerHandler<
   @usableFromInline
   internal let context: CallHandlerContext
 
-  /// A reference to a `UserInfo`.
+  /// A reference to a ``UserInfo``.
   @usableFromInline
   internal let userInfoRef: Ref<UserInfo>
 

@@ -66,7 +66,7 @@ public struct ConnectionBackoff: Sequence, GRPCSendable {
     }
   }
 
-  /// Creates a `ConnectionBackoff`.
+  /// Creates a ``ConnectionBackoff``.
   ///
   /// - Parameters:
   ///   - initialBackoff: Initial backoff in seconds, defaults to 1.0.
@@ -97,7 +97,7 @@ public struct ConnectionBackoff: Sequence, GRPCSendable {
   }
 }
 
-/// An iterator for `ConnectionBackoff`.
+/// An iterator for ``ConnectionBackoff``.
 public class ConnectionBackoffIterator: IteratorProtocol {
   public typealias Element = (timeout: TimeInterval, backoff: TimeInterval)
 

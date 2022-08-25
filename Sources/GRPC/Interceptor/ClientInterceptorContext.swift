@@ -54,7 +54,7 @@ public struct ClientInterceptorContext<Request, Response> {
     return self._pipeline.details.options
   }
 
-  /// Construct a `ClientInterceptorContext` for the interceptor at the given index within in
+  /// Construct a ``ClientInterceptorContext`` for the interceptor at the given index within in
   /// interceptor pipeline.
   @inlinable
   internal init(

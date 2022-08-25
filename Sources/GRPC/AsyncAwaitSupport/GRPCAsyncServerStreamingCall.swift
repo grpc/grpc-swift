@@ -17,7 +17,7 @@
 
 import NIOHPACK
 
-/// Async-await variant of `ServerStreamingCall`.
+/// Async-await variant of ``ServerStreamingCall``.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable> {
   private let call: Call<Request, Response>

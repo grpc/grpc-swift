@@ -315,7 +315,7 @@ extension Server {
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
     /// in `sendResponse(_:compression)`.
     ///
-    /// Defaults to `.disabled`.
+    /// Defaults to ``ServerMessageEncoding/disabled``.
     public var messageEncoding: ServerMessageEncoding = .disabled
 
     /// The maximum size in bytes of a message which may be received from a client. Defaults to 4MB.
