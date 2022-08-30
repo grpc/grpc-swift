@@ -18,8 +18,8 @@ import Foundation
 import PackagePlugin
 
 @main
-struct SwiftGRPCPlugin: BuildToolPlugin {
-  /// Errors thrown by the `SwiftGRPCPlugin`
+struct GRPCSwiftPlugin: BuildToolPlugin {
+  /// Errors thrown by the `GRPCSwiftPlugin`
   enum PluginError: Error {
     /// Indicates that the target where the plugin was applied to was not `SourceModuleTarget`.
     case invalidTarget
@@ -47,8 +47,6 @@ struct SwiftGRPCPlugin: BuildToolPlugin {
       var server: Bool?
       /// Whether client code is generated.
       var client: Bool?
-      /// Whether test client code is generated.
-      var testClient: Bool?
       /// Determines whether the casing of generated function names is kept.
       var keepMethodCasing: Bool?
     }
@@ -58,11 +56,11 @@ struct SwiftGRPCPlugin: BuildToolPlugin {
     /// If this is not set, SPM will try to find the tool itself.
     var protocPath: String?
 
-    /// A list of invocations of `protoc` with the `SwiftGRPCPlugin`.
+    /// A list of invocations of `protoc` with the `GRPCSwiftPlugin`.
     var invocations: [Invocation]
   }
 
-  static let configurationFileName = "swift-grpc-config.json"
+  static let configurationFileName = "grpc-swift-config.json"
 
   func createBuildCommands(context: PluginContext, target: Target) throws -> [Command] {
     // Let's check that this is a source target
@@ -77,11 +75,15 @@ struct SwiftGRPCPlugin: BuildToolPlugin {
 
     try self.validateConfiguration(configuration)
 
-    // We need to find the path of protoc and protoc-gen-swift
+    // We need to find the path of protoc and protoc-gen-grpc-swift
     let protocPath: Path
     if let configuredProtocPath = configuration.protocPath {
       protocPath = Path(configuredProtocPath)
+    } else if let environmentPath = ProcessInfo.processInfo.environment["PROTOC_PATH"] {
+      // The user set the env variable, so let's take that
+      protocPath = Path(environmentPath)
     } else {
+      // The user didn't set anything so let's try see if SPM can find a binary for us
       protocPath = try context.tool(named: "protoc").path
     }
     let protocGenGRPCSwiftPath = try context.tool(named: "protoc-gen-grpc-swift").path
@@ -137,10 +139,6 @@ struct SwiftGRPCPlugin: BuildToolPlugin {
       protocArgs.append("--grpc-swift_opt=Client=\(generateClientCode)")
     }
 
-    if let generateTestClientCode = invocation.testClient {
-      protocArgs.append("--grpc-swift_opt=TestClient=\(generateTestClientCode)")
-    }
-
     if let keepMethodCasingOption = invocation.keepMethodCasing {
       protocArgs.append("--grpc-swift_opt=KeepMethodCasing=\(keepMethodCasingOption)")
     }
@@ -168,7 +166,7 @@ struct SwiftGRPCPlugin: BuildToolPlugin {
     // system know when to invoke the command. The output paths are passed on to
     // the rule engine in the build system.
     return Command.buildCommand(
-      displayName: "Generating GRPC swift files from proto files",
+      displayName: "Generating gRPC Swift files from proto files",
       executable: protocPath,
       arguments: protocArgs,
       inputFiles: inputFiles + [protocGenGRPCSwiftPath],
