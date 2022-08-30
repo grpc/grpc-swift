@@ -48,7 +48,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-protobuf.git",
-    from: "1.19.0"
+    from: "1.20.0"
   ),
   .package(
     url: "https://github.com/apple/swift-log.git",
@@ -78,7 +78,6 @@ extension Target.Dependency {
   // Target dependencies; external
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
-  static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
 
   // Target dependencies; internal
   static let grpcSampleData: Self = .target(name: "GRPCSampleData")
@@ -89,6 +88,7 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
+  static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
 
   // Product dependencies
   static let argumentParser: Self = .product(
@@ -162,6 +162,14 @@ extension Target {
     ],
     exclude: [
       "README.md",
+    ]
+  )
+
+  static let swiftGRPCPlugin: Target = .plugin(
+    name: "SwiftGRPCPlugin",
+    capability: .buildTool(),
+    dependencies: [
+      .protocGenGRPCSwift,
     ]
   )
 
@@ -423,6 +431,11 @@ extension Product {
     name: "protoc-gen-grpc-swift",
     targets: ["protoc-gen-grpc-swift"]
   )
+
+  static let swiftGRPCPlugin: Product = .plugin(
+    name: "SwiftGRPCPlugin",
+    targets: ["SwiftGRPCPlugin"]
+  )
 }
 
 // MARK: - Package
@@ -433,6 +446,7 @@ let package = Package(
     .grpc,
     .cgrpcZlib,
     .protocGenGRPCSwift,
+    .swiftGRPCPlugin,
   ],
   dependencies: packageDependencies,
   targets: [
@@ -440,6 +454,7 @@ let package = Package(
     .grpc,
     .cgrpcZlib,
     .protocGenGRPCSwift,
+    .swiftGRPCPlugin,
 
     // Tests etc.
     .grpcTests,
