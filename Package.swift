@@ -48,7 +48,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-protobuf.git",
-    from: "1.19.0"
+    from: "1.20.1"
   ),
   .package(
     url: "https://github.com/apple/swift-log.git",
@@ -162,6 +162,14 @@ extension Target {
     ],
     exclude: [
       "README.md",
+    ]
+  )
+
+  static let grpcSwiftPlugin: Target = .plugin(
+    name: "GRPCSwiftPlugin",
+    capability: .buildTool(),
+    dependencies: [
+      .protocGenGRPCSwift,
     ]
   )
 
@@ -423,6 +431,11 @@ extension Product {
     name: "protoc-gen-grpc-swift",
     targets: ["protoc-gen-grpc-swift"]
   )
+
+  static let grpcSwiftPlugin: Product = .plugin(
+    name: "GRPCSwiftPlugin",
+    targets: ["GRPCSwiftPlugin"]
+  )
 }
 
 // MARK: - Package
@@ -433,6 +446,7 @@ let package = Package(
     .grpc,
     .cgrpcZlib,
     .protocGenGRPCSwift,
+    .grpcSwiftPlugin,
   ],
   dependencies: packageDependencies,
   targets: [
@@ -440,6 +454,7 @@ let package = Package(
     .grpc,
     .cgrpcZlib,
     .protocGenGRPCSwift,
+    .grpcSwiftPlugin,
 
     // Tests etc.
     .grpcTests,
