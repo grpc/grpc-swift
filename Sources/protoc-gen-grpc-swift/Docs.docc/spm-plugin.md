@@ -105,7 +105,7 @@ compiler by changing the configuration file like this:
 
 ```json
 {
-    "protoCPath": "/path/to/protoc",
+    "protocPath": "/path/to/protoc",
     "invocations": [...]
 }
 ```
