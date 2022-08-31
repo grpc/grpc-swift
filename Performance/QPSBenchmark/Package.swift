@@ -35,7 +35,7 @@ let package = Package(
     ),
     .package(
       url: "https://github.com/apple/swift-protobuf.git",
-      from: "1.19.0"
+      from: "1.20.1"
     ),
   ],
   targets: [
@@ -53,14 +53,9 @@ let package = Package(
         .product(name: "SwiftProtobuf", package: "swift-protobuf"),
         .target(name: "BenchmarkUtils"),
       ],
-      exclude: [
-        "Model/benchmark_service.proto",
-        "Model/control.proto",
-        "Model/core_stats.proto",
-        "Model/messages.proto",
-        "Model/payloads.proto",
-        "Model/stats.proto",
-        "Model/worker_service.proto",
+      plugins: [
+        .plugin(name: "SwiftProtobufPlugin", package: "swift-protobuf"),
+        .plugin(name: "GRPCSwiftPlugin", package: "grpc-swift"),
       ]
     ),
     .target(

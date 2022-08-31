@@ -5,8 +5,6 @@ An implementation of the QPS worker for benchmarking described in the
 
 ## Building
 
-To rebuild the proto files run `make generate-qps-worker`.
-
 The benchmarks can be built in the usual Swift Package Manager way but release
 mode is strongly recommended: `swift build -c release`
 

@@ -1,0 +1,14 @@
+{
+  "invocations": [
+    {
+      "protoFiles": [
+        "Model/messages.proto",
+        "Model/control.proto",
+        "Model/core_stats.proto",
+        "Model/payloads.proto",
+        "Model/stats.proto"
+      ],
+      "visibility": "public"
+    }
+  ]
+}
