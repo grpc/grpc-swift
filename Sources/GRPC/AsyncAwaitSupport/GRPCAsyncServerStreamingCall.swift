@@ -15,6 +15,7 @@
  */
 #if compiler(>=5.6)
 
+import NIOCore
 import NIOHPACK
 
 /// Async-await variant of ``ServerStreamingCall``.
@@ -22,7 +23,12 @@ import NIOHPACK
 public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
-  private let responseSource: PassthroughMessageSource<Response, Error>
+  private let responseSource: NIOThrowingAsyncSequenceProducer<
+    Response,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >.Source
 
   /// The stream of responses from the server.
   public let responseStream: GRPCAsyncResponseStream<Response>
@@ -79,8 +85,17 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
     // We ignore messages in the closure and instead feed them into the response source when we
     // invoke the `call`.
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
-    self.responseSource = PassthroughMessageSource<Response, Error>()
-    self.responseStream = .init(PassthroughMessageSequence(consuming: self.responseSource))
+    let sequence = NIOThrowingAsyncSequenceProducer<
+      Response,
+      Error,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >.makeSequence(
+      backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+      delegate: GRPCAsyncSequenceProducerDelegate()
+    )
+    self.responseSource = sequence.source
+    self.responseStream = .init(sequence.sequence)
   }
 
   /// We expose this as the only non-private initializer so that the caller
@@ -96,7 +111,7 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
       onStart: {},
       onError: { error in
         asyncCall.responseParts.handleError(error)
-        asyncCall.responseSource.finish(throwing: error)
+        asyncCall.responseSource.finish(error)
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,
