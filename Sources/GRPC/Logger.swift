@@ -29,6 +29,8 @@ enum MetadataKey {
   static let h2Payload = "h2_payload"
   static let h2Headers = "h2_headers"
   static let h2DataBytes = "h2_data_bytes"
+  static let h2GoAwayError = "h2_goaway_error"
+  static let h2GoAwayLastStreamID = "h2_goaway_last_stream_id"
 
   static let error = "error"
 }

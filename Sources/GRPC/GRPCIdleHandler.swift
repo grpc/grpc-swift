@@ -287,7 +287,11 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     let frame = self.unwrapInboundIn(data)
 
     switch frame.payload {
-    case .goAway:
+    case let .goAway(lastStreamID, errorCode, _):
+      self.stateMachine.logger.debug("received GOAWAY frame", metadata: [
+        MetadataKey.h2GoAwayLastStreamID: "\(Int(lastStreamID))",
+        MetadataKey.h2GoAwayError: "\(errorCode.networkCode)",
+      ])
       self.perform(operations: self.stateMachine.receiveGoAway())
     case let .settings(.settings(settings)):
       self.perform(operations: self.stateMachine.receiveSettings(settings))
