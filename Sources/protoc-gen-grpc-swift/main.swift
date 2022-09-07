@@ -125,8 +125,8 @@ func main() throws {
 
   // Only generate output for services.
   for name in request.fileToGenerate {
-    let fileDescriptor = descriptorSet.lookupFileDescriptor(protoName: name)
-    if !fileDescriptor.services.isEmpty {
+    if let fileDescriptor = descriptorSet.fileDescriptor(named: name),
+       !fileDescriptor.services.isEmpty {
       let grpcFileName = uniqueOutputFileName(
         component: "grpc",
         fileDescriptor: fileDescriptor,
