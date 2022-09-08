@@ -121,7 +121,13 @@ public protocol ClientBootstrapProtocol {
 
   func connectTimeout(_ timeout: TimeAmount) -> Self
   func channelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
+
+  #if swift(>=5.7)
+  @preconcurrency
+  func channelInitializer(_ handler: @escaping @Sendable (Channel) -> EventLoopFuture<Void>) -> Self
+  #else
   func channelInitializer(_ handler: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
+  #endif
 }
 
 extension ClientBootstrapProtocol {
@@ -149,10 +155,25 @@ public protocol ServerBootstrapProtocol {
   func bind(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
   func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel>
 
-  func serverChannelInitializer(_ initializer: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
+  #if swift(>=5.7)
+  @preconcurrency
+  func serverChannelInitializer(
+    _ handler: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+  ) -> Self
+  #else
+  func serverChannelInitializer(_ handler: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
+  #endif
+
   func serverChannelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
 
-  func childChannelInitializer(_ initializer: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
+  #if swift(>=5.7)
+  @preconcurrency
+  func childChannelInitializer(_ handler: @escaping @Sendable (Channel) -> EventLoopFuture<Void>)
+    -> Self
+  #else
+  func childChannelInitializer(_ handler: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
+  #endif
+
   func childChannelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
 }
 

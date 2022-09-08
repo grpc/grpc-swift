@@ -15,7 +15,7 @@
  */
 #if compiler(>=5.6)
 
-@preconcurrency import Logging
+import Logging
 import NIOConcurrencyHelpers
 import NIOHPACK
 
