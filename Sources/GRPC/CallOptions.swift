@@ -15,14 +15,9 @@
  */
 import struct Foundation.UUID
 
-#if swift(>=5.6)
-@preconcurrency import Logging
-@preconcurrency import NIOCore
-#else
-import Logging
 import NIOCore
-#endif // swift(>=5.6)
 
+import Logging
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2

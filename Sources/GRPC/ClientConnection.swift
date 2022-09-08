@@ -15,14 +15,12 @@
  */
 #if swift(>=5.6)
 @preconcurrency import Foundation
-@preconcurrency import Logging
-@preconcurrency import NIOCore
 #else
 import Foundation
-import Logging
-import NIOCore
 #endif // swift(>=5.6)
 
+import Logging
+import NIOCore
 import NIOHPACK
 import NIOHTTP2
 #if canImport(NIOSSL)
