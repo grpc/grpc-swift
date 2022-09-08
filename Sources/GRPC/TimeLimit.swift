@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 import Dispatch
-#if swift(>=5.6)
-@preconcurrency import NIOCore
-#else
 import NIOCore
-#endif // swift(>=5.6)
 
 /// A time limit for an RPC.
 ///

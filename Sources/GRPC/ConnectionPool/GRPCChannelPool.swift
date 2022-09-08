@@ -13,13 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if swift(>=5.6)
-@preconcurrency import Logging
-@preconcurrency import NIOCore
-#else
 import Logging
 import NIOCore
-#endif // swift(>=5.6)
 import NIOPosix
 
 public enum GRPCChannelPool {
