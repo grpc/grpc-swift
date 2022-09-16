@@ -19,6 +19,38 @@
 /// Writer for server-streaming RPC handlers to provide responses.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
+  public struct RecordingAsyncSequence: AsyncSequence {
+    public typealias Element = (Response, Compression)
+
+    private let stream: AsyncStream<(Response, Compression)>
+
+    init(stream: AsyncStream<(Response, Compression)>) {
+      self.stream = stream
+    }
+
+    public func makeAsyncIterator() -> AsyncIterator {
+      AsyncIterator(iterator: self.stream.makeAsyncIterator())
+    }
+
+    public struct AsyncIterator: AsyncIteratorProtocol {
+      private var iterator: AsyncStream<(Response, Compression)>.AsyncIterator
+
+      init(iterator: AsyncStream<(Response, Compression)>.AsyncIterator) {
+        self.iterator = iterator
+      }
+
+      public mutating func next() async -> Element? {
+        await self.iterator.next()
+      }
+    }
+  }
+
+  @usableFromInline
+  enum Backing: Sendable {
+    case asyncWriter(AsyncWriter<Delegate>)
+    case closure(@Sendable ((Response, Compression)) async -> Void)
+  }
+
   @usableFromInline
   internal typealias Element = (Response, Compression)
 
@@ -26,11 +58,16 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
   internal typealias Delegate = AsyncResponseStreamWriterDelegate<Response>
 
   @usableFromInline
-  internal let asyncWriter: AsyncWriter<Delegate>
+  internal let backing: Backing
 
   @inlinable
   internal init(wrapping asyncWriter: AsyncWriter<Delegate>) {
-    self.asyncWriter = asyncWriter
+    self.backing = .asyncWriter(asyncWriter)
+  }
+
+  @inlinable
+  internal init(onWrite: @escaping @Sendable ((Response, Compression)) async -> Void) {
+    self.backing = .closure(onWrite)
   }
 
   @inlinable
@@ -38,7 +75,34 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     _ response: Response,
     compression: Compression = .deferToCallDefault
   ) async throws {
-    try await self.asyncWriter.write((response, compression))
+    switch self.backing {
+    case let .asyncWriter(writer):
+      try await writer.write((response, compression))
+
+    case let .closure(closure):
+      await closure((response, compression))
+    }
+  }
+
+  public struct RecordingWriter {
+    /// The actual writer.
+    public let writer: GRPCAsyncResponseStreamWriter<Response>
+    /// An `AsyncSequence` with the written responses and their compression.
+    public let responses: RecordingAsyncSequence
+  }
+
+  /// Creates a new `GRPCAsyncResponseStreamWriter` backed by an ``RecordingAsyncSequence``.
+  /// This is mostly useful for testing purposes where one wants to observe the output of a method invocation.
+  public static func makeRecordingWriter() -> RecordingWriter {
+    var continuation: AsyncStream<(Response, Compression)>.Continuation!
+    let asyncStream = AsyncStream<(Response, Compression)> { cont in
+      continuation = cont
+    }
+    let writer = Self.init { [continuation] in
+      continuation!.yield($0)
+    }
+
+    return RecordingWriter(writer: writer, responses: RecordingAsyncSequence(stream: asyncStream))
   }
 }
 

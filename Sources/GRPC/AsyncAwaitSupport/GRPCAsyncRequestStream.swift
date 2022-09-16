@@ -21,40 +21,64 @@
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
   @usableFromInline
-  internal typealias _WrappedStream = PassthroughMessageSequence<Element, Error>
+  enum Backing: Sendable {
+    case passthroughMessageSequence(PassthroughMessageSequence<Element, Error>)
+    case asyncStream(AsyncThrowingStream<Element, Error>)
+  }
 
   @usableFromInline
-  internal let _stream: _WrappedStream
+  internal let backing: Backing
 
   @inlinable
-  internal init(_ stream: _WrappedStream) {
-    self._stream = stream
+  internal init(_ sequence: PassthroughMessageSequence<Element, Error>) {
+    self.backing = .passthroughMessageSequence(sequence)
+  }
+
+  @inlinable
+  public init(_ stream: AsyncThrowingStream<Element, Error>) {
+    self.backing = .asyncStream(stream)
   }
 
   @inlinable
   public func makeAsyncIterator() -> Iterator {
-    Self.AsyncIterator(self._stream)
+    switch self.backing {
+    case let .passthroughMessageSequence(sequence):
+      return Self.AsyncIterator(.passthroughMessageSequence(sequence.makeAsyncIterator()))
+    case let .asyncStream(stream):
+      return Self.AsyncIterator(.asyncStream(stream.makeAsyncIterator()))
+    }
   }
 
   public struct Iterator: AsyncIteratorProtocol {
     @usableFromInline
-    internal var iterator: _WrappedStream.AsyncIterator
+    enum BackingIterator {
+      case passthroughMessageSequence(PassthroughMessageSequence<Element, Error>.Iterator)
+      case asyncStream(AsyncThrowingStream<Element, Error>.Iterator)
+    }
 
     @usableFromInline
-    internal init(_ stream: _WrappedStream) {
-      self.iterator = stream.makeAsyncIterator()
+    internal var iterator: BackingIterator
+
+    @usableFromInline
+    internal init(_ iterator: BackingIterator) {
+      self.iterator = iterator
     }
 
     @inlinable
     public mutating func next() async throws -> Element? {
-      try await self.iterator.next()
+      switch self.iterator {
+      case let .passthroughMessageSequence(iterator):
+        return try await iterator.next()
+      case var .asyncStream(iterator):
+        let element = try await iterator.next()
+        self.iterator = .asyncStream(iterator)
+        return element
+      }
     }
   }
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCAsyncRequestStream: Sendable where Element: Sendable {}
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension GRPCAsyncRequestStream.Iterator: Sendable where Element: Sendable {}
 
 #endif
