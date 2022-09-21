@@ -28,7 +28,8 @@ Next, you need to add the `.proto` files for which you want to generate your Swi
 source directory. You should also commit these files to your git repository since the generated types
 are now generated on demand.
 
-> Note: imports on your `.proto` files will have to include the relative path from the target source to the `.proto` file you wish to import.
+> Note: imports on your `.proto` files will have to include the relative path from the target source to the `.proto` file you wish to import. 
+> Files **must** be contained within the target source directory.
 
 ### Adding the plugin to your manifest
 
@@ -87,6 +88,7 @@ to the root of your target's source folder. An example configuration file looks 
 ```
 
 > Note: paths to your `.proto` files will have to include the relative path from the target source to the `.proto` file location.
+> Files **must** be contained within the target source directory.
 
 In the above configuration, you declared two invocations to the `protoc` compiler. The first invocation
 is generating Swift types for the `Foo.proto` file with `internal` visibility. Notice the relative path to the `.proto` file.
