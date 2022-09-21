@@ -20,8 +20,13 @@ insecure channels.
 gRPC Swift's platform support is identical to the [platform support of Swift
 NIO][swift-nio-platforms].
 
-The earliest supported Swift version for gRPC Swift 1.8.x and newer is 5.4.
-For 1.7.x and earlier the oldest supported Swift version is 5.2.
+The earliest supported version of Swift for gRPC Swift releases are as follows:
+
+gRPC Swift Version | Earliest Swift Version
+-------------------|-----------------------
+`1.0.0 ..< 1.8.0`  | 5.2
+`1.8.0 ..< 1.11.0` | 5.4
+`1.11.0...`        | 5.5
 
 Versions of clients and services which are use Swift's Concurrency support
 are available from gRPC Swift 1.8.0 and require Swift 5.6 and newer.
