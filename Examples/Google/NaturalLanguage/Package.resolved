@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/attaswift/BigInt",
         "state": {
           "branch": null,
-          "revision": "19f5e8a48be155e34abb98a2bcf4a343316f0343",
-          "version": "5.0.0"
+          "revision": "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+          "version": "5.3.0"
         }
       },
       {
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": null,
-          "revision": "79ac632c85df81f2618dd838fc3869633e163370",
-          "version": "1.2.0"
+          "revision": "af1b58fc569bfde777462349b9f7314b61762be0",
+          "version": "1.3.2"
         }
       },
       {
@@ -24,17 +24,26 @@
         "repositoryURL": "https://github.com/googleapis/google-auth-library-swift.git",
         "state": {
           "branch": null,
-          "revision": "f3c652646735e27885e81e710d4147f33eb6c26f",
-          "version": "0.5.1"
+          "revision": "4b510d91fc74f1415eae6dabc9836b8c3e1f44f6",
+          "version": "0.5.3"
         }
       },
       {
-        "package": "GRPC",
-        "repositoryURL": "/Users/georgebarnett/workspace/grpc-swift",
+        "package": "grpc-swift",
+        "repositoryURL": "/Users/filipw/Documents/dev/grpc-swift",
         "state": {
           "branch": "HEAD",
-          "revision": "13a4fdedf9ba1286d8fb4a73ccb49fe8c77871e9",
+          "revision": "6cab35e471cd8e35df5ef913c749527369f67553",
           "version": null
+        }
+      },
+      {
+        "package": "swift-atomics",
+        "repositoryURL": "https://github.com/apple/swift-atomics.git",
+        "state": {
+          "branch": null,
+          "revision": "919eb1d83e02121cdb434c7bfc1f0c66ef17febe",
+          "version": "1.0.2"
         }
       },
       {
@@ -42,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-log",
         "state": {
           "branch": null,
-          "revision": "74d7b91ceebc85daf387ebb206003f78813f71aa",
-          "version": "1.2.0"
+          "revision": "6fe203dc33195667ce1759bf0182975e4653ba1c",
+          "version": "1.4.4"
         }
       },
       {
@@ -51,8 +60,17 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "ff01888051cd7efceb1bf8319c1dd3986c4bf6fc",
-          "version": "2.10.1"
+          "revision": "b4e0a274f7f34210e97e2f2c50ab02a10b549250",
+          "version": "2.41.1"
+        }
+      },
+      {
+        "package": "swift-nio-extras",
+        "repositoryURL": "https://github.com/apple/swift-nio-extras.git",
+        "state": {
+          "branch": null,
+          "revision": "6c84d247754ad77487a6f0694273b89b83efd056",
+          "version": "1.14.0"
         }
       },
       {
@@ -60,8 +78,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": null,
-          "revision": "867259332c45d5405efed844f7b3997ebfa94167",
-          "version": "1.7.2"
+          "revision": "f9ab1c94c80d568efd762d2a638f25162691d766",
+          "version": "1.22.1"
         }
       },
       {
@@ -69,8 +87,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "ccf96bbe65ecc7c1558ab0dba7ffabdea5c1d31f",
-          "version": "2.4.4"
+          "revision": "ba7c0d7f82affc518147ea61d240330bf7f7ea9b",
+          "version": "2.22.1"
         }
       },
       {
@@ -78,8 +96,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
         "state": {
           "branch": null,
-          "revision": "80b11dc13261e0e52f75ea3a0b2e04f24e925019",
-          "version": "1.2.1"
+          "revision": "4e02d9cf35cabfb538c96613272fb027dd0c8692",
+          "version": "1.13.1"
         }
       },
       {
@@ -87,8 +105,8 @@
         "repositoryURL": "https://github.com/apple/swift-protobuf.git",
         "state": {
           "branch": null,
-          "revision": "da75a93ac017534e0028e83c0e4fc4610d2acf48",
-          "version": "1.7.0"
+          "revision": "b8230909dedc640294d7324d37f4c91ad3dcf177",
+          "version": "1.20.1"
         }
       }
     ]

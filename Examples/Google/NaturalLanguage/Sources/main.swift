@@ -27,15 +27,10 @@ func makeServiceClient(
   host: String,
   port: Int,
   eventLoopGroup: MultiThreadedEventLoopGroup
-) -> Google_Cloud_Language_V1_LanguageServiceServiceClient {
-  let configuration = ClientConnection.Configuration(
-    target: .hostAndPort(host, port),
-    eventLoopGroup: eventLoopGroup,
-    tls: .init()
-  )
-
-  let connection = ClientConnection(configuration: configuration)
-  return Google_Cloud_Language_V1_LanguageServiceServiceClient(connection: connection)
+) -> Google_Cloud_Language_V1_LanguageServiceNIOClient {
+  let connection = ClientConnection.usingPlatformAppropriateTLS(for: eventLoopGroup)
+    .connect(host: host, port: port)
+  return Google_Cloud_Language_V1_LanguageServiceNIOClient(channel: connection)
 }
 
 enum AuthError: Error {
@@ -90,7 +85,7 @@ do {
 
   // Use CallOptions to send the auth token (necessary) and set a custom timeout (optional).
   let headers: HPACKHeaders = ["authorization": "Bearer \(authToken)"]
-  let callOptions = CallOptions(customMetadata: headers, timeout: .seconds(rounding: 30))
+  let callOptions = CallOptions(customMetadata: headers, timeLimit: TimeLimit.timeout(.seconds(30)))
   print("CALL OPTIONS\n\(callOptions)\n")
 
   // Construct the API request.
