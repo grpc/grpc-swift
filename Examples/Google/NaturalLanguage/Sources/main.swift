@@ -28,7 +28,8 @@ func makeServiceClient(
   port: Int,
   eventLoopGroup: MultiThreadedEventLoopGroup
 ) -> Google_Cloud_Language_V1_LanguageServiceNIOClient {
-  let connection = ClientConnection.usingPlatformAppropriateTLS(for: eventLoopGroup).connect(host: host, port: port)
+  let connection = ClientConnection.usingPlatformAppropriateTLS(for: eventLoopGroup)
+    .connect(host: host, port: port)
   return Google_Cloud_Language_V1_LanguageServiceNIOClient(channel: connection)
 }
 
