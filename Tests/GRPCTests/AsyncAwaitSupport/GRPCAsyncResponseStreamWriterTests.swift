@@ -24,8 +24,9 @@ final class GRPCAsyncResponseStreamWriterTests: XCTestCase {
     let responseStreamWriter = GRPCAsyncResponseStreamWriter<Int>.makeResponseStreamWriter()
 
     try await responseStreamWriter.writer.send(1, compression: .disabled)
+    responseStreamWriter.stream.finish()
 
-    let results = try await responseStreamWriter.stream.prefix(1).collect()
+    let results = try await responseStreamWriter.stream.collect()
     XCTAssertEqual(results[0].0, 1)
     XCTAssertEqual(results[0].1, .disabled)
   }
