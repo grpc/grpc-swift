@@ -21,11 +21,11 @@ import XCTest
 @available(macOS 12, iOS 13, tvOS 13, watchOS 6, *)
 final class GRPCAsyncResponseStreamWriterTests: XCTestCase {
   func testRecorder() async throws {
-    let writer = GRPCAsyncResponseStreamWriter<Int>.makeRecordingWriter()
+    let responseStreamWriter = GRPCAsyncResponseStreamWriter<Int>.makeResponseStreamWriter()
 
-    try await writer.writer.send(1, compression: .disabled)
+    try await responseStreamWriter.writer.send(1, compression: .disabled)
 
-    let results = try await writer.responses.prefix(1).collect()
+    let results = try await responseStreamWriter.stream.prefix(1).collect()
     XCTAssertEqual(results[0].0, 1)
     XCTAssertEqual(results[0].1, .disabled)
   }

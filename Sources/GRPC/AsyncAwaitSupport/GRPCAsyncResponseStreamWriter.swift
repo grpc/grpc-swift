@@ -17,13 +17,21 @@
 #if compiler(>=5.6)
 
 /// Writer for server-streaming RPC handlers to provide responses.
+///
+/// To enable testability this type provides a static ``GRPCAsyncResponseStreamWriter/makeResponseStreamWriter()``
+/// method which allows you to create a stream that you can drive.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
-  public struct RecordingAsyncSequence: AsyncSequence {
+  /// An `AsyncSequence` backing a ``GRPCAsyncResponseStreamWriter`` for testing purposes.
+  ///
+  /// - Important: This `AsyncSequence` is never finishing.
+  public struct ResponseStream: AsyncSequence {
     public typealias Element = (Response, Compression)
 
-    private let stream: AsyncStream<(Response, Compression)>
+    @usableFromInline
+    internal let stream: AsyncStream<(Response, Compression)>
 
+    @inlinable
     init(stream: AsyncStream<(Response, Compression)>) {
       self.stream = stream
     }
@@ -33,8 +41,10 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     }
 
     public struct AsyncIterator: AsyncIteratorProtocol {
-      private var iterator: AsyncStream<(Response, Compression)>.AsyncIterator
+      @usableFromInline
+      internal var iterator: AsyncStream<(Response, Compression)>.AsyncIterator
 
+      @inlinable
       init(iterator: AsyncStream<(Response, Compression)>.AsyncIterator) {
         self.iterator = iterator
       }
@@ -42,6 +52,26 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
       public mutating func next() async -> Element? {
         await self.iterator.next()
       }
+    }
+  }
+
+  /// Simple struct for the return type of ``GRPCAsyncResponseStreamWriter/makeResponseStreamWriter()``.
+  ///
+  /// This struct contains two properties:
+  /// 1. The ``writer`` which is the actual ``GRPCAsyncResponseStreamWriter`` and should be passed to the method under testing.
+  /// 2. The ``stream`` which can be used to observe the written responses.
+  public struct ResponseStreamWriter {
+    /// The actual writer.
+    public let writer: GRPCAsyncResponseStreamWriter<Response>
+    /// The written responses in a stream.
+    ///
+    /// - Important: This `AsyncSequence` is never finishing.
+    public let stream: ResponseStream
+
+    @inlinable
+    init(writer: GRPCAsyncResponseStreamWriter<Response>, stream: ResponseStream) {
+      self.writer = writer
+      self.stream = stream
     }
   }
 
@@ -84,16 +114,10 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     }
   }
 
-  public struct RecordingWriter {
-    /// The actual writer.
-    public let writer: GRPCAsyncResponseStreamWriter<Response>
-    /// An `AsyncSequence` with the written responses and their compression.
-    public let responses: RecordingAsyncSequence
-  }
-
-  /// Creates a new `GRPCAsyncResponseStreamWriter` backed by an ``RecordingAsyncSequence``.
-  /// This is mostly useful for testing purposes where one wants to observe the output of a method invocation.
-  public static func makeRecordingWriter() -> RecordingWriter {
+  /// Creates a new `GRPCAsyncResponseStreamWriter` backed by a ``ResponseStream``.
+  /// This is mostly useful for testing purposes where one wants to observe the written responses.
+  @inlinable
+  public static func makeResponseStreamWriter() -> ResponseStreamWriter {
     var continuation: AsyncStream<(Response, Compression)>.Continuation!
     let asyncStream = AsyncStream<(Response, Compression)> { cont in
       continuation = cont
@@ -102,7 +126,7 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
       continuation!.yield($0)
     }
 
-    return RecordingWriter(writer: writer, responses: RecordingAsyncSequence(stream: asyncStream))
+    return ResponseStreamWriter(writer: writer, stream: ResponseStream(stream: asyncStream))
   }
 }
 

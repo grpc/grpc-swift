@@ -21,15 +21,12 @@ import XCTest
 @available(macOS 12, iOS 13, tvOS 13, watchOS 6, *)
 final class GRPCAsyncRequestStreamTests: XCTestCase {
   func testRecorder() async throws {
-    var continuation: AsyncThrowingStream<Int, Error>.Continuation!
-    let stream = AsyncThrowingStream<Int, Error> { cont in
-      continuation = cont
-    }
-    let sequence = GRPCAsyncRequestStream<Int>.init(stream)
+    let testingStream = GRPCAsyncRequestStream<Int>.makeTestingRequestStream()
 
-    continuation.yield(1)
+    testingStream.source.yield(1)
+    testingStream.source.finish(throwing: nil)
 
-    let results = try await sequence.prefix(1).collect()
+    let results = try await testingStream.stream.collect()
 
     XCTAssertEqual(results, [1])
   }
