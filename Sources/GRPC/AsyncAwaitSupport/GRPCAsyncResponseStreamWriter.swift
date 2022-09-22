@@ -147,7 +147,7 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
       continuation: continuation
     )
 
-    return TestingResponseStreamWriter(writer: writer, stream: responseStream)
+    return TestingStreamWriter(writer: writer, stream: responseStream)
   }
 }
 

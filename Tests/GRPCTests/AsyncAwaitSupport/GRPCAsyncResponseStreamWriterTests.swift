@@ -21,7 +21,7 @@ import XCTest
 @available(macOS 12, iOS 13, tvOS 13, watchOS 6, *)
 final class GRPCAsyncResponseStreamWriterTests: XCTestCase {
   func testRecorder() async throws {
-    let responseStreamWriter = GRPCAsyncResponseStreamWriter<Int>.makeResponseStreamWriter()
+    let responseStreamWriter = GRPCAsyncResponseStreamWriter<Int>.makeTestingResponseStreamWriter()
 
     try await responseStreamWriter.writer.send(1, compression: .disabled)
     responseStreamWriter.stream.finish()
