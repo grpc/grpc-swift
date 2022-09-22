@@ -15,46 +15,140 @@
  */
 
 #if compiler(>=5.6)
-
-/// This is currently a wrapper around AsyncThrowingStream because we want to be
+/// A type for the stream of request messages send to a gRPC server method.
+///
+/// To enable testability this type provides a static ``GRPCAsyncRequestStream/makeTestingRequestStream()``
+/// method which allows you to create a stream that you can drive.
+///
+/// - Note: This is currently a wrapper around AsyncThrowingStream because we want to be
 /// able to swap out the implementation for something else in the future.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
-  @usableFromInline
-  internal typealias _WrappedStream = PassthroughMessageSequence<Element, Error>
+  /// A source used for driving a ``GRPCAsyncRequestStream`` during tests.
+  public struct Source {
+    @usableFromInline
+    internal let continuation: AsyncThrowingStream<Element, Error>.Continuation
+
+    @inlinable
+    init(continuation: AsyncThrowingStream<Element, Error>.Continuation) {
+      self.continuation = continuation
+    }
+
+    /// Yields the element to the request stream.
+    ///
+    /// - Parameter element: The element to yield to the request stream.
+    @inlinable
+    public func yield(_ element: Element) {
+      self.continuation.yield(element)
+    }
+
+    /// Finished the request stream.
+    @inlinable
+    public func finish() {
+      self.continuation.finish()
+    }
+
+    /// Finished the request stream.
+    ///
+    /// - Parameter error: An optional `Error` to finish the request stream with.
+    @inlinable
+    public func finish(throwing error: Error?) {
+      self.continuation.finish(throwing: error)
+    }
+  }
+
+  /// Simple struct for the return type of ``GRPCAsyncRequestStream/makeTestingRequestStream()``.
+  ///
+  /// This struct contains two properties:
+  /// 1. The ``stream`` which is the actual ``GRPCAsyncRequestStream`` and should be passed to the method under testing.
+  /// 2. The ``source`` which can be used to drive the stream.
+  public struct TestingStream {
+    /// The actual stream.
+    public let stream: GRPCAsyncRequestStream<Element>
+    /// The source used to drive the stream.
+    public let source: Source
+
+    @inlinable
+    init(stream: GRPCAsyncRequestStream<Element>, source: Source) {
+      self.stream = stream
+      self.source = source
+    }
+  }
 
   @usableFromInline
-  internal let _stream: _WrappedStream
+  enum Backing: Sendable {
+    case passthroughMessageSequence(PassthroughMessageSequence<Element, Error>)
+    case asyncStream(AsyncThrowingStream<Element, Error>)
+  }
+
+  @usableFromInline
+  internal let backing: Backing
 
   @inlinable
-  internal init(_ stream: _WrappedStream) {
-    self._stream = stream
+  internal init(_ sequence: PassthroughMessageSequence<Element, Error>) {
+    self.backing = .passthroughMessageSequence(sequence)
+  }
+
+  @inlinable
+  internal init(_ stream: AsyncThrowingStream<Element, Error>) {
+    self.backing = .asyncStream(stream)
+  }
+
+  /// Creates a new testing stream.
+  ///
+  /// This is useful for writing unit tests for your gRPC method implementations since it allows you to drive the stream passed
+  /// to your method.
+  ///
+  /// - Returns: A new ``TestingStream`` containing the actual ``GRPCAsyncRequestStream`` and a ``Source``.
+  @inlinable
+  public static func makeTestingRequestStream() -> TestingStream {
+    var continuation: AsyncThrowingStream<Element, Error>.Continuation!
+    let stream = AsyncThrowingStream<Element, Error> { continuation = $0 }
+    let source = Source(continuation: continuation)
+    let requestStream = Self(stream)
+    return TestingStream(stream: requestStream, source: source)
   }
 
   @inlinable
   public func makeAsyncIterator() -> Iterator {
-    Self.AsyncIterator(self._stream)
+    switch self.backing {
+    case let .passthroughMessageSequence(sequence):
+      return Self.AsyncIterator(.passthroughMessageSequence(sequence.makeAsyncIterator()))
+    case let .asyncStream(stream):
+      return Self.AsyncIterator(.asyncStream(stream.makeAsyncIterator()))
+    }
   }
 
   public struct Iterator: AsyncIteratorProtocol {
     @usableFromInline
-    internal var iterator: _WrappedStream.AsyncIterator
+    enum BackingIterator {
+      case passthroughMessageSequence(PassthroughMessageSequence<Element, Error>.Iterator)
+      case asyncStream(AsyncThrowingStream<Element, Error>.Iterator)
+    }
 
     @usableFromInline
-    internal init(_ stream: _WrappedStream) {
-      self.iterator = stream.makeAsyncIterator()
+    internal var iterator: BackingIterator
+
+    @usableFromInline
+    internal init(_ iterator: BackingIterator) {
+      self.iterator = iterator
     }
 
     @inlinable
     public mutating func next() async throws -> Element? {
-      try await self.iterator.next()
+      switch self.iterator {
+      case let .passthroughMessageSequence(iterator):
+        return try await iterator.next()
+      case var .asyncStream(iterator):
+        let element = try await iterator.next()
+        self.iterator = .asyncStream(iterator)
+        return element
+      }
     }
   }
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCAsyncRequestStream: Sendable where Element: Sendable {}
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension GRPCAsyncRequestStream.Iterator: Sendable where Element: Sendable {}
 
 #endif

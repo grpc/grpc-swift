@@ -304,8 +304,7 @@ internal struct FakeClientTransportFactory<Request, Response> {
   ) where RequestSerializer.Input == Request,
     RequestDeserializer.Output == Request,
     ResponseSerializer.Input == Response,
-    ResponseDeserializer.Output == Response
-  {
+    ResponseDeserializer.Output == Response {
     self.fakeResponseStream = fakeResponseStream
     self.requestSerializer = AnySerializer(wrapping: requestSerializer)
     self.responseDeserializer = AnyDeserializer(wrapping: responseDeserializer)
