@@ -18,7 +18,7 @@
 
 /// Writer for server-streaming RPC handlers to provide responses.
 ///
-/// To enable testability this type provides a static ``GRPCAsyncResponseStreamWriter/makeResponseStreamWriter()``
+/// To enable testability this type provides a static ``GRPCAsyncResponseStreamWriter/makeTestingResponseStreamWriter()``
 /// method which allows you to create a stream that you can drive.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
@@ -69,12 +69,12 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     }
   }
 
-  /// Simple struct for the return type of ``GRPCAsyncResponseStreamWriter/makeResponseStreamWriter()``.
+  /// Simple struct for the return type of ``GRPCAsyncResponseStreamWriter/makeTestingResponseStreamWriter()``.
   ///
   /// This struct contains two properties:
   /// 1. The ``writer`` which is the actual ``GRPCAsyncResponseStreamWriter`` and should be passed to the method under testing.
   /// 2. The ``stream`` which can be used to observe the written responses.
-  public struct TestingResponseStreamWriter {
+  public struct TestingStreamWriter {
     /// The actual writer.
     public let writer: GRPCAsyncResponseStreamWriter<Response>
     /// The written responses in a stream.
@@ -134,7 +134,7 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
   /// - Note: For most tests it is useful to call ``ResponseStream/finish()`` after the async method under testing
   /// resumed. This allows you to easily collect all written responses.
   @inlinable
-  public static func makeResponseStreamWriter() -> TestingResponseStreamWriter {
+  public static func makeTestingResponseStreamWriter() -> TestingStreamWriter {
     var continuation: AsyncStream<(Response, Compression)>.Continuation!
     let asyncStream = AsyncStream<(Response, Compression)> { cont in
       continuation = cont
