@@ -38,14 +38,14 @@ extension StreamingType {
 }
 
 internal func streamingType(_ method: MethodDescriptor) -> StreamingType {
-  if method.proto.clientStreaming {
-    if method.proto.serverStreaming {
+  if method.clientStreaming {
+    if method.serverStreaming {
       return .bidirectionalStreaming
     } else {
       return .clientStreaming
     }
   } else {
-    if method.proto.serverStreaming {
+    if method.serverStreaming {
       return .serverStreaming
     } else {
       return .unary
