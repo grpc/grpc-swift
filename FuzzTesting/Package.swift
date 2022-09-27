@@ -26,6 +26,12 @@ let package = Package(
     .executableTarget(
       name: "ServerFuzzer",
       dependencies: [
+        .target(name: "ServerFuzzerLib"),
+      ]
+    ),
+    .target(
+      name: "ServerFuzzerLib",
+      dependencies: [
         .product(name: "GRPC", package: "grpc-swift"),
         .product(name: "NIO", package: "swift-nio"),
         .target(name: "EchoImplementation"),

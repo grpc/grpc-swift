@@ -17,7 +17,7 @@ import EchoImplementation
 import GRPC
 import NIO
 
-@_cdecl("LLVMFuzzerTestOneInput")
+@_cdecl("ServerFuzzer")
 public func test(_ start: UnsafeRawPointer, _ count: Int) -> CInt {
   let bytes = UnsafeRawBufferPointer(start: start, count: count)
 
