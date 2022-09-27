@@ -58,9 +58,9 @@ jobs:
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 428000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 176000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 174000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 181000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 181000
@@ -68,9 +68,9 @@ jobs:
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 428000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 176000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 174000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 181000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 181000
@@ -78,9 +78,9 @@ jobs:
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 429000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 177000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 175000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 182000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 182000
@@ -88,9 +88,9 @@ jobs:
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 459000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 189000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 186000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 193000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 193000

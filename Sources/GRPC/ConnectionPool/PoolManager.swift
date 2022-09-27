@@ -96,7 +96,7 @@ internal final class PoolManager {
   internal var _pools: [ConnectionPool]
 
   @usableFromInline
-  internal let lock = Lock()
+  internal let lock = NIOLock()
 
   /// The `EventLoopGroup` providing `EventLoop`s for connection pools. Once initialized the manager
   /// will hold as many pools as there are loops in this `EventLoopGroup`.
@@ -145,7 +145,7 @@ internal final class PoolManager {
   }
 
   deinit {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       assert(
         self._state.isShutdownOrShuttingDown,
         "The pool manager (\(ObjectIdentifier(self))) must be shutdown before going out of scope."
@@ -187,7 +187,7 @@ internal final class PoolManager {
       )
     }
 
-    self.lock.withLockVoid {
+    self.lock.withLock {
       assert(self._pools.isEmpty)
       self._pools = pools
 
@@ -334,7 +334,7 @@ internal final class PoolManager {
   }
 
   private func shutdownComplete() {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       self._state.shutdownComplete()
     }
   }
@@ -345,14 +345,14 @@ internal final class PoolManager {
 extension PoolManager: StreamLender {
   @usableFromInline
   internal func returnStreams(_ count: Int, to pool: ConnectionPool) {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       self._state.returnStreams(count, toPoolOnEventLoopWithID: pool.eventLoop.id)
     }
   }
 
   @usableFromInline
   internal func changeStreamCapacity(by delta: Int, for pool: ConnectionPool) {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       self._state.changeStreamCapacity(by: delta, forPoolOnEventLoopWithID: pool.eventLoop.id)
     }
   }

@@ -38,7 +38,7 @@ internal final class PassthroughMessageSource<Element: Sendable, Failure: Error>
   /// - Important: We use a `class` with a lock rather than an `actor` as we must guarantee that
   ///   calls to ``yield(_:)`` are not reordered.
   @usableFromInline
-  internal let _lock: Lock
+  internal let _lock: NIOLock
 
   /// A queue of elements which may be consumed as soon as there is demand.
   @usableFromInline
@@ -56,7 +56,7 @@ internal final class PassthroughMessageSource<Element: Sendable, Failure: Error>
 
   @usableFromInline
   internal init(initialBufferCapacity: Int = 16) {
-    self._lock = Lock()
+    self._lock = NIOLock()
     self._continuationResults = CircularBuffer(initialCapacity: initialBufferCapacity)
     self._continuation = nil
     self._isTerminated = false

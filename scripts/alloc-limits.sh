@@ -28,6 +28,7 @@
 #   MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=64000
 
 grep 'test_.*\.total_allocations: ' \
+  | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}.[0-9]*Z //' \
   | sed 's/^test_/MAX_ALLOCS_ALLOWED_/' \
   | sed 's/.total_allocations://' \
   | awk '{ print "              " $1 ": " ((int($2 / 1000) + 1) * 1000) }' \

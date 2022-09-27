@@ -48,7 +48,7 @@ class BidiPingPongBenchmark: Benchmark {
   }
 
   func run() throws -> Int {
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoNIOClient(channel: self.client)
     var statusCodeSum = 0
 
     // We'll use this semaphore to make sure we're ping-ponging request-response
