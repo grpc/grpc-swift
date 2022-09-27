@@ -15,6 +15,7 @@
  */
 #if compiler(>=5.6)
 
+import NIOCore
 import NIOHPACK
 
 /// Async-await variant of ``BidirectionalStreamingCall``.
@@ -22,7 +23,12 @@ import NIOHPACK
 public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: Sendable>: Sendable {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
-  private let responseSource: PassthroughMessageSource<Response, Error>
+  private let responseSource: NIOThrowingAsyncSequenceProducer<
+    Response,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >.Source
 
   /// A request stream writer for sending messages to the server.
   public let requestStream: GRPCAsyncRequestStreamWriter<Request>
@@ -80,8 +86,17 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
   private init(call: Call<Request, Response>) {
     self.call = call
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
-    self.responseSource = PassthroughMessageSource<Response, Error>()
-    self.responseStream = .init(PassthroughMessageSequence(consuming: self.responseSource))
+    let sequence = NIOThrowingAsyncSequenceProducer<
+      Response,
+      Error,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >.makeSequence(
+      backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+      delegate: GRPCAsyncSequenceProducerDelegate()
+    )
+    self.responseSource = sequence.source
+    self.responseStream = .init(sequence.sequence)
     self.requestStream = call.makeRequestStreamWriter()
   }
 
@@ -96,7 +111,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
       },
       onError: { error in
         asyncCall.responseParts.handleError(error)
-        asyncCall.responseSource.finish(throwing: error)
+        asyncCall.responseSource.finish(error)
         asyncCall.requestStream.asyncWriter.cancelAsynchronously(withError: error)
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
@@ -114,7 +129,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
 internal enum AsyncCall {
   internal static func makeResponsePartHandler<Response, Request>(
     responseParts: StreamingResponseParts<Response>,
-    responseSource: PassthroughMessageSource<Response, Error>,
+    responseSource: NIOThrowingAsyncSequenceProducer<
+      Response,
+      Error,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >.Source,
     requestStream: GRPCAsyncRequestStreamWriter<Request>?,
     requestType: Request.Type = Request.self
   ) -> (GRPCClientResponsePart<Response>) -> Void {
@@ -135,7 +155,7 @@ internal enum AsyncCall {
         if status.isOk {
           responseSource.finish()
         } else {
-          responseSource.finish(throwing: status)
+          responseSource.finish(status)
         }
 
         requestStream?.asyncWriter.cancelAsynchronously(withError: status)

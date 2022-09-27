@@ -235,6 +235,14 @@ internal final class AsyncServerHandler<
     GRPCAsyncServerCallContext
   ) async throws -> Void
 
+  @usableFromInline
+  internal typealias AsyncSequenceProducer = NIOThrowingAsyncSequenceProducer<
+    Request,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >
+
   @inlinable
   internal init(
     context: CallHandlerContext,
@@ -422,7 +430,10 @@ internal final class AsyncServerHandler<
         contextProvider: self
       )
 
-      let requestSource = PassthroughMessageSource<Request, Error>()
+      let sequenceProducer = AsyncSequenceProducer.makeSequence(
+        backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+        delegate: GRPCAsyncSequenceProducerDelegate()
+      )
 
       let writerDelegate = AsyncResponseStreamWriterDelegate(
         send: self.interceptResponseMessage(_:compression:),
@@ -448,12 +459,13 @@ internal final class AsyncServerHandler<
       // Update our state before invoke the handler.
       self.handlerStateMachine.handlerInvoked(requestHeaders: headers)
       self.handlerComponents = ServerHandlerComponents(
-        requestSource: requestSource,
+        requestSource: sequenceProducer.source,
         responseWriter: writer,
         task: promise.completeWithTask {
           // We don't have a task cancellation handler here: we do it in `self.cancel()`.
           try await self.invokeUserHandler(
-            requestStreamSource: requestSource,
+            sequence: sequenceProducer.sequence,
+            sequenceSource: sequenceProducer.source,
             responseStreamWriter: writer,
             callContext: handlerContext
           )
@@ -468,18 +480,19 @@ internal final class AsyncServerHandler<
   @Sendable
   @usableFromInline
   internal func invokeUserHandler(
-    requestStreamSource: PassthroughMessageSource<Request, Error>,
+    sequence: AsyncSequenceProducer,
+    sequenceSource: AsyncSequenceProducer.Source,
     responseStreamWriter: AsyncWriter<AsyncResponseStreamWriterDelegate<Response>>,
     callContext: GRPCAsyncServerCallContext
   ) async throws {
     defer {
       // It's possible the user handler completed before the end of the request stream. We
       // explicitly finish it to drop any unconsumed inbound messages.
-      requestStreamSource.finish()
+      sequenceSource.finish()
     }
 
     do {
-      let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
+      let requestStream = GRPCAsyncRequestStream(sequence)
       let responseStream = GRPCAsyncResponseStreamWriter(wrapping: responseStreamWriter)
       try await self.userHandler(requestStream, responseStream, callContext)
 
@@ -530,7 +543,7 @@ internal final class AsyncServerHandler<
     case .forward:
       switch self.handlerStateMachine.handleMessage() {
       case .forward:
-        self.handlerComponents?.requestSource.yield(request)
+        _ = self.handlerComponents?.requestSource.yield(request)
       case .cancel:
         self.cancel(error: nil)
       }
@@ -809,11 +822,21 @@ internal struct ServerHandlerComponents<Request: Sendable, Delegate: AsyncWriter
   @usableFromInline
   internal let responseWriter: AsyncWriter<Delegate>
   @usableFromInline
-  internal let requestSource: PassthroughMessageSource<Request, Error>
+  internal let requestSource: NIOThrowingAsyncSequenceProducer<
+    Request,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >.Source
 
   @inlinable
   init(
-    requestSource: PassthroughMessageSource<Request, Error>,
+    requestSource: NIOThrowingAsyncSequenceProducer<
+      Request,
+      Error,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >.Source,
     responseWriter: AsyncWriter<Delegate>,
     task: Task<Void, Never>
   ) {
@@ -830,7 +853,7 @@ internal struct ServerHandlerComponents<Request: Sendable, Delegate: AsyncWriter
     // to the request stream, and cancelling the writer will ensure no more responses are
     // written. This should reduce how long the user handler runs for as it can no longer do
     // anything useful.
-    self.requestSource.finish(throwing: CancellationError())
+    self.requestSource.finish()
     self.responseWriter.cancelAsynchronously(withError: CancellationError())
     self.task.cancel()
   }

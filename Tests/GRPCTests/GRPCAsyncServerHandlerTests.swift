@@ -126,18 +126,18 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata()
+    await responseStream.next().assertMetadata()
     for expected in ["1", "2", "3"] {
-      try await responseStream.next().assertMessage { buffer, metadata in
+      await responseStream.next().assertMessage { buffer, metadata in
         XCTAssertEqual(buffer, .init(string: expected))
         XCTAssertFalse(metadata.compress)
       }
     }
 
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .ok)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testHappyPathWithCompressionEnabled() async throws {
@@ -158,15 +158,15 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata()
+    await responseStream.next().assertMetadata()
     for expected in ["1", "2", "3"] {
-      try await responseStream.next().assertMessage { buffer, metadata in
+      await responseStream.next().assertMessage { buffer, metadata in
         XCTAssertEqual(buffer, .init(string: expected))
         XCTAssertTrue(metadata.compress)
       }
     }
-    try await responseStream.next().assertStatus()
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertStatus()
+    await responseStream.next().assertNil()
   }
 
   func testHappyPathWithCompressionEnabledButDisabledByCaller() async throws {
@@ -193,15 +193,15 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata()
+    await responseStream.next().assertMetadata()
     for expected in ["1", "2", "3"] {
-      try await responseStream.next().assertMessage { buffer, metadata in
+      await responseStream.next().assertMessage { buffer, metadata in
         XCTAssertEqual(buffer, .init(string: expected))
         XCTAssertFalse(metadata.compress)
       }
     }
-    try await responseStream.next().assertStatus()
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertStatus()
+    await responseStream.next().assertNil()
   }
 
   func testResponseHeadersAndTrailersSentFromContext() async throws {
@@ -220,14 +220,14 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata { headers in
+    await responseStream.next().assertMetadata { headers in
       XCTAssertEqual(headers, ["pontiac": "bandit"])
     }
-    try await responseStream.next().assertMessage()
-    try await responseStream.next().assertStatus { _, trailers in
+    await responseStream.next().assertMessage()
+    await responseStream.next().assertStatus { _, trailers in
       XCTAssertEqual(trailers, ["disco": "strangler"])
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testThrowingDeserializer() async throws {
@@ -249,10 +249,10 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testThrowingSerializer() async throws {
@@ -274,11 +274,11 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertMetadata()
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testReceiveMessageBeforeHeaders() async throws {
@@ -294,10 +294,10 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testReceiveMultipleHeaders() async throws {
@@ -314,10 +314,10 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testFinishBeforeStarting() async throws {
@@ -330,8 +330,8 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus()
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertStatus()
+    await responseStream.next().assertNil()
   }
 
   func testFinishAfterHeaders() async throws {
@@ -345,8 +345,8 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus()
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertStatus()
+    await responseStream.next().assertNil()
   }
 
   func testFinishAfterMessage() async throws {
@@ -359,18 +359,18 @@ class AsyncServerHandlerTests: GRPCTestCase {
 
     // Await the metadata and message so we know the user function is running.
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata()
-    try await responseStream.next().assertMessage()
+    await responseStream.next().assertMetadata()
+    await responseStream.next().assertMessage()
 
     // Finish, i.e. terminate early.
     self.loop.execute {
       handler.finish()
     }
 
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testErrorAfterHeaders() async throws {
@@ -384,11 +384,11 @@ class AsyncServerHandlerTests: GRPCTestCase {
     // We don't send a message so we don't expect any responses. As metadata is sent lazily on the
     // first message we don't expect to get metadata back either.
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .unavailable)
     }
 
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testErrorAfterMessage() async throws {
@@ -401,8 +401,8 @@ class AsyncServerHandlerTests: GRPCTestCase {
 
     // Wait the metadata and message; i.e. for function to have been invoked.
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertMetadata()
-    try await responseStream.next().assertMessage()
+    await responseStream.next().assertMetadata()
+    await responseStream.next().assertMessage()
 
     // Throw in an error.
     self.loop.execute {
@@ -410,10 +410,10 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     // The RPC should end.
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .unavailable)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testHandlerThrowsGRPCStatusOKResultsInUnknownStatus() async throws {
@@ -428,10 +428,10 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .unknown)
     }
-    try await responseStream.next().assertNil()
+    await responseStream.next().assertNil()
   }
 
   func testUnaryHandlerReceivingMultipleMessages() async throws {
@@ -460,7 +460,7 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
   }
@@ -494,24 +494,36 @@ class AsyncServerHandlerTests: GRPCTestCase {
     }
 
     let responseStream = self.recorder.responseSequence.makeAsyncIterator()
-    try await responseStream.next().assertStatus { status, _ in
+    await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
   }
 }
 
 internal final class AsyncResponseStream: GRPCServerResponseWriter {
-  private let source: PassthroughMessageSource<GRPCServerResponsePart<ByteBuffer>, Never>
-
-  internal var responseSequence: PassthroughMessageSequence<
+  private let source: NIOAsyncSequenceProducer<
     GRPCServerResponsePart<ByteBuffer>,
-    Never
-  > {
-    return .init(consuming: self.source)
-  }
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >.Source
+
+  internal var responseSequence: NIOAsyncSequenceProducer<
+    GRPCServerResponsePart<ByteBuffer>,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >
 
   init() {
-    self.source = PassthroughMessageSource()
+    let sequenceProducer = NIOAsyncSequenceProducer<
+      GRPCServerResponsePart<ByteBuffer>,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >.makeSequence(
+      backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+      delegate: GRPCAsyncSequenceProducerDelegate()
+    )
+    self.source = sequenceProducer.source
+    self.responseSequence = sequenceProducer.sequence
   }
 
   func sendMetadata(
@@ -519,7 +531,7 @@ internal final class AsyncResponseStream: GRPCServerResponseWriter {
     flush: Bool,
     promise: EventLoopPromise<Void>?
   ) {
-    self.source.yield(.metadata(metadata))
+    _ = self.source.yield(.metadata(metadata))
     promise?.succeed(())
   }
 
@@ -528,7 +540,7 @@ internal final class AsyncResponseStream: GRPCServerResponseWriter {
     metadata: MessageMetadata,
     promise: EventLoopPromise<Void>?
   ) {
-    self.source.yield(.message(bytes, metadata))
+    _ = self.source.yield(.message(bytes, metadata))
     promise?.succeed(())
   }
 
@@ -537,7 +549,7 @@ internal final class AsyncResponseStream: GRPCServerResponseWriter {
     trailers: HPACKHeaders,
     promise: EventLoopPromise<Void>?
   ) {
-    self.source.yield(.end(status, trailers))
+    _ = self.source.yield(.end(status, trailers))
     self.source.finish()
     promise?.succeed(())
   }

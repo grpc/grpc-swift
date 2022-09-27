@@ -15,6 +15,8 @@
  */
 
 #if compiler(>=5.6)
+import NIOCore
+
 /// A type for the stream of request messages send to a gRPC server method.
 ///
 /// To enable testability this type provides a static ``GRPCAsyncRequestStream/makeTestingRequestStream()``
@@ -77,16 +79,26 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
 
   @usableFromInline
   enum Backing: Sendable {
-    case passthroughMessageSequence(PassthroughMessageSequence<Element, Error>)
     case asyncStream(AsyncThrowingStream<Element, Error>)
+    case nioThrowingAsyncSequence(NIOThrowingAsyncSequenceProducer<
+      Element,
+      Error,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >)
   }
 
   @usableFromInline
   internal let backing: Backing
 
   @inlinable
-  internal init(_ sequence: PassthroughMessageSequence<Element, Error>) {
-    self.backing = .passthroughMessageSequence(sequence)
+  internal init(_ sequence: NIOThrowingAsyncSequenceProducer<
+    Element,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >) {
+    self.backing = .nioThrowingAsyncSequence(sequence)
   }
 
   @inlinable
@@ -112,18 +124,23 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
   @inlinable
   public func makeAsyncIterator() -> Iterator {
     switch self.backing {
-    case let .passthroughMessageSequence(sequence):
-      return Self.AsyncIterator(.passthroughMessageSequence(sequence.makeAsyncIterator()))
     case let .asyncStream(stream):
       return Self.AsyncIterator(.asyncStream(stream.makeAsyncIterator()))
+    case let .nioThrowingAsyncSequence(sequence):
+      return Self.AsyncIterator(.nioThrowingAsyncSequence(sequence.makeAsyncIterator()))
     }
   }
 
   public struct Iterator: AsyncIteratorProtocol {
     @usableFromInline
     enum BackingIterator {
-      case passthroughMessageSequence(PassthroughMessageSequence<Element, Error>.Iterator)
       case asyncStream(AsyncThrowingStream<Element, Error>.Iterator)
+      case nioThrowingAsyncSequence(NIOThrowingAsyncSequenceProducer<
+        Element,
+        Error,
+        NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+        GRPCAsyncSequenceProducerDelegate
+      >.AsyncIterator)
     }
 
     @usableFromInline
@@ -137,12 +154,12 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
     @inlinable
     public mutating func next() async throws -> Element? {
       switch self.iterator {
-      case let .passthroughMessageSequence(iterator):
-        return try await iterator.next()
       case var .asyncStream(iterator):
         let element = try await iterator.next()
         self.iterator = .asyncStream(iterator)
         return element
+      case let .nioThrowingAsyncSequence(iterator):
+        return try await iterator.next()
       }
     }
   }

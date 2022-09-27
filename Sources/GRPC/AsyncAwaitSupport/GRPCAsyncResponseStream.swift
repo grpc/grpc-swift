@@ -15,12 +15,19 @@
  */
 #if compiler(>=5.6)
 
+import NIOCore
+
 /// This is currently a wrapper around AsyncThrowingStream because we want to be
 /// able to swap out the implementation for something else in the future.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncResponseStream<Element: Sendable>: AsyncSequence {
   @usableFromInline
-  internal typealias WrappedStream = PassthroughMessageSequence<Element, Error>
+  internal typealias WrappedStream = NIOThrowingAsyncSequenceProducer<
+    Element,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >
 
   @usableFromInline
   internal let stream: WrappedStream
@@ -52,7 +59,5 @@ public struct GRPCAsyncResponseStream<Element: Sendable>: AsyncSequence {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCAsyncResponseStream: Sendable {}
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension GRPCAsyncResponseStream.Iterator: Sendable {}
 
 #endif
