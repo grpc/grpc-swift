@@ -24,7 +24,7 @@ extension ErrorRecordingDelegate: @unchecked Sendable {}
 #endif // compiler(>=5.6)
 
 final class ErrorRecordingDelegate: ClientErrorDelegate {
-  private let lock: Lock
+  private let lock: NIOLock
   private var _errors: [Error] = []
 
   internal var errors: [Error] {
@@ -37,11 +37,11 @@ final class ErrorRecordingDelegate: ClientErrorDelegate {
 
   init(expectation: XCTestExpectation) {
     self.expectation = expectation
-    self.lock = Lock()
+    self.lock = NIOLock()
   }
 
   func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       self._errors.append(error)
     }
     self.expectation.fulfill()

@@ -279,7 +279,7 @@ internal final class ConnectionManager {
 
   private let connectionID: String
   private var channelNumber: UInt64
-  private var channelNumberLock = Lock()
+  private var channelNumberLock = NIOLock()
 
   private var _connectionIDAndNumber: String {
     return "\(self.connectionID)/\(self.channelNumber)"
@@ -292,7 +292,7 @@ internal final class ConnectionManager {
   }
 
   private func updateConnectionID() {
-    self.channelNumberLock.withLockVoid {
+    self.channelNumberLock.withLock {
       self.channelNumber &+= 1
       self.logger[metadataKey: MetadataKey.connectionID] = "\(self._connectionIDAndNumber)"
     }

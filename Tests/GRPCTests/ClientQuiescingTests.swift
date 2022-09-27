@@ -425,10 +425,10 @@ extension ClientQuiescingTests {
     }
 
     private var state = _State.active(0)
-    private let lock = Lock()
+    private let lock = NIOLock()
 
     internal func assert(_ state: State, line: UInt = #line) {
-      self.lock.withLockVoid {
+      self.lock.withLock {
         switch (self.state, state) {
         case (.active, .active),
              (.shutdownRequested, .shutdownRequested),
@@ -441,7 +441,7 @@ extension ClientQuiescingTests {
     }
 
     internal func willStartRPC() {
-      self.lock.withLockVoid {
+      self.lock.withLock {
         switch self.state {
         case let .active(outstandingRPCs):
           self.state = .active(outstandingRPCs + 1)
@@ -458,7 +458,7 @@ extension ClientQuiescingTests {
     }
 
     internal func didFinishRPC() {
-      self.lock.withLockVoid {
+      self.lock.withLock {
         switch self.state {
         case let .active(outstandingRPCs):
           XCTAssertGreaterThan(outstandingRPCs, 0)
@@ -475,7 +475,7 @@ extension ClientQuiescingTests {
     }
 
     internal func willRequestGracefulShutdown() {
-      self.lock.withLockVoid {
+      self.lock.withLock {
         switch self.state {
         case let .active(outstandingRPCs):
           self.state = .shutdownRequested(outstandingRPCs)

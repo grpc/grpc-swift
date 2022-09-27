@@ -277,7 +277,7 @@ fileprivate final class CollectingDelegate<
   Element: Sendable,
   End: Sendable
 >: AsyncWriterDelegate, @unchecked Sendable {
-  private let lock = Lock()
+  private let lock = NIOLock()
   private var _elements: [Element] = []
   private var _end: End?
 
@@ -290,13 +290,13 @@ fileprivate final class CollectingDelegate<
   }
 
   internal func write(_ element: Element) {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       self._elements.append(element)
     }
   }
 
   internal func writeEnd(_ end: End) {
-    self.lock.withLockVoid {
+    self.lock.withLock {
       self._end = end
     }
   }

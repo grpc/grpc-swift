@@ -20,7 +20,7 @@ import NIOConcurrencyHelpers
 
 /// A `LogHandler` factory which captures all logs emitted by the handlers it makes.
 internal class CapturingLogHandlerFactory {
-  private var lock = Lock()
+  private var lock = NIOLock()
   private var _logs: [CapturedLog] = []
 
   private var logFormatter: CapturedLogFormatter?
@@ -45,7 +45,7 @@ internal class CapturingLogHandlerFactory {
   /// Make a `LogHandler` whose logs will be recorded by this factory.
   func make(_ label: String) -> LogHandler {
     return CapturingLogHandler(label: label) { log in
-      self.lock.withLockVoid {
+      self.lock.withLock {
         self._logs.append(log)
       }
 

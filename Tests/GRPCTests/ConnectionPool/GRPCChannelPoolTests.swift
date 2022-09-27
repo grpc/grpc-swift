@@ -312,7 +312,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
       $0.connectionPool.maxWaitTime = .hours(1)
     }
 
-    let lock = Lock()
+    let lock = NIOLock()
     var order = 0
 
     // We need a connection to be up and running to avoid hitting the waiter limit when creating a
@@ -341,15 +341,15 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     }
 
     // Still zero: the first RPC is still active.
-    lock.withLockVoid { XCTAssertEqual(order, 0) }
+    lock.withLock { XCTAssertEqual(order, 0) }
     // End the first RPC.
     XCTAssertNoThrow(try rpcs.first!.sendEnd().wait())
     XCTAssertNoThrow(try rpcs.first!.status.wait())
-    lock.withLockVoid { XCTAssertEqual(order, 1) }
+    lock.withLock { XCTAssertEqual(order, 1) }
     // End the last RPC.
     XCTAssertNoThrow(try rpcs.last!.sendEnd().wait())
     XCTAssertNoThrow(try rpcs.last!.status.wait())
-    lock.withLockVoid { XCTAssertEqual(order, 2) }
+    lock.withLock { XCTAssertEqual(order, 2) }
 
     // End the rest.
     for rpc in rpcs.dropFirst().dropLast() {

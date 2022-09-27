@@ -330,7 +330,7 @@ extension PoolManagerStateMachine.ShutdownAction {
 private final class EmbeddedEventLoopGroup: EventLoopGroup {
   internal let loops: [EmbeddedEventLoop]
 
-  internal let lock = Lock()
+  internal let lock = NIOLock()
   internal var index = 0
 
   internal init(loops: Int) {

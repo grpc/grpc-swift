@@ -74,10 +74,10 @@ extension ConnectivityStateMonitor: @unchecked Sendable {}
 #endif // compiler(>=5.6)
 
 public class ConnectivityStateMonitor {
-  private let stateLock = Lock()
+  private let stateLock = NIOLock()
   private var _state: ConnectivityState = .idle
 
-  private let delegateLock = Lock()
+  private let delegateLock = NIOLock()
   private var _delegate: ConnectivityStateDelegate?
   private let delegateCallbackQueue: DispatchQueue
 
@@ -105,7 +105,7 @@ public class ConnectivityStateMonitor {
       }
     }
     set {
-      self.delegateLock.withLockVoid {
+      self.delegateLock.withLock {
         self._delegate = newValue
       }
     }
