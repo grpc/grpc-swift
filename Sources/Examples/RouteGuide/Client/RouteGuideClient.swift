@@ -143,7 +143,7 @@ extension RouteGuideExample {
         }
       }
 
-      try await recordRoute.requestStream.finish()
+      recordRoute.requestStream.finish()
       let summary = try await recordRoute.response
 
       print(
@@ -188,7 +188,7 @@ extension RouteGuideExample {
             try await Task.sleep(nanoseconds: UInt64.random(in: UInt64(2e8) ... UInt64(1e9)))
           }
 
-          try await routeChat.requestStream.finish()
+          routeChat.requestStream.finish()
         }
 
         // Add a task to print each message received on the response stream.

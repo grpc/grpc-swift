@@ -21,11 +21,16 @@ import NIOCore
 ///
 /// To enable testability this type provides a static ``GRPCAsyncRequestStream/makeTestingRequestStream()``
 /// method which allows you to create a stream that you can drive.
-///
-/// - Note: This is currently a wrapper around AsyncThrowingStream because we want to be
-/// able to swap out the implementation for something else in the future.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
+  @usableFromInline
+  internal typealias _AsyncSequenceProducer = NIOThrowingAsyncSequenceProducer<
+    Element,
+    Error,
+    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+    GRPCAsyncSequenceProducerDelegate
+  >
+
   /// A source used for driving a ``GRPCAsyncRequestStream`` during tests.
   public struct Source {
     @usableFromInline
@@ -80,25 +85,15 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
   @usableFromInline
   enum Backing: Sendable {
     case asyncStream(AsyncThrowingStream<Element, Error>)
-    case nioThrowingAsyncSequence(NIOThrowingAsyncSequenceProducer<
-      Element,
-      Error,
-      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-      GRPCAsyncSequenceProducerDelegate
-    >)
+    case throwingAsyncSequenceProducer(_AsyncSequenceProducer)
   }
 
   @usableFromInline
   internal let backing: Backing
 
   @inlinable
-  internal init(_ sequence: NIOThrowingAsyncSequenceProducer<
-    Element,
-    Error,
-    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-    GRPCAsyncSequenceProducerDelegate
-  >) {
-    self.backing = .nioThrowingAsyncSequence(sequence)
+  internal init(_ sequence: _AsyncSequenceProducer) {
+    self.backing = .throwingAsyncSequenceProducer(sequence)
   }
 
   @inlinable
@@ -126,8 +121,8 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
     switch self.backing {
     case let .asyncStream(stream):
       return Self.AsyncIterator(.asyncStream(stream.makeAsyncIterator()))
-    case let .nioThrowingAsyncSequence(sequence):
-      return Self.AsyncIterator(.nioThrowingAsyncSequence(sequence.makeAsyncIterator()))
+    case let .throwingAsyncSequenceProducer(sequence):
+      return Self.AsyncIterator(.throwingAsyncSequenceProducer(sequence.makeAsyncIterator()))
     }
   }
 
@@ -135,12 +130,7 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
     @usableFromInline
     enum BackingIterator {
       case asyncStream(AsyncThrowingStream<Element, Error>.Iterator)
-      case nioThrowingAsyncSequence(NIOThrowingAsyncSequenceProducer<
-        Element,
-        Error,
-        NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-        GRPCAsyncSequenceProducerDelegate
-      >.AsyncIterator)
+      case throwingAsyncSequenceProducer(_AsyncSequenceProducer.AsyncIterator)
     }
 
     @usableFromInline
@@ -153,12 +143,13 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
 
     @inlinable
     public mutating func next() async throws -> Element? {
+      if Task.isCancelled { throw GRPCStatus(code: .cancelled) }
       switch self.iterator {
       case var .asyncStream(iterator):
         let element = try await iterator.next()
         self.iterator = .asyncStream(iterator)
         return element
-      case let .nioThrowingAsyncSequence(iterator):
+      case let .throwingAsyncSequenceProducer(iterator):
         return try await iterator.next()
       }
     }

@@ -222,7 +222,7 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     let collect = echo.makeCollectCall()
     // Send and close.
     try await collect.requestStream.send(.with { $0.text = "foo" })
-    try await collect.requestStream.finish()
+    collect.requestStream.finish()
 
     // Await the response and status.
     _ = try await collect.response
@@ -294,7 +294,7 @@ final class AsyncClientCancellationTests: GRPCTestCase {
     let update = echo.makeUpdateCall()
     // Send and close.
     try await update.requestStream.send(.with { $0.text = "foo" })
-    try await update.requestStream.finish()
+    update.requestStream.finish()
 
     // Await the response and status.
     let responseCount = try await update.responseStream.count()

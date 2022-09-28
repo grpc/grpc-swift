@@ -14,20 +14,35 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import NIOCore
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Call where Request: Sendable, Response: Sendable {
-  internal func makeRequestStreamWriter() -> GRPCAsyncRequestStreamWriter<Request> {
-    let delegate = GRPCAsyncRequestStreamWriter<Request>.Delegate(
-      compressionEnabled: self.options.messageEncoding.enabledForRequests
-    ) { request, metadata in
-      self.send(.message(request, metadata), promise: nil)
-    } finish: {
-      self.send(.end, promise: nil)
-    }
+  typealias AsyncWriter = NIOAsyncWriter<
+    (Request, Compression),
+    GRPCAsyncWriterSinkDelegate<(Request, Compression)>
+  >
+  internal func makeRequestStreamWriter()
+    -> (GRPCAsyncRequestStreamWriter<Request>, AsyncWriter.Sink) {
+    let delegate = GRPCAsyncWriterSinkDelegate<(Request, Compression)>(
+      didYield: { requests in
+        for (request, compression) in requests {
+          let compress = compression
+            .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
+
+          // TODO: be smarter about inserting flushes.
+          // We currently always flush after every write which may trigger more syscalls than necessary.
+          let metadata = MessageMetadata(compress: compress, flush: true)
+          self.send(.message(request, metadata), promise: nil)
+        }
+      },
+      didTerminate: { _ in self.send(.end, promise: nil) }
+    )
+
+    let writer = NIOAsyncWriter.makeWriter(isWritable: false, delegate: delegate)
 
     // Start as not-writable; writability will be toggled when the stream comes up.
-    return GRPCAsyncRequestStreamWriter(asyncWriter: .init(isWritable: false, delegate: delegate))
+    return (GRPCAsyncRequestStreamWriter<Request>(asyncWriter: writer.writer), writer.sink)
   }
 }
 

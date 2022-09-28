@@ -15,6 +15,7 @@
  */
 #if compiler(>=5.6)
 
+import NIOCore
 import NIOHPACK
 
 /// Async-await variant of ``ClientStreamingCall``.
@@ -22,6 +23,7 @@ import NIOHPACK
 public struct GRPCAsyncClientStreamingCall<Request: Sendable, Response: Sendable>: Sendable {
   private let call: Call<Request, Response>
   private let responseParts: UnaryResponseParts<Response>
+  private let requestSink: AsyncSink<(Request, Compression)>
 
   /// A request stream writer for sending messages to the server.
   public let requestStream: GRPCAsyncRequestStreamWriter<Request>
@@ -81,7 +83,9 @@ public struct GRPCAsyncClientStreamingCall<Request: Sendable, Response: Sendable
   private init(call: Call<Request, Response>) {
     self.call = call
     self.responseParts = UnaryResponseParts(on: call.eventLoop)
-    self.requestStream = call.makeRequestStreamWriter()
+    let (requestStream, requestSink) = call.makeRequestStreamWriter()
+    self.requestStream = requestStream
+    self.requestSink = AsyncSink(wrapping: requestSink)
   }
 
   /// We expose this as the only non-private initializer so that the caller
@@ -91,11 +95,11 @@ public struct GRPCAsyncClientStreamingCall<Request: Sendable, Response: Sendable
 
     asyncCall.call.invokeStreamingRequests(
       onStart: {
-        asyncCall.requestStream.asyncWriter.toggleWritabilityAsynchronously()
+        asyncCall.requestSink.setWritability(to: true)
       },
       onError: { error in
         asyncCall.responseParts.handleError(error)
-        asyncCall.requestStream.asyncWriter.cancelAsynchronously(withError: error)
+        asyncCall.requestSink.finish(error: error)
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,

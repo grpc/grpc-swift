@@ -82,7 +82,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
     try await collect.requestStream.send(.with { $0.text = "boyle" })
     try await collect.requestStream.send(.with { $0.text = "jeffers" })
     try await collect.requestStream.send(.with { $0.text = "holt" })
-    try await collect.requestStream.finish()
+    collect.requestStream.finish()
 
     let initialMetadata = try await collect.initialMetadata
     initialMetadata.assertFirst("200", forName: ":status")
@@ -149,7 +149,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
       XCTAssertEqual(response, "Swift echo update (\(i)): \(name)")
     }
 
-    try await update.requestStream.finish()
+    update.requestStream.finish()
 
     // This isn't right after we make the call as servers are not guaranteed to send metadata back
     // immediately. Concretely, we don't send initial metadata back until the first response
@@ -186,7 +186,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
     _ = try await update.responseStream.first(where: { _ in true })
     XCTAssertNoThrow(try self.server.close().wait())
     self.server = nil // So that tearDown() does not call close() again.
-    try await update.requestStream.finish()
+    update.requestStream.finish()
   }
 }
 
