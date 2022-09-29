@@ -616,16 +616,16 @@ internal final class AsyncServerHandler<
       let status: GRPCStatus
       let processedTrailers: HPACKHeaders
 
-      if processedError != nil {
+      if let processedError = processedError {
         (status, processedTrailers) = ServerErrorProcessor.processObserverError(
-          processedError!,
+          processedError,
           headers: requestHeaders,
           trailers: trailers,
           delegate: self.errorDelegate
         )
       } else {
         status = GRPCStatus.ok
-        processedTrailers = HPACKHeaders()
+        processedTrailers = trailers
       }
 
       switch self.interceptorStateMachine.interceptResponseStatus() {
