@@ -43,7 +43,7 @@ internal enum ServerErrorProcessor {
       status = grpcStatusTransformable.makeGRPCStatus()
       trailers = [:]
     } else {
-      // Eh... well, we don't what status to use. Use a generic one.
+      // Eh... well, we don't know what status to use. Use a generic one.
       status = .processingError(cause: error)
       trailers = [:]
     }

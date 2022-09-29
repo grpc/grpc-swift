@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import NIOCore
 
 /// An object allowing the holder -- a client -- to send requests on an RPC.
 ///
@@ -33,10 +34,16 @@
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   @usableFromInline
-  internal let asyncWriter: AsyncWriter<Delegate<Request>>
+  typealias AsyncWriter = NIOAsyncWriter<
+    (Request, Compression),
+    GRPCAsyncWriterSinkDelegate<(Request, Compression)>
+  >
+
+  @usableFromInline
+  /* private */ internal let asyncWriter: AsyncWriter
 
   @inlinable
-  internal init(asyncWriter: AsyncWriter<Delegate<Request>>) {
+  internal init(asyncWriter: AsyncWriter) {
     self.asyncWriter = asyncWriter
   }
 
@@ -62,65 +69,17 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
     _ request: Request,
     compression: Compression = .deferToCallDefault
   ) async throws {
-    try await self.asyncWriter.write((request, compression))
+    try await self.asyncWriter.yield((request, compression))
   }
 
-  /// Finish the request stream for the RPC. This must be called when there are no more requests to
-  /// be sent.
-  ///
-  /// - Throws: ``GRPCAsyncWriterError`` if the request stream has already been finished.
+  /// Finish the request stream for the RPC. This must be called when there are no more requests to be sent.
   public func finish() async throws {
-    try await self.asyncWriter.finish()
+    self.asyncWriter.finish()
   }
-}
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension GRPCAsyncRequestStreamWriter {
-  /// A delegate for the writer which writes messages to an underlying receiver.`
-  @usableFromInline
-  internal final class Delegate<Request: Sendable>: AsyncWriterDelegate, Sendable {
-    @usableFromInline
-    internal typealias Element = (Request, Compression)
-
-    @usableFromInline
-    internal typealias End = Void
-
-    @usableFromInline
-    internal let _compressionEnabled: Bool
-
-    @usableFromInline
-    internal let _send: @Sendable (Request, MessageMetadata) -> Void
-
-    @usableFromInline
-    internal let _finish: @Sendable () -> Void
-
-    @inlinable
-    internal init(
-      compressionEnabled: Bool,
-      send: @Sendable @escaping (Request, MessageMetadata) -> Void,
-      finish: @Sendable @escaping () -> Void
-    ) {
-      self._compressionEnabled = compressionEnabled
-      self._send = send
-      self._finish = finish
-    }
-
-    @inlinable
-    internal func write(_ element: (Request, Compression)) {
-      let (request, compression) = element
-      let compress = compression.isEnabled(callDefault: self._compressionEnabled)
-
-      // TODO: be smarter about inserting flushes.
-      //
-      // We currently always flush after every write which may trigger more syscalls than necessary.
-      let metadata = MessageMetadata(compress: compress, flush: true)
-      self._send(request, metadata)
-    }
-
-    @inlinable
-    internal func writeEnd(_ end: Void) {
-      self._finish()
-    }
+  /// Finish the request stream for the RPC with the given error.
+  internal func finish(_ error: Error) {
+    self.asyncWriter.finish(error: error)
   }
 }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #if compiler(>=5.6)
 
 import NIOCore
@@ -85,17 +86,20 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
     // We ignore messages in the closure and instead feed them into the response source when we
     // invoke the `call`.
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
-    let sequence = NIOThrowingAsyncSequenceProducer<
-      Response,
-      Error,
-      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-      GRPCAsyncSequenceProducerDelegate
-    >.makeSequence(
-      backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+
+    let backpressureStrategy = NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark(
+      lowWatermark: 10,
+      highWatermark: 50
+    )
+    let sequenceProducer = NIOThrowingAsyncSequenceProducer.makeSequence(
+      elementType: Response.self,
+      failureType: Error.self,
+      backPressureStrategy: backpressureStrategy,
       delegate: GRPCAsyncSequenceProducerDelegate()
     )
-    self.responseSource = sequence.source
-    self.responseStream = .init(sequence.sequence)
+
+    self.responseSource = sequenceProducer.source
+    self.responseStream = .init(sequenceProducer.sequence)
   }
 
   /// We expose this as the only non-private initializer so that the caller

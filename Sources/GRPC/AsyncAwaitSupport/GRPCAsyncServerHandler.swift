@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if compiler(>=5.6)
+import DequeModule
 import Logging
 import NIOCore
 import NIOHPACK
@@ -224,7 +225,8 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal private(set) var handlerComponents: Optional<ServerHandlerComponents<
     Request,
-    AsyncResponseStreamWriterDelegate<Response>
+    Response,
+    GRPCAsyncWriterSinkDelegate<(Response, Compression)>
   >>
 
   /// The user provided function to execute.
@@ -430,43 +432,41 @@ internal final class AsyncServerHandler<
         contextProvider: self
       )
 
-      let sequenceProducer = AsyncSequenceProducer.makeSequence(
-        backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+      let backpressureStrategy = NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark(
+        lowWatermark: 10,
+        highWatermark: 50
+      )
+      let requestSequenceProducer = NIOThrowingAsyncSequenceProducer.makeSequence(
+        elementType: Request.self,
+        failureType: Error.self,
+        backPressureStrategy: backpressureStrategy,
         delegate: GRPCAsyncSequenceProducerDelegate()
       )
 
-      let writerDelegate = AsyncResponseStreamWriterDelegate(
-        send: self.interceptResponseMessage(_:compression:),
-        finish: self.interceptResponseStatus(_:)
+      let responseWriter = NIOAsyncWriter.makeWriter(
+        isWritable: true,
+        delegate: GRPCAsyncWriterSinkDelegate<(Response, Compression)>(
+          didYield: self.interceptResponseMessages,
+          didTerminate: { error in
+            self.interceptTermination(error)
+          }
+        )
       )
-      let writer = AsyncWriter(delegate: writerDelegate)
-
-      // The user handler has two exit modes:
-      // 1. It completes successfully (the async user function completes without throwing), or
-      // 2. It throws an error.
-      //
-      // On the happy path the 'ok' status is queued up on the async writer. On the error path
-      // the writer queue is drained and promise below is completed. When the promise is failed
-      // it processes the error (possibly via a delegate) and sends back an appropriate status.
-      // We require separate paths as the failure path needs to execute on the event loop to process
-      // the error.
-      let promise = self.eventLoop.makePromise(of: Void.self)
-      // The success path is taken care of by the Task.
-      promise.futureResult.whenFailure { error in
-        self.userHandlerThrewError(error)
-      }
 
       // Update our state before invoke the handler.
       self.handlerStateMachine.handlerInvoked(requestHeaders: headers)
-      self.handlerComponents = ServerHandlerComponents(
-        requestSource: sequenceProducer.source,
-        responseWriter: writer,
-        task: promise.completeWithTask {
+      self.handlerComponents = ServerHandlerComponents<
+        Request,
+        Response,
+        GRPCAsyncWriterSinkDelegate<(Response, Compression)>
+      >(
+        requestSource: requestSequenceProducer.source,
+        responseWriterSink: responseWriter.sink,
+        task: Task {
           // We don't have a task cancellation handler here: we do it in `self.cancel()`.
-          try await self.invokeUserHandler(
-            sequence: sequenceProducer.sequence,
-            sequenceSource: sequenceProducer.source,
-            responseStreamWriter: writer,
+          await self.invokeUserHandler(
+            requestSequence: requestSequenceProducer,
+            responseWriter: responseWriter.writer,
             callContext: handlerContext
           )
         }
@@ -480,60 +480,27 @@ internal final class AsyncServerHandler<
   @Sendable
   @usableFromInline
   internal func invokeUserHandler(
-    sequence: AsyncSequenceProducer,
-    sequenceSource: AsyncSequenceProducer.Source,
-    responseStreamWriter: AsyncWriter<AsyncResponseStreamWriterDelegate<Response>>,
+    requestSequence: AsyncSequenceProducer.NewSequence,
+    responseWriter: NIOAsyncWriter<
+      (Response, Compression),
+      GRPCAsyncWriterSinkDelegate<(Response, Compression)>
+    >,
     callContext: GRPCAsyncServerCallContext
-  ) async throws {
+  ) async {
     defer {
       // It's possible the user handler completed before the end of the request stream. We
       // explicitly finish it to drop any unconsumed inbound messages.
-      sequenceSource.finish()
+      requestSequence.source.finish()
     }
 
     do {
-      let requestStream = GRPCAsyncRequestStream(sequence)
-      let responseStream = GRPCAsyncResponseStreamWriter(wrapping: responseStreamWriter)
-      try await self.userHandler(requestStream, responseStream, callContext)
+      let grpcRequestStream = GRPCAsyncRequestStream(requestSequence.sequence)
+      let grpcResponseStreamWriter = GRPCAsyncResponseStreamWriter(wrapping: responseWriter)
+      try await self.userHandler(grpcRequestStream, grpcResponseStreamWriter, callContext)
 
-      // Done successfully. Queue up and send back an 'ok' status.
-      try await responseStreamWriter.finish(.ok)
+      responseWriter.finish()
     } catch {
-      // Drop pending writes as we're on the error path.
-      await responseStreamWriter.cancel(withError: error)
-
-      if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
-        throw GRPCStatus(code: .unknown, message: "Handler threw error with status code 'ok'.")
-      } else {
-        throw error
-      }
-    }
-  }
-
-  @usableFromInline
-  internal func userHandlerThrewError(_ error: Error) {
-    self.eventLoop.assertInEventLoop()
-
-    switch self.handlerStateMachine.sendStatus() {
-    case let .intercept(requestHeaders, trailers):
-      let (status, processedTrailers) = ServerErrorProcessor.processObserverError(
-        error,
-        headers: requestHeaders,
-        trailers: trailers,
-        delegate: self.errorDelegate
-      )
-
-      switch self.interceptorStateMachine.interceptResponseStatus() {
-      case .intercept:
-        self.interceptors?.send(.end(status, processedTrailers), promise: nil)
-      case .cancel:
-        self.cancel(error: nil)
-      case .drop:
-        ()
-      }
-
-    case .drop:
-      ()
+      responseWriter.finish(error: error)
     }
   }
 
@@ -616,25 +583,54 @@ internal final class AsyncServerHandler<
 
   @Sendable
   @inlinable
-  internal func interceptResponseMessage(_ response: Response, compression: Compression) {
+  internal func interceptResponseMessages(_ messages: Deque<(Response, Compression)>) {
     if self.eventLoop.inEventLoop {
-      self._interceptResponseMessage(response, compression: compression)
+      for message in messages {
+        self._interceptResponseMessage(message.0, compression: message.1)
+      }
     } else {
       self.eventLoop.execute {
-        self._interceptResponseMessage(response, compression: compression)
+        for message in messages {
+          self._interceptResponseMessage(message.0, compression: message.1)
+        }
       }
     }
   }
 
   @inlinable
-  internal func _interceptResponseStatus(_ status: GRPCStatus) {
+  internal func _interceptTermination(_ error: Error?) {
     self.eventLoop.assertInEventLoop()
 
+    let processedError: Error?
+    if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
+      processedError = GRPCStatus(
+        code: .unknown,
+        message: "Handler threw error with status code 'ok'."
+      )
+    } else {
+      processedError = error
+    }
+
     switch self.handlerStateMachine.sendStatus() {
-    case let .intercept(_, trailers):
+    case let .intercept(requestHeaders, trailers):
+      let status: GRPCStatus
+      let processedTrailers: HPACKHeaders
+
+      if let processedError = processedError {
+        (status, processedTrailers) = ServerErrorProcessor.processObserverError(
+          processedError,
+          headers: requestHeaders,
+          trailers: trailers,
+          delegate: self.errorDelegate
+        )
+      } else {
+        status = GRPCStatus.ok
+        processedTrailers = trailers
+      }
+
       switch self.interceptorStateMachine.interceptResponseStatus() {
       case .intercept:
-        self.interceptors?.send(.end(status, trailers), promise: nil)
+        self.interceptors?.send(.end(status, processedTrailers), promise: nil)
       case .cancel:
         return self.cancel(error: nil)
       case .drop:
@@ -648,12 +644,12 @@ internal final class AsyncServerHandler<
 
   @Sendable
   @inlinable
-  internal func interceptResponseStatus(_ status: GRPCStatus) {
+  internal func interceptTermination(_ status: Error?) {
     if self.eventLoop.inEventLoop {
-      self._interceptResponseStatus(status)
+      self._interceptTermination(status)
     } else {
       self.eventLoop.execute {
-        self._interceptResponseStatus(status)
+        self._interceptTermination(status)
       }
     }
   }
@@ -816,32 +812,37 @@ protocol AsyncServerCallContextProvider: Sendable {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-internal struct ServerHandlerComponents<Request: Sendable, Delegate: AsyncWriterDelegate> {
+internal struct ServerHandlerComponents<
+  Request: Sendable,
+  Response: Sendable,
+  Delegate: NIOAsyncWriterSinkDelegate
+> where Delegate.Element == (Response, Compression) {
   @usableFromInline
-  internal let task: Task<Void, Never>
+  internal typealias AsyncWriterSink = NIOAsyncWriter<(Response, Compression), Delegate>.Sink
+
   @usableFromInline
-  internal let responseWriter: AsyncWriter<Delegate>
-  @usableFromInline
-  internal let requestSource: NIOThrowingAsyncSequenceProducer<
+  internal typealias AsyncSequenceSource = NIOThrowingAsyncSequenceProducer<
     Request,
     Error,
     NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
     GRPCAsyncSequenceProducerDelegate
   >.Source
 
+  @usableFromInline
+  internal let task: Task<Void, Never>
+  @usableFromInline
+  internal let responseWriterSink: AsyncWriterSink
+  @usableFromInline
+  internal let requestSource: AsyncSequenceSource
+
   @inlinable
   init(
-    requestSource: NIOThrowingAsyncSequenceProducer<
-      Request,
-      Error,
-      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-      GRPCAsyncSequenceProducerDelegate
-    >.Source,
-    responseWriter: AsyncWriter<Delegate>,
+    requestSource: AsyncSequenceSource,
+    responseWriterSink: AsyncWriterSink,
     task: Task<Void, Never>
   ) {
     self.task = task
-    self.responseWriter = responseWriter
+    self.responseWriterSink = responseWriterSink
     self.requestSource = requestSource
   }
 
@@ -849,12 +850,12 @@ internal struct ServerHandlerComponents<Request: Sendable, Delegate: AsyncWriter
     // Cancel the request and response streams.
     //
     // The user handler is encouraged to check for cancellation, however, we should assume
-    // they do not. Cancelling the request source stops any more requests from being delivered
-    // to the request stream, and cancelling the writer will ensure no more responses are
+    // they do not. Finishing the request source stops any more requests from being delivered
+    // to the request stream, and finishing the writer sink will ensure no more responses are
     // written. This should reduce how long the user handler runs for as it can no longer do
     // anything useful.
     self.requestSource.finish()
-    self.responseWriter.cancelAsynchronously(withError: CancellationError())
+    self.responseWriterSink.finish(error: CancellationError())
     self.task.cancel()
   }
 }

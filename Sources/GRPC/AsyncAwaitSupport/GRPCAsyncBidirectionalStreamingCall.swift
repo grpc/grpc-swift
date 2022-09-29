@@ -29,6 +29,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
     NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
     GRPCAsyncSequenceProducerDelegate
   >.Source
+  private let requestSink: AsyncSink<(Request, Compression)>
 
   /// A request stream writer for sending messages to the server.
   public let requestStream: GRPCAsyncRequestStreamWriter<Request>
@@ -86,7 +87,8 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
   private init(call: Call<Request, Response>) {
     self.call = call
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
-    let sequence = NIOThrowingAsyncSequenceProducer<
+
+    let sequenceProducer = NIOThrowingAsyncSequenceProducer<
       Response,
       Error,
       NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
@@ -95,9 +97,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
       backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
       delegate: GRPCAsyncSequenceProducerDelegate()
     )
-    self.responseSource = sequence.source
-    self.responseStream = .init(sequence.sequence)
-    self.requestStream = call.makeRequestStreamWriter()
+
+    self.responseSource = sequenceProducer.source
+    self.responseStream = .init(sequenceProducer.sequence)
+    let (requestStream, requestSink) = call.makeRequestStreamWriter()
+    self.requestStream = requestStream
+    self.requestSink = AsyncSink(wrapping: requestSink)
   }
 
   /// We expose this as the only non-private initializer so that the caller
@@ -107,12 +112,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
 
     asyncCall.call.invokeStreamingRequests(
       onStart: {
-        asyncCall.requestStream.asyncWriter.toggleWritabilityAsynchronously()
+        asyncCall.requestSink.setWritability(to: true)
       },
       onError: { error in
         asyncCall.responseParts.handleError(error)
         asyncCall.responseSource.finish(error)
-        asyncCall.requestStream.asyncWriter.cancelAsynchronously(withError: error)
+        asyncCall.requestSink.finish(error: error)
       },
       onResponsePart: AsyncCall.makeResponsePartHandler(
         responseParts: asyncCall.responseParts,
@@ -157,8 +162,7 @@ internal enum AsyncCall {
         } else {
           responseSource.finish(status)
         }
-
-        requestStream?.asyncWriter.cancelAsynchronously(withError: status)
+        requestStream?.finish(status)
       }
     }
   }
@@ -178,7 +182,7 @@ internal enum AsyncCall {
       case .metadata, .message:
         ()
       case let .end(status, _):
-        requestStream?.asyncWriter.cancelAsynchronously(withError: status)
+        requestStream?.finish(status)
       }
     }
   }

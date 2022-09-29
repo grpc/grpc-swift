@@ -15,6 +15,7 @@
  */
 
 #if compiler(>=5.6)
+import NIOCore
 
 /// Writer for server-streaming RPC handlers to provide responses.
 ///
@@ -22,6 +23,12 @@
 /// method which allows you to create a stream that you can drive.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
+  @usableFromInline
+  internal typealias AsyncWriter = NIOAsyncWriter<
+    (Response, Compression),
+    GRPCAsyncWriterSinkDelegate<(Response, Compression)>
+  >
+
   /// An `AsyncSequence` backing a ``GRPCAsyncResponseStreamWriter`` for testing purposes.
   ///
   /// - Important: This `AsyncSequence` is never finishing.
@@ -91,21 +98,15 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
 
   @usableFromInline
   enum Backing: Sendable {
-    case asyncWriter(AsyncWriter<Delegate>)
+    case asyncWriter(AsyncWriter)
     case closure(@Sendable ((Response, Compression)) async -> Void)
   }
-
-  @usableFromInline
-  internal typealias Element = (Response, Compression)
-
-  @usableFromInline
-  internal typealias Delegate = AsyncResponseStreamWriterDelegate<Response>
 
   @usableFromInline
   internal let backing: Backing
 
   @inlinable
-  internal init(wrapping asyncWriter: AsyncWriter<Delegate>) {
+  internal init(wrapping asyncWriter: AsyncWriter) {
     self.backing = .asyncWriter(asyncWriter)
   }
 
@@ -121,7 +122,7 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
   ) async throws {
     switch self.backing {
     case let .asyncWriter(writer):
-      try await writer.write((response, compression))
+      try await writer.yield((response, compression))
 
     case let .closure(closure):
       await closure((response, compression))
@@ -148,54 +149,6 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     )
 
     return TestingStreamWriter(writer: writer, stream: responseStream)
-  }
-}
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-@usableFromInline
-internal final class AsyncResponseStreamWriterDelegate<Response: Sendable>: AsyncWriterDelegate {
-  @usableFromInline
-  internal typealias Element = (Response, Compression)
-
-  @usableFromInline
-  internal typealias End = GRPCStatus
-
-  @usableFromInline
-  internal let _send: @Sendable (Response, Compression) -> Void
-
-  @usableFromInline
-  internal let _finish: @Sendable (GRPCStatus) -> Void
-
-  // Create a new AsyncResponseStreamWriterDelegate.
-  //
-  // - Important: the `send` and `finish` closures must be thread-safe.
-  @inlinable
-  internal init(
-    send: @escaping @Sendable (Response, Compression) -> Void,
-    finish: @escaping @Sendable (GRPCStatus) -> Void
-  ) {
-    self._send = send
-    self._finish = finish
-  }
-
-  @inlinable
-  internal func _send(
-    _ response: Response,
-    compression: Compression = .deferToCallDefault
-  ) {
-    self._send(response, compression)
-  }
-
-  // MARK: - AsyncWriterDelegate conformance.
-
-  @inlinable
-  internal func write(_ element: (Response, Compression)) {
-    self._send(element.0, compression: element.1)
-  }
-
-  @inlinable
-  internal func writeEnd(_ end: GRPCStatus) {
-    self._finish(end)
   }
 }
 

@@ -514,16 +514,17 @@ internal final class AsyncResponseStream: GRPCServerResponseWriter {
   >
 
   init() {
-    let sequenceProducer = NIOAsyncSequenceProducer<
-      GRPCServerResponsePart<ByteBuffer>,
-      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-      GRPCAsyncSequenceProducerDelegate
-    >.makeSequence(
-      backPressureStrategy: .init(lowWatermark: 10, highWatermark: 50),
+    let backpressureStrategy = NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark(
+      lowWatermark: 10,
+      highWatermark: 50
+    )
+    let sequence = NIOAsyncSequenceProducer.makeSequence(
+      elementType: GRPCServerResponsePart<ByteBuffer>.self,
+      backPressureStrategy: backpressureStrategy,
       delegate: GRPCAsyncSequenceProducerDelegate()
     )
-    self.source = sequenceProducer.source
-    self.responseSequence = sequenceProducer.sequence
+    self.source = sequence.source
+    self.responseSequence = sequence.sequence
   }
 
   func sendMetadata(
