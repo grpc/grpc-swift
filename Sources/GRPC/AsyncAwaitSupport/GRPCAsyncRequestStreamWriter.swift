@@ -78,7 +78,7 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   }
 
   /// Finish the request stream for the RPC with the given error.
-  internal func finish(with error: Error) {
+  internal func finish(_ error: Error) {
     self.asyncWriter.finish(error: error)
   }
 }

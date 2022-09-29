@@ -601,24 +601,32 @@ internal final class AsyncServerHandler<
   internal func _interceptTermination(_ error: Error?) {
     self.eventLoop.assertInEventLoop()
 
-    let processedError: Error
+    let processedError: Error?
     if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
       processedError = GRPCStatus(
         code: .unknown,
         message: "Handler threw error with status code 'ok'."
       )
     } else {
-      processedError = error ?? GRPCStatus.ok
+      processedError = error
     }
 
     switch self.handlerStateMachine.sendStatus() {
     case let .intercept(requestHeaders, trailers):
-      let (status, processedTrailers) = ServerErrorProcessor.processObserverError(
-        processedError,
-        headers: requestHeaders,
-        trailers: trailers,
-        delegate: self.errorDelegate
-      )
+      let status: GRPCStatus
+      let processedTrailers: HPACKHeaders
+
+      if processedError != nil {
+        (status, processedTrailers) = ServerErrorProcessor.processObserverError(
+          processedError!,
+          headers: requestHeaders,
+          trailers: trailers,
+          delegate: self.errorDelegate
+        )
+      } else {
+        status = GRPCStatus.ok
+        processedTrailers = HPACKHeaders()
+      }
 
       switch self.interceptorStateMachine.interceptResponseStatus() {
       case .intercept:

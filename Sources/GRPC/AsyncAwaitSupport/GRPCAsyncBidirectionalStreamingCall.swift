@@ -162,7 +162,7 @@ internal enum AsyncCall {
         } else {
           responseSource.finish(status)
         }
-        requestStream?.finish(with: status)
+        requestStream?.finish(status)
       }
     }
   }
@@ -182,7 +182,7 @@ internal enum AsyncCall {
       case .metadata, .message:
         ()
       case let .end(status, _):
-        requestStream?.finish(with: status)
+        requestStream?.finish(status)
       }
     }
   }
