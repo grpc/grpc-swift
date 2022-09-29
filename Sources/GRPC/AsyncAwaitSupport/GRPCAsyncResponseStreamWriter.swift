@@ -15,7 +15,6 @@
  */
 
 #if compiler(>=5.6)
-import DequeModule
 import NIOCore
 
 /// Writer for server-streaming RPC handlers to provide responses.

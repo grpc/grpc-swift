@@ -500,15 +500,7 @@ internal final class AsyncServerHandler<
 
       responseWriter.finish()
     } catch {
-      if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
-        let unknownStatus = GRPCStatus(
-          code: .unknown,
-          message: "Handler threw error with status code 'ok'."
-        )
-        responseWriter.finish(error: unknownStatus)
-      } else {
-        responseWriter.finish(error: error)
-      }
+      responseWriter.finish(error: error)
     }
   }
 
@@ -606,13 +598,23 @@ internal final class AsyncServerHandler<
   }
 
   @inlinable
-  internal func _interceptTermination(_ error: Error) {
+  internal func _interceptTermination(_ error: Error?) {
     self.eventLoop.assertInEventLoop()
+
+    let processedError: Error
+    if let thrownStatus = error as? GRPCStatus, thrownStatus.isOk {
+      processedError = GRPCStatus(
+        code: .unknown,
+        message: "Handler threw error with status code 'ok'."
+      )
+    } else {
+      processedError = error ?? GRPCStatus.ok
+    }
 
     switch self.handlerStateMachine.sendStatus() {
     case let .intercept(requestHeaders, trailers):
       let (status, processedTrailers) = ServerErrorProcessor.processObserverError(
-        error,
+        processedError,
         headers: requestHeaders,
         trailers: trailers,
         delegate: self.errorDelegate
@@ -636,10 +638,10 @@ internal final class AsyncServerHandler<
   @inlinable
   internal func interceptTermination(_ status: Error?) {
     if self.eventLoop.inEventLoop {
-      self._interceptTermination(status ?? GRPCStatus.ok)
+      self._interceptTermination(status)
     } else {
       self.eventLoop.execute {
-        self._interceptTermination(status ?? GRPCStatus.ok)
+        self._interceptTermination(status)
       }
     }
   }

@@ -421,7 +421,7 @@ extension GRPCClient {
           for try await request in requests {
             try await call.requestStream.send(request)
           }
-          call.requestStream.finish()
+          try await call.requestStream.finish()
         } catch {
           // If we throw then cancel the call. We will rely on the response throwing an appropriate
           // error below.
@@ -452,7 +452,7 @@ extension GRPCClient {
           for try await request in requests {
             try await call.requestStream.send(request)
           }
-          call.requestStream.finish()
+          try await call.requestStream.finish()
         } onCancel: {
           call.cancel()
         }
