@@ -167,7 +167,7 @@ $ protoc Sources/Examples/RouteGuide/Model/route_guide.proto \
     --swift_opt=Visibility=Public \
     --swift_out=Sources/Examples/RouteGuide/Model \
     --plugin=./.build/debug/protoc-gen-grpc-swift \
-    --grpc-swift_opt=Visibility=Public,AsyncClient=True,AsyncServer=True \
+    --grpc-swift_opt=Visibility=Public \
     --grpc-swift_out=Sources/Examples/RouteGuide/Model
 ```
 
