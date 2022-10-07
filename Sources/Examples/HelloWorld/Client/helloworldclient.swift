@@ -67,4 +67,12 @@ struct HelloWorld: AsyncParsableCommand {
     }
   }
 }
+
+@main
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+struct Main {
+    static func main() async {
+        await HelloWorld.main()
+    }
+}
 #endif // compiler(>=5.6)
