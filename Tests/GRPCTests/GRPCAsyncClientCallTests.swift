@@ -132,14 +132,17 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
         callOptions: .init()
       )
 
-    for word in ["boyle", "jeffers", "holt"] {
-      try await update.requestStream.send(.with { $0.text = word })
+    let requests = ["boyle", "jeffers", "holt"]
+      .map { word in Echo_EchoRequest.with { $0.text = word } }
+    for request in requests {
+      try await update.requestStream.send(request)
     }
+    try await update.requestStream.send(requests)
     try await update.requestStream.finish()
 
     let numResponses = try await update.responseStream.map { _ in 1 }.reduce(0, +)
 
-    await assertThat(numResponses, .is(.equalTo(3)))
+    await assertThat(numResponses, .is(.equalTo(6)))
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
   }

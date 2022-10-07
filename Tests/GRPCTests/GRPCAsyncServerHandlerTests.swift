@@ -230,6 +230,28 @@ class AsyncServerHandlerTests: GRPCTestCase {
     await responseStream.next().assertNil()
   }
 
+  func testResponseSequence() async throws {
+    let handler = self.makeHandler { _, responseStreamWriter, _ in
+      try await responseStreamWriter.send(contentsOf: ["1", "2", "3"])
+    }
+    defer {
+      XCTAssertNoThrow(try self.loop.submit { handler.finish() }.wait())
+    }
+
+    self.loop.execute {
+      handler.receiveMetadata([:])
+      handler.receiveEnd()
+    }
+
+    let responseStream = self.recorder.responseSequence.makeAsyncIterator()
+    await responseStream.next().assertMetadata { _ in }
+    await responseStream.next().assertMessage()
+    await responseStream.next().assertMessage()
+    await responseStream.next().assertMessage()
+    await responseStream.next().assertStatus { _, _ in }
+    await responseStream.next().assertNil()
+  }
+
   func testThrowingDeserializer() async throws {
     let handler = AsyncServerHandler(
       context: self.makeCallHandlerContext(),
