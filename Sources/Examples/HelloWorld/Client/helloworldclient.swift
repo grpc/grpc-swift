@@ -20,6 +20,7 @@ import HelloWorldModel
 import NIOCore
 import NIOPosix
 
+@main
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct HelloWorld: AsyncParsableCommand {
   @Option(help: "The port to connect to")
@@ -66,13 +67,5 @@ struct HelloWorld: AsyncParsableCommand {
       print("Greeter failed: \(error)")
     }
   }
-}
-
-@main
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct Main {
-    static func main() async {
-        await HelloWorld.main()
-    }
 }
 #endif // compiler(>=5.6)
