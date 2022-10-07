@@ -49,12 +49,7 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
 
   /// Send a single request.
   ///
-  /// To ensure requests are delivered in order callers should `await` the result of this call
-  /// before sending another request. Callers who do not need this guarantee do not have to `await`
-  /// the completion of this call and may send messages concurrently from multiple ``Task``s.
-  /// However, it is important to note that no more than 16 writes may be pending at any one time
-  /// and attempting to exceed this will result in an ``GRPCAsyncWriterError/tooManyPendingWrites``
-  /// error being thrown.
+  /// It is safe to send multiple requests concurrently by sharing the ``GRPCAsyncRequestStreamWriter`` across tasks.
   ///
   /// Callers must call ``finish()`` when they have no more requests left to send.
   ///
@@ -62,14 +57,32 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   ///   - request: The request to send.
   ///   - compression: Whether the request should be compressed or not. Ignored if compression was
   ///       not enabled for the RPC.
-  /// - Throws: ``GRPCAsyncWriterError`` if there are too many pending writes or the request stream
-  ///     has already been finished.
+  /// - Throws: If the request stream has already been finished.
   @inlinable
   public func send(
     _ request: Request,
     compression: Compression = .deferToCallDefault
   ) async throws {
     try await self.asyncWriter.yield((request, compression))
+  }
+
+  /// Send a sequence of requests.
+  ///
+  /// It is safe to send multiple requests concurrently by sharing the ``GRPCAsyncRequestStreamWriter`` across tasks.
+  ///
+  /// Callers must call ``finish()`` when they have no more requests left to send.
+  ///
+  /// - Parameters:
+  ///   - requests: The requests to send.
+  ///   - compression: Whether the requests should be compressed or not. Ignored if compression was
+  ///       not enabled for the RPC.
+  /// - Throws: If the request stream has already been finished.
+  @inlinable
+  public func send<S: Sequence>(
+    _ requests: S,
+    compression: Compression = .deferToCallDefault
+  ) async throws where S.Element == Request {
+    try await self.asyncWriter.yield(contentsOf: requests.lazy.map { ($0, compression) })
   }
 
   /// Finish the request stream for the RPC. This must be called when there are no more requests to be sent.
