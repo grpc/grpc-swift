@@ -129,6 +129,23 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     }
   }
 
+  @inlinable
+  public func send<S: Sequence>(
+    contentsOf responses: S,
+    compression: Compression = .deferToCallDefault
+  ) async throws where S.Element == Response {
+    let responsesWithCompression = responses.lazy.map { ($0, compression) }
+    switch self.backing {
+    case let .asyncWriter(writer):
+      try await writer.yield(contentsOf: responsesWithCompression)
+
+    case let .closure(closure):
+      for response in responsesWithCompression {
+        await closure(response)
+      }
+    }
+  }
+
   /// Creates a new `GRPCAsyncResponseStreamWriter` backed by a ``ResponseStream``.
   /// This is mostly useful for testing purposes where one wants to observe the written responses.
   ///
