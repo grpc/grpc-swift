@@ -90,6 +90,11 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
     self.asyncWriter.finish()
   }
 
+  /// Sync variant for finishing the request stream for the RPC. This must be called when there are no more requests to be sent.
+  public func finish() {
+    self.asyncWriter.finish()
+  }
+
   /// Finish the request stream for the RPC with the given error.
   internal func finish(_ error: Error) {
     self.asyncWriter.finish(error: error)
