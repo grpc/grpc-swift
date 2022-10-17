@@ -20,7 +20,6 @@ import HelloWorldModel
 import NIOCore
 import NIOPosix
 
-@main
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct HelloWorld: AsyncParsableCommand {
   @Option(help: "The port to listen on for new connections")
