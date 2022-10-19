@@ -105,7 +105,7 @@ class InterceptorsAsyncTests: GRPCTestCase {
     let call = self.echo.makeCollectCall(callOptions: .init())
     try await call.requestStream.send(.with { $0.text = "1 2" })
     try await call.requestStream.send(.with { $0.text = "3 4" })
-    try await call.requestStream.finish()
+    call.requestStream.finish()
 
     await assertThat(
       try await call.response,
@@ -153,7 +153,7 @@ class InterceptorsAsyncTests: GRPCTestCase {
     let call = self.echo.makeUpdateCall(callOptions: .init())
     try await call.requestStream.send(.with { $0.text = "1 2" })
     try await call.requestStream.send(.with { $0.text = "3 4" })
-    try await call.requestStream.finish()
+    call.requestStream.finish()
 
     var count = 0
     for try await response in call.responseStream {

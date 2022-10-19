@@ -98,7 +98,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     for word in ["boyle", "jeffers", "holt"] {
       try await collect.requestStream.send(.with { $0.text = word })
     }
-    try await collect.requestStream.finish()
+    collect.requestStream.finish()
 
     await assertThat(try await collect.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
     await assertThat(try await collect.response, .doesNotThrow())
@@ -138,7 +138,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       try await update.requestStream.send(request)
     }
     try await update.requestStream.send(requests)
-    try await update.requestStream.finish()
+    update.requestStream.finish()
 
     let numResponses = try await update.responseStream.map { _ in 1 }.reduce(0, +)
 
@@ -163,7 +163,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       await assertThat(try await responseStreamIterator.next(), .is(.notNil()))
     }
 
-    try await update.requestStream.finish()
+    update.requestStream.finish()
 
     await assertThat(try await responseStreamIterator.next(), .is(.nil()))
 
@@ -191,7 +191,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
           try await update.requestStream.send(.with { $0.text = word })
           await counter.incrementRequests()
         }
-        try await update.requestStream.finish()
+        update.requestStream.finish()
       }
       // Get responses in a separate task.
       taskGroup.addTask {

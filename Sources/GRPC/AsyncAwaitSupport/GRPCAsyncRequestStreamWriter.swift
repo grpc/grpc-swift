@@ -86,7 +86,7 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
   }
 
   /// Finish the request stream for the RPC. This must be called when there are no more requests to be sent.
-  public func finish() async throws {
+  public func finish() {
     self.asyncWriter.finish()
   }
 
