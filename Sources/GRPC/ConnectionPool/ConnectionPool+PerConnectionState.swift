@@ -27,7 +27,31 @@ extension ConnectionPool {
     internal var _availability: StreamAvailability?
 
     @usableFromInline
+    internal var isQuiescing: Bool {
+      get {
+        return self._availability?.isQuiescing ?? false
+      }
+      set {
+        self._availability?.isQuiescing = true
+      }
+    }
+
+    @usableFromInline
     internal struct StreamAvailability {
+      @usableFromInline
+      struct Utilization {
+        @usableFromInline
+        var used: Int
+        @usableFromInline
+        var capacity: Int
+
+        @usableFromInline
+        init(used: Int, capacity: Int) {
+          self.used = used
+          self.capacity = capacity
+        }
+      }
+
       @usableFromInline
       var multiplexer: HTTP2StreamMultiplexer
       /// Maximum number of available streams.
@@ -36,24 +60,39 @@ extension ConnectionPool {
       /// Number of streams reserved.
       @usableFromInline
       var reserved: Int = 0
+      /// Number of streams opened.
+      @usableFromInline
+      var open: Int = 0
+      @usableFromInline
+      var isQuiescing = false
       /// Number of available streams.
       @usableFromInline
       var available: Int {
-        return self.maxAvailable - self.reserved
+        return self.isQuiescing ? 0 : self.maxAvailable - self.reserved
       }
 
       /// Increment the reserved streams and return the multiplexer.
       @usableFromInline
       mutating func reserve() -> HTTP2StreamMultiplexer {
+        assert(!self.isQuiescing)
         self.reserved += 1
         return self.multiplexer
       }
 
+      @usableFromInline
+      mutating func opened() -> Utilization {
+        self.open += 1
+        return .init(used: self.open, capacity: self.maxAvailable)
+      }
+
       /// Decrement the reserved streams by one.
       @usableFromInline
-      mutating func `return`() {
+      mutating func `return`() -> Utilization {
         self.reserved -= 1
+        self.open -= 1
         assert(self.reserved >= 0)
+        assert(self.open >= 0)
+        return .init(used: self.open, capacity: self.maxAvailable)
       }
     }
 
@@ -92,10 +131,15 @@ extension ConnectionPool {
       return self._availability?.reserve()
     }
 
+    @usableFromInline
+    internal mutating func openedStream() -> PerConnectionState.StreamAvailability.Utilization? {
+      return self._availability?.opened()
+    }
+
     /// Return a reserved stream to the connection.
     @usableFromInline
-    internal mutating func returnStream() {
-      self._availability?.return()
+    internal mutating func returnStream() -> PerConnectionState.StreamAvailability.Utilization? {
+      return self._availability?.return()
     }
 
     /// Update the maximum concurrent streams available on the connection, marking it as available

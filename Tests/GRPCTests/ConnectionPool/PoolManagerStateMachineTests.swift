@@ -39,6 +39,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
         onReturnStreams: { _ in },
         onUpdateMaxAvailableStreams: { _ in }
       ),
+      delegate: nil,
       logger: self.logger.wrapped
     )
   }

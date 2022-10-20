@@ -53,6 +53,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     reservationLoadThreshold: Double = 0.9,
     now: @escaping () -> NIODeadline = { .now() },
     connectionBackoff: ConnectionBackoff = ConnectionBackoff(),
+    delegate: GRPCConnectionPoolDelegate? = nil,
     onReservationReturned: @escaping (Int) -> Void = { _ in },
     onMaximumReservationsChange: @escaping (Int) -> Void = { _ in },
     channelProvider: ConnectionManagerChannelProvider
@@ -68,6 +69,7 @@ final class ConnectionPoolTests: GRPCTestCase {
         onReturnStreams: onReservationReturned,
         onUpdateMaxAvailableStreams: onMaximumReservationsChange
       ),
+      delegate: delegate,
       logger: self.logger.wrapped,
       now: now
     )
@@ -75,10 +77,12 @@ final class ConnectionPoolTests: GRPCTestCase {
 
   private func makePool(
     waiters: Int = 1000,
+    delegate: GRPCConnectionPoolDelegate? = nil,
     makeChannel: @escaping (ConnectionManager, EventLoop) -> EventLoopFuture<Channel>
   ) -> ConnectionPool {
     return self.makePool(
       waiters: waiters,
+      delegate: delegate,
       channelProvider: HookedChannelProvider(makeChannel)
     )
   }
@@ -88,6 +92,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     reservationLoadThreshold: Double = 0.9,
     now: @escaping () -> NIODeadline = { .now() },
     connectionBackoff: ConnectionBackoff = ConnectionBackoff(),
+    delegate: GRPCConnectionPoolDelegate? = nil,
     onReservationReturned: @escaping (Int) -> Void = { _ in },
     onMaximumReservationsChange: @escaping (Int) -> Void = { _ in }
   ) -> (ConnectionPool, ChannelController) {
@@ -97,6 +102,7 @@ final class ConnectionPoolTests: GRPCTestCase {
       reservationLoadThreshold: reservationLoadThreshold,
       now: now,
       connectionBackoff: connectionBackoff,
+      delegate: delegate,
       onReservationReturned: onReservationReturned,
       onMaximumReservationsChange: onMaximumReservationsChange,
       channelProvider: controller
@@ -127,7 +133,9 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.availableStreams, 0)
     XCTAssertEqual(pool.sync.reservedStreams, 0)
 
-    XCTAssertNoThrow(try pool.shutdown().wait())
+    let shutdownFuture = pool.shutdown()
+    self.eventLoop.run()
+    XCTAssertNoThrow(try shutdownFuture.wait())
   }
 
   func testShutdownEmptyPool() {
@@ -600,7 +608,8 @@ final class ConnectionPoolTests: GRPCTestCase {
     // The quiescing connection had 1 stream reserved, it's now returned to the outer pool and we
     // have a new idle connection in place of the old one.
     XCTAssertEqual(reservationsReturned, [1])
-    XCTAssertEqual(pool.sync.reservedStreams, 0)
+    // The inner pool still knows about the reserved stream.
+    XCTAssertEqual(pool.sync.reservedStreams, 1)
     XCTAssertEqual(pool.sync.availableStreams, 0)
     XCTAssertEqual(pool.sync.idleConnections, 1)
 
@@ -619,7 +628,8 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try w2.wait())
     controller.openStreamInChannel(atIndex: 1)
 
-    XCTAssertEqual(pool.sync.reservedStreams, 1)
+    // The stream on the quiescing connection is still reserved.
+    XCTAssertEqual(pool.sync.reservedStreams, 2)
     XCTAssertEqual(pool.sync.availableStreams, 99)
 
     // Return a stream for the _quiescing_ connection: nothing should change in the pool.
@@ -865,6 +875,130 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertThrowsError(try promise.futureResult.wait())
     XCTAssertNil(waiter._scheduledTimeout)
   }
+
+  func testConnectionPoolDelegate() throws {
+    let recorder = EventRecordingConnectionPoolDelegate()
+    let (pool, controller) = self.setUpPoolAndController(delegate: recorder)
+    pool.initialize(connections: 2)
+
+    func assertConnectionAdded(
+      _ event: EventRecordingConnectionPoolDelegate.Event?
+    ) throws -> GRPCConnectionID {
+      let unwrappedEvent = try XCTUnwrap(event)
+      switch unwrappedEvent {
+      case let .connectionAdded(id):
+        return id
+      default:
+        throw EventRecordingConnectionPoolDelegate.UnexpectedEvent(unwrappedEvent)
+      }
+    }
+
+    let connID1 = try assertConnectionAdded(recorder.popFirst())
+    let connID2 = try assertConnectionAdded(recorder.popFirst())
+
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+    // Start creating the channel.
+    self.eventLoop.run()
+
+    let startedConnecting = recorder.popFirst()
+    let firstConn: GRPCConnectionID
+    let secondConn: GRPCConnectionID
+
+    if startedConnecting == .startedConnecting(connID1) {
+      firstConn = connID1
+      secondConn = connID2
+    } else if startedConnecting == .startedConnecting(connID2) {
+      firstConn = connID2
+      secondConn = connID1
+    } else {
+      return XCTFail("Unexpected event")
+    }
+
+    // Connect the connection.
+    self.eventLoop.run()
+    controller.connectChannel(atIndex: 0)
+    controller.sendSettingsToChannel(atIndex: 0, maxConcurrentStreams: 10)
+    XCTAssertEqual(recorder.popFirst(), .connectSucceeded(firstConn, 10))
+
+    // Open a stream for the waiter.
+    controller.openStreamInChannel(atIndex: 0)
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(firstConn, 1, 10))
+    self.eventLoop.run()
+    XCTAssertNoThrow(try waiter.wait())
+
+    // Okay, more utilization!
+    for n in 2 ... 8 {
+      let w = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+
+      controller.openStreamInChannel(atIndex: 0)
+      XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(firstConn, n, 10))
+      self.eventLoop.run()
+      XCTAssertNoThrow(try w.wait())
+    }
+
+    // The utilisation threshold before bringing up a new connection is 0.9; we have 8 open streams
+    // (out of 10) now so opening the next should trigger a connect on the other connection.
+    let w9 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+    XCTAssertEqual(recorder.popFirst(), .startedConnecting(secondConn))
+
+    // Deal with the 9th stream.
+    controller.openStreamInChannel(atIndex: 0)
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(firstConn, 9, 10))
+    self.eventLoop.run()
+    XCTAssertNoThrow(try w9.wait())
+
+    // Bring up the next connection.
+    controller.connectChannel(atIndex: 1)
+    controller.sendSettingsToChannel(atIndex: 1, maxConcurrentStreams: 10)
+    XCTAssertEqual(recorder.popFirst(), .connectSucceeded(secondConn, 10))
+
+    // The next stream should be on the new connection.
+    let w10 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    // Deal with the 10th stream.
+    controller.openStreamInChannel(atIndex: 1)
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(secondConn, 1, 10))
+    self.eventLoop.run()
+    XCTAssertNoThrow(try w10.wait())
+
+    // Close the streams.
+    for i in 1 ... 9 {
+      controller.closeStreamInChannel(atIndex: 0)
+      XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(firstConn, 9 - i, 10))
+    }
+
+    controller.closeStreamInChannel(atIndex: 1)
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(secondConn, 0, 10))
+
+    // Close the connections.
+    controller.fireChannelInactiveForChannel(atIndex: 0)
+    XCTAssertEqual(recorder.popFirst(), .connectionClosed(firstConn))
+    controller.fireChannelInactiveForChannel(atIndex: 1)
+    XCTAssertEqual(recorder.popFirst(), .connectionClosed(secondConn))
+
+    // All conns are already closed.
+    let shutdownFuture = pool.shutdown()
+    self.eventLoop.run()
+    XCTAssertNoThrow(try shutdownFuture.wait())
+
+    // Two connections must be removed.
+    for _ in 0 ..< 2 {
+      if let event = recorder.popFirst() {
+        let id = event.id
+        XCTAssertEqual(event, .connectionRemoved(id))
+      } else {
+        XCTFail("Expected .connectionRemoved")
+      }
+    }
+  }
 }
 
 extension ConnectionPool {
@@ -1031,8 +1165,8 @@ internal struct HookedStreamLender: StreamLender {
     self.onReturnStreams(count)
   }
 
-  internal func changeStreamCapacity(by max: Int, for pool: ConnectionPool) {
-    self.onUpdateMaxAvailableStreams(max)
+  internal func changeStreamCapacity(by delta: Int, for: ConnectionPool) {
+    self.onUpdateMaxAvailableStreams(delta)
   }
 }
 

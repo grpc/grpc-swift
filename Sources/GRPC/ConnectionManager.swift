@@ -242,12 +242,34 @@ internal final class ConnectionManager {
     }
   }
 
+  /// Returns whether the state is 'shutdown'.
+  private var isShutdown: Bool {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .shutdown:
+      return true
+    case .idle, .connecting, .transientFailure, .active, .ready:
+      return false
+    }
+  }
+
   /// Returns the `HTTP2StreamMultiplexer` from the 'ready' state or `nil` if it is not available.
   private var multiplexer: HTTP2StreamMultiplexer? {
     self.eventLoop.assertInEventLoop()
     switch self.state {
     case let .ready(state):
       return state.multiplexer
+
+    case .idle, .connecting, .transientFailure, .active, .shutdown:
+      return nil
+    }
+  }
+
+  private var channel: Channel? {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case let .ready(state):
+      return state.channel
 
     case .idle, .connecting, .transientFailure, .active, .shutdown:
       return nil
@@ -807,6 +829,11 @@ internal final class ConnectionManager {
     }
   }
 
+  internal func streamOpened() {
+    self.eventLoop.assertInEventLoop()
+    self.http2Delegate?.streamOpened(self)
+  }
+
   internal func streamClosed() {
     self.eventLoop.assertInEventLoop()
     self.http2Delegate?.streamClosed(self)
@@ -1001,10 +1028,21 @@ extension ConnectionManager {
       return self.manager.isIdle
     }
 
+    /// Returne `true` if the connection is in the shutdown state.
+    internal var isShutdown: Bool {
+      return self.manager.isShutdown
+    }
+
     /// Returns the `multiplexer` from a connection in the `ready` state or `nil` if it is any
     /// other state.
     internal var multiplexer: HTTP2StreamMultiplexer? {
       return self.manager.multiplexer
+    }
+
+    /// Returns the `channel` from a connection in the `ready` state or `nil` if it is any
+    /// other state.
+    internal var channel: Channel? {
+      return self.manager.channel
     }
 
     // Start establishing a connection. Must only be called when `isIdle` is `true`.
