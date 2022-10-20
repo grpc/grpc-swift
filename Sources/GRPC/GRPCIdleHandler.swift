@@ -248,11 +248,11 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     } else if event is ChannelShouldQuiesceEvent {
       self.perform(operations: self.stateMachine.initiateGracefulShutdown())
       // Swallow this event.
-    } else if case .handshakeCompleted(let negotiatedProtocol) = event as? TLSUserEvent {
+    } else if case let .handshakeCompleted(negotiatedProtocol) = event as? TLSUserEvent {
       let tlsVersion = try? context.channel.getTLSVersionSync()
       self.stateMachine.logger.debug("TLS handshake completed", metadata: [
         "alpn": "\(negotiatedProtocol ?? "nil")",
-        "tls_version": "\(tlsVersion.map(String.init(describing:)) ?? "nil")"
+        "tls_version": "\(tlsVersion.map(String.init(describing:)) ?? "nil")",
       ])
       context.fireUserInboundEventTriggered(event)
     } else {

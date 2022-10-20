@@ -234,7 +234,7 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       let tlsVersion = try? context.channel.getTLSVersionSync()
       self.configuration.logger.debug("TLS handshake completed", metadata: [
         "alpn": "\(negotiatedProtocol ?? "nil")",
-        "tls_version": "\(tlsVersion.map(String.init(describing:)) ?? "nil")"
+        "tls_version": "\(tlsVersion.map(String.init(describing:)) ?? "nil")",
       ])
 
       switch negotiatedProtocol {
