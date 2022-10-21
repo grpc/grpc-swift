@@ -277,7 +277,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
     closeFuture: EventLoopFuture<Void>,
     services: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
-    normalizeHeaders: Bool
+    normalizeHeaders: Bool,
+    traceIDExtractor: Server.Configuration.TraceIDExtractor?
   ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     // Extract and validate the content type. If it's nil we need to close.
     guard let contentType = self.extractContentType(from: headers) else {
@@ -326,7 +327,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
       remoteAddress: remoteAddress,
       responseWriter: responseWriter,
       allocator: allocator,
-      closeFuture: closeFuture
+      closeFuture: closeFuture,
+      traceIDExtractor: traceIDExtractor
     )
 
     // We have a matching service, hopefully we have a provider for the method too.
@@ -865,7 +867,8 @@ extension HTTP2ToRawGRPCStateMachine {
     closeFuture: EventLoopFuture<Void>,
     services: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
-    normalizeHeaders: Bool
+    normalizeHeaders: Bool,
+    traceIDExtractor: Server.Configuration.TraceIDExtractor?
   ) -> ReceiveHeadersAction {
     return self.withStateAvoidingCoWs { state in
       state.receive(
@@ -879,7 +882,8 @@ extension HTTP2ToRawGRPCStateMachine {
         closeFuture: closeFuture,
         services: services,
         encoding: encoding,
-        normalizeHeaders: normalizeHeaders
+        normalizeHeaders: normalizeHeaders,
+        traceIDExtractor: traceIDExtractor
       )
     }
   }
@@ -974,7 +978,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
     closeFuture: EventLoopFuture<Void>,
     services: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
-    normalizeHeaders: Bool
+    normalizeHeaders: Bool,
+    traceIDExtractor: Server.Configuration.TraceIDExtractor?
   ) -> HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction {
     switch self {
     // These are the only states in which we can receive headers. Everything else is invalid.
@@ -991,7 +996,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
         closeFuture: closeFuture,
         services: services,
         encoding: encoding,
-        normalizeHeaders: normalizeHeaders
+        normalizeHeaders: normalizeHeaders,
+        traceIDExtractor: traceIDExtractor
       )
       self = stateAndAction.state
       return stateAndAction.action

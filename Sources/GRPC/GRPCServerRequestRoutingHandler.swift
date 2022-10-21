@@ -59,6 +59,8 @@ public struct CallHandlerContext {
   internal var allocator: ByteBufferAllocator
   @usableFromInline
   internal var closeFuture: EventLoopFuture<Void>
+  @usableFromInline
+  internal var traceIDExtractor: Server.Configuration.TraceIDExtractor?
 }
 
 /// A call URI split into components.

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIOCore
 import NIOHPACK
 
@@ -57,6 +58,9 @@ public final class BidirectionalStreamingServerHandler<
   internal var state: State = .idle
 
   @usableFromInline
+  internal var logger: Logger
+
+  @usableFromInline
   internal enum State {
     // No headers have been received.
     case idle
@@ -85,6 +89,7 @@ public final class BidirectionalStreamingServerHandler<
 
     let userInfoRef = Ref(UserInfo())
     self.userInfoRef = userInfoRef
+    self.logger = context.logger
     self.interceptors = ServerInterceptorPipeline(
       logger: context.logger,
       eventLoop: context.eventLoop,
@@ -102,6 +107,10 @@ public final class BidirectionalStreamingServerHandler<
 
   @inlinable
   public func receiveMetadata(_ headers: HPACKHeaders) {
+    if let extractor = self.context.traceIDExtractor, let id = extractor.extract(from: headers) {
+      self.logger[metadataKey: extractor.loggerKey] = "\(id)"
+      self.interceptors.logger[metadataKey: extractor.loggerKey] = "\(id)"
+    }
     self.interceptors.receive(.metadata(headers))
   }
 
@@ -164,7 +173,7 @@ public final class BidirectionalStreamingServerHandler<
       let context = _StreamingResponseCallContext<Request, Response>(
         eventLoop: self.context.eventLoop,
         headers: headers,
-        logger: self.context.logger,
+        logger: self.logger,
         userInfoRef: self.userInfoRef,
         compressionIsEnabled: self.context.encoding.isEnabled,
         closeFuture: self.context.closeFuture,

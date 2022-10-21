@@ -191,7 +191,10 @@ internal final class AsyncServerHandler<
 
   /// A logger.
   @usableFromInline
-  internal let logger: Logger
+  internal var logger: Logger
+
+  @usableFromInline
+  internal let traceIDExtractor: Server.Configuration.TraceIDExtractor?
 
   /// A reference to the user info. This is shared with the interceptor pipeline and may be accessed
   /// from the async call context. `UserInfo` is _not_ `Sendable` and must always be accessed from
@@ -267,6 +270,7 @@ internal final class AsyncServerHandler<
     self.compressionEnabledOnRPC = context.encoding.isEnabled
     self.compressResponsesIfPossible = true
     self.logger = context.logger
+    self.traceIDExtractor = context.traceIDExtractor
 
     self.userInfoRef = Ref(UserInfo())
     self.handlerStateMachine = .init()
@@ -295,6 +299,10 @@ internal final class AsyncServerHandler<
   internal func receiveMetadata(_ headers: HPACKHeaders) {
     switch self.interceptorStateMachine.interceptRequestMetadata() {
     case .intercept:
+      if let extractor = self.traceIDExtractor, let id = extractor.extract(from: headers) {
+        self.logger[metadataKey: extractor.loggerKey] = "\(id)"
+        self.interceptors?.logger[metadataKey: extractor.loggerKey] = "\(id)"
+      }
       self.interceptors?.receive(.metadata(headers))
     case .cancel:
       self.cancel(error: nil)

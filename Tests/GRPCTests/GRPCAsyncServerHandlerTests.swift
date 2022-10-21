@@ -55,7 +55,8 @@ class AsyncServerHandlerTests: GRPCTestCase {
       remoteAddress: nil,
       responseWriter: self.recorder,
       allocator: ByteBufferAllocator(),
-      closeFuture: closeFuture
+      closeFuture: closeFuture,
+      traceIDExtractor: nil
     )
   }
 

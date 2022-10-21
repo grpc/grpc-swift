@@ -36,7 +36,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
 
   /// A logger.
   @usableFromInline
-  internal let logger: Logger
+  internal var logger: Logger
 
   /// A reference to a 'UserInfo'.
   @usableFromInline

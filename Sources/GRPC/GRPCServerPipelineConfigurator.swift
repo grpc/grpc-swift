@@ -142,7 +142,8 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       errorDelegate: self.configuration.errorDelegate,
       normalizeHeaders: normalizeHeaders,
       maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
-      logger: logger
+      logger: logger,
+      traceIDExtractor: self.configuration.traceIDExtractor
     )
   }
 

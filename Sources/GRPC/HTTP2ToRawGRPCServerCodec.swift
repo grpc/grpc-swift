@@ -23,6 +23,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
   typealias OutboundOut = HTTP2Frame.FramePayload
 
   private var logger: Logger
+  private let traceIDExtractor: Server.Configuration.TraceIDExtractor?
   private var state: HTTP2ToRawGRPCStateMachine
   private let errorDelegate: ServerErrorDelegate?
   private var context: ChannelHandlerContext!
@@ -73,9 +74,11 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     errorDelegate: ServerErrorDelegate?,
     normalizeHeaders: Bool,
     maximumReceiveMessageLength: Int,
-    logger: Logger
+    logger: Logger,
+    traceIDExtractor: Server.Configuration.TraceIDExtractor?
   ) {
     self.logger = logger
+    self.traceIDExtractor = traceIDExtractor
     self.errorDelegate = errorDelegate
     self.servicesByName = servicesByName
     self.encoding = encoding
@@ -127,7 +130,8 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
         closeFuture: context.channel.closeFuture,
         services: self.servicesByName,
         encoding: self.encoding,
-        normalizeHeaders: self.normalizeHeaders
+        normalizeHeaders: self.normalizeHeaders,
+        traceIDExtractor: self.traceIDExtractor
       )
 
       switch receiveHeaders {

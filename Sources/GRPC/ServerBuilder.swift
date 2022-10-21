@@ -15,6 +15,7 @@
  */
 import Logging
 import NIOCore
+import NIOHPACK
 
 #if canImport(Network)
 import Security
@@ -172,6 +173,24 @@ extension Server.Builder {
   @discardableResult
   public func withLogger(_ logger: Logger) -> Self {
     self.configuration.logger = logger
+    return self
+  }
+
+  /// Extracts the value present in the request headers for the header field named `headerName` and
+  /// inserts it as metadata into the logger for the RPC using the key `loggerKey`.
+  @discardableResult
+  public func withFixedHeaderTraceIDExtraction(headerName: String, loggerKey: String) -> Self {
+    self.configuration.traceIDExtractor = .fixedHeaderName(headerName, loggerKey: loggerKey)
+    return self
+  }
+
+  /// Extracts a trace ID using the given function for each RPC and sets it as a metadata value
+  /// on the logger using the key `loggerKey`.
+  public func withTraceIDExtraction(
+    loggerKey: String,
+    extractor: @escaping (HPACKHeaders) -> String?
+  ) -> Self {
+    self.configuration.traceIDExtractor = .init(loggerKey: loggerKey, extractor: extractor)
     return self
   }
 }

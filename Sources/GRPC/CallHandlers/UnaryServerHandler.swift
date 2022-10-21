@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIOCore
 import NIOHPACK
 
@@ -52,6 +53,9 @@ public final class UnaryServerHandler<
   internal var state: State = .idle
 
   @usableFromInline
+  internal var logger: Logger
+
+  @usableFromInline
   internal enum State {
     // Initial state. Nothing has happened yet.
     case idle
@@ -77,6 +81,7 @@ public final class UnaryServerHandler<
     self.serializer = responseSerializer
     self.deserializer = requestDeserializer
     self.context = context
+    self.logger = context.logger
 
     let userInfoRef = Ref(UserInfo())
     self.userInfoRef = userInfoRef
@@ -97,6 +102,10 @@ public final class UnaryServerHandler<
 
   @inlinable
   public func receiveMetadata(_ metadata: HPACKHeaders) {
+    if let extractor = self.context.traceIDExtractor, let id = extractor.extract(from: metadata) {
+      self.logger[metadataKey: extractor.loggerKey] = "\(id)"
+      self.interceptors.logger[metadataKey: extractor.loggerKey] = "\(id)"
+    }
     self.interceptors.receive(.metadata(metadata))
   }
 
@@ -159,7 +168,7 @@ public final class UnaryServerHandler<
       let context = UnaryResponseCallContext<Response>(
         eventLoop: self.context.eventLoop,
         headers: headers,
-        logger: self.context.logger,
+        logger: self.logger,
         userInfoRef: self.userInfoRef,
         closeFuture: self.context.closeFuture
       )

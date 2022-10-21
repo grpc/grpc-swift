@@ -108,7 +108,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: services ?? self.services,
       encoding: encoding,
-      normalizeHeaders: true
+      normalizeHeaders: true,
+      traceIDExtractor: nil
     )
 
     assertThat(receiveHeadersAction, .is(.configure()))
@@ -184,7 +185,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.configure()))
   }
@@ -202,7 +204,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.rejectRPC(.contains(":status", ["415"]))))
   }
@@ -220,7 +223,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
@@ -238,7 +242,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
@@ -256,7 +261,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
@@ -274,7 +280,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
@@ -293,7 +300,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .invalidArgument))))
   }
@@ -312,7 +320,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .enabled(.deflate, .identity),
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
 
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
@@ -337,7 +346,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .enabled(.deflate, .identity),
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
 
     // This is expected: however, we also expect 'grpc-accept-encoding' to be in the response
@@ -365,7 +375,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .disabled,
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
 
     assertThat(action, .is(.configure()))
@@ -385,7 +396,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture(),
       services: self.services,
       encoding: .enabled(.gzip, .deflate),
-      normalizeHeaders: false
+      normalizeHeaders: false,
+      traceIDExtractor: nil
     )
 
     // This is expected, but we need to check the value of 'grpc-encoding' in the response headers.

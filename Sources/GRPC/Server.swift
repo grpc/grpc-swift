@@ -17,6 +17,7 @@ import Foundation
 import Logging
 import NIOCore
 import NIOExtras
+import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import NIOPosix
@@ -272,11 +273,9 @@ extension Server {
         return Array(self.serviceProvidersByName.values)
       }
       set {
-        self
-          .serviceProvidersByName = Dictionary(
-            uniqueKeysWithValues: newValue
-              .map { ($0.serviceName, $0) }
-          )
+        self.serviceProvidersByName = Dictionary(
+          uniqueKeysWithValues: newValue.map { ($0.serviceName, $0) }
+        )
       }
     }
 
@@ -352,6 +351,10 @@ extension Server {
     /// each connection will use a logger branched from the connections logger. This logger is made
     /// available to service providers via `context`. Defaults to a no-op logger.
     public var logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
+
+    /// Configuration for extracting trace IDs from metadata and injecting the extracted ID into
+    /// a logger.
+    public var traceIDExtractor: TraceIDExtractor?
 
     /// A channel initializer which will be run after gRPC has initialized each accepted channel.
     /// This may be used to add additional handlers to the pipeline and is intended for debugging.
@@ -451,6 +454,38 @@ extension Server {
   }
 }
 
+extension Server.Configuration {
+  /// Configuration for extracting IDs from metadata and inserting them into a logger.
+  public struct TraceIDExtractor {
+    @usableFromInline
+    let extractor: (HPACKHeaders) -> String?
+
+    /// The key for the logging metadata to set with the extracted trace ID.
+    public var loggerKey: String
+
+    /// Create a new trace ID extractor.
+    ///
+    /// - Parameters:
+    ///   - loggerKey: The key in the logger to set the trace ID on.
+    ///   - extractor: A function to extract a trace ID from
+    public init(loggerKey: String, extractor: @escaping (HPACKHeaders) -> String?) {
+      self.extractor = extractor
+      self.loggerKey = loggerKey
+    }
+
+    /// Creates a trace ID extractor which extracts the first header matching the given header name.
+    ///
+    /// - Parameters:
+    ///   - headerName: The name of the header field containing the trace ID.
+    ///   - loggerKey: The key in the logger to set the trace ID on.
+    public static func fixedHeaderName(_ headerName: String, loggerKey: String) -> Self {
+      return Self(loggerKey: loggerKey) { headers in
+        headers.first(name: headerName)
+      }
+    }
+  }
+}
+
 extension ServerBootstrapProtocol {
   fileprivate func bind(to target: BindTarget) -> EventLoopFuture<Channel> {
     switch target.wrapped {
@@ -472,5 +507,12 @@ extension ServerBootstrapProtocol {
 extension Comparable {
   internal func clamped(to range: ClosedRange<Self>) -> Self {
     return min(max(self, range.lowerBound), range.upperBound)
+  }
+}
+
+extension Server.Configuration.TraceIDExtractor {
+  @usableFromInline
+  internal func extract(from headers: HPACKHeaders) -> String? {
+    return self.extractor(headers)
   }
 }

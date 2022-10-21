@@ -90,7 +90,7 @@ class GRPCTestCase: XCTestCase {
   }
 
   /// Returns all captured logs sorted by date.
-  private func capturedLogs() -> [CapturedLog] {
+  func capturedLogs() -> [CapturedLog] {
     assert(self.logFactory != nil, "Missing call to super.setUp()")
 
     var logs = self.logFactory.clearCapturedLogs()
