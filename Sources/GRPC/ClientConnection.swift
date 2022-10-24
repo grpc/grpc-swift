@@ -454,9 +454,15 @@ extension ClientConnection {
     /// used to add additional handlers to the pipeline and is intended for debugging.
     ///
     /// - Warning: The initializer closure may be invoked *multiple times*.
-    public var debugChannelInitializer: GRPCChannelInitializer?
+    #if compiler(>=5.6)
+    @preconcurrency
+    public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
+    #else
+    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+    #endif
 
     #if canImport(NIOSSL)
+    #if compiler(>=5.6)
     /// Create a `Configuration` with some pre-defined defaults. Prefer using
     /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
     /// `ClientConnection.insecure(group:)` to build a plaintext connection.
@@ -480,6 +486,7 @@ extension ClientConnection {
     /// - Parameter debugChannelInitializer: A channel initializer will be called after gRPC has
     ///     initialized the channel. Defaults to `nil`.
     @available(*, deprecated, renamed: "default(target:eventLoopGroup:)")
+    @preconcurrency
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
@@ -496,7 +503,7 @@ extension ClientConnection {
         label: "io.grpc",
         factory: { _ in SwiftLogNoOpLogHandler() }
       ),
-      debugChannelInitializer: GRPCChannelInitializer? = nil
+      debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -512,6 +519,41 @@ extension ClientConnection {
       self.backgroundActivityLogger = backgroundActivityLogger
       self.debugChannelInitializer = debugChannelInitializer
     }
+    #else
+    @available(*, deprecated, renamed: "default(target:eventLoopGroup:)")
+    public init(
+      target: ConnectionTarget,
+      eventLoopGroup: EventLoopGroup,
+      errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate(),
+      connectivityStateDelegate: ConnectivityStateDelegate? = nil,
+      connectivityStateDelegateQueue: DispatchQueue? = nil,
+      tls: Configuration.TLS? = nil,
+      connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
+      connectionKeepalive: ClientConnectionKeepalive = ClientConnectionKeepalive(),
+      connectionIdleTimeout: TimeAmount = .minutes(30),
+      callStartBehavior: CallStartBehavior = .waitsForConnectivity,
+      httpTargetWindowSize: Int = 8 * 1024 * 1024,
+      backgroundActivityLogger: Logger = Logger(
+        label: "io.grpc",
+        factory: { _ in SwiftLogNoOpLogHandler() }
+      ),
+      debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
+    ) {
+      self.target = target
+      self.eventLoopGroup = eventLoopGroup
+      self.errorDelegate = errorDelegate
+      self.connectivityStateDelegate = connectivityStateDelegate
+      self.connectivityStateDelegateQueue = connectivityStateDelegateQueue
+      self.tlsConfiguration = tls.map { GRPCTLSConfiguration(transforming: $0) }
+      self.connectionBackoff = connectionBackoff
+      self.connectionKeepalive = connectionKeepalive
+      self.connectionIdleTimeout = connectionIdleTimeout
+      self.callStartBehavior = callStartBehavior
+      self.httpTargetWindowSize = httpTargetWindowSize
+      self.backgroundActivityLogger = backgroundActivityLogger
+      self.debugChannelInitializer = debugChannelInitializer
+    }
+    #endif // compiler(>=5.6)
     #endif // canImport(NIOSSL)
 
     private init(eventLoopGroup: EventLoopGroup, target: ConnectionTarget) {
