@@ -315,13 +315,24 @@ extension ClientConnection.Builder {
   /// used to add additional handlers to the pipeline and is intended for debugging.
   ///
   /// - Warning: The initializer closure may be invoked *multiple times*.
+  #if compiler(>=5.6)
   @discardableResult
+  @preconcurrency
   public func withDebugChannelInitializer(
-    _ debugChannelInitializer: @escaping GRPCChannelInitializer
+    _ debugChannelInitializer: @Sendable @escaping (Channel) -> EventLoopFuture<Void>
   ) -> Self {
     self.configuration.debugChannelInitializer = debugChannelInitializer
     return self
   }
+  #else
+  @discardableResult
+  public func withDebugChannelInitializer(
+    _ debugChannelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+  ) -> Self {
+    self.configuration.debugChannelInitializer = debugChannelInitializer
+    return self
+  }
+  #endif
 }
 
 extension Double {

@@ -167,7 +167,12 @@ extension GRPCChannelPool {
     /// This may be used to add additional handlers to the pipeline and is intended for debugging.
     ///
     /// - Warning: The initializer closure may be invoked *multiple times*.
-    public var debugChannelInitializer: GRPCChannelInitializer?
+    #if compiler(>=5.6)
+    @preconcurrency
+    public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
+    #else
+    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+    #endif
 
     /// An error delegate which is called when errors are caught.
     public var errorDelegate: ClientErrorDelegate?
