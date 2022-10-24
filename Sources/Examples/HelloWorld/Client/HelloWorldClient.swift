@@ -21,6 +21,7 @@ import NIOCore
 import NIOPosix
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@main
 struct HelloWorld: AsyncParsableCommand {
   @Option(help: "The port to connect to")
   var port: Int = 1234
@@ -65,6 +66,13 @@ struct HelloWorld: AsyncParsableCommand {
     } catch {
       print("Greeter failed: \(error)")
     }
+  }
+}
+#else
+@main
+enum HelloWorld {
+  static func main() {
+    fatalError("This example requires swift >= 5.6")
   }
 }
 #endif // compiler(>=5.6)
