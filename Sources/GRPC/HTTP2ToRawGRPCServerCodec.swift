@@ -17,13 +17,14 @@ import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
+import Tracing
 
 internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServerResponseWriter {
   typealias InboundIn = HTTP2Frame.FramePayload
   typealias OutboundOut = HTTP2Frame.FramePayload
 
   private var logger: Logger
-  private let traceIDExtractor: Server.Configuration.TraceIDExtractor?
+  private var tracer: Tracing.Tracer?
   private var state: HTTP2ToRawGRPCStateMachine
   private let errorDelegate: ServerErrorDelegate?
   private var context: ChannelHandlerContext!
@@ -75,10 +76,10 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     normalizeHeaders: Bool,
     maximumReceiveMessageLength: Int,
     logger: Logger,
-    traceIDExtractor: Server.Configuration.TraceIDExtractor?
+    tracer: Tracing.Tracer?
   ) {
     self.logger = logger
-    self.traceIDExtractor = traceIDExtractor
+    self.tracer = tracer
     self.errorDelegate = errorDelegate
     self.servicesByName = servicesByName
     self.encoding = encoding
@@ -131,7 +132,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
         services: self.servicesByName,
         encoding: self.encoding,
         normalizeHeaders: self.normalizeHeaders,
-        traceIDExtractor: self.traceIDExtractor
+        tracer: self.tracer
       )
 
       switch receiveHeaders {

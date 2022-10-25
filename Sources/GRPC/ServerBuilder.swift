@@ -179,20 +179,15 @@ extension Server.Builder {
   /// Extracts the value present in the request headers for the header field named `headerName` and
   /// inserts it as metadata into the logger for the RPC using the key `loggerKey`.
   @discardableResult
+  @available(*, deprecated, message: "Arguably one should rather configure a tracing backend, but yes we can allow setting a tracer")
   public func withFixedHeaderTraceIDExtraction(headerName: String, loggerKey: String) -> Self {
-    self.configuration.traceIDExtractor = .fixedHeaderName(headerName, loggerKey: loggerKey)
+    self.configuration.tracer = _GRPCSimpleFixedTraceIDTracer(fixedHeaderName: headerName)
     return self
   }
 
-  /// Extracts a trace ID using the given function for each RPC and sets it as a metadata value
-  /// on the logger using the key `loggerKey`.
-  public func withTraceIDExtraction(
-    loggerKey: String,
-    extractor: @escaping (HPACKHeaders) -> String?
-  ) -> Self {
-    self.configuration.traceIDExtractor = .init(loggerKey: loggerKey, extractor: extractor)
-    return self
-  }
+  // NOTE: Don't do APIs which do -> String, because there may be more interesting values to extract than one,
+  //       Implementing a -> Baggage is how tracers are implemented;
+  //       We should not be providing "partial" tracer implementations INSIDE client libraries, that's what tracer libraries are for.
 }
 
 extension Server.Builder {

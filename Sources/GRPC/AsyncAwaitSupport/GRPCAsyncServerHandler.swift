@@ -18,6 +18,7 @@ import DequeModule
 import Logging
 import NIOCore
 import NIOHPACK
+import Tracing
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct GRPCAsyncServerHandler<
@@ -193,8 +194,13 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal var logger: Logger
 
+  /// Contextual baggage which can be used to start tracing spans,
+  // or carry additional contextual information through the handler.
   @usableFromInline
-  internal let traceIDExtractor: Server.Configuration.TraceIDExtractor?
+  internal var baggage: Baggage
+
+  @usableFromInline
+  internal let tracer: Tracing.Tracer? // FIXME: tri state "don't trace" / "global" / "configured"
 
   /// A reference to the user info. This is shared with the interceptor pipeline and may be accessed
   /// from the async call context. `UserInfo` is _not_ `Sendable` and must always be accessed from
@@ -270,7 +276,8 @@ internal final class AsyncServerHandler<
     self.compressionEnabledOnRPC = context.encoding.isEnabled
     self.compressResponsesIfPossible = true
     self.logger = context.logger
-    self.traceIDExtractor = context.traceIDExtractor
+    self.baggage = .topLevel // TODO: or carry from context?
+    self.tracer = context.tracer
 
     self.userInfoRef = Ref(UserInfo())
     self.handlerStateMachine = .init()
@@ -299,9 +306,17 @@ internal final class AsyncServerHandler<
   internal func receiveMetadata(_ headers: HPACKHeaders) {
     switch self.interceptorStateMachine.interceptRequestMetadata() {
     case .intercept:
-      if let extractor = self.traceIDExtractor, let id = extractor.extract(from: headers) {
-        self.logger[metadataKey: extractor.loggerKey] = "\(id)"
-        self.interceptors?.logger[metadataKey: extractor.loggerKey] = "\(id)"
+      if let tracer = self.tracer {
+        tracer.extract(headers, into: &baggage, using: HPACKHeadersExtractor())
+
+        if let metadata: Logger.Metadata = self.logger.metadataProvider?.metadata(baggage) { // FIXME: function naming a bit ugly here
+          for (k, v) in metadata {
+            self.logger[metadataKey: k] = v
+            self.interceptors?.logger[metadataKey: k] = v
+            // self.logger[metadataKey: extractor.loggerKey] = "\(id)"
+            // self.interceptors?.logger[metadataKey: extractor.loggerKey] = "\(id)"
+          }
+        }
       }
       self.interceptors?.receive(.metadata(headers))
     case .cancel:
@@ -323,7 +338,7 @@ internal final class AsyncServerHandler<
 
     switch self.interceptorStateMachine.interceptRequestMessage() {
     case .intercept:
-      self.interceptors?.receive(.message(request))
+      self.interceptors?.receive(.message(request)) // TODO: if we wrapped this in a withSpan, would that be correct?
     case .cancel:
       self.cancel(error: nil)
     case .drop:

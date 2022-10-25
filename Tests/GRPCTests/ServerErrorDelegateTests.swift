@@ -161,7 +161,7 @@ class ServerErrorDelegateTests: GRPCTestCase {
       normalizeHeaders: true,
       maximumReceiveMessageLength: .max,
       logger: self.logger,
-      traceIDExtractor: nil
+      tracer: nil
     )
 
     self.channel = EmbeddedChannel(handler: handler)

@@ -18,9 +18,32 @@ import GRPC
 import NIOCore
 import NIOPosix
 import XCTest
+import Tracing
+import Logging
+
+// ==== ----------------------------------------------------------------------------------------------------------------
+
+enum TestXTraceID: BaggageKey {
+  typealias Value = String
+  static var nameOverride: String? { "x-trace-id" }
+}
+
+extension Baggage {
+  public internal(set) var testXTraceID: String? {
+    get {
+      self[TestXTraceID.self]
+    }
+    set {
+      self[TestXTraceID.self] = newValue
+    }
+  }
+}
+
+
+// ==== ----------------------------------------------------------------------------------------------------------------
 
 internal final class ServerLogExtractionTests: GRPCTestCase {
-  private let traceIDHeader = "x-trace-id"
+  private let traceIDHeader = TestXTraceID.nameOverride!
   private let loggerKey = "uuid"
 
   private var group: EventLoopGroup?
@@ -59,7 +82,17 @@ internal final class ServerLogExtractionTests: GRPCTestCase {
     )
 
     serverConfig.logger = self.serverLogger
-    serverConfig.traceIDExtractor = .fixedHeaderName(self.traceIDHeader, loggerKey: self.loggerKey)
+    // serverConfig.traceIDExtractor = .fixedHeaderName(self.traceIDHeader, loggerKey: self.loggerKey)
+    serverConfig.tracer = _GRPCSimpleFixedTraceIDTracer(fixedHeaderName: TestXTraceID.nameOverride!)
+    serverConfig.logger.metadataProvider = .init { baggage in
+      print("provide metadata: \(baggage)")
+      if let simpleID = baggage?.grpcSimpleFixedTraceID {
+        print("provide metadata ->>>> \(simpleID)")
+        return [self.loggerKey : .string(simpleID)] // NOTE: We explicitly log the value under a "loggerKey" as the test expects
+      } else {
+        return [:]
+      }
+    }
 
     self.server = try Server.start(configuration: serverConfig).wait()
 
@@ -91,6 +124,10 @@ internal final class ServerLogExtractionTests: GRPCTestCase {
     // Check the captured logs for the expected message and metadata.
     let logs = self.capturedLogs()
 
+    for l in logs {
+      print("    Captured log: \(l.message) :: \(l.metadata)")
+    }
+    print("Check where: message == \(function)")
     if let log = logs.first(where: { $0.message == "\(function)" }) {
       XCTAssertEqual(log.metadata[self.loggerKey], "\(uuid)")
     } else {

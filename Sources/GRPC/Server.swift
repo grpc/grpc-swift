@@ -28,6 +28,7 @@ import NIOTransportServices
 #if canImport(Network)
 import Network
 #endif
+import Tracing
 
 /// Wrapper object to manage the lifecycle of a gRPC server.
 ///
@@ -352,9 +353,8 @@ extension Server {
     /// available to service providers via `context`. Defaults to a no-op logger.
     public var logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
 
-    /// Configuration for extracting trace IDs from metadata and injecting the extracted ID into
-    /// a logger.
-    public var traceIDExtractor: TraceIDExtractor?
+    /// Tracer that should when handling trace metadata.
+    public var tracer: (any Tracing.Tracer)? // TODO: tri-state "don't trace" / global / configured(any Tracer)
 
     /// A channel initializer which will be run after gRPC has initialized each accepted channel.
     /// This may be used to add additional handlers to the pipeline and is intended for debugging.
@@ -416,6 +416,7 @@ extension Server {
       self.messageEncoding = messageEncoding
       self.httpTargetWindowSize = httpTargetWindowSize
       self.logger = logger
+      self.tracer = InstrumentationSystem.tracer // FIXME: not the best idea I guess, rather get it inline; OR have a tri-state "don't trace / global / configured".
       self.debugChannelInitializer = debugChannelInitializer
     }
     #endif // canImport(NIOSSL)
@@ -456,34 +457,34 @@ extension Server {
 
 extension Server.Configuration {
   /// Configuration for extracting IDs from metadata and inserting them into a logger.
-  public struct TraceIDExtractor {
-    @usableFromInline
-    let extractor: (HPACKHeaders) -> String?
-
-    /// The key for the logging metadata to set with the extracted trace ID.
-    public var loggerKey: String
-
-    /// Create a new trace ID extractor.
-    ///
-    /// - Parameters:
-    ///   - loggerKey: The key in the logger to set the trace ID on.
-    ///   - extractor: A function to extract a trace ID from
-    public init(loggerKey: String, extractor: @escaping (HPACKHeaders) -> String?) {
-      self.extractor = extractor
-      self.loggerKey = loggerKey
-    }
-
-    /// Creates a trace ID extractor which extracts the first header matching the given header name.
-    ///
-    /// - Parameters:
-    ///   - headerName: The name of the header field containing the trace ID.
-    ///   - loggerKey: The key in the logger to set the trace ID on.
-    public static func fixedHeaderName(_ headerName: String, loggerKey: String) -> Self {
-      return Self(loggerKey: loggerKey) { headers in
-        headers.first(name: headerName)
-      }
-    }
-  }
+//  public struct ____TraceIDExtractor {
+//    @usableFromInline
+//    let extractor: (HPACKHeaders) -> String?
+//
+//    /// The key for the logging metadata to set with the extracted trace ID.
+//    public var loggerKey: String
+//
+//    /// Create a new trace ID extractor.
+//    ///
+//    /// - Parameters:
+//    ///   - loggerKey: The key in the logger to set the trace ID on.
+//    ///   - extractor: A function to extract a trace ID from
+//    public init(loggerKey: String, extractor: @escaping (HPACKHeaders) -> String?) {
+//      self.extractor = extractor
+//      self.loggerKey = loggerKey
+//    }
+//
+//    /// Creates a trace ID extractor which extracts the first header matching the given header name.
+//    ///
+//    /// - Parameters:
+//    ///   - headerName: The name of the header field containing the trace ID.
+//    ///   - loggerKey: The key in the logger to set the trace ID on.
+//    public static func fixedHeaderName(_ headerName: String, loggerKey: String) -> Self {
+//      return Self(loggerKey: loggerKey) { headers in
+//        headers.first(name: headerName)
+//      }
+//    }
+//  }
 }
 
 extension ServerBootstrapProtocol {
@@ -510,9 +511,9 @@ extension Comparable {
   }
 }
 
-extension Server.Configuration.TraceIDExtractor {
-  @usableFromInline
-  internal func extract(from headers: HPACKHeaders) -> String? {
-    return self.extractor(headers)
-  }
-}
+//extension Server.Configuration.____TraceIDExtractor {
+//  @usableFromInline
+//  internal func extract(from headers: HPACKHeaders) -> String? {
+//    return self.extractor(headers)
+//  }
+//}

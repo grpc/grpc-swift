@@ -16,6 +16,7 @@
 import Logging
 import NIOCore
 import NIOHPACK
+import Tracing
 
 public final class UnaryServerHandler<
   Serializer: MessageSerializer,
@@ -56,6 +57,9 @@ public final class UnaryServerHandler<
   internal var logger: Logger
 
   @usableFromInline
+  internal var baggage: Baggage
+
+  @usableFromInline
   internal enum State {
     // Initial state. Nothing has happened yet.
     case idle
@@ -81,6 +85,7 @@ public final class UnaryServerHandler<
     self.serializer = responseSerializer
     self.deserializer = requestDeserializer
     self.context = context
+    self.baggage = .topLevel // TODO: decide if rather we set it from somewhere here?
     self.logger = context.logger
 
     let userInfoRef = Ref(UserInfo())
@@ -102,9 +107,15 @@ public final class UnaryServerHandler<
 
   @inlinable
   public func receiveMetadata(_ metadata: HPACKHeaders) {
-    if let extractor = self.context.traceIDExtractor, let id = extractor.extract(from: metadata) {
-      self.logger[metadataKey: extractor.loggerKey] = "\(id)"
-      self.interceptors.logger[metadataKey: extractor.loggerKey] = "\(id)"
+    if let tracer = self.context.tracer {
+      tracer.extract(metadata, into: &baggage, using: HPACKHeadersExtractor())
+
+      if let metadata: Logger.Metadata = self.logger.metadataProvider?.metadata(baggage) { // FIXME: function naming a bit ugly here
+        for (k, v) in metadata {
+          self.logger[metadataKey: k] = v
+          self.interceptors?.logger[metadataKey: k] = v
+        }
+      }
     }
     self.interceptors.receive(.metadata(metadata))
   }

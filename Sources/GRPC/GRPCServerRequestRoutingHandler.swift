@@ -19,6 +19,7 @@ import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
+import Tracing
 
 /// Provides ``GRPCServerHandlerProtocol`` objects for the methods on a particular service name.
 ///
@@ -45,6 +46,7 @@ public struct CallHandlerContext {
   internal var errorDelegate: ServerErrorDelegate?
   @usableFromInline
   internal var logger: Logger
+  // TODO: does this need baggage?
   @usableFromInline
   internal var encoding: ServerMessageEncoding
   @usableFromInline
@@ -60,7 +62,7 @@ public struct CallHandlerContext {
   @usableFromInline
   internal var closeFuture: EventLoopFuture<Void>
   @usableFromInline
-  internal var traceIDExtractor: Server.Configuration.TraceIDExtractor?
+  internal var tracer: Tracing.Tracer?
 }
 
 /// A call URI split into components.

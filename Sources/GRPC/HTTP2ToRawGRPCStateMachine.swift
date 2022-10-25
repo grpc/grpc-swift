@@ -17,6 +17,7 @@ import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
+import Tracing
 
 struct HTTP2ToRawGRPCStateMachine {
   /// The current state.
@@ -278,7 +279,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     services: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
     normalizeHeaders: Bool,
-    traceIDExtractor: Server.Configuration.TraceIDExtractor?
+    tracer: Tracing.Tracer?
   ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     // Extract and validate the content type. If it's nil we need to close.
     guard let contentType = self.extractContentType(from: headers) else {
@@ -328,7 +329,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       responseWriter: responseWriter,
       allocator: allocator,
       closeFuture: closeFuture,
-      traceIDExtractor: traceIDExtractor
+      tracer: tracer
     )
 
     // We have a matching service, hopefully we have a provider for the method too.
@@ -868,7 +869,7 @@ extension HTTP2ToRawGRPCStateMachine {
     services: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
     normalizeHeaders: Bool,
-    traceIDExtractor: Server.Configuration.TraceIDExtractor?
+    tracer: Tracing.Tracer?
   ) -> ReceiveHeadersAction {
     return self.withStateAvoidingCoWs { state in
       state.receive(
@@ -883,7 +884,7 @@ extension HTTP2ToRawGRPCStateMachine {
         services: services,
         encoding: encoding,
         normalizeHeaders: normalizeHeaders,
-        traceIDExtractor: traceIDExtractor
+        tracer: tracer
       )
     }
   }
@@ -979,7 +980,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     services: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
     normalizeHeaders: Bool,
-    traceIDExtractor: Server.Configuration.TraceIDExtractor?
+    tracer: Tracing.Tracer?
   ) -> HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction {
     switch self {
     // These are the only states in which we can receive headers. Everything else is invalid.
@@ -997,7 +998,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
         services: services,
         encoding: encoding,
         normalizeHeaders: normalizeHeaders,
-        traceIDExtractor: traceIDExtractor
+        tracer: tracer
       )
       self = stateAndAction.state
       return stateAndAction.action

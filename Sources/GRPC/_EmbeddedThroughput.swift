@@ -54,7 +54,7 @@ extension EmbeddedChannel {
       normalizeHeaders: normalizeHeaders,
       maximumReceiveMessageLength: .max,
       logger: logger,
-      traceIDExtractor: nil
+      tracer: nil
     )
     return self.pipeline.addHandler(codec)
   }

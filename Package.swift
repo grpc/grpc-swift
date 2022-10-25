@@ -51,18 +51,24 @@ let packageDependencies: [Package.Dependency] = [
     from: "1.20.2"
   ),
   .package(
-    url: "https://github.com/apple/swift-log.git",
-    from: "1.4.4"
+    // url: "https://github.com/apple/swift-log.git",
+    // from: "1.4.4"
+    url: "https://github.com/slashmo/swift-log.git",
+    branch: "feature/baggage"
   ),
   .package(
     url: "https://github.com/apple/swift-argument-parser.git",
     // Version is higher than in other Package@swift manifests: 1.1.0 raised the minimum Swift
-    // version and indluded async support.
+    // version and included async support.
     from: "1.1.1"
   ),
   .package(
     url: "https://github.com/apple/swift-docc-plugin",
     from: "1.0.0"
+  ),
+  .package(
+    url: "https://github.com/apple/swift-distributed-tracing",
+    branch: "main"
   ),
 ].appending(
   .package(
@@ -114,6 +120,7 @@ extension Target.Dependency {
     package: "swift-nio-transport-services"
   )
   static let logging: Self = .product(name: "Logging", package: "swift-log")
+  static let tracing: Self = .product(name: "Tracing", package: "swift-distributed-tracing")
   static let protobuf: Self = .product(name: "SwiftProtobuf", package: "swift-protobuf")
   static let protobufPluginLibrary: Self = .product(
     name: "SwiftProtobufPluginLibrary",
@@ -139,6 +146,7 @@ extension Target {
       .nioHTTP2,
       .nioExtras,
       .logging,
+      .tracing,
       .protobuf,
     ].appending(
       .nioSSL, if: includeNIOSSL
