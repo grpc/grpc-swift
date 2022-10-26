@@ -490,17 +490,31 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
     XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 0, 100))
 
-    // Grab the port and shutdown the server gracefully.
-    let serverPort = try XCTUnwrap(self.serverPort)
-    XCTAssertNoThrow(try self.server?.initiateGracefulShutdown().wait())
+    // Start an RPC.
+    let rpc = self.echo.collect()
+    XCTAssertNoThrow(try rpc.sendMessage(.with { $0.text = "foo" }).wait())
+    // Complete another one to make sure the previous one is known by the server.
+    XCTAssertNoThrow(try self.echo.get(.with { $0.text = "foo" }).status.wait())
 
-    // Start the server again on the same port.
-    self.startServer(withTLS: false, port: serverPort)
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 2, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
 
-    self.server = nil
-    self.startServer(withTLS: false)
+    // Start shutting the server down.
+    let didShutdown = self.server!.initiateGracefulShutdown()
+    self.server = nil // Avoid shutting down again in tearDown
 
-    XCTAssertEqual(recorder.popFirst(), .connectionClosed(id1))
+    // Pause a moment so we know the client received the GOAWAY.
+    let sleep = self.group.any().scheduleTask(in: .milliseconds(50)) {}
+    XCTAssertNoThrow(try sleep.futureResult.wait())
+    XCTAssertEqual(recorder.popFirst(), .connectionQuiescing(id1))
+
+    // Finish the RPC.
+    XCTAssertNoThrow(try rpc.sendEnd().wait())
+    XCTAssertNoThrow(try rpc.status.wait())
+
+    // Server should shutdown now.
+    XCTAssertNoThrow(try didShutdown.wait())
   }
 
   func testDelegateCanTellWhenFirstConnectionIsBeingEstablished() {
@@ -568,7 +582,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     // We should be able to do a bunch of other RPCs without the state changing (we'll XCTFail if
     // a state change happens).
-    let rpcs = (0 ..< 20).map { i in
+    let rpcs: [EventLoopFuture<GRPCStatus>] = (0 ..< 20).map { i in
       let rpc = self.echo.get(.with { $0.text = "\(i)" })
       return rpc.status
     }
@@ -576,191 +590,3 @@ final class GRPCChannelPoolTests: GRPCTestCase {
   }
 }
 #endif // canImport(NIOSSL)
-
-final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
-  private let lock = NIOLock()
-  private var connecting = Set<GRPCConnectionID>()
-  private var active = Set<GRPCConnectionID>()
-
-  enum StateNotifacation: Hashable, GRPCSendable {
-    case connecting
-    case connected
-  }
-
-  #if swift(>=5.6)
-  private let onStateChange: @Sendable (StateNotifacation) -> Void
-  #else
-  private let onStateChange: (StateNotifacation) -> Void
-  #endif
-
-  #if swift(>=5.6)
-  init(onStateChange: @escaping @Sendable (StateNotifacation) -> Void) {
-    self.onStateChange = onStateChange
-  }
-  #else
-  init(onStateChange: @escaping (StateNotifacation) -> Void) {
-    self.onStateChange = onStateChange
-  }
-  #endif
-
-  func startedConnecting(id: GRPCConnectionID) {
-    let didStartConnecting = self.lock.withLock {
-      let (inserted, _) = self.connecting.insert(id)
-      // Only intereseted new connection attempts when there are no active connections.
-      return inserted && self.connecting.count == 1 && self.active.isEmpty
-    }
-
-    if didStartConnecting {
-      self.onStateChange(.connecting)
-    }
-  }
-
-  func connectSucceeded(id: GRPCConnectionID, streamCapacity: Int) {
-    let didStopConnecting = self.lock.withLock {
-      let removed = self.connecting.remove(id) != nil
-      let (inserted, _) = self.active.insert(id)
-      return removed && inserted && self.active.count == 1
-    }
-
-    if didStopConnecting {
-      self.onStateChange(.connected)
-    }
-  }
-
-  func connectionClosed(id: GRPCConnectionID, error: Error?) {
-    self.lock.withLock {
-      self.active.remove(id)
-      self.connecting.remove(id)
-    }
-  }
-
-  func connectionQuiescing(id: GRPCConnectionID) {
-    self.lock.withLock {
-      _ = self.active.remove(id)
-    }
-  }
-
-  // No-op.
-  func connectionAdded(id: GRPCConnectionID) {}
-
-  // No-op.
-  func connectionRemoved(id: GRPCConnectionID) {}
-
-  // Conection failures put the connection into a backing off state, we consider that to still
-  // be 'connecting' at this point.
-  func connectFailed(id: GRPCConnectionID, error: Error) {}
-
-  // No-op.
-  func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int) {}
-}
-
-#if swift(>=5.6)
-extension IsConnectingDelegate: @unchecked Sendable {}
-#endif
-
-final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
-  struct UnexpectedEvent: Error {
-    var event: Event
-
-    init(_ event: Event) {
-      self.event = event
-    }
-  }
-
-  enum Event: Equatable {
-    case connectionAdded(GRPCConnectionID)
-    case startedConnecting(GRPCConnectionID)
-    case connectFailed(GRPCConnectionID)
-    case connectSucceeded(GRPCConnectionID, Int)
-    case connectionClosed(GRPCConnectionID)
-    case connectionUtilizationChanged(GRPCConnectionID, Int, Int)
-    case connectionQuiescing(GRPCConnectionID)
-    case connectionRemoved(GRPCConnectionID)
-
-    var id: GRPCConnectionID {
-      switch self {
-      case let .connectionAdded(id),
-           let .startedConnecting(id),
-           let .connectFailed(id),
-           let .connectSucceeded(id, _),
-           let .connectionClosed(id),
-           let .connectionUtilizationChanged(id, _, _),
-           let .connectionQuiescing(id),
-           let .connectionRemoved(id):
-        return id
-      }
-    }
-  }
-
-  private var events: CircularBuffer<Event> = []
-  private let lock = NIOLock()
-
-  var first: Event? {
-    return self.lock.withLock {
-      self.events.first
-    }
-  }
-
-  var isEmpty: Bool {
-    return self.lock.withLock { self.events.isEmpty }
-  }
-
-  func popFirst() -> Event? {
-    return self.lock.withLock {
-      self.events.popFirst()
-    }
-  }
-
-  func connectionAdded(id: GRPCConnectionID) {
-    self.lock.withLock {
-      self.events.append(.connectionAdded(id))
-    }
-  }
-
-  func startedConnecting(id: GRPCConnectionID) {
-    self.lock.withLock {
-      self.events.append(.startedConnecting(id))
-    }
-  }
-
-  func connectFailed(id: GRPCConnectionID, error: Error) {
-    self.lock.withLock {
-      self.events.append(.connectFailed(id))
-    }
-  }
-
-  func connectSucceeded(id: GRPCConnectionID, streamCapacity: Int) {
-    self.lock.withLock {
-      self.events.append(.connectSucceeded(id, streamCapacity))
-    }
-  }
-
-  func connectionClosed(id: GRPCConnectionID, error: Error?) {
-    self.lock.withLock {
-      self.events.append(.connectionClosed(id))
-    }
-  }
-
-  func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int) {
-    self.lock.withLock {
-      self.events.append(.connectionUtilizationChanged(id, streamsUsed, streamCapacity))
-    }
-  }
-
-  func connectionQuiescing(id: GRPCConnectionID) {
-    self.lock.withLock {
-      self.events.append(.connectionQuiescing(id))
-    }
-    print("quiescing...")
-  }
-
-  func connectionRemoved(id: GRPCConnectionID) {
-    self.lock.withLock {
-      self.events.append(.connectionRemoved(id))
-    }
-  }
-}
-
-#if swift(>=5.6)
-extension EventRecordingConnectionPoolDelegate: @unchecked Sendable {}
-#endif // swift(>=5.6)
