@@ -575,6 +575,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try EventLoopFuture.andAllSucceed(rpcs, on: self.group.any()).wait())
   }
 }
+#endif // canImport(NIOSSL)
 
 final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
   private let lock = NIOLock()
@@ -652,7 +653,6 @@ final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
   // No-op.
   func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int) {}
 }
-#endif // canImport(NIOSSL)
 
 #if swift(>=5.6)
 extension IsConnectingDelegate: @unchecked Sendable {}
