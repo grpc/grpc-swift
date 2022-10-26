@@ -652,6 +652,7 @@ final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
   // No-op.
   func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int) {}
 }
+#endif // canImport(NIOSSL)
 
 #if swift(>=5.6)
 extension IsConnectingDelegate: @unchecked Sendable {}
@@ -763,5 +764,3 @@ final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
 #if swift(>=5.6)
 extension EventRecordingConnectionPoolDelegate: @unchecked Sendable {}
 #endif // swift(>=5.6)
-
-#endif // canImport(NIOSSL)
