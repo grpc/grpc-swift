@@ -195,7 +195,7 @@ internal final class AsyncServerHandler<
   internal var logger: Logger
 
   /// Contextual baggage which can be used to start tracing spans,
-  // or carry additional contextual information through the handler.
+  /// or carry additional contextual information through the handler.
   @usableFromInline
   internal var baggage: Baggage
 
