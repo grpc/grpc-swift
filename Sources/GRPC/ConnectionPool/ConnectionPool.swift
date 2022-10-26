@@ -517,7 +517,7 @@ internal final class ConnectionPool {
       let connections = self._connections
       self._connections.removeAll()
 
-      let allShutdown = connections.values.map {
+      let allShutdown: [EventLoopFuture<Void>] = connections.values.map {
         let id = $0.manager.id
         let manager = $0.manager
 
