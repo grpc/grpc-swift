@@ -265,17 +265,6 @@ internal final class ConnectionManager {
     }
   }
 
-  private var channel: Channel? {
-    self.eventLoop.assertInEventLoop()
-    switch self.state {
-    case let .ready(state):
-      return state.channel
-
-    case .idle, .connecting, .transientFailure, .active, .shutdown:
-      return nil
-    }
-  }
-
   /// The `EventLoop` that the managed connection will run on.
   internal let eventLoop: EventLoop
 
@@ -601,6 +590,31 @@ internal final class ConnectionManager {
     // We're already shutdown; there's nothing to do.
     case let .shutdown(state):
       promise.completeWith(state.closeFuture)
+    }
+  }
+
+  /// Registers a callback which fires when the current active connection is closed.
+  ///
+  /// If there is a connection, the callback will be invoked with `true` when the connection is
+  /// closed. Otherwise the callback is invoked with `false`.
+  internal func onCurrentConnectionClose(_ onClose: @escaping (Bool) -> Void) {
+    if self.eventLoop.inEventLoop {
+      self._onCurrentConnectionClose(onClose)
+    } else {
+      self.eventLoop.execute {
+        self._onCurrentConnectionClose(onClose)
+      }
+    }
+  }
+
+  private func _onCurrentConnectionClose(_ onClose: @escaping (Bool) -> Void) {
+    self.eventLoop.assertInEventLoop()
+
+    switch self.state {
+    case let .ready(state):
+      state.channel.closeFuture.whenComplete { _ in onClose(true) }
+    case .idle, .connecting, .active, .transientFailure, .shutdown:
+      onClose(false)
     }
   }
 
@@ -1037,12 +1051,6 @@ extension ConnectionManager {
     /// other state.
     internal var multiplexer: HTTP2StreamMultiplexer? {
       return self.manager.multiplexer
-    }
-
-    /// Returns the `channel` from a connection in the `ready` state or `nil` if it is any
-    /// other state.
-    internal var channel: Channel? {
-      return self.manager.channel
     }
 
     // Start establishing a connection. Must only be called when `isIdle` is `true`.

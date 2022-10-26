@@ -615,29 +615,27 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
   func connectionIsQuiescing(_ manager: ConnectionManager) {
     self.eventLoop.assertInEventLoop()
 
-    // Find the relevant connection, mark it as quiescing and drop the connectivity delegate as
-    // these events are no longer relevant.
-    guard let index = self._connections.index(forKey: manager.id) else { return }
-    self._connections.values[index].isQuiescing = true
-    self._connections.values[index].manager.sync.connectivityDelegate = nil
+    // Find the relevant connection.
+    guard let index = self._connections.index(forKey: manager.id) else {
+      return
+    }
 
+    // Drop the connectivity delegate, we're no longer interested in its events now.
+    manager.sync.connectivityDelegate = nil
+
+    // Started quiescing; update our state and notify the pool delegate.
+    self._connections.values[index].isQuiescing = true
     self.delegate?.connectionQuiescing(id: .init(manager.id))
 
-    // If there's a close future then the underlying channel is open. It will close eventually when
-    // open streams are closed, so drop the H2 delegate and update the pool delegate when that
-    // happens.
-    if let closeFuture = self._connections.values[index].manager.sync.channel?.closeFuture {
-      closeFuture.whenComplete { _ in
-        guard let removed = self._connections.removeValue(forKey: manager.id) else { return }
+    // As the connection is quescing, we need to know when the current connection its managing has
+    // closed. When that happens drop the H2 delegate and update the pool delegate.
+    manager.onCurrentConnectionClose { hadActiveConnection in
+      assert(hadActiveConnection)
+      if let removed = self._connections.removeValue(forKey: manager.id) {
         removed.manager.sync.http2Delegate = nil
         self.delegate?.connectionClosed(id: .init(removed.manager.id), error: nil)
         self.delegate?.connectionRemoved(id: .init(removed.manager.id))
       }
-    } else {
-      // No close future, so no open channel. Remove the delegate and connection.
-      self._connections.values[index].manager.sync.http2Delegate = nil
-      self._connections.remove(at: index)
-      self.delegate?.connectionRemoved(id: .init(manager.id))
     }
 
     // Grab the number of reserved streams (before invalidating the index by adding a connection).
