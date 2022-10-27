@@ -457,7 +457,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 1, 100))
     XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 0, 100))
 
-    let rpcs = try (1 ... 10).map { i in
+    let rpcs: [ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>] = try (1 ... 10).map { i in
       let rpc = self.echo.collect()
       XCTAssertNoThrow(try rpc.sendMessage(.with { $0.text = "foo" }).wait())
       XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, i, 100))
