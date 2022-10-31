@@ -177,6 +177,10 @@ extension GRPCChannelPool {
     /// An error delegate which is called when errors are caught.
     public var errorDelegate: ClientErrorDelegate?
 
+    /// A delegate which will be notified about changes to the state of connections managed by the
+    /// pool.
+    public var delegate: GRPCConnectionPoolDelegate?
+
     /// A logger used for background activity, such as connection state changes.
     public var backgroundActivityLogger = Logger(
       label: "io.grpc",
@@ -286,4 +290,59 @@ extension GRPCChannelPool.Configuration {
     /// thread _could support.
     public var reservationLoadThreshold: Double = 0.9
   }
+}
+
+/// The ID of a connection in the connection pool.
+public struct GRPCConnectionID: Hashable, GRPCSendable, CustomStringConvertible {
+  private let id: ConnectionManagerID
+
+  public var description: String {
+    return String(describing: self.id)
+  }
+
+  internal init(_ id: ConnectionManagerID) {
+    self.id = id
+  }
+}
+
+/// A delegate for the connection pool which is notified of various lifecycle events.
+///
+/// All functions must execute quickly and may be executed on arbitrary threads. The implementor is
+/// responsible for ensuring thread safety.
+public protocol GRPCConnectionPoolDelegate: GRPCSendable {
+  /// A new connection was created with the given ID and added to the pool. The connection is not
+  /// yet active (or connecting).
+  ///
+  /// In most cases ``startedConnecting(id:)`` will be the next function called for the given
+  /// connection but ``connectionRemoved(id:)`` may also be called.
+  func connectionAdded(id: GRPCConnectionID)
+
+  /// The connection with the given ID was removed from the pool.
+  func connectionRemoved(id: GRPCConnectionID)
+
+  /// The connection with the given ID has started trying to establish a connection. The outcome
+  /// of the connection will be reported as either ``connectSucceeded(id:streamCapacity:)`` or
+  /// ``connectFailed(id:error:)``.
+  func startedConnecting(id: GRPCConnectionID)
+
+  /// A connection attempt failed with the given error. After some period of
+  /// time ``startedConnecting(id:)`` may be called again.
+  func connectFailed(id: GRPCConnectionID, error: Error)
+
+  /// A connection was established on the connection with the given ID. `streamCapacity` streams are
+  /// available to use on the connection. The maximum number of available streams may change over
+  /// time and is reported via ``connectionUtilizationChanged(id:streamsUsed:streamCapacity:)``. The
+  func connectSucceeded(id: GRPCConnectionID, streamCapacity: Int)
+
+  /// The utlization of the connection changed; a stream may have been used, returned or the
+  /// maximum number of concurrent streams available on the connection changed.
+  func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int)
+
+  /// The remote peer is quiescing the connection: no new streams will be created on it. The
+  /// connection will eventually be closed and removed from the pool.
+  func connectionQuiescing(id: GRPCConnectionID)
+
+  /// The connection was closed. The connection may be established again in the future (notified
+  /// via ``startedConnecting(id:)``).
+  func connectionClosed(id: GRPCConnectionID, error: Error?)
 }

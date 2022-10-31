@@ -35,6 +35,12 @@ internal protocol ConnectionManagerConnectivityDelegate {
 }
 
 internal protocol ConnectionManagerHTTP2Delegate {
+  /// An HTTP/2 stream was opened.
+  ///
+  /// - Parameters:
+  ///   - connectionManager: The connection manager reporting the opened stream.
+  func streamOpened(_ connectionManager: ConnectionManager)
+
   /// An HTTP/2 stream was closed.
   ///
   /// - Parameters:

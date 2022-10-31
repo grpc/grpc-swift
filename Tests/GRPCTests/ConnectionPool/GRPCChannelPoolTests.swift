@@ -72,9 +72,9 @@ final class GRPCChannelPoolTests: GRPCTestCase {
       .withServiceProviders([EchoProvider()])
   }
 
-  private func startServer(withTLS: Bool = false) {
+  private func startServer(withTLS: Bool = false, port: Int = 0) {
     self.server = try! self.makeServerBuilder(withTLS: withTLS)
-      .bind(host: "localhost", port: 0)
+      .bind(host: "localhost", port: port)
       .wait()
   }
 
@@ -104,13 +104,18 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     }
   }
 
-  private func setUpClientAndServer(withTLS tls: Bool) {
-    self.configureEventLoopGroup()
+  private func setUpClientAndServer(
+    withTLS tls: Bool,
+    threads: Int = System.coreCount,
+    _ configure: (inout GRPCChannelPool.Configuration) -> Void = { _ in }
+  ) {
+    self.configureEventLoopGroup(threads: threads)
     self.startServer(withTLS: tls)
     self.startChannel(withTLS: tls) {
       // We'll allow any number of waiters since we immediately fire off a bunch of RPCs and don't
       // want to bounce off the limit as we wait for a connection to come up.
       $0.connectionPool.maxWaitersPerEventLoop = .max
+      configure(&$0)
     }
   }
 
@@ -435,6 +440,153 @@ final class GRPCChannelPoolTests: GRPCTestCase {
       XCTFail("Status message did not contain a possible cause: '\(status.message ?? "nil")'")
     }
   }
-}
 
+  func testConnectionPoolDelegateSingleConnection() throws {
+    let recorder = EventRecordingConnectionPoolDelegate()
+    self.setUpClientAndServer(withTLS: false, threads: 1) {
+      $0.delegate = recorder
+    }
+
+    let warmup = self.echo.get(.with { $0.text = "" })
+    XCTAssertNoThrow(try warmup.status.wait())
+
+    let id = try XCTUnwrap(recorder.first?.id)
+    XCTAssertEqual(recorder.popFirst(), .connectionAdded(id))
+    XCTAssertEqual(recorder.popFirst(), .startedConnecting(id))
+    XCTAssertEqual(recorder.popFirst(), .connectSucceeded(id, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 1, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 0, 100))
+
+    let rpcs: [ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>] = try (1 ... 10).map { i in
+      let rpc = self.echo.collect()
+      XCTAssertNoThrow(try rpc.sendMessage(.with { $0.text = "foo" }).wait())
+      XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, i, 100))
+      return rpc
+    }
+
+    for (i, rpc) in rpcs.enumerated() {
+      XCTAssertNoThrow(try rpc.sendEnd().wait())
+      XCTAssertNoThrow(try rpc.status.wait())
+      XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 10 - (i + 1), 100))
+    }
+
+    XCTAssertNoThrow(try self.channel?.close().wait())
+    XCTAssertEqual(recorder.popFirst(), .connectionClosed(id))
+    XCTAssertEqual(recorder.popFirst(), .connectionRemoved(id))
+    XCTAssert(recorder.isEmpty)
+  }
+
+  func testConnectionPoolDelegateQuiescing() throws {
+    let recorder = EventRecordingConnectionPoolDelegate()
+    self.setUpClientAndServer(withTLS: false, threads: 1) {
+      $0.delegate = recorder
+    }
+
+    XCTAssertNoThrow(try self.echo.get(.with { $0.text = "foo" }).status.wait())
+    let id1 = try XCTUnwrap(recorder.first?.id)
+    XCTAssertEqual(recorder.popFirst(), .connectionAdded(id1))
+    XCTAssertEqual(recorder.popFirst(), .startedConnecting(id1))
+    XCTAssertEqual(recorder.popFirst(), .connectSucceeded(id1, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 0, 100))
+
+    // Start an RPC.
+    let rpc = self.echo.collect()
+    XCTAssertNoThrow(try rpc.sendMessage(.with { $0.text = "foo" }).wait())
+    // Complete another one to make sure the previous one is known by the server.
+    XCTAssertNoThrow(try self.echo.get(.with { $0.text = "foo" }).status.wait())
+
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 2, 100))
+    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
+
+    // Start shutting the server down.
+    let didShutdown = self.server!.initiateGracefulShutdown()
+    self.server = nil // Avoid shutting down again in tearDown
+
+    // Pause a moment so we know the client received the GOAWAY.
+    let sleep = self.group.any().scheduleTask(in: .milliseconds(50)) {}
+    XCTAssertNoThrow(try sleep.futureResult.wait())
+    XCTAssertEqual(recorder.popFirst(), .connectionQuiescing(id1))
+
+    // Finish the RPC.
+    XCTAssertNoThrow(try rpc.sendEnd().wait())
+    XCTAssertNoThrow(try rpc.status.wait())
+
+    // Server should shutdown now.
+    XCTAssertNoThrow(try didShutdown.wait())
+  }
+
+  func testDelegateCanTellWhenFirstConnectionIsBeingEstablished() {
+    final class State {
+      private enum _State {
+        case idle
+        case connecting
+        case connected
+      }
+
+      private var state: _State = .idle
+      private let lock = NIOLock()
+
+      var isConnected: Bool {
+        return self.lock.withLock {
+          switch self.state {
+          case .connected:
+            return true
+          case .idle, .connecting:
+            return false
+          }
+        }
+      }
+
+      func startedConnecting() {
+        self.lock.withLock {
+          switch self.state {
+          case .idle:
+            self.state = .connecting
+          case .connecting, .connected:
+            XCTFail("Invalid state \(self.state) for \(#function)")
+          }
+        }
+      }
+
+      func connected() {
+        self.lock.withLock {
+          switch self.state {
+          case .connecting:
+            self.state = .connected
+          case .idle, .connected:
+            XCTFail("Invalid state \(self.state) for \(#function)")
+          }
+        }
+      }
+    }
+
+    let state = State()
+
+    self.setUpClientAndServer(withTLS: false, threads: 1) {
+      $0.delegate = IsConnectingDelegate { stateChange in
+        switch stateChange {
+        case .connecting:
+          state.startedConnecting()
+        case .connected:
+          state.connected()
+        }
+      }
+    }
+
+    XCTAssertFalse(state.isConnected)
+    let rpc = self.echo.get(.with { $0.text = "" })
+    XCTAssertNoThrow(try rpc.status.wait())
+    XCTAssertTrue(state.isConnected)
+
+    // We should be able to do a bunch of other RPCs without the state changing (we'll XCTFail if
+    // a state change happens).
+    let rpcs: [EventLoopFuture<GRPCStatus>] = (0 ..< 20).map { i in
+      let rpc = self.echo.get(.with { $0.text = "\(i)" })
+      return rpc.status
+    }
+    XCTAssertNoThrow(try EventLoopFuture.andAllSucceed(rpcs, on: self.group.any()).wait())
+  }
+}
 #endif // canImport(NIOSSL)

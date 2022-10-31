@@ -242,6 +242,17 @@ internal final class ConnectionManager {
     }
   }
 
+  /// Returns whether the state is 'shutdown'.
+  private var isShutdown: Bool {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .shutdown:
+      return true
+    case .idle, .connecting, .transientFailure, .active, .ready:
+      return false
+    }
+  }
+
   /// Returns the `HTTP2StreamMultiplexer` from the 'ready' state or `nil` if it is not available.
   private var multiplexer: HTTP2StreamMultiplexer? {
     self.eventLoop.assertInEventLoop()
@@ -582,6 +593,31 @@ internal final class ConnectionManager {
     }
   }
 
+  /// Registers a callback which fires when the current active connection is closed.
+  ///
+  /// If there is a connection, the callback will be invoked with `true` when the connection is
+  /// closed. Otherwise the callback is invoked with `false`.
+  internal func onCurrentConnectionClose(_ onClose: @escaping (Bool) -> Void) {
+    if self.eventLoop.inEventLoop {
+      self._onCurrentConnectionClose(onClose)
+    } else {
+      self.eventLoop.execute {
+        self._onCurrentConnectionClose(onClose)
+      }
+    }
+  }
+
+  private func _onCurrentConnectionClose(_ onClose: @escaping (Bool) -> Void) {
+    self.eventLoop.assertInEventLoop()
+
+    switch self.state {
+    case let .ready(state):
+      state.channel.closeFuture.whenComplete { _ in onClose(true) }
+    case .idle, .connecting, .active, .transientFailure, .shutdown:
+      onClose(false)
+    }
+  }
+
   // MARK: - State changes from the channel handler.
 
   /// The channel caught an error. Hold on to it until the channel becomes inactive, it may provide
@@ -807,6 +843,11 @@ internal final class ConnectionManager {
     }
   }
 
+  internal func streamOpened() {
+    self.eventLoop.assertInEventLoop()
+    self.http2Delegate?.streamOpened(self)
+  }
+
   internal func streamClosed() {
     self.eventLoop.assertInEventLoop()
     self.http2Delegate?.streamClosed(self)
@@ -999,6 +1040,11 @@ extension ConnectionManager {
     /// Returns `true` if the connection is in the idle state.
     internal var isIdle: Bool {
       return self.manager.isIdle
+    }
+
+    /// Returne `true` if the connection is in the shutdown state.
+    internal var isShutdown: Bool {
+      return self.manager.isShutdown
     }
 
     /// Returns the `multiplexer` from a connection in the `ready` state or `nil` if it is any

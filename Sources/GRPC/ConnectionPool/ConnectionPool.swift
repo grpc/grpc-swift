@@ -98,6 +98,9 @@ internal final class ConnectionPool {
   @usableFromInline
   internal let streamLender: StreamLender
 
+  @usableFromInline
+  internal var delegate: GRPCConnectionPoolDelegate?
+
   /// A logger which always sets "GRPC" as its source.
   @usableFromInline
   internal let logger: GRPCLogger
@@ -147,6 +150,7 @@ internal final class ConnectionPool {
     connectionBackoff: ConnectionBackoff,
     channelProvider: ConnectionManagerChannelProvider,
     streamLender: StreamLender,
+    delegate: GRPCConnectionPoolDelegate?,
     logger: GRPCLogger,
     now: @escaping () -> NIODeadline = NIODeadline.now
   ) {
@@ -165,6 +169,7 @@ internal final class ConnectionPool {
     self.connectionBackoff = connectionBackoff
     self.channelProvider = channelProvider
     self.streamLender = streamLender
+    self.delegate = delegate
     self.logger = logger
     self.now = now
   }
@@ -191,7 +196,9 @@ internal final class ConnectionPool {
       http2Delegate: self,
       logger: self.logger.unwrapped
     )
-    self._connections[manager.id] = PerConnectionState(manager: manager)
+    let id = manager.id
+    self._connections[id] = PerConnectionState(manager: manager)
+    self.delegate?.connectionAdded(id: .init(id))
   }
 
   // MARK: - Called from the pool manager
@@ -397,8 +404,8 @@ internal final class ConnectionPool {
 
     // TODO: make this cheaper by storing and incrementally updating the number of idle connections
     let capacity = self._connections.values.reduce(0) { sum, state in
-      if state.manager.sync.isIdle {
-        // Idle connection, no capacity.
+      if state.manager.sync.isIdle || state.isQuiescing {
+        // Idle connection or quiescing (so the capacity should be ignored).
         return sum
       } else if let knownMaxAvailableStreams = state.maxAvailableStreams {
         // A known value of max concurrent streams, i.e. the connection is active.
@@ -502,6 +509,7 @@ internal final class ConnectionPool {
       self._state = .shuttingDown(promise.futureResult)
       promise.futureResult.whenComplete { _ in
         self._state = .shutdown
+        self.delegate = nil
         self.logger.trace("finished shutting down connection pool")
       }
 
@@ -509,8 +517,22 @@ internal final class ConnectionPool {
       let connections = self._connections
       self._connections.removeAll()
 
-      let allShutdown = connections.values.map {
-        $0.manager.shutdown(mode: mode)
+      let allShutdown: [EventLoopFuture<Void>] = connections.values.map {
+        let id = $0.manager.id
+        let manager = $0.manager
+
+        return manager.eventLoop.flatSubmit {
+          // If the connection was idle/shutdown before calling shutdown then we shouldn't tell
+          // the delegate the connection closed (because it either never connected or was already
+          // informed about this).
+          let connectionIsInactive = manager.sync.isIdle || manager.sync.isShutdown
+          return manager.shutdown(mode: mode).always { _ in
+            if !connectionIsInactive {
+              self.delegate?.connectionClosed(id: .init(id), error: nil)
+            }
+            self.delegate?.connectionRemoved(id: .init(id))
+          }
+        }
       }
 
       // Fail the outstanding waiters.
@@ -564,27 +586,71 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     default:
       ()
     }
+
+    guard let delegate = self.delegate else { return }
+
+    switch (oldState, newState) {
+    case (.idle, .connecting),
+         (.transientFailure, .connecting):
+      delegate.startedConnecting(id: .init(manager.id))
+
+    case (.connecting, .ready):
+      // The connection becoming ready is handled by 'receivedSettingsMaxConcurrentStreams'.
+      ()
+
+    case (.ready, .idle):
+      delegate.connectionClosed(id: .init(manager.id), error: nil)
+
+    case let (.ready, .transientFailure(error)):
+      delegate.connectionClosed(id: .init(manager.id), error: error)
+
+    case let (.connecting, .transientFailure(error)):
+      delegate.connectFailed(id: .init(manager.id), error: error)
+
+    default:
+      ()
+    }
   }
 
   func connectionIsQuiescing(_ manager: ConnectionManager) {
     self.eventLoop.assertInEventLoop()
-    guard let removed = self._connections.removeValue(forKey: manager.id) else {
+
+    // Find the relevant connection.
+    guard let index = self._connections.index(forKey: manager.id) else {
       return
     }
 
-    // Drop any delegates. We're no longer interested in these events.
-    removed.manager.sync.connectivityDelegate = nil
-    removed.manager.sync.http2Delegate = nil
+    // Drop the connectivity delegate, we're no longer interested in its events now.
+    manager.sync.connectivityDelegate = nil
+
+    // Started quiescing; update our state and notify the pool delegate.
+    self._connections.values[index].isQuiescing = true
+    self.delegate?.connectionQuiescing(id: .init(manager.id))
+
+    // As the connection is quescing, we need to know when the current connection its managing has
+    // closed. When that happens drop the H2 delegate and update the pool delegate.
+    manager.onCurrentConnectionClose { hadActiveConnection in
+      assert(hadActiveConnection)
+      if let removed = self._connections.removeValue(forKey: manager.id) {
+        removed.manager.sync.http2Delegate = nil
+        self.delegate?.connectionClosed(id: .init(removed.manager.id), error: nil)
+        self.delegate?.connectionRemoved(id: .init(removed.manager.id))
+      }
+    }
+
+    // Grab the number of reserved streams (before invalidating the index by adding a connection).
+    let reservedStreams = self._connections.values[index].reservedStreams
 
     // Replace the connection with a new idle one.
     self.addConnectionToPool()
 
-    // Since we're removing this connection from the pool, the pool manager can ignore any streams
-    // reserved against this connection.
+    // Since we're removing this connection from the pool (and no new streams can be created on
+    // the connection), the pool manager can ignore any streams reserved against this connection.
+    // We do still care about the number of reserved streams for the connection though
     //
-    // Note: we don't need to adjust the number of available streams as the number of connections
-    // hasn't changed.
-    self.streamLender.returnStreams(removed.reservedStreams, to: self)
+    // Note: we don't need to adjust the number of available streams as the effective number of
+    // connections hasn't changed.
+    self.streamLender.returnStreams(reservedStreams, to: self)
   }
 
   private func updateMostRecentError(_ error: Error) {
@@ -606,15 +672,43 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
 }
 
 extension ConnectionPool: ConnectionManagerHTTP2Delegate {
+  internal func streamOpened(_ manager: ConnectionManager) {
+    self.eventLoop.assertInEventLoop()
+    if let utilization = self._connections[manager.id]?.openedStream(),
+       let delegate = self.delegate {
+      delegate.connectionUtilizationChanged(
+        id: .init(manager.id),
+        streamsUsed: utilization.used,
+        streamCapacity: utilization.capacity
+      )
+    }
+  }
+
   internal func streamClosed(_ manager: ConnectionManager) {
     self.eventLoop.assertInEventLoop()
 
-    // Return the stream the connection and to the pool manager.
-    self._connections[manager.id]?.returnStream()
-    self.streamLender.returnStreams(1, to: self)
+    guard let index = self._connections.index(forKey: manager.id) else {
+      return
+    }
 
-    // A stream was returned: we may be able to service a waiter now.
-    self.tryServiceWaiters()
+    // Return the stream the connection and to the pool manager.
+    if let utilization = self._connections.values[index].returnStream(),
+       let delegate = self.delegate {
+      delegate.connectionUtilizationChanged(
+        id: .init(manager.id),
+        streamsUsed: utilization.used,
+        streamCapacity: utilization.capacity
+      )
+    }
+
+    // Don't return the stream to the pool manager if the connection is quescing, they were returned
+    // when the connection started quiescing.
+    if !self._connections.values[index].isQuiescing {
+      self.streamLender.returnStreams(1, to: self)
+
+      // A stream was returned: we may be able to service a waiter now.
+      self.tryServiceWaiters()
+    }
   }
 
   internal func receivedSettingsMaxConcurrentStreams(
@@ -623,10 +717,21 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
   ) {
     self.eventLoop.assertInEventLoop()
 
+    // Find the relevant connection.
+    guard let index = self._connections.index(forKey: manager.id) else {
+      return
+    }
+
+    // When the connection is quiescing, the pool manager is not interested in updates to the
+    // connection, bail out early.
+    if self._connections.values[index].isQuiescing {
+      return
+    }
+
     // If we received a SETTINGS update then a connection is okay: drop the last known error.
     self._mostRecentError = nil
 
-    let previous = self._connections[manager.id]?.updateMaxConcurrentStreams(maxConcurrentStreams)
+    let previous = self._connections.values[index].updateMaxConcurrentStreams(maxConcurrentStreams)
     let delta: Int
 
     if let previousValue = previous {
@@ -637,6 +742,8 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
       // There was no previous value so this must be a new connection. We'll compare against our
       // assumed default.
       delta = maxConcurrentStreams - self.assumedMaxConcurrentStreams
+      // Notify the delegate.
+      self.delegate?.connectSucceeded(id: .init(manager.id), streamCapacity: maxConcurrentStreams)
     }
 
     if delta != 0 {

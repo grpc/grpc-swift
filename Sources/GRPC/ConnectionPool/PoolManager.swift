@@ -58,13 +58,17 @@ internal final class PoolManager {
     var channelProvider: DefaultChannelProvider
 
     @usableFromInline
+    var delegate: GRPCConnectionPoolDelegate?
+
+    @usableFromInline
     internal init(
       maxConnections: Int,
       maxWaiters: Int,
       loadThreshold: Double,
       assumedMaxConcurrentStreams: Int = 100,
       connectionBackoff: ConnectionBackoff,
-      channelProvider: DefaultChannelProvider
+      channelProvider: DefaultChannelProvider,
+      delegate: GRPCConnectionPoolDelegate?
     ) {
       self.maxConnections = maxConnections
       self.maxWaiters = maxWaiters
@@ -72,6 +76,7 @@ internal final class PoolManager {
       self.assumedMaxConcurrentStreams = assumedMaxConcurrentStreams
       self.connectionBackoff = connectionBackoff
       self.channelProvider = channelProvider
+      self.delegate = delegate
     }
   }
 
@@ -224,6 +229,7 @@ internal final class PoolManager {
         connectionBackoff: configuration.connectionBackoff,
         channelProvider: configuration.channelProvider,
         streamLender: self,
+        delegate: configuration.delegate,
         logger: logger
       )
     }

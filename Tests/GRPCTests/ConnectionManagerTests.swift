@@ -1034,8 +1034,13 @@ extension ConnectionManagerTests {
     )
 
     class HTTP2Delegate: ConnectionManagerHTTP2Delegate {
+      var streamsOpened = 0
       var streamsClosed = 0
       var maxConcurrentStreams = 0
+
+      func streamOpened(_ connectionManager: ConnectionManager) {
+        self.streamsOpened += 1
+      }
 
       func streamClosed(_ connectionManager: ConnectionManager) {
         self.streamsClosed += 1
@@ -1118,6 +1123,7 @@ extension ConnectionManagerTests {
       channel.pipeline.fireUserInboundEventTriggered(streamClosed)
     }
 
+    XCTAssertEqual(http2.streamsOpened, 4)
     XCTAssertEqual(http2.streamsClosed, 4)
   }
 

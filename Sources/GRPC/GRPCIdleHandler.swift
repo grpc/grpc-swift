@@ -239,6 +239,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     if let created = event as? NIOHTTP2StreamCreatedEvent {
       self.perform(operations: self.stateMachine.streamCreated(withID: created.streamID))
       self.handlePingAction(self.pingHandler.streamCreated())
+      self.mode.connectionManager?.streamOpened()
       context.fireUserInboundEventTriggered(event)
     } else if let closed = event as? StreamClosedEvent {
       self.perform(operations: self.stateMachine.streamClosed(withID: closed.streamID))
