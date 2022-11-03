@@ -119,7 +119,7 @@ class HeaderNormalizationTests: GRPCTestCase {
   private func assertCustomMetadataIsLowercased(
     _ headers: EventLoopFuture<HPACKHeaders>,
     expectation: XCTestExpectation,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     // Header lookup is case-insensitive so we need to pull out the values we know the server sent

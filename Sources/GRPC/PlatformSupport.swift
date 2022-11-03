@@ -416,7 +416,7 @@ extension EventLoopGroup {
 
   internal func preconditionCompatible(
     with tlsConfiguration: GRPCTLSConfiguration,
-    file: StaticString = #file,
+    file: StaticString = #fileID,
     line: UInt = #line
   ) {
     precondition(

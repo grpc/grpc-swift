@@ -38,7 +38,7 @@ class GRPCTestCase: XCTestCase {
   override func tearDown() {
     let logs = self.capturedLogs()
 
-    // The default source emitted by swift-log is the directory containing the '#file' in which the
+    // The default source emitted by swift-log is the directory containing the '#filePath' in which the
     // log was emitted. It's meant to represent the system which emitted the log, typically the
     // module name. In most cases it's right but in a few places, i.e. where the source lives in
     // child directories below 'GRPC', it isn't. We'll use this as a sanity check.

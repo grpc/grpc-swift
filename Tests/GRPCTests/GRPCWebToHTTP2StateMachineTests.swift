@@ -516,7 +516,7 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
 
 extension GRPCWebToHTTP2ServerCodec.StateMachine.Action {
   func assertRead(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (HTTP2Frame.FramePayload) -> Void = { _ in }
   ) {
@@ -528,7 +528,7 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.Action {
   }
 
   func assertWrite(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Write) -> Void = { _ in }
   ) {
@@ -540,7 +540,7 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.Action {
   }
 
   func assertCompletePromise(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Error?) -> Void = { _ in }
   ) {
@@ -557,7 +557,7 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.Action {
   }
 
   func assertNone(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     if case .none = self {
@@ -570,7 +570,7 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.Action {
 
 extension HTTP2Frame.FramePayload {
   func assertHeaders(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Headers) -> Void = { _ in }
   ) {
@@ -582,7 +582,7 @@ extension HTTP2Frame.FramePayload {
   }
 
   func assertData(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Data) -> Void = { _ in }
   ) {
@@ -594,7 +594,7 @@ extension HTTP2Frame.FramePayload {
   }
 
   func assertEmptyDataWithEndStream(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     self.assertData(file: file, line: line) {
@@ -608,7 +608,7 @@ extension HTTP2Frame.FramePayload {
 
 extension HTTPServerResponsePart {
   func assertHead(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (HTTPResponseHead) -> Void = { _ in }
   ) {
@@ -620,7 +620,7 @@ extension HTTPServerResponsePart {
   }
 
   func assertBody(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (ByteBuffer) -> Void = { _ in }
   ) {
@@ -632,7 +632,7 @@ extension HTTPServerResponsePart {
   }
 
   func assertEnd(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (HTTPHeaders?) -> Void = { _ in }
   ) {
@@ -646,7 +646,7 @@ extension HTTPServerResponsePart {
 
 extension IOData {
   func assertByteBuffer(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (ByteBuffer) -> Void = { _ in }
   ) {
@@ -660,7 +660,7 @@ extension IOData {
 
 extension Optional {
   func assertSome(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Wrapped) -> Void = { _ in }
   ) {

@@ -66,7 +66,7 @@ class ConnectionManagerTests: GRPCTestCase {
     from: ConnectivityState,
     to: ConnectivityState,
     timeout: DispatchTimeInterval = .seconds(1),
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     body: () throws -> Result
   ) rethrows -> Result {
@@ -81,7 +81,7 @@ class ConnectionManagerTests: GRPCTestCase {
   private func waitForStateChanges<Result>(
     _ changes: [Change],
     timeout: DispatchTimeInterval = .seconds(1),
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     body: () throws -> Result
   ) rethrows -> Result {
@@ -1248,7 +1248,7 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
 
   func waitForExpectedChanges(
     timeout: DispatchTimeInterval,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     let result = self.semaphore.wait(timeout: .now() + timeout)

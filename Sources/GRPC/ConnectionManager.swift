@@ -1063,7 +1063,7 @@ extension ConnectionManager {
 extension ConnectionManager {
   private func invalidState(
     function: StaticString = #function,
-    file: StaticString = #file,
+    file: StaticString = #fileID,
     line: UInt = #line
   ) -> Never {
     preconditionFailure("Invalid state \(self.state) for \(function)", file: file, line: line)

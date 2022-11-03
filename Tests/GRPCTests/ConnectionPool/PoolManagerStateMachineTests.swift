@@ -270,7 +270,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
 
 extension Result {
   internal func assertSuccess(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Success) -> Void = { _ in }
   ) {
@@ -282,7 +282,7 @@ extension Result {
   }
 
   internal func assertFailure(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (Failure) -> Void = { _ in }
   ) {
@@ -296,7 +296,7 @@ extension Result {
 
 extension PoolManagerStateMachine.ShutdownAction {
   internal func assertShutdownPools(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     if case .shutdownPools = self {
@@ -307,7 +307,7 @@ extension PoolManagerStateMachine.ShutdownAction {
   }
 
   internal func assertAlreadyShuttingDown(
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     verify: (EventLoopFuture<Void>) -> Void = { _ in }
   ) {
@@ -318,7 +318,7 @@ extension PoolManagerStateMachine.ShutdownAction {
     }
   }
 
-  internal func assertAlreadyShutdown(file: StaticString = #file, line: UInt = #line) {
+  internal func assertAlreadyShutdown(file: StaticString = #filePath, line: UInt = #line) {
     if case .alreadyShutdown = self {
       ()
     } else {

@@ -22,7 +22,7 @@ import NIOEmbedded
 import XCTest
 
 final class ServerFuzzingRegressionTests: GRPCTestCase {
-  private static let failCasesURL = URL(fileURLWithPath: #file)
+  private static let failCasesURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent() // ServerFuzzingRegressionTests.swift
     .deletingLastPathComponent() // GRPCTests
     .deletingLastPathComponent() // Tests

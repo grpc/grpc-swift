@@ -46,7 +46,7 @@ internal struct GRPCLogger {
   internal func trace(
     _ message: @autoclosure () -> Logger.Message,
     metadata: @autoclosure () -> Logger.Metadata? = nil,
-    file: String = #file,
+    file: String = #fileID,
     function: String = #function,
     line: UInt = #line
   ) {
@@ -64,7 +64,7 @@ internal struct GRPCLogger {
   internal func debug(
     _ message: @autoclosure () -> Logger.Message,
     metadata: @autoclosure () -> Logger.Metadata? = nil,
-    file: String = #file,
+    file: String = #fileID,
     function: String = #function,
     line: UInt = #line
   ) {
@@ -82,7 +82,7 @@ internal struct GRPCLogger {
   internal func notice(
     _ message: @autoclosure () -> Logger.Message,
     metadata: @autoclosure () -> Logger.Metadata? = nil,
-    file: String = #file,
+    file: String = #fileID,
     function: String = #function,
     line: UInt = #line
   ) {
@@ -100,7 +100,7 @@ internal struct GRPCLogger {
   internal func warning(
     _ message: @autoclosure () -> Logger.Message,
     metadata: @autoclosure () -> Logger.Metadata? = nil,
-    file: String = #file,
+    file: String = #fileID,
     function: String = #function,
     line: UInt = #line
   ) {
