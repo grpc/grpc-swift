@@ -19,7 +19,7 @@ internal enum Version {
   internal static let major = 1
 
   /// The minor version.
-  internal static let minor = 12
+  internal static let minor = 13
 
   /// The patch version.
   internal static let patch = 0
