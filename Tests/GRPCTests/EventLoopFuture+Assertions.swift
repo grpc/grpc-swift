@@ -27,7 +27,7 @@ extension EventLoopFuture where Value: Equatable {
   func assertEqual(
     _ expected: Value,
     fulfill expectation: XCTestExpectation,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     self.whenComplete { result in
@@ -59,7 +59,7 @@ extension EventLoopFuture {
   ///   - handler: A block to run additional verification on the error. Defaults to no-op.
   func assertError(
     fulfill expectation: XCTestExpectation,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line,
     handler: @escaping (Error) -> Void = { _ in }
   ) {
@@ -84,7 +84,7 @@ extension EventLoopFuture {
   /// - Parameter expectation: The expectation to fulfill.
   func assertSuccess(
     fulfill expectation: XCTestExpectation,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     self.whenSuccess { _ in

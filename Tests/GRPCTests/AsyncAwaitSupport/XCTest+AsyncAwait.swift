@@ -20,7 +20,7 @@ import XCTest
 internal func XCTAssertThrowsError<T>(
   _ expression: @autoclosure () async throws -> T,
   verify: (Error) -> Void = { _ in },
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) async {
   do {

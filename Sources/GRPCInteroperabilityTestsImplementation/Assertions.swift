@@ -28,7 +28,7 @@ public struct AssertionError: Error {
 public func assertEqual<T: Equatable>(
   _ value1: T,
   _ value2: T,
-  file: StaticString = #file,
+  file: StaticString = #fileID,
   line: UInt = #line
 ) throws {
   guard value1 == value2 else {
@@ -43,7 +43,7 @@ public func assertEqual<T: Equatable>(
 public func waitAndAssertEqual<T: Equatable>(
   _ future: EventLoopFuture<T>,
   _ value: T,
-  file: StaticString = #file,
+  file: StaticString = #fileID,
   line: UInt = #line
 ) throws {
   try assertEqual(try future.wait(), value, file: file, line: line)
@@ -56,7 +56,7 @@ public func waitAndAssertEqual<T: Equatable>(
 public func waitAndAssertEqual<T: Equatable>(
   _ future1: EventLoopFuture<T>,
   _ future2: EventLoopFuture<T>,
-  file: StaticString = #file,
+  file: StaticString = #fileID,
   line: UInt = #line
 ) throws {
   try assertEqual(try future1.wait(), try future2.wait(), file: file, line: line)
@@ -64,7 +64,7 @@ public func waitAndAssertEqual<T: Equatable>(
 
 public func waitAndAssert<T>(
   _ future: EventLoopFuture<T>,
-  file: StaticString = #file,
+  file: StaticString = #fileID,
   line: UInt = #line,
   message: String = "",
   verify: (T) -> Bool

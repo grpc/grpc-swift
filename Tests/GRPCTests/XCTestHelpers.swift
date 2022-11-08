@@ -26,7 +26,7 @@ struct UnwrapError: Error {}
 func assertNotNil<Value>(
   _ expression: @autoclosure () throws -> Value?,
   message: @autoclosure () -> String = "Optional value was nil",
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws -> Value {
   guard let value = try expression() else {
@@ -39,7 +39,7 @@ func assertNotNil<Value>(
 func assertNoThrow<Value>(
   _ expression: @autoclosure () throws -> Value,
   message: @autoclosure () -> String = "Unexpected error thrown",
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws -> Value {
   do {
@@ -59,7 +59,7 @@ func assertNoThrow<Value>(
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () throws -> Value,
   _ matcher: Matcher<Value>,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   // For value matchers we'll assert that we don't throw by default.
@@ -69,7 +69,7 @@ func assertThat<Value>(
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () throws -> Value,
   _ matcher: ExpressionMatcher<Value>,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   switch matcher.evaluate(expression) {
@@ -666,7 +666,7 @@ struct ExpressionMatcher<Value> {
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () async throws -> Value,
   _ matcher: Matcher<Value>,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) async {
   // For value matchers we'll assert that we don't throw by default.
@@ -677,7 +677,7 @@ func assertThat<Value>(
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () async throws -> Value,
   _ matcher: ExpressionMatcher<Value>,
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) async {
   // Create a shim here from async-await world...

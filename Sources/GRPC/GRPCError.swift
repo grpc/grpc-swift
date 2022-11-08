@@ -309,7 +309,7 @@ extension GRPCError {
 
     init(
       _ error: GRPCStatusTransformable,
-      file: StaticString = #file,
+      file: StaticString = #fileID,
       line: Int = #line,
       function: StaticString = #function
     ) {
@@ -331,7 +331,7 @@ public protocol GRPCErrorProtocol: GRPCStatusTransformable, Equatable, CustomStr
 extension GRPCErrorProtocol {
   /// Creates a `GRPCError.WithContext` containing a `GRPCError` and the location of the call site.
   internal func captureContext(
-    file: StaticString = #file,
+    file: StaticString = #fileID,
     line: Int = #line,
     function: StaticString = #function
   ) -> GRPCError.WithContext {

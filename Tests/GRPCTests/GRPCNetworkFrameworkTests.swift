@@ -37,7 +37,7 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   private var group: MultiThreadedEventLoopGroup!
   private let queue = DispatchQueue(label: "io.grpc.verify-handshake")
 
-  private static let p12bundleURL = URL(fileURLWithPath: #file)
+  private static let p12bundleURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent() // (this file)
     .deletingLastPathComponent() // GRPCTests
     .deletingLastPathComponent() // Tests

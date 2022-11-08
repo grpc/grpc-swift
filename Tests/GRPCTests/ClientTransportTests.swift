@@ -80,7 +80,7 @@ class ClientTransportTests: GRPCTestCase {
     self.transport.configure(body)
   }
 
-  private func connect(file: StaticString = #file, line: UInt = #line) throws {
+  private func connect(file: StaticString = #filePath, line: UInt = #line) throws {
     let address = try assertNoThrow(SocketAddress(unixDomainSocketPath: "/whatever"))
     assertThat(
       try self.channel.connect(to: address).wait(),
@@ -103,7 +103,7 @@ class ClientTransportTests: GRPCTestCase {
 
   private func sendResponse(
     _ part: _GRPCClientResponsePart<String>,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) throws {
     assertThat(try self.channel.writeInbound(part), .doesNotThrow(), file: file, line: line)

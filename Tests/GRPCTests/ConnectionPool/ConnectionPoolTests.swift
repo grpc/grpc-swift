@@ -1026,7 +1026,7 @@ internal final class ChannelController {
 
   private func isValidIndex(
     _ index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) -> Bool {
     let isValid = self.channels.indices.contains(index)
@@ -1036,7 +1036,7 @@ internal final class ChannelController {
 
   internal func connectChannel(
     atIndex index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
@@ -1050,7 +1050,7 @@ internal final class ChannelController {
 
   internal func fireChannelInactiveForChannel(
     atIndex index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
@@ -1060,7 +1060,7 @@ internal final class ChannelController {
   internal func throwError(
     _ error: Error,
     inChannelAtIndex index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
@@ -1070,7 +1070,7 @@ internal final class ChannelController {
   internal func sendSettingsToChannel(
     atIndex index: Int,
     maxConcurrentStreams: Int = 100,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
@@ -1083,7 +1083,7 @@ internal final class ChannelController {
 
   internal func sendGoAwayToChannel(
     atIndex index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
@@ -1098,7 +1098,7 @@ internal final class ChannelController {
 
   internal func openStreamInChannel(
     atIndex index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
@@ -1115,7 +1115,7 @@ internal final class ChannelController {
 
   internal func closeStreamInChannel(
     atIndex index: Int,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }

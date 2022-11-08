@@ -40,7 +40,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   func doTestUnary(
     request: Echo_EchoRequest,
     expect response: Echo_EchoResponse,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     let responseExpectation = self.makeResponseExpectation()
@@ -53,7 +53,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
   }
 
-  func doTestUnary(message: String, file: StaticString = #file, line: UInt = #line) {
+  func doTestUnary(message: String, file: StaticString = #filePath, line: UInt = #line) {
     self.doTestUnary(
       request: Echo_EchoRequest(text: message),
       expect: Echo_EchoResponse(text: "Swift echo get: \(message)"),
@@ -130,7 +130,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
 
   func doTestClientStreaming(
     messages: [String],
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) throws {
     let responseExpectation = self.makeResponseExpectation()
