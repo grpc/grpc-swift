@@ -17,7 +17,7 @@ import os
 import subprocess
 import datetime
 
-TEMPLATE = """
+TEMPLATE = """\
 /*
  * Copyright {year}, gRPC Authors All rights reserved.
  *
