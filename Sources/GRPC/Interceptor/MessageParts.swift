@@ -99,3 +99,10 @@ extension GRPCServerResponsePart {
     }
   }
 }
+
+#if swift(>=5.6)
+extension GRPCClientRequestPart: Sendable where Request: Sendable {}
+extension GRPCClientResponsePart: Sendable where Response: Sendable {}
+extension GRPCServerRequestPart: Sendable where Request: Sendable {}
+extension GRPCServerResponsePart: Sendable where Response: Sendable {}
+#endif
