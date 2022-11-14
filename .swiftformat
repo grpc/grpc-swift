@@ -3,6 +3,7 @@
 
 # Ignore generated files.
 --exclude **/LinuxMain.swift,**/XCTestManifests.swift,**/*.grpc.swift,**/*.pb.swift
+--exclude Sources/GRPCSampleData/GRPCSwiftCertificate.swift
 
 --indent 2
 --maxwidth 100
