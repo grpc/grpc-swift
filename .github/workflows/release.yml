@@ -43,6 +43,9 @@ jobs:
           username: ${{ secrets.BUF_ORG }}
           password: ${{ secrets.BUF_API_KEY }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Build and push buf plugin for protoc-gen-grpc-swift
         uses: docker/build-push-action@v3
         with:
@@ -62,9 +65,3 @@ jobs:
           tags: plugins.buf.build/${{ secrets.BUF_ORG }}/protoc-gen-swift:${{ env.RELEASE_VERSION }}
           build-args: |
             PLUGIN=protoc-gen-swift
-
-      - name: Push template version
-        run: |-
-          buf beta registry template version create buf.build/${{ secrets.BUF_ORG }}/templates/grpc-swift \
-            --name ${{ env.RELEASE_VERSION }} \
-            --config '{"version":"${{ env.RELEASE_VERSION }}","plugin_versions":[{"owner":"${{ secrets.BUF_ORG }}","name":"protoc-gen-swift","version":"${{ env.RELEASE_VERSION }}"},{"owner":"${{ secrets.BUF_ORG }}","name":"protoc-gen-grpc-swift","version":"${{ env.RELEASE_VERSION }}"}]}' 
