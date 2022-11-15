@@ -5,3 +5,4 @@ FuzzTesting
 Performance
 .github
 .build
+protoc-gen-*
