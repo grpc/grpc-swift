@@ -25,3 +25,46 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: protoc-grpc-swift-plugins-linux-x86_64-${{ env.RELEASE_VERSION }}.zip
+
+  buf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: bufbuild/buf-setup-action@v1.9.0
+
+      - name: Extract release version
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Login to Buf docker registry
+        uses: docker/login-action@v2
+        with:
+          registry: plugins.buf.build
+          username: ${{ secrets.BUF_ORG }}
+          password: ${{ secrets.BUF_API_KEY }}
+
+      - name: Build and push buf plugin for protoc-gen-grpc-swift
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.plugin
+          push: true
+          tags: plugins.buf.build/${{ secrets.BUF_ORG }}/protoc-gen-grpc-swift:${{ env.RELEASE_VERSION }}
+          build-args: |
+            PLUGIN=protoc-gen-grpc-swift
+
+      - name: Build and push buf plugin for protoc-gen-swift
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.plugin
+          push: true
+          tags: plugins.buf.build/${{ secrets.BUF_ORG }}/protoc-gen-swift:${{ env.RELEASE_VERSION }}
+          build-args: |
+            PLUGIN=protoc-gen-swift
+
+      - name: Push template version
+        run: |-
+          buf beta registry template version create buf.build/${{ secrets.BUF_ORG }}/templates/grpc-swift \
+            --name ${{ env.RELEASE_VERSION }} \
+            --config '{"version":"${{ env.RELEASE_VERSION }}","plugin_versions":[{"owner":"${{ secrets.BUF_ORG }}","name":"protoc-gen-swift","version":"${{ env.RELEASE_VERSION }}"},{"owner":"${{ secrets.BUF_ORG }}","name":"protoc-gen-grpc-swift","version":"${{ env.RELEASE_VERSION }}"}]}' 

@@ -1,0 +1,24 @@
+ARG SWIFT_VERSION=5.7
+ARG PLUGIN
+ARG TARGET_PLUGIN=./.build/release/${PLUGIN}
+
+FROM --platform=linux/amd64 swift:${SWIFT_VERSION} as builder
+
+RUN apt-get update && apt-get install -y build-essential
+COPY . .
+
+ARG PLUGIN
+ARG TARGET_PLUGIN
+
+RUN make ${TARGET_PLUGIN}
+
+FROM swift:${SWIFT_VERSION}-jammy-slim
+
+ARG PLUGIN
+ARG TARGET_PLUGIN
+ENV PLUGIN=${PLUGIN}
+
+COPY --from=builder /${TARGET_PLUGIN} /usr/local/bin/${PLUGIN}
+RUN chmod +x /usr/local/bin/${PLUGIN}
+
+ENTRYPOINT /usr/local/bin/$PLUGIN
