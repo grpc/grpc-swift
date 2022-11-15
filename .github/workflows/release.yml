@@ -34,7 +34,7 @@ jobs:
       - uses: bufbuild/buf-setup-action@v1.9.0
 
       - name: Extract release version
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=v${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Login to Buf docker registry
         uses: docker/login-action@v2
