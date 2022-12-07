@@ -542,10 +542,10 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
         context.write(self.wrapOutboundOut(frame1), promise: promise1)
 
         if let actuallyBuffer = maybeBuffer {
-          let frame2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(maybeBuffer)))
+          let frame2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(actuallyBuffer)))
           self.logger.trace("writing HTTP2 frame", metadata: [
             MetadataKey.h2Payload: "DATA",
-            MetadataKey.h2DataBytes: "\(maybeBuffer.readableBytes)",
+            MetadataKey.h2DataBytes: "\(actuallyBuffer.readableBytes)",
             MetadataKey.h2EndStream: "false",
           ])
           context.write(self.wrapOutboundOut(frame2), promise: promise)
