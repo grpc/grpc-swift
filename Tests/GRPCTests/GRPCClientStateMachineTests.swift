@@ -39,7 +39,16 @@ class GRPCClientStateMachineTests: GRPCTestCase {
     let buffer = self.allocator.buffer(string: message)
 
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    return try writer.write(buffer: buffer, allocator: self.allocator, compressed: false)
+    var (buffer1, buffer2) = try writer.write(
+      buffer: buffer,
+      allocator: self.allocator,
+      compressed: false
+    )
+
+    if var buffer2 = buffer2 {
+      buffer1.writeBuffer(&buffer2)
+    }
+    return buffer1
   }
 
   /// Writes a message into the given `buffer`.
@@ -148,8 +157,9 @@ extension GRPCClientStateMachineTests {
       ByteBuffer(string: request),
       compressed: false,
       allocator: self.allocator
-    ).assertSuccess { buffer in
-      var buffer = buffer
+    ).assertSuccess { buffers in
+      var buffer = buffers.0
+      XCTAssertNil(buffers.1)
       // Remove the length and compression flag prefix.
       buffer.moveReaderIndex(forwardBy: 5)
       let data = buffer.readString(length: buffer.readableBytes)!
@@ -1149,13 +1159,14 @@ class ReadStateTests: GRPCTestCase {
     // Write a message into the buffer:
     let message = ByteBuffer(string: "Hello!")
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
+    var buffers = try writer.write(buffer: message, allocator: self.allocator)
+    XCTAssertNil(buffers.1)
     // And some extra junk bytes:
     let bytes: [UInt8] = [0x00]
-    buffer.writeBytes(bytes)
+    buffers.0.writeBytes(bytes)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer, maxLength: .max).assertFailure {
+    state.readMessages(&buffers.0, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .leftOverBytes)
     }
     state.assertNotReading()
@@ -1165,12 +1176,14 @@ class ReadStateTests: GRPCTestCase {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
-    var second = try writer.write(buffer: message, allocator: self.allocator)
-    buffer.writeBuffer(&second)
+    var buffers1 = try writer.write(buffer: message, allocator: self.allocator)
+    var buffers2 = try writer.write(buffer: message, allocator: self.allocator)
+    XCTAssertNil(buffers1.1)
+    XCTAssertNil(buffers2.1)
+    buffers1.0.writeBuffer(&buffers2.0)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer, maxLength: .max).assertFailure {
+    state.readMessages(&buffers1.0, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
     state.assertNotReading()
@@ -1180,7 +1193,8 @@ class ReadStateTests: GRPCTestCase {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
+    var (buffer, other) = try writer.write(buffer: message, allocator: self.allocator)
+    XCTAssertNil(other)
 
     var state: ReadState = .one()
     state.readMessages(&buffer, maxLength: .max).assertSuccess {
@@ -1195,7 +1209,8 @@ class ReadStateTests: GRPCTestCase {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
+    var (buffer, other) = try writer.write(buffer: message, allocator: self.allocator)
+    XCTAssertNil(other)
 
     var state: ReadState = .many()
     state.readMessages(&buffer, maxLength: .max).assertSuccess {
@@ -1211,9 +1226,9 @@ class ReadStateTests: GRPCTestCase {
     let message = ByteBuffer(string: "Hello!")
     let writer = LengthPrefixedMessageWriter(compression: .none)
 
-    var first = try writer.write(buffer: message, allocator: self.allocator)
-    var second = try writer.write(buffer: message, allocator: self.allocator)
-    var third = try writer.write(buffer: message, allocator: self.allocator)
+    var (first, _) = try writer.write(buffer: message, allocator: self.allocator)
+    var (second, _) = try writer.write(buffer: message, allocator: self.allocator)
+    var (third, _) = try writer.write(buffer: message, allocator: self.allocator)
 
     first.writeBuffer(&second)
     first.writeBuffer(&third)

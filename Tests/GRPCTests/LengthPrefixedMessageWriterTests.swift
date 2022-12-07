@@ -23,7 +23,8 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
     let allocator = ByteBufferAllocator()
     let buffer = allocator.buffer(bytes: [1, 2, 3])
 
-    var prefixed = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    XCTAssertNil(other)
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 0)
     XCTAssertEqual(prefixed.readInteger(as: UInt32.self), 3)
     XCTAssertEqual(prefixed.readBytes(length: 3), [1, 2, 3])
@@ -37,7 +38,8 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
     var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) + [1, 2, 3])
     buffer.moveReaderIndex(forwardBy: 5)
 
-    var prefixed = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    XCTAssertNil(other)
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 0)
     XCTAssertEqual(prefixed.readInteger(as: UInt32.self), 3)
     XCTAssertEqual(prefixed.readBytes(length: 3), [1, 2, 3])
@@ -49,7 +51,8 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
     let allocator = ByteBufferAllocator()
 
     let buffer = allocator.buffer(bytes: [1, 2, 3])
-    var prefixed = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    XCTAssertNil(other)
 
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 1)
     let size = prefixed.readInteger(as: UInt32.self)!
@@ -64,12 +67,37 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
 
     var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) + [1, 2, 3])
     buffer.moveReaderIndex(forwardBy: 5)
-    var prefixed = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    XCTAssertNil(other)
 
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 1)
     let size = prefixed.readInteger(as: UInt32.self)!
     XCTAssertGreaterThanOrEqual(size, 0)
     XCTAssertNotNil(prefixed.readBytes(length: Int(size)))
     XCTAssertEqual(prefixed.readableBytes, 0)
+  }
+
+  func testLargeCompressedPayloadEmitsOneBuffer() throws {
+    let writer = LengthPrefixedMessageWriter(compression: .gzip)
+    let allocator = ByteBufferAllocator()
+    let message = ByteBuffer(repeating: 0, count: 16 * 1024 * 1024)
+
+    var (lengthPrefixed, other) = try writer.write(buffer: message, allocator: allocator)
+    XCTAssertNil(other)
+    XCTAssertEqual(lengthPrefixed.readInteger(as: UInt8.self), 1)
+    let length = lengthPrefixed.readInteger(as: UInt32.self)
+    XCTAssertEqual(length, UInt32(lengthPrefixed.readableBytes))
+  }
+
+  func testLargeUncompressedPayloadEmitsTwoBuffers() throws {
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    let allocator = ByteBufferAllocator()
+    let message = ByteBuffer(repeating: 0, count: 16 * 1024 * 1024)
+
+    var (header, payload) = try writer.write(buffer: message, allocator: allocator)
+    XCTAssertEqual(header.readInteger(as: UInt8.self), 0)
+    XCTAssertEqual(header.readInteger(as: UInt32.self), UInt32(message.readableBytes))
+    XCTAssertEqual(header.readableBytes, 0)
+    XCTAssertEqual(payload, message)
   }
 }

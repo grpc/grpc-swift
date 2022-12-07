@@ -644,10 +644,10 @@ extension HTTP2ToRawGRPCStateMachine {
     compress: Bool,
     allocator: ByteBufferAllocator,
     writer: LengthPrefixedMessageWriter
-  ) -> Result<ByteBuffer, Error> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     do {
-      let prefixed = try writer.write(buffer: buffer, allocator: allocator, compressed: compress)
-      return .success(prefixed)
+      let buffers = try writer.write(buffer: buffer, allocator: allocator, compressed: compress)
+      return .success(buffers)
     } catch {
       return .failure(error)
     }
@@ -659,7 +659,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compress: Bool
-  ) -> Result<ByteBuffer, Error> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
       buffer,
       compress: compress,
@@ -674,7 +674,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compress: Bool
-  ) -> Result<ByteBuffer, Error> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
       buffer,
       compress: compress,
@@ -907,7 +907,7 @@ extension HTTP2ToRawGRPCStateMachine {
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compress: Bool
-  ) -> Result<ByteBuffer, Error> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     return self.state.send(buffer: buffer, allocator: allocator, compress: compress)
   }
 
@@ -1119,7 +1119,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compress: Bool
-  ) -> Result<ByteBuffer, Error> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: the request stream is still closed")

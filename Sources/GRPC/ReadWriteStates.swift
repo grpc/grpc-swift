@@ -62,16 +62,16 @@ enum WriteState {
     _ message: ByteBuffer,
     compressed: Bool,
     allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
     switch self {
     case .notWriting:
       return .failure(.cardinalityViolation)
 
     case let .writing(writeArity, contentType, writer):
-      let buffer: ByteBuffer
+      let buffers: (ByteBuffer, ByteBuffer?)
 
       do {
-        buffer = try writer.write(buffer: message, allocator: allocator, compressed: compressed)
+        buffers = try writer.write(buffer: message, allocator: allocator, compressed: compressed)
       } catch {
         self = .notWriting
         return .failure(.serializationFailed)
@@ -84,7 +84,7 @@ enum WriteState {
         self = .writing(writeArity, contentType, writer)
       }
 
-      return .success(buffer)
+      return .success(buffers)
     }
   }
 }

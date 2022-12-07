@@ -530,15 +530,26 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
         allocator: context.channel.allocator
       )
       switch result {
-      case let .success(buffer):
-        // We're clear to send a message; wrap it up in an HTTP/2 frame.
-        let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+      case let .success((buffer, maybeBuffer)):
+        let frame1 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
         self.logger.trace("writing HTTP2 frame", metadata: [
           MetadataKey.h2Payload: "DATA",
           MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
           MetadataKey.h2EndStream: "false",
         ])
-        context.write(self.wrapOutboundOut(framePayload), promise: promise)
+        // If there's a second buffer, attach the promise to the second write.
+        let promise1 = maybeBuffer == nil ? promise : nil
+        context.write(self.wrapOutboundOut(frame1), promise: promise1)
+
+        if let maybeBuffer = maybeBuffer {
+          let frame2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(maybeBuffer)))
+          self.logger.trace("writing HTTP2 frame", metadata: [
+            MetadataKey.h2Payload: "DATA",
+            MetadataKey.h2DataBytes: "\(maybeBuffer.readableBytes)",
+            MetadataKey.h2EndStream: "false",
+          ])
+          context.write(self.wrapOutboundOut(frame2), promise: promise)
+        }
 
       case let .failure(writeError):
         switch writeError {

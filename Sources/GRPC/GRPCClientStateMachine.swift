@@ -197,7 +197,7 @@ struct GRPCClientStateMachine {
     _ message: ByteBuffer,
     compressed: Bool,
     allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
+  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
     return self.withStateAvoidingCoWs { state in
       state.sendRequest(message, compressed: compressed, allocator: allocator)
     }
@@ -392,8 +392,8 @@ extension GRPCClientStateMachine.State {
     _ message: ByteBuffer,
     compressed: Bool,
     allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
-    let result: Result<ByteBuffer, MessageWriteError>
+  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
+    let result: Result<(ByteBuffer, ByteBuffer?), MessageWriteError>
 
     switch self {
     case .clientActiveServerIdle(var writeState, let pendingReadState):

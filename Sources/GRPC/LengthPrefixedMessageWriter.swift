@@ -86,99 +86,42 @@ internal struct LengthPrefixedMessageWriter {
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compressed: Bool = true
-  ) throws -> ByteBuffer {
+  ) throws -> (ByteBuffer, ByteBuffer?) {
     if compressed, let compressor = self.compressor {
-      return try self.compress(buffer: buffer, using: compressor, allocator: allocator)
-    } else if buffer.readerIndex >= 5 {
-      // We're not compressing and we have enough bytes before the reader index that we can write
-      // over with the compression byte and length.
-      var buffer = buffer
-
-      // Get the size of the message.
-      let messageSize = buffer.readableBytes
-
-      // Move the reader index back 5 bytes. This is okay: we validated the `readerIndex` above.
-      buffer.moveReaderIndex(to: buffer.readerIndex - 5)
-
-      // Fill in the compression byte and message length.
-      buffer.setInteger(UInt8(0), at: buffer.readerIndex)
-      buffer.setInteger(UInt32(messageSize), at: buffer.readerIndex + 1)
-
-      // The message bytes are already in place, we're done.
-      return buffer
+      let compressedAndFramedPayload = try self.compress(
+        buffer: buffer,
+        using: compressor,
+        allocator: allocator
+      )
+      return (compressedAndFramedPayload, nil)
+    } else if buffer.readableBytes > Self.singleBufferSizeLimit {
+      // Buffer is larger than the limit for emitting a single buffer: create a second buffer
+      // containing just the message header.
+      var prefixed = allocator.buffer(capacity: 5)
+      prefixed.writeMultipleIntegers(UInt8(0), UInt32(buffer.readableBytes))
+      return (prefixed, buffer)
     } else {
-      // We're not compressing and we don't have enough space before the message bytes passed in.
-      // We need a new buffer.
-      var lengthPrefixed = allocator.buffer(capacity: 5 + buffer.readableBytes)
-
-      // Write the compression byte.
-      lengthPrefixed.writeInteger(UInt8(0))
-
-      // Write the message length.
-      lengthPrefixed.writeInteger(UInt32(buffer.readableBytes))
-
+      // We're not compressing and the message is within our single buffer size limit.
+      var lengthPrefixed = allocator.buffer(capacity: 5 &+ buffer.readableBytes)
+      // Write the compression byte and message length.
+      lengthPrefixed.writeMultipleIntegers(UInt8(0), UInt32(buffer.readableBytes))
       // Write the message.
-      var buffer = buffer
-      lengthPrefixed.writeBuffer(&buffer)
-
-      return lengthPrefixed
+      lengthPrefixed.writeImmutableBuffer(buffer)
+      return (lengthPrefixed, nil)
     }
   }
 
-  /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
+  /// Message size above which we emit two buffers: one containing the header and one with the
+  /// actual message bytes. At or below the limit we copy the message into a new buffer containing
+  /// both the header and the message.
   ///
-  /// - Parameters:
-  ///   - payload: The payload to serialize and write.
-  ///   - buffer: The buffer to write the message into.
-  /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
-  /// - Precondition: `compression.supported` is `true`.
-  /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
-  func write(
-    _ payload: GRPCPayload,
-    into buffer: inout ByteBuffer,
-    compressed: Bool = true
-  ) throws {
-    buffer.reserveCapacity(buffer.writerIndex + LengthPrefixedMessageWriter.metadataLength)
-
-    if compressed, let compressor = self.compressor {
-      // Set the compression byte.
-      buffer.writeInteger(UInt8(1))
-
-      // Leave a gap for the length, we'll set it in a moment.
-      let payloadSizeIndex = buffer.writerIndex
-      buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
-
-      var messageBuf = ByteBufferAllocator().buffer(capacity: 0)
-      try payload.serialize(into: &messageBuf)
-
-      // Compress the message.
-      let bytesWritten = try compressor.deflate(&messageBuf, into: &buffer)
-
-      // Now fill in the message length.
-      buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
-
-      // Finally, the compression context should be reset between messages.
-      compressor.reset()
-    } else {
-      // We could be using 'identity' compression, but since the result is the same we'll just
-      // say it isn't compressed.
-      buffer.writeInteger(UInt8(0))
-
-      // Leave a gap for the length, we'll set it in a moment.
-      let payloadSizeIndex = buffer.writerIndex
-      buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
-
-      let payloadPrefixedBytes = buffer.readableBytes
-      // Writes the payload into the buffer
-      try payload.serialize(into: &buffer)
-
-      // Calculates the Written bytes with respect to the prefixed ones
-      let bytesWritten = buffer.readableBytes - payloadPrefixedBytes
-
-      // Write the message length.
-      buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
-    }
-  }
+  /// Using two buffers avoids expensive copies of large messages. For smaller messages the copy
+  /// is cheaper than the additional allocations and overhead required to send an extra HTTP/2 DATA
+  /// frame.
+  ///
+  /// The value of 8192 was chosen empirically. We subtract the length of the message header
+  /// as `ByteBuffer` reserve capacity in powers of two and want to avoid overallocating.
+  private static let singleBufferSizeLimit = 8192 - 5
 }
 
 extension ByteBuffer {
