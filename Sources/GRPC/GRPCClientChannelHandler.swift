@@ -502,7 +502,10 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
     switch self.unwrapOutboundIn(data) {
     case let .head(requestHead):
       // Feed the request into the state machine:
-      switch self.stateMachine.sendRequestHeaders(requestHead: requestHead) {
+      switch self.stateMachine.sendRequestHeaders(
+        requestHead: requestHead,
+        allocator: context.channel.allocator
+      ) {
       case let .success(headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
         let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
@@ -526,8 +529,7 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       // Feed the request message into the state machine:
       let result = self.stateMachine.sendRequest(
         request.message,
-        compressed: request.compressed,
-        allocator: context.channel.allocator
+        compressed: request.compressed
       )
       switch result {
       case let .success((buffer, maybeBuffer)):

@@ -303,7 +303,11 @@ extension HTTP2ToRawGRPCStateMachine.State {
     }
 
     // Figure out which encoding we should use for responses.
-    let (writer, responseEncoding) = self.extractResponseEncoding(from: headers, encoding: encoding)
+    let (writer, responseEncoding) = self.extractResponseEncoding(
+      from: headers,
+      encoding: encoding,
+      allocator: allocator
+    )
 
     // Parse the path, and create a call handler.
     guard let path = headers.first(name: ":path") else {
@@ -516,7 +520,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
   /// - Returns: A message writer and the response encoding header to send back to the client.
   private func extractResponseEncoding(
     from headers: HPACKHeaders,
-    encoding: ServerMessageEncoding
+    encoding: ServerMessageEncoding,
+    allocator: ByteBufferAllocator
   ) -> (LengthPrefixedMessageWriter, String?) {
     let writer: LengthPrefixedMessageWriter
     let responseEncoding: String?
@@ -534,12 +539,12 @@ extension HTTP2ToRawGRPCStateMachine.State {
         configuration.enabledAlgorithms.contains($0)
       }
 
-      writer = LengthPrefixedMessageWriter(compression: algorithm)
+      writer = LengthPrefixedMessageWriter(compression: algorithm, allocator: allocator)
       responseEncoding = algorithm?.name
 
     case .disabled:
       // The server doesn't have compression enabled.
-      writer = LengthPrefixedMessageWriter(compression: .none)
+      writer = LengthPrefixedMessageWriter(compression: .none, allocator: allocator)
       responseEncoding = nil
     }
 
@@ -642,11 +647,10 @@ extension HTTP2ToRawGRPCStateMachine {
   static func writeGRPCFramedMessage(
     _ buffer: ByteBuffer,
     compress: Bool,
-    allocator: ByteBufferAllocator,
-    writer: LengthPrefixedMessageWriter
+    writer: inout LengthPrefixedMessageWriter
   ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     do {
-      let buffers = try writer.write(buffer: buffer, allocator: allocator, compressed: compress)
+      let buffers = try writer.write(buffer: buffer, compressed: compress)
       return .success(buffers)
     } catch {
       return .failure(error)
@@ -655,31 +659,27 @@ extension HTTP2ToRawGRPCStateMachine {
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
-  func send(
+  mutating func send(
     buffer: ByteBuffer,
-    allocator: ByteBufferAllocator,
     compress: Bool
   ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
       buffer,
       compress: compress,
-      allocator: allocator,
-      writer: self.writer
+      writer: &self.writer
     )
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
-  func send(
+  mutating func send(
     buffer: ByteBuffer,
-    allocator: ByteBufferAllocator,
     compress: Bool
   ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
     return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
       buffer,
       compress: compress,
-      allocator: allocator,
-      writer: self.writer
+      writer: &self.writer
     )
   }
 }
@@ -903,12 +903,14 @@ extension HTTP2ToRawGRPCStateMachine {
   }
 
   /// Send a response buffer.
-  func send(
+  mutating func send(
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compress: Bool
   ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
-    return self.state.send(buffer: buffer, allocator: allocator, compress: compress)
+    return self.withStateAvoidingCoWs { state in
+      state.send(buffer: buffer, allocator: allocator, compress: compress)
+    }
   }
 
   /// Send status and trailers.
@@ -1115,7 +1117,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     }
   }
 
-  func send(
+  mutating func send(
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
     compress: Bool
@@ -1129,19 +1131,21 @@ extension HTTP2ToRawGRPCStateMachine.State {
       let error = GRPCError.InvalidState("Response headers must be sent before response message")
       return .failure(error)
 
-    case let .requestOpenResponseOpen(state):
-      return state.send(
+    case var .requestOpenResponseOpen(state):
+      let result = state.send(
         buffer: buffer,
-        allocator: allocator,
         compress: compress
       )
+      self = .requestOpenResponseOpen(state)
+      return result
 
-    case let .requestClosedResponseOpen(state):
-      return state.send(
+    case var .requestClosedResponseOpen(state):
+      let result = state.send(
         buffer: buffer,
-        allocator: allocator,
         compress: compress
       )
+      self = .requestClosedResponseOpen(state)
+      return result
 
     case .requestOpenResponseClosed,
          .requestClosedResponseClosed:

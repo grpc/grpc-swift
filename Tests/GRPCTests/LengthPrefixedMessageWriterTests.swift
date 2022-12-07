@@ -19,11 +19,11 @@ import XCTest
 
 class LengthPrefixedMessageWriterTests: GRPCTestCase {
   func testWriteBytesWithNoLeadingSpaceOrCompression() throws {
-    let writer = LengthPrefixedMessageWriter()
+    var writer = LengthPrefixedMessageWriter()
     let allocator = ByteBufferAllocator()
     let buffer = allocator.buffer(bytes: [1, 2, 3])
 
-    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer)
     XCTAssertNil(other)
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 0)
     XCTAssertEqual(prefixed.readInteger(as: UInt32.self), 3)
@@ -32,13 +32,13 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
   }
 
   func testWriteBytesWithLeadingSpaceAndNoCompression() throws {
-    let writer = LengthPrefixedMessageWriter()
+    var writer = LengthPrefixedMessageWriter()
     let allocator = ByteBufferAllocator()
 
     var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) + [1, 2, 3])
     buffer.moveReaderIndex(forwardBy: 5)
 
-    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer)
     XCTAssertNil(other)
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 0)
     XCTAssertEqual(prefixed.readInteger(as: UInt32.self), 3)
@@ -47,11 +47,11 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
   }
 
   func testWriteBytesWithNoLeadingSpaceAndCompression() throws {
-    let writer = LengthPrefixedMessageWriter(compression: .gzip)
+    var writer = LengthPrefixedMessageWriter(compression: .gzip)
     let allocator = ByteBufferAllocator()
 
     let buffer = allocator.buffer(bytes: [1, 2, 3])
-    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer)
     XCTAssertNil(other)
 
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 1)
@@ -62,12 +62,12 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
   }
 
   func testWriteBytesWithLeadingSpaceAndCompression() throws {
-    let writer = LengthPrefixedMessageWriter(compression: .gzip)
+    var writer = LengthPrefixedMessageWriter(compression: .gzip)
     let allocator = ByteBufferAllocator()
 
     var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) + [1, 2, 3])
     buffer.moveReaderIndex(forwardBy: 5)
-    var (prefixed, other) = try writer.write(buffer: buffer, allocator: allocator)
+    var (prefixed, other) = try writer.write(buffer: buffer)
     XCTAssertNil(other)
 
     XCTAssertEqual(prefixed.readInteger(as: UInt8.self), 1)
@@ -78,11 +78,11 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
   }
 
   func testLargeCompressedPayloadEmitsOneBuffer() throws {
-    let writer = LengthPrefixedMessageWriter(compression: .gzip)
+    var writer = LengthPrefixedMessageWriter(compression: .gzip)
     let allocator = ByteBufferAllocator()
     let message = ByteBuffer(repeating: 0, count: 16 * 1024 * 1024)
 
-    var (lengthPrefixed, other) = try writer.write(buffer: message, allocator: allocator)
+    var (lengthPrefixed, other) = try writer.write(buffer: message)
     XCTAssertNil(other)
     XCTAssertEqual(lengthPrefixed.readInteger(as: UInt8.self), 1)
     let length = lengthPrefixed.readInteger(as: UInt32.self)
@@ -90,14 +90,20 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
   }
 
   func testLargeUncompressedPayloadEmitsTwoBuffers() throws {
-    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var writer = LengthPrefixedMessageWriter(compression: .none)
     let allocator = ByteBufferAllocator()
     let message = ByteBuffer(repeating: 0, count: 16 * 1024 * 1024)
 
-    var (header, payload) = try writer.write(buffer: message, allocator: allocator)
+    var (header, payload) = try writer.write(buffer: message)
     XCTAssertEqual(header.readInteger(as: UInt8.self), 0)
     XCTAssertEqual(header.readInteger(as: UInt32.self), UInt32(message.readableBytes))
     XCTAssertEqual(header.readableBytes, 0)
     XCTAssertEqual(payload, message)
+  }
+}
+
+extension LengthPrefixedMessageWriter {
+  init(compression: CompressionAlgorithm? = nil) {
+    self.init(compression: compression, allocator: .init())
   }
 }

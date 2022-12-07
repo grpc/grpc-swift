@@ -28,8 +28,13 @@ internal struct LengthPrefixedMessageWriter {
     return self.compression != nil
   }
 
-  init(compression: CompressionAlgorithm? = nil) {
+  /// A scratch buffer that we encode messages into: if the buffer isn't held elsewhere then we
+  /// can avoid having to allocate a new one.
+  private var scratch: ByteBuffer
+
+  init(compression: CompressionAlgorithm? = nil, allocator: ByteBufferAllocator) {
     self.compression = compression
+    self.scratch = allocator.buffer(capacity: 0)
 
     switch self.compression?.algorithm {
     case .none, .some(.identity):
@@ -41,73 +46,62 @@ internal struct LengthPrefixedMessageWriter {
     }
   }
 
-  private func compress(
+  private mutating func compress(
     buffer: ByteBuffer,
-    using compressor: Zlib.Deflate,
-    allocator: ByteBufferAllocator
+    using compressor: Zlib.Deflate
   ) throws -> ByteBuffer {
     // The compressor will allocate the correct size. For now the leading 5 bytes will do.
-    var output = allocator.buffer(capacity: 5)
-
+    self.scratch.clear(minimumCapacity: 5)
     // Set the compression byte.
-    output.writeInteger(UInt8(1))
-
+    self.scratch.writeInteger(UInt8(1))
     // Set the length to zero; we'll write the actual value in a moment.
-    let payloadSizeIndex = output.writerIndex
-    output.writeInteger(UInt32(0))
+    let payloadSizeIndex = self.scratch.writerIndex
+    self.scratch.writeInteger(UInt32(0))
 
     let bytesWritten: Int
 
     do {
       var buffer = buffer
-      bytesWritten = try compressor.deflate(&buffer, into: &output)
+      bytesWritten = try compressor.deflate(&buffer, into: &self.scratch)
     } catch {
       throw error
     }
 
     // Now fill in the message length.
-    output.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
+    self.scratch.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
 
     // Finally, the compression context should be reset between messages.
     compressor.reset()
 
-    return output
+    return self.scratch
   }
 
   /// Writes the readable bytes of `buffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:
   ///   - buffer: The bytes to compress and length-prefix.
-  ///   - allocator: A `ByteBufferAllocator`.
   ///   - compressed: Whether the bytes should be compressed. This is ignored if not compression
   ///     mechanism was configured on this writer.
   /// - Returns: A buffer containing the length prefixed bytes.
-  func write(
+  mutating func write(
     buffer: ByteBuffer,
-    allocator: ByteBufferAllocator,
     compressed: Bool = true
   ) throws -> (ByteBuffer, ByteBuffer?) {
     if compressed, let compressor = self.compressor {
-      let compressedAndFramedPayload = try self.compress(
-        buffer: buffer,
-        using: compressor,
-        allocator: allocator
-      )
+      let compressedAndFramedPayload = try self.compress(buffer: buffer, using: compressor)
       return (compressedAndFramedPayload, nil)
     } else if buffer.readableBytes > Self.singleBufferSizeLimit {
       // Buffer is larger than the limit for emitting a single buffer: create a second buffer
       // containing just the message header.
-      var prefixed = allocator.buffer(capacity: 5)
-      prefixed.writeMultipleIntegers(UInt8(0), UInt32(buffer.readableBytes))
-      return (prefixed, buffer)
+      self.scratch.clear(minimumCapacity: 5)
+      self.scratch.writeMultipleIntegers(UInt8(0), UInt32(buffer.readableBytes))
+      return (self.scratch, buffer)
     } else {
       // We're not compressing and the message is within our single buffer size limit.
-      var lengthPrefixed = allocator.buffer(capacity: 5 &+ buffer.readableBytes)
-      // Write the compression byte and message length.
-      lengthPrefixed.writeMultipleIntegers(UInt8(0), UInt32(buffer.readableBytes))
-      // Write the message.
-      lengthPrefixed.writeImmutableBuffer(buffer)
-      return (lengthPrefixed, nil)
+      self.scratch.clear(minimumCapacity: 5 &+ buffer.readableBytes)
+      self.scratch.writeMultipleIntegers(UInt8(0), UInt32(buffer.readableBytes))
+      self.scratch.writeImmutableBuffer(buffer)
+      return (self.scratch, nil)
     }
   }
 
