@@ -3,7 +3,7 @@ SWIFT:=swift
 # Where products will be built; this is the SPM default.
 SWIFT_BUILD_PATH:=./.build
 SWIFT_BUILD_CONFIGURATION=debug
-SWIFT_FLAGS=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION} --enable-test-discovery
+SWIFT_FLAGS=--scratch-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION}
 # Force release configuration (for plugins)
 SWIFT_FLAGS_RELEASE=$(patsubst --configuration=%,--configuration=release,$(SWIFT_FLAGS))
 
