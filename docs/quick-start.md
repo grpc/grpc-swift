@@ -28,7 +28,7 @@ and other tutorials):
 
 ```sh
 $ # Clone the repository at the latest release to get the example code:
-$ git clone -b 1.0.0 https://github.com/grpc/grpc-swift
+$ git clone -b 1.13.0 https://github.com/grpc/grpc-swift
 $ # Navigate to the repository
 $ cd grpc-swift/
 ```
@@ -131,27 +131,27 @@ In the same directory, open
 method like this:
 
 ```swift
-class GreeterProvider: Helloworld_GreeterProvider {
+final class GreeterProvider: Helloworld_GreeterAsyncProvider {
+  let interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? = nil
+
   func sayHello(
     request: Helloworld_HelloRequest,
-    context: StatusOnlyCallContext
-  ) -> EventLoopFuture<Helloworld_HelloReply> {
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Helloworld_HelloReply {
     let recipient = request.name.isEmpty ? "stranger" : request.name
-    let response = Helloworld_HelloReply.with {
+    return Helloworld_HelloReply.with {
       $0.message = "Hello \(recipient)!"
     }
-    return context.eventLoop.makeSucceededFuture(response)
   }
 
   func sayHelloAgain(
     request: Helloworld_HelloRequest,
-    context: StatusOnlyCallContext
-  ) -> EventLoopFuture<Helloworld_HelloReply> {
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Helloworld_HelloReply {
     let recipient = request.name.isEmpty ? "stranger" : request.name
-    let response = Helloworld_HelloReply.with {
+    return Helloworld_HelloReply.with {
       $0.message = "Hello again \(recipient)!"
     }
-    return context.eventLoop.makeSucceededFuture(response)
   }
 }
 ```
@@ -159,36 +159,54 @@ class GreeterProvider: Helloworld_GreeterProvider {
 #### Update the client
 
 In the same directory, open
-`Sources/Examples/HelloWorld/Client/main.swift`. Call the new method like this:
+`Sources/Examples/HelloWorld/Client/HelloWorldClient.swift`. Call the new method like this:
 
 ```swift
-func greet(name: String?, client greeter: Helloworld_GreeterClient) {
-  // Form the request with the name, if one was provided.
-  let request = Helloworld_HelloRequest.with {
-    $0.name = name ?? ""
-  }
+func run() async throws {
+    // Setup an `EventLoopGroup` for the connection to run on.
+    //
+    // See: https://github.com/apple/swift-nio#eventloops-and-eventloopgroups
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-  // Make the RPC call to the server.
-  let sayHello = greeter.sayHello(request)
+    // Make sure the group is shutdown when we're done with it.
+    defer {
+      try! group.syncShutdownGracefully()
+    }
 
-  // wait() on the response to stop the program from exiting before the response is received.
-  do {
-    let response = try sayHello.response.wait()
-    print("Greeter received: \(response.message)")
-  } catch {
-    print("Greeter failed: \(error)")
-    return
-  }
+    // Configure the channel, we're not using TLS so the connection is `insecure`.
+    let channel = try GRPCChannelPool.with(
+      target: .host("localhost", port: self.port),
+      transportSecurity: .plaintext,
+      eventLoopGroup: group
+    )
 
-  let sayHelloAgain = greeter.sayHelloAgain(request)
-  do {
-    let response = try sayHelloAgain.response.wait()
-    print("Greeter received: \(response.message)")
-  } catch {
-    print("Greeter failed: \(error)")
-    return
+    // Close the connection when we're done with it.
+    defer {
+      try! channel.close().wait()
+    }
+
+    // Provide the connection to the generated client.
+    let greeter = Helloworld_GreeterAsyncClient(channel: channel)
+
+    // Form the request with the name, if one was provided.
+    let request = Helloworld_HelloRequest.with {
+      $0.name = self.name ?? ""
+    }
+
+    do {
+      let greeting = try await greeter.sayHello(request)
+      print("Greeter received: \(greeting.message)")
+    } catch {
+      print("Greeter failed: \(error)")
+    }
+
+    do {
+      let greetingAgain = try await greeter.sayHelloAgain(request)
+      print("Greeter received: \(greetingAgain.message)")
+    } catch {
+      print("Greeter failed: \(error)")
+    }
   }
-}
 ```
 
 #### Run!
