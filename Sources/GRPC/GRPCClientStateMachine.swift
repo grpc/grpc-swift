@@ -165,10 +165,11 @@ struct GRPCClientStateMachine {
   ///
   /// - Parameter requestHead: The client request head for the RPC.
   mutating func sendRequestHeaders(
-    requestHead: _GRPCRequestHead
+    requestHead: _GRPCRequestHead,
+    allocator: ByteBufferAllocator
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
     return self.withStateAvoidingCoWs { state in
-      state.sendRequestHeaders(requestHead: requestHead)
+      state.sendRequestHeaders(requestHead: requestHead, allocator: allocator)
     }
   }
 
@@ -195,11 +196,10 @@ struct GRPCClientStateMachine {
   ///     request will be written.
   mutating func sendRequest(
     _ message: ByteBuffer,
-    compressed: Bool,
-    allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
+    compressed: Bool
+  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
     return self.withStateAvoidingCoWs { state in
-      state.sendRequest(message, compressed: compressed, allocator: allocator)
+      state.sendRequest(message, compressed: compressed)
     }
   }
 
@@ -351,7 +351,8 @@ struct GRPCClientStateMachine {
 extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.sendRequestHeaders(requestHead:)`.
   mutating func sendRequestHeaders(
-    requestHead: _GRPCRequestHead
+    requestHead: _GRPCRequestHead,
+    allocator: ByteBufferAllocator
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
     let result: Result<HPACKHeaders, SendRequestHeadersError>
 
@@ -369,7 +370,10 @@ extension GRPCClientStateMachine.State {
       result = .success(headers)
 
       self = .clientActiveServerIdle(
-        writeState: pendingWriteState.makeWriteState(messageEncoding: requestHead.encoding),
+        writeState: pendingWriteState.makeWriteState(
+          messageEncoding: requestHead.encoding,
+          allocator: allocator
+        ),
         pendingReadState: .init(arity: responseArity, messageEncoding: requestHead.encoding)
       )
 
@@ -390,18 +394,17 @@ extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.sendRequest(_:allocator:)`.
   mutating func sendRequest(
     _ message: ByteBuffer,
-    compressed: Bool,
-    allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
-    let result: Result<ByteBuffer, MessageWriteError>
+    compressed: Bool
+  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
+    let result: Result<(ByteBuffer, ByteBuffer?), MessageWriteError>
 
     switch self {
     case .clientActiveServerIdle(var writeState, let pendingReadState):
-      result = writeState.write(message, compressed: compressed, allocator: allocator)
+      result = writeState.write(message, compressed: compressed)
       self = .clientActiveServerIdle(writeState: writeState, pendingReadState: pendingReadState)
 
     case .clientActiveServerActive(var writeState, let readState):
-      result = writeState.write(message, compressed: compressed, allocator: allocator)
+      result = writeState.write(message, compressed: compressed)
       self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientClosedServerIdle,

@@ -38,8 +38,16 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   func writeMessage(_ message: String) throws -> ByteBuffer {
     let buffer = self.allocator.buffer(string: message)
 
-    let writer = LengthPrefixedMessageWriter(compression: .none)
-    return try writer.write(buffer: buffer, allocator: self.allocator, compressed: false)
+    var writer = LengthPrefixedMessageWriter(compression: .none, allocator: .init())
+    var (buffer1, buffer2) = try writer.write(
+      buffer: buffer,
+      compressed: false
+    )
+
+    if var buffer2 = buffer2 {
+      buffer1.writeBuffer(&buffer2)
+    }
+    return buffer1
   }
 
   /// Writes a message into the given `buffer`.
@@ -73,7 +81,7 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
-    )).assertFailure {
+    ), allocator: .init()).assertFailure {
       XCTAssertEqual($0, .invalidState)
     }
   }
@@ -89,7 +97,7 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
-    )).assertSuccess()
+    ), allocator: .init()).assertSuccess()
   }
 
   func testSendRequestHeadersFromClientActiveServerIdle() {
@@ -133,8 +141,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(state)
     stateMachine.sendRequest(
       ByteBuffer(string: "Hello!"),
-      compressed: false,
-      allocator: self.allocator
+      compressed: false
     ).assertFailure {
       XCTAssertEqual($0, expected)
     }
@@ -146,10 +153,10 @@ extension GRPCClientStateMachineTests {
     let request = "Hello!"
     stateMachine.sendRequest(
       ByteBuffer(string: request),
-      compressed: false,
-      allocator: self.allocator
-    ).assertSuccess { buffer in
-      var buffer = buffer
+      compressed: false
+    ).assertSuccess { buffers in
+      var buffer = buffers.0
+      XCTAssertNil(buffers.1)
       // Remove the length and compression flag prefix.
       buffer.moveReaderIndex(forwardBy: 5)
       let data = buffer.readString(length: buffer.readableBytes)!
@@ -537,7 +544,7 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
-    )).assertSuccess()
+    ), allocator: .init()).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
@@ -545,8 +552,7 @@ extension GRPCClientStateMachineTests {
     // Send a request.
     stateMachine.sendRequest(
       ByteBuffer(string: "Hello!"),
-      compressed: false,
-      allocator: self.allocator
+      compressed: false
     ).assertSuccess()
 
     // Close the request stream.
@@ -573,18 +579,15 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
-    )).assertSuccess()
+    ), allocator: .init()).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send some requests.
-    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
-    stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
-    stateMachine.sendRequest(ByteBuffer(string: "3"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false).assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false).assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "3"), compressed: false).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -610,14 +613,13 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
-    )).assertSuccess()
+    ), allocator: .init()).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send a request.
-    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -648,24 +650,21 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
-    )).assertSuccess()
+    ), allocator: .init()).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Interleave requests and responses:
-    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false).assertSuccess()
 
     // Receive a response.
     var firstBuffer = try self.writeMessage("1")
     stateMachine.receiveResponseBuffer(&firstBuffer, maxMessageLength: .max).assertSuccess()
 
     // Send two more requests.
-    stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
-    stateMachine.sendRequest(ByteBuffer(string: "3"), compressed: false, allocator: self.allocator)
-      .assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false).assertSuccess()
+    stateMachine.sendRequest(ByteBuffer(string: "3"), compressed: false).assertSuccess()
 
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage("2")
@@ -691,15 +690,11 @@ extension GRPCClientStateMachineTests {
       ))
 
       // One is fine.
-      stateMachine
-        .sendRequest(ByteBuffer(string: "1"), compressed: false, allocator: self.allocator)
-        .assertSuccess()
+      stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false).assertSuccess()
       // Two is not.
-      stateMachine
-        .sendRequest(ByteBuffer(string: "2"), compressed: false, allocator: self.allocator)
-        .assertFailure {
-          XCTAssertEqual($0, .cardinalityViolation)
-        }
+      stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false).assertFailure {
+        XCTAssertEqual($0, .cardinalityViolation)
+      }
     }
   }
 
@@ -709,15 +704,11 @@ extension GRPCClientStateMachineTests {
         .makeStateMachine(.clientActiveServerActive(writeState: .one(), readState: readState))
 
       // One is fine.
-      stateMachine
-        .sendRequest(ByteBuffer(string: "1"), compressed: false, allocator: self.allocator)
-        .assertSuccess()
+      stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false).assertSuccess()
       // Two is not.
-      stateMachine
-        .sendRequest(ByteBuffer(string: "2"), compressed: false, allocator: self.allocator)
-        .assertFailure {
-          XCTAssertEqual($0, .cardinalityViolation)
-        }
+      stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false).assertFailure {
+        XCTAssertEqual($0, .cardinalityViolation)
+      }
     }
   }
 
@@ -725,10 +716,9 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientClosedServerClosed)
 
     // No requests allowed!
-    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false, allocator: self.allocator)
-      .assertFailure {
-        XCTAssertEqual($0, .cardinalityViolation)
-      }
+    stateMachine.sendRequest(ByteBuffer(string: "1"), compressed: false).assertFailure {
+      XCTAssertEqual($0, .cardinalityViolation)
+    }
   }
 
   func testReceiveTooManyRequests() throws {
@@ -782,7 +772,7 @@ extension GRPCClientStateMachineTests {
         acceptableForResponses: [.identity],
         decompressionLimit: .ratio(10)
       ))
-    )).assertSuccess { headers in
+    ), allocator: .init()).assertSuccess { headers in
       XCTAssertEqual(headers[":method"], ["POST"])
       XCTAssertEqual(headers[":path"], ["/echo/Get"])
       XCTAssertEqual(headers[":authority"], ["localhost"])
@@ -818,7 +808,7 @@ extension GRPCClientStateMachineTests {
       deadline: .distantFuture,
       customMetadata: customMetadata,
       encoding: .disabled
-    )).assertSuccess { headers in
+    ), allocator: .init()).assertSuccess { headers in
       // Pull out the entries we care about by matching values
       let filtered = headers.filter { _, value, _ in
         value == filterKey
@@ -855,7 +845,7 @@ extension GRPCClientStateMachineTests {
         acceptableForResponses: [],
         decompressionLimit: .ratio(10)
       ))
-    )).assertSuccess { headers in
+    ), allocator: .init()).assertSuccess { headers in
       XCTAssertEqual(headers["user-agent"], ["test-user-agent"])
     }
   }
@@ -875,7 +865,7 @@ extension GRPCClientStateMachineTests {
         acceptableForResponses: [],
         decompressionLimit: .ratio(10)
       ))
-    )).assertSuccess { headers in
+    ), allocator: .init()).assertSuccess { headers in
       XCTAssertFalse(headers.contains(name: "grpc-encoding"))
       XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
     }
@@ -896,7 +886,7 @@ extension GRPCClientStateMachineTests {
         acceptableForResponses: [.identity, .gzip],
         decompressionLimit: .ratio(10)
       ))
-    )).assertSuccess { headers in
+    ), allocator: .init()).assertSuccess { headers in
       XCTAssertFalse(headers.contains(name: "grpc-encoding"))
       XCTAssertTrue(headers.contains(name: "grpc-accept-encoding"))
     }
@@ -917,7 +907,7 @@ extension GRPCClientStateMachineTests {
         acceptableForResponses: [],
         decompressionLimit: .ratio(10)
       ))
-    )).assertSuccess { headers in
+    ), allocator: .init()).assertSuccess { headers in
       XCTAssertEqual(headers["grpc-encoding"], ["gzip"])
       // This asymmetry is strange but allowed: if a client does not advertise support of the
       // compression it is using, the server may still process the message so long as it too
@@ -1148,14 +1138,15 @@ class ReadStateTests: GRPCTestCase {
   func testReadWithLeftOverBytesForOneExpectedMessage() throws {
     // Write a message into the buffer:
     let message = ByteBuffer(string: "Hello!")
-    let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
+    var writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffers = try writer.write(buffer: message)
+    XCTAssertNil(buffers.1)
     // And some extra junk bytes:
     let bytes: [UInt8] = [0x00]
-    buffer.writeBytes(bytes)
+    buffers.0.writeBytes(bytes)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer, maxLength: .max).assertFailure {
+    state.readMessages(&buffers.0, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .leftOverBytes)
     }
     state.assertNotReading()
@@ -1164,13 +1155,15 @@ class ReadStateTests: GRPCTestCase {
   func testReadTooManyMessagesForOneExpectedMessages() throws {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
-    let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
-    var second = try writer.write(buffer: message, allocator: self.allocator)
-    buffer.writeBuffer(&second)
+    var writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffers1 = try writer.write(buffer: message)
+    var buffers2 = try writer.write(buffer: message)
+    XCTAssertNil(buffers1.1)
+    XCTAssertNil(buffers2.1)
+    buffers1.0.writeBuffer(&buffers2.0)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer, maxLength: .max).assertFailure {
+    state.readMessages(&buffers1.0, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
     state.assertNotReading()
@@ -1179,8 +1172,9 @@ class ReadStateTests: GRPCTestCase {
   func testReadOneMessageForOneExpectedMessages() throws {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
-    let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
+    var writer = LengthPrefixedMessageWriter(compression: .none)
+    var (buffer, other) = try writer.write(buffer: message)
+    XCTAssertNil(other)
 
     var state: ReadState = .one()
     state.readMessages(&buffer, maxLength: .max).assertSuccess {
@@ -1194,8 +1188,9 @@ class ReadStateTests: GRPCTestCase {
   func testReadOneMessageForManyExpectedMessages() throws {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
-    let writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffer = try writer.write(buffer: message, allocator: self.allocator)
+    var writer = LengthPrefixedMessageWriter(compression: .none)
+    var (buffer, other) = try writer.write(buffer: message)
+    XCTAssertNil(other)
 
     var state: ReadState = .many()
     state.readMessages(&buffer, maxLength: .max).assertSuccess {
@@ -1209,11 +1204,11 @@ class ReadStateTests: GRPCTestCase {
   func testReadManyMessagesForManyExpectedMessages() throws {
     // Write a message into the buffer twice:
     let message = ByteBuffer(string: "Hello!")
-    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var writer = LengthPrefixedMessageWriter(compression: .none)
 
-    var first = try writer.write(buffer: message, allocator: self.allocator)
-    var second = try writer.write(buffer: message, allocator: self.allocator)
-    var third = try writer.write(buffer: message, allocator: self.allocator)
+    var (first, _) = try writer.write(buffer: message)
+    var (second, _) = try writer.write(buffer: message)
+    var (third, _) = try writer.write(buffer: message)
 
     first.writeBuffer(&second)
     first.writeBuffer(&third)

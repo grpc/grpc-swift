@@ -295,9 +295,16 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     )
 
     switch writeBuffer {
-    case let .success(buffer):
-      let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
-      self.context.write(self.wrapOutboundOut(payload), promise: promise)
+    case let .success((buffer, maybeBuffer)):
+      if let actuallyBuffer = maybeBuffer {
+        let payload1 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+        self.context.write(self.wrapOutboundOut(payload1), promise: nil)
+        let payload2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(actuallyBuffer)))
+        self.context.write(self.wrapOutboundOut(payload2), promise: promise)
+      } else {
+        let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+        self.context.write(self.wrapOutboundOut(payload), promise: promise)
+      }
       if metadata.flush {
         self.markFlushPoint()
       }

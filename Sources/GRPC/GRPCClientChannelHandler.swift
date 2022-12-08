@@ -502,7 +502,10 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
     switch self.unwrapOutboundIn(data) {
     case let .head(requestHead):
       // Feed the request into the state machine:
-      switch self.stateMachine.sendRequestHeaders(requestHead: requestHead) {
+      switch self.stateMachine.sendRequestHeaders(
+        requestHead: requestHead,
+        allocator: context.channel.allocator
+      ) {
       case let .success(headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
         let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
@@ -526,19 +529,29 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       // Feed the request message into the state machine:
       let result = self.stateMachine.sendRequest(
         request.message,
-        compressed: request.compressed,
-        allocator: context.channel.allocator
+        compressed: request.compressed
       )
       switch result {
-      case let .success(buffer):
-        // We're clear to send a message; wrap it up in an HTTP/2 frame.
-        let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+      case let .success((buffer, maybeBuffer)):
+        let frame1 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
         self.logger.trace("writing HTTP2 frame", metadata: [
           MetadataKey.h2Payload: "DATA",
           MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
           MetadataKey.h2EndStream: "false",
         ])
-        context.write(self.wrapOutboundOut(framePayload), promise: promise)
+        // If there's a second buffer, attach the promise to the second write.
+        let promise1 = maybeBuffer == nil ? promise : nil
+        context.write(self.wrapOutboundOut(frame1), promise: promise1)
+
+        if let actuallyBuffer = maybeBuffer {
+          let frame2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(actuallyBuffer)))
+          self.logger.trace("writing HTTP2 frame", metadata: [
+            MetadataKey.h2Payload: "DATA",
+            MetadataKey.h2DataBytes: "\(actuallyBuffer.readableBytes)",
+            MetadataKey.h2EndStream: "false",
+          ])
+          context.write(self.wrapOutboundOut(frame2), promise: promise)
+        }
 
       case let .failure(writeError):
         switch writeError {

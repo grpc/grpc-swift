@@ -616,7 +616,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
   func testSendData() {
     for startingState in [DesiredState.requestOpenResponseOpen, .requestClosedResponseOpen] {
-      let machine = self.makeStateMachine(state: startingState)
+      var machine = self.makeStateMachine(state: startingState)
       let buffer = ByteBuffer(repeating: 0, count: 1024)
 
       // We should be able to do this multiple times.
@@ -656,7 +656,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
   }
 
   func testSendDataBeforeMetadata() {
-    let machine = self.makeStateMachine(state: .requestClosedResponseIdle(pipelineConfigured: true))
+    var machine = self.makeStateMachine(state: .requestClosedResponseIdle(pipelineConfigured: true))
 
     // Response stream is still idle, so this should fail.
     let buffer = ByteBuffer(repeating: 0, count: 1024)

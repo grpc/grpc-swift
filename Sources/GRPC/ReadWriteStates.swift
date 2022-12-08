@@ -30,7 +30,10 @@ struct PendingWriteState {
   /// The 'content-type' being written.
   var contentType: ContentType
 
-  func makeWriteState(messageEncoding: ClientMessageEncoding) -> WriteState {
+  func makeWriteState(
+    messageEncoding: ClientMessageEncoding,
+    allocator: ByteBufferAllocator
+  ) -> WriteState {
     let compression: CompressionAlgorithm?
     switch messageEncoding {
     case let .enabled(configuration):
@@ -39,7 +42,7 @@ struct PendingWriteState {
       compression = nil
     }
 
-    let writer = LengthPrefixedMessageWriter(compression: compression)
+    let writer = LengthPrefixedMessageWriter(compression: compression, allocator: allocator)
     return .writing(self.arity, self.contentType, writer)
   }
 }
@@ -53,25 +56,23 @@ enum WriteState {
   /// more messages to be written.
   case notWriting
 
-  /// Writes a message into a buffer using the `writer` and `allocator`.
+  /// Writes a message into a buffer using the `writer`.
   ///
   /// - Parameter message: The `Message` to write.
-  /// - Parameter allocator: An allocator to provide a `ByteBuffer` into which the message will be
-  ///     written.
   mutating func write(
     _ message: ByteBuffer,
-    compressed: Bool,
-    allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
+    compressed: Bool
+  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
     switch self {
     case .notWriting:
       return .failure(.cardinalityViolation)
 
-    case let .writing(writeArity, contentType, writer):
-      let buffer: ByteBuffer
+    case .writing(let writeArity, let contentType, var writer):
+      self = .notWriting
+      let buffers: (ByteBuffer, ByteBuffer?)
 
       do {
-        buffer = try writer.write(buffer: message, allocator: allocator, compressed: compressed)
+        buffers = try writer.write(buffer: message, compressed: compressed)
       } catch {
         self = .notWriting
         return .failure(.serializationFailed)
@@ -84,7 +85,7 @@ enum WriteState {
         self = .writing(writeArity, contentType, writer)
       }
 
-      return .success(buffer)
+      return .success(buffers)
     }
   }
 }
