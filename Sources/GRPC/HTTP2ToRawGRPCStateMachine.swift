@@ -21,23 +21,6 @@ import NIOHTTP2
 struct HTTP2ToRawGRPCStateMachine {
   /// The current state.
   private var state: State = .requestIdleResponseIdle
-
-  /// Temporarily sets `self.state` to `._modifying` before calling the provided block and setting
-  /// `self.state` to the `State` modified by the block.
-  ///
-  /// Since we hold state as associated data on our `State` enum, any modification to that state
-  /// will trigger a copy on write for its heap allocated data. Temporarily setting the `self.state`
-  /// to `._modifying` allows us to avoid an extra reference to any heap allocated data and
-  /// therefore avoid a copy on write.
-  @inlinable
-  internal mutating func withStateAvoidingCoWs<Action>(_ body: (inout State) -> Action) -> Action {
-    var state: State = ._modifying
-    swap(&self.state, &state)
-    defer {
-      swap(&self.state, &state)
-    }
-    return body(&state)
-  }
 }
 
 extension HTTP2ToRawGRPCStateMachine {
@@ -63,9 +46,6 @@ extension HTTP2ToRawGRPCStateMachine {
 
     // Both streams are closed. This state is terminal.
     case requestClosedResponseClosed
-
-    // Not a real state. See 'withStateAvoidingCoWs'.
-    case _modifying
   }
 
   struct RequestOpenResponseIdleState {
@@ -867,21 +847,19 @@ extension HTTP2ToRawGRPCStateMachine {
     encoding: ServerMessageEncoding,
     normalizeHeaders: Bool
   ) -> ReceiveHeadersAction {
-    return self.withStateAvoidingCoWs { state in
-      state.receive(
-        headers: headers,
-        eventLoop: eventLoop,
-        errorDelegate: errorDelegate,
-        remoteAddress: remoteAddress,
-        logger: logger,
-        allocator: allocator,
-        responseWriter: responseWriter,
-        closeFuture: closeFuture,
-        services: services,
-        encoding: encoding,
-        normalizeHeaders: normalizeHeaders
-      )
-    }
+    return self.state.receive(
+      headers: headers,
+      eventLoop: eventLoop,
+      errorDelegate: errorDelegate,
+      remoteAddress: remoteAddress,
+      logger: logger,
+      allocator: allocator,
+      responseWriter: responseWriter,
+      closeFuture: closeFuture,
+      services: services,
+      encoding: encoding,
+      normalizeHeaders: normalizeHeaders
+    )
   }
 
   /// Receive request buffer.
@@ -890,16 +868,12 @@ extension HTTP2ToRawGRPCStateMachine {
   ///   - endStream: Whether end stream was set.
   /// - Returns: Returns whether the caller should try to read a message from the buffer.
   mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> ReceiveDataAction {
-    return self.withStateAvoidingCoWs { state in
-      state.receive(buffer: &buffer, endStream: endStream)
-    }
+    self.state.receive(buffer: &buffer, endStream: endStream)
   }
 
   /// Send response headers.
   mutating func send(headers: HPACKHeaders) -> Result<HPACKHeaders, Error> {
-    return self.withStateAvoidingCoWs { state in
-      state.send(headers: headers)
-    }
+    self.state.send(headers: headers)
   }
 
   /// Send a response buffer.
@@ -908,9 +882,7 @@ extension HTTP2ToRawGRPCStateMachine {
     allocator: ByteBufferAllocator,
     compress: Bool
   ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
-    return self.withStateAvoidingCoWs { state in
-      state.send(buffer: buffer, allocator: allocator, compress: compress)
-    }
+    self.state.send(buffer: buffer, allocator: allocator, compress: compress)
   }
 
   /// Send status and trailers.
@@ -918,23 +890,17 @@ extension HTTP2ToRawGRPCStateMachine {
     status: GRPCStatus,
     trailers: HPACKHeaders
   ) -> HTTP2ToRawGRPCStateMachine.SendEndAction {
-    return self.withStateAvoidingCoWs { state in
-      state.send(status: status, trailers: trailers)
-    }
+    self.state.send(status: status, trailers: trailers)
   }
 
   /// The pipeline has been configured with a service provider.
   mutating func pipelineConfigured() -> PipelineConfiguredAction {
-    return self.withStateAvoidingCoWs { state in
-      state.pipelineConfigured()
-    }
+    self.state.pipelineConfigured()
   }
 
   /// Try to read a request message.
   mutating func readNextRequest(maxLength: Int) -> ReadNextMessageAction {
-    return self.withStateAvoidingCoWs { state in
-      state.readNextRequest(maxLength: maxLength)
-    }
+    self.state.readNextRequest(maxLength: maxLength)
   }
 }
 
@@ -959,9 +925,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
          .requestClosedResponseOpen,
          .requestClosedResponseClosed:
       preconditionFailure("Invalid state: response stream opened before pipeline was configured")
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 
@@ -1005,9 +968,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
          .requestClosedResponseIdle,
          .requestClosedResponseOpen:
       preconditionFailure("Invalid state: \(self)")
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 
@@ -1049,9 +1009,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
 
     case .requestClosedResponseClosed:
       return .nothing
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 
@@ -1085,9 +1042,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case .requestOpenResponseClosed,
          .requestClosedResponseClosed:
       return .none
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 
@@ -1111,9 +1065,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
          .requestClosedResponseOpen,
          .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 
@@ -1150,9 +1101,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case .requestOpenResponseClosed,
          .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 
@@ -1183,9 +1131,6 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case .requestOpenResponseClosed,
          .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
-
-    case ._modifying:
-      preconditionFailure("Left in modifying state")
     }
   }
 }
