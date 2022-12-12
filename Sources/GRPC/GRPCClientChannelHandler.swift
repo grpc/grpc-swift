@@ -529,29 +529,13 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       // Feed the request message into the state machine:
       let result = self.stateMachine.sendRequest(
         request.message,
-        compressed: request.compressed
+        compressed: request.compressed,
+        promise: promise
       )
-      switch result {
-      case let .success((buffer, maybeBuffer)):
-        let frame1 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
-        self.logger.trace("writing HTTP2 frame", metadata: [
-          MetadataKey.h2Payload: "DATA",
-          MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
-          MetadataKey.h2EndStream: "false",
-        ])
-        // If there's a second buffer, attach the promise to the second write.
-        let promise1 = maybeBuffer == nil ? promise : nil
-        context.write(self.wrapOutboundOut(frame1), promise: promise1)
 
-        if let actuallyBuffer = maybeBuffer {
-          let frame2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(actuallyBuffer)))
-          self.logger.trace("writing HTTP2 frame", metadata: [
-            MetadataKey.h2Payload: "DATA",
-            MetadataKey.h2DataBytes: "\(actuallyBuffer.readableBytes)",
-            MetadataKey.h2EndStream: "false",
-          ])
-          context.write(self.wrapOutboundOut(frame2), promise: promise)
-        }
+      switch result {
+      case .success:
+        ()
 
       case let .failure(writeError):
         switch writeError {
@@ -572,13 +556,37 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       }
 
     case .end:
+      // About to send end: write any outbound messages first.
+      while let (result, promise) = self.stateMachine.nextRequest() {
+        switch result {
+        case let .success(buffer):
+          let framePayload: HTTP2Frame.FramePayload = .data(
+            .init(data: .byteBuffer(buffer), endStream: false)
+          )
+
+          self.logger.trace("writing HTTP2 frame", metadata: [
+            MetadataKey.h2Payload: "DATA",
+            MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
+            MetadataKey.h2EndStream: "false",
+          ])
+          context.write(self.wrapOutboundOut(framePayload), promise: promise)
+
+        case let .failure(error):
+          context.fireErrorCaught(error)
+          promise?.fail(error)
+          return
+        }
+      }
+
       // Okay: can we close the request stream?
       switch self.stateMachine.sendEndOfRequestStream() {
       case .success:
         // We can. Send an empty DATA frame with end-stream set.
         let empty = context.channel.allocator.buffer(capacity: 0)
-        let framePayload = HTTP2Frame.FramePayload
-          .data(.init(data: .byteBuffer(empty), endStream: true))
+        let framePayload: HTTP2Frame.FramePayload = .data(
+          .init(data: .byteBuffer(empty), endStream: true)
+        )
+
         self.logger.trace("writing HTTP2 frame", metadata: [
           MetadataKey.h2Payload: "DATA",
           MetadataKey.h2DataBytes: "0",
@@ -604,5 +612,31 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
         }
       }
     }
+  }
+
+  func flush(context: ChannelHandlerContext) {
+    // Drain any requests.
+    while let (result, promise) = self.stateMachine.nextRequest() {
+      switch result {
+      case let .success(buffer):
+        let framePayload: HTTP2Frame.FramePayload = .data(
+          .init(data: .byteBuffer(buffer), endStream: false)
+        )
+
+        self.logger.trace("writing HTTP2 frame", metadata: [
+          MetadataKey.h2Payload: "DATA",
+          MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
+          MetadataKey.h2EndStream: "false",
+        ])
+        context.write(self.wrapOutboundOut(framePayload), promise: promise)
+
+      case let .failure(error):
+        context.fireErrorCaught(error)
+        promise?.fail(error)
+        return
+      }
+    }
+
+    context.flush()
   }
 }

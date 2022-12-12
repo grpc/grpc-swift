@@ -196,11 +196,16 @@ struct GRPCClientStateMachine {
   ///     request will be written.
   mutating func sendRequest(
     _ message: ByteBuffer,
-    compressed: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
+    compressed: Bool,
+    promise: EventLoopPromise<Void>? = nil
+  ) -> Result<Void, MessageWriteError> {
     return self.withStateAvoidingCoWs { state in
-      state.sendRequest(message, compressed: compressed)
+      state.sendRequest(message, compressed: compressed, promise: promise)
     }
+  }
+
+  mutating func nextRequest() -> (Result<ByteBuffer, MessageWriteError>, EventLoopPromise<Void>?)? {
+    return self.state.nextRequest()
   }
 
   /// Closes the request stream.
@@ -394,18 +399,21 @@ extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.sendRequest(_:allocator:)`.
   mutating func sendRequest(
     _ message: ByteBuffer,
-    compressed: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
-    let result: Result<(ByteBuffer, ByteBuffer?), MessageWriteError>
+    compressed: Bool,
+    promise: EventLoopPromise<Void>?
+  ) -> Result<Void, MessageWriteError> {
+    let result: Result<Void, MessageWriteError>
 
     switch self {
     case .clientActiveServerIdle(var writeState, let pendingReadState):
-      result = writeState.write(message, compressed: compressed)
+      let result = writeState.write(message, compressed: compressed, promise: promise)
       self = .clientActiveServerIdle(writeState: writeState, pendingReadState: pendingReadState)
+      return result
 
     case .clientActiveServerActive(var writeState, let readState):
-      result = writeState.write(message, compressed: compressed)
+      let result = writeState.write(message, compressed: compressed, promise: promise)
       self = .clientActiveServerActive(writeState: writeState, readState: readState)
+      return result
 
     case .clientClosedServerIdle,
          .clientClosedServerActive,
@@ -420,6 +428,31 @@ extension GRPCClientStateMachine.State {
     }
 
     return result
+  }
+
+  mutating func nextRequest() -> (Result<ByteBuffer, MessageWriteError>, EventLoopPromise<Void>?)? {
+    switch self {
+    case .clientActiveServerIdle(var writeState, let pendingReadState):
+      self = .modifying
+      let result = writeState.next()
+      self = .clientActiveServerIdle(writeState: writeState, pendingReadState: pendingReadState)
+      return result
+
+    case .clientActiveServerActive(var writeState, let readState):
+      self = .modifying
+      let result = writeState.next()
+      self = .clientActiveServerActive(writeState: writeState, readState: readState)
+      return result
+
+    case .clientIdleServerIdle,
+         .clientClosedServerIdle,
+         .clientClosedServerActive,
+         .clientClosedServerClosed:
+      return nil
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
+    }
   }
 
   /// See `GRPCClientStateMachine.sendEndOfRequestStream()`.
