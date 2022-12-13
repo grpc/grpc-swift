@@ -337,7 +337,6 @@ extension ClientTransport {
       self._pipeline?.logger = self.logger
       self.logger.debug("activated stream channel")
       self.channel = channel
-      self.onStart()
       self.unbuffer()
 
     case .close:
@@ -943,6 +942,10 @@ extension ClientTransport {
     case let .metadata(headers):
       let head = self.makeRequestHead(with: headers)
       channel.write(self.wrapOutboundOut(.head(head)), promise: promise)
+      // Messages are buffered by this class and in the async writer for async calls. Initially the
+      // async writer is not allowed to emit messages; the call to 'onStart()' signals that messages
+      // may be emitted. We call it here to avoid races between writing headers and messages.
+      self.onStart()
 
     case let .message(request, metadata):
       do {

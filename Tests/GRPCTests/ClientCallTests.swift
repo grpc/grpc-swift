@@ -206,4 +206,43 @@ class ClientCallTests: GRPCTestCase {
     // Cancellation should now fail, we've already cancelled.
     assertThat(try get.cancel().wait(), .throws(.instanceOf(GRPCError.AlreadyComplete.self)))
   }
+
+  func testWriteMessageOnStart() throws {
+    // This test isn't deterministic so run a bunch of iterations.
+    for _ in 0 ..< 100 {
+      let call = self.update()
+      let promise = call.eventLoop.makePromise(of: Void.self)
+      let finished = call.eventLoop.makePromise(of: Void.self)
+
+      call.invokeStreamingRequests {
+        // Send in onStart.
+        call.send(
+          .message(.with { $0.text = "foo" }, .init(compress: false, flush: false)),
+          promise: promise
+        )
+      } onError: { _ in // ignore errors
+      } onResponsePart: {
+        switch $0 {
+        case .metadata, .message:
+          ()
+        case .end:
+          finished.succeed(())
+        }
+      }
+
+      // End the stream.
+      promise.futureResult.whenComplete { _ in
+        call.send(.end, promise: nil)
+      }
+
+      do {
+        try promise.futureResult.wait()
+        try finished.futureResult.wait()
+      } catch {
+        // Stop on the first error.
+        XCTFail("Unexpected error: \(error)")
+        return
+      }
+    }
+  }
 }
