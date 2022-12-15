@@ -150,6 +150,7 @@ enum ReadState {
       return .failure(.cardinalityViolation)
 
     case .reading(let readArity, var reader):
+      self = .notReading // Avoid CoWs
       reader.append(buffer: &buffer)
       var messages: [ByteBuffer] = []
 
