@@ -184,6 +184,10 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     case .none:
       ()
 
+    case .ack:
+      // NIO's HTTP2 handler acks for us so this is a no-op.
+      ()
+
     case .cancelScheduledTimeout:
       self.scheduledClose?.cancel()
       self.scheduledClose = nil

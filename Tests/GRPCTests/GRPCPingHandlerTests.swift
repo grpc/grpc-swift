@@ -15,6 +15,7 @@
  */
 @testable import GRPC
 import NIOCore
+import NIOEmbedded
 import NIOHTTP2
 import XCTest
 
@@ -249,24 +250,15 @@ class GRPCPingHandlerTests: GRPCTestCase {
       pingData: HTTP2PingData(withInteger: 1),
       ack: false
     )
-    XCTAssertEqual(
-      response,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(response, .ack)
 
     // Received another ping, response should be a pong (ping strikes not in effect)
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(
-      response,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(response, .ack)
 
     // Received another ping, response should be a pong (ping strikes not in effect)
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(
-      response,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(response, .ack)
   }
 
   func testPingWithoutDataResultsInPongForClient() {
@@ -274,10 +266,7 @@ class GRPCPingHandlerTests: GRPCTestCase {
     self.setupPingHandler(permitWithoutCalls: false)
 
     let action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(
-      action,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(action, .ack)
   }
 
   func testPingWithoutDataResultsInPongForServer() {
@@ -291,10 +280,7 @@ class GRPCPingHandlerTests: GRPCTestCase {
     )
 
     let action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(
-      action,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(action, .ack)
   }
 
   func testPingStrikesOnServer() {
@@ -312,10 +298,7 @@ class GRPCPingHandlerTests: GRPCTestCase {
       pingData: HTTP2PingData(withInteger: 1),
       ack: false
     )
-    XCTAssertEqual(
-      response,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(response, .ack)
 
     // Received another ping, which is invalid (ping strike), response should be no action
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
@@ -326,10 +309,7 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Received another ping, which is valid now, response should be a pong
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(
-      response,
-      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
-    )
+    XCTAssertEqual(response, .ack)
 
     // Received another ping, which is invalid (ping strike), response should be no action
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
@@ -381,6 +361,8 @@ extension PingHandler.Action: Equatable {
     switch (lhs, rhs) {
     case (.none, .none):
       return true
+    case (.ack, .ack):
+      return true
     case (let .schedulePing(lhsDelay, lhsTimeout), let .schedulePing(rhsDelay, rhsTimeout)):
       return lhsDelay == rhsDelay && lhsTimeout == rhsTimeout
     case (.cancelScheduledTimeout, .cancelScheduledTimeout):
@@ -398,6 +380,92 @@ extension PingHandler.Action: Equatable {
       }
     default:
       return false
+    }
+  }
+}
+
+extension GRPCPingHandlerTests {
+  func testSingleAckIsEmittedOnPing() throws {
+    let client = EmbeddedChannel()
+    let _ = try client.configureHTTP2Pipeline(mode: .client) { _ in
+      fatalError("Unexpected inbound stream")
+    }.wait()
+
+    let server = EmbeddedChannel()
+    let serverMux = try server.configureHTTP2Pipeline(mode: .server) { _ in
+      fatalError("Unexpected inbound stream")
+    }.wait()
+
+    let idleHandler = GRPCIdleHandler(
+      idleTimeout: .minutes(5),
+      keepalive: .init(),
+      logger: self.serverLogger
+    )
+    try server.pipeline.syncOperations.addHandler(idleHandler, position: .before(serverMux))
+    try server.connect(to: .init(unixDomainSocketPath: "/ignored")).wait()
+    try client.connect(to: .init(unixDomainSocketPath: "/ignored")).wait()
+
+    func interact(client: EmbeddedChannel, server: EmbeddedChannel) throws {
+      var didRead = true
+      while didRead {
+        didRead = false
+
+        if let data = try client.readOutbound(as: ByteBuffer.self) {
+          didRead = true
+          try server.writeInbound(data)
+        }
+
+        if let data = try server.readOutbound(as: ByteBuffer.self) {
+          didRead = true
+          try client.writeInbound(data)
+        }
+      }
+    }
+
+    try interact(client: client, server: server)
+
+    // Settings.
+    let f1 = try XCTUnwrap(client.readInbound(as: HTTP2Frame.self))
+    f1.payload.assertSettings(ack: false)
+
+    // Settings ack.
+    let f2 = try XCTUnwrap(client.readInbound(as: HTTP2Frame.self))
+    f2.payload.assertSettings(ack: true)
+
+    // Send a ping.
+    let ping = HTTP2Frame(streamID: .rootStream, payload: .ping(.init(withInteger: 42), ack: false))
+    try client.writeOutbound(ping)
+    try interact(client: client, server: server)
+
+    // Ping ack.
+    let f3 = try XCTUnwrap(client.readInbound(as: HTTP2Frame.self))
+    f3.payload.assertPing(ack: true)
+
+    XCTAssertNil(try client.readInbound(as: HTTP2Frame.self))
+  }
+}
+
+extension HTTP2Frame.FramePayload {
+  func assertSettings(ack: Bool, file: StaticString = #file, line: UInt = #line) {
+    switch self {
+    case let .settings(settings):
+      switch settings {
+      case .ack:
+        XCTAssertTrue(ack, file: file, line: line)
+      case .settings:
+        XCTAssertFalse(ack, file: file, line: line)
+      }
+    default:
+      XCTFail("Expected .settings got \(self)", file: file, line: line)
+    }
+  }
+
+  func assertPing(ack: Bool, file: StaticString = #file, line: UInt = #line) {
+    switch self {
+    case let .ping(_, ack: pingAck):
+      XCTAssertEqual(pingAck, ack, file: file, line: line)
+    default:
+      XCTFail("Expected .ping got \(self)", file: file, line: line)
     }
   }
 }

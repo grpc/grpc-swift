@@ -90,6 +90,7 @@ struct PingHandler {
 
   enum Action {
     case none
+    case ack
     case schedulePing(delay: TimeAmount, timeout: TimeAmount)
     case cancelScheduledTimeout
     case reply(HTTP2Frame.FramePayload)
@@ -170,14 +171,14 @@ struct PingHandler {
         // This is a valid ping, reset our strike count and reply with a pong.
         self.pingStrikes = 0
         self.lastReceivedPingDate = self.now()
-        return .reply(self.generatePingFrame(data: pingData, ack: true))
+        return .ack
       }
     } else {
       // We don't support ping strikes. We'll just reply with a pong.
       //
       // Note: we don't need to update `pingStrikes` or `lastReceivedPingDate` as we don't
       // support ping strikes.
-      return .reply(self.generatePingFrame(data: pingData, ack: true))
+      return .ack
     }
   }
 
@@ -185,20 +186,19 @@ struct PingHandler {
     if self.shouldBlockPing {
       return .none
     } else {
-      return .reply(self.generatePingFrame(data: self.pingData, ack: false))
+      return .reply(self.generatePingFrame(data: self.pingData))
     }
   }
 
   private mutating func generatePingFrame(
-    data: HTTP2PingData,
-    ack: Bool
+    data: HTTP2PingData
   ) -> HTTP2Frame.FramePayload {
     if self.activeStreams == 0 {
       self.sentPingsWithoutData += 1
     }
 
     self.lastSentPingDate = self.now()
-    return HTTP2Frame.FramePayload.ping(data, ack: ack)
+    return HTTP2Frame.FramePayload.ping(data, ack: false)
   }
 
   /// Returns true if, on receipt of a ping, the ping should be regarded as a ping strike.
