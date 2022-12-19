@@ -1,4 +1,4 @@
 version: 1
 builder:
   configs:
-    - documentation_targets: [GRPC]
+    - documentation_targets: [GRPC, protoc-gen-grpc-swift]
