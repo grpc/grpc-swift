@@ -623,8 +623,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       for _ in 0 ..< 5 {
         let action = machine.send(
           buffer: buffer,
-          allocator: self.allocator,
-          compress: false
+          compress: false,
+          promise: nil
         )
         assertThat(action, .is(.success()))
       }
@@ -633,8 +633,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       // write as normal.
       let action = machine.send(
         buffer: buffer,
-        allocator: self.allocator,
-        compress: true
+        compress: true,
+        promise: nil
       )
       assertThat(action, .is(.success()))
     }
@@ -649,8 +649,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     let buffer = ByteBuffer(repeating: 0, count: 1024)
     let action2 = machine.send(
       buffer: buffer,
-      allocator: self.allocator,
-      compress: false
+      compress: false,
+      promise: nil
     )
     assertThat(action2, .is(.failure()))
   }
@@ -662,10 +662,49 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     let buffer = ByteBuffer(repeating: 0, count: 1024)
     let action2 = machine.send(
       buffer: buffer,
-      allocator: self.allocator,
-      compress: false
+      compress: false,
+      promise: nil
     )
     assertThat(action2, .is(.failure()))
+  }
+
+  // MARK: Next Response
+
+  func testNextResponseBeforeMetadata() {
+    var machine = self.makeStateMachine(state: .requestOpenResponseIdle(pipelineConfigured: true))
+    XCTAssertNil(machine.nextResponse())
+  }
+
+  func testNextResponseWhenOpen() throws {
+    for startingState in [DesiredState.requestOpenResponseOpen, .requestClosedResponseOpen] {
+      var machine = self.makeStateMachine(state: startingState)
+
+      // No response buffered yet.
+      XCTAssertNil(machine.nextResponse())
+
+      let buffer = ByteBuffer(repeating: 0, count: 1024)
+      machine.send(buffer: buffer, compress: false, promise: nil).assertSuccess()
+
+      let (framedBuffer, promise) = try XCTUnwrap(machine.nextResponse())
+      XCTAssertNil(promise) // Didn't provide a promise.
+      framedBuffer.assertSuccess()
+
+      // No more responses.
+      XCTAssertNil(machine.nextResponse())
+    }
+  }
+
+  func testNextResponseWhenClosed() throws {
+    var machine = self.makeStateMachine(state: .requestClosedResponseOpen)
+    let action = machine.send(status: .ok, trailers: [:])
+    switch action {
+    case .sendTrailersAndFinish:
+      ()
+    default:
+      XCTFail("Expected 'sendTrailersAndFinish' but got \(action)")
+    }
+
+    XCTAssertNil(machine.nextResponse())
   }
 
   // MARK: Send End
