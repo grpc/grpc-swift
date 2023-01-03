@@ -79,7 +79,6 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
 
   func testLargeCompressedPayloadEmitsOneBuffer() throws {
     var writer = LengthPrefixedMessageWriter(compression: .gzip)
-    let allocator = ByteBufferAllocator()
     let message = ByteBuffer(repeating: 0, count: 16 * 1024 * 1024)
 
     var (lengthPrefixed, other) = try writer.write(buffer: message)
@@ -91,7 +90,6 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
 
   func testLargeUncompressedPayloadEmitsTwoBuffers() throws {
     var writer = LengthPrefixedMessageWriter(compression: .none)
-    let allocator = ByteBufferAllocator()
     let message = ByteBuffer(repeating: 0, count: 16 * 1024 * 1024)
 
     var (header, payload) = try writer.write(buffer: message)

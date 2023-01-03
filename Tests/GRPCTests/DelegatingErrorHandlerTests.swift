@@ -19,6 +19,7 @@ import Foundation
 import Logging
 import NIOCore
 import NIOEmbedded
+import NIOHTTP2
 import NIOSSL
 import XCTest
 
@@ -42,6 +43,19 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
 
     XCTAssertEqual(delegate.errors.count, 1)
     XCTAssertEqual(delegate.errors[0] as? NIOSSLError, .writeDuringTLSShutdown)
+  }
+
+  func testNoSuchStreamIsIgnored() throws {
+    let delegate = ErrorRecorder()
+    let channel = EmbeddedChannel(
+      handler: DelegatingErrorHandler(logger: self.logger, delegate: delegate)
+    )
+
+    channel.pipeline.fireErrorCaught(NIOHTTP2Errors.noSuchStream(streamID: 42))
+    channel.pipeline.fireErrorCaught(NIOHTTP2Errors.badClientMagic())
+
+    XCTAssertEqual(delegate.errors.count, 1)
+    XCTAssertTrue(delegate.errors[0] is NIOHTTP2Errors.BadClientMagic)
   }
 }
 #endif // canImport(NIOSSL)

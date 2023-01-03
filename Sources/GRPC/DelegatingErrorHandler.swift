@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIOCore
+import NIOHTTP2
 
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This
 /// handler is intended to be used in the client channel pipeline after the HTTP/2 stream
@@ -43,6 +44,13 @@ internal final class DelegatingErrorHandler: ChannelInboundHandler {
     // Without this we would unnecessarily log when we're communicating with peers which don't
     // send `close_notify`.
     if error.isNIOSSLUncleanShutdown {
+      return
+    }
+
+    // NIOHTTP2 can emit WINDOW_UPDATE frames from a stream which may be processed after the stream
+    // has closed leading to the following error. Ignore the error rather than closing the whole
+    // connection.
+    if error is NIOHTTP2Errors.NoSuchStream {
       return
     }
 
