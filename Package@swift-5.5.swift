@@ -62,7 +62,7 @@ let packageDependencies: [Package.Dependency] = [
 ].appending(
   .package(
     url: "https://github.com/apple/swift-nio-ssl.git",
-    from: "2.14.0"
+    from: "2.23.0"
   ),
   if: includeNIOSSL
 )
