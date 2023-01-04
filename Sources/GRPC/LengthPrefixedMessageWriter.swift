@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIOCore
+import NIOHPACK
 
 internal struct LengthPrefixedMessageWriter {
   static let metadataLength = 5
