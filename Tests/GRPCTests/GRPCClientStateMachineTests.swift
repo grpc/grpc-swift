@@ -154,14 +154,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.sendRequest(
       ByteBuffer(string: request),
       compressed: false
-    ).assertSuccess { buffers in
-      var buffer = buffers.0
-      XCTAssertNil(buffers.1)
-      // Remove the length and compression flag prefix.
-      buffer.moveReaderIndex(forwardBy: 5)
-      let data = buffer.readString(length: buffer.readableBytes)!
-      XCTAssertEqual(request, data)
-    }
+    ).assertSuccess()
   }
 
   func testSendRequestFromIdle() {
@@ -1299,10 +1292,18 @@ extension PendingWriteState {
 
 extension WriteState {
   static func one() -> WriteState {
-    return .writing(.one, .protobuf, LengthPrefixedMessageWriter(compression: .none))
+    return .init(
+      arity: .one,
+      contentType: .protobuf,
+      writer: .init(compression: .none, allocator: .init())
+    )
   }
 
   static func many() -> WriteState {
-    return .writing(.many, .protobuf, LengthPrefixedMessageWriter(compression: .none))
+    return .init(
+      arity: .many,
+      contentType: .protobuf,
+      writer: .init(compression: .none, allocator: .init())
+    )
   }
 }

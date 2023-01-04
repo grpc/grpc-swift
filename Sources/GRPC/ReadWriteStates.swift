@@ -42,50 +42,61 @@ struct PendingWriteState {
       compression = nil
     }
 
-    let writer = LengthPrefixedMessageWriter(compression: compression, allocator: allocator)
-    return .writing(self.arity, self.contentType, writer)
+    let writer = CoalescingLengthPrefixedMessageWriter(
+      compression: compression,
+      allocator: allocator
+    )
+    return .init(arity: self.arity, contentType: self.contentType, writer: writer)
   }
 }
 
 /// The write state of a stream.
-enum WriteState {
-  /// Writing may be attempted using the given writer.
-  case writing(MessageArity, ContentType, LengthPrefixedMessageWriter)
+struct WriteState {
+  private var arity: MessageArity
+  private var contentType: ContentType
+  private var writer: CoalescingLengthPrefixedMessageWriter
+  private var canWrite: Bool
 
-  /// Writing may not be attempted: either a write previously failed or it is not valid for any
-  /// more messages to be written.
-  case notWriting
+  init(
+    arity: MessageArity,
+    contentType: ContentType,
+    writer: CoalescingLengthPrefixedMessageWriter
+  ) {
+    self.arity = arity
+    self.contentType = contentType
+    self.writer = writer
+    self.canWrite = true
+  }
 
   /// Writes a message into a buffer using the `writer`.
   ///
   /// - Parameter message: The `Message` to write.
   mutating func write(
     _ message: ByteBuffer,
-    compressed: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), MessageWriteError> {
-    switch self {
-    case .notWriting:
+    compressed: Bool,
+    promise: EventLoopPromise<Void>?
+  ) -> Result<Void, MessageWriteError> {
+    guard self.canWrite else {
       return .failure(.cardinalityViolation)
+    }
 
-    case .writing(let writeArity, let contentType, var writer):
-      self = .notWriting
-      let buffers: (ByteBuffer, ByteBuffer?)
+    self.writer.append(buffer: message, compress: compressed, promise: promise)
 
-      do {
-        buffers = try writer.write(buffer: message, compressed: compressed)
-      } catch {
-        self = .notWriting
-        return .failure(.serializationFailed)
-      }
+    switch self.arity {
+    case .one:
+      self.canWrite = false
+    case .many:
+      ()
+    }
 
-      // If we only expect to write one message then we're no longer writable.
-      if case .one = writeArity {
-        self = .notWriting
-      } else {
-        self = .writing(writeArity, contentType, writer)
-      }
+    return .success(())
+  }
 
-      return .success(buffers)
+  mutating func next() -> (Result<ByteBuffer, MessageWriteError>, EventLoopPromise<Void>?)? {
+    if let next = self.writer.next() {
+      return (next.0.mapError { _ in .serializationFailed }, next.1)
+    } else {
+      return nil
     }
   }
 }
