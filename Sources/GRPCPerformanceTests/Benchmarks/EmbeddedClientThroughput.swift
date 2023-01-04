@@ -108,7 +108,12 @@ class EmbeddedClientThroughput: Benchmark {
       while let _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self) {
         requestFrames += 1
       }
-      precondition(requestFrames == 3) // headers, data, empty data (end-stream)
+      // headers, data, empty data (end-stream). If the request is large there may be
+      // two DATA frames.
+      precondition(
+        requestFrames == 3 || requestFrames == 4,
+        "Expected 3/4 HTTP/2 frames but got \(requestFrames)"
+      )
 
       // Okay, let's build a response.
 
