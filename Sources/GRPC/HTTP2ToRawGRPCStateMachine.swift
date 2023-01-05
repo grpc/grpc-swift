@@ -53,7 +53,7 @@ extension HTTP2ToRawGRPCStateMachine {
     var reader: LengthPrefixedMessageReader
 
     /// A length prefixed message writer for response messages.
-    var writer: LengthPrefixedMessageWriter
+    var writer: CoalescingLengthPrefixedMessageWriter
 
     /// The content type of the RPC.
     var contentType: ContentType
@@ -78,7 +78,7 @@ extension HTTP2ToRawGRPCStateMachine {
     var reader: LengthPrefixedMessageReader
 
     /// A length prefixed message writer for response messages.
-    var writer: LengthPrefixedMessageWriter
+    var writer: CoalescingLengthPrefixedMessageWriter
 
     /// The content type of the RPC.
     var contentType: ContentType
@@ -113,7 +113,7 @@ extension HTTP2ToRawGRPCStateMachine {
     var reader: LengthPrefixedMessageReader
 
     /// A length prefixed message writer for response messages.
-    var writer: LengthPrefixedMessageWriter
+    var writer: CoalescingLengthPrefixedMessageWriter
 
     /// Whether to normalize user-provided metadata.
     var normalizeHeaders: Bool
@@ -130,7 +130,7 @@ extension HTTP2ToRawGRPCStateMachine {
     var reader: LengthPrefixedMessageReader
 
     /// A length prefixed message writer for response messages.
-    var writer: LengthPrefixedMessageWriter
+    var writer: CoalescingLengthPrefixedMessageWriter
 
     /// Whether to normalize user-provided metadata.
     var normalizeHeaders: Bool
@@ -502,8 +502,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
     from headers: HPACKHeaders,
     encoding: ServerMessageEncoding,
     allocator: ByteBufferAllocator
-  ) -> (LengthPrefixedMessageWriter, String?) {
-    let writer: LengthPrefixedMessageWriter
+  ) -> (CoalescingLengthPrefixedMessageWriter, String?) {
+    let writer: CoalescingLengthPrefixedMessageWriter
     let responseEncoding: String?
 
     switch encoding {
@@ -519,12 +519,12 @@ extension HTTP2ToRawGRPCStateMachine.State {
         configuration.enabledAlgorithms.contains($0)
       }
 
-      writer = LengthPrefixedMessageWriter(compression: algorithm, allocator: allocator)
+      writer = .init(compression: algorithm, allocator: allocator)
       responseEncoding = algorithm?.name
 
     case .disabled:
       // The server doesn't have compression enabled.
-      writer = LengthPrefixedMessageWriter(compression: .none, allocator: allocator)
+      writer = .init(compression: .none, allocator: allocator)
       responseEncoding = nil
     }
 
@@ -623,44 +623,23 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
 
 // MARK: - Send Data
 
-extension HTTP2ToRawGRPCStateMachine {
-  static func writeGRPCFramedMessage(
-    _ buffer: ByteBuffer,
-    compress: Bool,
-    writer: inout LengthPrefixedMessageWriter
-  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
-    do {
-      let buffers = try writer.write(buffer: buffer, compressed: compress)
-      return .success(buffers)
-    } catch {
-      return .failure(error)
-    }
-  }
-}
-
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
   mutating func send(
     buffer: ByteBuffer,
-    compress: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
-    return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
-      buffer,
-      compress: compress,
-      writer: &self.writer
-    )
+    compress: Bool,
+    promise: EventLoopPromise<Void>?
+  ) {
+    self.writer.append(buffer: buffer, compress: compress, promise: promise)
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
   mutating func send(
     buffer: ByteBuffer,
-    compress: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
-    return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
-      buffer,
-      compress: compress,
-      writer: &self.writer
-    )
+    compress: Bool,
+    promise: EventLoopPromise<Void>?
+  ) {
+    self.writer.append(buffer: buffer, compress: compress, promise: promise)
   }
 }
 
@@ -879,10 +858,14 @@ extension HTTP2ToRawGRPCStateMachine {
   /// Send a response buffer.
   mutating func send(
     buffer: ByteBuffer,
-    allocator: ByteBufferAllocator,
-    compress: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
-    self.state.send(buffer: buffer, allocator: allocator, compress: compress)
+    compress: Bool,
+    promise: EventLoopPromise<Void>?
+  ) -> Result<Void, Error> {
+    self.state.send(buffer: buffer, compress: compress, promise: promise)
+  }
+
+  mutating func nextResponse() -> (Result<ByteBuffer, Error>, EventLoopPromise<Void>?)? {
+    self.state.nextResponse()
   }
 
   /// Send status and trailers.
@@ -1070,9 +1053,9 @@ extension HTTP2ToRawGRPCStateMachine.State {
 
   mutating func send(
     buffer: ByteBuffer,
-    allocator: ByteBufferAllocator,
-    compress: Bool
-  ) -> Result<(ByteBuffer, ByteBuffer?), Error> {
+    compress: Bool,
+    promise: EventLoopPromise<Void>?
+  ) -> Result<Void, Error> {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: the request stream is still closed")
@@ -1083,24 +1066,47 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return .failure(error)
 
     case var .requestOpenResponseOpen(state):
-      let result = state.send(
-        buffer: buffer,
-        compress: compress
-      )
+      self = .requestClosedResponseClosed
+      state.send(buffer: buffer, compress: compress, promise: promise)
+      self = .requestOpenResponseOpen(state)
+      return .success(())
+
+    case var .requestClosedResponseOpen(state):
+      self = .requestClosedResponseClosed
+      state.send(buffer: buffer, compress: compress, promise: promise)
+      self = .requestClosedResponseOpen(state)
+      return .success(())
+
+    case .requestOpenResponseClosed,
+         .requestClosedResponseClosed:
+      return .failure(GRPCError.AlreadyComplete())
+    }
+  }
+
+  mutating func nextResponse() -> (Result<ByteBuffer, Error>, EventLoopPromise<Void>?)? {
+    switch self {
+    case .requestIdleResponseIdle:
+      preconditionFailure("Invalid state: the request stream is still closed")
+
+    case .requestOpenResponseIdle,
+         .requestClosedResponseIdle:
+      return nil
+
+    case var .requestOpenResponseOpen(state):
+      self = .requestClosedResponseClosed
+      let result = state.writer.next()
       self = .requestOpenResponseOpen(state)
       return result
 
     case var .requestClosedResponseOpen(state):
-      let result = state.send(
-        buffer: buffer,
-        compress: compress
-      )
+      self = .requestClosedResponseClosed
+      let result = state.writer.next()
       self = .requestClosedResponseOpen(state)
       return result
 
     case .requestOpenResponseClosed,
          .requestClosedResponseClosed:
-      return .failure(GRPCError.AlreadyComplete())
+      return nil
     }
   }
 
