@@ -16,6 +16,7 @@
 import EchoImplementation
 import EchoModel
 import GRPC
+import NIOConcurrencyHelpers
 import NIOCore
 import NIOHPACK
 import NIOPosix
@@ -268,21 +269,27 @@ class MessageCompressionTests: GRPCTestCase {
 
   func testDecompressionLimitIsRespectedByClientForStreamingCall() throws {
     try self.setupServer(encoding: .enabled(.init(decompressionLimit: .absolute(2048))))
-    self
-      .setupClient(encoding: .enabled(.init(
-        forRequests: .gzip,
-        decompressionLimit: .absolute(1024)
-      )))
+    self.setupClient(
+      encoding: .enabled(.init(forRequests: .gzip, decompressionLimit: .absolute(1024)))
+    )
 
-    var responses: [Echo_EchoResponse] = []
+    let responsePromise = self.group.next().makePromise(of: Echo_EchoResponse.self)
+    let lock = NIOLock()
+    var responseCount = 0
+
     let update = self.echo.update {
-      responses.append($0)
+      lock.withLock {
+        responseCount += 1
+      }
+      responsePromise.succeed($0)
     }
 
     let status = self.expectation(description: "received status")
 
     // Smaller than limit.
     update.sendMessage(.with { $0.text = "foo" }, promise: nil)
+    XCTAssertNoThrow(try responsePromise.futureResult.wait())
+
     // Should be just over the limit.
     update.sendMessage(.with { $0.text = String(repeating: "x", count: 1024) }, promise: nil)
     update.sendEnd(promise: nil)
@@ -292,7 +299,8 @@ class MessageCompressionTests: GRPCTestCase {
     }.assertEqual(.resourceExhausted, fulfill: status)
 
     self.wait(for: [status], timeout: self.defaultTimeout)
-    XCTAssertEqual(responses.count, 1)
+    let receivedResponses = lock.withLock { responseCount }
+    XCTAssertEqual(receivedResponses, 1)
   }
 
   func testIdentityCompressionIsntCompression() throws {

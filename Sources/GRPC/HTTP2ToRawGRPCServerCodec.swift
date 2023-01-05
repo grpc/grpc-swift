@@ -181,11 +181,24 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     self.isReading = false
 
     if self.flushPending {
+      self.deliverPendingResponses()
       self.flushPending = false
       context.flush()
     }
 
     context.fireChannelReadComplete()
+  }
+
+  private func deliverPendingResponses() {
+    while let (result, promise) = self.state.nextResponse() {
+      switch result {
+      case let .success(buffer):
+        let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+        self.context.write(self.wrapOutboundOut(payload), promise: promise)
+      case let .failure(error):
+        promise?.fail(error)
+      }
+    }
   }
 
   /// Called when the pipeline has finished configuring.
@@ -288,23 +301,14 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     metadata: MessageMetadata,
     promise: EventLoopPromise<Void>?
   ) {
-    let writeBuffer = self.state.send(
+    let result = self.state.send(
       buffer: buffer,
-      allocator: self.context.channel.allocator,
-      compress: metadata.compress
+      compress: metadata.compress,
+      promise: promise
     )
 
-    switch writeBuffer {
-    case let .success((buffer, maybeBuffer)):
-      if let actuallyBuffer = maybeBuffer {
-        let payload1 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
-        self.context.write(self.wrapOutboundOut(payload1), promise: nil)
-        let payload2 = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(actuallyBuffer)))
-        self.context.write(self.wrapOutboundOut(payload2), promise: promise)
-      } else {
-        let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
-        self.context.write(self.wrapOutboundOut(payload), promise: promise)
-      }
+    switch result {
+    case .success:
       if metadata.flush {
         self.markFlushPoint()
       }
@@ -319,6 +323,9 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     trailers: HPACKHeaders,
     promise: EventLoopPromise<Void>?
   ) {
+    // About to end the stream: send any pending responses.
+    self.deliverPendingResponses()
+
     switch self.state.send(status: status, trailers: trailers) {
     case let .sendTrailers(trailers):
       self.sendTrailers(trailers, promise: promise)
@@ -349,6 +356,8 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     if self.isReading {
       self.flushPending = true
     } else {
+      // About to flush: send any pending responses.
+      self.deliverPendingResponses()
       self.flushPending = false
       self.context.flush()
     }
