@@ -38,16 +38,21 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   func writeMessage(_ message: String) throws -> ByteBuffer {
     let buffer = self.allocator.buffer(string: message)
 
-    var writer = LengthPrefixedMessageWriter(compression: .none, allocator: .init())
-    var (buffer1, buffer2) = try writer.write(
-      buffer: buffer,
-      compressed: false
-    )
+    var writer = CoalescingLengthPrefixedMessageWriter(compression: .none, allocator: .init())
+    writer.append(buffer: buffer, compress: false, promise: nil)
 
-    if var buffer2 = buffer2 {
-      buffer1.writeBuffer(&buffer2)
+    var result: ByteBuffer?
+    while let next = writer.next() {
+      switch next.0 {
+      case let .success(buffer):
+        result.setOrWriteImmutableBuffer(buffer)
+      case let .failure(error):
+        throw error
+      }
     }
-    return buffer1
+
+    // We wrote a message, we must get at least one buffer out (or throw).
+    return result!
   }
 
   /// Writes a message into the given `buffer`.
@@ -1119,6 +1124,14 @@ extension GRPCClientStateMachineTests {
 class ReadStateTests: GRPCTestCase {
   var allocator = ByteBufferAllocator()
 
+  func writeMessage(_ message: String) -> ByteBuffer {
+    var buffer = self.allocator.buffer(capacity: 5 + message.utf8.count)
+    buffer.writeInteger(UInt8(0))
+    buffer.writeInteger(UInt32(message.utf8.count))
+    buffer.writeBytes(message.utf8)
+    return buffer
+  }
+
   func testReadWhenNoExpectedMessages() {
     var state: ReadState = .notReading
     var buffer = self.allocator.buffer(capacity: 0)
@@ -1129,17 +1142,13 @@ class ReadStateTests: GRPCTestCase {
   }
 
   func testReadWithLeftOverBytesForOneExpectedMessage() throws {
-    // Write a message into the buffer:
-    let message = ByteBuffer(string: "Hello!")
-    var writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffers = try writer.write(buffer: message)
-    XCTAssertNil(buffers.1)
+    var buffer = self.writeMessage("Hello!")
     // And some extra junk bytes:
     let bytes: [UInt8] = [0x00]
-    buffers.0.writeBytes(bytes)
+    buffer.writeBytes(bytes)
 
     var state: ReadState = .one()
-    state.readMessages(&buffers.0, maxLength: .max).assertFailure {
+    state.readMessages(&buffer, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .leftOverBytes)
     }
     state.assertNotReading()
@@ -1147,31 +1156,22 @@ class ReadStateTests: GRPCTestCase {
 
   func testReadTooManyMessagesForOneExpectedMessages() throws {
     // Write a message into the buffer twice:
-    let message = ByteBuffer(string: "Hello!")
-    var writer = LengthPrefixedMessageWriter(compression: .none)
-    var buffers1 = try writer.write(buffer: message)
-    var buffers2 = try writer.write(buffer: message)
-    XCTAssertNil(buffers1.1)
-    XCTAssertNil(buffers2.1)
-    buffers1.0.writeBuffer(&buffers2.0)
+    var buffer1 = self.writeMessage("Hello!")
+    let buffer2 = buffer1
+    buffer1.writeImmutableBuffer(buffer2)
 
     var state: ReadState = .one()
-    state.readMessages(&buffers1.0, maxLength: .max).assertFailure {
+    state.readMessages(&buffer1, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
     state.assertNotReading()
   }
 
   func testReadOneMessageForOneExpectedMessages() throws {
-    // Write a message into the buffer twice:
-    let message = ByteBuffer(string: "Hello!")
-    var writer = LengthPrefixedMessageWriter(compression: .none)
-    var (buffer, other) = try writer.write(buffer: message)
-    XCTAssertNil(other)
-
+    var buffer = self.writeMessage("Hello!")
     var state: ReadState = .one()
     state.readMessages(&buffer, maxLength: .max).assertSuccess {
-      XCTAssertEqual($0, [message])
+      XCTAssertEqual($0, [ByteBuffer(string: "Hello!")])
     }
 
     // We shouldn't be able to read anymore.
@@ -1179,15 +1179,10 @@ class ReadStateTests: GRPCTestCase {
   }
 
   func testReadOneMessageForManyExpectedMessages() throws {
-    // Write a message into the buffer twice:
-    let message = ByteBuffer(string: "Hello!")
-    var writer = LengthPrefixedMessageWriter(compression: .none)
-    var (buffer, other) = try writer.write(buffer: message)
-    XCTAssertNil(other)
-
+    var buffer = self.writeMessage("Hello!")
     var state: ReadState = .many()
     state.readMessages(&buffer, maxLength: .max).assertSuccess {
-      XCTAssertEqual($0, [message])
+      XCTAssertEqual($0, [ByteBuffer(string: "Hello!")])
     }
 
     // We should still be able to read.
@@ -1195,20 +1190,14 @@ class ReadStateTests: GRPCTestCase {
   }
 
   func testReadManyMessagesForManyExpectedMessages() throws {
-    // Write a message into the buffer twice:
-    let message = ByteBuffer(string: "Hello!")
-    var writer = LengthPrefixedMessageWriter(compression: .none)
-
-    var (first, _) = try writer.write(buffer: message)
-    var (second, _) = try writer.write(buffer: message)
-    var (third, _) = try writer.write(buffer: message)
-
-    first.writeBuffer(&second)
-    first.writeBuffer(&third)
+    let lengthPrefixed = self.writeMessage("Hello!")
+    var buffer = lengthPrefixed
+    buffer.writeImmutableBuffer(lengthPrefixed)
+    buffer.writeImmutableBuffer(lengthPrefixed)
 
     var state: ReadState = .many()
-    state.readMessages(&first, maxLength: .max).assertSuccess {
-      XCTAssertEqual($0, [message, message, message])
+    state.readMessages(&buffer, maxLength: .max).assertSuccess {
+      XCTAssertEqual($0, Array(repeating: ByteBuffer(string: "Hello!"), count: 3))
     }
 
     // We should still be able to read.
