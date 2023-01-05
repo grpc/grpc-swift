@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-focal
+          - image: swiftlang/swift:nightly-5.8-focal
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
           - image: swift:5.7-jammy
@@ -54,7 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-focal
+          - image: swiftlang/swift:nightly-5.8-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 392000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 176000
