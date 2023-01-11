@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Atomics
 import EchoImplementation
 import EchoModel
 import GRPC
@@ -28,6 +29,7 @@ class InterceptorsTests: GRPCTestCase {
   private var server: Server!
   private var connection: ClientConnection!
   private var echo: Echo_EchoNIOClient!
+  private let onCloseCounter = ManagedAtomic<Int>(0)
 
   override func setUp() {
     super.setUp()
@@ -35,7 +37,7 @@ class InterceptorsTests: GRPCTestCase {
 
     self.server = try! Server.insecure(group: self.group)
       .withServiceProviders([
-        EchoProvider(),
+        EchoProvider(interceptors: CountOnCloseInterceptors(counter: self.onCloseCounter)),
         HelloWorldProvider(interceptors: HelloWorldServerInterceptorFactory()),
       ])
       .withLogger(self.serverLogger)
@@ -64,6 +66,8 @@ class InterceptorsTests: GRPCTestCase {
     let get = self.echo.get(.with { $0.text = "hello" })
     assertThat(try get.response.wait(), .is(.with { $0.text = "hello :teg ohce tfiwS" }))
     assertThat(try get.status.wait(), .hasCode(.ok))
+
+    XCTAssertEqual(self.onCloseCounter.load(ordering: .sequentiallyConsistent), 1)
   }
 
   func testCollect() {
@@ -73,6 +77,8 @@ class InterceptorsTests: GRPCTestCase {
     collect.sendEnd(promise: nil)
     assertThat(try collect.response.wait(), .is(.with { $0.text = "3 4 1 2 :tcelloc ohce tfiwS" }))
     assertThat(try collect.status.wait(), .hasCode(.ok))
+
+    XCTAssertEqual(self.onCloseCounter.load(ordering: .sequentiallyConsistent), 1)
   }
 
   func testExpand() {
@@ -81,6 +87,8 @@ class InterceptorsTests: GRPCTestCase {
       assertThat(response, .is(.with { $0.text = "hello :)0( dnapxe ohce tfiwS" }))
     }
     assertThat(try expand.status.wait(), .hasCode(.ok))
+
+    XCTAssertEqual(self.onCloseCounter.load(ordering: .sequentiallyConsistent), 1)
   }
 
   func testUpdate() {
@@ -91,6 +99,8 @@ class InterceptorsTests: GRPCTestCase {
     update.sendMessage(.with { $0.text = "hello" }, promise: nil)
     update.sendEnd(promise: nil)
     assertThat(try update.status.wait(), .hasCode(.ok))
+
+    XCTAssertEqual(self.onCloseCounter.load(ordering: .sequentiallyConsistent), 1)
   }
 
   func testSayHello() {
@@ -357,6 +367,54 @@ final class ReversingInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
 
   func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
     return self.interceptors
+  }
+}
+
+final class CountOnCloseInterceptors: Echo_EchoServerInterceptorFactoryProtocol {
+  // This interceptor is stateless, let's just share it.
+  private let interceptors: [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  init(counter: ManagedAtomic<Int>) {
+    self.interceptors = [CountOnCloseServerInterceptor(counter: counter)]
+  }
+
+  func makeGetInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.interceptors
+  }
+
+  func makeExpandInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.interceptors
+  }
+
+  func makeCollectInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.interceptors
+  }
+
+  func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.interceptors
+  }
+}
+
+final class CountOnCloseServerInterceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+  private let counter: ManagedAtomic<Int>
+
+  init(counter: ManagedAtomic<Int>) {
+    self.counter = counter
+  }
+
+  override func receive(
+    _ part: GRPCServerRequestPart<Echo_EchoRequest>,
+    context: ServerInterceptorContext<Echo_EchoRequest, Echo_EchoResponse>
+  ) {
+    switch part {
+    case .metadata:
+      context.closeFuture.whenComplete { _ in
+        self.counter.wrappingIncrement(ordering: .sequentiallyConsistent)
+      }
+    default:
+      ()
+    }
+    context.receive(part)
   }
 }
 

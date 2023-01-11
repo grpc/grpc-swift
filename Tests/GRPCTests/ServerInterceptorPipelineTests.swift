@@ -43,6 +43,7 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
       callType: callType,
       remoteAddress: nil,
       userInfoRef: Ref(UserInfo()),
+      closeFuture: self.embeddedEventLoop.makeSucceededVoidFuture(),
       interceptors: interceptors,
       onRequestPart: onRequestPart,
       onResponsePart: onResponsePart

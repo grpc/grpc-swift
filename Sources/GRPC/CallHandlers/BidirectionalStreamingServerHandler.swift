@@ -92,6 +92,7 @@ public final class BidirectionalStreamingServerHandler<
       callType: .bidirectionalStreaming,
       remoteAddress: context.remoteAddress,
       userInfoRef: userInfoRef,
+      closeFuture: context.closeFuture,
       interceptors: interceptors,
       onRequestPart: self.receiveInterceptedPart(_:),
       onResponsePart: self.sendInterceptedPart(_:promise:)
