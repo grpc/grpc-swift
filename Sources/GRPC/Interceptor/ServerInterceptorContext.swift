@@ -54,6 +54,12 @@ public struct ServerInterceptorContext<Request, Response> {
     return self._pipeline.remoteAddress
   }
 
+  /// A future which completes when the call closes. This may be used to register callbacks which
+  /// free up resources used by the interceptor.
+  public var closeFuture: EventLoopFuture<Void> {
+    return self._pipeline.closeFuture
+  }
+
   /// A 'UserInfo' dictionary.
   ///
   /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a

@@ -42,6 +42,11 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   @usableFromInline
   internal let userInfoRef: Ref<UserInfo>
 
+  /// A future which completes when the call closes. This may be used to register callbacks which
+  /// free up resources used by the interceptor.
+  @usableFromInline
+  internal let closeFuture: EventLoopFuture<Void>
+
   /// Called when a response part has traversed the interceptor pipeline.
   @usableFromInline
   internal let _onResponsePart: (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
@@ -99,6 +104,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     callType: GRPCCallType,
     remoteAddress: SocketAddress?,
     userInfoRef: Ref<UserInfo>,
+    closeFuture: EventLoopFuture<Void>,
     interceptors: [ServerInterceptor<Request, Response>],
     onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void,
     onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
@@ -109,6 +115,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     self.type = callType
     self.remoteAddress = remoteAddress
     self.userInfoRef = userInfoRef
+    self.closeFuture = closeFuture
 
     self._onResponsePart = onResponsePart
     self._onRequestPart = onRequestPart

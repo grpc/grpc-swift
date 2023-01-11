@@ -283,6 +283,7 @@ internal final class AsyncServerHandler<
       callType: callType,
       remoteAddress: context.remoteAddress,
       userInfoRef: self.userInfoRef,
+      closeFuture: context.closeFuture,
       interceptors: interceptors,
       onRequestPart: self.receiveInterceptedPart(_:),
       onResponsePart: self.sendInterceptedPart(_:promise:)
