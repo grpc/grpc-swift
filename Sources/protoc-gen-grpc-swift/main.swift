@@ -104,7 +104,18 @@ func uniqueOutputFileName(
   }
 }
 
-func main() throws {
+func printVersion(args: [String]) {
+  // Stip off the file path
+  let program = args.first?.split(separator: "/").last ?? "protoc-gen-grpc-swift"
+  print("\(program) \(Version.versionString)")
+}
+
+func main(args: [String]) throws {
+  if args.dropFirst().contains("--version") {
+    printVersion(args: args)
+    return
+  }
+
   // initialize responses
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse(
     files: [],
@@ -147,7 +158,7 @@ func main() throws {
 }
 
 do {
-  try main()
+  try main(args: CommandLine.arguments)
 } catch {
   Log("ERROR: \(error)")
 }
