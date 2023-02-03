@@ -134,6 +134,9 @@ public final class ServerStreamingServerHandler<
     case let .createdContext(context),
          let .invokedFunction(context):
       context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      self.context.eventLoop.execute {
+        self.interceptors = nil
+      }
 
     case .completed:
       self.interceptors = nil

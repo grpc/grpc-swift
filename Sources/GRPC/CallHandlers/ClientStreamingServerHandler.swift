@@ -138,6 +138,9 @@ public final class ClientStreamingServerHandler<
     case let .creatingObserver(context),
          let .observing(_, context):
       context.responsePromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      self.context.eventLoop.execute {
+        self.interceptors = nil
+      }
 
     case .completed:
       self.interceptors = nil
