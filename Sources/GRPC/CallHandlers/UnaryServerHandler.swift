@@ -132,6 +132,9 @@ public final class UnaryServerHandler<
     case let .createdContext(context),
          let .invokedFunction(context):
       context.responsePromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      self.context.eventLoop.execute {
+        self.interceptors = nil
+      }
 
     case .completed:
       self.interceptors = nil

@@ -49,11 +49,14 @@ internal final class ServerInterceptorPipeline<Request, Response> {
 
   /// Called when a response part has traversed the interceptor pipeline.
   @usableFromInline
-  internal let _onResponsePart: (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+  internal var _onResponsePart: Optional<(
+    GRPCServerResponsePart<Response>,
+    EventLoopPromise<Void>?
+  ) -> Void>
 
   /// Called when a request part has traversed the interceptor pipeline.
   @usableFromInline
-  internal let _onRequestPart: (GRPCServerRequestPart<Request>) -> Void
+  internal var _onRequestPart: Optional<(GRPCServerRequestPart<Request>) -> Void>
 
   /// The index before the first user interceptor context index. (always -1).
   @usableFromInline
@@ -185,7 +188,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
       )
 
     case self._tailIndex:
-      self._onRequestPart(part)
+      self._onRequestPart?(part)
 
     default:
       self._userContexts[index].invokeReceive(part)
@@ -245,10 +248,11 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   ) {
     switch index {
     case self._headIndex:
+      let onResponsePart = self._onResponsePart
       if part.isEnd {
         self.close()
       }
-      self._onResponsePart(part, promise)
+      onResponsePart?(part, promise)
 
     case self._tailIndex:
       // The next outbound index must exist: it will be the head or a user interceptor.
@@ -269,6 +273,9 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     self._isOpen = false
     // Each context hold a ref to the pipeline; break the retain cycle.
     self._userContexts.removeAll()
+    // Drop the refs to the server handler.
+    self._onRequestPart = nil
+    self._onResponsePart = nil
   }
 }
 
