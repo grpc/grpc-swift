@@ -16,8 +16,8 @@ jobs:
       run: |
         SWIFTFORMAT_VERSION=0.49.4
         git clone --depth 1 --branch "$SWIFTFORMAT_VERSION" "https://github.com/nicklockwood/SwiftFormat" "$HOME/SwiftFormat"
-        swift build --package-path "$HOME/SwiftFormat" --product swiftformat
-        export PATH=$PATH:"$(swift build --package-path "$HOME/SwiftFormat" --show-bin-path)"
+        swift build -c release --package-path "$HOME/SwiftFormat" --product swiftformat
+        export PATH=$PATH:"$(swift build -c release --package-path "$HOME/SwiftFormat" --show-bin-path)"
         ./scripts/sanity.sh
   unit-tests:
     strategy:

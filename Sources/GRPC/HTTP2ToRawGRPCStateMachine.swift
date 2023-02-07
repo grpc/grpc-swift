@@ -447,10 +447,19 @@ extension HTTP2ToRawGRPCStateMachine.State {
     from headers: HPACKHeaders,
     encoding: ServerMessageEncoding
   ) -> RequestEncodingValidation {
-    let encodings = headers[canonicalForm: GRPCHeaderName.encoding]
+    let encodingValues = headers.values(forHeader: GRPCHeaderName.encoding, canonicalForm: true)
+    var encodingIterator = encodingValues.makeIterator()
+    let encodingHeader = encodingIterator.next()
 
     // Fail if there's more than one encoding header.
-    if encodings.count > 1 {
+    if let first = encodingHeader, let second = encodingIterator.next() {
+      var encodings: [Substring] = []
+      encodings.reserveCapacity(8)
+      encodings.append(first)
+      encodings.append(second)
+      while let next = encodingIterator.next() {
+        encodings.append(next)
+      }
       let status = GRPCStatus(
         code: .invalidArgument,
         message: "'\(GRPCHeaderName.encoding)' must contain no more than one value but was '\(encodings.joined(separator: ", "))'"
@@ -458,12 +467,10 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return .invalid(status: status, acceptEncoding: nil)
     }
 
-    let encodingHeader = encodings.first
     let result: RequestEncodingValidation
-
     let validator = MessageEncodingHeaderValidator(encoding: encoding)
 
-    switch validator.validate(requestEncoding: encodingHeader) {
+    switch validator.validate(requestEncoding: encodingHeader.map { String($0) }) {
     case let .supported(algorithm, decompressionLimit, acceptEncoding):
       // Request message encoding is valid and supported.
       result = .valid(
