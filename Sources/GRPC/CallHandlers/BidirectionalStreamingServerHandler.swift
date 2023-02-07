@@ -137,6 +137,9 @@ public final class BidirectionalStreamingServerHandler<
     case let .creatingObserver(context),
          let .observing(_, context):
       context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      self.context.eventLoop.execute {
+        self.interceptors = nil
+      }
 
     case .completed:
       self.interceptors = nil
