@@ -22,58 +22,64 @@ class HTTPVersionParserTests: GRPCTestCase {
 
   func testHTTP2ExactlyTheRightBytes() {
     let buffer = ByteBuffer(string: self.preface)
-    XCTAssertTrue(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer), .accepted)
   }
 
   func testHTTP2TheRightBytesAndMore() {
     var buffer = ByteBuffer(string: self.preface)
     buffer.writeRepeatingByte(42, count: 1024)
-    XCTAssertTrue(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer), .accepted)
   }
 
   func testHTTP2NoBytes() {
     let empty = ByteBuffer()
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(empty))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(empty), .notEnoughBytes)
   }
 
   func testHTTP2NotEnoughBytes() {
     var buffer = ByteBuffer(string: self.preface)
     buffer.moveWriterIndex(to: buffer.writerIndex - 1)
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer), .notEnoughBytes)
   }
 
   func testHTTP2EnoughOfTheWrongBytes() {
     let buffer = ByteBuffer(string: String(self.preface.reversed()))
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer), .rejected)
   }
 
   func testHTTP1RequestLine() {
     let buffer = ByteBuffer(staticString: "GET https://grpc.io/index.html HTTP/1.1\r\n")
-    XCTAssertTrue(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer), .accepted)
   }
 
   func testHTTP1RequestLineAndMore() {
     let buffer = ByteBuffer(staticString: "GET https://grpc.io/index.html HTTP/1.1\r\nMore")
-    XCTAssertTrue(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer), .accepted)
   }
 
   func testHTTP1RequestLineWithoutCRLF() {
     let buffer = ByteBuffer(staticString: "GET https://grpc.io/index.html HTTP/1.1")
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer), .notEnoughBytes)
   }
 
   func testHTTP1NoBytes() {
     let empty = ByteBuffer()
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP1RequestLine(empty))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(empty), .notEnoughBytes)
   }
 
   func testHTTP1IncompleteRequestLine() {
     let buffer = ByteBuffer(staticString: "GET https://grpc.io/index.html")
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer), .notEnoughBytes)
   }
 
   func testHTTP1MalformedVersion() {
     let buffer = ByteBuffer(staticString: "GET https://grpc.io/index.html ptth/1.1\r\n")
-    XCTAssertFalse(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer))
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer), .rejected)
+  }
+
+  func testTooManyIncorrectBytes() {
+    let buffer = ByteBuffer(repeating: UInt8(ascii: "\r"), count: 2048)
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP2ConnectionPreface(buffer), .rejected)
+    XCTAssertEqual(HTTPVersionParser.prefixedWithHTTP1RequestLine(buffer), .rejected)
   }
 }
