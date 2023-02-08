@@ -135,12 +135,63 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     self.assertHTTP2Handler(isPresent: true)
   }
 
+  func testHTTP2SetupViaBytesDripFed() {
+    self.setUp(tls: false)
+    var bytes = ByteBuffer(staticString: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
+    var head = bytes.readSlice(length: bytes.readableBytes - 1)!
+    let tail = bytes.readSlice(length: 1)!
+
+    while let slice = head.readSlice(length: 1) {
+      assertThat(try self.channel.writeInbound(slice), .doesNotThrow())
+      self.assertConfigurator(isPresent: true)
+      self.assertHTTP2Handler(isPresent: false)
+    }
+
+    // Final byte.
+    assertThat(try self.channel.writeInbound(tail), .doesNotThrow())
+    self.assertConfigurator(isPresent: false)
+    self.assertHTTP2Handler(isPresent: true)
+  }
+
   func testHTTP1Dot1SetupViaBytes() {
     self.setUp(tls: false)
     let bytes = ByteBuffer(staticString: "GET http://www.foo.bar HTTP/1.1\r\n")
     assertThat(try self.channel.writeInbound(bytes), .doesNotThrow())
     self.assertConfigurator(isPresent: false)
     self.assertGRPCWebToHTTP2Handler(isPresent: true)
+  }
+
+  func testHTTP1Dot1SetupViaBytesDripFed() {
+    self.setUp(tls: false)
+    var bytes = ByteBuffer(staticString: "GET http://www.foo.bar HTTP/1.1\r\n")
+    var head = bytes.readSlice(length: bytes.readableBytes - 1)!
+    let tail = bytes.readSlice(length: 1)!
+
+    while let slice = head.readSlice(length: 1) {
+      assertThat(try self.channel.writeInbound(slice), .doesNotThrow())
+      self.assertConfigurator(isPresent: true)
+      self.assertGRPCWebToHTTP2Handler(isPresent: false)
+    }
+
+    // Final byte.
+    assertThat(try self.channel.writeInbound(tail), .doesNotThrow())
+    self.assertConfigurator(isPresent: false)
+    self.assertGRPCWebToHTTP2Handler(isPresent: true)
+  }
+
+  func testUnexpectedInputClosesEventuallyWhenDripFed() {
+    self.setUp(tls: false)
+    var bytes = ByteBuffer(repeating: UInt8(ascii: "a"), count: 2048)
+
+    while let slice = bytes.readSlice(length: 1) {
+      assertThat(try self.channel.writeInbound(slice), .doesNotThrow())
+      self.assertConfigurator(isPresent: true)
+      self.assertHTTP2Handler(isPresent: false)
+      self.assertGRPCWebToHTTP2Handler(isPresent: false)
+    }
+
+    self.channel.embeddedEventLoop.run()
+    assertThat(try self.channel.closeFuture.wait(), .doesNotThrow())
   }
 
   func testReadsAreUnbufferedAfterConfiguration() throws {
