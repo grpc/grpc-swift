@@ -51,6 +51,13 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
       var keepMethodCasing: Bool?
     }
 
+    /// Specify the directory in which to search for
+    /// imports.  May be specified multiple times;
+    /// directories will be searched in order.  If not
+    /// given, the current working directory is used.
+    /// Passed via `protoc -I <path>`
+    var importPaths: [String]?
+
     /// The path to the `protoc` binary.
     ///
     /// If this is not set, SPM will try to find the tool itself.
@@ -75,6 +82,14 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
 
     try self.validateConfiguration(configuration)
 
+    let importPaths: [Path]
+    if let configuredImportPaths = configuration.importPaths {
+        importPaths = configuredImportPaths.map { Path($0) }
+    } else {
+        // We include the target directory as the default
+        importPaths = [target.directory]
+    }
+
     // We need to find the path of protoc and protoc-gen-grpc-swift
     let protocPath: Path
     if let configuredProtocPath = configuration.protocPath {
@@ -97,7 +112,8 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
         invocation: invocation,
         protocPath: protocPath,
         protocGenGRPCSwiftPath: protocGenGRPCSwiftPath,
-        outputDirectory: outputDirectory
+        outputDirectory: outputDirectory,
+        importPaths: importPaths
       )
     }
   }
@@ -110,22 +126,26 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
   ///   - protocPath: The path to the `protoc` binary.
   ///   - protocGenSwiftPath: The path to the `protoc-gen-swift` binary.
   ///   - outputDirectory: The output directory for the generated files.
+  ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`
   /// - Returns: The build command.
   private func invokeProtoc(
     target: Target,
     invocation: Configuration.Invocation,
     protocPath: Path,
     protocGenGRPCSwiftPath: Path,
-    outputDirectory: Path
+    outputDirectory: Path,
+    importPaths: [Path]
   ) -> Command {
     // Construct the `protoc` arguments.
     var protocArgs = [
       "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath)",
       "--grpc-swift_out=\(outputDirectory)",
-      // We include the target directory as a proto search path
-      "-I",
-      "\(target.directory)",
     ]
+
+    importPaths.forEach { path in
+      protocArgs.append("-I")
+      protocArgs.append("\(path)")
+    }
 
     if let visibility = invocation.visibility {
       protocArgs.append("--grpc-swift_opt=Visibility=\(visibility.rawValue.capitalized)")
