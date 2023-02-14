@@ -53,9 +53,9 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
 
     /// Specify the directory in which to search for
     /// imports.  May be specified multiple times;
-    /// directories will be searched in order.  If not
-    /// given, the current working directory is used.
-    /// Passed via `protoc -I <path>`
+    /// directories will be searched in order.
+    /// The target source directory is always appended
+    /// to the import paths.
     var importPaths: [String]?
 
     /// The path to the `protoc` binary.
@@ -82,12 +82,9 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
 
     try self.validateConfiguration(configuration)
 
-    let importPaths: [Path]
+    var importPaths: [Path] = [target.directory]
     if let configuredImportPaths = configuration.importPaths {
-        importPaths = configuredImportPaths.map { Path($0) }
-    } else {
-        // We include the target directory as the default
-        importPaths = [target.directory]
+      importPaths.append(contentsOf: configuredImportPaths.map { Path($0) })
     }
 
     // We need to find the path of protoc and protoc-gen-grpc-swift
