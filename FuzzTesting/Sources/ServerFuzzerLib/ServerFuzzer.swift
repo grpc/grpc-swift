@@ -22,6 +22,8 @@ public func test(_ start: UnsafeRawPointer, _ count: Int) -> CInt {
   let bytes = UnsafeRawBufferPointer(start: start, count: count)
 
   let channel = EmbeddedChannel()
+  try! channel.connect(to: try! SocketAddress(ipAddress: "127.0.0.1", port: 0)).wait()
+
   defer {
     _ = try? channel.finish()
   }

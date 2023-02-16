@@ -31,6 +31,7 @@ final class ServerFuzzingRegressionTests: GRPCTestCase {
 
   private func runTest(withInput buffer: ByteBuffer) {
     let channel = EmbeddedChannel()
+    try! channel.connect(to: try! SocketAddress(ipAddress: "127.0.0.1", port: 0)).wait()
     defer {
       _ = try? channel.finish()
     }
