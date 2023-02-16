@@ -514,9 +514,14 @@ internal final class ConnectionManager {
       state.candidate.whenComplete {
         switch $0 {
         case let .success(channel):
-          // In case we do successfully connect, close immediately.
-          channel.close(mode: .all, promise: nil)
-          promise.completeWith(channel.closeFuture.recoveringFromUncleanShutdown())
+          // In case we do successfully connect, close on the next loop tick. When connecting a
+          // channel NIO will complete the promise for the channel before firing channel active.
+          // That means we may close and fire inactive before active which HTTP/2 will be unhappy
+          // about.
+          self.eventLoop.execute {
+            channel.close(mode: .all, promise: nil)
+            promise.completeWith(channel.closeFuture.recoveringFromUncleanShutdown())
+          }
 
         case .failure:
           // We failed to connect, that's fine we still shutdown successfully.
