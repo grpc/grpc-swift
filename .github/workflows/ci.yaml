@@ -24,6 +24,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swiftlang/swift:nightly-focal
+            # No TSAN because of: https://github.com/apple/swift/issues/59068
+            # swift-test-flags: "--sanitize=thread"
           - image: swiftlang/swift:nightly-5.8-focal
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
@@ -54,6 +57,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swiftlang/swift:nightly-focal
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 391000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 175000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 173000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 180000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 180000
           - image: swiftlang/swift:nightly-5.8-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 391000
@@ -111,6 +124,7 @@ jobs:
       matrix:
         include:
           - image: swiftlang/swift:nightly-focal
+          - image: swiftlang/swift:nightly-5.8-focal
           - image: swift:5.7-jammy
           - image: swift:5.6-focal
           - image: swift:5.5-focal
