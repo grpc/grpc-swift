@@ -94,7 +94,7 @@ internal final class ClientTransport<Request, Response> {
   private var channel: Channel?
 
   /// A callback which is invoked once when the stream channel becomes active.
-  private let onStart: () -> Void
+  private var onStart: (() -> Void)?
 
   /// Our current state as logging metadata.
   private var stateForLogging: Logger.MetadataValue {
@@ -945,7 +945,8 @@ extension ClientTransport {
       // Messages are buffered by this class and in the async writer for async calls. Initially the
       // async writer is not allowed to emit messages; the call to 'onStart()' signals that messages
       // may be emitted. We call it here to avoid races between writing headers and messages.
-      self.onStart()
+      self.onStart?()
+      self.onStart = nil
 
     case let .message(request, metadata):
       do {
