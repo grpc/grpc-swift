@@ -239,6 +239,119 @@ extension ConnectionManagerTests {
     }
   }
 
+  func testChannelInactiveBeforeActiveWithNoReconnect() throws {
+    let channel = EmbeddedChannel(loop: self.loop)
+    let channelPromise = self.loop.makePromise(of: Channel.self)
+
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
+    }
+
+    // Start the connection.
+    self.waitForStateChange(from: .idle, to: .connecting) {
+      // Triggers the connect.
+      _ = manager.getHTTP2Multiplexer()
+      self.loop.run()
+    }
+
+    try channel.pipeline.syncOperations.addHandler(
+      GRPCIdleHandler(
+        connectionManager: manager,
+        multiplexer: HTTP2StreamMultiplexer(
+          mode: .client,
+          channel: channel,
+          inboundStreamInitializer: nil
+        ),
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
+      )
+    )
+    channelPromise.succeed(channel)
+    // Oops: wrong way around. We should tolerate this.
+    self.waitForStateChange(from: .connecting, to: .shutdown) {
+      channel.pipeline.fireChannelInactive()
+    }
+
+    // Should be ignored.
+    channel.pipeline.fireChannelActive()
+  }
+
+  func testChannelInactiveBeforeActiveWillReconnect() throws {
+    var channels = [EmbeddedChannel(loop: self.loop), EmbeddedChannel(loop: self.loop)]
+    var channelPromises: [EventLoopPromise<Channel>] = [self.loop.makePromise(),
+                                                        self.loop.makePromise()]
+    var channelFutures = Array(channelPromises.map { $0.futureResult })
+
+    var configuration = self.defaultConfiguration
+    configuration.connectionBackoff = .oneSecondFixed
+
+    let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
+      return channelFutures.removeLast()
+    }
+
+    // Start the connection.
+    self.waitForStateChange(from: .idle, to: .connecting) {
+      // Triggers the connect.
+      _ = manager.getHTTP2Multiplexer()
+      self.loop.run()
+    }
+
+    // Setup the channel.
+    let channel1 = channels.removeLast()
+    let channel1Promise = channelPromises.removeLast()
+
+    try channel1.pipeline.syncOperations.addHandler(
+      GRPCIdleHandler(
+        connectionManager: manager,
+        multiplexer: HTTP2StreamMultiplexer(
+          mode: .client,
+          channel: channel1,
+          inboundStreamInitializer: nil
+        ),
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
+      )
+    )
+    channel1Promise.succeed(channel1)
+    // Oops: wrong way around. We should tolerate this.
+    self.waitForStateChange(from: .connecting, to: .transientFailure) {
+      channel1.pipeline.fireChannelInactive()
+    }
+
+    channel1.pipeline.fireChannelActive()
+
+    // Start the next attempt.
+    self.waitForStateChange(from: .transientFailure, to: .connecting) {
+      self.loop.advanceTime(by: .seconds(1))
+    }
+
+    let channel2 = channels.removeLast()
+    let channel2Promise = channelPromises.removeLast()
+    try channel2.pipeline.syncOperations.addHandler(
+      GRPCIdleHandler(
+        connectionManager: manager,
+        multiplexer: HTTP2StreamMultiplexer(
+          mode: .client,
+          channel: channel1,
+          inboundStreamInitializer: nil
+        ),
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
+      )
+    )
+
+    channel2Promise.succeed(channel2)
+
+    try self.waitForStateChange(from: .connecting, to: .ready) {
+      channel2.pipeline.fireChannelActive()
+      let frame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings([])))
+      XCTAssertNoThrow(try channel2.writeInbound(frame))
+    }
+  }
+
   func testIdleTimeoutWhenThereAreActiveStreams() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
     let manager = self.makeConnectionManager { _, _ in
