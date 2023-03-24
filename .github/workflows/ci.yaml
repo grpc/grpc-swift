@@ -56,44 +56,44 @@ jobs:
         include:
           - image: swiftlang/swift:nightly-5.8-focal
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 391000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 175000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 347000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 167000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 173000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 180000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 180000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 169000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 176000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 176000
           - image: swift:5.7-jammy
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 391000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 175000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 347000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 167000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 173000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 180000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 180000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 169000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 176000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 176000
           - image: swift:5.6-focal
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 392000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 176000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 348000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 168000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 174000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 181000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 181000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 170000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 177000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 177000
           - image: swift:5.5-focal
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 422000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 188000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 378000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 180000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 185000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 192000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 192000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 181000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 188000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 188000
 
     name: Performance Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
