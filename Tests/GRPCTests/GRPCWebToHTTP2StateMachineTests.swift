@@ -223,12 +223,11 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
       promise: nil,
       allocator: self.allocator
     ).assertWrite { write in
-      write.part.assertEnd {
-        $0.assertSome { trailers in
-          XCTAssertEqual(trailers[canonicalForm: "grpc-status"], ["0"])
-        }
+      write.part.assertBody { buffer in
+        var buffer = buffer
+        let trailers = buffer.readLengthPrefixedMessage().map { String(buffer: $0) }
+        XCTAssertEqual(trailers, "grpc-status: 0\r\n")
       }
-
       XCTAssertEqual(write.closeChannel, expectChannelClose)
     }
   }
@@ -330,15 +329,15 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
       write.part.assertBody { buffer in
         var buffer = buffer
         let base64Encoded = buffer.readString(length: buffer.readableBytes)!
-        XCTAssertEqual(base64Encoded, "aGVsbG8sIHdvcmxkIYAAAAAOZ3JwYy1zdGF0dXM6IDA=")
+        XCTAssertEqual(base64Encoded, "aGVsbG8sIHdvcmxkIYAAAAAQZ3JwYy1zdGF0dXM6IDANCg==")
 
         let data = Data(base64Encoded: base64Encoded)!
         buffer.writeData(data)
 
         XCTAssertEqual(buffer.readString(length: 13), "hello, world!")
         XCTAssertEqual(buffer.readInteger(), UInt8(0x80))
-        XCTAssertEqual(buffer.readInteger(), UInt32(14))
-        XCTAssertEqual(buffer.readString(length: 14), "grpc-status: 0")
+        XCTAssertEqual(buffer.readInteger(), UInt32(16))
+        XCTAssertEqual(buffer.readString(length: 16), "grpc-status: 0\r\n")
         XCTAssertEqual(buffer.readableBytes, 0)
       }
 
@@ -670,5 +669,16 @@ extension Optional {
     case .none:
       XCTFail("Expected '.some' but got 'nil'", file: file, line: line)
     }
+  }
+}
+
+extension ByteBuffer {
+  mutating func readLengthPrefixedMessage() -> ByteBuffer? {
+    // Read off and ignore the compression byte.
+    if self.readInteger(as: UInt8.self) == nil {
+      return nil
+    }
+
+    return self.readLengthPrefixedSlice(as: UInt32.self)
   }
 }

@@ -24,10 +24,14 @@ import XCTest
 
 class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
   private func writeTrailers(_ trailers: HPACKHeaders, into buffer: inout ByteBuffer) {
-    let encoded = trailers.map { "\($0.name): \($0.value)" }.joined(separator: "\r\n")
     buffer.writeInteger(UInt8(0x80))
-    buffer.writeInteger(UInt32(encoded.utf8.count))
-    buffer.writeString(encoded)
+    try! buffer.writeLengthPrefixed(as: UInt32.self) {
+      var length = 0
+      for (name, value, _) in trailers {
+        length += $0.writeString("\(name): \(value)\r\n")
+      }
+      return length
+    }
   }
 
   private func receiveHead(
@@ -106,7 +110,7 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     on channel: EmbeddedChannel,
     expectedBytes: ByteBuffer? = nil
   ) throws {
-    let headers: HPACKHeaders = ["grpc-status": "\(status)"]
+    let headers: HPACKHeaders = ["grpc-status": "\(status.rawValue)"]
     let headersPayload: HTTP2Frame.FramePayload = .headers(.init(headers: headers, endStream: true))
     assertThat(try channel.writeOutbound(headersPayload), .doesNotThrow())
 
@@ -128,7 +132,10 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     // Outbound
     try self.sendResponseHeaders(on: channel)
     try self.sendBytes([1, 2, 3], on: channel, expectedBytes: [1, 2, 3])
-    try self.sendEnd(status: .ok, on: channel)
+
+    var buffer = ByteBuffer()
+    self.writeTrailers(["grpc-status": "0"], into: &buffer)
+    try self.sendEnd(status: .ok, on: channel, expectedBytes: buffer)
   }
 
   func testWebTextHappyPath() throws {
@@ -150,7 +157,7 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     // Build up the expected response, i.e. the response bytes and the trailers, base64 encoded.
     var expectedBodyBuffer = ByteBuffer(bytes: [1, 2, 3])
     let status = GRPCStatus.Code.ok
-    self.writeTrailers(["grpc-status": "\(status)"], into: &expectedBodyBuffer)
+    self.writeTrailers(["grpc-status": "\(status.rawValue)"], into: &expectedBodyBuffer)
     try self.sendEnd(status: status, on: channel, expectedBytes: expectedBodyBuffer.base64Encoded())
   }
 
