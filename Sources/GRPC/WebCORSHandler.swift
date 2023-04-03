@@ -17,54 +17,110 @@ import NIOCore
 import NIOHTTP1
 
 /// Handler that manages the CORS protocol for requests incoming from the browser.
-internal class WebCORSHandler {
-  var requestMethod: HTTPMethod?
+internal final class WebCORSHandler {
+  let configuration: Server.Configuration.CORS
+
+  private var state: State = .idle
+  private enum State: Equatable {
+    /// Starting state.
+    case idle
+    /// CORS preflight request is in progress.
+    case processingPreflightRequest
+    /// "Real" request is in progress.
+    case processingRequest(origin: String?)
+  }
+
+  init(configuration: Server.Configuration.CORS) {
+    self.configuration = configuration
+  }
 }
 
 extension WebCORSHandler: ChannelInboundHandler {
   typealias InboundIn = HTTPServerRequestPart
+  typealias InboundOut = HTTPServerRequestPart
   typealias OutboundOut = HTTPServerResponsePart
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    // If the request is OPTIONS, the request is not propagated further.
     switch self.unwrapInboundIn(data) {
-    case let .head(requestHead):
-      self.requestMethod = requestHead.method
-      if self.requestMethod == .OPTIONS {
-        var headers = HTTPHeaders()
-        headers.add(name: "Access-Control-Allow-Origin", value: "*")
-        headers.add(name: "Access-Control-Allow-Methods", value: "POST")
-        headers.add(
-          name: "Access-Control-Allow-Headers",
-          value: "content-type,x-grpc-web,x-user-agent"
-        )
-        headers.add(name: "Access-Control-Max-Age", value: "86400")
-        context.write(
-          self.wrapOutboundOut(.head(HTTPResponseHead(
-            version: requestHead.version,
-            status: .ok,
-            headers: headers
-          ))),
-          promise: nil
-        )
-        return
-      }
-    case .body:
-      if self.requestMethod == .OPTIONS {
-        // OPTIONS requests do not have a body, but still handle this case to be
-        // cautious.
-        return
+    case let .head(head):
+      self.receivedRequestHead(context: context, head)
+
+    case let .body(body):
+      self.receivedRequestBody(context: context, body)
+
+    case let .end(trailers):
+      self.receivedRequestEnd(context: context, trailers)
+    }
+  }
+
+  private func receivedRequestHead(context: ChannelHandlerContext, _ head: HTTPRequestHead) {
+    if head.method == .OPTIONS,
+       head.headers.contains(.accessControlRequestMethod),
+       let origin = head.headers.first(name: "origin") {
+      // If the request is OPTIONS with a access-control-request-method header it's a CORS
+      // preflight request and is not propagated further.
+      self.state = .processingPreflightRequest
+      self.handlePreflightRequest(context: context, head: head, origin: origin)
+    } else {
+      self.state = .processingRequest(origin: head.headers.first(name: "origin"))
+      context.fireChannelRead(self.wrapInboundOut(.head(head)))
+    }
+  }
+
+  private func receivedRequestBody(context: ChannelHandlerContext, _ body: ByteBuffer) {
+    // OPTIONS requests do not have a body, but still handle this case to be
+    // cautious.
+    if self.state == .processingPreflightRequest {
+      return
+    }
+
+    context.fireChannelRead(self.wrapInboundOut(.body(body)))
+  }
+
+  private func receivedRequestEnd(context: ChannelHandlerContext, _ trailers: HTTPHeaders?) {
+    if self.state == .processingPreflightRequest {
+      // End of OPTIONS request; reset state and finish the response.
+      self.state = .idle
+      context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+    } else {
+      context.fireChannelRead(self.wrapInboundOut(.end(trailers)))
+    }
+  }
+
+  private func handlePreflightRequest(
+    context: ChannelHandlerContext,
+    head: HTTPRequestHead,
+    origin: String
+  ) {
+    let responseHead: HTTPResponseHead
+
+    if let allowedOrigin = self.configuration.allowedOrigins.header(origin) {
+      var headers = HTTPHeaders()
+      headers.reserveCapacity(4 + self.configuration.allowedHeaders.count)
+      headers.add(name: .accessControlAllowOrigin, value: allowedOrigin)
+      headers.add(name: .accessControlAllowMethods, value: "POST")
+
+      for value in self.configuration.allowedHeaders {
+        headers.add(name: .accessControlAllowHeaders, value: value)
       }
 
-    case .end:
-      if self.requestMethod == .OPTIONS {
-        context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-        self.requestMethod = nil
-        return
+      if self.configuration.allowCredentialedRequests {
+        headers.add(name: .accessControlAllowCredentials, value: "true")
       }
+
+      if self.configuration.preflightCacheExpiration > 0 {
+        headers.add(
+          name: .accessControlMaxAge,
+          value: "\(self.configuration.preflightCacheExpiration)"
+        )
+      }
+      responseHead = HTTPResponseHead(version: head.version, status: .ok, headers: headers)
+    } else {
+      // Not allowed; respond with 403. This is okay in a pre-flight request.
+      responseHead = HTTPResponseHead(version: head.version, status: .forbidden)
     }
-    // The OPTIONS request should be fully handled at this point.
-    context.fireChannelRead(data)
+
+    context.write(self.wrapOutboundOut(.head(responseHead)), promise: nil)
   }
 }
 
@@ -74,25 +130,76 @@ extension WebCORSHandler: ChannelOutboundHandler {
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
-    case let .head(responseHead):
-      var headers = responseHead.headers
-      // CORS requires all requests to have an Allow-Origin header.
-      headers.add(name: "Access-Control-Allow-Origin", value: "*")
-      //! FIXME: Check whether we can let browsers keep connections alive. It's not possible
-      // now as the channel has a state that can't be reused since the pipeline is modified to
-      // inject the gRPC call handler.
-      headers.add(name: "Connection", value: "close")
+    case var .head(responseHead):
+      switch self.state {
+      case let .processingRequest(origin):
+        self.prepareCORSResponseHead(&responseHead, origin: origin)
+        context.write(self.wrapOutboundOut(.head(responseHead)), promise: promise)
 
-      context.write(
-        self.wrapOutboundOut(.head(HTTPResponseHead(
-          version: responseHead.version,
-          status: responseHead.status,
-          headers: headers
-        ))),
-        promise: promise
-      )
-    default:
+      case .idle, .processingPreflightRequest:
+        assertionFailure("Writing response head when no request is in progress")
+        context.close(promise: nil)
+      }
+
+    case .body:
       context.write(data, promise: promise)
+
+    case .end:
+      self.state = .idle
+      context.write(data, promise: promise)
+    }
+  }
+
+  private func prepareCORSResponseHead(_ head: inout HTTPResponseHead, origin: String?) {
+    guard let header = origin.flatMap({ self.configuration.allowedOrigins.header($0) }) else {
+      // No origin or the origin is not allowed; don't treat it as a CORS request.
+      return
+    }
+
+    head.headers.replaceOrAdd(name: .accessControlAllowOrigin, value: header)
+
+    if self.configuration.allowCredentialedRequests {
+      head.headers.add(name: .accessControlAllowCredentials, value: "true")
+    }
+
+    //! FIXME: Check whether we can let browsers keep connections alive. It's not possible
+    // now as the channel has a state that can't be reused since the pipeline is modified to
+    // inject the gRPC call handler.
+    head.headers.replaceOrAdd(name: "Connection", value: "close")
+  }
+}
+
+extension HTTPHeaders {
+  fileprivate enum CORSHeader: String {
+    case accessControlRequestMethod = "access-control-request-method"
+    case accessControlRequestHeaders = "access-control-request-headers"
+    case accessControlAllowOrigin = "access-control-allow-origin"
+    case accessControlAllowMethods = "access-control-allow-methods"
+    case accessControlAllowHeaders = "access-control-allow-headers"
+    case accessControlAllowCredentials = "access-control-allow-credentials"
+    case accessControlMaxAge = "access-control-max-age"
+  }
+
+  fileprivate func contains(_ name: CORSHeader) -> Bool {
+    return self.contains(name: name.rawValue)
+  }
+
+  fileprivate mutating func add(name: CORSHeader, value: String) {
+    self.add(name: name.rawValue, value: value)
+  }
+
+  fileprivate mutating func replaceOrAdd(name: CORSHeader, value: String) {
+    self.replaceOrAdd(name: name.rawValue, value: value)
+  }
+}
+
+extension Server.Configuration.CORS.AllowedOrigins {
+  internal func header(_ origin: String) -> String? {
+    switch self.wrapped {
+    case .all:
+      return "*"
+    case let .only(allowed):
+      return allowed.contains(origin) ? origin : nil
     }
   }
 }
