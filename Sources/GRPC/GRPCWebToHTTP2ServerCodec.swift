@@ -453,9 +453,17 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.State {
         )
       )
     } else {
-      // No response buffer; plain gRPC Web.
-      let trailers = HTTPHeaders(hpackHeaders: trailers)
-      return .write(.init(part: .end(trailers), promise: promise, closeChannel: closeChannel))
+      // No response buffer; plain gRPC Web. Trailers are encoded into the body as a regular
+      // length-prefixed message.
+      let buffer = GRPCWebToHTTP2ServerCodec.formatTrailers(trailers, allocator: allocator)
+      return .write(
+        .init(
+          part: .body(.byteBuffer(buffer)),
+          additionalPart: .end(nil),
+          promise: promise,
+          closeChannel: closeChannel
+        )
+      )
     }
   }
 
@@ -671,18 +679,27 @@ extension GRPCWebToHTTP2ServerCodec {
     allocator: ByteBufferAllocator
   ) -> ByteBuffer {
     // See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
-    let encodedTrailers = trailers.map { name, value, _ in
-      "\(name): \(value)"
-    }.joined(separator: "\r\n")
+    let length = trailers.reduce(0) { partial, trailer in
+      // +4 for: ":", " ", "\r", "\n"
+      return partial + trailer.name.utf8.count + trailer.value.utf8.count + 4
+    }
+    var buffer = allocator.buffer(capacity: 5 + length)
 
-    var buffer = allocator.buffer(capacity: 5 + encodedTrailers.utf8.count)
     // Uncompressed trailer byte.
     buffer.writeInteger(UInt8(0x80))
     // Length.
-    buffer.writeInteger(UInt32(encodedTrailers.utf8.count))
-    // Uncompressed trailers.
-    buffer.writeString(encodedTrailers)
+    let lengthIndex = buffer.writerIndex
+    buffer.writeInteger(UInt32(0))
 
+    var bytesWritten = 0
+    for (name, value, _) in trailers {
+      bytesWritten += buffer.writeString(name)
+      bytesWritten += buffer.writeString(": ")
+      bytesWritten += buffer.writeString(value)
+      bytesWritten += buffer.writeString("\r\n")
+    }
+
+    buffer.setInteger(UInt32(bytesWritten), at: lengthIndex)
     return buffer
   }
 
