@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import EchoImplementation
 import EchoModel
 import GRPC
@@ -169,5 +168,3 @@ class InterceptorsAsyncTests: GRPCTestCase {
     }
   }
 }
-
-#endif

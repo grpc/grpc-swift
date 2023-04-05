@@ -41,7 +41,8 @@ gRPC Swift Version | Earliest Swift Version
 -------------------|-----------------------
 `1.0.0 ..< 1.8.0`  | 5.2
 `1.8.0 ..< 1.11.0` | 5.4
-`1.11.0...`        | 5.5
+`1.11.0..< 1.16.0`.| 5.5
+`1.16.0...`        | 5.6
 
 Versions of clients and services which are use Swift's Concurrency support
 are available from gRPC Swift 1.8.0 and require Swift 5.6 and newer.
@@ -59,7 +60,7 @@ package dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.9.0")
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.15.0")
 ]
 ```
 

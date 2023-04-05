@@ -15,7 +15,7 @@
  */
 
 @usableFromInline
-internal struct ConnectionManagerID: Hashable, CustomStringConvertible, GRPCSendable {
+internal struct ConnectionManagerID: Hashable, CustomStringConvertible, Sendable {
   @usableFromInline
   internal let _id: ObjectIdentifier
 

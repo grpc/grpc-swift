@@ -19,16 +19,12 @@ import NIOConcurrencyHelpers
 import NIOCore
 import NIOHTTP2
 
-#if compiler(>=5.6)
 // Unchecked because mutable state is always accessed and modified on a particular event loop.
 // APIs which _may_ be called from different threads execute onto the correct event loop first.
 // APIs which _must_ be called from an exact event loop have preconditions checking that the correct
 // event loop is being used.
-extension ConnectionManager: @unchecked Sendable {}
-#endif // compiler(>=5.6)
-
 @usableFromInline
-internal final class ConnectionManager {
+internal final class ConnectionManager: @unchecked Sendable {
   internal enum Reconnect {
     case none
     case after(TimeInterval)

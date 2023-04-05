@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 @testable import GRPC
 import NIOEmbedded
 import XCTest
@@ -185,5 +184,3 @@ extension ServerInterceptorStateMachine.CancelAction {
     XCTAssertEqual(self, .nilOutInterceptorPipeline)
   }
 }
-
-#endif // compiler(>=5.6)

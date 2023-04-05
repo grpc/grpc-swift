@@ -18,11 +18,9 @@ import NIOCore
 import NIOEmbedded
 import SwiftProtobuf
 
-#if compiler(>=5.6)
 // This type is deprecated, but we need to '@unchecked Sendable' to avoid warnings in our own code.
 @available(swift, deprecated: 5.6)
 extension FakeChannel: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 /// A fake channel for use with generated test clients.
 ///

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import GRPC
 import HelloWorldModel
 import NIOCore
@@ -32,4 +31,3 @@ final class GreeterProvider: Helloworld_GreeterAsyncProvider {
     }
   }
 }
-#endif // compiler(>=5.6)

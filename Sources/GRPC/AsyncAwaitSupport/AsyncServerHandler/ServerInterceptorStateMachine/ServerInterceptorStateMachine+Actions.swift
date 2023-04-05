@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 extension ServerInterceptorStateMachine {
   @usableFromInline
   enum InterceptAction: Hashable {
@@ -65,4 +64,3 @@ extension ServerInterceptorStateMachine {
     case none
   }
 }
-#endif // compiler(>=5.6)

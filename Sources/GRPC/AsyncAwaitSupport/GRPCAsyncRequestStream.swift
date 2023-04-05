@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
 import NIOCore
 
 /// A type for the stream of request messages send to a gRPC server method.
@@ -158,5 +156,3 @@ public struct GRPCAsyncRequestStream<Element: Sendable>: AsyncSequence {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCAsyncRequestStream: Sendable where Element: Sendable {}
-
-#endif

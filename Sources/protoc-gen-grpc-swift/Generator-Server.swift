@@ -24,13 +24,9 @@ extension Generator {
       self.println()
       self.printServerProtocolExtension()
       self.println()
-      self.printIfCompilerGuardForAsyncAwait()
-      self.println()
       self.printServerProtocolAsyncAwait()
       self.println()
       self.printServerProtocolExtensionAsyncAwait()
-      self.println()
-      self.printEndCompilerGuardForAsyncAwait()
       self.println()
       // Both implementations share definitions for interceptors and metadata.
       self.printServerInterceptorFactoryProtocol()

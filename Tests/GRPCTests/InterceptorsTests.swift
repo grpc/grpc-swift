@@ -158,9 +158,7 @@ class HelloWorldProvider: Helloworld_GreeterProvider {
   }
 }
 
-#if swift(>=5.6)
 extension HelloWorldClientInterceptorFactory: @unchecked Sendable {}
-#endif // swift(>=5.6)
 
 private class HelloWorldClientInterceptorFactory:
   Helloworld_GreeterClientInterceptorFactoryProtocol {

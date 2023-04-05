@@ -252,7 +252,6 @@ class GRPCSecureInteroperabilityTests: GRPCInsecureInteroperabilityTests {
 }
 #endif // canImport(NIOSSL)
 
-#if compiler(>=5.6)
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 class GRPCInsecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityTests {
   override func makeProvider() -> CallHandlerProvider {
@@ -418,4 +417,3 @@ class GRPCSecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityAsyncTes
   }
 }
 #endif // canImport(NIOSSL)
-#endif // compiler(>=5.6)

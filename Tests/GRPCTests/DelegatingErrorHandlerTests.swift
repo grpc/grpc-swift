@@ -44,9 +44,7 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
     XCTAssertEqual(delegate.errors[0] as? NIOSSLError, .writeDuringTLSShutdown)
   }
 }
-#endif // canImport(NIOSSL)
 
-#if canImport(NIOSSL) && compiler(>=5.6)
 // Unchecked because the error recorder is only ever used in the context of an EmbeddedChannel.
 extension DelegatingErrorHandlerTests.ErrorRecorder: @unchecked Sendable {}
-#endif // canImport(NIOSSL) && compiler(>=5.6)
+#endif // canImport(NIOSSL)

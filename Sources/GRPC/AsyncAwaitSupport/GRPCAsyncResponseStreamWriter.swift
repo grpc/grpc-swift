@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
 import NIOCore
 
 /// Writer for server-streaming RPC handlers to provide responses.
@@ -168,5 +166,3 @@ public struct GRPCAsyncResponseStreamWriter<Response: Sendable>: Sendable {
     return TestingStreamWriter(writer: writer, stream: responseStream)
   }
 }
-
-#endif

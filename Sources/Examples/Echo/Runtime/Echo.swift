@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
-
 import ArgumentParser
 import EchoImplementation
 import EchoModel
@@ -246,12 +243,3 @@ func echoUpdate(client: Echo_EchoAsyncClient, message: String) async throws {
     print("update received: \(response.text)")
   }
 }
-
-#else
-@main
-enum Echo {
-  static func main() {
-    print("This example requires Swift >= 5.6")
-  }
-}
-#endif

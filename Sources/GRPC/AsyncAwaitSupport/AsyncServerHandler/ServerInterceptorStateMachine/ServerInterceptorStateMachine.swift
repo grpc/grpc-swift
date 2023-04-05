@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 @usableFromInline
 internal struct ServerInterceptorStateMachine {
   @usableFromInline
@@ -283,4 +282,3 @@ extension ServerInterceptorStateMachine.Finished {
     }
   }
 }
-#endif // compiler(>=5.6)

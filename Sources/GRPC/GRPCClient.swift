@@ -19,7 +19,8 @@ import NIOHTTP2
 import SwiftProtobuf
 
 /// A gRPC client.
-public protocol GRPCClient: GRPCPreconcurrencySendable {
+@preconcurrency
+public protocol GRPCClient: Sendable {
   /// The gRPC channel over which RPCs are sent and received. Note that this is distinct
   /// from `NIO.Channel`.
   var channel: GRPCChannel { get }
@@ -202,11 +203,9 @@ public final class AnyServiceClient: GRPCClient {
   }
 }
 
-#if swift(>=5.6)
 // Unchecked because mutable state is protected by a lock.
 @available(*, deprecated, renamed: "GRPCAnyServiceClient")
-extension AnyServiceClient: @unchecked GRPCSendable {}
-#endif // swift(>=5.6)
+extension AnyServiceClient: @unchecked Sendable {}
 
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
 /// See ``GRPCClient`` for details.

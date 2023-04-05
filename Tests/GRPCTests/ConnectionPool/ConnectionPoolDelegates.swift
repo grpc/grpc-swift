@@ -22,26 +22,16 @@ final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
   private var connecting = Set<GRPCConnectionID>()
   private var active = Set<GRPCConnectionID>()
 
-  enum StateNotifacation: Hashable, GRPCSendable {
+  enum StateNotifacation: Hashable, Sendable {
     case connecting
     case connected
   }
 
-  #if swift(>=5.6)
   private let onStateChange: @Sendable (StateNotifacation) -> Void
-  #else
-  private let onStateChange: (StateNotifacation) -> Void
-  #endif
 
-  #if swift(>=5.6)
   init(onStateChange: @escaping @Sendable (StateNotifacation) -> Void) {
     self.onStateChange = onStateChange
   }
-  #else
-  init(onStateChange: @escaping (StateNotifacation) -> Void) {
-    self.onStateChange = onStateChange
-  }
-  #endif
 
   func startedConnecting(id: GRPCConnectionID) {
     let didStartConnecting: Bool = self.lock.withLock {
@@ -94,9 +84,7 @@ final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
   func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int) {}
 }
 
-#if swift(>=5.6)
 extension IsConnectingDelegate: @unchecked Sendable {}
-#endif
 
 final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
   struct UnexpectedEvent: Error {
@@ -200,6 +188,4 @@ final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
   }
 }
 
-#if swift(>=5.6)
 extension EventRecordingConnectionPoolDelegate: @unchecked Sendable {}
-#endif // swift(>=5.6)

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import EchoImplementation
 import EchoModel
 import GRPC
@@ -195,5 +194,3 @@ extension HPACKHeaders {
     XCTAssertEqual(self.first(name: name), value)
   }
 }
-
-#endif // compiler(>=5.6)

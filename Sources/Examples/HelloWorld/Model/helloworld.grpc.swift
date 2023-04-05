@@ -63,10 +63,8 @@ extension Helloworld_GreeterClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Helloworld_GreeterClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Helloworld_GreeterNIOClient")
 public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
@@ -122,7 +120,6 @@ public struct Helloworld_GreeterNIOClient: Helloworld_GreeterClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 /// The greeting service definition.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Helloworld_GreeterAsyncClientProtocol: GRPCClient {
@@ -190,9 +187,7 @@ public struct Helloworld_GreeterAsyncClient: Helloworld_GreeterAsyncClientProtoc
   }
 }
 
-#endif // compiler(>=5.6)
-
-public protocol Helloworld_GreeterClientInterceptorFactoryProtocol: GRPCSendable {
+public protocol Helloworld_GreeterClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'sayHello'.
   func makeSayHelloInterceptors() -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
@@ -253,8 +248,6 @@ extension Helloworld_GreeterProvider {
   }
 }
 
-#if compiler(>=5.6)
-
 /// The greeting service definition.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
@@ -303,8 +296,6 @@ extension Helloworld_GreeterAsyncProvider {
     }
   }
 }
-
-#endif // compiler(>=5.6)
 
 public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
 

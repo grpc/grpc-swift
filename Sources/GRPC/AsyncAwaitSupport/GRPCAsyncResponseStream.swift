@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
-
 import NIOCore
 
 /// This is currently a wrapper around AsyncThrowingStream because we want to be
@@ -60,5 +57,3 @@ public struct GRPCAsyncResponseStream<Element: Sendable>: AsyncSequence {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension GRPCAsyncResponseStream: Sendable {}
-
-#endif

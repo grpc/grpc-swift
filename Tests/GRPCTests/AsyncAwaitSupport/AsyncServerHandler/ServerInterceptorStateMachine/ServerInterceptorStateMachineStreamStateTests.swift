@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 @testable import GRPC
 import XCTest
 
@@ -126,5 +125,3 @@ internal final class ServerInterceptorStateMachineStreamStateTests: GRPCTestCase
     XCTAssertEqual(state, .done)
   }
 }
-
-#endif // compiler(>=5.6)

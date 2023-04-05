@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 extension ServerInterceptorStateMachine {
   /// The 'Finished' state is, as the name suggests, a terminal state. Nothing can happen in this
   /// state.
@@ -91,4 +90,3 @@ extension ServerInterceptorStateMachine {
     }
   }
 }
-#endif // compiler(>=5.6)

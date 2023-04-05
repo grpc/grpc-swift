@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 
 import GRPC
 import XCTest
@@ -31,4 +30,3 @@ final class GRPCAsyncResponseStreamWriterTests: XCTestCase {
     XCTAssertEqual(results[0].1, .disabled)
   }
 }
-#endif

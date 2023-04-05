@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
 import NIOCore
 
 /// Unchecked-sendable wrapper for ``NIOAsyncWriter/Sink``, to avoid getting sendability warnings.
@@ -48,4 +46,3 @@ internal struct AsyncSink<Element: Sendable>: @unchecked Sendable {
     self.sink.finish()
   }
 }
-#endif // compiler(>=5.6)

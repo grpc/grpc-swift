@@ -18,7 +18,7 @@ import NIOHTTP1
 import NIOHTTP2
 
 /// Encapsulates the result of a gRPC call.
-public struct GRPCStatus: Error, GRPCSendable {
+public struct GRPCStatus: Error, Sendable {
   /// Storage for message/cause. In the happy case ('ok') there will not be a message or cause
   /// and this will reference a static storage containing nil values. Making it optional makes the
   /// setters for message and cause a little messy.
@@ -145,7 +145,7 @@ extension GRPCStatus {
 extension GRPCStatus {
   /// Status codes for gRPC operations (replicated from `status_code_enum.h` in the
   /// [gRPC core library](https://github.com/grpc/grpc)).
-  public struct Code: Hashable, CustomStringConvertible, GRPCSendable {
+  public struct Code: Hashable, CustomStringConvertible, Sendable {
     // `rawValue` must be an `Int` for API reasons and we don't need (or want) to store anything so
     // wide, a `UInt8` is fine.
     private let _rawValue: UInt8
@@ -316,11 +316,9 @@ extension GRPCStatus {
   }
 }
 
-#if compiler(>=5.6)
 // `GRPCStatus` has CoW semantics so it is inherently `Sendable`. Rather than marking `GRPCStatus`
 // as `@unchecked Sendable` we only mark `Storage` as such.
 extension GRPCStatus.Storage: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 /// This protocol serves as a customisation point for error types so that gRPC calls may be
 /// terminated with an appropriate status.

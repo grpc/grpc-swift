@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#if compiler(>=5.6)
-
 import NIOCore
 import NIOHPACK
 
@@ -128,5 +126,3 @@ public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable
     return asyncCall
   }
 }
-
-#endif

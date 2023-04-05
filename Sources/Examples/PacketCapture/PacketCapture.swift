@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import ArgumentParser
 import EchoModel
 import GRPC
@@ -84,11 +83,3 @@ struct PCAP: AsyncParsableCommand {
     try await echo.channel.close().get()
   }
 }
-#else
-@main
-enum PCAP {
-  static func main() {
-    print("This example requires Swift >= 5.6")
-  }
-}
-#endif // compiler(>=5.6)

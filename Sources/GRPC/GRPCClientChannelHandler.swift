@@ -226,7 +226,7 @@ extension _GRPCRequestHead {
 }
 
 /// The type of gRPC call.
-public enum GRPCCallType: Hashable, GRPCSendable {
+public enum GRPCCallType: Hashable, Sendable {
   /// Unary: a single request and a single response.
   case unary
 

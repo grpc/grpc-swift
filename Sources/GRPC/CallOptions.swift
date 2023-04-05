@@ -23,7 +23,7 @@ import NIOHTTP1
 import NIOHTTP2
 
 /// Options to use for GRPC calls.
-public struct CallOptions: GRPCSendable {
+public struct CallOptions: Sendable {
   /// Additional metadata to send to the service.
   public var customMetadata: HPACKHeaders
 
@@ -125,14 +125,10 @@ public struct CallOptions: GRPCSendable {
 }
 
 extension CallOptions {
-  public struct RequestIDProvider: GRPCSendable {
-    #if swift(>=5.6)
+  public struct RequestIDProvider: Sendable {
     public typealias RequestIDGenerator = @Sendable () -> String
-    #else
-    public typealias RequestIDGenerator = () -> String
-    #endif // swift(>=5.6)
 
-    private enum RequestIDSource: GRPCSendable {
+    private enum RequestIDSource: Sendable {
       case none
       case `static`(String)
       case generated(RequestIDGenerator)
@@ -179,7 +175,7 @@ extension CallOptions {
 }
 
 extension CallOptions {
-  public struct EventLoopPreference: GRPCSendable {
+  public struct EventLoopPreference: Sendable {
     /// No preference. The framework will assign an `EventLoop`.
     public static let indifferent = EventLoopPreference(.indifferent)
 
@@ -189,7 +185,7 @@ extension CallOptions {
     }
 
     @usableFromInline
-    internal enum Preference: GRPCSendable {
+    internal enum Preference: Sendable {
       case indifferent
       case exact(EventLoop)
     }
