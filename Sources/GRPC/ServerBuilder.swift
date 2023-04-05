@@ -166,6 +166,15 @@ extension Server.Builder {
 }
 
 extension Server.Builder {
+  /// Set the CORS configuration for gRPC Web.
+  @discardableResult
+  public func withCORSConfiguration(_ configuration: Server.Configuration.CORS) -> Self {
+    self.configuration.webCORS = configuration
+    return self
+  }
+}
+
+extension Server.Builder {
   /// Sets the root server logger. Accepted connections will branch from this logger and RPCs on
   /// each connection will use a logger branched from the connections logger. This logger is made
   /// available to service providers via `context`. Defaults to a no-op logger.

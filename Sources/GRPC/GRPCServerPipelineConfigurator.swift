@@ -191,7 +191,7 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       // we'll be on the right event loop and sync operations are fine.
       let sync = context.pipeline.syncOperations
       try sync.configureHTTPServerPipeline(withErrorHandling: true)
-      try sync.addHandler(WebCORSHandler())
+      try sync.addHandler(WebCORSHandler(configuration: self.configuration.webCORS))
       let scheme = self.configuration.tlsConfiguration == nil ? "http" : "https"
       try sync.addHandler(GRPCWebToHTTP2ServerCodec(scheme: scheme))
       // There's no need to normalize headers for HTTP/1.

@@ -367,6 +367,9 @@ extension Server {
     /// the need to recalculate this dictionary each time we receive an rpc.
     internal var serviceProvidersByName: [Substring: CallHandlerProvider]
 
+    /// CORS configuration for gRPC-Web support.
+    public var webCORS = Configuration.CORS()
+
     #if canImport(NIOSSL)
     /// Create a `Configuration` with some pre-defined defaults.
     ///
@@ -401,11 +404,9 @@ extension Server {
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
-      self
-        .serviceProvidersByName = Dictionary(
-          uniqueKeysWithValues: serviceProviders
-            .map { ($0.serviceName, $0) }
-        )
+      self.serviceProvidersByName = Dictionary(
+        uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) }
+      )
       self.errorDelegate = errorDelegate
       self.tlsConfiguration = tls.map { GRPCTLSConfiguration(transforming: $0) }
       self.connectionKeepalive = connectionKeepalive
@@ -447,6 +448,55 @@ extension Server {
         target: target,
         serviceProviders: serviceProviders
       )
+    }
+  }
+}
+
+extension Server.Configuration {
+  public struct CORS: Hashable, GRPCSendable {
+    /// Determines which 'origin' header field values are permitted in a CORS request.
+    public var allowedOrigins: AllowedOrigins
+    /// Sets the headers which are permitted in a response to a CORS request.
+    public var allowedHeaders: [String]
+    /// Enabling this value allows sets the "access-control-allow-credentials" header field
+    /// to "true" in respones to CORS requests. This must be enabled if the client intends to send
+    /// credentials.
+    public var allowCredentialedRequests: Bool
+    /// The maximum age in seconds which pre-flight CORS requests may be cached for.
+    public var preflightCacheExpiration: Int
+
+    public init(
+      allowedOrigins: AllowedOrigins = .all,
+      allowedHeaders: [String] = ["content-type", "x-grpc-web", "x-user-agent"],
+      allowCredentialedRequests: Bool = false,
+      preflightCacheExpiration: Int = 86400
+    ) {
+      self.allowedOrigins = allowedOrigins
+      self.allowedHeaders = allowedHeaders
+      self.allowCredentialedRequests = allowCredentialedRequests
+      self.preflightCacheExpiration = preflightCacheExpiration
+    }
+  }
+}
+
+extension Server.Configuration.CORS {
+  public struct AllowedOrigins: Hashable, Sendable {
+    enum Wrapped: Hashable, Sendable {
+      case all
+      case only([String])
+    }
+
+    private(set) var wrapped: Wrapped
+    private init(_ wrapped: Wrapped) {
+      self.wrapped = wrapped
+    }
+
+    /// Allow all origin values.
+    public static let all = Self(.all)
+
+    /// Allow only the given origin values.
+    public static func only(_ allowed: [String]) -> Self {
+      return Self(.only(allowed))
     }
   }
 }
