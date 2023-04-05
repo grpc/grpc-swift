@@ -456,7 +456,7 @@ extension Server.Configuration {
   public struct CORS: Hashable, GRPCSendable {
     /// Determines which 'origin' header field values are permitted in a CORS request.
     public var allowedOrigins: AllowedOrigins
-    /// Sets the headaers which are permitted in a response to a CORS request.
+    /// Sets the headers which are permitted in a response to a CORS request.
     public var allowedHeaders: [String]
     /// Enabling this value allows sets the "access-control-allow-credentials" header field
     /// to "true" in respones to CORS requests. This must be enabled if the client intends to send
