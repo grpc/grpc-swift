@@ -22,8 +22,7 @@ import Logging
 /// The intended use of this protocol is with ``ClientConnection``. In order to avoid retain
 /// cycles, classes implementing this delegate **must not** maintain a strong reference to the
 /// ``ClientConnection``.
-@preconcurrency
-public protocol ClientErrorDelegate: AnyObject, Sendable {
+public protocol ClientErrorDelegate: AnyObject, GRPCPreconcurrencySendable {
   /// Called when the client catches an error.
   ///
   /// - Parameters:

@@ -18,7 +18,6 @@ import NIOCore
 @available(*, deprecated, renamed: "Swift.Sendable")
 public typealias GRPCSendable = Swift.Sendable
 
-@available(*, deprecated, message: "Use @preconcurrency Swift.Sendable")
 @preconcurrency
 public protocol GRPCPreconcurrencySendable: Sendable {}
 
