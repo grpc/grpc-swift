@@ -1,5 +1,5 @@
 # Language version.
---swiftversion 5.2
+--swiftversion 5.6
 
 # Ignore generated files.
 --exclude **/LinuxMain.swift,**/XCTestManifests.swift,**/*.grpc.swift,**/*.pb.swift

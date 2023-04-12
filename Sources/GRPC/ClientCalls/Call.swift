@@ -440,7 +440,5 @@ extension Call {
   }
 }
 
-#if compiler(>=5.6)
 // @unchecked is ok: all mutable state is accessed/modified from the appropriate event loop.
 extension Call: @unchecked Sendable where Request: Sendable, Response: Sendable {}
-#endif

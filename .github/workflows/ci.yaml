@@ -24,7 +24,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-5.8-focal
+          - image: swiftlang/swift:nightly-focal
+            # No TSAN because of: https://github.com/apple/swift/issues/59068
+            # swift-test-flags: "--sanitize=thread"
+          - image: swift:5.8-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
           - image: swift:5.7-jammy
@@ -33,8 +36,6 @@ jobs:
           - image: swift:5.6-focal
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.5-focal
-            swift-test-flags: "--sanitize=thread"
     name: Build and Test on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
@@ -54,7 +55,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-5.8-focal
+          - image: swiftlang/swift:nightly-focal
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 347000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 167000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 169000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 176000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 176000
+          - image: swift:5.8-jammy
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 347000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 167000
@@ -84,16 +95,6 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 177000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 177000
-          - image: swift:5.5-focal
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 378000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 180000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 109000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 64000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 60000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 181000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 188000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 188000
 
     name: Performance Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
@@ -111,9 +112,9 @@ jobs:
       matrix:
         include:
           - image: swiftlang/swift:nightly-focal
+          - image: swift:5.8-jammy
           - image: swift:5.7-jammy
           - image: swift:5.6-focal
-          - image: swift:5.5-focal
     name: Integration Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:

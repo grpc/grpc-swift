@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 extension ServerInterceptorStateMachine {
   /// The 'Intercepting' state is responsible for validating that appropriate message parts are
   /// forwarded to the interceptor pipeline and that messages parts which have been emitted from the
@@ -138,4 +137,3 @@ extension ServerInterceptorStateMachine {
     }
   }
 }
-#endif // compiler(>=5.6)

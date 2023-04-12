@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import ArgumentParser
 import struct Foundation.Data
 import struct Foundation.URL
@@ -64,11 +63,3 @@ struct RouteGuide: AsyncParsableCommand {
     try await server.onClose.get()
   }
 }
-#else
-@main
-enum RouteGuide {
-  static func main() {
-    print("This example requires Swift >= 5.6")
-  }
-}
-#endif // compiler(>=5.6)

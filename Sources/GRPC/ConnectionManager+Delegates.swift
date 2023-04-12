@@ -60,7 +60,7 @@ internal protocol ConnectionManagerHTTP2Delegate {
 
 // This mirrors `ConnectivityState` (which is public API) but adds `Error` as associated data
 // to a few cases.
-internal enum _ConnectivityState: GRPCSendable {
+internal enum _ConnectivityState: Sendable {
   case idle(Error?)
   case connecting
   case ready

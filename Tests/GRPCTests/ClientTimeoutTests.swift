@@ -164,10 +164,8 @@ class ClientTimeoutTests: GRPCTestCase {
   }
 }
 
-#if compiler(>=5.6)
 // Unchecked as it uses an 'EmbeddedChannel'.
 extension EmbeddedGRPCChannel: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 private final class EmbeddedGRPCChannel: GRPCChannel {
   let embeddedChannel: EmbeddedChannel

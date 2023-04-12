@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import NIOHPACK
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -107,4 +106,3 @@ extension ServerHandlerStateMachine {
     }
   }
 }
-#endif // compiler(>=5.6)

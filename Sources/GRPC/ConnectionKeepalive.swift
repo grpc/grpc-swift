@@ -19,7 +19,7 @@ import NIOCore
 ///
 /// The defaults are determined by the gRPC keepalive
 /// [documentation] (https://github.com/grpc/grpc/blob/master/doc/keepalive.md).
-public struct ClientConnectionKeepalive: Hashable, GRPCSendable {
+public struct ClientConnectionKeepalive: Hashable, Sendable {
   /// The amount of time to wait before sending a keepalive ping.
   public var interval: TimeAmount
 

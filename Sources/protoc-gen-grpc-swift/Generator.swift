@@ -169,12 +169,4 @@ class Generator {
   func printAvailabilityForAsyncAwait() {
     self.println("@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)")
   }
-
-  func printIfCompilerGuardForAsyncAwait() {
-    self.println("#if compiler(>=5.6)")
-  }
-
-  func printEndCompilerGuardForAsyncAwait() {
-    self.println("#endif // compiler(>=5.6)")
-  }
 }

@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
-
 import NIOCore
 
 @usableFromInline
@@ -31,5 +28,3 @@ internal struct GRPCAsyncSequenceProducerDelegate: NIOAsyncSequenceProducerDeleg
   @inlinable
   internal func didTerminate() {}
 }
-
-#endif

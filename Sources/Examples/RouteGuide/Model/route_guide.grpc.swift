@@ -154,10 +154,8 @@ extension Routeguide_RouteGuideClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Routeguide_RouteGuideClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Routeguide_RouteGuideNIOClient")
 public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProtocol {
@@ -213,7 +211,6 @@ public struct Routeguide_RouteGuideNIOClient: Routeguide_RouteGuideClientProtoco
   }
 }
 
-#if compiler(>=5.6)
 /// Interface exported by the server.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Routeguide_RouteGuideAsyncClientProtocol: GRPCClient {
@@ -386,9 +383,7 @@ public struct Routeguide_RouteGuideAsyncClient: Routeguide_RouteGuideAsyncClient
   }
 }
 
-#endif // compiler(>=5.6)
-
-public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol: GRPCSendable {
+public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'getFeature'.
   func makeGetFeatureInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_Feature>]
@@ -531,8 +526,6 @@ extension Routeguide_RouteGuideProvider {
   }
 }
 
-#if compiler(>=5.6)
-
 /// Interface exported by the server.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
@@ -644,8 +637,6 @@ extension Routeguide_RouteGuideAsyncProvider {
     }
   }
 }
-
-#endif // compiler(>=5.6)
 
 public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
 

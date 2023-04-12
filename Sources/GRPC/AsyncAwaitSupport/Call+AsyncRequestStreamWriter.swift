@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import NIOCore
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -45,5 +44,3 @@ extension Call where Request: Sendable, Response: Sendable {
     return (GRPCAsyncRequestStreamWriter<Request>(asyncWriter: writer.writer), writer.sink)
   }
 }
-
-#endif // compiler(>=5.6)

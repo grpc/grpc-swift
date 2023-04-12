@@ -20,7 +20,7 @@ import NIOCore
 
 /// The connectivity state of a client connection. Note that this is heavily lifted from the gRPC
 /// documentation: https://github.com/grpc/grpc/blob/master/doc/connectivity-semantics-and-api.md.
-public enum ConnectivityState: GRPCSendable {
+public enum ConnectivityState: Sendable {
   /// This is the state where the channel has not yet been created.
   case idle
 
@@ -68,12 +68,8 @@ extension ConnectivityStateDelegate {
   public func connectionStartedQuiescing() {}
 }
 
-#if compiler(>=5.6)
 // Unchecked because all mutable state is protected by locks.
-extension ConnectivityStateMonitor: @unchecked Sendable {}
-#endif // compiler(>=5.6)
-
-public class ConnectivityStateMonitor {
+public class ConnectivityStateMonitor: @unchecked Sendable {
   private let stateLock = NIOLock()
   private var _state: ConnectivityState = .idle
 

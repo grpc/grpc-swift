@@ -29,7 +29,6 @@ extension Generator {
       self.println()
       self.printStructBackedServiceClientImplementation()
       self.println()
-      self.printIfCompilerGuardForAsyncAwait()
       self.printAsyncServiceClientProtocol()
       self.println()
       self.printAsyncClientProtocolExtension()
@@ -37,8 +36,6 @@ extension Generator {
       self.printAsyncClientProtocolSafeWrappersExtension()
       self.println()
       self.printAsyncServiceClientImplementation()
-      self.println()
-      self.printEndCompilerGuardForAsyncAwait()
       self.println()
       // Both implementations share definitions for interceptors and metadata.
       self.printServiceClientInterceptorFactoryProtocol()
@@ -159,7 +156,7 @@ extension Generator {
   }
 
   private func printServiceClientInterceptorFactoryProtocol() {
-    self.println("\(self.access) protocol \(self.clientInterceptorProtocolName): GRPCSendable {")
+    self.println("\(self.access) protocol \(self.clientInterceptorProtocolName): Sendable {")
     self.withIndentation {
       // Method specific interceptors.
       for method in service.methods {
@@ -189,10 +186,8 @@ extension Generator {
   }
 
   private func printClassBackedServiceClientImplementation() {
-    self.printIfCompilerGuardForAsyncAwait()
     self.println("@available(*, deprecated)")
     self.println("extension \(clientClassName): @unchecked Sendable {}")
-    self.printEndCompilerGuardForAsyncAwait()
     self.println()
     self.println("@available(*, deprecated, renamed: \"\(clientStructName)\")")
     println("\(access) final class \(clientClassName): \(clientProtocolName) {")
@@ -534,10 +529,8 @@ extension Generator {
   }
 
   private func printTestClient() {
-    self.printIfCompilerGuardForAsyncAwait()
     self.println("@available(swift, deprecated: 5.6)")
     self.println("extension \(self.testClientClassName): @unchecked Sendable {}")
-    self.printEndCompilerGuardForAsyncAwait()
     self.println()
     self.println(
       "@available(swift, deprecated: 5.6, message: \"Test clients are not Sendable "

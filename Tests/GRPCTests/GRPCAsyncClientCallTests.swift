@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
-
 import EchoImplementation
 import EchoModel
 @testable import GRPC
@@ -211,7 +209,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 // Workaround https://bugs.swift.org/browse/SR-15070 (compiler crashes when defining a class/actor
 // in an async context).
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-fileprivate actor RequestResponseCounter {
+private actor RequestResponseCounter {
   var numResponses = 0
   var numRequests = 0
 
@@ -223,5 +221,3 @@ fileprivate actor RequestResponseCounter {
     self.numRequests += 1
   }
 }
-
-#endif

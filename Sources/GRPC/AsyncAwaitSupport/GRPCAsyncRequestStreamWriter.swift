@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import NIOCore
 
 /// An object allowing the holder -- a client -- to send requests on an RPC.
@@ -95,5 +94,3 @@ public struct GRPCAsyncRequestStreamWriter<Request: Sendable>: Sendable {
     self.asyncWriter.finish(error: error)
   }
 }
-
-#endif // compiler(>=5.6)

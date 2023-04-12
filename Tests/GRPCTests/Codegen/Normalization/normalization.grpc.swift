@@ -234,10 +234,8 @@ extension Normalization_NormalizationClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Normalization_NormalizationClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Normalization_NormalizationNIOClient")
 internal final class Normalization_NormalizationClient: Normalization_NormalizationClientProtocol {
@@ -293,7 +291,6 @@ internal struct Normalization_NormalizationNIOClient: Normalization_Normalizatio
   }
 }
 
-#if compiler(>=5.6)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal protocol Normalization_NormalizationAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
@@ -599,9 +596,7 @@ internal struct Normalization_NormalizationAsyncClient: Normalization_Normalizat
   }
 }
 
-#endif // compiler(>=5.6)
-
-internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol: GRPCSendable {
+internal protocol Normalization_NormalizationClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'Unary'.
   func makeUnaryInterceptors() -> [ClientInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
@@ -806,8 +801,6 @@ extension Normalization_NormalizationProvider {
   }
 }
 
-#if compiler(>=5.6)
-
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal protocol Normalization_NormalizationAsyncProvider: CallHandlerProvider {
@@ -955,8 +948,6 @@ extension Normalization_NormalizationAsyncProvider {
     }
   }
 }
-
-#endif // compiler(>=5.6)
 
 internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol {
 

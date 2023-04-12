@@ -660,8 +660,6 @@ struct ExpressionMatcher<Value> {
   }
 }
 
-#if compiler(>=5.6)
-
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () async throws -> Value,
@@ -695,5 +693,3 @@ func assertThat<Value>(
     XCTFail("ACTUAL: \(actual), EXPECTED: \(expected)", file: file, line: line)
   }
 }
-
-#endif

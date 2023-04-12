@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-public struct GRPCServiceDescriptor: Hashable, GRPCSendable {
+public struct GRPCServiceDescriptor: Hashable, Sendable {
   /// The name of the service excluding the package, e.g. 'Echo'.
   public var name: String
 
@@ -31,7 +31,7 @@ public struct GRPCServiceDescriptor: Hashable, GRPCSendable {
   }
 }
 
-public struct GRPCMethodDescriptor: Hashable, GRPCSendable {
+public struct GRPCMethodDescriptor: Hashable, Sendable {
   /// The name of the method, e.g. 'Get'.
   public var name: String
 

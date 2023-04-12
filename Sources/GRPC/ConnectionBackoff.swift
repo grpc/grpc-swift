@@ -19,7 +19,7 @@ import Foundation
 ///
 /// This algorithm and defaults are determined by the gRPC connection backoff
 /// [documentation](https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md).
-public struct ConnectionBackoff: Sequence, GRPCSendable {
+public struct ConnectionBackoff: Sequence, Sendable {
   public typealias Iterator = ConnectionBackoffIterator
 
   /// The initial backoff in seconds.
@@ -41,8 +41,8 @@ public struct ConnectionBackoff: Sequence, GRPCSendable {
   /// A limit on the number of times to attempt reconnection.
   public var retries: Retries
 
-  public struct Retries: Hashable, GRPCSendable {
-    fileprivate enum Limit: Hashable, GRPCSendable {
+  public struct Retries: Hashable, Sendable {
+    fileprivate enum Limit: Hashable, Sendable {
       case limited(Int)
       case unlimited
     }

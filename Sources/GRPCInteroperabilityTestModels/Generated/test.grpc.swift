@@ -244,10 +244,8 @@ extension Grpc_Testing_TestServiceClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Grpc_Testing_TestServiceClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Grpc_Testing_TestServiceNIOClient")
 public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClientProtocol {
@@ -303,7 +301,6 @@ public struct Grpc_Testing_TestServiceNIOClient: Grpc_Testing_TestServiceClientP
   }
 }
 
-#if compiler(>=5.6)
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -602,9 +599,7 @@ public struct Grpc_Testing_TestServiceAsyncClient: Grpc_Testing_TestServiceAsync
   }
 }
 
-#endif // compiler(>=5.6)
-
-public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol: GRPCSendable {
+public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'emptyCall'.
   func makeEmptyCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
@@ -736,10 +731,8 @@ extension Grpc_Testing_UnimplementedServiceClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Grpc_Testing_UnimplementedServiceClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Grpc_Testing_UnimplementedServiceNIOClient")
 public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedServiceClientProtocol {
@@ -795,7 +788,6 @@ public struct Grpc_Testing_UnimplementedServiceNIOClient: Grpc_Testing_Unimpleme
   }
 }
 
-#if compiler(>=5.6)
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -864,9 +856,7 @@ public struct Grpc_Testing_UnimplementedServiceAsyncClient: Grpc_Testing_Unimple
   }
 }
 
-#endif // compiler(>=5.6)
-
-public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol: GRPCSendable {
+public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'unimplementedCall'.
   func makeUnimplementedCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
@@ -950,10 +940,8 @@ extension Grpc_Testing_ReconnectServiceClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Grpc_Testing_ReconnectServiceClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Grpc_Testing_ReconnectServiceNIOClient")
 public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectServiceClientProtocol {
@@ -1009,7 +997,6 @@ public struct Grpc_Testing_ReconnectServiceNIOClient: Grpc_Testing_ReconnectServ
   }
 }
 
-#if compiler(>=5.6)
 /// A service used to control reconnect server.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Grpc_Testing_ReconnectServiceAsyncClientProtocol: GRPCClient {
@@ -1106,9 +1093,7 @@ public struct Grpc_Testing_ReconnectServiceAsyncClient: Grpc_Testing_ReconnectSe
   }
 }
 
-#endif // compiler(>=5.6)
-
-public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol: GRPCSendable {
+public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'start'.
   func makeStartInterceptors() -> [ClientInterceptor<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>]
@@ -1260,8 +1245,6 @@ extension Grpc_Testing_TestServiceProvider {
     }
   }
 }
-
-#if compiler(>=5.6)
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
@@ -1415,8 +1398,6 @@ extension Grpc_Testing_TestServiceAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.6)
-
 public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
 
   /// - Returns: Interceptors to use when handling 'emptyCall'.
@@ -1556,8 +1537,6 @@ extension Grpc_Testing_UnimplementedServiceProvider {
   }
 }
 
-#if compiler(>=5.6)
-
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
 ///
@@ -1607,8 +1586,6 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
     }
   }
 }
-
-#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol {
 
@@ -1681,8 +1658,6 @@ extension Grpc_Testing_ReconnectServiceProvider {
   }
 }
 
-#if compiler(>=5.6)
-
 /// A service used to control reconnect server.
 ///
 /// To implement a server, implement an object which conforms to this protocol.
@@ -1744,8 +1719,6 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
     }
   }
 }
-
-#endif // compiler(>=5.6)
 
 public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol {
 

@@ -136,10 +136,8 @@ extension Echo_EchoClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(*, deprecated)
 extension Echo_EchoClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(*, deprecated, renamed: "Echo_EchoNIOClient")
 public final class Echo_EchoClient: Echo_EchoClientProtocol {
@@ -195,7 +193,6 @@ public struct Echo_EchoNIOClient: Echo_EchoClientProtocol {
   }
 }
 
-#if compiler(>=5.6)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
@@ -367,9 +364,7 @@ public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   }
 }
 
-#endif // compiler(>=5.6)
-
-public protocol Echo_EchoClientInterceptorFactoryProtocol: GRPCSendable {
+public protocol Echo_EchoClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'get'.
   func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
@@ -423,10 +418,8 @@ public enum Echo_EchoClientMetadata {
   }
 }
 
-#if compiler(>=5.6)
 @available(swift, deprecated: 5.6)
 extension Echo_EchoTestClient: @unchecked Sendable {}
-#endif // compiler(>=5.6)
 
 @available(swift, deprecated: 5.6, message: "Test clients are not Sendable but the 'GRPCClient' API requires clients to be Sendable. Using a localhost client and server is the recommended alternative.")
 public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
@@ -618,8 +611,6 @@ extension Echo_EchoProvider {
   }
 }
 
-#if compiler(>=5.6)
-
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
@@ -713,8 +704,6 @@ extension Echo_EchoAsyncProvider {
     }
   }
 }
-
-#endif // compiler(>=5.6)
 
 public protocol Echo_EchoServerInterceptorFactoryProtocol {
 

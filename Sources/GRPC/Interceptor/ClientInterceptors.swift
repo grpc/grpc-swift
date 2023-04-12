@@ -48,7 +48,6 @@ import NIOCore
 /// require any extra attention. However, if work is done on a `DispatchQueue` or _other_
 /// `EventLoop` then implementers should ensure that they use `context` from the correct
 /// `EventLoop`.
-#if swift(>=5.6)
 @preconcurrency open class ClientInterceptor<Request, Response>: @unchecked Sendable {
   public init() {}
 
@@ -98,54 +97,3 @@ import NIOCore
     context.cancel(promise: promise)
   }
 }
-#else
-open class ClientInterceptor<Request, Response> {
-  public init() {}
-
-  /// Called when the interceptor has received a response part to handle.
-  /// - Parameters:
-  ///   - part: The response part which has been received from the server.
-  ///   - context: An interceptor context which may be used to forward the response part.
-  open func receive(
-    _ part: GRPCClientResponsePart<Response>,
-    context: ClientInterceptorContext<Request, Response>
-  ) {
-    context.receive(part)
-  }
-
-  /// Called when the interceptor has received an error.
-  /// - Parameters:
-  ///   - error: The error.
-  ///   - context: An interceptor context which may be used to forward the error.
-  open func errorCaught(
-    _ error: Error,
-    context: ClientInterceptorContext<Request, Response>
-  ) {
-    context.errorCaught(error)
-  }
-
-  /// Called when the interceptor has received a request part to handle.
-  /// - Parameters:
-  ///   - part: The request part which should be sent to the server.
-  ///   - promise: A promise which should be completed when the response part has been handled.
-  ///   - context: An interceptor context which may be used to forward the request part.
-  open func send(
-    _ part: GRPCClientRequestPart<Request>,
-    promise: EventLoopPromise<Void>?,
-    context: ClientInterceptorContext<Request, Response>
-  ) {
-    context.send(part, promise: promise)
-  }
-
-  /// Called when the interceptor has received a request to cancel the RPC.
-  /// - Parameters:
-  ///   - promise: A promise which should be cancellation request has been handled.
-  ///   - context: An interceptor context which may be used to forward the cancellation request.
-  open func cancel(
-    promise: EventLoopPromise<Void>?,
-    context: ClientInterceptorContext<Request, Response>
-  ) {
-    context.cancel(promise: promise)
-  }
-}
-#endif // swift(>=5.6)

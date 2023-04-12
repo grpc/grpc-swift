@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 extension ServerInterceptorStateMachine {
   @usableFromInline
   internal enum StreamFilter: Hashable {
@@ -99,4 +98,3 @@ extension ServerInterceptorStateMachine {
     }
   }
 }
-#endif // compiler(>=5.6)

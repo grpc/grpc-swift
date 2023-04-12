@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import DequeModule
 import Logging
 import NIOCore
@@ -860,5 +859,3 @@ internal struct ServerHandlerComponents<
     self.task.cancel()
   }
 }
-
-#endif // compiler(>=5.6)

@@ -87,7 +87,7 @@ public enum GRPCChannelPool {
 }
 
 extension GRPCChannelPool {
-  public struct Configuration: GRPCSendable {
+  public struct Configuration: Sendable {
     @inlinable
     internal init(
       target: ConnectionTarget,
@@ -167,12 +167,8 @@ extension GRPCChannelPool {
     /// This may be used to add additional handlers to the pipeline and is intended for debugging.
     ///
     /// - Warning: The initializer closure may be invoked *multiple times*.
-    #if compiler(>=5.6)
     @preconcurrency
     public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
-    #else
-    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
-    #endif
 
     /// An error delegate which is called when errors are caught.
     public var errorDelegate: ClientErrorDelegate?
@@ -192,7 +188,7 @@ extension GRPCChannelPool {
 }
 
 extension GRPCChannelPool.Configuration {
-  public struct TransportSecurity: GRPCSendable {
+  public struct TransportSecurity: Sendable {
     private init(_ configuration: GRPCTLSConfiguration?) {
       self.tlsConfiguration = configuration
     }
@@ -219,7 +215,7 @@ extension GRPCChannelPool.Configuration {
 }
 
 extension GRPCChannelPool.Configuration {
-  public struct HTTP2: Hashable, GRPCSendable {
+  public struct HTTP2: Hashable, Sendable {
     private static let allowedTargetWindowSizes = (1 ... Int(Int32.max))
     private static let allowedMaxFrameSizes = (1 << 14) ... ((1 << 24) - 1)
 
@@ -252,7 +248,7 @@ extension GRPCChannelPool.Configuration {
 }
 
 extension GRPCChannelPool.Configuration {
-  public struct ConnectionPool: Hashable, GRPCSendable {
+  public struct ConnectionPool: Hashable, Sendable {
     /// Default connection pool configuration.
     public static let defaults = ConnectionPool()
 
@@ -293,7 +289,7 @@ extension GRPCChannelPool.Configuration {
 }
 
 /// The ID of a connection in the connection pool.
-public struct GRPCConnectionID: Hashable, GRPCSendable, CustomStringConvertible {
+public struct GRPCConnectionID: Hashable, Sendable, CustomStringConvertible {
   private let id: ConnectionManagerID
 
   public var description: String {
@@ -309,7 +305,7 @@ public struct GRPCConnectionID: Hashable, GRPCSendable, CustomStringConvertible 
 ///
 /// All functions must execute quickly and may be executed on arbitrary threads. The implementor is
 /// responsible for ensuring thread safety.
-public protocol GRPCConnectionPoolDelegate: GRPCSendable {
+public protocol GRPCConnectionPoolDelegate: Sendable {
   /// A new connection was created with the given ID and added to the pool. The connection is not
   /// yet active (or connecting).
   ///

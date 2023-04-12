@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
-
 @testable import GRPC
 import NIOCore
 import NIOEmbedded
@@ -614,4 +612,3 @@ extension Optional where Wrapped == GRPCServerResponsePart<ByteBuffer> {
     }
   }
 }
-#endif

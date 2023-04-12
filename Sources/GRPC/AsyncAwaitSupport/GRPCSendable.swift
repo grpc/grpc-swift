@@ -13,25 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import NIOCore
 
-#if compiler(>=5.6)
+@available(*, deprecated, renamed: "Swift.Sendable")
 public typealias GRPCSendable = Swift.Sendable
-#else
-public typealias GRPCSendable = Any
-#endif // compiler(>=5.6)
 
-#if compiler(>=5.6)
 @preconcurrency
 public protocol GRPCPreconcurrencySendable: Sendable {}
-#else
-public protocol GRPCPreconcurrencySendable {}
-#endif // compiler(>=5.6)
 
-#if compiler(>=5.6)
 @preconcurrency public typealias GRPCChannelInitializer = @Sendable (Channel)
   -> EventLoopFuture<Void>
-#else
-public typealias GRPCChannelInitializer = (Channel) -> EventLoopFuture<Void>
-#endif // compiler(>=5.6)

@@ -202,11 +202,9 @@ public final class AnyServiceClient: GRPCClient {
   }
 }
 
-#if swift(>=5.6)
 // Unchecked because mutable state is protected by a lock.
 @available(*, deprecated, renamed: "GRPCAnyServiceClient")
-extension AnyServiceClient: @unchecked GRPCSendable {}
-#endif // swift(>=5.6)
+extension AnyServiceClient: @unchecked Sendable {}
 
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
 /// See ``GRPCClient`` for details.

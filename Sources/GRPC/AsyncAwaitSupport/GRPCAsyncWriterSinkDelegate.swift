@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if compiler(>=5.6)
 import DequeModule
 import NIOCore
 
@@ -45,4 +43,3 @@ internal struct GRPCAsyncWriterSinkDelegate<Element: Sendable>: NIOAsyncWriterSi
     self._didTerminate?(error)
   }
 }
-#endif // compiler(>=5.6)

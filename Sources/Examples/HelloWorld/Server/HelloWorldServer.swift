@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if compiler(>=5.6)
 import ArgumentParser
 import GRPC
 import HelloWorldModel
@@ -44,11 +43,3 @@ struct HelloWorld: AsyncParsableCommand {
     try await server.onClose.get()
   }
 }
-#else
-@main
-enum HelloWorld {
-  static func main() {
-    fatalError("This example requires swift >= 5.6")
-  }
-}
-#endif // compiler(>=5.6)
