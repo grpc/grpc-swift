@@ -53,7 +53,7 @@ extension ConnectionPool {
       }
 
       @usableFromInline
-      var multiplexer: HTTP2StreamMultiplexer
+      var multiplexer: NIOHTTP2Handler.StreamMultiplexer
       /// Maximum number of available streams.
       @usableFromInline
       var maxAvailable: Int
@@ -73,7 +73,7 @@ extension ConnectionPool {
 
       /// Increment the reserved streams and return the multiplexer.
       @usableFromInline
-      mutating func reserve() -> HTTP2StreamMultiplexer {
+      mutating func reserve() -> NIOHTTP2Handler.StreamMultiplexer {
         assert(!self.isQuiescing)
         self.reserved += 1
         return self.multiplexer
@@ -127,7 +127,7 @@ extension ConnectionPool {
     ///
     /// The result may be safely unwrapped if `self.availableStreams > 0` when reserving a stream.
     @usableFromInline
-    internal mutating func reserveStream() -> HTTP2StreamMultiplexer? {
+    internal mutating func reserveStream() -> NIOHTTP2Handler.StreamMultiplexer? {
       return self._availability?.reserve()
     }
 

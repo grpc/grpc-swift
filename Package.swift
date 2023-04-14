@@ -36,7 +36,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
-    from: "1.24.1"
+    branch: "main" //TODO: replace with a version number before merging
   ),
   .package(
     url: "https://github.com/apple/swift-nio-transport-services.git",

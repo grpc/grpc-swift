@@ -30,7 +30,7 @@ extension ConnectionPool {
 
     /// The channel initializer.
     @usableFromInline
-    internal let _channelInitializer: (Channel) -> EventLoopFuture<Void>
+    internal let _channelInitializer: @Sendable (Channel) -> EventLoopFuture<Void>
 
     /// The deadline at which the timeout is scheduled.
     @usableFromInline
@@ -51,7 +51,7 @@ extension ConnectionPool {
     internal init(
       deadline: NIODeadline,
       promise: EventLoopPromise<Channel>,
-      channelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+      channelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
     ) {
       self._deadline = deadline
       self._promise = promise
@@ -83,7 +83,7 @@ extension ConnectionPool {
 
     /// Succeed the waiter with the given multiplexer.
     @usableFromInline
-    internal func succeed(with multiplexer: HTTP2StreamMultiplexer) {
+    internal func succeed(with multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
       self._scheduledTimeout?.cancel()
       self._scheduledTimeout = nil
       multiplexer.createStreamChannel(promise: self._promise, self._channelInitializer)

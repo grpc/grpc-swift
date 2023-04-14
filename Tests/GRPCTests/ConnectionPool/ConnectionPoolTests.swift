@@ -17,7 +17,7 @@
 import Logging
 import NIOCore
 import NIOEmbedded
-import NIOHTTP2
+@testable import NIOHTTP2
 import XCTest
 
 final class ConnectionPoolTests: GRPCTestCase {
@@ -709,6 +709,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     self.eventLoop.run()
     XCTAssertNoThrow(try w2.wait())
     controller.openStreamInChannel(atIndex: 1)
+
   }
 
   func testFailedWaiterWithError() throws {
@@ -1010,8 +1011,14 @@ extension ConnectionPool {
 
 // MARK: - Helpers
 
+struct ChannelAndState {
+  let channel: EmbeddedChannel
+  let streamDelegate: NIOHTTP2StreamDelegate
+  var isActive: Bool
+}
+
 internal final class ChannelController {
-  private var channels: [EmbeddedChannel] = []
+  private var channels: [ChannelAndState] = []
 
   internal var count: Int {
     return self.channels.count
@@ -1019,8 +1026,11 @@ internal final class ChannelController {
 
   internal func finish() {
     while let channel = self.channels.popLast() {
+      if !channel.isActive {
+        continue
+      }
       // We're okay with this throwing: some channels are left in a bad state (i.e. with errors).
-      _ = try? channel.finish()
+      _ = try? channel.channel.finish()
     }
   }
 
@@ -1040,9 +1050,10 @@ internal final class ChannelController {
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
+    self.channels[index].isActive = true
 
     XCTAssertNoThrow(
-      try self.channels[index].connect(to: .init(unixDomainSocketPath: "/")),
+      try self.channels[index].channel.connect(to: .init(unixDomainSocketPath: "/")),
       file: file,
       line: line
     )
@@ -1054,7 +1065,8 @@ internal final class ChannelController {
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
-    self.channels[index].pipeline.fireChannelInactive()
+    self.channels[index].channel.pipeline.fireChannelInactive()
+    self.channels[index].isActive = false
   }
 
   internal func throwError(
@@ -1064,7 +1076,7 @@ internal final class ChannelController {
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
-    self.channels[index].pipeline.fireErrorCaught(error)
+    self.channels[index].channel.pipeline.fireErrorCaught(error)
   }
 
   internal func sendSettingsToChannel(
@@ -1078,7 +1090,7 @@ internal final class ChannelController {
     let settings = [HTTP2Setting(parameter: .maxConcurrentStreams, value: maxConcurrentStreams)]
     let settingsFrame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings(settings)))
 
-    XCTAssertNoThrow(try self.channels[index].writeInbound(settingsFrame), file: file, line: line)
+    XCTAssertNoThrow(try self.channels[index].channel.writeInbound(settingsFrame.encode()), file: file, line: line)
   }
 
   internal func sendGoAwayToChannel(
@@ -1093,7 +1105,7 @@ internal final class ChannelController {
       payload: .goAway(lastStreamID: .maxID, errorCode: .noError, opaqueData: nil)
     )
 
-    XCTAssertNoThrow(try self.channels[index].writeInbound(goAwayFrame), file: file, line: line)
+    XCTAssertNoThrow(try self.channels[index].channel.writeInbound(goAwayFrame.encode()), file: file, line: line)
   }
 
   internal func openStreamInChannel(
@@ -1104,13 +1116,8 @@ internal final class ChannelController {
     guard self.isValidIndex(index, file: file, line: line) else { return }
 
     // The details don't matter here.
-    let event = NIOHTTP2StreamCreatedEvent(
-      streamID: .rootStream,
-      localInitialWindowSize: nil,
-      remoteInitialWindowSize: nil
-    )
-
-    self.channels[index].pipeline.fireUserInboundEventTriggered(event)
+    let channel = self.channels[index]
+    channel.streamDelegate.streamCreated(.rootStream, channel: channel.channel)
   }
 
   internal func closeStreamInChannel(
@@ -1121,8 +1128,8 @@ internal final class ChannelController {
     guard self.isValidIndex(index, file: file, line: line) else { return }
 
     // The details don't matter here.
-    let event = StreamClosedEvent(streamID: .rootStream, reason: nil)
-    self.channels[index].pipeline.fireUserInboundEventTriggered(event)
+    let channel = self.channels[index]
+    channel.streamDelegate.streamClosed(.rootStream, channel: channel.channel)
   }
 }
 
@@ -1134,24 +1141,28 @@ extension ChannelController: ConnectionManagerChannelProvider {
     logger: Logger
   ) -> EventLoopFuture<Channel> {
     let channel = EmbeddedChannel(loop: eventLoop as! EmbeddedEventLoop)
-    self.channels.append(channel)
-
-    let multiplexer = HTTP2StreamMultiplexer(
-      mode: .client,
-      channel: channel,
-      inboundStreamInitializer: nil
-    )
 
     let idleHandler = GRPCIdleHandler(
       connectionManager: connectionManager,
-      multiplexer: multiplexer,
       idleTimeout: .minutes(5),
       keepalive: ClientConnectionKeepalive(),
       logger: logger
     )
 
+    let h2handler = NIOHTTP2Handler(
+      mode: .client,
+      eventLoop: channel.eventLoop,
+      streamDelegate: idleHandler
+    ) { channel in
+      channel.eventLoop.makeSucceededVoidFuture()
+    }
+    XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(h2handler))
+
+
+    idleHandler.setMultiplexer(try! h2handler.syncMultiplexer())
+    self.channels.append(.init(channel: channel, streamDelegate: idleHandler, isActive: false))
+
     XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(idleHandler))
-    XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(multiplexer))
 
     return eventLoop.makeSucceededFuture(channel)
   }
@@ -1197,4 +1208,23 @@ extension Optional where Wrapped == ConnectionPoolError {
       return false
     }
   }
+}
+
+extension HTTP2Frame {
+    func encode() throws -> ByteBuffer {
+        let allocator = ByteBufferAllocator()
+        var buffer = allocator.buffer(capacity: 1024)
+
+        var frameEncoder = HTTP2FrameEncoder(allocator: allocator)
+        let extraData = try frameEncoder.encode(frame: self, to: &buffer)
+        if let extraData = extraData {
+            switch extraData {
+            case .byteBuffer(let extraBuffer):
+                buffer.writeImmutableBuffer(extraBuffer)
+            default:
+                preconditionFailure()
+            }
+        }
+        return buffer
+    }
 }
