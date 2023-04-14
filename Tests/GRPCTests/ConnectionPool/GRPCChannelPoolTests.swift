@@ -464,7 +464,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     event = await iterator.next()
     XCTAssertEqual(event, .connectionUtilizationChanged(id, 0, 100))
 
-    let rpcs: [ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>] = try (1 ... 10).map { i in
+    let rpcs: [ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>] = try (1 ... 10).map { _ in
       let rpc = self.echo.collect()
       XCTAssertNoThrow(try rpc.sendMessage(.with { $0.text = "foo" }).wait())
       return rpc

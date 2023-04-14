@@ -603,7 +603,6 @@ extension ChannelPipeline.SynchronousOperations {
       HTTP2Setting(parameter: .initialWindowSize, value: httpTargetWindowSize),
     ]
 
-
     let grpcIdleHandler = GRPCIdleHandler(
       connectionManager: connectionManager,
       idleTimeout: connectionIdleTimeout,
@@ -644,7 +643,11 @@ extension Channel {
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
   ) -> EventLoopFuture<Void> {
-    return self.configureHTTP2Pipeline(mode: .client, connectionConfiguration: .init(), streamConfiguration: .init()) { channel in
+    return self.configureHTTP2Pipeline(
+      mode: .client,
+      connectionConfiguration: .init(),
+      streamConfiguration: .init()
+    ) { channel in
       channel.eventLoop.makeSucceededVoidFuture()
     }.flatMap { _ in
       self.pipeline.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))

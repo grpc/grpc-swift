@@ -709,7 +709,6 @@ final class ConnectionPoolTests: GRPCTestCase {
     self.eventLoop.run()
     XCTAssertNoThrow(try w2.wait())
     controller.openStreamInChannel(atIndex: 1)
-
   }
 
   func testFailedWaiterWithError() throws {
@@ -1090,7 +1089,11 @@ internal final class ChannelController {
     let settings = [HTTP2Setting(parameter: .maxConcurrentStreams, value: maxConcurrentStreams)]
     let settingsFrame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings(settings)))
 
-    XCTAssertNoThrow(try self.channels[index].channel.writeInbound(settingsFrame.encode()), file: file, line: line)
+    XCTAssertNoThrow(
+      try self.channels[index].channel.writeInbound(settingsFrame.encode()),
+      file: file,
+      line: line
+    )
   }
 
   internal func sendGoAwayToChannel(
@@ -1105,7 +1108,11 @@ internal final class ChannelController {
       payload: .goAway(lastStreamID: .maxID, errorCode: .noError, opaqueData: nil)
     )
 
-    XCTAssertNoThrow(try self.channels[index].channel.writeInbound(goAwayFrame.encode()), file: file, line: line)
+    XCTAssertNoThrow(
+      try self.channels[index].channel.writeInbound(goAwayFrame.encode()),
+      file: file,
+      line: line
+    )
   }
 
   internal func openStreamInChannel(
@@ -1157,7 +1164,6 @@ extension ChannelController: ConnectionManagerChannelProvider {
       channel.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(h2handler))
-
 
     idleHandler.setMultiplexer(try! h2handler.syncMultiplexer())
     self.channels.append(.init(channel: channel, streamDelegate: idleHandler, isActive: false))
@@ -1211,20 +1217,20 @@ extension Optional where Wrapped == ConnectionPoolError {
 }
 
 extension HTTP2Frame {
-    func encode() throws -> ByteBuffer {
-        let allocator = ByteBufferAllocator()
-        var buffer = allocator.buffer(capacity: 1024)
+  func encode() throws -> ByteBuffer {
+    let allocator = ByteBufferAllocator()
+    var buffer = allocator.buffer(capacity: 1024)
 
-        var frameEncoder = HTTP2FrameEncoder(allocator: allocator)
-        let extraData = try frameEncoder.encode(frame: self, to: &buffer)
-        if let extraData = extraData {
-            switch extraData {
-            case .byteBuffer(let extraBuffer):
-                buffer.writeImmutableBuffer(extraBuffer)
-            default:
-                preconditionFailure()
-            }
-        }
-        return buffer
+    var frameEncoder = HTTP2FrameEncoder(allocator: allocator)
+    let extraData = try frameEncoder.encode(frame: self, to: &buffer)
+    if let extraData = extraData {
+      switch extraData {
+      case let .byteBuffer(extraBuffer):
+        buffer.writeImmutableBuffer(extraBuffer)
+      default:
+        preconditionFailure()
+      }
     }
+    return buffer
+  }
 }

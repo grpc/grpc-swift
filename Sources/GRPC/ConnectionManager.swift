@@ -47,7 +47,11 @@ internal final class ConnectionManager: @unchecked Sendable {
     var multiplexer: NIOHTTP2Handler.StreamMultiplexer
     var error: Error?
 
-    init(from state: ConnectingState, candidate: Channel, multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
+    init(
+      from state: ConnectingState,
+      candidate: Channel,
+      multiplexer: NIOHTTP2Handler.StreamMultiplexer
+    ) {
       self.backoffIterator = state.backoffIterator
       self.reconnect = state.reconnect
       self.candidate = candidate
@@ -421,7 +425,8 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// attempt, or if the state is 'idle' returns the future for the next connection attempt.
   ///
   /// Note: if the state is 'transientFailure' or 'shutdown' then a failed future will be returned.
-  private func getHTTP2MultiplexerOptimistic() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
+  private func getHTTP2MultiplexerOptimistic()
+    -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
     // `getHTTP2Multiplexer` makes sure we're on the event loop but let's just be sure.
     self.eventLoop.preconditionInEventLoop()
 

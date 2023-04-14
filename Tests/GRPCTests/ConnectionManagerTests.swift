@@ -255,8 +255,8 @@ extension ConnectionManagerTests {
 
     var seenAnInactive = false
     public func channelInactive(context: ChannelHandlerContext) {
-      if !seenAnInactive {
-        seenAnInactive = true
+      if !self.seenAnInactive {
+        self.seenAnInactive = true
         context.fireChannelInactive()
       }
     }
@@ -520,15 +520,16 @@ extension ConnectionManagerTests {
       return next
     }
 
-    let readyChannelMux: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = self.waitForStateChanges([
-      Change(from: .idle, to: .connecting),
-      Change(from: .connecting, to: .transientFailure),
-    ]) {
-      // Get a HTTP/2 stream multiplexer.
-      let readyChannelMux = manager.getHTTP2Multiplexer()
-      self.loop.run()
-      return readyChannelMux
-    }
+    let readyChannelMux: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = self
+      .waitForStateChanges([
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .transientFailure),
+      ]) {
+        // Get a HTTP/2 stream multiplexer.
+        let readyChannelMux = manager.getHTTP2Multiplexer()
+        self.loop.run()
+        return readyChannelMux
+      }
 
     // Get a HTTP/2 stream mux from the manager - it is a future for the one we made earlier.
     let anotherReadyChannelMux = manager.getHTTP2Multiplexer()
@@ -624,15 +625,16 @@ extension ConnectionManagerTests {
       self.loop.makeFailedFuture(DoomedChannelError())
     }
 
-    let readyChannelMux: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = self.waitForStateChanges([
-      Change(from: .idle, to: .connecting),
-      Change(from: .connecting, to: .transientFailure),
-    ]) {
-      // Get a HTTP/2 stream multiplexer.
-      let readyChannelMux = manager.getHTTP2Multiplexer()
-      self.loop.run()
-      return readyChannelMux
-    }
+    let readyChannelMux: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = self
+      .waitForStateChanges([
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .transientFailure),
+      ]) {
+        // Get a HTTP/2 stream multiplexer.
+        let readyChannelMux = manager.getHTTP2Multiplexer()
+        self.loop.run()
+        return readyChannelMux
+      }
 
     // Now shutdown.
     try self.waitForStateChange(from: .transientFailure, to: .shutdown) {
@@ -1058,14 +1060,15 @@ extension ConnectionManagerTests {
     }
 
     // Start the connection.
-    let readyChannelMux: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = self.waitForStateChange(
-      from: .idle,
-      to: .connecting
-    ) {
-      let readyChannelMux = manager.getHTTP2Multiplexer()
-      self.loop.run()
-      return readyChannelMux
-    }
+    let readyChannelMux: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = self
+      .waitForStateChange(
+        from: .idle,
+        to: .connecting
+      ) {
+        let readyChannelMux = manager.getHTTP2Multiplexer()
+        self.loop.run()
+        return readyChannelMux
+      }
 
     // Setup the real channel and activate it.
     let channel = EmbeddedChannel(loop: self.loop)
@@ -1207,7 +1210,7 @@ extension ConnectionManagerTests {
 
     let http2 = HTTP2Delegate()
 
-    var streamDelegate: NIOHTTP2StreamDelegate? = nil
+    var streamDelegate: NIOHTTP2StreamDelegate?
     let manager = ConnectionManager(
       eventLoop: self.loop,
       channelProvider: HookedChannelProvider { manager, eventLoop -> EventLoopFuture<Channel> in
@@ -1222,7 +1225,7 @@ extension ConnectionManagerTests {
           eventLoop: channel.eventLoop,
           streamDelegate: idleHandler
         ) { channel in
-            channel.eventLoop.makeSucceededVoidFuture()
+          channel.eventLoop.makeSucceededVoidFuture()
         }
         try! channel.pipeline.syncOperations.addHandler(h2Handler)
         idleHandler.setMultiplexer(try! h2Handler.syncMultiplexer())

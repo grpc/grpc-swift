@@ -195,7 +195,11 @@ extension EventRecordingConnectionPoolDelegate: @unchecked Sendable {}
 final class AsyncEventStreamConnectionPoolDelegate: GRPCConnectionPoolDelegate {
   private let continuation: AsyncStream<EventRecordingConnectionPoolDelegate.Event>.Continuation
 
-  static func makeDelegateAndAsyncStream() -> (AsyncEventStreamConnectionPoolDelegate, AsyncStream<EventRecordingConnectionPoolDelegate.Event>) {
+  static func makeDelegateAndAsyncStream()
+    -> (
+      AsyncEventStreamConnectionPoolDelegate,
+      AsyncStream<EventRecordingConnectionPoolDelegate.Event>
+    ) {
     var continuation: AsyncStream<EventRecordingConnectionPoolDelegate.Event>.Continuation!
     let asyncStream = AsyncStream(EventRecordingConnectionPoolDelegate.Event.self) {
       continuation = $0

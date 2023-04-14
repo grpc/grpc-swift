@@ -49,7 +49,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     mutating func setMultiplexer(_ multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
       switch self {
-      case .partial(let connectionManager):
+      case let .partial(connectionManager):
         self = .complete(connectionManager, multiplexer)
       case .complete:
         preconditionFailure("Setting the multiplexer twice is not supported.")
@@ -65,7 +65,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     mutating func setMultiplexer(_ multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
       switch self {
-      case .client(var clientConfigurationState):
+      case var .client(clientConfigurationState):
         clientConfigurationState.setMultiplexer(multiplexer)
         self = .client(clientConfigurationState)
       case .server:
@@ -75,11 +75,11 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     var connectionManager: ConnectionManager? {
       switch self {
-      case .client(let configurationState):
+      case let .client(configurationState):
         switch configurationState {
-        case .complete(let connectionManager, _):
+        case let .complete(connectionManager, _):
           return connectionManager
-        case .partial(let connectionManager):
+        case let .partial(connectionManager):
           return connectionManager
         }
       case .server:
@@ -305,9 +305,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     // No state machine action here.
     switch self.mode {
-    case .client(let configurationState):
+    case let .client(configurationState):
       switch configurationState {
-      case .complete(let connectionManager, let multiplexer):
+      case let .complete(connectionManager, multiplexer):
         connectionManager.channelActive(channel: context.channel, multiplexer: multiplexer)
       case .partial:
         preconditionFailure("not yet initialised")
