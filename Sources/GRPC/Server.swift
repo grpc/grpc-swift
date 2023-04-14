@@ -453,7 +453,7 @@ extension Server {
 }
 
 extension Server.Configuration {
-  public struct CORS: Hashable, GRPCSendable {
+  public struct CORS: Hashable, Sendable {
     /// Determines which 'origin' header field values are permitted in a CORS request.
     public var allowedOrigins: AllowedOrigins
     /// Sets the headers which are permitted in a response to a CORS request.
