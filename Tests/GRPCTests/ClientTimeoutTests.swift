@@ -169,7 +169,7 @@ extension EmbeddedGRPCChannel: @unchecked Sendable {}
 
 private final class EmbeddedGRPCChannel: GRPCChannel {
   let embeddedChannel: EmbeddedChannel
-  let h2Handler: EventLoopFuture<NIOHTTP2Handler>
+  let multiplexer: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer>
 
   let logger: Logger
   let scheme: String
@@ -191,12 +191,15 @@ private final class EmbeddedGRPCChannel: GRPCChannel {
     let embeddedChannel = EmbeddedChannel()
     self.embeddedChannel = embeddedChannel
     self.logger = logger
-    self.h2Handler = embeddedChannel.configureGRPCClient(
+    self.multiplexer = embeddedChannel.configureGRPCClient(
       errorDelegate: errorDelegate,
       logger: logger
     ).flatMap {
       embeddedChannel.pipeline.handler(type: NIOHTTP2Handler.self)
+    }.flatMap { h2Handler in
+      h2Handler.multiplexer
     }
+
     self.scheme = "http"
     self.authority = "localhost"
     self.errorDelegate = errorDelegate
@@ -250,11 +253,9 @@ private final class EmbeddedGRPCChannel: GRPCChannel {
 
   private func makeStreamChannel() -> EventLoopFuture<Channel> {
     let promise = self.eventLoop.makePromise(of: Channel.self)
-    self.h2Handler.whenSuccess {
-      $0.multiplexer.whenSuccess {
-        $0.createStreamChannel(promise: promise) {
-          $0.eventLoop.makeSucceededVoidFuture()
-        }
+    self.multiplexer.whenSuccess {
+      $0.createStreamChannel(promise: promise) {
+        $0.eventLoop.makeSucceededVoidFuture()
       }
     }
     return promise.futureResult

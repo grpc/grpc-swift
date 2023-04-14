@@ -17,7 +17,7 @@
 import Logging
 import NIOCore
 import NIOEmbedded
-@testable import NIOHTTP2
+import NIOHTTP2
 import XCTest
 
 final class ConnectionPoolTests: GRPCTestCase {
@@ -1024,12 +1024,10 @@ internal final class ChannelController {
   }
 
   internal func finish() {
-    while let channel = self.channels.popLast() {
-      if !channel.isActive {
-        continue
+    while let state = self.channels.popLast() {
+      if state.isActive {
+        _ = try? state.channel.finish()
       }
-      // We're okay with this throwing: some channels are left in a bad state (i.e. with errors).
-      _ = try? channel.channel.finish()
     }
   }
 
@@ -1216,12 +1214,138 @@ extension Optional where Wrapped == ConnectionPoolError {
   }
 }
 
-extension HTTP2Frame {
+// Simplified version of the frame encoder found in SwiftNIO HTTP/2
+struct HTTP2FrameEncoder {
+  mutating func encode(frame: HTTP2Frame, to buf: inout ByteBuffer) throws -> IOData? {
+    // note our starting point
+    let start = buf.writerIndex
+
+    //      +-----------------------------------------------+
+    //      |                 Length (24)                   |
+    //      +---------------+---------------+---------------+
+    //      |   Type (8)    |   Flags (8)   |
+    //      +-+-------------+---------------+-------------------------------+
+    //      |R|                 Stream Identifier (31)                      |
+    //      +=+=============================================================+
+    //      |                   Frame Payload (0...)                      ...
+    //      +---------------------------------------------------------------+
+
+    // skip 24-bit length for now, we'll fill that in later
+    buf.moveWriterIndex(forwardBy: 3)
+
+    // 8-bit type
+    buf.writeInteger(frame.code())
+
+    // skip the 8 bit flags for now, we'll fill it in later as well.
+    let flagsIndex = buf.writerIndex
+    var flags = FrameFlags()
+    buf.moveWriterIndex(forwardBy: 1)
+
+    // 32-bit stream identifier -- ensuring the top bit is empty
+    buf.writeInteger(Int32(frame.streamID))
+
+    // frame payload follows, which depends on the frame type itself
+    let payloadStart = buf.writerIndex
+    let extraFrameData: IOData?
+    let payloadSize: Int
+
+    switch frame.payload {
+
+    case .settings(.settings(let settings)):
+      for setting in settings {
+        buf.writeInteger(setting.parameter.networkRepresentation())
+        buf.writeInteger(UInt32(setting.value))
+      }
+
+      payloadSize = settings.count * 6
+      extraFrameData = nil
+
+    case .settings(.ack):
+      payloadSize = 0
+      extraFrameData = nil
+      flags.insert(.ack)
+
+    case .goAway(let lastStreamID, let errorCode, let opaqueData):
+      let streamVal: UInt32 = UInt32(Int(lastStreamID)) & ~0x8000_0000
+      buf.writeInteger(streamVal)
+      buf.writeInteger(UInt32(errorCode.networkCode))
+
+      if let data = opaqueData {
+        payloadSize = data.readableBytes + 8
+        extraFrameData = .byteBuffer(data)
+      } else {
+        payloadSize = 8
+        extraFrameData = nil
+      }
+
+    case .data, .headers, .priority,
+        .rstStream, .pushPromise, .ping,
+        .windowUpdate, .alternativeService, .origin:
+      preconditionFailure("Frame type not supported: \(frame.payload)")
+    }
+
+    // Write the frame data. This is the payload size and the flags byte.
+    buf.writePayloadSize(payloadSize, at: start)
+    buf.setInteger(flags.rawValue, at: flagsIndex)
+
+    // all bytes to write are in the provided buffer now
+    return extraFrameData
+  }
+
+  struct FrameFlags: OptionSet {
+    internal private(set) var rawValue: UInt8
+
+    internal init(rawValue: UInt8) {
+      self.rawValue = rawValue
+    }
+
+    /// ACK flag. Valid on SETTINGS and PING frames.
+    internal static let ack = FrameFlags(rawValue: 0x01)
+  }
+}
+
+internal extension HTTP2SettingsParameter {
+  func networkRepresentation() -> UInt16 {
+    switch self {
+    case HTTP2SettingsParameter.headerTableSize:
+      return UInt16(1)
+    case HTTP2SettingsParameter.enablePush:
+      return UInt16(2)
+    case HTTP2SettingsParameter.maxConcurrentStreams:
+      return UInt16(3)
+    case HTTP2SettingsParameter.initialWindowSize:
+      return UInt16(4)
+    case HTTP2SettingsParameter.maxFrameSize:
+      return UInt16(5)
+    case HTTP2SettingsParameter.maxHeaderListSize:
+      return UInt16(6)
+    case HTTP2SettingsParameter.enableConnectProtocol:
+      return UInt16(8)
+    default:
+      preconditionFailure("Unknown settings parameter.")
+    }
+  }
+}
+
+extension ByteBuffer {
+  fileprivate mutating func writePayloadSize(_ size: Int, at location: Int) {
+    // Yes, this performs better than running a UInt8 through the generic write(integer:) three times.
+    var bytes: (UInt8, UInt8, UInt8)
+    bytes.0 = UInt8((size & 0xff_00_00) >> 16)
+    bytes.1 = UInt8((size & 0x00_ff_00) >>  8)
+    bytes.2 = UInt8( size & 0x00_00_ff)
+    withUnsafeBytes(of: bytes) { ptr in
+      _ = self.setBytes(ptr, at: location)
+    }
+  }
+}
+
+internal extension HTTP2Frame {
   func encode() throws -> ByteBuffer {
     let allocator = ByteBufferAllocator()
     var buffer = allocator.buffer(capacity: 1024)
 
-    var frameEncoder = HTTP2FrameEncoder(allocator: allocator)
+    var frameEncoder = HTTP2FrameEncoder()
     let extraData = try frameEncoder.encode(frame: self, to: &buffer)
     if let extraData = extraData {
       switch extraData {
@@ -1232,5 +1356,22 @@ extension HTTP2Frame {
       }
     }
     return buffer
+  }
+
+  /// The one-byte identifier used to indicate the type of a frame on the wire.
+  func code() -> UInt8 {
+    switch self.payload {
+    case .data:                 return 0x0
+    case .headers:              return 0x1
+    case .priority:             return 0x2
+    case .rstStream:            return 0x3
+    case .settings:             return 0x4
+    case .pushPromise:          return 0x5
+    case .ping:                 return 0x6
+    case .goAway:               return 0x7
+    case .windowUpdate:         return 0x8
+    case .alternativeService:   return 0xa
+    case .origin:               return 0xc
+    }
   }
 }

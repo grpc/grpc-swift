@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Dispatch
 import GRPC
 import NIOConcurrencyHelpers
 import NIOCore
-import XCTest
 
 final class IsConnectingDelegate: GRPCConnectionPoolDelegate {
   private let lock = NIOLock()

@@ -610,8 +610,6 @@ extension ChannelPipeline.SynchronousOperations {
       logger: logger
     )
 
-    // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the
-    // two HTTP/2 handlers so we'll do it manually instead.
     var connectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
     connectionConfiguration.initialSettings = initialSettings
     var streamConfiguration = NIOHTTP2Handler.StreamConfiguration()
@@ -623,15 +621,11 @@ extension ChannelPipeline.SynchronousOperations {
       streamConfiguration: streamConfiguration,
       streamDelegate: grpcIdleHandler
     ) { channel in
-      channel.eventLoop.makeSucceededVoidFuture()
+      channel.close()
     }
     try self.addHandler(h2Handler)
 
     grpcIdleHandler.setMultiplexer(try h2Handler.syncMultiplexer())
-
-    // The multiplexer is passed through the idle handler so it is only reported on
-    // successful channel activation - with happy eyeballs multiple pipelines can
-    // be constructed so it's not safe to report just yet.
     try self.addHandler(grpcIdleHandler)
 
     try self.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))

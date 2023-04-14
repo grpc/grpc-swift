@@ -80,7 +80,7 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
   /// Makes an HTTP/2 handler.
   private func makeHTTP2Handler(
     for channel: Channel,
-    streamDelegate: NIOHTTP2StreamDelegate? = nil
+    streamDelegate: NIOHTTP2StreamDelegate?
   ) -> NIOHTTP2Handler {
     var connectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
     connectionConfiguration.initialSettings = [
