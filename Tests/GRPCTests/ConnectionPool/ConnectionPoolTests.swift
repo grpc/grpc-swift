@@ -1250,8 +1250,7 @@ struct HTTP2FrameEncoder {
     let payloadSize: Int
 
     switch frame.payload {
-
-    case .settings(.settings(let settings)):
+    case let .settings(.settings(settings)):
       for setting in settings {
         buf.writeInteger(setting.parameter.networkRepresentation())
         buf.writeInteger(UInt32(setting.value))
@@ -1265,8 +1264,8 @@ struct HTTP2FrameEncoder {
       extraFrameData = nil
       flags.insert(.ack)
 
-    case .goAway(let lastStreamID, let errorCode, let opaqueData):
-      let streamVal: UInt32 = UInt32(Int(lastStreamID)) & ~0x8000_0000
+    case let .goAway(lastStreamID, errorCode, opaqueData):
+      let streamVal = UInt32(Int(lastStreamID)) & ~0x8000_0000
       buf.writeInteger(streamVal)
       buf.writeInteger(UInt32(errorCode.networkCode))
 
@@ -1279,8 +1278,8 @@ struct HTTP2FrameEncoder {
       }
 
     case .data, .headers, .priority,
-        .rstStream, .pushPromise, .ping,
-        .windowUpdate, .alternativeService, .origin:
+         .rstStream, .pushPromise, .ping,
+         .windowUpdate, .alternativeService, .origin:
       preconditionFailure("Frame type not supported: \(frame.payload)")
     }
 
@@ -1304,8 +1303,8 @@ struct HTTP2FrameEncoder {
   }
 }
 
-internal extension HTTP2SettingsParameter {
-  func networkRepresentation() -> UInt16 {
+extension HTTP2SettingsParameter {
+  internal func networkRepresentation() -> UInt16 {
     switch self {
     case HTTP2SettingsParameter.headerTableSize:
       return UInt16(1)
@@ -1331,17 +1330,17 @@ extension ByteBuffer {
   fileprivate mutating func writePayloadSize(_ size: Int, at location: Int) {
     // Yes, this performs better than running a UInt8 through the generic write(integer:) three times.
     var bytes: (UInt8, UInt8, UInt8)
-    bytes.0 = UInt8((size & 0xff_00_00) >> 16)
-    bytes.1 = UInt8((size & 0x00_ff_00) >>  8)
-    bytes.2 = UInt8( size & 0x00_00_ff)
+    bytes.0 = UInt8((size & 0xFF0000) >> 16)
+    bytes.1 = UInt8((size & 0x00FF00) >> 8)
+    bytes.2 = UInt8(size & 0x0000FF)
     withUnsafeBytes(of: bytes) { ptr in
       _ = self.setBytes(ptr, at: location)
     }
   }
 }
 
-internal extension HTTP2Frame {
-  func encode() throws -> ByteBuffer {
+extension HTTP2Frame {
+  internal func encode() throws -> ByteBuffer {
     let allocator = ByteBufferAllocator()
     var buffer = allocator.buffer(capacity: 1024)
 
@@ -1359,19 +1358,19 @@ internal extension HTTP2Frame {
   }
 
   /// The one-byte identifier used to indicate the type of a frame on the wire.
-  func code() -> UInt8 {
+  internal func code() -> UInt8 {
     switch self.payload {
-    case .data:                 return 0x0
-    case .headers:              return 0x1
-    case .priority:             return 0x2
-    case .rstStream:            return 0x3
-    case .settings:             return 0x4
-    case .pushPromise:          return 0x5
-    case .ping:                 return 0x6
-    case .goAway:               return 0x7
-    case .windowUpdate:         return 0x8
-    case .alternativeService:   return 0xa
-    case .origin:               return 0xc
+    case .data: return 0x0
+    case .headers: return 0x1
+    case .priority: return 0x2
+    case .rstStream: return 0x3
+    case .settings: return 0x4
+    case .pushPromise: return 0x5
+    case .ping: return 0x6
+    case .goAway: return 0x7
+    case .windowUpdate: return 0x8
+    case .alternativeService: return 0xA
+    case .origin: return 0xC
     }
   }
 }

@@ -521,8 +521,8 @@ extension ConnectionManagerTests {
     }
 
     let readyChannelMux = self.waitForStateChanges([
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .transientFailure),
+      Change(from: .idle, to: .connecting),
+      Change(from: .connecting, to: .transientFailure),
     ]) { () -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> in
       // Get a HTTP/2 stream multiplexer.
       let readyChannelMux = manager.getHTTP2Multiplexer()
@@ -625,8 +625,8 @@ extension ConnectionManagerTests {
     }
 
     let readyChannelMux = self.waitForStateChanges([
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .transientFailure),
+      Change(from: .idle, to: .connecting),
+      Change(from: .connecting, to: .transientFailure),
     ]) { () -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> in
       // Get a HTTP/2 stream multiplexer.
       let readyChannelMux = manager.getHTTP2Multiplexer()
