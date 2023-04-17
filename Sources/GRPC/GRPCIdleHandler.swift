@@ -46,6 +46,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   internal enum ClientConfigurationState {
     case partial(ConnectionManager)
     case complete(ConnectionManager, NIOHTTP2Handler.StreamMultiplexer)
+    case deinitialized
 
     mutating func setMultiplexer(_ multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
       switch self {
@@ -53,6 +54,8 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
         self = .complete(connectionManager, multiplexer)
       case .complete:
         preconditionFailure("Setting the multiplexer twice is not supported.")
+      case .deinitialized:
+        preconditionFailure("Setting the multiplexer after removing from a channel is not supported.")
       }
     }
   }
@@ -81,9 +84,20 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
           return connectionManager
         case let .partial(connectionManager):
           return connectionManager
+        case .deinitialized:
+          return nil
         }
       case .server:
         return nil
+      }
+    }
+
+    mutating func deinitialize() {
+      switch self {
+      case .client:
+        self = .client(.deinitialized)
+      case .server:
+        break // nothing to drop
       }
     }
   }
@@ -273,6 +287,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
   func handlerRemoved(context: ChannelHandlerContext) {
     self.context = nil
+    self.mode.deinitialize()
   }
 
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
@@ -311,6 +326,8 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
         connectionManager.channelActive(channel: context.channel, multiplexer: multiplexer)
       case .partial:
         preconditionFailure("not yet initialised")
+      case .deinitialized:
+        preconditionFailure("removed from channel")
       }
     case .server:
       ()
