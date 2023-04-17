@@ -55,7 +55,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       case .complete:
         preconditionFailure("Setting the multiplexer twice is not supported.")
       case .deinitialized:
-        preconditionFailure("Setting the multiplexer after removing from a channel is not supported.")
+        preconditionFailure(
+          "Setting the multiplexer after removing from a channel is not supported."
+        )
       }
     }
   }
