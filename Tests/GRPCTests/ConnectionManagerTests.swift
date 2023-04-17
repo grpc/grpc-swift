@@ -300,6 +300,9 @@ extension ConnectionManagerTests {
     // Oops: wrong way around. We should tolerate this - just don't crash.
     channel.pipeline.fireChannelInactive()
     channel.pipeline.fireChannelActive()
+
+    channel.embeddedEventLoop.run()
+    try manager.shutdown(mode: .forceful).wait()
   }
 
   func testChannelInactiveBeforeActiveWillReconnect() throws {
