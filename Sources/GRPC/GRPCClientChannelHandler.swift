@@ -270,10 +270,10 @@ public enum GRPCCallType: Hashable, Sendable {
 /// This handler relies heavily on the `GRPCClientStateMachine` to manage the state of the request
 /// and response streams, which share a single HTTP/2 stream for transport.
 ///
-/// Typical usage of this handler is with a `HTTP2StreamMultiplexer` from SwiftNIO HTTP2:
+/// Typical usage of this handler is with a `NIOHTTP2Handler.StreamMultiplexer` from SwiftNIO HTTP2:
 ///
 /// ```
-/// let multiplexer: HTTP2StreamMultiplexer = // ...
+/// let multiplexer: NIOHTTP2Handler.StreamMultiplexer = // ...
 /// multiplexer.createStreamChannel(promise: nil) { (channel, streamID) in
 ///   let clientChannelHandler = GRPCClientChannelHandler<Request, Response>(
 ///     streamID: streamID,

@@ -78,38 +78,39 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
   }
 
   /// Makes an HTTP/2 handler.
-  private func makeHTTP2Handler() -> NIOHTTP2Handler {
+  private func makeHTTP2Handler(
+    for channel: Channel,
+    streamDelegate: NIOHTTP2StreamDelegate?
+  ) -> NIOHTTP2Handler {
+    var connectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
+    connectionConfiguration.initialSettings = [
+      HTTP2Setting(
+        parameter: .maxConcurrentStreams,
+        value: self.configuration.httpMaxConcurrentStreams
+      ),
+      HTTP2Setting(
+        parameter: .maxHeaderListSize,
+        value: HPACKDecoder.defaultMaxHeaderListSize
+      ),
+      HTTP2Setting(
+        parameter: .maxFrameSize,
+        value: self.configuration.httpMaxFrameSize
+      ),
+      HTTP2Setting(
+        parameter: .initialWindowSize,
+        value: self.configuration.httpTargetWindowSize
+      ),
+    ]
+
+    var streamConfiguration = NIOHTTP2Handler.StreamConfiguration()
+    streamConfiguration.targetWindowSize = self.configuration.httpTargetWindowSize
+
     return .init(
       mode: .server,
-      initialSettings: [
-        HTTP2Setting(
-          parameter: .maxConcurrentStreams,
-          value: self.configuration.httpMaxConcurrentStreams
-        ),
-        HTTP2Setting(
-          parameter: .maxHeaderListSize,
-          value: HPACKDecoder.defaultMaxHeaderListSize
-        ),
-        HTTP2Setting(
-          parameter: .maxFrameSize,
-          value: self.configuration.httpMaxFrameSize
-        ),
-        HTTP2Setting(
-          parameter: .initialWindowSize,
-          value: self.configuration.httpTargetWindowSize
-        ),
-      ]
-    )
-  }
-
-  /// Makes an HTTP/2 multiplexer suitable handling gRPC requests.
-  private func makeHTTP2Multiplexer(for channel: Channel) -> HTTP2StreamMultiplexer {
-    var logger = self.configuration.logger
-
-    return .init(
-      mode: .server,
-      channel: channel,
-      targetWindowSize: self.configuration.httpTargetWindowSize
+      eventLoop: channel.eventLoop,
+      connectionConfiguration: connectionConfiguration,
+      streamConfiguration: streamConfiguration,
+      streamDelegate: streamDelegate
     ) { stream in
       // Sync options were added to the HTTP/2 stream channel in 1.17.0 (we require at least this)
       // so this shouldn't be `nil`, but it's not a problem if it is.
@@ -118,6 +119,7 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
         return String(Int(streamID))
       } ?? "<unknown>"
 
+      var logger = self.configuration.logger
       logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
 
       do {
@@ -165,13 +167,14 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
     // to then insert our keepalive and idle handlers between. We can just add everything together.
     let result: Result<Void, Error>
 
+    let idleHandler = self.makeIdleHandler()
     do {
       // This is only ever called as a result of reading a user inbound event or reading inbound so
       // we'll be on the right event loop and sync operations are fine.
       let sync = context.pipeline.syncOperations
-      try sync.addHandler(self.makeHTTP2Handler())
-      try sync.addHandler(self.makeIdleHandler())
-      try sync.addHandler(self.makeHTTP2Multiplexer(for: context.channel))
+      try sync.addHandler(self.makeHTTP2Handler(for: context.channel, streamDelegate: idleHandler))
+      // Here we intentionally don't associate the multiplexer with the idleHandler in the server case
+      try sync.addHandler(idleHandler)
       result = .success(())
     } catch {
       result = .failure(error)

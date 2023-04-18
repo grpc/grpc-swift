@@ -53,28 +53,25 @@ import SwiftProtobuf
 ///               │  DelegatingErrorHandler  │
 ///               └──────────▲───────────────┘
 ///                HTTP2Frame│
-///                          │                ⠇ ⠇   ⠇ ⠇
-///                          │               ┌┴─▼┐ ┌┴─▼┐
-///                          │               │   | │   | HTTP/2 streams
-///                          │               └▲─┬┘ └▲─┬┘
-///                          │                │ │   │ │ HTTP2Frame
-///                        ┌─┴────────────────┴─▼───┴─▼┐
-///                        │   HTTP2StreamMultiplexer  |
-///                        └─▲───────────────────────┬─┘
-///                HTTP2Frame│                       │HTTP2Frame
-///                        ┌─┴───────────────────────▼─┐
-///                        │       GRPCIdleHandler     │
-///                        └─▲───────────────────────┬─┘
-///                HTTP2Frame│                       │HTTP2Frame
-///                        ┌─┴───────────────────────▼─┐
-///                        │       NIOHTTP2Handler     │
-///                        └─▲───────────────────────┬─┘
-///                ByteBuffer│                       │ByteBuffer
-///                        ┌─┴───────────────────────▼─┐
-///                        │       NIOSSLHandler       │
-///                        └─▲───────────────────────┬─┘
-///                ByteBuffer│                       │ByteBuffer
-///                          │                       ▼
+///                          │
+///                          │
+///                          │
+///                          │
+///                          │
+///                HTTP2Frame│                  ⠇        ⠇ ⠇   ⠇ ⠇
+///                        ┌─┴──────────────────▼─┐     ┌┴─▼┐ ┌┴─▼┐
+///                        │    GRPCIdleHandler   │     │   | │   | HTTP/2 streams
+///                        └─▲──────────────────┬─┘     └▲─┬┘ └▲─┬┘
+///                HTTP2Frame│                  │        │ │   │ │ HTTP2Frame
+///                        ┌─┴──────────────────▼────────┴─▼───┴─▼┐
+///                        │            NIOHTTP2Handler           │
+///                        └─▲──────────────────────────────────┬─┘
+///                ByteBuffer│                                  │ByteBuffer
+///                        ┌─┴──────────────────────────────────▼─┐
+///                        │             NIOSSLHandler            │
+///                        └─▲──────────────────────────────────┬─┘
+///                ByteBuffer│                                  │ByteBuffer
+///                          │                                  ▼
 ///
 /// The 'GRPCIdleHandler' intercepts HTTP/2 frames and various events and is responsible for
 /// informing and controlling the state of the connection (idling and keepalive). The HTTP/2 streams
@@ -83,7 +80,7 @@ public final class ClientConnection: Sendable {
   private let connectionManager: ConnectionManager
 
   /// HTTP multiplexer from the underlying channel handling gRPC calls.
-  internal func getMultiplexer() -> EventLoopFuture<HTTP2StreamMultiplexer> {
+  internal func getMultiplexer() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
     return self.connectionManager.getHTTP2Multiplexer()
   }
 
@@ -245,7 +242,7 @@ extension ClientConnection: GRPCChannel {
   }
 
   private static func makeStreamChannel(
-    using result: Result<HTTP2StreamMultiplexer, Error>,
+    using result: Result<NIOHTTP2Handler.StreamMultiplexer, Error>,
     promise: EventLoopPromise<Channel>
   ) {
     switch result {
@@ -606,29 +603,31 @@ extension ChannelPipeline.SynchronousOperations {
       HTTP2Setting(parameter: .initialWindowSize, value: httpTargetWindowSize),
     ]
 
-    // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the
-    // two HTTP/2 handlers so we'll do it manually instead.
-    try self.addHandler(NIOHTTP2Handler(mode: .client, initialSettings: initialSettings))
-
-    let h2Multiplexer = HTTP2StreamMultiplexer(
-      mode: .client,
-      channel: channel,
-      targetWindowSize: httpTargetWindowSize,
-      inboundStreamInitializer: nil
-    )
-
-    // The multiplexer is passed through the idle handler so it is only reported on
-    // successful channel activation - with happy eyeballs multiple pipelines can
-    // be constructed so it's not safe to report just yet.
-    try self.addHandler(GRPCIdleHandler(
+    let grpcIdleHandler = GRPCIdleHandler(
       connectionManager: connectionManager,
-      multiplexer: h2Multiplexer,
       idleTimeout: connectionIdleTimeout,
       keepalive: connectionKeepalive,
       logger: logger
-    ))
+    )
 
-    try self.addHandler(h2Multiplexer)
+    var connectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
+    connectionConfiguration.initialSettings = initialSettings
+    var streamConfiguration = NIOHTTP2Handler.StreamConfiguration()
+    streamConfiguration.targetWindowSize = httpTargetWindowSize
+    let h2Handler = NIOHTTP2Handler(
+      mode: .client,
+      eventLoop: channel.eventLoop,
+      connectionConfiguration: connectionConfiguration,
+      streamConfiguration: streamConfiguration,
+      streamDelegate: grpcIdleHandler
+    ) { channel in
+      channel.close()
+    }
+    try self.addHandler(h2Handler)
+
+    grpcIdleHandler.setMultiplexer(try h2Handler.syncMultiplexer())
+    try self.addHandler(grpcIdleHandler)
+
     try self.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
   }
 }
@@ -638,7 +637,13 @@ extension Channel {
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
   ) -> EventLoopFuture<Void> {
-    return self.configureHTTP2Pipeline(mode: .client, inboundStreamInitializer: nil).flatMap { _ in
+    return self.configureHTTP2Pipeline(
+      mode: .client,
+      connectionConfiguration: .init(),
+      streamConfiguration: .init()
+    ) { channel in
+      channel.eventLoop.makeSucceededVoidFuture()
+    }.flatMap { _ in
       self.pipeline.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
     }
   }

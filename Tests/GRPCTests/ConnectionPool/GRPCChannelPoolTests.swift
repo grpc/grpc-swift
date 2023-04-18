@@ -441,54 +441,75 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     }
   }
 
-  func testConnectionPoolDelegateSingleConnection() throws {
-    let recorder = EventRecordingConnectionPoolDelegate()
+  func testConnectionPoolDelegateSingleConnection() async throws {
+    let (delegate, stream) = AsyncEventStreamConnectionPoolDelegate.makeDelegateAndAsyncStream()
     self.setUpClientAndServer(withTLS: false, threads: 1) {
-      $0.delegate = recorder
+      $0.delegate = delegate
     }
 
     let warmup = self.echo.get(.with { $0.text = "" })
     XCTAssertNoThrow(try warmup.status.wait())
 
-    let id = try XCTUnwrap(recorder.first?.id)
-    XCTAssertEqual(recorder.popFirst(), .connectionAdded(id))
-    XCTAssertEqual(recorder.popFirst(), .startedConnecting(id))
-    XCTAssertEqual(recorder.popFirst(), .connectSucceeded(id, 100))
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 1, 100))
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 0, 100))
+    var iterator = stream.makeAsyncIterator()
 
-    let rpcs: [ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>] = try (1 ... 10).map { i in
+    var event = await iterator.next()
+    let id = try XCTUnwrap(event?.id)
+    XCTAssertEqual(event, .connectionAdded(id))
+    event = await iterator.next()
+    XCTAssertEqual(event, .startedConnecting(id))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectSucceeded(id, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id, 1, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id, 0, 100))
+
+    let rpcs: [ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>] = try (1 ... 10).map { _ in
       let rpc = self.echo.collect()
       XCTAssertNoThrow(try rpc.sendMessage(.with { $0.text = "foo" }).wait())
-      XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, i, 100))
       return rpc
+    }
+
+    for (i, _) in rpcs.enumerated() {
+      let event = await iterator.next()
+      XCTAssertEqual(event, .connectionUtilizationChanged(id, i + 1, 100))
     }
 
     for (i, rpc) in rpcs.enumerated() {
       XCTAssertNoThrow(try rpc.sendEnd().wait())
       XCTAssertNoThrow(try rpc.status.wait())
-      XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id, 10 - (i + 1), 100))
+      let event = await iterator.next()
+      XCTAssertEqual(event, .connectionUtilizationChanged(id, 10 - (i + 1), 100))
     }
 
     XCTAssertNoThrow(try self.channel?.close().wait())
-    XCTAssertEqual(recorder.popFirst(), .connectionClosed(id))
-    XCTAssertEqual(recorder.popFirst(), .connectionRemoved(id))
-    XCTAssert(recorder.isEmpty)
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionClosed(id))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionRemoved(id))
   }
 
-  func testConnectionPoolDelegateQuiescing() throws {
-    let recorder = EventRecordingConnectionPoolDelegate()
+  func testConnectionPoolDelegateQuiescing() async throws {
+    let (delegate, stream) = AsyncEventStreamConnectionPoolDelegate.makeDelegateAndAsyncStream()
     self.setUpClientAndServer(withTLS: false, threads: 1) {
-      $0.delegate = recorder
+      $0.delegate = delegate
     }
 
     XCTAssertNoThrow(try self.echo.get(.with { $0.text = "foo" }).status.wait())
-    let id1 = try XCTUnwrap(recorder.first?.id)
-    XCTAssertEqual(recorder.popFirst(), .connectionAdded(id1))
-    XCTAssertEqual(recorder.popFirst(), .startedConnecting(id1))
-    XCTAssertEqual(recorder.popFirst(), .connectSucceeded(id1, 100))
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 0, 100))
+
+    var iterator = stream.makeAsyncIterator()
+
+    var event = await iterator.next()
+    let id1 = try XCTUnwrap(event?.id)
+    XCTAssertEqual(event, .connectionAdded(id1))
+    event = await iterator.next()
+    XCTAssertEqual(event, .startedConnecting(id1))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectSucceeded(id1, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id1, 1, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id1, 0, 100))
 
     // Start an RPC.
     let rpc = self.echo.collect()
@@ -496,9 +517,12 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     // Complete another one to make sure the previous one is known by the server.
     XCTAssertNoThrow(try self.echo.get(.with { $0.text = "foo" }).status.wait())
 
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 2, 100))
-    XCTAssertEqual(recorder.popFirst(), .connectionUtilizationChanged(id1, 1, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id1, 1, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id1, 2, 100))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionUtilizationChanged(id1, 1, 100))
 
     // Start shutting the server down.
     let didShutdown = self.server!.initiateGracefulShutdown()
@@ -507,7 +531,8 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     // Pause a moment so we know the client received the GOAWAY.
     let sleep = self.group.any().scheduleTask(in: .milliseconds(50)) {}
     XCTAssertNoThrow(try sleep.futureResult.wait())
-    XCTAssertEqual(recorder.popFirst(), .connectionQuiescing(id1))
+    event = await iterator.next()
+    XCTAssertEqual(event, .connectionQuiescing(id1))
 
     // Finish the RPC.
     XCTAssertNoThrow(try rpc.sendEnd().wait())

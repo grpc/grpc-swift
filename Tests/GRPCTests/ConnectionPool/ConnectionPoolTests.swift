@@ -1010,17 +1010,24 @@ extension ConnectionPool {
 
 // MARK: - Helpers
 
+struct ChannelAndState {
+  let channel: EmbeddedChannel
+  let streamDelegate: NIOHTTP2StreamDelegate
+  var isActive: Bool
+}
+
 internal final class ChannelController {
-  private var channels: [EmbeddedChannel] = []
+  private var channels: [ChannelAndState] = []
 
   internal var count: Int {
     return self.channels.count
   }
 
   internal func finish() {
-    while let channel = self.channels.popLast() {
-      // We're okay with this throwing: some channels are left in a bad state (i.e. with errors).
-      _ = try? channel.finish()
+    while let state = self.channels.popLast() {
+      if state.isActive {
+        _ = try? state.channel.finish()
+      }
     }
   }
 
@@ -1040,9 +1047,10 @@ internal final class ChannelController {
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
+    self.channels[index].isActive = true
 
     XCTAssertNoThrow(
-      try self.channels[index].connect(to: .init(unixDomainSocketPath: "/")),
+      try self.channels[index].channel.connect(to: .init(unixDomainSocketPath: "/")),
       file: file,
       line: line
     )
@@ -1054,7 +1062,8 @@ internal final class ChannelController {
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
-    self.channels[index].pipeline.fireChannelInactive()
+    self.channels[index].channel.pipeline.fireChannelInactive()
+    self.channels[index].isActive = false
   }
 
   internal func throwError(
@@ -1064,7 +1073,7 @@ internal final class ChannelController {
     line: UInt = #line
   ) {
     guard self.isValidIndex(index, file: file, line: line) else { return }
-    self.channels[index].pipeline.fireErrorCaught(error)
+    self.channels[index].channel.pipeline.fireErrorCaught(error)
   }
 
   internal func sendSettingsToChannel(
@@ -1078,7 +1087,11 @@ internal final class ChannelController {
     let settings = [HTTP2Setting(parameter: .maxConcurrentStreams, value: maxConcurrentStreams)]
     let settingsFrame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings(settings)))
 
-    XCTAssertNoThrow(try self.channels[index].writeInbound(settingsFrame), file: file, line: line)
+    XCTAssertNoThrow(
+      try self.channels[index].channel.writeInbound(settingsFrame.encode()),
+      file: file,
+      line: line
+    )
   }
 
   internal func sendGoAwayToChannel(
@@ -1093,7 +1106,11 @@ internal final class ChannelController {
       payload: .goAway(lastStreamID: .maxID, errorCode: .noError, opaqueData: nil)
     )
 
-    XCTAssertNoThrow(try self.channels[index].writeInbound(goAwayFrame), file: file, line: line)
+    XCTAssertNoThrow(
+      try self.channels[index].channel.writeInbound(goAwayFrame.encode()),
+      file: file,
+      line: line
+    )
   }
 
   internal func openStreamInChannel(
@@ -1104,13 +1121,8 @@ internal final class ChannelController {
     guard self.isValidIndex(index, file: file, line: line) else { return }
 
     // The details don't matter here.
-    let event = NIOHTTP2StreamCreatedEvent(
-      streamID: .rootStream,
-      localInitialWindowSize: nil,
-      remoteInitialWindowSize: nil
-    )
-
-    self.channels[index].pipeline.fireUserInboundEventTriggered(event)
+    let channel = self.channels[index]
+    channel.streamDelegate.streamCreated(.rootStream, channel: channel.channel)
   }
 
   internal func closeStreamInChannel(
@@ -1121,8 +1133,8 @@ internal final class ChannelController {
     guard self.isValidIndex(index, file: file, line: line) else { return }
 
     // The details don't matter here.
-    let event = StreamClosedEvent(streamID: .rootStream, reason: nil)
-    self.channels[index].pipeline.fireUserInboundEventTriggered(event)
+    let channel = self.channels[index]
+    channel.streamDelegate.streamClosed(.rootStream, channel: channel.channel)
   }
 }
 
@@ -1134,24 +1146,27 @@ extension ChannelController: ConnectionManagerChannelProvider {
     logger: Logger
   ) -> EventLoopFuture<Channel> {
     let channel = EmbeddedChannel(loop: eventLoop as! EmbeddedEventLoop)
-    self.channels.append(channel)
-
-    let multiplexer = HTTP2StreamMultiplexer(
-      mode: .client,
-      channel: channel,
-      inboundStreamInitializer: nil
-    )
 
     let idleHandler = GRPCIdleHandler(
       connectionManager: connectionManager,
-      multiplexer: multiplexer,
       idleTimeout: .minutes(5),
       keepalive: ClientConnectionKeepalive(),
       logger: logger
     )
 
+    let h2handler = NIOHTTP2Handler(
+      mode: .client,
+      eventLoop: channel.eventLoop,
+      streamDelegate: idleHandler
+    ) { channel in
+      channel.eventLoop.makeSucceededVoidFuture()
+    }
+    XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(h2handler))
+
+    idleHandler.setMultiplexer(try! h2handler.syncMultiplexer())
+    self.channels.append(.init(channel: channel, streamDelegate: idleHandler, isActive: false))
+
     XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(idleHandler))
-    XCTAssertNoThrow(try channel.pipeline.syncOperations.addHandler(multiplexer))
 
     return eventLoop.makeSucceededFuture(channel)
   }
@@ -1195,6 +1210,167 @@ extension Optional where Wrapped == ConnectionPoolError {
       return true
     case .some(.tooManyWaiters), .some(.deadlineExceeded), .none:
       return false
+    }
+  }
+}
+
+// Simplified version of the frame encoder found in SwiftNIO HTTP/2
+struct HTTP2FrameEncoder {
+  mutating func encode(frame: HTTP2Frame, to buf: inout ByteBuffer) throws -> IOData? {
+    // note our starting point
+    let start = buf.writerIndex
+
+    //      +-----------------------------------------------+
+    //      |                 Length (24)                   |
+    //      +---------------+---------------+---------------+
+    //      |   Type (8)    |   Flags (8)   |
+    //      +-+-------------+---------------+-------------------------------+
+    //      |R|                 Stream Identifier (31)                      |
+    //      +=+=============================================================+
+    //      |                   Frame Payload (0...)                      ...
+    //      +---------------------------------------------------------------+
+
+    // skip 24-bit length for now, we'll fill that in later
+    buf.moveWriterIndex(forwardBy: 3)
+
+    // 8-bit type
+    buf.writeInteger(frame.code())
+
+    // skip the 8 bit flags for now, we'll fill it in later as well.
+    let flagsIndex = buf.writerIndex
+    var flags = FrameFlags()
+    buf.moveWriterIndex(forwardBy: 1)
+
+    // 32-bit stream identifier -- ensuring the top bit is empty
+    buf.writeInteger(Int32(frame.streamID))
+
+    // frame payload follows, which depends on the frame type itself
+    let payloadStart = buf.writerIndex
+    let extraFrameData: IOData?
+    let payloadSize: Int
+
+    switch frame.payload {
+    case let .settings(.settings(settings)):
+      for setting in settings {
+        buf.writeInteger(setting.parameter.networkRepresentation())
+        buf.writeInteger(UInt32(setting.value))
+      }
+
+      payloadSize = settings.count * 6
+      extraFrameData = nil
+
+    case .settings(.ack):
+      payloadSize = 0
+      extraFrameData = nil
+      flags.insert(.ack)
+
+    case let .goAway(lastStreamID, errorCode, opaqueData):
+      let streamVal = UInt32(Int(lastStreamID)) & ~0x8000_0000
+      buf.writeInteger(streamVal)
+      buf.writeInteger(UInt32(errorCode.networkCode))
+
+      if let data = opaqueData {
+        payloadSize = data.readableBytes + 8
+        extraFrameData = .byteBuffer(data)
+      } else {
+        payloadSize = 8
+        extraFrameData = nil
+      }
+
+    case .data, .headers, .priority,
+         .rstStream, .pushPromise, .ping,
+         .windowUpdate, .alternativeService, .origin:
+      preconditionFailure("Frame type not supported: \(frame.payload)")
+    }
+
+    // Write the frame data. This is the payload size and the flags byte.
+    buf.writePayloadSize(payloadSize, at: start)
+    buf.setInteger(flags.rawValue, at: flagsIndex)
+
+    // all bytes to write are in the provided buffer now
+    return extraFrameData
+  }
+
+  struct FrameFlags: OptionSet {
+    internal private(set) var rawValue: UInt8
+
+    internal init(rawValue: UInt8) {
+      self.rawValue = rawValue
+    }
+
+    /// ACK flag. Valid on SETTINGS and PING frames.
+    internal static let ack = FrameFlags(rawValue: 0x01)
+  }
+}
+
+extension HTTP2SettingsParameter {
+  internal func networkRepresentation() -> UInt16 {
+    switch self {
+    case HTTP2SettingsParameter.headerTableSize:
+      return UInt16(1)
+    case HTTP2SettingsParameter.enablePush:
+      return UInt16(2)
+    case HTTP2SettingsParameter.maxConcurrentStreams:
+      return UInt16(3)
+    case HTTP2SettingsParameter.initialWindowSize:
+      return UInt16(4)
+    case HTTP2SettingsParameter.maxFrameSize:
+      return UInt16(5)
+    case HTTP2SettingsParameter.maxHeaderListSize:
+      return UInt16(6)
+    case HTTP2SettingsParameter.enableConnectProtocol:
+      return UInt16(8)
+    default:
+      preconditionFailure("Unknown settings parameter.")
+    }
+  }
+}
+
+extension ByteBuffer {
+  fileprivate mutating func writePayloadSize(_ size: Int, at location: Int) {
+    // Yes, this performs better than running a UInt8 through the generic write(integer:) three times.
+    var bytes: (UInt8, UInt8, UInt8)
+    bytes.0 = UInt8((size & 0xFF0000) >> 16)
+    bytes.1 = UInt8((size & 0x00FF00) >> 8)
+    bytes.2 = UInt8(size & 0x0000FF)
+    withUnsafeBytes(of: bytes) { ptr in
+      _ = self.setBytes(ptr, at: location)
+    }
+  }
+}
+
+extension HTTP2Frame {
+  internal func encode() throws -> ByteBuffer {
+    let allocator = ByteBufferAllocator()
+    var buffer = allocator.buffer(capacity: 1024)
+
+    var frameEncoder = HTTP2FrameEncoder()
+    let extraData = try frameEncoder.encode(frame: self, to: &buffer)
+    if let extraData = extraData {
+      switch extraData {
+      case let .byteBuffer(extraBuffer):
+        buffer.writeImmutableBuffer(extraBuffer)
+      default:
+        preconditionFailure()
+      }
+    }
+    return buffer
+  }
+
+  /// The one-byte identifier used to indicate the type of a frame on the wire.
+  internal func code() -> UInt8 {
+    switch self.payload {
+    case .data: return 0x0
+    case .headers: return 0x1
+    case .priority: return 0x2
+    case .rstStream: return 0x3
+    case .settings: return 0x4
+    case .pushPromise: return 0x5
+    case .ping: return 0x6
+    case .goAway: return 0x7
+    case .windowUpdate: return 0x8
+    case .alternativeService: return 0xA
+    case .origin: return 0xC
     }
   }
 }
