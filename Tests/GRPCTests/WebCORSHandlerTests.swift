@@ -93,6 +93,50 @@ internal final class WebCORSHandlerTests: XCTestCase {
     try self.runPreflightRequestTest(spec: spec)
   }
 
+  func testOptionsPreflightOriginBased() throws {
+    let spec = PreflightRequestSpec(
+      configuration: .init(
+        allowedOrigins: .originBased,
+        allowedHeaders: ["x-grpc-web"],
+        allowCredentialedRequests: false,
+        preflightCacheExpiration: 60
+      ),
+      requestOrigin: "foo",
+      expectOrigin: "foo",
+      expectAllowedHeaders: ["x-grpc-web"],
+      expectAllowCredentials: false,
+      expectMaxAge: "60"
+    )
+    try self.runPreflightRequestTest(spec: spec)
+  }
+
+  func testOptionsPreflightCustom() throws {
+    struct Wrapper: GRPCCustomCORSAllowedOrigin {
+      func check(origin: String) -> String? {
+        if origin == "foo" {
+          return "bar"
+        } else {
+          return nil
+        }
+      }
+    }
+
+    let spec = PreflightRequestSpec(
+      configuration: .init(
+        allowedOrigins: .custom(Wrapper()),
+        allowedHeaders: ["x-grpc-web"],
+        allowCredentialedRequests: false,
+        preflightCacheExpiration: 60
+      ),
+      requestOrigin: "foo",
+      expectOrigin: "bar",
+      expectAllowedHeaders: ["x-grpc-web"],
+      expectAllowCredentials: false,
+      expectMaxAge: "60"
+    )
+    try self.runPreflightRequestTest(spec: spec)
+  }
+
   func testOptionsPreflightAllowSomeOrigins() throws {
     let spec = PreflightRequestSpec(
       configuration: .init(
