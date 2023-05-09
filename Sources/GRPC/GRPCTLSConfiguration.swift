@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if canImport(NIOSSL)
+import NIOCore
 import NIOSSL
 #endif
 
@@ -311,6 +312,38 @@ extension GRPCTLSConfiguration {
     certificateVerification: CertificateVerification = .none,
     requireALPN: Bool = true
   ) -> GRPCTLSConfiguration {
+    return Self.makeServerConfigurationBackedByNIOSSL(
+      certificateChain: certificateChain,
+      privateKey: privateKey,
+      trustRoots: trustRoots,
+      certificateVerification: certificateVerification,
+      requireALPN: requireALPN,
+      customVerificationCallback: nil
+    )
+  }
+
+  /// TLS Configuration with suitable defaults for servers.
+  ///
+  /// This is a wrapper around `NIOSSL.TLSConfiguration` to restrict input to values which comply
+  /// with the gRPC protocol.
+  ///
+  /// - Parameter certificateChain: The certificate to offer during negotiation.
+  /// - Parameter privateKey: The private key associated with the leaf certificate.
+  /// - Parameter trustRoots: The trust roots to validate certificates, this defaults to using a
+  ///     root provided by the platform.
+  /// - Parameter certificateVerification: Whether to verify the remote certificate. Defaults to
+  ///     `.none`.
+  /// - Parameter requireALPN: Whether ALPN is required or not.
+  /// - Parameter customVerificationCallback: A callback to provide to override the certificate verification logic,
+  ///     defaults to `nil`.
+  public static func makeServerConfigurationBackedByNIOSSL(
+    certificateChain: [NIOSSLCertificateSource],
+    privateKey: NIOSSLPrivateKeySource,
+    trustRoots: NIOSSLTrustRoots = .default,
+    certificateVerification: CertificateVerification = .none,
+    requireALPN: Bool = true,
+    customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+  ) -> GRPCTLSConfiguration {
     var configuration = TLSConfiguration.makeServerConfiguration(
       certificateChain: certificateChain,
       privateKey: privateKey
@@ -323,7 +356,8 @@ extension GRPCTLSConfiguration {
 
     return GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
       configuration: configuration,
-      requireALPN: requireALPN
+      requireALPN: requireALPN,
+      customVerificationCallback: customVerificationCallback
     )
   }
 
@@ -339,6 +373,28 @@ extension GRPCTLSConfiguration {
     configuration: TLSConfiguration,
     requireALPN: Bool = true
   ) -> GRPCTLSConfiguration {
+    return Self.makeServerConfigurationBackedByNIOSSL(
+      configuration: configuration,
+      requireALPN: requireALPN,
+      customVerificationCallback: nil
+    )
+  }
+
+  /// Creates a gRPC TLS Configuration suitable for servers using the given
+  /// `NIOSSL.TLSConfiguration`.
+  ///
+  /// - Note: If no ALPN tokens are set in `configuration.applicationProtocols` then "grpc-exp",
+  ///   "h2", and "http/1.1" will be used.
+  /// - Parameters:
+  ///   - configuration: The `NIOSSL.TLSConfiguration` to base this configuration on.
+  ///   - requiresALPN: Whether the server enforces ALPN. Defaults to `true`.
+  /// - Parameter customVerificationCallback: A callback to provide to override the certificate verification logic,
+  ///     defaults to `nil`.
+  public static func makeServerConfigurationBackedByNIOSSL(
+    configuration: TLSConfiguration,
+    requireALPN: Bool = true,
+    customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+  ) -> GRPCTLSConfiguration {
     var configuration = configuration
 
     // Set the ALPN tokens if none were set.
@@ -348,7 +404,7 @@ extension GRPCTLSConfiguration {
 
     let nioConfiguration = NIOConfiguration(
       configuration: configuration,
-      customVerificationCallback: nil,
+      customVerificationCallback: customVerificationCallback,
       hostnameOverride: nil,
       requireALPN: requireALPN
     )

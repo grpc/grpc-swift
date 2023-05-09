@@ -124,6 +124,83 @@ class ServerTLSErrorTests: GRPCTestCase {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
     }
   }
+
+  func testServerCustomVerificationCallback() async throws {
+    let verificationCallbackInvoked = self.serverEventLoopGroup.next().makePromise(of: Void.self)
+    let configuration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.server.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.server),
+      certificateVerification: .fullVerification,
+      customVerificationCallback: { _, promise in
+        verificationCallbackInvoked.succeed()
+        promise.succeed(.failed)
+      }
+    )
+
+    let server = try await Server.usingTLS(with: configuration, on: self.serverEventLoopGroup)
+      .withServiceProviders([EchoProvider()])
+      .bind(host: "localhost", port: 0)
+      .get()
+    defer {
+      XCTAssertNoThrow(try server.close().wait())
+    }
+
+    let clientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.client.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.client),
+      trustRoots: .certificates([SampleCertificate.ca.certificate]),
+      certificateVerification: .noHostnameVerification,
+      hostnameOverride: SampleCertificate.server.commonName
+    )
+
+    let client = try GRPCChannelPool.with(
+      target: .hostAndPort("localhost", server.channel.localAddress!.port!),
+      transportSecurity: .tls(clientTLSConfiguration),
+      eventLoopGroup: self.clientEventLoopGroup
+    )
+    defer {
+      XCTAssertNoThrow(try client.close().wait())
+    }
+
+    let echo = Echo_EchoAsyncClient(channel: client)
+
+    enum TaskResult {
+      case rpcFailed
+      case rpcSucceeded
+      case verificationCallbackInvoked
+    }
+
+    await withTaskGroup(of: TaskResult.self, returning: Void.self) { group in
+      group.addTask {
+        // Call the service to start an RPC.
+        do {
+          _ = try await echo.get(.with { $0.text = "foo" })
+          return .rpcSucceeded
+        } catch {
+          return .rpcFailed
+        }
+      }
+
+      group.addTask {
+        // '!' is okay, the promise is only ever succeeded.
+        try! await verificationCallbackInvoked.futureResult.get()
+        return .verificationCallbackInvoked
+      }
+
+      while let next = await group.next() {
+        switch next {
+        case .verificationCallbackInvoked:
+          // Expected.
+          group.cancelAll()
+        case .rpcFailed:
+          // Expected, carry on.
+          continue
+        case .rpcSucceeded:
+          XCTFail("RPC succeeded but shouldn't have")
+        }
+      }
+    }
+  }
 }
 
 #endif // canImport(NIOSSL)

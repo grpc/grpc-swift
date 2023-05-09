@@ -33,12 +33,12 @@ final class AsyncClientCancellationTests: GRPCTestCase {
 
   override func tearDown() async throws {
     if self.pool != nil {
-      try self.pool.close().wait()
+      try await self.pool.close().get()
       self.pool = nil
     }
 
     if self.server != nil {
-      try self.server.close().wait()
+      try await self.server.close().get()
       self.server = nil
     }
 
