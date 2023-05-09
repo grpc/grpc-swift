@@ -140,7 +140,17 @@ public final class Server {
           let sync = channel.pipeline.syncOperations
           #if canImport(NIOSSL)
           if let sslContext = try sslContext?.get() {
-            try sync.addHandler(NIOSSLServerHandler(context: sslContext))
+            let sslHandler: NIOSSLServerHandler
+            if let verify = configuration.tlsConfiguration?.nioSSLCustomVerificationCallback {
+              sslHandler = NIOSSLServerHandler(
+                context: sslContext,
+                customVerificationCallback: verify
+              )
+            } else {
+              sslHandler = NIOSSLServerHandler(context: sslContext)
+            }
+
+            try sync.addHandler(sslHandler)
           }
           #endif // canImport(NIOSSL)
 
