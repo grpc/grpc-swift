@@ -198,8 +198,12 @@ extension Server.Configuration.CORS.AllowedOrigins {
     switch self.wrapped {
     case .all:
       return "*"
+    case .originBased:
+      return origin
     case let .only(allowed):
       return allowed.contains(origin) ? origin : nil
+    case let .custom(custom):
+      return custom.check(origin: origin)
     }
   }
 }
