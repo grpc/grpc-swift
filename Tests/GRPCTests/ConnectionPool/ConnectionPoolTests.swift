@@ -1245,7 +1245,6 @@ struct HTTP2FrameEncoder {
     buf.writeInteger(Int32(frame.streamID))
 
     // frame payload follows, which depends on the frame type itself
-    let payloadStart = buf.writerIndex
     let extraFrameData: IOData?
     let payloadSize: Int
 
