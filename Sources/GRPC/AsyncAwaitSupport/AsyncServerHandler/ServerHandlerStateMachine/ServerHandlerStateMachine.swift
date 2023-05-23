@@ -27,7 +27,7 @@ internal struct ServerHandlerStateMachine {
   }
 
   @inlinable
-  mutating func setResponseHeaders(_ headers: HPACKHeaders) {
+  mutating func setResponseHeaders(_ headers: HPACKHeaders) -> Bool {
     switch self.state {
     case var .handling(handling):
       let nextStateAndOutput = handling.setResponseHeaders(headers)

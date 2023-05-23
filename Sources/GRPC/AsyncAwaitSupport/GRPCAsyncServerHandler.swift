@@ -207,6 +207,16 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal var compressResponsesIfPossible: Bool
 
+  /// The interceptor pipeline does not track flushing as a separate event. The flush decision is
+  /// included with metadata alongside each message. For the status and trailers the flush is
+  /// implicit. For headers we track whether to flush here.
+  ///
+  /// In most cases the flush will be delayed until the first message is flushed and this will
+  /// remain unset. However, this may be set when the server handler
+  /// uses ``GRPCAsyncServerCallContext/sendHeaders(_:)``.
+  @usableFromInline
+  internal var flushNextHeaders: Bool
+
   /// A state machine for the interceptor pipeline.
   @usableFromInline
   internal private(set) var interceptorStateMachine: ServerInterceptorStateMachine
@@ -265,6 +275,7 @@ internal final class AsyncServerHandler<
     self.errorDelegate = context.errorDelegate
     self.compressionEnabledOnRPC = context.encoding.isEnabled
     self.compressResponsesIfPossible = true
+    self.flushNextHeaders = false
     self.logger = context.logger
 
     self.userInfoRef = Ref(UserInfo())
@@ -685,7 +696,9 @@ internal final class AsyncServerHandler<
     switch self.interceptorStateMachine.interceptedResponseMetadata() {
     case .forward:
       if let responseWriter = self.responseWriter {
-        responseWriter.sendMetadata(metadata, flush: false, promise: promise)
+        let flush = self.flushNextHeaders
+        self.flushNextHeaders = false
+        responseWriter.sendMetadata(metadata, flush: flush, promise: promise)
       } else if let promise = promise {
         promise.fail(GRPCStatus.processingError)
       }
@@ -747,9 +760,42 @@ extension AsyncServerHandler: AsyncServerCallContextProvider {
   @usableFromInline
   internal func setResponseHeaders(_ headers: HPACKHeaders) async throws {
     let completed = self.eventLoop.submit {
-      self.handlerStateMachine.setResponseHeaders(headers)
+      if !self.handlerStateMachine.setResponseHeaders(headers) {
+        throw GRPCStatus(
+          code: .failedPrecondition,
+          message: "Tried to send response headers in an invalid state"
+        )
+      }
     }
     try await completed.get()
+  }
+
+  @usableFromInline
+  internal func acceptRPC(_ headers: HPACKHeaders) async {
+    let completed = self.eventLoop.submit {
+      guard self.handlerStateMachine.setResponseHeaders(headers) else { return }
+
+      // Shh,it's a lie! We don't really have a message to send but the state machine doesn't know
+      // (or care) about that. It will, however, tell us if we can send the headers or not.
+      switch self.handlerStateMachine.sendMessage() {
+      case let .intercept(.some(headers)):
+        switch self.interceptorStateMachine.interceptResponseMetadata() {
+        case .intercept:
+          self.flushNextHeaders = true
+          self.interceptors?.send(.metadata(headers), promise: nil)
+        case .cancel:
+          return self.cancel(error: nil)
+        case .drop:
+          ()
+        }
+
+      case .intercept(.none), .drop:
+        // intercept(.none) means headers have already been sent; we should never hit this because
+        // we guard on setting the response headers above.
+        ()
+      }
+    }
+    try? await completed.get()
   }
 
   @usableFromInline
@@ -798,6 +844,7 @@ extension AsyncServerHandler: AsyncServerCallContextProvider {
 @usableFromInline
 protocol AsyncServerCallContextProvider: Sendable {
   func setResponseHeaders(_ headers: HPACKHeaders) async throws
+  func acceptRPC(_ headers: HPACKHeaders) async
   func setResponseTrailers(_ trailers: HPACKHeaders) async throws
   func setResponseCompression(_ enabled: Bool) async throws
 

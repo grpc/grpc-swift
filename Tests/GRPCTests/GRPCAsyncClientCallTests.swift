@@ -35,12 +35,14 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     ("grpc-status", "0"),
   ])
 
-  private func setUpServerAndChannel() throws -> ClientConnection {
+  private func setUpServerAndChannel(
+    service: CallHandlerProvider = EchoProvider()
+  ) throws -> ClientConnection {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.group = group
 
     let server = try Server.insecure(group: group)
-      .withServiceProviders([EchoProvider()])
+      .withServiceProviders([service])
       .withLogger(self.serverLogger)
       .bind(host: "127.0.0.1", port: 0)
       .wait()
@@ -204,6 +206,110 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
   }
+
+  func testExplicitAcceptUnary(twice: Bool, function: String = #function) async throws {
+    let headers: HPACKHeaders = ["fn": function]
+    let channel = try self.setUpServerAndChannel(
+      service: AsyncEchoProvider(headers: headers, sendTwice: twice)
+    )
+    let echo = Echo_EchoAsyncClient(channel: channel)
+    let call = echo.makeGetCall(.with { $0.text = "" })
+    let responseHeaders = try await call.initialMetadata
+    XCTAssertEqual(responseHeaders.first(name: "fn"), function)
+    let status = await call.status
+    XCTAssertEqual(status.code, .ok)
+  }
+
+  func testExplicitAcceptUnary() async throws {
+    try await self.testExplicitAcceptUnary(twice: false)
+  }
+
+  func testExplicitAcceptTwiceUnary() async throws {
+    try await self.testExplicitAcceptUnary(twice: true)
+  }
+
+  func testExplicitAcceptClientStreaming(twice: Bool, function: String = #function) async throws {
+    let headers: HPACKHeaders = ["fn": function]
+    let channel = try self.setUpServerAndChannel(
+      service: AsyncEchoProvider(headers: headers, sendTwice: twice)
+    )
+    let echo = Echo_EchoAsyncClient(channel: channel)
+    let call = echo.makeCollectCall()
+    let responseHeaders = try await call.initialMetadata
+    XCTAssertEqual(responseHeaders.first(name: "fn"), function)
+
+    // Close request stream; the response should be empty.
+    call.requestStream.finish()
+    let response = try await call.response
+    XCTAssertEqual(response.text, "")
+
+    let status = await call.status
+    XCTAssertEqual(status.code, .ok)
+  }
+
+  func testExplicitAcceptClientStreaming() async throws {
+    try await self.testExplicitAcceptClientStreaming(twice: false)
+  }
+
+  func testExplicitAcceptTwiceClientStreaming() async throws {
+    try await self.testExplicitAcceptClientStreaming(twice: true)
+  }
+
+  func testExplicitAcceptServerStreaming(twice: Bool, function: String = #function) async throws {
+    let headers: HPACKHeaders = ["fn": #function]
+    let channel = try self.setUpServerAndChannel(
+      service: AsyncEchoProvider(headers: headers, sendTwice: twice)
+    )
+    let echo = Echo_EchoAsyncClient(channel: channel)
+    let call = echo.makeExpandCall(.with { $0.text = "foo bar baz" })
+    let responseHeaders = try await call.initialMetadata
+    XCTAssertEqual(responseHeaders.first(name: "fn"), #function)
+
+    // Close request stream; the response should be empty.
+    let responses = try await call.responseStream.collect()
+    XCTAssertEqual(responses.count, 3)
+
+    let status = await call.status
+    XCTAssertEqual(status.code, .ok)
+  }
+
+  func testExplicitAcceptServerStreaming() async throws {
+    try await self.testExplicitAcceptServerStreaming(twice: false)
+  }
+
+  func testExplicitAcceptTwiceServerStreaming() async throws {
+    try await self.testExplicitAcceptServerStreaming(twice: true)
+  }
+
+  func testExplicitAcceptBidirectionalStreaming(
+    twice: Bool,
+    function: String = #function
+  ) async throws {
+    let headers: HPACKHeaders = ["fn": function]
+    let channel = try self.setUpServerAndChannel(
+      service: AsyncEchoProvider(headers: headers, sendTwice: twice)
+    )
+    let echo = Echo_EchoAsyncClient(channel: channel)
+    let call = echo.makeUpdateCall()
+    let responseHeaders = try await call.initialMetadata
+    XCTAssertEqual(responseHeaders.first(name: "fn"), function)
+
+    // Close request stream; there should be no responses.
+    call.requestStream.finish()
+    let responses = try await call.responseStream.collect()
+    XCTAssertEqual(responses.count, 0)
+
+    let status = await call.status
+    XCTAssertEqual(status.code, .ok)
+  }
+
+  func testExplicitAcceptBidirectionalStreaming() async throws {
+    try await self.testExplicitAcceptBidirectionalStreaming(twice: false)
+  }
+
+  func testExplicitAcceptTwiceBidirectionalStreaming() async throws {
+    try await self.testExplicitAcceptBidirectionalStreaming(twice: true)
+  }
 }
 
 // Workaround https://bugs.swift.org/browse/SR-15070 (compiler crashes when defining a class/actor
@@ -219,5 +325,65 @@ private actor RequestResponseCounter {
 
   func incrementRequests() async {
     self.numRequests += 1
+  }
+}
+
+private final class AsyncEchoProvider: Echo_EchoAsyncProvider {
+  let headers: HPACKHeaders
+  let sendTwice: Bool
+
+  init(headers: HPACKHeaders, sendTwice: Bool = false) {
+    self.headers = headers
+    self.sendTwice = sendTwice
+  }
+
+  private func accept(context: GRPCAsyncServerCallContext) async {
+    await context.acceptRPC(headers: self.headers)
+    if self.sendTwice {
+      await context.acceptRPC(headers: self.headers) // Should be a no-op.
+    }
+  }
+
+  func get(
+    request: Echo_EchoRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Echo_EchoResponse {
+    await self.accept(context: context)
+    return Echo_EchoResponse.with { $0.text = request.text }
+  }
+
+  func expand(
+    request: Echo_EchoRequest,
+    responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws {
+    await self.accept(context: context)
+    for part in request.text.components(separatedBy: " ") {
+      let response = Echo_EchoResponse.with {
+        $0.text = part
+      }
+      try await responseStream.send(response)
+    }
+  }
+
+  func collect(
+    requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Echo_EchoResponse {
+    await self.accept(context: context)
+    let collected = try await requestStream.map { $0.text }.collect().joined(separator: " ")
+    return Echo_EchoResponse.with { $0.text = collected }
+  }
+
+  func update(
+    requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws {
+    await self.accept(context: context)
+    for try await request in requestStream {
+      let response = Echo_EchoResponse.with { $0.text = request.text }
+      try await responseStream.send(response)
+    }
   }
 }

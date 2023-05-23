@@ -30,6 +30,21 @@ public struct GRPCAsyncServerCallContext: Sendable {
     Response(contextProvider: self.contextProvider)
   }
 
+  /// Notifies the client that the RPC has been accepted for processing by the server.
+  ///
+  /// On accepting the RPC the server will send the given headers (which may be empty) along with
+  /// any transport specific headers (such the ":status" pseudo header) to the client.
+  ///
+  /// It is not necessary to call this function: the RPC is implicitly accepted when the first
+  /// response message is sent, however this may be useful when clients require an early indication
+  /// that the RPC has been accepted.
+  ///
+  /// If the RPC has already been accepted (either implicitly or explicitly) then this function is
+  /// a no-op.
+  public func acceptRPC(headers: HPACKHeaders) async {
+    await self.contextProvider.acceptRPC(headers)
+  }
+
   /// Access the ``UserInfo`` dictionary which is shared with the interceptor contexts for this RPC.
   ///
   /// - Important: While ``UserInfo`` has value-semantics, this function accesses a reference
