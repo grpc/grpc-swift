@@ -100,24 +100,24 @@ struct Matcher<Value> {
   // MARK: Sugar
 
   /// Just returns the provided matcher.
-  static func `is`<Value>(_ matcher: Matcher<Value>) -> Matcher<Value> {
+  static func `is`<V>(_ matcher: Matcher<V>) -> Matcher<V> {
     return matcher
   }
 
   /// Just returns the provided matcher.
-  static func and<Value>(_ matcher: Matcher<Value>) -> Matcher<Value> {
+  static func and<V>(_ matcher: Matcher<V>) -> Matcher<V> {
     return matcher
   }
 
   // MARK: Equality
 
   /// Checks the equality of the actual value against the provided value. See `equalTo(_:)`.
-  static func `is`<Value: Equatable>(_ value: Value) -> Matcher<Value> {
+  static func `is`<V: Equatable>(_ value: V) -> Matcher<V> {
     return .equalTo(value)
   }
 
   /// Checks the equality of the actual value against the provided value.
-  static func equalTo<Value: Equatable>(_ expected: Value) -> Matcher<Value> {
+  static func equalTo<V: Equatable>(_ expected: V) -> Matcher<V> {
     return .init { actual in
       actual == expected
         ? .match
@@ -133,7 +133,7 @@ struct Matcher<Value> {
   }
 
   /// Matches if the value is `nil`.
-  static func `nil`<Value>() -> Matcher<Value?> {
+  static func `nil`<V>() -> Matcher<V?> {
     return .init { actual in
       actual == nil
         ? .match
@@ -142,7 +142,7 @@ struct Matcher<Value> {
   }
 
   /// Matches if the value is not `nil`.
-  static func notNil<Value>(_ matcher: Matcher<Value>? = nil) -> Matcher<Value?> {
+  static func notNil<V>(_ matcher: Matcher<V>? = nil) -> Matcher<V?> {
     return .init { actual in
       if let actual = actual {
         return matcher?.evaluate(actual) ?? .match
@@ -154,7 +154,7 @@ struct Matcher<Value> {
 
   // MARK: Result
 
-  static func success<Value>(_ matcher: Matcher<Value>? = nil) -> Matcher<Result<Value, Error>> {
+  static func success<V>(_ matcher: Matcher<V>? = nil) -> Matcher<Result<V, Error>> {
     return .init { actual in
       switch actual {
       case let .success(value):
@@ -191,7 +191,7 @@ struct Matcher<Value> {
 
   // MARK: Utility
 
-  static func all<Value>(_ matchers: Matcher<Value>...) -> Matcher<Value> {
+  static func all<V>(_ matchers: Matcher<V>...) -> Matcher<V> {
     return .init { actual in
       for matcher in matchers {
         let result = matcher.evaluate(actual)
@@ -209,7 +209,7 @@ struct Matcher<Value> {
   // MARK: Type
 
   /// Checks that the actual value is an instance of the given type.
-  static func instanceOf<Value, Expected>(_: Expected.Type) -> Matcher<Value> {
+  static func instanceOf<V, Expected>(_: Expected.Type) -> Matcher<V> {
     return .init { actual in
       if actual is Expected {
         return .match
@@ -635,7 +635,7 @@ struct ExpressionMatcher<Value> {
 
   /// Asserts that the expression does not throw and error. Returns the result of any provided
   /// matcher on the result of the expression.
-  static func doesNotThrow<Value>(_ matcher: Matcher<Value>? = nil) -> ExpressionMatcher<Value> {
+  static func doesNotThrow<V>(_ matcher: Matcher<V>? = nil) -> ExpressionMatcher<V> {
     return .init { expression in
       do {
         let value = try expression()
@@ -648,7 +648,7 @@ struct ExpressionMatcher<Value> {
 
   /// Asserts that the expression throws and error. Returns the result of any provided matcher
   /// on the error thrown by the expression.
-  static func `throws`<Value>(_ matcher: Matcher<Error>? = nil) -> ExpressionMatcher<Value> {
+  static func `throws`<V>(_ matcher: Matcher<Error>? = nil) -> ExpressionMatcher<V> {
     return .init { expression in
       do {
         let value = try expression()
