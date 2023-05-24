@@ -51,7 +51,8 @@ internal struct ClientTransportFactory<Request, Response> {
     scheme: String,
     maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
-  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message {
+  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message {
     let http2 = HTTP2ClientTransportFactory<Request, Response>(
       streamChannel: channel,
       scheme: scheme,
@@ -97,7 +98,8 @@ internal struct ClientTransportFactory<Request, Response> {
   @usableFromInline
   internal static func fake(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
-  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message {
+  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message {
     let factory = FakeClientTransportFactory(
       fakeResponse,
       requestSerializer: ProtobufSerializer(),
