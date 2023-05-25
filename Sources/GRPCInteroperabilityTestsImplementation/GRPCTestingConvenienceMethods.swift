@@ -21,9 +21,11 @@ import SwiftProtobuf
 // MARK: - Payload creation
 
 extension Grpc_Testing_Payload {
-  static func bytes<T>(of body: inout T) -> Grpc_Testing_Payload {
+  static func bytes(of value: UInt64) -> Grpc_Testing_Payload {
     return Grpc_Testing_Payload.with { payload in
-      payload.body = Data(bytes: &body, count: MemoryLayout.size(ofValue: body))
+      withUnsafeBytes(of: value) { bytes in
+        payload.body = Data(bytes)
+      }
     }
   }
 

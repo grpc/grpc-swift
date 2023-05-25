@@ -21,10 +21,10 @@ import protocol SwiftProtobuf.Message
 @usableFromInline
 internal struct ClientTransportFactory<Request, Response> {
   /// The underlying transport factory.
-  private var factory: Factory<Request, Response>
+  private var factory: Factory
 
   @usableFromInline
-  internal enum Factory<Request, Response> {
+  internal enum Factory {
     case http2(HTTP2ClientTransportFactory<Request, Response>)
     case fake(FakeClientTransportFactory<Request, Response>)
   }
@@ -45,13 +45,14 @@ internal struct ClientTransportFactory<Request, Response> {
   ///   - errorDelegate: A client error delegate.
   /// - Returns: A factory for making and configuring HTTP/2 based transport.
   @usableFromInline
-  internal static func http2<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  internal static func http2(
     channel: EventLoopFuture<Channel>,
     authority: String,
     scheme: String,
     maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
-  ) -> ClientTransportFactory<Request, Response> {
+  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message {
     let http2 = HTTP2ClientTransportFactory<Request, Response>(
       streamChannel: channel,
       scheme: scheme,
@@ -72,13 +73,13 @@ internal struct ClientTransportFactory<Request, Response> {
   ///   - errorDelegate: A client error delegate.
   /// - Returns: A factory for making and configuring HTTP/2 based transport.
   @usableFromInline
-  internal static func http2<Request: GRPCPayload, Response: GRPCPayload>(
+  internal static func http2(
     channel: EventLoopFuture<Channel>,
     authority: String,
     scheme: String,
     maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
-  ) -> ClientTransportFactory<Request, Response> {
+  ) -> ClientTransportFactory<Request, Response> where Request: GRPCPayload, Response: GRPCPayload {
     let http2 = HTTP2ClientTransportFactory<Request, Response>(
       streamChannel: channel,
       scheme: scheme,
@@ -95,9 +96,10 @@ internal struct ClientTransportFactory<Request, Response> {
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
   @usableFromInline
-  internal static func fake<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  internal static func fake(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
-  ) -> ClientTransportFactory<Request, Response> {
+  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message {
     let factory = FakeClientTransportFactory(
       fakeResponse,
       requestSerializer: ProtobufSerializer(),
@@ -112,9 +114,9 @@ internal struct ClientTransportFactory<Request, Response> {
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
   @usableFromInline
-  internal static func fake<Request: GRPCPayload, Response: GRPCPayload>(
+  internal static func fake(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
-  ) -> ClientTransportFactory<Request, Response> {
+  ) -> ClientTransportFactory<Request, Response> where Request: GRPCPayload, Response: GRPCPayload {
     let factory = FakeClientTransportFactory(
       fakeResponse,
       requestSerializer: GRPCPayloadSerializer(),
@@ -239,7 +241,7 @@ internal struct HTTP2ClientTransportFactory<Request, Response> {
     )
   }
 
-  fileprivate func configure<Request, Response>(_ transport: ClientTransport<Request, Response>) {
+  fileprivate func configure(_ transport: ClientTransport<Request, Response>) {
     transport.configure { _ in
       self.streamChannel.flatMapThrowing { channel in
         // This initializer will always occur on the appropriate event loop, sync operations are
@@ -342,7 +344,7 @@ internal struct FakeClientTransportFactory<Request, Response> {
     )
   }
 
-  fileprivate func configure<Request, Response>(_ transport: ClientTransport<Request, Response>) {
+  fileprivate func configure(_ transport: ClientTransport<Request, Response>) {
     transport.configure { handler in
       if let fakeResponse = self.fakeResponseStream {
         return fakeResponse.channel.pipeline.addHandlers(self.codec, handler).always { result in
