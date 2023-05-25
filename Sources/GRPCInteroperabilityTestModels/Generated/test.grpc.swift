@@ -1251,18 +1251,18 @@ extension Grpc_Testing_TestServiceProvider {
 ///
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
+public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? { get }
 
   /// One empty request followed by one empty response.
-  @Sendable func emptyCall(
+  func emptyCall(
     request: Grpc_Testing_Empty,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_Empty
 
   /// One request followed by one response.
-  @Sendable func unaryCall(
+  func unaryCall(
     request: Grpc_Testing_SimpleRequest,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_SimpleResponse
@@ -1270,14 +1270,14 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   /// One request followed by one response. Response has cache control
   /// headers set such that a caching HTTP proxy (such as GFE) can
   /// satisfy subsequent requests.
-  @Sendable func cacheableUnaryCall(
+  func cacheableUnaryCall(
     request: Grpc_Testing_SimpleRequest,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_SimpleResponse
 
   /// One request followed by a sequence of responses (streamed download).
   /// The server returns the payload with client desired type and sizes.
-  @Sendable func streamingOutputCall(
+  func streamingOutputCall(
     request: Grpc_Testing_StreamingOutputCallRequest,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
@@ -1285,7 +1285,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
 
   /// A sequence of requests followed by one response (streamed upload).
   /// The server returns the aggregated size of client payload as the result.
-  @Sendable func streamingInputCall(
+  func streamingInputCall(
     requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingInputCallRequest>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_StreamingInputCallResponse
@@ -1293,7 +1293,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   /// A sequence of requests with each request served by the server immediately.
   /// As one request could lead to multiple responses, this interface
   /// demonstrates the idea of full duplexing.
-  @Sendable func fullDuplexCall(
+  func fullDuplexCall(
     requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
@@ -1303,7 +1303,7 @@ public protocol Grpc_Testing_TestServiceAsyncProvider: CallHandlerProvider {
   /// The server buffers all the client requests and then serves them in order. A
   /// stream of responses are returned to the client when the server starts with
   /// first request.
-  @Sendable func halfDuplexCall(
+  func halfDuplexCall(
     requestStream: GRPCAsyncRequestStream<Grpc_Testing_StreamingOutputCallRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Grpc_Testing_StreamingOutputCallResponse>,
     context: GRPCAsyncServerCallContext
@@ -1335,7 +1335,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
         interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? [],
-        wrapping: self.emptyCall(request:context:)
+        wrapping: { try await self.emptyCall(request: $0, context: $1) }
       )
 
     case "UnaryCall":
@@ -1344,7 +1344,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
         interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? [],
-        wrapping: self.unaryCall(request:context:)
+        wrapping: { try await self.unaryCall(request: $0, context: $1) }
       )
 
     case "CacheableUnaryCall":
@@ -1353,7 +1353,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
         interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? [],
-        wrapping: self.cacheableUnaryCall(request:context:)
+        wrapping: { try await self.cacheableUnaryCall(request: $0, context: $1) }
       )
 
     case "StreamingOutputCall":
@@ -1362,7 +1362,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? [],
-        wrapping: self.streamingOutputCall(request:responseStream:context:)
+        wrapping: { try await self.streamingOutputCall(request: $0, responseStream: $1, context: $2) }
       )
 
     case "StreamingInputCall":
@@ -1371,7 +1371,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingInputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingInputCallResponse>(),
         interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? [],
-        wrapping: self.streamingInputCall(requestStream:context:)
+        wrapping: { try await self.streamingInputCall(requestStream: $0, context: $1) }
       )
 
     case "FullDuplexCall":
@@ -1380,7 +1380,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? [],
-        wrapping: self.fullDuplexCall(requestStream:responseStream:context:)
+        wrapping: { try await self.fullDuplexCall(requestStream: $0, responseStream: $1, context: $2) }
       )
 
     case "HalfDuplexCall":
@@ -1389,7 +1389,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? [],
-        wrapping: self.halfDuplexCall(requestStream:responseStream:context:)
+        wrapping: { try await self.halfDuplexCall(requestStream: $0, responseStream: $1, context: $2) }
       )
 
     default:
@@ -1398,7 +1398,7 @@ extension Grpc_Testing_TestServiceAsyncProvider {
   }
 }
 
-public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
+public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'emptyCall'.
   ///   Defaults to calling `self.makeInterceptors()`.
@@ -1542,12 +1542,12 @@ extension Grpc_Testing_UnimplementedServiceProvider {
 ///
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Grpc_Testing_UnimplementedServiceAsyncProvider: CallHandlerProvider {
+public protocol Grpc_Testing_UnimplementedServiceAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol? { get }
 
   /// A call that no server should implement
-  @Sendable func unimplementedCall(
+  func unimplementedCall(
     request: Grpc_Testing_Empty,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_Empty
@@ -1578,7 +1578,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
         interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? [],
-        wrapping: self.unimplementedCall(request:context:)
+        wrapping: { try await self.unimplementedCall(request: $0, context: $1) }
       )
 
     default:
@@ -1587,7 +1587,7 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
   }
 }
 
-public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol {
+public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'unimplementedCall'.
   ///   Defaults to calling `self.makeInterceptors()`.
@@ -1662,16 +1662,16 @@ extension Grpc_Testing_ReconnectServiceProvider {
 ///
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Grpc_Testing_ReconnectServiceAsyncProvider: CallHandlerProvider {
+public protocol Grpc_Testing_ReconnectServiceAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol? { get }
 
-  @Sendable func start(
+  func start(
     request: Grpc_Testing_ReconnectParams,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_Empty
 
-  @Sendable func stop(
+  func stop(
     request: Grpc_Testing_Empty,
     context: GRPCAsyncServerCallContext
   ) async throws -> Grpc_Testing_ReconnectInfo
@@ -1702,7 +1702,7 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_ReconnectParams>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
         interceptors: self.interceptors?.makeStartInterceptors() ?? [],
-        wrapping: self.start(request:context:)
+        wrapping: { try await self.start(request: $0, context: $1) }
       )
 
     case "Stop":
@@ -1711,7 +1711,7 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_ReconnectInfo>(),
         interceptors: self.interceptors?.makeStopInterceptors() ?? [],
-        wrapping: self.stop(request:context:)
+        wrapping: { try await self.stop(request: $0, context: $1) }
       )
 
     default:
@@ -1720,7 +1720,7 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
   }
 }
 
-public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol {
+public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'start'.
   ///   Defaults to calling `self.makeInterceptors()`.

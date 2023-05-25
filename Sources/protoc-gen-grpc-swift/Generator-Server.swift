@@ -148,7 +148,7 @@ extension Generator {
   }
 
   private func printServerInterceptorFactoryProtocol() {
-    self.println("\(self.access) protocol \(self.serverInterceptorProtocolName) {")
+    self.println("\(self.access) protocol \(self.serverInterceptorProtocolName): Sendable {")
     self.withIndentation {
       // Method specific interceptors.
       for method in service.methods {

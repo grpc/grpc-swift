@@ -22,8 +22,8 @@ import NIOCore
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
-  public var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol?
+public final class TestServiceAsyncProvider: Grpc_Testing_TestServiceAsyncProvider {
+  public let interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? = nil
 
   public init() {}
 

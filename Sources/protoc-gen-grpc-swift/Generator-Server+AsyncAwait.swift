@@ -29,7 +29,7 @@ extension Generator {
     self.println("/// To implement a server, implement an object which conforms to this protocol.")
     self.printAvailabilityForAsyncAwait()
     self.withIndentation(
-      "\(self.access) protocol \(self.asyncProviderName): CallHandlerProvider",
+      "\(self.access) protocol \(self.asyncProviderName): CallHandlerProvider, Sendable",
       braces: .curly
     ) {
       self.println("static var serviceDescriptor: GRPCServiceDescriptor { get }")
@@ -86,7 +86,7 @@ extension Generator {
       name: self.methodFunctionName,
       arguments: arguments,
       returnType: returnType,
-      sendable: true,
+      sendable: false,
       async: true,
       throws: true,
       bodyBuilder: nil
@@ -152,20 +152,19 @@ extension Generator {
               self.println("requestDeserializer: \(Types.deserializer(for: requestType))(),")
               self.println("responseSerializer: \(Types.serializer(for: responseType))(),")
               self.println("interceptors: self.interceptors?.\(interceptorFactory)() ?? [],")
+              let prefix = "wrapping: { try await self.\(functionName)"
               switch streamingType(self.method) {
               case .unary:
-                self.println("wrapping: self.\(functionName)(request:context:)")
+                self.println("\(prefix)(request: $0, context: $1) }")
 
               case .clientStreaming:
-                self.println("wrapping: self.\(functionName)(requestStream:context:)")
+                self.println("\(prefix)(requestStream: $0, context: $1) }")
 
               case .serverStreaming:
-                self.println("wrapping: self.\(functionName)(request:responseStream:context:)")
+                self.println("\(prefix)(request: $0, responseStream: $1, context: $2) }")
 
               case .bidirectionalStreaming:
-                self.println(
-                  "wrapping: self.\(functionName)(requestStream:responseStream:context:)"
-                )
+                self.println("\(prefix)(requestStream: $0, responseStream: $1, context: $2) }")
               }
             }
           }

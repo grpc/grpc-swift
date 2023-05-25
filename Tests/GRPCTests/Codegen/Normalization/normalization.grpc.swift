@@ -803,49 +803,49 @@ extension Normalization_NormalizationProvider {
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal protocol Normalization_NormalizationAsyncProvider: CallHandlerProvider {
+internal protocol Normalization_NormalizationAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Normalization_NormalizationServerInterceptorFactoryProtocol? { get }
 
-  @Sendable func Unary(
+  func Unary(
     request: SwiftProtobuf.Google_Protobuf_Empty,
     context: GRPCAsyncServerCallContext
   ) async throws -> Normalization_FunctionName
 
-  @Sendable func unary(
+  func unary(
     request: SwiftProtobuf.Google_Protobuf_Empty,
     context: GRPCAsyncServerCallContext
   ) async throws -> Normalization_FunctionName
 
-  @Sendable func ServerStreaming(
-    request: SwiftProtobuf.Google_Protobuf_Empty,
-    responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
-    context: GRPCAsyncServerCallContext
-  ) async throws
-
-  @Sendable func serverStreaming(
+  func ServerStreaming(
     request: SwiftProtobuf.Google_Protobuf_Empty,
     responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
     context: GRPCAsyncServerCallContext
   ) async throws
 
-  @Sendable func ClientStreaming(
+  func serverStreaming(
+    request: SwiftProtobuf.Google_Protobuf_Empty,
+    responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  func ClientStreaming(
     requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Normalization_FunctionName
 
-  @Sendable func clientStreaming(
+  func clientStreaming(
     requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Normalization_FunctionName
 
-  @Sendable func BidirectionalStreaming(
+  func BidirectionalStreaming(
     requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
     responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
     context: GRPCAsyncServerCallContext
   ) async throws
 
-  @Sendable func bidirectionalStreaming(
+  func bidirectionalStreaming(
     requestStream: GRPCAsyncRequestStream<SwiftProtobuf.Google_Protobuf_Empty>,
     responseStream: GRPCAsyncResponseStreamWriter<Normalization_FunctionName>,
     context: GRPCAsyncServerCallContext
@@ -877,7 +877,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeUnaryInterceptors() ?? [],
-        wrapping: self.Unary(request:context:)
+        wrapping: { try await self.Unary(request: $0, context: $1) }
       )
 
     case "unary":
@@ -886,7 +886,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeunaryInterceptors() ?? [],
-        wrapping: self.unary(request:context:)
+        wrapping: { try await self.unary(request: $0, context: $1) }
       )
 
     case "ServerStreaming":
@@ -895,7 +895,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeServerStreamingInterceptors() ?? [],
-        wrapping: self.ServerStreaming(request:responseStream:context:)
+        wrapping: { try await self.ServerStreaming(request: $0, responseStream: $1, context: $2) }
       )
 
     case "serverStreaming":
@@ -904,7 +904,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeserverStreamingInterceptors() ?? [],
-        wrapping: self.serverStreaming(request:responseStream:context:)
+        wrapping: { try await self.serverStreaming(request: $0, responseStream: $1, context: $2) }
       )
 
     case "ClientStreaming":
@@ -913,7 +913,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? [],
-        wrapping: self.ClientStreaming(requestStream:context:)
+        wrapping: { try await self.ClientStreaming(requestStream: $0, context: $1) }
       )
 
     case "clientStreaming":
@@ -922,7 +922,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? [],
-        wrapping: self.clientStreaming(requestStream:context:)
+        wrapping: { try await self.clientStreaming(requestStream: $0, context: $1) }
       )
 
     case "BidirectionalStreaming":
@@ -931,7 +931,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? [],
-        wrapping: self.BidirectionalStreaming(requestStream:responseStream:context:)
+        wrapping: { try await self.BidirectionalStreaming(requestStream: $0, responseStream: $1, context: $2) }
       )
 
     case "bidirectionalStreaming":
@@ -940,7 +940,7 @@ extension Normalization_NormalizationAsyncProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? [],
-        wrapping: self.bidirectionalStreaming(requestStream:responseStream:context:)
+        wrapping: { try await self.bidirectionalStreaming(requestStream: $0, responseStream: $1, context: $2) }
       )
 
     default:
@@ -949,7 +949,7 @@ extension Normalization_NormalizationAsyncProvider {
   }
 }
 
-internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol {
+internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'Unary'.
   ///   Defaults to calling `self.makeInterceptors()`.
