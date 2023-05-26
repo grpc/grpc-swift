@@ -67,8 +67,8 @@ class CacheableUnary: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceNIOClient(channel: connection)
 
-    var timestamp = DispatchTime.now().rawValue
-    let request = Grpc_Testing_SimpleRequest.withPayload(of: .bytes(of: &timestamp))
+    let timestamp = DispatchTime.now().uptimeNanoseconds
+    let request = Grpc_Testing_SimpleRequest.withPayload(of: .bytes(of: timestamp))
 
     let headers: HPACKHeaders = ["x-user-ip": "1.2.3.4"]
     let callOptions = CallOptions(customMetadata: headers, cacheable: true)

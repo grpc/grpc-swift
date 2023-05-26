@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if os(Linux)
 @preconcurrency import Foundation
+#else
+import Foundation
+#endif
 
 import Logging
 import NIOCore
