@@ -27,6 +27,11 @@ extension ConnectionPool {
     internal var _availability: StreamAvailability?
 
     @usableFromInline
+    internal var isAvailable: Bool {
+      return self._availability != nil
+    }
+
+    @usableFromInline
     internal var isQuiescing: Bool {
       get {
         return self._availability?.isQuiescing ?? false
