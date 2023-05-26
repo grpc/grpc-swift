@@ -701,9 +701,9 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
       )
     }
 
-    // Don't return the stream to the pool manager if the connection is quiescing, they were returned
-    // when the connection started quiescing.
-    if !self._connections.values[index].isQuiescing {
+    // Return the stream to the pool manager if the connection is available and not quiescing. For
+    // quiescing connections streams were returned when the connection started quiescing.
+    if self._connections.values[index].isAvailable, !self._connections.values[index].isQuiescing {
       self.streamLender.returnStreams(1, to: self)
 
       // A stream was returned: we may be able to service a waiter now.
