@@ -42,7 +42,7 @@ final class AsyncClientCancellationTests: GRPCTestCase {
       self.server = nil
     }
 
-    try self.group.syncShutdownGracefully()
+    try await self.group.shutdownGracefully()
     self.group = nil
 
     try await super.tearDown()
