@@ -102,8 +102,8 @@ extension GRPCAsyncServerCallContext {
     /// Set the metadata to return at the start of the RPC.
     ///
     /// - Important: If this is required it should be updated _before_ the first response is sent
-    ///   via the response stream writer. Updates must not be made after the first response has
-    ///   been sent.
+    ///   via the response stream writer. Updates must not be made after the RPC has been accepted
+    ///   or the first response has been sent otherwise this method will throw an error.
     public func setHeaders(_ headers: HPACKHeaders) async throws {
       try await self.contextProvider.setResponseHeaders(headers)
     }
