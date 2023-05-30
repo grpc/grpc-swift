@@ -46,19 +46,20 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
     .appendingPathComponent("bundle")
     .appendingPathExtension("p12")
 
-  override func setUp() {
-    super.setUp()
+  // Not really 'async' but there is no 'func setUp() throws' to override.
+  override func setUp() async throws {
+    try await super.setUp()
 
     self.tsGroup = NIOTSEventLoopGroup(loopCount: 1)
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    self.identity = try? self.loadIdentity()
+    self.identity = try self.loadIdentity()
     XCTAssertNotNil(
       self.identity,
       "Unable to load identity from '\(GRPCNetworkFrameworkTests.p12bundleURL)'"
     )
 
-    self.pkcs12Bundle = try? NIOSSLPKCS12Bundle(
+    self.pkcs12Bundle = try NIOSSLPKCS12Bundle(
       file: GRPCNetworkFrameworkTests.p12bundleURL.path,
       passphrase: "password".utf8
     )
@@ -70,10 +71,10 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   }
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.client.close().wait())
-    XCTAssertNoThrow(try self.server.close().wait())
-    XCTAssertNoThrow(try self.group.syncShutdownGracefully())
-    XCTAssertNoThrow(try self.tsGroup.syncShutdownGracefully())
+    XCTAssertNoThrow(try self.client?.close().wait())
+    XCTAssertNoThrow(try self.server?.close().wait())
+    XCTAssertNoThrow(try self.group?.syncShutdownGracefully())
+    XCTAssertNoThrow(try self.tsGroup?.syncShutdownGracefully())
     super.tearDown()
   }
 
@@ -84,8 +85,13 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
     var rawItems: CFArray?
     let status = SecPKCS12Import(data as CFData, options as CFDictionary, &rawItems)
 
-    guard status == errSecSuccess else {
-      XCTFail("SecPKCS12Import failed with status \(status)")
+    switch status {
+    case errSecSuccess:
+      ()
+    case errSecInteractionNotAllowed:
+      throw XCTSkip("Unable to import PKCS12 bundle: no interaction allowed")
+    default:
+      XCTFail("SecPKCS12Import: failed with status \(status)")
       return nil
     }
 

@@ -876,6 +876,50 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNil(waiter._scheduledTimeout)
   }
 
+  func testReturnStreamAfterConnectionCloses() throws {
+    var returnedStreams = 0
+    let (pool, controller) = self.setUpPoolAndController(onReservationReturned: { returned in
+      returnedStreams += returned
+    })
+    pool.initialize(connections: 1)
+
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+    // Start creating the channel.
+    self.eventLoop.run()
+    XCTAssertEqual(controller.count, 1)
+
+    // Fire up the connection.
+    controller.connectChannel(atIndex: 0)
+    controller.sendSettingsToChannel(atIndex: 0, maxConcurrentStreams: 10)
+
+    // Run the loop to create the stream, we need to fire the stream creation event too.
+    self.eventLoop.run()
+    XCTAssertNoThrow(try waiter.wait())
+    controller.openStreamInChannel(atIndex: 0)
+
+    XCTAssertEqual(pool.sync.waiters, 0)
+    XCTAssertEqual(pool.sync.availableStreams, 9)
+    XCTAssertEqual(pool.sync.reservedStreams, 1)
+    XCTAssertEqual(pool.sync.connections, 1)
+
+    // Close all streams on connection 0.
+    let error = GRPCStatus(code: .internalError, message: nil)
+    controller.throwError(error, inChannelAtIndex: 0)
+    controller.fireChannelInactiveForChannel(atIndex: 0)
+    XCTAssertEqual(returnedStreams, 1)
+
+    XCTAssertEqual(pool.sync.waiters, 0)
+    XCTAssertEqual(pool.sync.availableStreams, 0)
+    XCTAssertEqual(pool.sync.reservedStreams, 0)
+    XCTAssertEqual(pool.sync.connections, 1)
+
+    // The connection is closed so the stream shouldn't be returned again.
+    controller.closeStreamInChannel(atIndex: 0)
+    XCTAssertEqual(returnedStreams, 1)
+  }
+
   func testConnectionPoolDelegate() throws {
     let recorder = EventRecordingConnectionPoolDelegate()
     let (pool, controller) = self.setUpPoolAndController(delegate: recorder)
