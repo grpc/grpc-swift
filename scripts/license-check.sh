@@ -97,7 +97,7 @@ check_copyright_headers() {
       # Package.swift is preceeded by a "swift-tools-version" line.
       *.grpc.swift)
         expected_sha="$SWIFT_GRPC_SHA"
-        drop_first=8
+        drop_first=9
         expected_lines=13
         ;;
       *.pb.swift)
