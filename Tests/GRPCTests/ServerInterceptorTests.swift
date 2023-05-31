@@ -178,7 +178,7 @@ class ServerInterceptorTests: GRPCTestCase {
   }
 }
 
-class EchoInterceptorFactory: Echo_EchoServerInterceptorFactoryProtocol {
+final class EchoInterceptorFactory: Echo_EchoServerInterceptorFactoryProtocol {
   private let interceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>
 
   init(interceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>) {
@@ -271,7 +271,7 @@ class EchoFromInterceptor: Echo_EchoProvider {
     return context.eventLoop.makeFailedFuture(GRPCStatus.processingError)
   }
 
-  class Interceptors: Echo_EchoServerInterceptorFactoryProtocol {
+  final class Interceptors: Echo_EchoServerInterceptorFactoryProtocol {
     func makeGetInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
       return [Interceptor()]
     }

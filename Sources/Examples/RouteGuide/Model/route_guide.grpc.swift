@@ -530,7 +530,7 @@ extension Routeguide_RouteGuideProvider {
 ///
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
+public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol? { get }
 
@@ -540,7 +540,7 @@ public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
   ///
   /// A feature with an empty name is returned if there's no feature at the given
   /// position.
-  @Sendable func getFeature(
+  func getFeature(
     request: Routeguide_Point,
     context: GRPCAsyncServerCallContext
   ) async throws -> Routeguide_Feature
@@ -551,7 +551,7 @@ public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
   /// streamed rather than returned at once (e.g. in a response message with a
   /// repeated field), as the rectangle may cover a large area and contain a
   /// huge number of features.
-  @Sendable func listFeatures(
+  func listFeatures(
     request: Routeguide_Rectangle,
     responseStream: GRPCAsyncResponseStreamWriter<Routeguide_Feature>,
     context: GRPCAsyncServerCallContext
@@ -561,7 +561,7 @@ public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
   ///
   /// Accepts a stream of Points on a route being traversed, returning a
   /// RouteSummary when traversal is completed.
-  @Sendable func recordRoute(
+  func recordRoute(
     requestStream: GRPCAsyncRequestStream<Routeguide_Point>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Routeguide_RouteSummary
@@ -570,7 +570,7 @@ public protocol Routeguide_RouteGuideAsyncProvider: CallHandlerProvider {
   ///
   /// Accepts a stream of RouteNotes sent while a route is being traversed,
   /// while receiving other RouteNotes (e.g. from other users).
-  @Sendable func routeChat(
+  func routeChat(
     requestStream: GRPCAsyncRequestStream<Routeguide_RouteNote>,
     responseStream: GRPCAsyncResponseStreamWriter<Routeguide_RouteNote>,
     context: GRPCAsyncServerCallContext
@@ -602,7 +602,7 @@ extension Routeguide_RouteGuideAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
         responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
         interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? [],
-        wrapping: self.getFeature(request:context:)
+        wrapping: { try await self.getFeature(request: $0, context: $1) }
       )
 
     case "ListFeatures":
@@ -611,7 +611,7 @@ extension Routeguide_RouteGuideAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_Rectangle>(),
         responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
         interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? [],
-        wrapping: self.listFeatures(request:responseStream:context:)
+        wrapping: { try await self.listFeatures(request: $0, responseStream: $1, context: $2) }
       )
 
     case "RecordRoute":
@@ -620,7 +620,7 @@ extension Routeguide_RouteGuideAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
         responseSerializer: ProtobufSerializer<Routeguide_RouteSummary>(),
         interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? [],
-        wrapping: self.recordRoute(requestStream:context:)
+        wrapping: { try await self.recordRoute(requestStream: $0, context: $1) }
       )
 
     case "RouteChat":
@@ -629,7 +629,7 @@ extension Routeguide_RouteGuideAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_RouteNote>(),
         responseSerializer: ProtobufSerializer<Routeguide_RouteNote>(),
         interceptors: self.interceptors?.makeRouteChatInterceptors() ?? [],
-        wrapping: self.routeChat(requestStream:responseStream:context:)
+        wrapping: { try await self.routeChat(requestStream: $0, responseStream: $1, context: $2) }
       )
 
     default:
@@ -638,7 +638,7 @@ extension Routeguide_RouteGuideAsyncProvider {
   }
 }
 
-public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
+public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'getFeature'.
   ///   Defaults to calling `self.makeInterceptors()`.
