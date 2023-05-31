@@ -35,8 +35,8 @@ extension ServerHandlerStateMachine {
     @inlinable
     mutating func setResponseHeaders(
       _ headers: HPACKHeaders
-    ) -> Self.NextStateAndOutput<Void> {
-      return .init(nextState: .finished(self))
+    ) -> Self.NextStateAndOutput<Bool> {
+      return .init(nextState: .finished(self), output: false)
     }
 
     @inlinable

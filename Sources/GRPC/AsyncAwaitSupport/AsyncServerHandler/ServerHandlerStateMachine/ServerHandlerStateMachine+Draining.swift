@@ -50,16 +50,16 @@ extension ServerHandlerStateMachine {
     @inlinable
     mutating func setResponseHeaders(
       _ metadata: HPACKHeaders
-    ) -> Self.NextStateAndOutput<Void> {
-      self.responseHeaders.update(metadata)
-      return .init(nextState: .draining(self))
+    ) -> Self.NextStateAndOutput<Bool> {
+      let output = self.responseHeaders.update(metadata)
+      return .init(nextState: .draining(self), output: output)
     }
 
     @inlinable
     mutating func setResponseTrailers(
       _ metadata: HPACKHeaders
     ) -> Self.NextStateAndOutput<Void> {
-      self.responseTrailers.update(metadata)
+      _ = self.responseTrailers.update(metadata)
       return .init(nextState: .draining(self))
     }
 

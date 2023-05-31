@@ -70,12 +70,13 @@ extension ServerHandlerStateMachine {
 
     /// Update the metadata. It must not have been written yet.
     @inlinable
-    mutating func update(_ metadata: HPACKHeaders) {
+    mutating func update(_ metadata: HPACKHeaders) -> Bool {
       switch self {
       case .notWritten:
         self = .notWritten(metadata)
+        return true
       case .written:
-        assertionFailure("Metadata must not be set after it has been sent")
+        return false
       }
     }
 

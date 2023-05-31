@@ -210,7 +210,7 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
 
   func testSetResponseHeadersWhenHandling() {
     var stateMachine = self.makeStateMachine(inState: .handling)
-    stateMachine.setResponseHeaders(["foo": "bar"])
+    XCTAssertTrue(stateMachine.setResponseHeaders(["foo": "bar"]))
     stateMachine.sendMessage().assertInterceptHeadersThenMessage { headers in
       XCTAssertEqual(headers, ["foo": "bar"])
     }
@@ -218,7 +218,7 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
 
   func testSetResponseHeadersWhenHandlingAreMovedToDraining() {
     var stateMachine = self.makeStateMachine(inState: .handling)
-    stateMachine.setResponseHeaders(["foo": "bar"])
+    XCTAssertTrue(stateMachine.setResponseHeaders(["foo": "bar"]))
     stateMachine.handleEnd().assertForward()
     stateMachine.sendMessage().assertInterceptHeadersThenMessage { headers in
       XCTAssertEqual(headers, ["foo": "bar"])
@@ -227,7 +227,7 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
 
   func testSetResponseHeadersWhenDraining() {
     var stateMachine = self.makeStateMachine(inState: .draining)
-    stateMachine.setResponseHeaders(["foo": "bar"])
+    XCTAssertTrue(stateMachine.setResponseHeaders(["foo": "bar"]))
     stateMachine.sendMessage().assertInterceptHeadersThenMessage { headers in
       XCTAssertEqual(headers, ["foo": "bar"])
     }
@@ -235,8 +235,7 @@ internal final class ServerHandlerStateMachineTests: GRPCTestCase {
 
   func testSetResponseHeadersWhenFinished() {
     var stateMachine = self.makeStateMachine(inState: .finished)
-    stateMachine.setResponseHeaders(["foo": "bar"])
-    // Nothing we can assert on, only that we don't crash.
+    XCTAssertFalse(stateMachine.setResponseHeaders(["foo": "bar"]))
   }
 
   func testSetResponseTrailersWhenHandling() {
