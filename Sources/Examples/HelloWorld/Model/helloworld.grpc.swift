@@ -252,12 +252,12 @@ extension Helloworld_GreeterProvider {
 ///
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Helloworld_GreeterAsyncProvider: CallHandlerProvider {
+public protocol Helloworld_GreeterAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? { get }
 
   /// Sends a greeting.
-  @Sendable func sayHello(
+  func sayHello(
     request: Helloworld_HelloRequest,
     context: GRPCAsyncServerCallContext
   ) async throws -> Helloworld_HelloReply
@@ -288,7 +288,7 @@ extension Helloworld_GreeterAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Helloworld_HelloRequest>(),
         responseSerializer: ProtobufSerializer<Helloworld_HelloReply>(),
         interceptors: self.interceptors?.makeSayHelloInterceptors() ?? [],
-        wrapping: self.sayHello(request:context:)
+        wrapping: { try await self.sayHello(request: $0, context: $1) }
       )
 
     default:
@@ -297,7 +297,7 @@ extension Helloworld_GreeterAsyncProvider {
   }
 }
 
-public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
+public protocol Helloworld_GreeterServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'sayHello'.
   ///   Defaults to calling `self.makeInterceptors()`.

@@ -613,31 +613,31 @@ extension Echo_EchoProvider {
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
+public protocol Echo_EchoAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { get }
 
   /// Immediately returns an echo of a request.
-  @Sendable func get(
+  func get(
     request: Echo_EchoRequest,
     context: GRPCAsyncServerCallContext
   ) async throws -> Echo_EchoResponse
 
   /// Splits a request into words and returns each word in a stream of messages.
-  @Sendable func expand(
+  func expand(
     request: Echo_EchoRequest,
     responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws
 
   /// Collects a stream of messages and returns them concatenated when the caller closes.
-  @Sendable func collect(
+  func collect(
     requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
     context: GRPCAsyncServerCallContext
   ) async throws -> Echo_EchoResponse
 
   /// Streams back messages as they are received in an input stream.
-  @Sendable func update(
+  func update(
     requestStream: GRPCAsyncRequestStream<Echo_EchoRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
     context: GRPCAsyncServerCallContext
@@ -669,7 +669,7 @@ extension Echo_EchoAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeGetInterceptors() ?? [],
-        wrapping: self.get(request:context:)
+        wrapping: { try await self.get(request: $0, context: $1) }
       )
 
     case "Expand":
@@ -678,7 +678,7 @@ extension Echo_EchoAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeExpandInterceptors() ?? [],
-        wrapping: self.expand(request:responseStream:context:)
+        wrapping: { try await self.expand(request: $0, responseStream: $1, context: $2) }
       )
 
     case "Collect":
@@ -687,7 +687,7 @@ extension Echo_EchoAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeCollectInterceptors() ?? [],
-        wrapping: self.collect(requestStream:context:)
+        wrapping: { try await self.collect(requestStream: $0, context: $1) }
       )
 
     case "Update":
@@ -696,7 +696,7 @@ extension Echo_EchoAsyncProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
-        wrapping: self.update(requestStream:responseStream:context:)
+        wrapping: { try await self.update(requestStream: $0, responseStream: $1, context: $2) }
       )
 
     default:
@@ -705,7 +705,7 @@ extension Echo_EchoAsyncProvider {
   }
 }
 
-public protocol Echo_EchoServerInterceptorFactoryProtocol {
+public protocol Echo_EchoServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'get'.
   ///   Defaults to calling `self.makeInterceptors()`.
