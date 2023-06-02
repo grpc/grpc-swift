@@ -52,6 +52,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
 
   // MARK: - Response Parts
 
+  private func withRPCCancellation<R: Sendable>(_ fn: () async throws -> R) async rethrows -> R {
+    return try await withTaskCancellationHandler(operation: fn) {
+      self.cancel()
+    }
+  }
+
   /// The initial metadata returned from the server.
   ///
   /// - Important: The initial metadata will only be available when the first response has been
@@ -59,7 +65,9 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
   /// this property.
   public var initialMetadata: HPACKHeaders {
     get async throws {
-      try await self.responseParts.initialMetadata.get()
+      try await self.withRPCCancellation {
+        try await self.responseParts.initialMetadata.get()
+      }
     }
   }
 
@@ -68,7 +76,9 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
   /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var trailingMetadata: HPACKHeaders {
     get async throws {
-      try await self.responseParts.trailingMetadata.get()
+      try await self.withRPCCancellation {
+        try await self.responseParts.trailingMetadata.get()
+      }
     }
   }
 
@@ -78,7 +88,9 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request: Sendable, Response: S
   public var status: GRPCStatus {
     get async {
       // force-try acceptable because any error is encapsulated in a successful GRPCStatus future.
-      try! await self.responseParts.status.get()
+      await self.withRPCCancellation {
+        try! await self.responseParts.status.get()
+      }
     }
   }
 
