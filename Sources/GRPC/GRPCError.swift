@@ -229,7 +229,7 @@ public enum GRPCError {
 
     public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(
-        code: .init(httpStatus: self.status),
+        code: .init(httpStatus: self.status) ?? .unknown,
         message: self.description,
         cause: self
       )
@@ -342,21 +342,29 @@ extension GRPCErrorProtocol {
 extension GRPCStatus.Code {
   /// The gRPC status code associated with the given HTTP status code. This should only be used if
   /// the RPC did not return a 'grpc-status' trailer.
-  internal init(httpStatus: String?) {
+  internal init?(httpStatus codeString: String?) {
+    if let code = codeString.flatMap(Int.init) {
+      self.init(httpStatus: code)
+    } else {
+      return nil
+    }
+  }
+
+  internal init?(httpStatus: Int) {
     /// See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
     switch httpStatus {
-    case "400":
+    case 400:
       self = .internalError
-    case "401":
+    case 401:
       self = .unauthenticated
-    case "403":
+    case 403:
       self = .permissionDenied
-    case "404":
+    case 404:
       self = .unimplemented
-    case "429", "502", "503", "504":
+    case 429, 502, 503, 504:
       self = .unavailable
     default:
-      self = .unknown
+      return nil
     }
   }
 }

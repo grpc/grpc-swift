@@ -117,14 +117,74 @@ class GRPCStatusCodeTests: GRPCTestCase {
 
     self.sendRequestHead()
     let headerFramePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
-    XCTAssertThrowsError(try self.channel.writeInbound(headerFramePayload)) { error in
-      guard let withContext = error as? GRPCError.WithContext,
-            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus
-      else {
-        XCTFail("Unexpected error: \(error)")
-        return
+    try self.channel.writeInbound(headerFramePayload)
+
+    let responsePart1 = try XCTUnwrap(
+      self.channel.readInbound(as: _GRPCClientResponsePart<ByteBuffer>.self)
+    )
+
+    switch responsePart1 {
+    case .trailingMetadata:
+      ()
+    case .initialMetadata, .message, .status:
+      XCTFail("Unexpected response part \(responsePart1)")
+    }
+
+    let responsePart2 = try XCTUnwrap(
+      self.channel.readInbound(as: _GRPCClientResponsePart<ByteBuffer>.self)
+    )
+
+    switch responsePart2 {
+    case .initialMetadata, .message, .trailingMetadata:
+      XCTFail("Unexpected response part \(responsePart2)")
+    case let .status(actual):
+      XCTAssertEqual(actual.code, status.code)
+      XCTAssertEqual(actual.message, status.message)
+    }
+  }
+
+  func testNon200StatusCodesAreConverted() throws {
+    let tests: [(Int, GRPCStatus.Code)] = [
+      (400, .internalError),
+      (401, .unauthenticated),
+      (403, .permissionDenied),
+      (404, .unimplemented),
+      (429, .unavailable),
+      (502, .unavailable),
+      (503, .unavailable),
+      (504, .unavailable),
+    ]
+
+    for (httpStatusCode, grpcStatusCode) in tests {
+      let headers: HPACKHeaders = [":status": "\(httpStatusCode)"]
+
+      self.setUp()
+      self.sendRequestHead()
+      let headerFramePayload = HTTP2Frame.FramePayload
+        .headers(.init(headers: headers, endStream: true))
+      try self.channel.writeInbound(headerFramePayload)
+
+      let responsePart1 = try XCTUnwrap(
+        self.channel.readInbound(as: _GRPCClientResponsePart<ByteBuffer>.self)
+      )
+
+      switch responsePart1 {
+      case .trailingMetadata:
+        ()
+      case .initialMetadata, .message, .status:
+        XCTFail("Unexpected response part \(responsePart1)")
       }
-      XCTAssertEqual(invalidHTTPStatus.makeGRPCStatus(), status)
+
+      let responsePart2 = try XCTUnwrap(
+        self.channel.readInbound(as: _GRPCClientResponsePart<ByteBuffer>.self)
+      )
+
+      switch responsePart2 {
+      case .initialMetadata, .message, .trailingMetadata:
+        XCTFail("Unexpected response part \(responsePart2)")
+      case let .status(actual):
+        XCTAssertEqual(actual.code, grpcStatusCode)
+      }
     }
   }
 
