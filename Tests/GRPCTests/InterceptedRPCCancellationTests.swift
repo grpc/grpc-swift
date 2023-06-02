@@ -33,7 +33,7 @@ final class InterceptedRPCCancellationTests: GRPCTestCase {
     }
 
     // Interceptor checks that a "magic" header is present.
-    let serverInterceptors = EchoServerInterceptors(MagicRequiredServerInterceptor.init)
+    let serverInterceptors = EchoServerInterceptors({ MagicRequiredServerInterceptor() })
     let server = try Server.insecure(group: group)
       .withLogger(self.serverLogger)
       .withServiceProviders([EchoProvider(interceptors: serverInterceptors)])
