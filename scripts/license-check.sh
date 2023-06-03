@@ -38,42 +38,6 @@ read -r -d '' COPYRIGHT_HEADER_SWIFT << 'EOF'
 EOF
 SWIFT_SHA=$(echo "$COPYRIGHT_HEADER_SWIFT" | shasum | awk '{print $1}')
 
-# Copyright header text and SHA for *.grpc.swift files
-read -r -d '' COPYRIGHT_HEADER_SWIFT_GRPC << 'EOF'
-// Copyright YEARS, gRPC Authors All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-EOF
-SWIFT_GRPC_SHA=$(echo "$COPYRIGHT_HEADER_SWIFT_GRPC" | shasum | awk '{print $1}')
-
-# Copyright header text and SHA for *.pb.swift files
-read -r -d '' COPYRIGHT_HEADER_SWIFT_PB << 'EOF'
-// Copyright YEARS gRPC authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-EOF
-SWIFT_GRPC_PB=$(echo "$COPYRIGHT_HEADER_SWIFT_PB" | shasum | awk '{print $1}')
-
 replace_years() {
   sed -e 's/201[56789]-20[12][0-9]/YEARS/' -e 's/201[56789]/YEARS/'
 }
@@ -134,10 +98,8 @@ check_copyright_headers() {
     fi
 
   done < <(find . -name '*.swift' \
-    ! -name 'echo.pb.swift' \
-    ! -name 'annotations.pb.swift' \
-    ! -name 'language_service.pb.swift' \
-    ! -name 'http.pb.swift' \
+    ! -name '*.pb.swift' \
+    ! -name '*.grpc.swift' \
     ! -name 'LinuxMain.swift' \
     ! -name 'XCTestManifests.swift' \
     ! -path './.build/*')
