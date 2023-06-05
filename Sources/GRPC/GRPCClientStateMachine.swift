@@ -41,10 +41,6 @@ enum ReceiveEndOfResponseStreamError: Error, Equatable {
   /// The HTTP response status from the server was not 200 OK.
   case invalidHTTPStatus(String?)
 
-  /// The HTTP response status from the server was not 200 OK but the "grpc-status" header contained
-  /// a valid value.
-  case invalidHTTPStatusWithGRPCStatus(GRPCStatus)
-
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
 }
@@ -742,7 +738,7 @@ extension GRPCClientStateMachine.State {
   private func readStatusCode(from trailers: HPACKHeaders) -> GRPCStatus.Code? {
     return trailers.first(name: GRPCHeaderName.statusCode)
       .flatMap(Int.init)
-      .flatMap(GRPCStatus.Code.init)
+      .flatMap({ GRPCStatus.Code(rawValue: $0) })
   }
 
   private func readStatusMessage(from trailers: HPACKHeaders) -> String? {
@@ -764,18 +760,22 @@ extension GRPCClientStateMachine.State {
     //
     // See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
     let statusHeader = trailers.first(name: ":status")
-    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) })
-    else {
+    let httpResponseStatus = statusHeader.flatMap(Int.init).map {
+      HTTPResponseStatus(statusCode: $0)
+    }
+
+    guard let httpResponseStatus = httpResponseStatus else {
       return .failure(.invalidHTTPStatus(statusHeader))
     }
 
-    guard status == .ok else {
-      if let code = self.readStatusCode(from: trailers) {
-        let message = self.readStatusMessage(from: trailers)
-        return .failure(.invalidHTTPStatusWithGRPCStatus(.init(code: code, message: message)))
-      } else {
-        return .failure(.invalidHTTPStatus(statusHeader))
-      }
+    guard httpResponseStatus == .ok else {
+      // Non-200 response. If there's a 'grpc-status' message we should use that otherwise try
+      // to create one from the HTTP status code.
+      let grpcStatusCode = self.readStatusCode(from: trailers)
+        ?? GRPCStatus.Code(httpStatus: Int(httpResponseStatus.code))
+        ?? .unknown
+      let message = self.readStatusMessage(from: trailers)
+      return .success(GRPCStatus(code: grpcStatusCode, message: message))
     }
 
     // Only validate the content-type header if it's present. This is a small deviation from the

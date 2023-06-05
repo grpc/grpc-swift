@@ -374,8 +374,6 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
             return GRPCError.InvalidContentType(contentType).captureContext()
           case let .invalidHTTPStatus(status):
             return GRPCError.InvalidHTTPStatus(status).captureContext()
-          case let .invalidHTTPStatusWithGRPCStatus(status):
-            return GRPCError.InvalidHTTPStatusWithGRPCStatus(status).captureContext()
           case .invalidState:
             return GRPCError.InvalidState("parsing end-of-stream trailers").captureContext()
           }
