@@ -1097,14 +1097,8 @@ extension GRPCClientStateMachineTests {
       ":status": "418",
       "grpc-status": "5",
     ]
-    stateMachine.receiveEndOfResponseStream(trailers).assertFailure { error in
-      XCTAssertEqual(
-        error,
-        .invalidHTTPStatusWithGRPCStatus(GRPCStatus(
-          code: GRPCStatus.Code(rawValue: 5)!,
-          message: nil
-        ))
-      )
+    stateMachine.receiveEndOfResponseStream(trailers).assertSuccess { status in
+      XCTAssertEqual(status.code.rawValue, 5)
     }
   }
 
@@ -1115,8 +1109,8 @@ extension GRPCClientStateMachineTests {
     ))
 
     let trailers: HPACKHeaders = [":status": "418"]
-    stateMachine.receiveEndOfResponseStream(trailers).assertFailure { error in
-      XCTAssertEqual(error, .invalidHTTPStatus("418"))
+    stateMachine.receiveEndOfResponseStream(trailers).assertSuccess { status in
+      XCTAssertEqual(status.code, .unknown)
     }
   }
 }
