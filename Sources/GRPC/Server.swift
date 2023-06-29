@@ -79,7 +79,9 @@ import Network
 ///      HTTP2Frame.FramePayload│                             │HTTP2Frame.FramePayload
 ///                             │                             ▼
 ///
-public final class Server {
+///- Note: This class is thread safe. It's marked as `@unchecked Sendable` because the non-Sendable
+/// `errorDelegate` property is mutated, but it's done thread-safely, as it only happens inside the `EventLoop`.
+public final class Server: @unchecked Sendable {
   /// Makes and configures a `ServerBootstrap` using the provided configuration.
   public class func makeBootstrap(configuration: Configuration) -> ServerBootstrapProtocol {
     let bootstrap = PlatformSupport.makeServerBootstrap(group: configuration.eventLoopGroup)
