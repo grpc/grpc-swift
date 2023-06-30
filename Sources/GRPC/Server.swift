@@ -79,7 +79,7 @@ import Network
 ///      HTTP2Frame.FramePayload│                             │HTTP2Frame.FramePayload
 ///                             │                             ▼
 ///
-///- Note: This class is thread safe. It's marked as `@unchecked Sendable` because the non-Sendable
+/// - Note: This class is thread safe. It's marked as `@unchecked Sendable` because the non-Sendable
 /// `errorDelegate` property is mutated, but it's done thread-safely, as it only happens inside the `EventLoop`.
 public final class Server: @unchecked Sendable {
   /// Makes and configures a `ServerBootstrap` using the provided configuration.
