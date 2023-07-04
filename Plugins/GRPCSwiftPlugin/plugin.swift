@@ -223,7 +223,7 @@ extension GRPCSwiftPlugin: BuildToolPlugin {
     guard let swiftTarget = target as? SwiftSourceModuleTarget else {
       throw PluginError.invalidTarget
     }
-    return try createBuildCommands(
+    return try self.createBuildCommands(
       pluginWorkDirectory: context.pluginWorkDirectory,
       sourceFiles: swiftTarget.sourceFiles,
       tool: context.tool
@@ -239,7 +239,7 @@ extension GRPCSwiftPlugin: XcodeBuildToolPlugin {
     context: XcodePluginContext,
     target: XcodeTarget
   ) throws -> [Command] {
-    return try createBuildCommands(
+    return try self.createBuildCommands(
       pluginWorkDirectory: context.pluginWorkDirectory,
       sourceFiles: target.inputFiles,
       tool: context.tool
