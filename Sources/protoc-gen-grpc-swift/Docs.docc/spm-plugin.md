@@ -22,18 +22,8 @@ There are multiple ways to do this. Some of the easiest are:
 1. If you are on macOS, installing it via `brew install protobuf`
 2. Download the binary from [Google's github repository](https://github.com/protocolbuffers/protobuf).
 
-### Adding the proto files to your target
-
-Next, you need to add the `.proto` files for which you want to generate your Swift types to your target's
-source directory. You should also commit these files to your git repository since the generated types
-are now generated on demand.
-
-> Note: imports on your `.proto` files will have to include the relative path from the target source to the `.proto` file you wish to import. 
-> Files **must** be contained within the target source directory.
-
 ### Adding the plugin to your manifest
 
-After adding the `.proto` files you can now add the plugin to the target inside your `Package.swift` manifest.
 First, you need to add a dependency on `grpc-swift`. Afterwards, you can declare the usage of the plugin
 for your target. Here is an example snippet of a `Package.swift` manifest:
 
@@ -61,23 +51,33 @@ let package = Package(
 
 ### Configuring the plugin
 
-Lastly, after you have added the `.proto` files and modified your `Package.swift` manifest, you can now
-configure the plugin to invoke the `protoc` compiler. This is done by adding a `grpc-swift-config.json`
-to the root of your target's source folder. An example configuration file looks like this:
+Configuring the plugin is done by adding a `grpc-swift-config.json` file anywhere in your target's sources. Before you start configuring the plugin, you need to add the `.proto` files to your sources. You should also commit these files to your git repository since the generated types are now generated on demand. It's also important to note that the proto files in your configuration should be in the same directory as the config file. Let's see an example to have a better understanding.
+
+Here's an example file structure that looks like this:
+
+```text
+Sources
+├── main.swift
+├── ProtoBuf
+    ├── grpc-swift-config.json
+    ├── foo.proto
+    └── Bar
+        └── Bar.proto
+```        
 
 ```json
 {
     "invocations": [
         {
             "protoFiles": [
-                "Path/To/Foo.proto",
+                "Foo.proto",
             ],
             "visibility": "internal",
             "server": false
         },
         {
             "protoFiles": [
-                "Bar.proto"
+                "Bar/Bar.proto"
             ],
             "visibility": "public",
             "client": false,
@@ -87,11 +87,12 @@ to the root of your target's source folder. An example configuration file looks 
 }
 ```
 
-> Note: paths to your `.proto` files will have to include the relative path from the target source to the `.proto` file location.
-> Files **must** be contained within the target source directory.
+> Note: paths to your `.proto` files will have to include the relative path from the config file directory to the `.proto` file location.
+> Files **must** be contained within the same directory as the config file.
 
-In the above configuration, you declared two invocations to the `protoc` compiler. The first invocation
-is generating Swift types for the `Foo.proto` file with `internal` visibility. Notice the relative path to the `.proto` file.
+In the above configuration, notice the relative path of the `.proto` file with respect to the configuration file. If you add a file in the `Sources` folder, the plugin would be unable to access it as the path is computed relative to the `grpc-swift-config.json` file. So the `.proto` files have to be added within the `ProtoBuf` folder, with relative paths taken into consideration.
+Here, you declared two invocations to the `protoc` compiler. The first invocation
+is generating Swift types for the `Foo.proto` file with `internal` visibility.
 We have also specified the `server` option and set it to false: this means that server code won't be generated for this proto.
 The second invocation is generating Swift types for the `Bar.proto` file with the `public` visibility.
 Notice the `client` option: it's been set to false, so no client code will be generated for this proto. We have also set
