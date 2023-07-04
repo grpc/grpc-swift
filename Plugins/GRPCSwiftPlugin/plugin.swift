@@ -18,13 +18,15 @@ import Foundation
 import PackagePlugin
 
 @main
-struct GRPCSwiftPlugin: BuildToolPlugin {
+struct GRPCSwiftPlugin {
   /// Errors thrown by the `GRPCSwiftPlugin`
   enum PluginError: Error {
     /// Indicates that the target where the plugin was applied to was not `SourceModuleTarget`.
     case invalidTarget
     /// Indicates that the file extension of an input file was not `.proto`.
     case invalidInputFileExtension
+    /// Indicates that there was no configuration file at the required location.
+    case noConfigFound
   }
 
   /// The configuration of the plugin.
@@ -69,20 +71,33 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
 
   static let configurationFileName = "grpc-swift-config.json"
 
-  func createBuildCommands(context: PluginContext, target: Target) throws -> [Command] {
-    // Let's check that this is a source target
-    guard let target = target as? SourceModuleTarget else {
-      throw PluginError.invalidTarget
+  /// Create build commands for the given arguments
+  /// - Parameters:
+  ///   - pluginWorkDirectory: The path of a writable directory into which the plugin or the build
+  ///   commands it constructs can write anything it wants.
+  ///   - sourceFiles: The input files that are associated with the target.
+  ///   - tool: The tool method from the context.
+  /// - Returns: The build commands configured based on the arguments.
+  func createBuildCommands(
+    pluginWorkDirectory: PackagePlugin.Path,
+    sourceFiles: FileList,
+    tool: (String) throws -> PackagePlugin.PluginContext.Tool
+  ) throws -> [Command] {
+    guard let configurationFilePath = sourceFiles.first(
+      where: {
+        $0.path.lastComponent == Self.configurationFileName
+      }
+    )?.path else {
+      throw PluginError.noConfigFound
     }
 
-    // We need to find the configuration file at the root of the target
-    let configurationFilePath = target.directory.appending(subpath: Self.configurationFileName)
     let data = try Data(contentsOf: URL(fileURLWithPath: "\(configurationFilePath)"))
     let configuration = try JSONDecoder().decode(Configuration.self, from: data)
 
     try self.validateConfiguration(configuration)
 
-    var importPaths: [Path] = [target.directory]
+    let targetDirectory = configurationFilePath.removingLastComponent()
+    var importPaths: [Path] = [targetDirectory]
     if let configuredImportPaths = configuration.importPaths {
       importPaths.append(contentsOf: configuredImportPaths.map { Path($0) })
     }
@@ -96,20 +111,17 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
       protocPath = Path(environmentPath)
     } else {
       // The user didn't set anything so let's try see if SPM can find a binary for us
-      protocPath = try context.tool(named: "protoc").path
+      protocPath = try tool("protoc").path
     }
-    let protocGenGRPCSwiftPath = try context.tool(named: "protoc-gen-grpc-swift").path
-
-    // This plugin generates its output into GeneratedSources
-    let outputDirectory = context.pluginWorkDirectory
+    let protocGenGRPCSwiftPath = try tool("protoc-gen-grpc-swift").path
 
     return configuration.invocations.map { invocation in
       self.invokeProtoc(
-        target: target,
+        directory: targetDirectory,
         invocation: invocation,
         protocPath: protocPath,
         protocGenGRPCSwiftPath: protocGenGRPCSwiftPath,
-        outputDirectory: outputDirectory,
+        outputDirectory: pluginWorkDirectory,
         importPaths: importPaths
       )
     }
@@ -118,15 +130,15 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
   /// Invokes `protoc` with the given inputs
   ///
   /// - Parameters:
-  ///   - target: The plugin's target.
+  ///   - directory: The plugin's target directory.
   ///   - invocation: The `protoc` invocation.
   ///   - protocPath: The path to the `protoc` binary.
   ///   - protocGenSwiftPath: The path to the `protoc-gen-swift` binary.
   ///   - outputDirectory: The output directory for the generated files.
   ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`
-  /// - Returns: The build command.
+  /// - Returns: The build command configured based on the arguments
   private func invokeProtoc(
-    target: Target,
+    directory: Path,
     invocation: Configuration.Invocation,
     protocPath: Path,
     protocGenGRPCSwiftPath: Path,
@@ -166,7 +178,7 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
     for var file in invocation.protoFiles {
       // Append the file to the protoc args so that it is used for generating
       protocArgs.append("\(file)")
-      inputFiles.append(target.directory.appending(file))
+      inputFiles.append(directory.appending(file))
 
       // The name of the output file is based on the name of the input file.
       // We validated in the beginning that every file has the suffix of .proto
@@ -202,3 +214,36 @@ struct GRPCSwiftPlugin: BuildToolPlugin {
     }
   }
 }
+
+extension GRPCSwiftPlugin: BuildToolPlugin {
+  func createBuildCommands(
+    context: PluginContext,
+    target: Target
+  ) async throws -> [Command] {
+    guard let swiftTarget = target as? SwiftSourceModuleTarget else {
+      throw PluginError.invalidTarget
+    }
+    return try self.createBuildCommands(
+      pluginWorkDirectory: context.pluginWorkDirectory,
+      sourceFiles: swiftTarget.sourceFiles,
+      tool: context.tool
+    )
+  }
+}
+
+#if canImport(XcodeProjectPlugin)
+import XcodeProjectPlugin
+
+extension GRPCSwiftPlugin: XcodeBuildToolPlugin {
+  func createBuildCommands(
+    context: XcodePluginContext,
+    target: XcodeTarget
+  ) throws -> [Command] {
+    return try self.createBuildCommands(
+      pluginWorkDirectory: context.pluginWorkDirectory,
+      sourceFiles: target.inputFiles,
+      tool: context.tool
+    )
+  }
+}
+#endif
