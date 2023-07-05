@@ -265,7 +265,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       initialDelay: delay,
       delay: delay
     ) { _ in
-      self.handlePingAction(self.pingHandler.pingFired())
+      let action = self.pingHandler.pingFired()
+      if case .none = action { return }
+      self.handlePingAction(action)
       // `timeout` is less than `interval`, guaranteeing that the close task
       // will be fired before a new ping is triggered.
       assert(timeout < delay, "`timeout` must be less than `interval`")
