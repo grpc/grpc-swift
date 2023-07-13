@@ -58,12 +58,12 @@ Here's an example file structure that looks like this:
 ```text
 Sources
 ├── main.swift
-├── ProtoBuf
+└── ProtoBuf
     ├── grpc-swift-config.json
     ├── foo.proto
     └── Bar
         └── Bar.proto
-```        
+```
 
 ```json
 {
@@ -103,19 +103,19 @@ the `keepMethodCasing` option to false, which means that the casing of the autog
 
 ### Defining the path to the protoc binary
 
-The plugin needs to be able to invoke the `protoc` binary to generate the Swift types. There are several ways to achieve this. 
+The plugin needs to be able to invoke the `protoc` binary to generate the Swift types. There are several ways to achieve this.
 
-First, by default, the package manager looks into the `$PATH` to find binaries named `protoc`. 
-This works immediately if you use `swift build` to build your package and `protoc` is installed 
+First, by default, the package manager looks into the `$PATH` to find binaries named `protoc`.
+This works immediately if you use `swift build` to build your package and `protoc` is installed
 in the `$PATH` (`brew` is adding it to your `$PATH` automatically).
 However, this doesn't work if you want to compile from Xcode since Xcode is not passed the `$PATH`.
 
-If compiling from Xcode, you have **three options** to set the path of `protoc` that the plugin is going to use: 
+If compiling from Xcode, you have **three options** to set the path of `protoc` that the plugin is going to use:
 
 * Set an environment variable `PROTOC_PATH` that gets picked up by the plugin. Here are two examples of how you can achieve this:
 
 ```shell
-# swift build
+# swift build
 env PROTOC_PATH=/opt/homebrew/bin/protoc swift build
 
 # To start Xcode (Xcode MUST NOT be running before invoking this)
@@ -134,9 +134,18 @@ env PROTOC_PATH=/opt/homebrew/bin/protoc xcodebuild <Here goes your command>
 }
 ```
 
-> Warning: The configuration file option only solves the problem for leaf packages that are using the Swift package manager
-plugin since there you can point the package manager to the right binary. The environment variable
-does solve the problem for transitive packages as well; however, it requires your users to set
-the variable now. In general we advise against adopting the plugin as a non-leaf package!
+* You can start Xcode by running `$ xed .` from the command line from the directory your project is located - this should make `$PATH` visible to Xcode.
 
-* You can start Xcode by running `$ xed .` from the command line from the directory your project is located - this should make `$PATH` visible to Xcode. 
+### Known Issues
+
+- The configuration file _must not_ be excluded from the list of sources for the
+  target in the package manifest (that is, it should not be present in the
+  `exclude` argument for the target). The build system does not have access to
+  the file if it is excluded, however, `swift build` will result in a warning
+  that the file should be excluded.
+- The plugin should only be used for leaf package. The configuration file option
+  only solves the problem for leaf packages that are using the Swift package
+  manager plugin since there you can point the package manager to the right
+  binary. The environment variable does solve the problem for transitive
+  packages as well; however, it requires your users to set the variable now.
+
