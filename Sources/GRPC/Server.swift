@@ -538,6 +538,9 @@ extension ServerBootstrapProtocol {
 
     case let .connectedSocket(socket):
       return self.withBoundSocket(socket)
+
+    case let .vsockAddress(address):
+      return self.bind(to: address)
     }
   }
 }

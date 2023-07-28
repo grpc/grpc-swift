@@ -23,6 +23,7 @@ import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
+import NIOPosix
 #if canImport(NIOSSL)
 import NIOSSL
 #endif
@@ -269,6 +270,7 @@ public struct ConnectionTarget: Sendable {
     case unixDomainSocket(String)
     case socketAddress(SocketAddress)
     case connectedSocket(NIOBSDSocket.Handle)
+    case vsockAddress(VsockAddress)
   }
 
   internal var wrapped: Wrapped
@@ -301,6 +303,11 @@ public struct ConnectionTarget: Sendable {
     return ConnectionTarget(.connectedSocket(socket))
   }
 
+  /// A vsock socket.
+  public static func vsockAddress(_ vsockAddress: VsockAddress) -> ConnectionTarget {
+    return ConnectionTarget(.vsockAddress(vsockAddress))
+  }
+
   @usableFromInline
   var host: String {
     switch self.wrapped {
@@ -312,6 +319,8 @@ public struct ConnectionTarget: Sendable {
       return address.host
     case .unixDomainSocket, .socketAddress(.unixDomainSocket), .connectedSocket:
       return "localhost"
+    case let .vsockAddress(address):
+      return "vsock://\(address.cid)"
     }
   }
 }
@@ -552,6 +561,8 @@ extension ClientBootstrapProtocol {
       return self.connect(to: address)
     case let .connectedSocket(socket):
       return self.withConnectedSocket(socket)
+    case let .vsockAddress(address):
+      return self.connect(to: address)
     }
   }
 }
