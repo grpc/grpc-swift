@@ -25,19 +25,27 @@ struct HelloWorld: AsyncParsableCommand {
   @Option(help: "The port to listen on for new connections")
   var port = 1234
 
+  @Flag(help: "Use local vsock socket")
+  var vsock = false
+
   func run() async throws {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     defer {
       try! group.syncShutdownGracefully()
     }
 
-    // Start the server and print its address once it has started.
-    let server = try await Server.insecure(group: group)
-      .withServiceProviders([GreeterProvider()])
-      .bind(host: "localhost", port: self.port)
-      .get()
+    let serverBuilder = Server.insecure(group: group).withServiceProviders([GreeterProvider()])
 
-    print("server started on port \(server.channel.localAddress!.port!)")
+    // Start the server and print its address once it has started.
+    let server: Server
+    if self.vsock {
+      let vsockAddress = VsockAddress(cid: .any, port: .init(self.port))
+      server = try await serverBuilder.bind(vsockAddress: vsockAddress).get()
+      print("server started on \(vsockAddress)")
+    } else {
+      server = try await serverBuilder.bind(host: "localhost", port: self.port).get()
+      print("server started on port \(server.channel.localAddress!.port!)")
+    }
 
     // Wait on the server's `onClose` future to stop the program from exiting.
     try await server.onClose.get()
