@@ -15,7 +15,7 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
+import GRPC
 import NIOPosix
 import XCTest
 
@@ -60,8 +60,8 @@ class VsockSocketTests: GRPCTestCase {
     #else
     fd = -1
     #endif
-    guard fd != -1 else { return false }
-    assert(close(fd) == 0)
+    if fd == -1 { return false }
+    precondition(close(fd) == 0)
     return true
   }
 }

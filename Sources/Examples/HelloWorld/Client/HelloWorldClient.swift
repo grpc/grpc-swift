@@ -25,9 +25,6 @@ struct HelloWorld: AsyncParsableCommand {
   @Option(help: "The port to connect to")
   var port: Int = 1234
 
-  @Flag(help: "Use local vsock socket")
-  var vsock = false
-
   @Argument(help: "The name to greet")
   var name: String?
 
@@ -43,18 +40,8 @@ struct HelloWorld: AsyncParsableCommand {
     }
 
     // Configure the channel, we're not using TLS so the connection is `insecure`.
-    let target: ConnectionTarget
-    if self.vsock {
-      #if canImport(Darwin)
-      target = .vsockAddress(.init(cid: .any, port: .init(self.port)))
-      #else
-      target = .vsockAddress(.init(cid: .local, port: .init(self.port)))
-      #endif
-    } else {
-      target = .host("localhost", port: self.port)
-    }
     let channel = try GRPCChannelPool.with(
-      target: target,
+      target: .host("localhost", port: self.port),
       transportSecurity: .plaintext,
       eventLoopGroup: group
     )

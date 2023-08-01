@@ -147,7 +147,7 @@ extension NIOTSConnectionBootstrap: ClientBootstrapProtocol {
   }
 
   public func connect(to vsockAddress: VsockAddress) -> EventLoopFuture<Channel> {
-    preconditionFailure("NIOTSListenerBootstrap does not support connect(to vsockAddress:)")
+    preconditionFailure("NIOTSConnectionBootstrap does not support connect(to vsockAddress:)")
   }
 }
 #endif
