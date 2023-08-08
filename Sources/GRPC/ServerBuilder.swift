@@ -15,6 +15,7 @@
  */
 import Logging
 import NIOCore
+import NIOPosix
 
 #if canImport(Network)
 import Security
@@ -57,6 +58,12 @@ extension Server {
 
     public func bind(unixDomainSocketPath path: String) -> EventLoopFuture<Server> {
       self.configuration.target = .unixDomainSocket(path)
+      self.configuration.tlsConfiguration = self.maybeTLS
+      return Server.start(configuration: self.configuration)
+    }
+
+    public func bind(vsockAddress: VsockAddress) -> EventLoopFuture<Server> {
+      self.configuration.target = .vsockAddress(vsockAddress)
       self.configuration.tlsConfiguration = self.maybeTLS
       return Server.start(configuration: self.configuration)
     }

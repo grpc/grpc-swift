@@ -118,6 +118,7 @@ public protocol ClientBootstrapProtocol {
   func connect(host: String, port: Int) -> EventLoopFuture<Channel>
   func connect(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
   func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel>
+  func connect(to vsockAddress: VsockAddress) -> EventLoopFuture<Channel>
 
   func connectTimeout(_ timeout: TimeAmount) -> Self
   func channelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
@@ -144,6 +145,10 @@ extension NIOTSConnectionBootstrap: ClientBootstrapProtocol {
   public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
     preconditionFailure("NIOTSConnectionBootstrap does not support withConnectedSocket(_:)")
   }
+
+  public func connect(to vsockAddress: VsockAddress) -> EventLoopFuture<Channel> {
+    preconditionFailure("NIOTSConnectionBootstrap does not support connect(to vsockAddress:)")
+  }
 }
 #endif
 
@@ -154,6 +159,7 @@ public protocol ServerBootstrapProtocol {
   func bind(host: String, port: Int) -> EventLoopFuture<Channel>
   func bind(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
   func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel>
+  func bind(to vsockAddress: VsockAddress) -> EventLoopFuture<Channel>
 
   #if swift(>=5.7)
   @preconcurrency
@@ -189,7 +195,11 @@ extension ServerBootstrap: ServerBootstrapProtocol {}
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 extension NIOTSListenerBootstrap: ServerBootstrapProtocol {
   public func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
-    preconditionFailure("NIOTSListenerBootstrap does not support withConnectedSocket(_:)")
+    preconditionFailure("NIOTSListenerBootstrap does not support withBoundSocket(_:)")
+  }
+
+  public func bind(to vsockAddress: VsockAddress) -> EventLoopFuture<Channel> {
+    preconditionFailure("NIOTSListenerBootstrap does not support bind(to vsockAddress:)")
   }
 }
 #endif
