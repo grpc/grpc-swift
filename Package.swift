@@ -30,11 +30,9 @@ let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == ni
 // MARK: - Package Dependencies
 
 let packageDependencies: [Package.Dependency] = [
-  // TODO: Remove before converting from draft PR
-  // This commit is from open pull request: https://github.com/apple/swift-nio/pull/2479
   .package(
     url: "https://github.com/apple/swift-nio.git",
-    .revision("2e35532c1d59fd37c0a023a655cdb44a7057ec3e")
+    from: "2.58.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
