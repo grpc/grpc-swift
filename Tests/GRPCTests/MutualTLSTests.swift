@@ -105,10 +105,12 @@ class MutualTLSTests: GRPCTestCase {
 
     if !expectServerHandshakeError {
       XCTAssert(
-        serverErrorDelegate.errors.isEmpty,
+        serverErrorDelegate.errors.withLockedValue { $0.isEmpty },
         "Unexpected server errors: \(serverErrorDelegate.errors)"
       )
-    } else if case .handshakeFailed = serverErrorDelegate.errors.first as? NIOSSLError {
+    } else if case .handshakeFailed = serverErrorDelegate.errors.withLockedValue({
+      $0.first as? NIOSSLError
+    }) {
       // This is the expected error.
     } else {
       XCTFail(

@@ -17,7 +17,7 @@
 /// Provides a context for gRPC payloads.
 ///
 /// - Important: This is **NOT** part of the public API.
-public final class _MessageContext<Message> {
+public final class _MessageContext<Message: Sendable>: Sendable {
   /// The message being sent or received.
   let message: Message
 

@@ -81,7 +81,7 @@ class ClientCallTests: GRPCTestCase {
   private func makeResponsePartHandler<Response>(
     for: Response.Type = Response.self,
     completing promise: EventLoopPromise<GRPCStatus>
-  ) -> (GRPCClientResponsePart<Response>) -> Void {
+  ) -> @Sendable (GRPCClientResponsePart<Response>) -> Void {
     return { part in
       switch part {
       case .metadata, .message:
@@ -99,7 +99,7 @@ class ClientCallTests: GRPCTestCase {
 
     let statusPromise = self.makeStatusPromise()
     get.invoke(
-      onError: statusPromise.fail(_:),
+      onError: { statusPromise.fail($0) },
       onResponsePart: self.makeResponsePartHandler(completing: statusPromise)
     )
 
@@ -123,7 +123,7 @@ class ClientCallTests: GRPCTestCase {
     get.invokeUnaryRequest(
       .with { $0.text = "get" },
       onStart: {},
-      onError: promise.fail(_:),
+      onError: { promise.fail($0) },
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
 
@@ -136,7 +136,7 @@ class ClientCallTests: GRPCTestCase {
     let promise = self.makeStatusPromise()
     collect.invokeStreamingRequests(
       onStart: {},
-      onError: promise.fail(_:),
+      onError: { promise.fail($0) },
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
     collect.send(
@@ -155,7 +155,7 @@ class ClientCallTests: GRPCTestCase {
     expand.invokeUnaryRequest(
       .with { $0.text = "expand" },
       onStart: {},
-      onError: promise.fail(_:),
+      onError: { promise.fail($0) },
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
 
@@ -168,7 +168,7 @@ class ClientCallTests: GRPCTestCase {
     let promise = self.makeStatusPromise()
     update.invokeStreamingRequests(
       onStart: {},
-      onError: promise.fail(_:),
+      onError: { promise.fail($0) },
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
     update.send(
@@ -194,7 +194,7 @@ class ClientCallTests: GRPCTestCase {
     let get = self.get()
     let promise = self.makeStatusPromise()
     get.invoke(
-      onError: promise.fail(_:),
+      onError: { promise.fail($0) },
       onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
 

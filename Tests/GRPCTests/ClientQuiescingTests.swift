@@ -92,8 +92,8 @@ internal final class ClientQuiescingTests: GRPCTestCase {
     let collect = self.echo.collect(callOptions: self.callOptionsWithLogger)
 
     if withTracking {
-      collect.status.whenSuccess { status in
-        self.tracker.didFinishRPC()
+      collect.status.whenSuccess { [tracker = self.tracker] status in
+        tracker.didFinishRPC()
         XCTAssert(status.isOk)
       }
     }
@@ -121,8 +121,8 @@ internal final class ClientQuiescingTests: GRPCTestCase {
     self.channel.closeGracefully(deadline: deadline, promise: promise)
 
     if withTracking {
-      promise.futureResult.whenComplete { _ in
-        self.tracker.didShutdown()
+      promise.futureResult.whenComplete { [tracker = self.tracker] _ in
+        tracker.didShutdown()
       }
     }
     return promise.futureResult
@@ -411,7 +411,7 @@ extension ClientQuiescingTests {
 }
 
 extension ClientQuiescingTests {
-  private final class RPCTracker {
+  private final class RPCTracker: @unchecked Sendable {
     private enum _State {
       case active(Int)
       case shutdownRequested(Int)

@@ -238,8 +238,8 @@ class ExtraRequestPartEmitter: ServerInterceptor<Echo_EchoRequest, Echo_EchoResp
   }
 }
 
-class EchoFromInterceptor: Echo_EchoProvider {
-  var interceptors: Echo_EchoServerInterceptorFactoryProtocol? = Interceptors()
+final class EchoFromInterceptor: Echo_EchoProvider {
+  let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = Interceptors()
 
   func get(
     request: Echo_EchoRequest,

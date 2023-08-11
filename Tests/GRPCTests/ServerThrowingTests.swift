@@ -31,7 +31,7 @@ let transformedMetadata = HPACKHeaders([("transformed", "header")])
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
-class ImmediateThrowingEchoProvider: Echo_EchoProvider {
+class ImmediateThrowingEchoProvider: Echo_EchoProvider, @unchecked Sendable {
   var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { return nil }
 
   func get(
@@ -68,7 +68,7 @@ extension EventLoop {
 }
 
 /// See `ImmediateThrowingEchoProvider`.
-class DelayedThrowingEchoProvider: Echo_EchoProvider {
+final class DelayedThrowingEchoProvider: Echo_EchoProvider {
   let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil
 
   func get(
@@ -97,7 +97,7 @@ class DelayedThrowingEchoProvider: Echo_EchoProvider {
 }
 
 /// Ensures that fulfilling the status promise (where possible) with an error yields the same result as failing the future.
-class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
+final class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
   // There's no status promise to fulfill for unary calls (only the response promise), so that case is omitted.
 
   override func expand(
@@ -123,7 +123,7 @@ class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
   }
 }
 
-private class ErrorTransformingDelegate: ServerErrorDelegate {
+private final class ErrorTransformingDelegate: ServerErrorDelegate {
   func transformRequestHandlerError(
     _ error: Error,
     headers: HPACKHeaders

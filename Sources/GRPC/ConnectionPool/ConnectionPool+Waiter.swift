@@ -68,7 +68,7 @@ extension ConnectionPool {
     @usableFromInline
     internal func scheduleTimeout(
       on eventLoop: EventLoop,
-      execute body: @escaping () -> Void
+      execute body: @escaping @Sendable () -> Void
     ) {
       assert(self._scheduledTimeout == nil)
       self._scheduledTimeout = eventLoop.scheduleTask(deadline: self._deadline, body)

@@ -98,8 +98,8 @@ final class MagicRequiredServerInterceptor<
 }
 
 final class MagicAddingClientInterceptor<
-  Request: Message,
-  Response: Message
+  Request: Message & Sendable,
+  Response: Message & Sendable
 >: ClientInterceptor<Request, Response> {
   private let channel: GRPCChannel
   private var requestParts = CircularBuffer<GRPCClientRequestPart<Request>>()
@@ -168,12 +168,14 @@ final class MagicAddingClientInterceptor<
         interceptors: []
       )
 
+      let loopBound = NIOLoopBound(context, eventLoop: context.eventLoop)
+
       self.retry!.invoke(onError: {
-        context.log.debug("intercepting error from retried rpc")
-        context.errorCaught($0)
+        loopBound.value.log.debug("intercepting error from retried rpc")
+        loopBound.value.errorCaught($0)
       }) { responsePart in
-        context.log.debug("intercepting response part from retried rpc")
-        context.receive(responsePart)
+        loopBound.value.log.debug("intercepting response part from retried rpc")
+        loopBound.value.receive(responsePart)
       }
 
       while let requestPart = self.requestParts.popFirst() {

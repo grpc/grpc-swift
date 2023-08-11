@@ -317,8 +317,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
       $0.connectionPool.maxWaitTime = .hours(1)
     }
 
-    let lock = NIOLock()
-    var order = 0
+    let order = NIOLockedValueBox(0)
 
     // We need a connection to be up and running to avoid hitting the waiter limit when creating a
     // batch of RPCs in one go.
@@ -330,31 +329,31 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     let rpcs = (0 ..< 101).map { _ in self.echo.update { _ in }}
     // The first RPC should (obviously) complete first.
     rpcs.first!.status.whenComplete { _ in
-      lock.withLock {
-        XCTAssertEqual(order, 0)
-        order += 1
+      order.withLockedValue {
+        XCTAssertEqual($0, 0)
+        $0 += 1
       }
     }
 
     // The 101st RPC will complete once the first is completed (we explicitly terminate the 1st
     // RPC below).
     rpcs.last!.status.whenComplete { _ in
-      lock.withLock {
-        XCTAssertEqual(order, 1)
-        order += 1
+      order.withLockedValue {
+        XCTAssertEqual($0, 1)
+        $0 += 1
       }
     }
 
     // Still zero: the first RPC is still active.
-    lock.withLock { XCTAssertEqual(order, 0) }
+    order.withLockedValue { XCTAssertEqual($0, 0) }
     // End the first RPC.
     XCTAssertNoThrow(try rpcs.first!.sendEnd().wait())
     XCTAssertNoThrow(try rpcs.first!.status.wait())
-    lock.withLock { XCTAssertEqual(order, 1) }
+    order.withLockedValue { XCTAssertEqual($0, 1) }
     // End the last RPC.
     XCTAssertNoThrow(try rpcs.last!.sendEnd().wait())
     XCTAssertNoThrow(try rpcs.last!.status.wait())
-    lock.withLock { XCTAssertEqual(order, 2) }
+    order.withLockedValue { XCTAssertEqual($0, 2) }
 
     // End the rest.
     for rpc in rpcs.dropFirst().dropLast() {
@@ -543,7 +542,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
   }
 
   func testDelegateCanTellWhenFirstConnectionIsBeingEstablished() {
-    final class State {
+    final class State: @unchecked Sendable {
       private enum _State {
         case idle
         case connecting

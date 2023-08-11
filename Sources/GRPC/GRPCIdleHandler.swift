@@ -192,8 +192,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
       case .schedule:
         if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let loopBoundSelf = context.eventLoop.makeLoopBound(self)
           let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
-            self.idleTimeoutFired()
+            loopBoundSelf.value.idleTimeoutFired()
           }
           self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
         }
@@ -225,8 +226,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     if operations.shouldCloseChannel, let context = self.context {
       // Close on the next event-loop tick so we don't drop any events which are
       // currently being processed.
+      let loopBoundContext = context.eventLoop.makeLoopBound(context)
       context.eventLoop.execute {
-        context.close(mode: .all, promise: nil)
+        loopBoundContext.value.close(mode: .all, promise: nil)
       }
     }
   }
@@ -257,27 +259,31 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   }
 
   private func schedulePing(in delay: TimeAmount, timeout: TimeAmount) {
-    guard delay != .nanoseconds(.max) else {
+    guard delay != .nanoseconds(.max), let context = self.context else {
       return
     }
 
-    self.scheduledPing = self.context?.eventLoop.scheduleRepeatedTask(
+    let loopBoundSelf = context.eventLoop.makeLoopBound(self)
+    self.scheduledPing = context.eventLoop.scheduleRepeatedTask(
       initialDelay: delay,
       delay: delay
     ) { _ in
-      let action = self.pingHandler.pingFired()
+      let action = loopBoundSelf.value.pingHandler.pingFired()
       if case .none = action { return }
-      self.handlePingAction(action)
+      loopBoundSelf.value.handlePingAction(action)
       // `timeout` is less than `interval`, guaranteeing that the close task
       // will be fired before a new ping is triggered.
       assert(timeout < delay, "`timeout` must be less than `interval`")
-      self.scheduleClose(in: timeout)
+      loopBoundSelf.value.scheduleClose(in: timeout)
     }
   }
 
   private func scheduleClose(in timeout: TimeAmount) {
+    guard let context = self.context else { return }
+    let loopBoundSelf = context.eventLoop.makeLoopBound(self)
     self.scheduledClose = self.context?.eventLoop.scheduleTask(in: timeout) {
-      self.perform(operations: self.stateMachine.shutdownNow())
+      let operations = loopBoundSelf.value.stateMachine.shutdownNow()
+      loopBoundSelf.value.perform(operations: operations)
     }
   }
 

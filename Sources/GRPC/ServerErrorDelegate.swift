@@ -18,7 +18,7 @@ import NIOCore
 import NIOHPACK
 import NIOHTTP1
 
-public protocol ServerErrorDelegate: AnyObject {
+public protocol ServerErrorDelegate: AnyObject, Sendable {
   //! FIXME: Provide more context about where the error was thrown, i.e. using `GRPCError`.
   /// Called when an error is thrown in the channel pipeline.
   func observeLibraryError(_ error: Error)

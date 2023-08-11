@@ -268,7 +268,7 @@ public typealias BindTarget = ConnectionTarget
 
 extension Server {
   /// The configuration for a server.
-  public struct Configuration {
+  public struct Configuration: Sendable {
     /// The target to bind to.
     public var target: BindTarget
     /// The event loop group to run the connection on.
@@ -367,7 +367,7 @@ extension Server {
     ///
     /// - Warning: The initializer closure may be invoked *multiple times*. More precisely: it will
     ///   be invoked at most once per accepted connection.
-    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+    public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
 
     /// A calculated private cache of the service providers by name.
     ///
@@ -408,7 +408,7 @@ extension Server {
       messageEncoding: ServerMessageEncoding = .disabled,
       httpTargetWindowSize: Int = 8 * 1024 * 1024,
       logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),
-      debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
+      debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup

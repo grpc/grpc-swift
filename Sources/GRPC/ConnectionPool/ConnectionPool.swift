@@ -19,7 +19,7 @@ import NIOCore
 import NIOHTTP2
 
 @usableFromInline
-internal final class ConnectionPool {
+internal final class ConnectionPool: @unchecked Sendable {
   /// The event loop all connections in this pool are running on.
   @usableFromInline
   internal let eventLoop: EventLoop
@@ -360,15 +360,20 @@ internal final class ConnectionPool {
     // Fail the waiter and punt it from the queue when it times out. It's okay that we schedule the
     // timeout before appending it to the waiters, it wont run until the next event loop tick at the
     // earliest (even if the deadline has already passed).
-    waiter.scheduleTimeout(on: self.eventLoop) {
-      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: self._mostRecentError))
+    let loopBoundSelf = self.eventLoop.makeLoopBound(self)
+    let loopBoundWaiter = self.eventLoop.makeLoopBound(waiter)
 
-      if let index = self.waiters.firstIndex(where: { $0.id == waiter.id }) {
-        self.waiters.remove(at: index)
+    waiter.scheduleTimeout(on: self.eventLoop) {
+      let error = loopBoundSelf.value._mostRecentError
+      let waiter = loopBoundWaiter
+      waiter.value.fail(ConnectionPoolError.deadlineExceeded(connectionError: error))
+
+      if let index = loopBoundSelf.value.waiters.firstIndex(where: { $0.id == waiter.value.id }) {
+        loopBoundSelf.value.waiters.remove(at: index)
 
         logger.trace("timed out waiting for a connection", metadata: [
-          Metadata.waiterID: "\(waiter.id)",
-          Metadata.waitersCount: "\(self.waiters.count)",
+          Metadata.waiterID: "\(waiter.value.id)",
+          Metadata.waitersCount: "\(loopBoundSelf.value.waiters.count)",
         ])
       }
     }
@@ -507,10 +512,9 @@ internal final class ConnectionPool {
 
       // We're shutting down now and when that's done we'll be fully shutdown.
       self._state = .shuttingDown(promise.futureResult)
+      let loopBoundSelf = self.eventLoop.makeLoopBound(self)
       promise.futureResult.whenComplete { _ in
-        self._state = .shutdown
-        self.delegate = nil
-        self.logger.trace("finished shutting down connection pool")
+        loopBoundSelf.value._onShutdown()
       }
 
       // Shutdown all the connections and remove them from the pool.
@@ -521,6 +525,7 @@ internal final class ConnectionPool {
         let id = $0.manager.id
         let manager = $0.manager
 
+        let loopBoundSelf = self.eventLoop.makeLoopBound(self)
         return manager.eventLoop.flatSubmit {
           // If the connection was idle/shutdown before calling shutdown then we shouldn't tell
           // the delegate the connection closed (because it either never connected or was already
@@ -528,9 +533,9 @@ internal final class ConnectionPool {
           let connectionIsInactive = manager.sync.isIdle || manager.sync.isShutdown
           return manager.shutdown(mode: mode).always { _ in
             if !connectionIsInactive {
-              self.delegate?.connectionClosed(id: .init(id), error: nil)
+              loopBoundSelf.value.delegate?.connectionClosed(id: .init(id), error: nil)
             }
-            self.delegate?.connectionRemoved(id: .init(id))
+            loopBoundSelf.value.delegate?.connectionRemoved(id: .init(id))
           }
         }
       }
@@ -551,6 +556,13 @@ internal final class ConnectionPool {
       // Already shutdown, fine.
       promise.succeed(())
     }
+  }
+
+  private func _onShutdown() {
+    self.eventLoop.assertInEventLoop()
+    self._state = .shutdown
+    self.delegate = nil
+    self.logger.trace("finished shutting down connection pool")
   }
 }
 
@@ -627,15 +639,11 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     self._connections.values[index].isQuiescing = true
     self.delegate?.connectionQuiescing(id: .init(manager.id))
 
-    // As the connection is quescing, we need to know when the current connection its managing has
+    // As the connection is quiescing, we need to know when the current connection its managing has
     // closed. When that happens drop the H2 delegate and update the pool delegate.
-    manager.onCurrentConnectionClose { hadActiveConnection in
-      assert(hadActiveConnection)
-      if let removed = self._connections.removeValue(forKey: manager.id) {
-        removed.manager.sync.http2Delegate = nil
-        self.delegate?.connectionClosed(id: .init(removed.manager.id), error: nil)
-        self.delegate?.connectionRemoved(id: .init(removed.manager.id))
-      }
+    let loopBoundSelf = self.eventLoop.makeLoopBound(self)
+    manager.onCurrentConnectionClose {
+      loopBoundSelf.value.onConnectionClose($0, id: manager.id)
     }
 
     // Grab the number of reserved streams (before invalidating the index by adding a connection).
@@ -651,6 +659,16 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     // Note: we don't need to adjust the number of available streams as the effective number of
     // connections hasn't changed.
     self.streamLender.returnStreams(reservedStreams, to: self)
+  }
+
+  private func onConnectionClose(_ hadActiveConnection: Bool, id: ConnectionManagerID) {
+    self.eventLoop.assertInEventLoop()
+    assert(hadActiveConnection)
+    if let removed = self._connections.removeValue(forKey: id) {
+      removed.manager.sync.http2Delegate = nil
+      self.delegate?.connectionClosed(id: .init(removed.manager.id), error: nil)
+      self.delegate?.connectionRemoved(id: .init(removed.manager.id))
+    }
   }
 
   private func updateMostRecentError(_ error: Error) {

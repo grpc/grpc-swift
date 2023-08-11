@@ -19,7 +19,7 @@ import NIOHPACK
 public final class UnaryServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
->: GRPCServerHandlerProtocol {
+>: GRPCServerHandlerProtocol, @unchecked Sendable {
   public typealias Request = Deserializer.Output
   public typealias Response = Serializer.Input
 
@@ -172,7 +172,7 @@ public final class UnaryServerHandler<
       self.state = .createdContext(context)
 
       // Register a callback on the response future. The user function will complete this promise.
-      context.responsePromise.futureResult.whenComplete(self.userFunctionCompletedWithResult(_:))
+      context.responsePromise.futureResult.whenComplete { self.userFunctionCompletedWithResult($0) }
 
       // Send back response headers.
       self.interceptors.send(.metadata([:]), promise: nil)

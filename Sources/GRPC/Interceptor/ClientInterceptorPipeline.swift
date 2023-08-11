@@ -58,7 +58,12 @@ import NIOHTTP2
 /// │                       (a NIO.ChannelHandler)                      │
 /// ```
 @usableFromInline
-internal final class ClientInterceptorPipeline<Request, Response> {
+internal final class ClientInterceptorPipeline<
+  Request: Sendable,
+  Response: Sendable
+>: @unchecked Sendable {
+  // @unchecked as all state is synchronized on the event loop.
+
   /// A logger.
   @usableFromInline
   internal var logger: GRPCLogger
@@ -460,6 +465,7 @@ extension ClientInterceptorPipeline {
   /// Sets up a deadline for the pipeline.
   @inlinable
   internal func _setupDeadline() {
+    @Sendable
     func setup() {
       self.eventLoop.assertInEventLoop()
 

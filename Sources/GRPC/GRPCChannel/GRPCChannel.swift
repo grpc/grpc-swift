@@ -105,7 +105,7 @@ extension GRPCChannel {
   ///   - request: The request to send.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeUnaryCall<Request: Message, Response: Message>(
+  public func makeUnaryCall<Request: Message & Sendable, Response: Message & Sendable>(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -154,7 +154,7 @@ extension GRPCChannel {
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeClientStreamingCall<Request: Message, Response: Message>(
+  public func makeClientStreamingCall<Request: Message & Sendable, Response: Message & Sendable>(
     path: String,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
@@ -202,7 +202,7 @@ extension GRPCChannel {
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
   ///   - handler: Response handler; called for every response received from the server.
-  public func makeServerStreamingCall<Request: Message, Response: Message>(
+  public func makeServerStreamingCall<Request: Message & Sendable, Response: Message & Sendable>(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -257,7 +257,10 @@ extension GRPCChannel {
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
   ///   - handler: Response handler; called for every response received from the server.
-  public func makeBidirectionalStreamingCall<Request: Message, Response: Message>(
+  public func makeBidirectionalStreamingCall<
+    Request: Message & Sendable,
+    Response: Message & Sendable
+  >(
     path: String,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = [],

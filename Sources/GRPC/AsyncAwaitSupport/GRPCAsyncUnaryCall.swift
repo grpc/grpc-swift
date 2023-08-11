@@ -102,8 +102,12 @@ public struct GRPCAsyncUnaryCall<Request: Sendable, Response: Sendable>: Sendabl
     self.call.invokeUnaryRequest(
       request,
       onStart: {},
-      onError: self.responseParts.handleError(_:),
-      onResponsePart: self.responseParts.handle(_:)
+      onError: { [responseParts = self.responseParts] in
+        responseParts.handleError($0)
+      },
+      onResponsePart: { [responseParts = self.responseParts] in
+        responseParts.handle($0)
+      }
     )
   }
 

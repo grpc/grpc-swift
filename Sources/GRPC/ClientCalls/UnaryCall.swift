@@ -25,7 +25,10 @@ import SwiftProtobuf
 ///
 /// Note: while this object is a `struct`, its implementation delegates to ``Call``. It therefore
 /// has reference semantics.
-public struct UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCall {
+public struct UnaryCall<
+  RequestPayload: Sendable,
+  ResponsePayload: Sendable
+>: UnaryResponseClientCall, Sendable {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: UnaryResponseParts<ResponsePayload>
 
@@ -85,8 +88,8 @@ public struct UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCal
     self.call.invokeUnaryRequest(
       request,
       onStart: {},
-      onError: self.responseParts.handleError(_:),
-      onResponsePart: self.responseParts.handle(_:)
+      onError: { self.responseParts.handleError($0) },
+      onResponsePart: { self.responseParts.handle($0) }
     )
   }
 }

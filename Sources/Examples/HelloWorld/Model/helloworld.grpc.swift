@@ -224,7 +224,7 @@ extension Helloworld_GreeterProvider {
         requestDeserializer: ProtobufDeserializer<Helloworld_HelloRequest>(),
         responseSerializer: ProtobufSerializer<Helloworld_HelloReply>(),
         interceptors: self.interceptors?.makeSayHelloInterceptors() ?? [],
-        userFunction: self.sayHello(request:context:)
+        userFunction: { self.sayHello(request: $0, context: $1) }
       )
 
     default:
@@ -285,7 +285,6 @@ extension Helloworld_GreeterAsyncProvider {
 public protocol Helloworld_GreeterServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'sayHello'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeSayHelloInterceptors() -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
 }
 

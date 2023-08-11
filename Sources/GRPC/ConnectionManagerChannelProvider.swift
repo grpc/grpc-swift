@@ -39,9 +39,9 @@ internal protocol ConnectionManagerChannelProvider {
 }
 
 @usableFromInline
-internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
+internal struct DefaultChannelProvider: ConnectionManagerChannelProvider, Sendable {
   @usableFromInline
-  enum TLSMode {
+  enum TLSMode: Sendable {
     #if canImport(NIOSSL)
     case configureWithNIOSSL(Result<NIOSSLContext, Error>)
     #endif // canImport(NIOSSL)
@@ -69,7 +69,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   @usableFromInline
   internal var errorDelegate: Optional<ClientErrorDelegate>
   @usableFromInline
-  internal var debugChannelInitializer: Optional<(Channel) -> EventLoopFuture<Void>>
+  internal var debugChannelInitializer: Optional< @Sendable (Channel) -> EventLoopFuture < Void>>
 
   @inlinable
   internal init(
@@ -81,7 +81,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     httpTargetWindowSize: Int,
     httpMaxFrameSize: Int,
     errorDelegate: ClientErrorDelegate?,
-    debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+    debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
   ) {
     self.connectionTarget = connectionTarget
     self.connectionKeepalive = connectionKeepalive

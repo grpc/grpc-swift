@@ -1391,13 +1391,13 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     }
   }
 
-  func expectChanges(_ count: Int, verify: @escaping ([Change]) -> Void) {
+  func expectChanges(_ count: Int, verify: @escaping @Sendable ([Change]) -> Void) {
     self.serialQueue.async {
       self.expectation = .some(count: count, recorded: [], verify)
     }
   }
 
-  func expectChange(verify: @escaping (Change) -> Void) {
+  func expectChange(verify: @Sendable @escaping (Change) -> Void) {
     self.serialQueue.async {
       self.expectation = .one(verify)
     }

@@ -19,16 +19,16 @@ import NIOCore
 
 /// An `Echo_EchoProvider` which sets `onClose` for each RPC and then calls a delegate to provide
 /// the RPC implementation.
-class OnCloseEchoProvider: Echo_EchoProvider {
+final class OnCloseEchoProvider: Echo_EchoProvider {
   let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
-  let onClose: (Result<Void, Error>) -> Void
+  let onClose: @Sendable (Result<Void, Error>) -> Void
   let delegate: Echo_EchoProvider
 
   init(
     delegate: Echo_EchoProvider,
     interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil,
-    onClose: @escaping (Result<Void, Error>) -> Void
+    onClose: @escaping @Sendable (Result<Void, Error>) -> Void
   ) {
     self.delegate = delegate
     self.onClose = onClose

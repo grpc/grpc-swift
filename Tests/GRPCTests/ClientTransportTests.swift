@@ -204,8 +204,8 @@ extension ClientTransportTests {
 
     // Chain a cancel from the first write promise.
     let cancelPromise = self.eventLoop.makePromise(of: Void.self)
-    writePromise1.futureResult.whenSuccess {
-      self.cancel(promise: cancelPromise)
+    writePromise1.futureResult.whenSuccess { [transport = self.transport] in
+      transport?.cancel(promise: cancelPromise)
     }
 
     // Enqueue a second write.
@@ -348,7 +348,7 @@ class WriteRecorder<Write>: ChannelOutboundHandler {
 
 private struct DummyError: Error {}
 
-internal struct StringSerializer: MessageSerializer {
+internal struct StringSerializer: MessageSerializer, Sendable {
   typealias Input = String
 
   func serialize(_ input: String, allocator: ByteBufferAllocator) throws -> ByteBuffer {
@@ -356,7 +356,7 @@ internal struct StringSerializer: MessageSerializer {
   }
 }
 
-internal struct StringDeserializer: MessageDeserializer {
+internal struct StringDeserializer: MessageDeserializer, Sendable {
   typealias Output = String
 
   func deserialize(byteBuffer: ByteBuffer) throws -> String {

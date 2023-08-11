@@ -22,7 +22,7 @@ import SwiftProtobuf
 
 /// An abstract base class for a context provided to handlers for RPCs which may return multiple
 /// responses, i.e. server streaming and bidirectional streaming RPCs.
-open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase {
+open class StreamingResponseCallContext<ResponsePayload: Sendable>: ServerCallContextBase {
   /// A promise for the ``GRPCStatus``, the end of the response stream. This must be completed by
   /// bidirectional streaming RPC handlers to end the RPC.
   ///
@@ -120,7 +120,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   ///     is enabled in the call context, the value passed here takes precedence. Defaults to
   ///     deferring to the value set on the call context.
   ///   - promise: A promise to complete once the messages have been sent.
-  open func sendResponses<Messages: Sequence>(
+  open func sendResponses<Messages: Sequence & Sendable>(
     _ messages: Messages,
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
@@ -134,7 +134,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   ///   - compression: Whether compression should be used for this response. If compression
   ///     is enabled in the call context, the value passed here takes precedence. Defaults to
   ///     deferring to the value set on the call context.
-  open func sendResponses<Messages: Sequence>(
+  open func sendResponses<Messages: Sequence & Sendable>(
     _ messages: Messages,
     compression: Compression = .deferToCallDefault
   ) -> EventLoopFuture<Void> where Messages.Element == ResponsePayload {
@@ -146,8 +146,8 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
 
 /// A concrete implementation of `StreamingResponseCallContext` used internally.
 @usableFromInline
-internal final class _StreamingResponseCallContext<Request, Response>:
-  StreamingResponseCallContext<Response> {
+internal final class _StreamingResponseCallContext<Request: Sendable, Response: Sendable>:
+  StreamingResponseCallContext<Response>, @unchecked Sendable {
   @usableFromInline
   internal let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
 
@@ -201,7 +201,7 @@ internal final class _StreamingResponseCallContext<Request, Response>:
   }
 
   @inlinable
-  override func sendResponses<Messages: Sequence>(
+  override func sendResponses<Messages: Sequence & Sendable>(
     _ messages: Messages,
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?

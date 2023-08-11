@@ -44,7 +44,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func serverBuilder(
     group: EventLoopGroup,
     secure: Bool,
-    debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+    debugInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) -> Server.Builder {
     if secure {
       return Server.usingTLSBackedByNIOSSL(
@@ -62,7 +62,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func makeServer(
     group: EventLoopGroup,
     secure: Bool,
-    debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+    debugInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) throws -> Server {
     return try self.serverBuilder(group: group, secure: secure, debugInitializer: debugInitializer)
       .withServiceProviders([self.makeEchoProvider()])
@@ -102,26 +102,16 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     )
   }
 
-  func zeroLengthWriteExpectation() -> XCTestExpectation {
-    let expectation = self.expectation(description: "Expecting zero length write workaround")
-    expectation.expectedFulfillmentCount = 1
-    expectation.assertForOverFulfill = true
-    return expectation
-  }
-
-  func noZeroLengthWriteExpectation() -> XCTestExpectation {
-    let expectation = self.expectation(description: "Not expecting zero length write workaround")
-    expectation.expectedFulfillmentCount = 1
-    expectation.assertForOverFulfill = true
-    return expectation
-  }
-
   func debugPipelineExpectation(
-    _ callback: @escaping (Result<NIOFilterEmptyWritesHandler, Error>) -> Void
-  ) -> GRPCChannelInitializer {
+    _ callback: @escaping @Sendable (Result<NIOFilterEmptyWritesHandler, Error>) throws -> Void
+  ) -> @Sendable (Channel) -> EventLoopFuture<Void> {
     return { channel in
       channel.pipeline.handler(type: NIOFilterEmptyWritesHandler.self).always { result in
-        callback(result)
+        do {
+          try callback(result)
+        } catch {
+          XCTFail("Unexpected error: \(error)")
+        }
       }.map { _ in () }.recover { _ in () }
     }
   }
@@ -129,8 +119,10 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   private func _runTest(
     networkPreference: NetworkPreference,
     secure: Bool,
-    clientHandlerCallback: @escaping (Result<NIOFilterEmptyWritesHandler, Error>) -> Void,
-    serverHandlerCallback: @escaping (Result<NIOFilterEmptyWritesHandler, Error>) -> Void
+    clientHandlerCallback: @escaping @Sendable (Result<NIOFilterEmptyWritesHandler, Error>) throws
+      -> Void,
+    serverHandlerCallback: @escaping @Sendable (Result<NIOFilterEmptyWritesHandler, Error>) throws
+      -> Void
   ) {
     // We can only run this test on platforms where the zero-length write workaround _could_ be added.
     #if canImport(Network)
@@ -164,7 +156,6 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     // We need to wait here to confirm that the RPC completes. All expectations should have completed by then.
     let call = client.get(Echo_EchoRequest(text: "foo bar baz"))
     XCTAssertNoThrow(try call.status.wait())
-    self.waitForExpectations(timeout: 1.0)
     #endif
   }
 
@@ -173,20 +164,14 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     #if canImport(Network)
     guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
-    let serverExpectation = self.noZeroLengthWriteExpectation()
-    let clientExpectation = self.noZeroLengthWriteExpectation()
     self._runTest(
       networkPreference: .userDefined(.posix),
       secure: true,
       clientHandlerCallback: { result in
-        if case .failure = result {
-          clientExpectation.fulfill()
-        }
+        XCTAssertThrowsError(try result.get())
       },
       serverHandlerCallback: { result in
-        if case .failure = result {
-          serverExpectation.fulfill()
-        }
+        XCTAssertThrowsError(try result.get())
       }
     )
     #endif
@@ -197,20 +182,14 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     #if canImport(Network)
     guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
-    let serverExpectation = self.noZeroLengthWriteExpectation()
-    let clientExpectation = self.noZeroLengthWriteExpectation()
     self._runTest(
       networkPreference: .userDefined(.posix),
       secure: false,
       clientHandlerCallback: { result in
-        if case .failure = result {
-          clientExpectation.fulfill()
-        }
+        XCTAssertThrowsError(try result.get())
       },
       serverHandlerCallback: { result in
-        if case .failure = result {
-          serverExpectation.fulfill()
-        }
+        XCTAssertThrowsError(try result.get())
       }
     )
     #endif
@@ -221,20 +200,14 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     #if canImport(Network)
     guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
-    let serverExpectation = self.noZeroLengthWriteExpectation()
-    let clientExpectation = self.noZeroLengthWriteExpectation()
     self._runTest(
       networkPreference: .userDefined(.networkFramework),
       secure: true,
       clientHandlerCallback: { result in
-        if case .failure = result {
-          clientExpectation.fulfill()
-        }
+        XCTAssertThrowsError(try result.get())
       },
       serverHandlerCallback: { result in
-        if case .failure = result {
-          serverExpectation.fulfill()
-        }
+        XCTAssertThrowsError(try result.get())
       }
     )
     #endif
@@ -245,20 +218,14 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     #if canImport(Network)
     guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
-    let serverExpectation = self.zeroLengthWriteExpectation()
-    let clientExpectation = self.zeroLengthWriteExpectation()
     self._runTest(
       networkPreference: .userDefined(.networkFramework),
       secure: false,
       clientHandlerCallback: { result in
-        if case .success = result {
-          clientExpectation.fulfill()
-        }
+        XCTAssertNoThrow(try result.get())
       },
       serverHandlerCallback: { result in
-        if case .success = result {
-          serverExpectation.fulfill()
-        }
+        XCTAssertNoThrow(try result.get())
       }
     )
     #endif

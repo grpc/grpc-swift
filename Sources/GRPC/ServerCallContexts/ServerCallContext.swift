@@ -59,7 +59,7 @@ extension GRPCStatus {
 }
 
 /// Base class providing data provided to the framework user for all server calls.
-open class ServerCallContextBase: ServerCallContext {
+open class ServerCallContextBase: ServerCallContext, @unchecked Sendable {
   /// The event loop this call is served on.
   public let eventLoop: EventLoop
 

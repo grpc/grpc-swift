@@ -431,14 +431,14 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   ///
   /// - Parameter requestHandler: a handler for request parts sent by the RPC.
   public func makeGetResponseStream(
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeUnaryResponse<Echo_EchoRequest, Echo_EchoResponse> {
     return self.fakeChannel.makeFakeUnaryResponse(path: Echo_EchoClientMetadata.Methods.get.path, requestHandler: requestHandler)
   }
 
   public func enqueueGetResponse(
     _ response: Echo_EchoResponse,
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) {
     let stream = self.makeGetResponseStream(requestHandler)
     // This is the only operation on the stream; try! is fine.
@@ -455,14 +455,14 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   ///
   /// - Parameter requestHandler: a handler for request parts sent by the RPC.
   public func makeExpandResponseStream(
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeStreamingResponse<Echo_EchoRequest, Echo_EchoResponse> {
     return self.fakeChannel.makeFakeStreamingResponse(path: Echo_EchoClientMetadata.Methods.expand.path, requestHandler: requestHandler)
   }
 
   public func enqueueExpandResponses(
     _ responses: [Echo_EchoResponse],
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) {
     let stream = self.makeExpandResponseStream(requestHandler)
     // These are the only operation on the stream; try! is fine.
@@ -480,14 +480,14 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   ///
   /// - Parameter requestHandler: a handler for request parts sent by the RPC.
   public func makeCollectResponseStream(
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeUnaryResponse<Echo_EchoRequest, Echo_EchoResponse> {
     return self.fakeChannel.makeFakeUnaryResponse(path: Echo_EchoClientMetadata.Methods.collect.path, requestHandler: requestHandler)
   }
 
   public func enqueueCollectResponse(
     _ response: Echo_EchoResponse,
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) {
     let stream = self.makeCollectResponseStream(requestHandler)
     // This is the only operation on the stream; try! is fine.
@@ -504,14 +504,14 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   ///
   /// - Parameter requestHandler: a handler for request parts sent by the RPC.
   public func makeUpdateResponseStream(
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) -> FakeStreamingResponse<Echo_EchoRequest, Echo_EchoResponse> {
     return self.fakeChannel.makeFakeStreamingResponse(path: Echo_EchoClientMetadata.Methods.update.path, requestHandler: requestHandler)
   }
 
   public func enqueueUpdateResponses(
     _ responses: [Echo_EchoResponse],
-    _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
+    _ requestHandler: @escaping @Sendable (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
   ) {
     let stream = self.makeUpdateResponseStream(requestHandler)
     // These are the only operation on the stream; try! is fine.
@@ -560,7 +560,7 @@ extension Echo_EchoProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeGetInterceptors() ?? [],
-        userFunction: self.get(request:context:)
+        userFunction: { self.get(request: $0, context: $1) }
       )
 
     case "Expand":
@@ -569,7 +569,7 @@ extension Echo_EchoProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeExpandInterceptors() ?? [],
-        userFunction: self.expand(request:context:)
+        userFunction: { self.expand(request: $0, context: $1) }
       )
 
     case "Collect":
@@ -578,7 +578,7 @@ extension Echo_EchoProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeCollectInterceptors() ?? [],
-        observerFactory: self.collect(context:)
+        observerFactory: { self.collect(context: $0) }
       )
 
     case "Update":
@@ -587,7 +587,7 @@ extension Echo_EchoProvider {
         requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
         responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
         interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
-        observerFactory: self.update(context:)
+        observerFactory: { self.update(context: $0) }
       )
 
     default:
@@ -693,19 +693,15 @@ extension Echo_EchoAsyncProvider {
 public protocol Echo_EchoServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'get'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeGetInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 
   /// - Returns: Interceptors to use when handling 'expand'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeExpandInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 
   /// - Returns: Interceptors to use when handling 'collect'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeCollectInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 
   /// - Returns: Interceptors to use when handling 'update'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 }
 

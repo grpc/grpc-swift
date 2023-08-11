@@ -20,7 +20,7 @@ import NIOCore
 ///
 /// See https://github.com/apple/swift-log/issues/145 for rationale.
 @usableFromInline
-internal struct GRPCLogger {
+internal struct GRPCLogger: Sendable {
   @usableFromInline
   internal var logger: Logger
 

@@ -52,9 +52,9 @@ public class FakeChannel: GRPCChannel {
 
   /// Make and store a fake unary response for the given path. Users should prefer making a response
   /// stream for their RPC directly via the appropriate method on their generated test client.
-  public func makeFakeUnaryResponse<Request, Response>(
+  public func makeFakeUnaryResponse<Request: Sendable, Response: Sendable>(
     path: String,
-    requestHandler: @escaping (FakeRequestPart<Request>) -> Void
+    requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void
   ) -> FakeUnaryResponse<Request, Response> {
     let proxy = FakeUnaryResponse<Request, Response>(requestHandler: requestHandler)
     self.responseStreams[path, default: []].append(proxy)
@@ -64,9 +64,9 @@ public class FakeChannel: GRPCChannel {
   /// Make and store a fake streaming response for the given path. Users should prefer making a
   /// response stream for their RPC directly via the appropriate method on their generated test
   /// client.
-  public func makeFakeStreamingResponse<Request, Response>(
+  public func makeFakeStreamingResponse<Request: Sendable, Response: Sendable>(
     path: String,
-    requestHandler: @escaping (FakeRequestPart<Request>) -> Void
+    requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void
   ) -> FakeStreamingResponse<Request, Response> {
     let proxy = FakeStreamingResponse<Request, Response>(requestHandler: requestHandler)
     self.responseStreams[path, default: []].append(proxy)

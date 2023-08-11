@@ -26,9 +26,9 @@ import NIOHTTP2
 /// Note: while this object is a `struct`, its implementation delegates to ``Call``. It therefore
 /// has reference semantics.
 public struct BidirectionalStreamingCall<
-  RequestPayload,
-  ResponsePayload
->: StreamingRequestClientCall {
+  RequestPayload: Sendable,
+  ResponsePayload: Sendable
+>: StreamingRequestClientCall, Sendable {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: StreamingResponseParts<ResponsePayload>
 
@@ -85,8 +85,8 @@ public struct BidirectionalStreamingCall<
   internal func invoke() {
     self.call.invokeStreamingRequests(
       onStart: {},
-      onError: self.responseParts.handleError(_:),
-      onResponsePart: self.responseParts.handle(_:)
+      onError: { self.responseParts.handleError($0) },
+      onResponsePart: { self.responseParts.handle($0) }
     )
   }
 
@@ -126,7 +126,7 @@ public struct BidirectionalStreamingCall<
     _ messages: S,
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
-  ) where S: Sequence, S.Element == RequestPayload {
+  ) where S: Sequence, S: Sendable, S.Element == RequestPayload {
     self.call.sendMessages(messages, compression: compression, promise: promise)
   }
 

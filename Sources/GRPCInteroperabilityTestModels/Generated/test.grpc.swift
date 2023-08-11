@@ -1168,7 +1168,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
         interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? [],
-        userFunction: self.emptyCall(request:context:)
+        userFunction: { self.emptyCall(request: $0, context: $1) }
       )
 
     case "UnaryCall":
@@ -1177,7 +1177,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
         interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? [],
-        userFunction: self.unaryCall(request:context:)
+        userFunction: { self.unaryCall(request: $0, context: $1) }
       )
 
     case "CacheableUnaryCall":
@@ -1186,7 +1186,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
         interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? [],
-        userFunction: self.cacheableUnaryCall(request:context:)
+        userFunction: { self.cacheableUnaryCall(request: $0, context: $1) }
       )
 
     case "StreamingOutputCall":
@@ -1195,7 +1195,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? [],
-        userFunction: self.streamingOutputCall(request:context:)
+        userFunction: { self.streamingOutputCall(request: $0, context: $1) }
       )
 
     case "StreamingInputCall":
@@ -1204,7 +1204,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingInputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingInputCallResponse>(),
         interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? [],
-        observerFactory: self.streamingInputCall(context:)
+        observerFactory: { self.streamingInputCall(context: $0) }
       )
 
     case "FullDuplexCall":
@@ -1213,7 +1213,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? [],
-        observerFactory: self.fullDuplexCall(context:)
+        observerFactory: { self.fullDuplexCall(context: $0) }
       )
 
     case "HalfDuplexCall":
@@ -1222,7 +1222,7 @@ extension Grpc_Testing_TestServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
         interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? [],
-        observerFactory: self.halfDuplexCall(context:)
+        observerFactory: { self.halfDuplexCall(context: $0) }
       )
 
     default:
@@ -1386,35 +1386,27 @@ extension Grpc_Testing_TestServiceAsyncProvider {
 public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'emptyCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeEmptyCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 
   /// - Returns: Interceptors to use when handling 'unaryCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnaryCallInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
 
   /// - Returns: Interceptors to use when handling 'cacheableUnaryCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeCacheableUnaryCallInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
 
   /// - Returns: Interceptors to use when handling 'streamingOutputCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeStreamingOutputCallInterceptors() -> [ServerInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>]
 
   /// - Returns: Interceptors to use when handling 'streamingInputCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeStreamingInputCallInterceptors() -> [ServerInterceptor<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>]
 
   /// - Returns: Interceptors to use when handling 'fullDuplexCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeFullDuplexCallInterceptors() -> [ServerInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>]
 
   /// - Returns: Interceptors to use when handling 'halfDuplexCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeHalfDuplexCallInterceptors() -> [ServerInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>]
 
   /// - Returns: Interceptors to use when handling 'unimplementedCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
 
@@ -1513,7 +1505,7 @@ extension Grpc_Testing_UnimplementedServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
         interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? [],
-        userFunction: self.unimplementedCall(request:context:)
+        userFunction: { self.unimplementedCall(request: $0, context: $1) }
       )
 
     default:
@@ -1575,7 +1567,6 @@ extension Grpc_Testing_UnimplementedServiceAsyncProvider {
 public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'unimplementedCall'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
 
@@ -1625,7 +1616,7 @@ extension Grpc_Testing_ReconnectServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_ReconnectParams>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
         interceptors: self.interceptors?.makeStartInterceptors() ?? [],
-        userFunction: self.start(request:context:)
+        userFunction: { self.start(request: $0, context: $1) }
       )
 
     case "Stop":
@@ -1634,7 +1625,7 @@ extension Grpc_Testing_ReconnectServiceProvider {
         requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
         responseSerializer: ProtobufSerializer<Grpc_Testing_ReconnectInfo>(),
         interceptors: self.interceptors?.makeStopInterceptors() ?? [],
-        userFunction: self.stop(request:context:)
+        userFunction: { self.stop(request: $0, context: $1) }
       )
 
     default:
@@ -1708,11 +1699,9 @@ extension Grpc_Testing_ReconnectServiceAsyncProvider {
 public protocol Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'start'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeStartInterceptors() -> [ServerInterceptor<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>]
 
   /// - Returns: Interceptors to use when handling 'stop'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeStopInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>]
 }
 

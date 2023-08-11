@@ -216,9 +216,12 @@ public struct GRPCTLSConfiguration: Sendable {
 
 #if canImport(NIOSSL)
 extension GRPCTLSConfiguration {
-  internal struct NIOConfiguration {
+  internal struct NIOConfiguration: Sendable {
     var configuration: TLSConfiguration
-    var customVerificationCallback: NIOSSLCustomVerificationCallback?
+    var customVerificationCallback: (@Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void)?
     var hostnameOverride: String?
     // The client doesn't support this yet (https://github.com/grpc/grpc-swift/issues/1042).
     var requireALPN: Bool
@@ -247,7 +250,10 @@ extension GRPCTLSConfiguration {
     trustRoots: NIOSSLTrustRoots = .default,
     certificateVerification: CertificateVerification = .fullVerification,
     hostnameOverride: String? = nil,
-    customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+    customVerificationCallback: (@Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void)? = nil
   ) -> GRPCTLSConfiguration {
     var configuration = TLSConfiguration.makeClientConfiguration()
     configuration.minimumTLSVersion = .tlsv12
@@ -274,7 +280,10 @@ extension GRPCTLSConfiguration {
   public static func makeClientConfigurationBackedByNIOSSL(
     configuration: TLSConfiguration,
     hostnameOverride: String? = nil,
-    customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+    customVerificationCallback: (@Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void)? = nil
   ) -> GRPCTLSConfiguration {
     var configuration = configuration
 
@@ -342,7 +351,10 @@ extension GRPCTLSConfiguration {
     trustRoots: NIOSSLTrustRoots = .default,
     certificateVerification: CertificateVerification = .none,
     requireALPN: Bool = true,
-    customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+    customVerificationCallback: (@Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void)? = nil
   ) -> GRPCTLSConfiguration {
     var configuration = TLSConfiguration.makeServerConfiguration(
       certificateChain: certificateChain,
@@ -393,7 +405,10 @@ extension GRPCTLSConfiguration {
   public static func makeServerConfigurationBackedByNIOSSL(
     configuration: TLSConfiguration,
     requireALPN: Bool = true,
-    customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+    customVerificationCallback: (@Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void)? = nil
   ) -> GRPCTLSConfiguration {
     var configuration = configuration
 
@@ -462,7 +477,10 @@ extension GRPCTLSConfiguration {
   }
 
   internal mutating func updateNIOCustomVerificationCallback(
-    to callback: @escaping NIOSSLCustomVerificationCallback
+    to callback: @escaping @Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void
   ) {
     self.modifyingNIOConfiguration {
       $0.customVerificationCallback = callback
@@ -487,7 +505,7 @@ extension GRPCTLSConfiguration {
 
 #if canImport(Network)
 extension GRPCTLSConfiguration {
-  internal struct NetworkConfiguration {
+  internal struct NetworkConfiguration: Sendable {
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
     internal var options: NWProtocolTLS.Options {
       get {
@@ -503,7 +521,7 @@ extension GRPCTLSConfiguration {
     /// This somewhat insane type-erasure is necessary because we need to availability-guard the NWProtocolTLS.Options
     /// (it isn't available in older SDKs), but we cannot have stored properties guarded by availability in this way, only
     /// computed ones. To that end, we have to erase the type and then un-erase it. This is fairly silly.
-    private var _options: Any
+    private var _options: any Sendable
 
     // This is set privately via `updateHostnameOverride(to:)` because we require availability
     // guards to update the value in the underlying `sec_protocol_options`.

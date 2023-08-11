@@ -35,7 +35,9 @@ import NIOHTTP2
 ///
 /// This class is not thread safe. All methods **must** be executed on the transport's `callEventLoop`.
 @usableFromInline
-internal final class ClientTransport<Request, Response> {
+internal final class ClientTransport<Request: Sendable, Response: Sendable>: @unchecked Sendable {
+  // @unchecked because all state is accessed from the event loop.
+
   /// The `EventLoop` the call is running on. State must be accessed from this event loop.
   @usableFromInline
   internal let callEventLoop: EventLoop

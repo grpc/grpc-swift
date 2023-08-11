@@ -201,7 +201,7 @@ extension Server.Builder {
   ///   be invoked at most once per accepted connection.
   @discardableResult
   public func withDebugChannelInitializer(
-    _ debugChannelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+    _ debugChannelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) -> Self {
     self.configuration.debugChannelInitializer = debugChannelInitializer
     return self

@@ -23,7 +23,7 @@ import SwiftProtobuf
 /// Provides ``GRPCServerHandlerProtocol`` objects for the methods on a particular service name.
 ///
 /// Implemented by the generated code.
-public protocol CallHandlerProvider: AnyObject {
+public protocol CallHandlerProvider: AnyObject, Sendable {
   /// The name of the service this object is providing methods for, including the package path.
   ///
   /// - Example: "io.grpc.Echo.EchoService"

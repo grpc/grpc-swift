@@ -23,7 +23,10 @@ import NIOHTTP2
 ///
 /// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
 /// has reference semantics.
-public struct ServerStreamingCall<RequestPayload, ResponsePayload>: ClientCall {
+public struct ServerStreamingCall<
+  RequestPayload: Sendable,
+  ResponsePayload: Sendable
+>: ClientCall, Sendable {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: StreamingResponseParts<ResponsePayload>
 
@@ -81,8 +84,8 @@ public struct ServerStreamingCall<RequestPayload, ResponsePayload>: ClientCall {
     self.call.invokeUnaryRequest(
       request,
       onStart: {},
-      onError: self.responseParts.handleError(_:),
-      onResponsePart: self.responseParts.handle(_:)
+      onError: { self.responseParts.handleError($0) },
+      onResponsePart: { self.responseParts.handle($0) }
     )
   }
 }

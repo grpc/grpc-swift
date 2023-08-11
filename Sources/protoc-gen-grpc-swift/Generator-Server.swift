@@ -126,9 +126,12 @@ extension Generator {
               )
               switch streamingType(method) {
               case .unary, .serverStreaming:
-                self.println("userFunction: self.\(self.methodFunctionName)(request:context:)")
+                self
+                  .println(
+                    "userFunction: { self.\(self.methodFunctionName)(request: $0, context: $1) }"
+                  )
               case .clientStreaming, .bidirectionalStreaming:
-                self.println("observerFactory: self.\(self.methodFunctionName)(context:)")
+                self.println("observerFactory: { self.\(self.methodFunctionName)(context: $0) }")
               }
             }
             self.println(")")
@@ -157,7 +160,6 @@ extension Generator {
         self.println(
           "/// - Returns: Interceptors to use when handling '\(self.methodFunctionName)'."
         )
-        self.println("///   Defaults to calling `self.makeInterceptors()`.")
         // Skip the access, we're defining a protocol.
         self.printMethodInterceptorFactory(access: nil)
       }

@@ -714,7 +714,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeUnaryInterceptors() ?? [],
-        userFunction: self.Unary(request:context:)
+        userFunction: { self.Unary(request: $0, context: $1) }
       )
 
     case "unary":
@@ -723,7 +723,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeunaryInterceptors() ?? [],
-        userFunction: self.unary(request:context:)
+        userFunction: { self.unary(request: $0, context: $1) }
       )
 
     case "ServerStreaming":
@@ -732,7 +732,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeServerStreamingInterceptors() ?? [],
-        userFunction: self.ServerStreaming(request:context:)
+        userFunction: { self.ServerStreaming(request: $0, context: $1) }
       )
 
     case "serverStreaming":
@@ -741,7 +741,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeserverStreamingInterceptors() ?? [],
-        userFunction: self.serverStreaming(request:context:)
+        userFunction: { self.serverStreaming(request: $0, context: $1) }
       )
 
     case "ClientStreaming":
@@ -750,7 +750,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeClientStreamingInterceptors() ?? [],
-        observerFactory: self.ClientStreaming(context:)
+        observerFactory: { self.ClientStreaming(context: $0) }
       )
 
     case "clientStreaming":
@@ -759,7 +759,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeclientStreamingInterceptors() ?? [],
-        observerFactory: self.clientStreaming(context:)
+        observerFactory: { self.clientStreaming(context: $0) }
       )
 
     case "BidirectionalStreaming":
@@ -768,7 +768,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makeBidirectionalStreamingInterceptors() ?? [],
-        observerFactory: self.BidirectionalStreaming(context:)
+        observerFactory: { self.BidirectionalStreaming(context: $0) }
       )
 
     case "bidirectionalStreaming":
@@ -777,7 +777,7 @@ extension Normalization_NormalizationProvider {
         requestDeserializer: ProtobufDeserializer<SwiftProtobuf.Google_Protobuf_Empty>(),
         responseSerializer: ProtobufSerializer<Normalization_FunctionName>(),
         interceptors: self.interceptors?.makebidirectionalStreamingInterceptors() ?? [],
-        observerFactory: self.bidirectionalStreaming(context:)
+        observerFactory: { self.bidirectionalStreaming(context: $0) }
       )
 
     default:
@@ -937,35 +937,27 @@ extension Normalization_NormalizationAsyncProvider {
 internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'Unary'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnaryInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'unary'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeunaryInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'ServerStreaming'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeServerStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'serverStreaming'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeserverStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'ClientStreaming'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeClientStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'clientStreaming'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeclientStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'BidirectionalStreaming'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeBidirectionalStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 
   /// - Returns: Interceptors to use when handling 'bidirectionalStreaming'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makebidirectionalStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 }
 

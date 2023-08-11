@@ -54,7 +54,7 @@ public struct ClientConnectionKeepalive: Hashable, Sendable {
   }
 }
 
-public struct ServerConnectionKeepalive: Hashable {
+public struct ServerConnectionKeepalive: Hashable, Sendable {
   /// The amount of time to wait before sending a keepalive ping.
   public var interval: TimeAmount
 

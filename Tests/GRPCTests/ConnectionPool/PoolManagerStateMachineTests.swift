@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Atomics
 @testable import GRPC
 import NIOConcurrencyHelpers
 import NIOCore
@@ -328,22 +329,16 @@ extension PoolManagerStateMachine.ShutdownAction {
 }
 
 /// An `EventLoopGroup` of `EmbeddedEventLoop`s.
-private final class EmbeddedEventLoopGroup: EventLoopGroup {
+private final class EmbeddedEventLoopGroup: EventLoopGroup, Sendable {
   internal let loops: [EmbeddedEventLoop]
-
-  internal let lock = NIOLock()
-  internal var index = 0
+  private let index = ManagedAtomic(0)
 
   internal init(loops: Int) {
     self.loops = (0 ..< loops).map { _ in EmbeddedEventLoop() }
   }
 
   internal func next() -> EventLoop {
-    let index: Int = self.lock.withLock {
-      let index = self.index
-      self.index += 1
-      return index
-    }
+    let index = self.index.loadThenWrappingIncrement(ordering: .sequentiallyConsistent)
     return self.loops[index % self.loops.count]
   }
 

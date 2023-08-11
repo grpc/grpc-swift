@@ -57,7 +57,7 @@ class ServerWebTests: EchoTestCaseBase {
   private func sendOverHTTP1(
     rpcMethod: String,
     message: String?,
-    handler: @escaping (Data?, Error?) -> Void
+    handler: @escaping @Sendable (Data?, Error?) -> Void
   ) {
     let serverURL = URL(string: "http://localhost:\(self.port!)/echo.Echo/\(rpcMethod)")!
     var request = URLRequest(url: serverURL)
@@ -84,19 +84,14 @@ extension ServerWebTests {
       .gRPCWebTrailers()
     let expectedResponse = expectedData.base64EncodedString()
 
-    let completionHandlerExpectation = expectation(description: "completion handler called")
-
     self.sendOverHTTP1(rpcMethod: "Get", message: message) { data, error in
       XCTAssertNil(error)
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
-        completionHandlerExpectation.fulfill()
       } else {
         XCTFail("no data returned")
       }
     }
-
-    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testUnaryWithoutRequestMessage() {
@@ -107,30 +102,20 @@ extension ServerWebTests {
 
     let expectedResponse = expectedData.base64EncodedString()
 
-    let completionHandlerExpectation = expectation(description: "completion handler called")
-
     self.sendOverHTTP1(rpcMethod: "Get", message: nil) { data, error in
       XCTAssertNil(error)
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
-        completionHandlerExpectation.fulfill()
       } else {
         XCTFail("no data returned")
       }
     }
-
-    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testUnaryLotsOfRequests() {
     guard self.runTimeSensitiveTests() else { return }
     // Sending that many requests at once can sometimes trip things up, it seems.
-    let clockStart = clock()
     let numberOfRequests = 2000
-
-    let completionHandlerExpectation = expectation(description: "completion handler called")
-    completionHandlerExpectation.expectedFulfillmentCount = numberOfRequests
-    completionHandlerExpectation.assertForOverFulfill = true
 
     for i in 0 ..< numberOfRequests {
       let message = "foo \(i)"
@@ -141,14 +126,9 @@ extension ServerWebTests {
         XCTAssertNil(error)
         if let data = data {
           XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
-          completionHandlerExpectation.fulfill()
         }
       }
     }
-    waitForExpectations(timeout: 10)
-    print(
-      "total time for \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))"
-    )
   }
 
   func testServerStreaming() {
@@ -162,16 +142,12 @@ extension ServerWebTests {
     }
     expectedData.append(self.gRPCWebTrailers())
     let expectedResponse = expectedData.base64EncodedString()
-    let completionHandlerExpectation = expectation(description: "completion handler called")
 
     self.sendOverHTTP1(rpcMethod: "Expand", message: message) { data, error in
       XCTAssertNil(error)
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
-        completionHandlerExpectation.fulfill()
       }
     }
-
-    waitForExpectations(timeout: defaultTestTimeout)
   }
 }

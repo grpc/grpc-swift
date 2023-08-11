@@ -17,7 +17,7 @@ import NIOCore
 import NIOHPACK
 
 /// A bucket of promises for a unary-response RPC.
-internal class UnaryResponseParts<Response> {
+internal final class UnaryResponseParts<Response: Sendable>: @unchecked Sendable {
   /// The `EventLoop` we expect to receive these response parts on.
   private let eventLoop: EventLoop
 
@@ -93,7 +93,7 @@ internal class UnaryResponseParts<Response> {
 }
 
 /// A bucket of promises for a streaming-response RPC.
-internal class StreamingResponseParts<Response> {
+internal final class StreamingResponseParts<Response: Sendable>: @unchecked Sendable {
   /// The `EventLoop` we expect to receive these response parts on.
   private let eventLoop: EventLoop
 
@@ -168,8 +168,8 @@ internal class StreamingResponseParts<Response> {
 }
 
 extension EventLoop {
-  fileprivate func executeOrFlatSubmit<Result>(
-    _ body: @escaping () -> EventLoopFuture<Result>
+  fileprivate func executeOrFlatSubmit<Result: Sendable>(
+    _ body: @escaping @Sendable () -> EventLoopFuture<Result>
   ) -> EventLoopFuture<Result> {
     if self.inEventLoop {
       return body()
@@ -200,7 +200,3 @@ extension Error {
     }
   }
 }
-
-// @unchecked is ok: all mutable state is accessed/modified from an appropriate event loop.
-extension UnaryResponseParts: @unchecked Sendable where Response: Sendable {}
-extension StreamingResponseParts: @unchecked Sendable where Response: Sendable {}

@@ -37,7 +37,9 @@ import protocol SwiftProtobuf.Message
 ///
 /// Callers are not able to create ``Call`` objects directly, rather they must be created via an
 /// object conforming to ``GRPCChannel`` such as ``ClientConnection``.
-public final class Call<Request, Response> {
+public final class Call<Request: Sendable, Response: Sendable>: @unchecked Sendable {
+  // @unchecked because mutable state is only accessed on the event loop.
+
   @usableFromInline
   internal enum State {
     /// Idle, waiting to be invoked.
@@ -82,8 +84,9 @@ public final class Call<Request, Response> {
     if self.eventLoop.inEventLoop {
       return self._channel()
     } else {
+      let loopBoundSelf = self.eventLoop.makeLoopBound(self)
       return self.eventLoop.flatSubmit {
-        return self._channel()
+        return loopBoundSelf.value._channel()
       }
     }
   }
@@ -117,8 +120,8 @@ public final class Call<Request, Response> {
   /// - Important: This function should only be called once. Subsequent calls will be ignored.
   @inlinable
   public func invoke(
-    onError: @escaping (Error) -> Void,
-    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onError: @escaping @Sendable (Error) -> Void,
+    onResponsePart: @escaping @Sendable (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.options.logger.debug("starting rpc", metadata: ["path": "\(self.path)"], source: "GRPC")
 
@@ -193,7 +196,7 @@ extension Call {
     _ messages: Messages,
     compression: Compression,
     promise: EventLoopPromise<Void>?
-  ) where Messages: Sequence, Messages.Element == Request {
+  ) where Messages: Sequence, Messages: Sendable, Messages.Element == Request {
     if self.eventLoop.inEventLoop {
       if let promise = promise {
         self._sendMessages(messages, compression: compression, promise: promise)
@@ -354,9 +357,9 @@ extension Call {
   @inlinable
   internal func invokeUnaryRequest(
     _ request: Request,
-    onStart: @escaping () -> Void,
-    onError: @escaping (Error) -> Void,
-    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onStart: @escaping @Sendable () -> Void,
+    onError: @escaping @Sendable (Error) -> Void,
+    onResponsePart: @escaping @Sendable (GRPCClientResponsePart<Response>) -> Void
   ) {
     if self.eventLoop.inEventLoop {
       self._invokeUnaryRequest(
@@ -384,9 +387,9 @@ extension Call {
   ///   - onResponsePart: A callback invoked for each response part received.
   @inlinable
   internal func invokeStreamingRequests(
-    onStart: @escaping () -> Void,
-    onError: @escaping (Error) -> Void,
-    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onStart: @escaping @Sendable () -> Void,
+    onError: @escaping @Sendable (Error) -> Void,
+    onResponsePart: @escaping @Sendable (GRPCClientResponsePart<Response>) -> Void
   ) {
     if self.eventLoop.inEventLoop {
       self._invokeStreamingRequests(
@@ -439,6 +442,3 @@ extension Call {
     self._send(.metadata(self.options.customMetadata), promise: nil)
   }
 }
-
-// @unchecked is ok: all mutable state is accessed/modified from the appropriate event loop.
-extension Call: @unchecked Sendable where Request: Sendable, Response: Sendable {}

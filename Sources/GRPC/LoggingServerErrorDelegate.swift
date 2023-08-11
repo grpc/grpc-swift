@@ -15,7 +15,7 @@
  */
 import Logging
 
-public class LoggingServerErrorDelegate: ServerErrorDelegate {
+public final class LoggingServerErrorDelegate: ServerErrorDelegate, Sendable {
   private let logger: Logger
 
   public init(logger: Logger) {

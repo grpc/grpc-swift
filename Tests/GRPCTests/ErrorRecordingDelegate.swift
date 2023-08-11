@@ -46,16 +46,16 @@ final class ErrorRecordingDelegate: ClientErrorDelegate {
   }
 }
 
-class ServerErrorRecordingDelegate: ServerErrorDelegate {
-  var errors: [Error] = []
-  var expectation: XCTestExpectation
+final class ServerErrorRecordingDelegate: ServerErrorDelegate {
+  let errors = NIOLockedValueBox<[Error]>([])
+  let expectation: XCTestExpectation
 
   init(expectation: XCTestExpectation) {
     self.expectation = expectation
   }
 
   func observeLibraryError(_ error: Error) {
-    self.errors.append(error)
+    self.errors.withLockedValue { $0.append(error) }
     self.expectation.fulfill()
   }
 }

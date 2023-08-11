@@ -63,7 +63,7 @@ final class ServerOnCloseTests: GRPCTestCase {
 
   private func startServer(
     echoDelegate: Echo_EchoProvider,
-    onClose: @escaping (Result<Void, Error>) -> Void
+    onClose: @escaping @Sendable (Result<Void, Error>) -> Void
   ) {
     let provider = OnCloseEchoProvider(delegate: echoDelegate, onClose: onClose)
     XCTAssertNoThrow(try self.setUp(provider: provider))

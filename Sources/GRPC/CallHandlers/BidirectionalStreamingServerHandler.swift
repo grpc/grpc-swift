@@ -19,7 +19,9 @@ import NIOHPACK
 public final class BidirectionalStreamingServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
->: GRPCServerHandlerProtocol {
+>: GRPCServerHandlerProtocol, @unchecked Sendable {
+  // @unchecked as state is synchronized on the event loop.
+
   public typealias Request = Deserializer.Output
   public typealias Response = Serializer.Input
 
@@ -49,7 +51,7 @@ public final class BidirectionalStreamingServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let observerFactory: (_StreamingResponseCallContext<Request, Response>)
+  internal let observerFactory: @Sendable (_StreamingResponseCallContext<Request, Response>)
     -> EventLoopFuture<(StreamEvent<Request>) -> Void>
 
   /// The state of the handler.
@@ -75,7 +77,7 @@ public final class BidirectionalStreamingServerHandler<
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    observerFactory: @escaping (StreamingResponseCallContext<Response>)
+    observerFactory: @escaping @Sendable (StreamingResponseCallContext<Response>)
       -> EventLoopFuture<(StreamEvent<Request>) -> Void>
   ) {
     self.serializer = responseSerializer
@@ -182,10 +184,14 @@ public final class BidirectionalStreamingServerHandler<
       self.interceptors.send(.metadata([:]), promise: nil)
 
       // Register callbacks on the status future.
-      context.statusPromise.futureResult.whenComplete(self.userFunctionStatusResolved(_:))
+      context.statusPromise.futureResult.whenComplete {
+        self.userFunctionStatusResolved($0)
+      }
 
       // Make an observer block and register a completion block.
-      self.observerFactory(context).whenComplete(self.userFunctionResolvedWithResult(_:))
+      self.observerFactory(context).whenComplete {
+        self.userFunctionResolvedWithResult($0)
+      }
 
     case .creatingObserver, .observing:
       self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))

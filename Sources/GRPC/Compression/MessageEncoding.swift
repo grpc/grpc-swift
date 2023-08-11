@@ -116,7 +116,7 @@ extension ClientMessageEncoding {
 }
 
 /// Whether compression is enabled or disabled on the server.
-public enum ServerMessageEncoding {
+public enum ServerMessageEncoding: Sendable {
   /// Compression is supported with this configuration.
   case enabled(Configuration)
   /// Compression is not enabled. However, 'identity' compression is still supported.
@@ -134,7 +134,7 @@ public enum ServerMessageEncoding {
 }
 
 extension ServerMessageEncoding {
-  public struct Configuration {
+  public struct Configuration: Sendable {
     /// The set of compression algorithms advertised that we will accept from clients for requests.
     /// Note that clients may send us messages compressed with algorithms not included in this list;
     /// if we support it then we still accept the message.

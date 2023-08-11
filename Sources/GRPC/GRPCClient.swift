@@ -31,7 +31,10 @@ public protocol GRPCClient: GRPCPreconcurrencySendable {
 // MARK: Convenience methods
 
 extension GRPCClient {
-  public func makeUnaryCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeUnaryCall<
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -62,8 +65,8 @@ extension GRPCClient {
   }
 
   public func makeServerStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     request: Request,
@@ -99,8 +102,8 @@ extension GRPCClient {
   }
 
   public func makeClientStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     callOptions: CallOptions? = nil,
@@ -130,8 +133,8 @@ extension GRPCClient {
   }
 
   public func makeBidirectionalStreamingCall<
-    Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message
+    Request: SwiftProtobuf.Message & Sendable,
+    Response: SwiftProtobuf.Message & Sendable
   >(
     path: String,
     callOptions: CallOptions? = nil,

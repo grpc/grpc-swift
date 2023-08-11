@@ -152,7 +152,7 @@ internal enum AsyncCall {
     >.Source,
     requestStream: GRPCAsyncRequestStreamWriter<Request>?,
     requestType: Request.Type = Request.self
-  ) -> (GRPCClientResponsePart<Response>) -> Void {
+  ) -> @Sendable (GRPCClientResponsePart<Response>) -> Void {
     return { responsePart in
       // Handle the metadata, trailers and status.
       responseParts.handle(responsePart)
@@ -182,7 +182,7 @@ internal enum AsyncCall {
     requestStream: GRPCAsyncRequestStreamWriter<Request>?,
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> (GRPCClientResponsePart<Response>) -> Void {
+  ) -> @Sendable (GRPCClientResponsePart<Response>) -> Void {
     return { responsePart in
       // Handle (most of) all parts.
       responseParts.handle(responsePart)

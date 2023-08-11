@@ -18,7 +18,7 @@ import GRPC
 import NIOCore
 import SwiftProtobuf
 
-public class EchoProvider: Echo_EchoProvider {
+public final class EchoProvider: Echo_EchoProvider {
   public let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
   public init(interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil) {

@@ -19,7 +19,7 @@ import NIOCore
 
 /// An `Echo_EchoProvider` which returns a failed future for each RPC which resolves in the distant
 /// future.
-class NeverResolvingEchoProvider: Echo_EchoProvider {
+final class NeverResolvingEchoProvider: Echo_EchoProvider {
   let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
   init(interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil) {

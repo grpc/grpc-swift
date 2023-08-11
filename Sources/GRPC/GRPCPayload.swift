@@ -17,7 +17,7 @@ import NIOCore
 
 /// A data type which may be serialized into and out from a `ByteBuffer` in order to be sent between
 /// gRPC peers.
-public protocol GRPCPayload {
+public protocol GRPCPayload: Sendable {
   /// Initializes a new payload by deserializing the bytes from the given `ByteBuffer`.
   ///
   /// - Parameter serializedByteBuffer: A buffer containing the serialized bytes of this payload.

@@ -163,8 +163,8 @@ class GRPCCustomPayloadTests: GRPCTestCase {
 
 // MARK: Custom Payload Service
 
-private class CustomPayloadProvider: CallHandlerProvider {
-  var serviceName: Substring = "CustomPayload"
+private final class CustomPayloadProvider: CallHandlerProvider {
+  let serviceName: Substring = "CustomPayload"
 
   fileprivate func reverseString(
     request: StringPayload,
@@ -257,7 +257,7 @@ private class CustomPayloadProvider: CallHandlerProvider {
         requestDeserializer: GRPCPayloadDeserializer<CustomPayload>(),
         responseSerializer: GRPCPayloadSerializer<CustomPayload>(),
         interceptors: [],
-        observerFactory: self.addOneAndReverseMessage(context:)
+        observerFactory: { self.addOneAndReverseMessage(context: $0) }
       )
 
     default:

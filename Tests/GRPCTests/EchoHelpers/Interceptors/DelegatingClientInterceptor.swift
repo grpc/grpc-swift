@@ -20,21 +20,25 @@ import SwiftProtobuf
 
 /// A client interceptor which delegates the implementation of `send` and `receive` to callbacks.
 final class DelegatingClientInterceptor<
-  Request: Message,
-  Response: Message
+  Request: Message & Sendable,
+  Response: Message & Sendable
 >: ClientInterceptor<Request, Response> {
   typealias RequestPart = GRPCClientRequestPart<Request>
   typealias ResponsePart = GRPCClientResponsePart<Response>
   typealias Context = ClientInterceptorContext<Request, Response>
-  typealias OnSend = (RequestPart, EventLoopPromise<Void>?, Context) -> Void
-  typealias OnReceive = (ResponsePart, Context) -> Void
+  typealias OnSend = @Sendable (RequestPart, EventLoopPromise<Void>?, Context) -> Void
+  typealias OnReceive = @Sendable (ResponsePart, Context) -> Void
 
   private let onSend: OnSend
   private let onReceive: OnReceive
 
   init(
-    onSend: @escaping OnSend = { part, promise, context in context.send(part, promise: promise) },
-    onReceive: @escaping OnReceive = { part, context in context.receive(part) }
+    onSend: @escaping OnSend = { part, promise, context in
+      context.send(part, promise: promise)
+    },
+    onReceive: @escaping OnReceive = { part, context in
+      context.receive(part)
+    }
   ) {
     self.onSend = onSend
     self.onReceive = onReceive

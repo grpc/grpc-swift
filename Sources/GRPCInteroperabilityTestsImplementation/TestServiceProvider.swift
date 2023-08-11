@@ -21,8 +21,8 @@ import NIOCore
 /// A service provider for the gRPC interoperability test suite.
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
-public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
-  public var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol?
+public final class TestServiceProvider: Grpc_Testing_TestServiceProvider {
+  public let interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? = nil
 
   public init() {}
 

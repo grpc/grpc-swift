@@ -24,7 +24,8 @@ public struct GRPCAsyncServerHandler<
   Deserializer: MessageDeserializer,
   Request: Sendable,
   Response: Sendable
->: GRPCServerHandlerProtocol where Serializer.Input == Response, Deserializer.Output == Request {
+>: GRPCServerHandlerProtocol, Sendable where Serializer.Input == Response,
+  Deserializer.Output == Request {
   @usableFromInline
   internal let _handler: AsyncServerHandler<Serializer, Deserializer, Request, Response>
 
@@ -473,11 +474,16 @@ internal final class AsyncServerHandler<
       >(
         requestSource: requestSequenceProducer.source,
         responseWriterSink: responseWriter.sink,
-        task: Task {
+        task: Task { [
+          sequence = requestSequenceProducer.sequence,
+          source = requestSequenceProducer.source,
+          writer = responseWriter.writer
+        ] in
           // We don't have a task cancellation handler here: we do it in `self.cancel()`.
           await self.invokeUserHandler(
-            requestSequence: requestSequenceProducer,
-            responseWriter: responseWriter.writer,
+            requestSequence: sequence,
+            requestSource: source,
+            responseWriter: writer,
             callContext: handlerContext
           )
         }
@@ -491,7 +497,8 @@ internal final class AsyncServerHandler<
   @Sendable
   @usableFromInline
   internal func invokeUserHandler(
-    requestSequence: AsyncSequenceProducer.NewSequence,
+    requestSequence: AsyncSequenceProducer,
+    requestSource: AsyncSequenceProducer.Source,
     responseWriter: NIOAsyncWriter<
       (Response, Compression),
       GRPCAsyncWriterSinkDelegate<(Response, Compression)>
@@ -501,11 +508,11 @@ internal final class AsyncServerHandler<
     defer {
       // It's possible the user handler completed before the end of the request stream. We
       // explicitly finish it to drop any unconsumed inbound messages.
-      requestSequence.source.finish()
+      requestSource.finish()
     }
 
     do {
-      let grpcRequestStream = GRPCAsyncRequestStream(requestSequence.sequence)
+      let grpcRequestStream = GRPCAsyncRequestStream(requestSequence)
       let grpcResponseStreamWriter = GRPCAsyncResponseStreamWriter(wrapping: responseWriter)
       try await self.userHandler(grpcRequestStream, grpcResponseStreamWriter, callContext)
 

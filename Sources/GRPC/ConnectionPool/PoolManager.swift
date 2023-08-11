@@ -21,7 +21,9 @@ import NIOCore
 extension PooledChannel: @unchecked Sendable {}
 
 @usableFromInline
-internal final class PoolManager {
+internal final class PoolManager: @unchecked Sendable {
+  // @unchecked as all mutable state is protected by a lock.
+
   /// Configuration used for each connection pool.
   @usableFromInline
   internal struct PerPoolConfiguration {

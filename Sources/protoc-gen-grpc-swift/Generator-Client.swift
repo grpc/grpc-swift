@@ -473,7 +473,7 @@ extension Generator {
       name: name,
       arguments: [
         responseArgAndType,
-        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
+        "_ requestHandler: @escaping @Sendable (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
       ],
       returnType: nil,
       access: self.access
@@ -504,7 +504,7 @@ extension Generator {
     self.printFunction(
       name: "make\(self.method.name)ResponseStream",
       arguments: [
-        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
+        "_ requestHandler: @escaping @Sendable (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
       ],
       returnType: "\(type)<\(self.methodInputName), \(self.methodOutputName)>",
       access: self.access

@@ -866,8 +866,9 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     XCTAssertNil(waiter._scheduledTimeout)
 
+    let loopBoundWaiter = NIOLoopBound(waiter, eventLoop: self.eventLoop)
     waiter.scheduleTimeout(on: self.eventLoop) {
-      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: nil))
+      loopBoundWaiter.value.fail(ConnectionPoolError.deadlineExceeded(connectionError: nil))
     }
 
     XCTAssertNotNil(waiter._scheduledTimeout)

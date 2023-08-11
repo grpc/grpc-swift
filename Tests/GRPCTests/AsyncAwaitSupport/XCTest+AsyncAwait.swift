@@ -43,13 +43,13 @@ internal func XCTAssertNoThrowAsync<T>(
   }
 }
 
-private enum TaskResult<Result> {
+private enum TaskResult<Result: Sendable>: Sendable {
   case operation(Result)
   case cancellation
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-func withTaskCancelledAfter<Result>(
+func withTaskCancelledAfter<Result: Sendable>(
   nanoseconds: UInt64,
   operation: @escaping @Sendable () async -> Result
 ) async throws {

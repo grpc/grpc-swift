@@ -137,8 +137,8 @@ class InterceptorsTests: GRPCTestCase {
 
 // MARK: - Helpers
 
-class HelloWorldProvider: Helloworld_GreeterProvider {
-  var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol?
+final class HelloWorldProvider: Helloworld_GreeterProvider {
+  let interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol?
 
   init(interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? = nil) {
     self.interceptors = interceptors
@@ -215,7 +215,7 @@ final class HelloWorldServerInterceptorFactory: Helloworld_GreeterServerIntercep
   }
 }
 
-class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
+class NotReallyAuthClientInterceptor<Request: Message & Sendable, Response: Message & Sendable>:
   ClientInterceptor<Request, Response> {
   private let client: Helloworld_GreeterNIOClient
 
@@ -293,8 +293,14 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
         // We're retying the call now.
         self.state = .retrying(call)
 
+        let loopBound = NIOLoopBound(context, eventLoop: context.eventLoop)
+
         // Invoke the call and redirect responses here.
-        call.invoke(onError: context.errorCaught(_:), onResponsePart: context.receive(_:))
+        call.invoke { error in
+          loopBound.value.errorCaught(error)
+        } onResponsePart: { part in
+          loopBound.value.receive(part)
+        }
 
         // Parts must contain the metadata as the first item if we got that first response.
         if case var .some(.metadata(metadata)) = parts.first {

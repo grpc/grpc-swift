@@ -114,11 +114,14 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     )
   }
 
-  private func echo(_ request: String, context: StatusOnlyCallContext) -> EventLoopFuture<String> {
+  private static func echo(
+    _ request: String,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<String> {
     return context.eventLoop.makeSucceededFuture(request)
   }
 
-  private func neverComplete(
+  private static func neverComplete(
     _ request: String,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<String> {
@@ -128,7 +131,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     return scheduled.futureResult
   }
 
-  private func neverCalled(
+  private static func neverCalled(
     _ request: String,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<String> {
@@ -137,7 +140,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testHappyPath() {
-    let handler = self.makeHandler(function: self.echo(_:context:))
+    let handler = self.makeHandler(function: Self.echo(_:context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -156,7 +159,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   func testHappyPathWithCompressionEnabled() {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
-      function: self.echo(_:context:)
+      function: Self.echo(_:context:)
     )
 
     handler.receiveMetadata([:])
@@ -172,7 +175,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { request, context in
       context.compressionEnabled = false
-      return self.echo(request, context: context)
+      return Self.echo(request, context: context)
     }
 
     handler.receiveMetadata([:])
@@ -189,7 +192,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
-      userFunction: self.neverCalled(_:context:)
+      userFunction: Self.neverCalled(_:context:)
     )
 
     handler.receiveMetadata([:])
@@ -208,7 +211,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),
       interceptors: [],
-      userFunction: self.echo(_:context:)
+      userFunction: Self.echo(_:context:)
     )
 
     handler.receiveMetadata([:])
@@ -239,7 +242,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMessageBeforeHeaders() {
-    let handler = self.makeHandler(function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: Self.neverCalled(_:context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
     assertThat(self.recorder.metadata, .is(.none()))
@@ -248,7 +251,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMultipleHeaders() {
-    let handler = self.makeHandler(function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: Self.neverCalled(_:context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -259,7 +262,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMultipleMessages() {
-    let handler = self.makeHandler(function: self.neverComplete(_:context:))
+    let handler = self.makeHandler(function: Self.neverComplete(_:context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -275,7 +278,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishBeforeStarting() {
-    let handler = self.makeHandler(function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: Self.neverCalled(_:context:))
 
     handler.finish()
     assertThat(self.recorder.metadata, .is(.none()))
@@ -285,7 +288,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterHeaders() {
-    let handler = self.makeHandler(function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: Self.neverCalled(_:context:))
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
 
@@ -297,7 +300,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterMessage() {
-    let handler = self.makeHandler(function: self.neverComplete(_:context:))
+    let handler = self.makeHandler(function: Self.neverComplete(_:context:))
 
     handler.receiveMetadata([:])
     handler.receiveMessage(ByteBuffer(string: "hello"))
@@ -326,7 +329,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     )
   }
 
-  private func joinWithSpaces(
+  private static func joinWithSpaces(
     context: UnaryResponseCallContext<String>
   ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
     var messages: [String] = []
@@ -341,7 +344,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     return context.eventLoop.makeSucceededFuture(onEvent(_:))
   }
 
-  private func neverReceivesMessage(
+  private static func neverReceivesMessage(
     context: UnaryResponseCallContext<String>
   ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
     func onEvent(_ event: StreamEvent<String>) {
@@ -355,7 +358,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     return context.eventLoop.makeSucceededFuture(onEvent(_:))
   }
 
-  private func neverCalled(
+  private static func neverCalled(
     context: UnaryResponseCallContext<String>
   ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
     XCTFail("This observer factory should never be called")
@@ -363,7 +366,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testHappyPath() {
-    let handler = self.makeHandler(observerFactory: self.joinWithSpaces(context:))
+    let handler = self.makeHandler(observerFactory: Self.joinWithSpaces(context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -383,7 +386,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   func testHappyPathWithCompressionEnabled() {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
-      observerFactory: self.joinWithSpaces(context:)
+      observerFactory: Self.joinWithSpaces(context:)
     )
 
     handler.receiveMetadata([:])
@@ -401,7 +404,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { context in
       context.compressionEnabled = false
-      return self.joinWithSpaces(context: context)
+      return Self.joinWithSpaces(context: context)
     }
 
     handler.receiveMetadata([:])
@@ -420,7 +423,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
-      observerFactory: self.neverReceivesMessage(context:)
+      observerFactory: Self.neverReceivesMessage(context:)
     )
 
     handler.receiveMetadata([:])
@@ -439,7 +442,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),
       interceptors: [],
-      observerFactory: self.joinWithSpaces(context:)
+      observerFactory: Self.joinWithSpaces(context:)
     )
 
     handler.receiveMetadata([:])
@@ -468,7 +471,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     let promise = self.eventLoop.makePromise(of: Void.self)
     let handler = self.makeHandler { context in
       return promise.futureResult.flatMap {
-        self.joinWithSpaces(context: context)
+        Self.joinWithSpaces(context: context)
       }
     }
 
@@ -492,7 +495,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     let promise = self.eventLoop.makePromise(of: Void.self)
     let handler = self.makeHandler { context in
       return promise.futureResult.flatMap {
-        self.joinWithSpaces(context: context)
+        Self.joinWithSpaces(context: context)
       }
     }
 
@@ -510,7 +513,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMessageBeforeHeaders() {
-    let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
+    let handler = self.makeHandler(observerFactory: Self.neverCalled(context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
     assertThat(self.recorder.metadata, .is(.none()))
@@ -519,7 +522,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMultipleHeaders() {
-    let handler = self.makeHandler(observerFactory: self.neverReceivesMessage(context:))
+    let handler = self.makeHandler(observerFactory: Self.neverReceivesMessage(context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -530,7 +533,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishBeforeStarting() {
-    let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
+    let handler = self.makeHandler(observerFactory: Self.neverCalled(context:))
 
     handler.finish()
     assertThat(self.recorder.metadata, .is(.none()))
@@ -540,7 +543,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterHeaders() {
-    let handler = self.makeHandler(observerFactory: self.joinWithSpaces(context:))
+    let handler = self.makeHandler(observerFactory: Self.joinWithSpaces(context:))
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
 
@@ -552,7 +555,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterMessage() {
-    let handler = self.makeHandler(observerFactory: self.joinWithSpaces(context:))
+    let handler = self.makeHandler(observerFactory: Self.joinWithSpaces(context:))
 
     handler.receiveMetadata([:])
     handler.receiveMessage(ByteBuffer(string: "hello"))
@@ -579,7 +582,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     )
   }
 
-  private func breakOnSpaces(
+  private static func breakOnSpaces(
     _ request: String,
     context: StreamingResponseCallContext<String>
   ) -> EventLoopFuture<GRPCStatus> {
@@ -588,7 +591,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     return context.eventLoop.makeSucceededFuture(.ok)
   }
 
-  private func neverCalled(
+  private static func neverCalled(
     _ request: String,
     context: StreamingResponseCallContext<String>
   ) -> EventLoopFuture<GRPCStatus> {
@@ -596,7 +599,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     return context.eventLoop.makeSucceededFuture(.processingError)
   }
 
-  private func neverComplete(
+  private static func neverComplete(
     _ request: String,
     context: StreamingResponseCallContext<String>
   ) -> EventLoopFuture<GRPCStatus> {
@@ -606,7 +609,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testHappyPath() {
-    let handler = self.makeHandler(userFunction: self.breakOnSpaces(_:context:))
+    let handler = self.makeHandler(userFunction: Self.breakOnSpaces(_:context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -627,7 +630,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   func testHappyPathWithCompressionEnabled() {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
-      userFunction: self.breakOnSpaces(_:context:)
+      userFunction: Self.breakOnSpaces(_:context:)
     )
 
     handler.receiveMetadata([:])
@@ -643,7 +646,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { request, context in
       context.compressionEnabled = false
-      return self.breakOnSpaces(request, context: context)
+      return Self.breakOnSpaces(request, context: context)
     }
 
     handler.receiveMetadata([:])
@@ -660,7 +663,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
-      userFunction: self.neverCalled(_:context:)
+      userFunction: Self.neverCalled(_:context:)
     )
 
     handler.receiveMetadata([:])
@@ -679,7 +682,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),
       interceptors: [],
-      userFunction: self.breakOnSpaces(_:context:)
+      userFunction: Self.breakOnSpaces(_:context:)
     )
 
     handler.receiveMetadata([:])
@@ -710,7 +713,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMessageBeforeHeaders() {
-    let handler = self.makeHandler(userFunction: self.neverCalled(_:context:))
+    let handler = self.makeHandler(userFunction: Self.neverCalled(_:context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
     assertThat(self.recorder.metadata, .is(.none()))
@@ -719,7 +722,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMultipleHeaders() {
-    let handler = self.makeHandler(userFunction: self.neverCalled(_:context:))
+    let handler = self.makeHandler(userFunction: Self.neverCalled(_:context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -730,7 +733,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMultipleMessages() {
-    let handler = self.makeHandler(userFunction: self.neverComplete(_:context:))
+    let handler = self.makeHandler(userFunction: Self.neverComplete(_:context:))
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -746,7 +749,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishBeforeStarting() {
-    let handler = self.makeHandler(userFunction: self.neverCalled(_:context:))
+    let handler = self.makeHandler(userFunction: Self.neverCalled(_:context:))
 
     handler.finish()
     assertThat(self.recorder.metadata, .is(.none()))
@@ -756,7 +759,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterHeaders() {
-    let handler = self.makeHandler(userFunction: self.neverCalled(_:context:))
+    let handler = self.makeHandler(userFunction: Self.neverCalled(_:context:))
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
 
@@ -768,7 +771,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterMessage() {
-    let handler = self.makeHandler(userFunction: self.neverComplete(_:context:))
+    let handler = self.makeHandler(userFunction: Self.neverComplete(_:context:))
 
     handler.receiveMetadata([:])
     handler.receiveMessage(ByteBuffer(string: "hello"))
@@ -782,10 +785,10 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
 // MARK: - Bidirectional Streaming
 
-class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
+final class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
-    observerFactory: @escaping (StreamingResponseCallContext<String>)
+    observerFactory: @escaping @Sendable (StreamingResponseCallContext<String>)
       -> EventLoopFuture<(StreamEvent<String>) -> Void>
   ) -> BidirectionalStreamingServerHandler<StringSerializer, StringDeserializer> {
     return BidirectionalStreamingServerHandler(
@@ -797,7 +800,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     )
   }
 
-  private func echo(
+  private static func echo(
     context: StreamingResponseCallContext<String>
   ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
     func onEvent(_ event: StreamEvent<String>) {
@@ -811,7 +814,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     return context.eventLoop.makeSucceededFuture(onEvent(_:))
   }
 
-  private func neverReceivesMessage(
+  private static func neverReceivesMessage(
     context: StreamingResponseCallContext<String>
   ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
     func onEvent(_ event: StreamEvent<String>) {
@@ -825,7 +828,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     return context.eventLoop.makeSucceededFuture(onEvent(_:))
   }
 
-  private func neverCalled(
+  private static func neverCalled(
     context: StreamingResponseCallContext<String>
   ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
     XCTFail("This observer factory should never be called")
@@ -833,7 +836,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testHappyPath() {
-    let handler = self.makeHandler(observerFactory: self.echo(context:))
+    let handler = self.makeHandler { Self.echo(context: $0) }
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -856,7 +859,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   func testHappyPathWithCompressionEnabled() {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
-      observerFactory: self.echo(context:)
+      observerFactory: { Self.echo(context: $0) }
     )
 
     handler.receiveMetadata([:])
@@ -877,7 +880,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { context in
       context.compressionEnabled = false
-      return self.echo(context: context)
+      return Self.echo(context: context)
     }
 
     handler.receiveMetadata([:])
@@ -899,7 +902,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
-      observerFactory: self.neverReceivesMessage(context:)
+      observerFactory: { Self.neverReceivesMessage(context: $0) }
     )
 
     handler.receiveMetadata([:])
@@ -918,7 +921,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),
       interceptors: [],
-      observerFactory: self.echo(context:)
+      observerFactory: { Self.echo(context: $0) }
     )
 
     handler.receiveMetadata([:])
@@ -947,7 +950,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     let promise = self.eventLoop.makePromise(of: Void.self)
     let handler = self.makeHandler { context in
       return promise.futureResult.flatMap {
-        self.echo(context: context)
+        Self.echo(context: context)
       }
     }
 
@@ -971,7 +974,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     let promise = self.eventLoop.makePromise(of: Void.self)
     let handler = self.makeHandler { context in
       return promise.futureResult.flatMap {
-        self.echo(context: context)
+        Self.echo(context: context)
       }
     }
 
@@ -991,7 +994,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMessageBeforeHeaders() {
-    let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
+    let handler = self.makeHandler { Self.neverCalled(context: $0) }
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
     assertThat(self.recorder.metadata, .is(.none()))
@@ -1000,7 +1003,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testReceiveMultipleHeaders() {
-    let handler = self.makeHandler(observerFactory: self.neverReceivesMessage(context:))
+    let handler = self.makeHandler { Self.neverReceivesMessage(context: $0) }
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
@@ -1011,7 +1014,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishBeforeStarting() {
-    let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
+    let handler = self.makeHandler { Self.neverCalled(context: $0) }
 
     handler.finish()
     assertThat(self.recorder.metadata, .is(.none()))
@@ -1021,7 +1024,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterHeaders() {
-    let handler = self.makeHandler(observerFactory: self.echo(context:))
+    let handler = self.makeHandler { Self.echo(context: $0) }
     handler.receiveMetadata([:])
     assertThat(self.recorder.metadata, .is([:]))
 
@@ -1033,7 +1036,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   func testFinishAfterMessage() {
-    let handler = self.makeHandler(observerFactory: self.echo(context:))
+    let handler = self.makeHandler { Self.echo(context: $0) }
 
     handler.receiveMetadata([:])
     handler.receiveMessage(ByteBuffer(string: "hello"))

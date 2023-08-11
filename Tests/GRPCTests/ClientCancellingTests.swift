@@ -19,75 +19,47 @@ import GRPC
 import XCTest
 
 class ClientCancellingTests: EchoTestCaseBase {
-  func testUnary() {
-    let statusReceived = self.expectation(description: "status received")
-    let responseReceived = self.expectation(description: "response received")
-
+  func testUnary() throws {
     let call = client.get(Echo_EchoRequest(text: "foo bar baz"))
     call.cancel(promise: nil)
 
-    call.response.whenFailure { error in
+    XCTAssertThrowsError(try call.response.wait()) { error in
       XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
-      responseReceived.fulfill()
     }
 
-    call.status.whenSuccess { status in
-      XCTAssertEqual(status.code, .cancelled)
-      statusReceived.fulfill()
-    }
-
-    waitForExpectations(timeout: self.defaultTestTimeout)
+    let status = try call.status.wait()
+    XCTAssertEqual(status.code, .cancelled)
   }
 
   func testClientStreaming() throws {
-    let statusReceived = self.expectation(description: "status received")
-    let responseReceived = self.expectation(description: "response received")
-
     let call = client.collect()
     call.cancel(promise: nil)
 
-    call.response.whenFailure { error in
+    XCTAssertThrowsError(try call.response.wait()) { error in
       XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
-      responseReceived.fulfill()
     }
 
-    call.status.whenSuccess { status in
-      XCTAssertEqual(status.code, .cancelled)
-      statusReceived.fulfill()
-    }
-
-    waitForExpectations(timeout: self.defaultTestTimeout)
+    let status = try call.status.wait()
+    XCTAssertEqual(status.code, .cancelled)
   }
 
-  func testServerStreaming() {
-    let statusReceived = self.expectation(description: "status received")
-
+  func testServerStreaming() throws {
     let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { _ in
       XCTFail("response should not be received after cancelling call")
     }
     call.cancel(promise: nil)
 
-    call.status.whenSuccess { status in
-      XCTAssertEqual(status.code, .cancelled)
-      statusReceived.fulfill()
-    }
-
-    waitForExpectations(timeout: self.defaultTestTimeout)
+    let status = try call.status.wait()
+    XCTAssertEqual(status.code, .cancelled)
   }
 
-  func testBidirectionalStreaming() {
-    let statusReceived = self.expectation(description: "status received")
-
+  func testBidirectionalStreaming() throws {
     let call = client.update { _ in
       XCTFail("response should not be received after cancelling call")
     }
     call.cancel(promise: nil)
 
-    call.status.whenSuccess { status in
-      XCTAssertEqual(status.code, .cancelled)
-      statusReceived.fulfill()
-    }
-
-    waitForExpectations(timeout: self.defaultTestTimeout)
+    let status = try call.status.wait()
+    XCTAssertEqual(status.code, .cancelled)
   }
 }

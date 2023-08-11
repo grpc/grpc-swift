@@ -25,8 +25,10 @@ import NIOHTTP2
 ///
 /// Note: while this object is a `struct`, its implementation delegates to ``Call``. It therefore
 /// has reference semantics.
-public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall,
-  UnaryResponseClientCall {
+public struct ClientStreamingCall<
+  RequestPayload: Sendable,
+  ResponsePayload: Sendable
+>: StreamingRequestClientCall, UnaryResponseClientCall, Sendable {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: UnaryResponseParts<ResponsePayload>
 
@@ -85,8 +87,8 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
   internal func invoke() {
     self.call.invokeStreamingRequests(
       onStart: {},
-      onError: self.responseParts.handleError(_:),
-      onResponsePart: self.responseParts.handle(_:)
+      onError: { self.responseParts.handleError($0) },
+      onResponsePart: { self.responseParts.handle($0) }
     )
   }
 
@@ -101,7 +103,7 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
   ///   - message: The message to send.
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
-  ///   - promise: A promise to fulfill with the outcome of the send operation.
+  ///   - promise: A promise to fulfil with the outcome of the send operation.
   public func sendMessage(
     _ message: RequestPayload,
     compression: Compression = .deferToCallDefault,
@@ -120,13 +122,13 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
   ///   - messages: The sequence of messages to send.
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
-  ///   - promise: A promise to fulfill with the outcome of the send operation. It will only succeed
+  ///   - promise: A promise to fulfil with the outcome of the send operation. It will only succeed
   ///     if all messages were written successfully.
   public func sendMessages<S>(
     _ messages: S,
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
-  ) where S: Sequence, S.Element == RequestPayload {
+  ) where S: Sequence, S: Sendable, S.Element == RequestPayload {
     self.call.sendMessages(messages, compression: compression, promise: promise)
   }
 

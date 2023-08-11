@@ -19,7 +19,7 @@ import NIOHPACK
 public final class ClientStreamingServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
->: GRPCServerHandlerProtocol {
+>: GRPCServerHandlerProtocol, @unchecked Sendable {
   public typealias Request = Deserializer.Output
   public typealias Response = Serializer.Input
 
@@ -178,10 +178,10 @@ public final class ClientStreamingServerHandler<
       self.state = .creatingObserver(context)
 
       // Register a callback on the response future.
-      context.responsePromise.futureResult.whenComplete(self.userFunctionCompletedWithResult(_:))
+      context.responsePromise.futureResult.whenComplete { self.userFunctionCompletedWithResult($0) }
 
       // Make an observer block and register a completion block.
-      self.handlerFactory(context).whenComplete(self.userFunctionResolved(_:))
+      self.handlerFactory(context).whenComplete { self.userFunctionResolved($0) }
 
       // Send response headers back via the interceptors.
       self.interceptors.send(.metadata([:]), promise: nil)

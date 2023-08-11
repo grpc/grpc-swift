@@ -42,7 +42,7 @@ public typealias _RawGRPCClientRequestPart = _GRPCClientRequestPart<ByteBuffer>
 /// A gRPC client response message part.
 ///
 /// - Important: This is **NOT** part of the public API.
-public enum _GRPCClientResponsePart<Response> {
+public enum _GRPCClientResponsePart<Response: Sendable>: Sendable {
   /// Metadata received as the server acknowledges the RPC.
   case initialMetadata(HPACKHeaders)
 

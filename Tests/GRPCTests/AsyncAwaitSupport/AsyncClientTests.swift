@@ -335,7 +335,7 @@ final class AsyncClientCancellationTests: GRPCTestCase {
   }
 
   private func testSendingRequestsSuspendsWhileStreamIsNotReady(
-    makeRPC: @escaping () -> RequestStreamingRPC
+    makeRPC: @escaping @Sendable () -> RequestStreamingRPC
   ) async throws {
     // The strategy for this test is to race two different tasks. The first will attempt to send a
     // message on a request stream on a connection which will never establish. The second will sleep

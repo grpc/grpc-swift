@@ -744,7 +744,7 @@ class EmptyStream: InteroperabilityTest {
 ///   received in the initial metadata for calls in Procedure steps 1 and 2.
 /// - metadata with key "x-grpc-test-echo-trailing-bin" and value 0xababab is received in the
 ///   trailing metadata for calls in Procedure steps 1 and 2.
-class CustomMetadata: InteroperabilityTest {
+final class CustomMetadata: InteroperabilityTest, Sendable {
   let initialMetadataName = "x-grpc-test-echo-initial"
   let initialMetadataValue = "test_initial_metadata_value"
 

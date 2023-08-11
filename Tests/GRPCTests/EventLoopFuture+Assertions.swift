@@ -17,7 +17,7 @@ import Foundation
 import NIOCore
 import XCTest
 
-extension EventLoopFuture where Value: Equatable {
+extension EventLoopFuture where Value: Equatable & Sendable {
   /// Registers a callback which asserts the value promised by this future is equal to
   /// the expected value. Causes a test failure if the future returns an error.
   ///
@@ -61,7 +61,7 @@ extension EventLoopFuture {
     fulfill expectation: XCTestExpectation,
     file: StaticString = #filePath,
     line: UInt = #line,
-    handler: @escaping (Error) -> Void = { _ in }
+    handler: @escaping @Sendable (Error) -> Void = { _ in }
   ) {
     self.whenComplete { result in
       defer {
@@ -95,13 +95,13 @@ extension EventLoopFuture {
 
 extension EventLoopFuture {
   // TODO: Replace with `always` once https://github.com/apple/swift-nio/pull/981 is released.
-  func peekError(callback: @escaping (Error) -> Void) -> EventLoopFuture<Value> {
+  func peekError(callback: @escaping @Sendable (Error) -> Void) -> EventLoopFuture<Value> {
     self.whenFailure(callback)
     return self
   }
 
   // TODO: Replace with `always` once https://github.com/apple/swift-nio/pull/981 is released.
-  func peek(callback: @escaping (Value) -> Void) -> EventLoopFuture<Value> {
+  func peek(callback: @escaping @Sendable (Value) -> Void) -> EventLoopFuture<Value> {
     self.whenSuccess(callback)
     return self
   }

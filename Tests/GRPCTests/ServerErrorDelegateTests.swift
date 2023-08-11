@@ -24,10 +24,10 @@ import NIOHPACK
 import NIOHTTP2
 import XCTest
 
-private class ServerErrorDelegateMock: ServerErrorDelegate {
-  private let transformLibraryErrorHandler: (Error) -> (GRPCStatusAndTrailers?)
+private final class ServerErrorDelegateMock: ServerErrorDelegate {
+  private let transformLibraryErrorHandler: @Sendable (Error) -> (GRPCStatusAndTrailers?)
 
-  init(transformLibraryErrorHandler: @escaping ((Error) -> (GRPCStatusAndTrailers?))) {
+  init(transformLibraryErrorHandler: @escaping (@Sendable (Error) -> (GRPCStatusAndTrailers?))) {
     self.transformLibraryErrorHandler = transformLibraryErrorHandler
   }
 
@@ -147,7 +147,7 @@ class ServerErrorDelegateTests: GRPCTestCase {
   }
 
   private func setupChannelAndDelegate(
-    transformLibraryErrorHandler: @escaping (Error) -> GRPCStatusAndTrailers?
+    transformLibraryErrorHandler: @escaping @Sendable (Error) -> GRPCStatusAndTrailers?
   ) {
     let provider = EchoProvider()
     self.errorDelegate = ServerErrorDelegateMock(

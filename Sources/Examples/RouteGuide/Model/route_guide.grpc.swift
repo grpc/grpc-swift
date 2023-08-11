@@ -475,7 +475,7 @@ extension Routeguide_RouteGuideProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
         responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
         interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? [],
-        userFunction: self.getFeature(request:context:)
+        userFunction: { self.getFeature(request: $0, context: $1) }
       )
 
     case "ListFeatures":
@@ -484,7 +484,7 @@ extension Routeguide_RouteGuideProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_Rectangle>(),
         responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
         interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? [],
-        userFunction: self.listFeatures(request:context:)
+        userFunction: { self.listFeatures(request: $0, context: $1) }
       )
 
     case "RecordRoute":
@@ -493,7 +493,7 @@ extension Routeguide_RouteGuideProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
         responseSerializer: ProtobufSerializer<Routeguide_RouteSummary>(),
         interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? [],
-        observerFactory: self.recordRoute(context:)
+        observerFactory: { self.recordRoute(context: $0) }
       )
 
     case "RouteChat":
@@ -502,7 +502,7 @@ extension Routeguide_RouteGuideProvider {
         requestDeserializer: ProtobufDeserializer<Routeguide_RouteNote>(),
         responseSerializer: ProtobufSerializer<Routeguide_RouteNote>(),
         interceptors: self.interceptors?.makeRouteChatInterceptors() ?? [],
-        observerFactory: self.routeChat(context:)
+        observerFactory: { self.routeChat(context: $0) }
       )
 
     default:
@@ -626,19 +626,15 @@ extension Routeguide_RouteGuideAsyncProvider {
 public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'getFeature'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeGetFeatureInterceptors() -> [ServerInterceptor<Routeguide_Point, Routeguide_Feature>]
 
   /// - Returns: Interceptors to use when handling 'listFeatures'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeListFeaturesInterceptors() -> [ServerInterceptor<Routeguide_Rectangle, Routeguide_Feature>]
 
   /// - Returns: Interceptors to use when handling 'recordRoute'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeRecordRouteInterceptors() -> [ServerInterceptor<Routeguide_Point, Routeguide_RouteSummary>]
 
   /// - Returns: Interceptors to use when handling 'routeChat'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeRouteChatInterceptors() -> [ServerInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>]
 }
 

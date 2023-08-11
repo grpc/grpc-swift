@@ -158,7 +158,7 @@ func main(args: [String]) throws {
 }
 
 do {
-  try main(args: CommandLine.arguments)
+  try main(args: ProcessInfo.processInfo.arguments)
 } catch {
   Log("ERROR: \(error)")
 }

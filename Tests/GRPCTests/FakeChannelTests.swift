@@ -15,6 +15,7 @@
  */
 import EchoModel
 import GRPC
+import NIOConcurrencyHelpers
 import NIOCore
 import XCTest
 
@@ -32,14 +33,14 @@ class FakeChannelTests: GRPCTestCase {
 
   private func makeUnaryResponse(
     path: String = "/foo/bar",
-    requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }
+    requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void = { _ in }
   ) -> FakeUnaryResponse<Request, Response> {
     return self.channel.makeFakeUnaryResponse(path: path, requestHandler: requestHandler)
   }
 
   private func makeStreamingResponse(
     path: String = "/foo/bar",
-    requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }
+    requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void = { _ in }
   ) -> FakeStreamingResponse<Request, Response> {
     return self.channel.makeFakeStreamingResponse(path: path, requestHandler: requestHandler)
   }
@@ -86,11 +87,11 @@ class FakeChannelTests: GRPCTestCase {
       private(set) var responses = [Response]()
       func collect(_ response: Response) { self.responses.append(response) }
     }
-    var requests: [Request] = []
+    let requests = NIOLockedValueBox([Request]())
     let response = self.makeStreamingResponse { part in
       switch part {
       case let .message(request):
-        requests.append(request)
+        requests.withLockedValue { $0.append(request) }
       default:
         ()
       }
@@ -108,7 +109,10 @@ class FakeChannelTests: GRPCTestCase {
     XCTAssertNoThrow(try call.sendMessage(.with { $0.text = "3" }).wait())
     XCTAssertNoThrow(try call.sendEnd().wait())
 
-    XCTAssertEqual(requests, (1 ... 3).map { number in .with { $0.text = "\(number)" } })
+    XCTAssertEqual(
+      requests.withLockedValue { $0 },
+      (1 ... 3).map { number in .with { $0.text = "\(number)" } }
+    )
 
     XCTAssertNoThrow(try response.sendMessage(.with { $0.text = "4" }))
     XCTAssertNoThrow(try response.sendMessage(.with { $0.text = "5" }))

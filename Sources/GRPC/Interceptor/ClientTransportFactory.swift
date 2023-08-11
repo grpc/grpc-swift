@@ -19,13 +19,14 @@ import protocol SwiftProtobuf.Message
 
 /// A `ClientTransport` factory for an RPC.
 @usableFromInline
-internal struct ClientTransportFactory<Request, Response> {
+internal struct ClientTransportFactory<Request: Sendable, Response: Sendable> {
   /// The underlying transport factory.
   private var factory: Factory
 
   @usableFromInline
   internal enum Factory {
     case http2(HTTP2ClientTransportFactory<Request, Response>)
+    @available(*, deprecated)
     case fake(FakeClientTransportFactory<Request, Response>)
   }
 
@@ -33,6 +34,7 @@ internal struct ClientTransportFactory<Request, Response> {
     self.factory = .http2(http2)
   }
 
+  @available(*, deprecated)
   private init(_ fake: FakeClientTransportFactory<Request, Response>) {
     self.factory = .fake(fake)
   }
@@ -95,6 +97,7 @@ internal struct ClientTransportFactory<Request, Response> {
   /// Make a factory for 'fake' transport.
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
+  @available(*, deprecated)
   @usableFromInline
   internal static func fake(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
@@ -113,6 +116,7 @@ internal struct ClientTransportFactory<Request, Response> {
   /// Make a factory for 'fake' transport.
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
+  @available(*, deprecated)
   @usableFromInline
   internal static func fake(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
@@ -177,7 +181,7 @@ internal struct ClientTransportFactory<Request, Response> {
 }
 
 @usableFromInline
-internal struct HTTP2ClientTransportFactory<Request, Response> {
+internal struct HTTP2ClientTransportFactory<Request: Sendable, Response: Sendable> {
   /// The multiplexer providing an HTTP/2 stream for the call.
   private var streamChannel: EventLoopFuture<Channel>
 
@@ -243,7 +247,8 @@ internal struct HTTP2ClientTransportFactory<Request, Response> {
 
   fileprivate func configure(_ transport: ClientTransport<Request, Response>) {
     transport.configure { _ in
-      self.streamChannel.flatMapThrowing { channel in
+      let maximumReceiveMessageLength = self.maximumReceiveMessageLength
+      return self.streamChannel.flatMapThrowing { channel in
         // This initializer will always occur on the appropriate event loop, sync operations are
         // fine here.
         let syncOperations = channel.pipeline.syncOperations
@@ -251,7 +256,7 @@ internal struct HTTP2ClientTransportFactory<Request, Response> {
         do {
           let clientHandler = GRPCClientChannelHandler(
             callType: transport.callDetails.type,
-            maximumReceiveMessageLength: self.maximumReceiveMessageLength,
+            maximumReceiveMessageLength: maximumReceiveMessageLength,
             logger: transport.logger
           )
           try syncOperations.addHandler(clientHandler)
@@ -276,8 +281,9 @@ internal struct HTTP2ClientTransportFactory<Request, Response> {
   }
 }
 
+@available(*, deprecated)
 @usableFromInline
-internal struct FakeClientTransportFactory<Request, Response> {
+internal struct FakeClientTransportFactory<Request: Sendable, Response: Sendable> {
   /// The fake response stream for the call. This can be `nil` if the user did not correctly
   /// configure their client. The result will be a transport which immediately fails.
   private var fakeResponseStream: _FakeResponseStream<Request, Response>?

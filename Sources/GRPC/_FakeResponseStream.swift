@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import NIOConcurrencyHelpers
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 
-public enum FakeRequestPart<Request> {
+public enum FakeRequestPart<Request: Sendable>: Sendable {
   case metadata(HPACKHeaders)
   case message(Request)
   case end
@@ -40,8 +41,8 @@ public struct FakeResponseProtocolViolation: Error, Hashable {
 ///
 /// Users may not interact with this class directly but may do so via one of its subclasses
 /// `FakeUnaryResponse` and `FakeStreamingResponse`.
-public class _FakeResponseStream<Request, Response> {
-  private enum StreamEvent {
+public class _FakeResponseStream<Request: Sendable, Response: Sendable>: @unchecked Sendable {
+  private enum StreamEvent: Sendable {
     case responsePart(_GRPCClientResponsePart<Response>)
     case error(Error)
   }
@@ -49,14 +50,18 @@ public class _FakeResponseStream<Request, Response> {
   /// The channel to use for communication.
   internal let channel: EmbeddedChannel
 
-  /// A buffer to hold responses in before the proxy is activated.
-  private var responseBuffer: CircularBuffer<StreamEvent>
+  private struct State: Sendable {
+    /// A buffer to hold responses in before the proxy is activated.
+    var responseBuffer: CircularBuffer<StreamEvent>
 
-  /// The current state of the proxy.
-  private var activeState: ActiveState
+    /// The current state of the proxy.
+    var activeState: ActiveState
 
-  /// The state of sending response parts.
-  private var sendState: SendState
+    /// The state of sending response parts.
+    var sendState: SendState
+  }
+
+  private let state: NIOLockedValueBox<State>
 
   private enum ActiveState {
     case inactive
@@ -79,30 +84,33 @@ public class _FakeResponseStream<Request, Response> {
     case closed
   }
 
-  internal init(requestHandler: @escaping (FakeRequestPart<Request>) -> Void) {
-    self.activeState = .inactive
-    self.sendState = .idle
-    self.responseBuffer = CircularBuffer()
+  internal init(requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void) {
+    self
+      .state =
+      NIOLockedValueBox(.init(responseBuffer: [], activeState: .inactive, sendState: .idle))
     self.channel = EmbeddedChannel(handler: WriteCapturingHandler(requestHandler: requestHandler))
   }
 
   /// Activate the test proxy; this should be called
   internal func activate() {
-    switch self.activeState {
-    case .inactive:
-      // Activate the channel. This will allow any request parts to be sent.
-      self.channel.pipeline.fireChannelActive()
-
-      // Unbuffer any response parts.
-      while !self.responseBuffer.isEmpty {
-        self.write(self.responseBuffer.removeFirst())
+    let buffer: CircularBuffer<StreamEvent>? = self.state.withLockedValue {
+      switch $0.activeState {
+      case .inactive:
+        $0.activeState = .active
+        let buffer = $0.responseBuffer
+        $0.responseBuffer.removeAll()
+        return buffer
+      case .active:
+        return nil
       }
+    }
 
-      // Now we're active.
-      self.activeState = .active
+    guard var buffer = buffer else { return }
 
-    case .active:
-      ()
+    self.channel.pipeline.fireChannelActive()
+    // Unbuffer any response parts.
+    while let part = buffer.popFirst() {
+      self.write(part)
     }
   }
 
@@ -131,55 +139,59 @@ public class _FakeResponseStream<Request, Response> {
 
   /// Validate events the user wants to send on the stream.
   private func validate(_ event: StreamEvent) -> Validation {
-    switch (event, self.sendState) {
-    case (.responsePart(.initialMetadata), .idle):
-      self.sendState = .sending
-      return .valid
+    self.state.withLockedValue {
+      switch (event, $0.sendState) {
+      case (.responsePart(.initialMetadata), .idle):
+        $0.sendState = .sending
+        return .valid
 
-    case (.responsePart(.initialMetadata), .sending),
-         (.responsePart(.initialMetadata), .closing),
-         (.responsePart(.initialMetadata), .closed):
-      // We can only send initial metadata from '.idle'.
-      return .invalid(reason: "Initial metadata has already been sent")
+      case (.responsePart(.initialMetadata), .sending),
+           (.responsePart(.initialMetadata), .closing),
+           (.responsePart(.initialMetadata), .closed):
+        // We can only send initial metadata from '.idle'.
+        return .invalid(reason: "Initial metadata has already been sent")
 
-    case (.responsePart(.message), .idle):
-      // This is fine: we don't force the user to specify initial metadata so we send some on their
-      // behalf.
-      self.sendState = .sending
-      return .validIfSentAfter(.responsePart(.initialMetadata([:])))
+      case (.responsePart(.message), .idle):
+        // This is fine: we don't force the user to specify initial metadata so we send some on their
+        // behalf.
+        $0.sendState = .sending
+        return .validIfSentAfter(.responsePart(.initialMetadata([:])))
 
-    case (.responsePart(.message), .sending):
-      return .valid
+      case (.responsePart(.message), .sending):
+        return .valid
 
-    case (.responsePart(.message), .closing),
-         (.responsePart(.message), .closed):
-      // We can't send messages once we're closing or closed.
-      return .invalid(reason: "Messages can't be sent after the stream has been closed")
+      case (.responsePart(.message), .closing),
+           (.responsePart(.message), .closed):
+        // We can't send messages once we're closing or closed.
+        return .invalid(reason: "Messages can't be sent after the stream has been closed")
 
-    case (.responsePart(.trailingMetadata), .idle),
-         (.responsePart(.trailingMetadata), .sending):
-      self.sendState = .closing
-      return .valid
+      case (.responsePart(.trailingMetadata), .idle),
+           (.responsePart(.trailingMetadata), .sending):
+        $0.sendState = .closing
+        return .valid
 
-    case (.responsePart(.trailingMetadata), .closing),
-         (.responsePart(.trailingMetadata), .closed):
-      // We're already closing or closed.
-      return .invalid(reason: "Trailing metadata can't be sent after the stream has been closed")
+      case (.responsePart(.trailingMetadata), .closing),
+           (.responsePart(.trailingMetadata), .closed):
+        // We're already closing or closed.
+        return .invalid(reason: "Trailing metadata can't be sent after the stream has been closed")
 
-    case (.responsePart(.status), .idle),
-         (.error, .idle),
-         (.responsePart(.status), .sending),
-         (.error, .sending),
-         (.responsePart(.status), .closed),
-         (.error, .closed):
-      // We can only error/close if we're closing (i.e. have already sent trailers which we enforce
-      // from the API in the subclasses).
-      return .invalid(reason: "Status/error can only be sent after trailing metadata has been sent")
+      case (.responsePart(.status), .idle),
+           (.error, .idle),
+           (.responsePart(.status), .sending),
+           (.error, .sending),
+           (.responsePart(.status), .closed),
+           (.error, .closed):
+        // We can only error/close if we're closing (i.e. have already sent trailers which we enforce
+        // from the API in the subclasses).
+        return .invalid(
+          reason: "Status/error can only be sent after trailing metadata has been sent"
+        )
 
-    case (.responsePart(.status), .closing),
-         (.error, .closing):
-      self.sendState = .closed
-      return .valid
+      case (.responsePart(.status), .closing),
+           (.error, .closing):
+        $0.sendState = .closed
+        return .valid
+      }
     }
   }
 
@@ -195,11 +207,17 @@ public class _FakeResponseStream<Request, Response> {
   }
 
   private func writeOrBuffer(_ event: StreamEvent) {
-    switch self.activeState {
-    case .inactive:
-      self.responseBuffer.append(event)
+    let write = self.state.withLockedValue {
+      switch $0.activeState {
+      case .inactive:
+        $0.responseBuffer.append(event)
+        return false
+      case .active:
+        return true
+      }
+    }
 
-    case .active:
+    if write {
       self.write(event)
     }
   }
@@ -235,8 +253,14 @@ public class _FakeResponseStream<Request, Response> {
 ///
 /// `sendError` may be used to terminate an RPC without providing a response. As for `sendMessage`,
 /// the `trailingMetadata` defaults to being empty.
-public class FakeUnaryResponse<Request, Response>: _FakeResponseStream<Request, Response> {
-  override public init(requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }) {
+public final class FakeUnaryResponse<
+  Request: Sendable,
+  Response: Sendable
+>: _FakeResponseStream<Request, Response>, Sendable {
+  override public init(
+    requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void = { _ in
+    }
+  ) {
     super.init(requestHandler: requestHandler)
   }
 
@@ -298,8 +322,14 @@ public class FakeUnaryResponse<Request, Response>: _FakeResponseStream<Request, 
 ///
 /// `sendError` may be called at any time to indicate an error on the response stream.
 /// Like `sendEnd`, `trailingMetadata` is empty by default.
-public class FakeStreamingResponse<Request, Response>: _FakeResponseStream<Request, Response> {
-  override public init(requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }) {
+public final class FakeStreamingResponse<
+  Request: Sendable,
+  Response: Sendable
+>: _FakeResponseStream<Request, Response>, Sendable {
+  override public init(
+    requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void = { _ in
+    }
+  ) {
     super.init(requestHandler: requestHandler)
   }
 

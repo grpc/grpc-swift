@@ -18,7 +18,7 @@ import GRPC
 import NIOCore
 
 /// An `Echo_EchoProvider` which always returns failed future for each RPC.
-class FailingEchoProvider: Echo_EchoProvider {
+final class FailingEchoProvider: Echo_EchoProvider {
   let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
   init(interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil) {

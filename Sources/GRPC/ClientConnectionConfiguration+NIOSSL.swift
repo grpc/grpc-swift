@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #if canImport(NIOSSL)
+import NIOCore
 import NIOSSL
 
 extension ClientConnection.Configuration {
@@ -71,7 +72,10 @@ extension ClientConnection.Configuration {
     }
 
     /// A custom verification callback that allows completely overriding the certificate verification logic for this connection.
-    public var customVerificationCallback: NIOSSLCustomVerificationCallback?
+    public var customVerificationCallback: (@Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void)?
 
     /// TLS Configuration with suitable defaults for clients.
     ///
@@ -96,7 +100,10 @@ extension ClientConnection.Configuration {
       trustRoots: NIOSSLTrustRoots = .default,
       certificateVerification: CertificateVerification = .fullVerification,
       hostnameOverride: String? = nil,
-      customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
+      customVerificationCallback: (@Sendable (
+        [NIOSSLCertificate],
+        EventLoopPromise<NIOSSLVerificationResult>
+      ) -> Void)? = nil
     ) {
       var configuration = TLSConfiguration.makeClientConfiguration()
       configuration.minimumTLSVersion = .tlsv12

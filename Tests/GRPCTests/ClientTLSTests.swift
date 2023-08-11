@@ -169,8 +169,12 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
   }
 }
 
-private class AuthorityCheckingEcho: Echo_EchoProvider {
-  var interceptors: Echo_EchoServerInterceptorFactoryProtocol?
+private final class AuthorityCheckingEcho: Echo_EchoProvider, @unchecked Sendable {
+  let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
+
+  init(interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil) {
+    self.interceptors = interceptors
+  }
 
   func get(
     request: Echo_EchoRequest,

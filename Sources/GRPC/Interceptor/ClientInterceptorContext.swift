@@ -16,7 +16,7 @@
 import Logging
 import NIOCore
 
-public struct ClientInterceptorContext<Request, Response> {
+public struct ClientInterceptorContext<Request: Sendable, Response: Sendable> {
   /// The interceptor this context is for.
   @usableFromInline
   internal let interceptor: ClientInterceptor<Request, Response>

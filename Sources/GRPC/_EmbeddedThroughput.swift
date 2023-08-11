@@ -22,7 +22,10 @@ extension EmbeddedChannel {
   /// Configures an `EmbeddedChannel` for the `EmbeddedClientThroughput` benchmark.
   ///
   /// - Important: This is **not** part of the public API.
-  public func _configureForEmbeddedThroughputTest<Request: Message, Response: Message>(
+  public func _configureForEmbeddedThroughputTest<
+    Request: Message & Sendable,
+    Response: Message & Sendable
+  >(
     callType: GRPCCallType,
     logger: Logger,
     requestType: Request.Type = Request.self,

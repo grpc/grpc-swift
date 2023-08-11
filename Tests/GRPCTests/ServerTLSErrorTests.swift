@@ -117,7 +117,7 @@ class ServerTLSErrorTests: GRPCTestCase {
     self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(1))
 
-    if let nioSSLError = errorDelegate.errors.first as? NIOSSLError,
+    if let nioSSLError = errorDelegate.errors.withLockedValue({ $0.first as? NIOSSLError }),
        case .failedToLoadCertificate = nioSSLError {
       // Expected case.
     } else {

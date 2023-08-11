@@ -366,7 +366,7 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// if the `ConnectionManager` was configured to be `fastFailure` this will have
   /// one chance to connect - if not reconnections are managed here.
   internal func getHTTP2Multiplexer() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
-    func getHTTP2Multiplexer0() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
+    let getHTTP2Multiplexer0: @Sendable () -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = {
       switch self.callStartBehavior {
       case .waitsForConnectivity:
         return self.getHTTP2MultiplexerPatient()
@@ -459,7 +459,7 @@ internal final class ConnectionManager: @unchecked Sendable {
   }
 
   @usableFromInline
-  internal enum ShutdownMode {
+  internal enum ShutdownMode: Sendable {
     /// Closes the underlying channel without waiting for existing RPCs to complete.
     case forceful
     /// Allows running RPCs to run their course before closing the underlying channel. No new
@@ -606,17 +606,17 @@ internal final class ConnectionManager: @unchecked Sendable {
   ///
   /// If there is a connection, the callback will be invoked with `true` when the connection is
   /// closed. Otherwise the callback is invoked with `false`.
-  internal func onCurrentConnectionClose(_ onClose: @escaping (Bool) -> Void) {
+  internal func onCurrentConnectionClose(_ onClose: @escaping @Sendable (Bool) -> Void) {
     if self.eventLoop.inEventLoop {
-      self._onCurrentConnectionClose(onClose)
+      self._onCurrentConnectionClose { onClose($0) }
     } else {
       self.eventLoop.execute {
-        self._onCurrentConnectionClose(onClose)
+        self._onCurrentConnectionClose { onClose($0) }
       }
     }
   }
 
-  private func _onCurrentConnectionClose(_ onClose: @escaping (Bool) -> Void) {
+  private func _onCurrentConnectionClose(_ onClose: @escaping @Sendable (Bool) -> Void) {
     self.eventLoop.assertInEventLoop()
 
     switch self.state {

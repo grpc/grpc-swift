@@ -19,7 +19,7 @@ import NIOFoundationCompat
 import SwiftProtobuf
 
 public protocol MessageSerializer {
-  associatedtype Input
+  associatedtype Input: Sendable
 
   /// Serializes `input` into a `ByteBuffer` allocated using the provided `allocator`.
   ///
@@ -31,7 +31,7 @@ public protocol MessageSerializer {
 }
 
 public protocol MessageDeserializer {
-  associatedtype Output
+  associatedtype Output: Sendable
 
   /// Deserializes `byteBuffer` to produce a single `Output`.
   ///
@@ -42,7 +42,7 @@ public protocol MessageDeserializer {
 
 // MARK: Protobuf
 
-public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSerializer {
+public struct ProtobufSerializer<Message: SwiftProtobuf.Message & Sendable>: MessageSerializer {
   @inlinable
   public init() {}
 
@@ -65,7 +65,7 @@ public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSeriali
   }
 }
 
-public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDeserializer {
+public struct ProtobufDeserializer<Message: SwiftProtobuf.Message & Sendable>: MessageDeserializer {
   @inlinable
   public init() {}
 
@@ -129,7 +129,7 @@ public struct GRPCPayloadDeserializer<Message: GRPCPayload>: MessageDeserializer
 
 // MARK: - Any Serializer/Deserializer
 
-internal struct AnySerializer<Input>: MessageSerializer {
+internal struct AnySerializer<Input: Sendable>: MessageSerializer {
   private let _serialize: (Input, ByteBufferAllocator) throws -> ByteBuffer
 
   init<Serializer: MessageSerializer>(wrapping other: Serializer) where Serializer.Input == Input {
@@ -141,7 +141,7 @@ internal struct AnySerializer<Input>: MessageSerializer {
   }
 }
 
-internal struct AnyDeserializer<Output>: MessageDeserializer {
+internal struct AnyDeserializer<Output: Sendable>: MessageDeserializer {
   private let _deserialize: (ByteBuffer) throws -> Output
 
   init<Deserializer: MessageDeserializer>(

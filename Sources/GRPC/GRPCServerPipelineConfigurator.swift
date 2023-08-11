@@ -105,6 +105,8 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
     var streamConfiguration = NIOHTTP2Handler.StreamConfiguration()
     streamConfiguration.targetWindowSize = self.configuration.httpTargetWindowSize
 
+    let loopBoundSelf = channel.eventLoop.makeLoopBound(self)
+
     return .init(
       mode: .server,
       eventLoop: channel.eventLoop,
@@ -119,12 +121,15 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
         return String(Int(streamID))
       } ?? "<unknown>"
 
-      var logger = self.configuration.logger
+      var logger = loopBoundSelf.value.configuration.logger
       logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
 
       do {
         // TODO: provide user configuration for header normalization.
-        let handler = self.makeHTTP2ToRawGRPCHandler(normalizeHeaders: true, logger: logger)
+        let handler = loopBoundSelf.value.makeHTTP2ToRawGRPCHandler(
+          normalizeHeaders: true,
+          logger: logger
+        )
         try stream.pipeline.syncOperations.addHandler(handler)
         return stream.eventLoop.makeSucceededVoidFuture()
       } catch {

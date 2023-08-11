@@ -18,7 +18,7 @@ import NIOCore
 
 /// The echo provider that comes with the example does some string processing, we'll avoid some of
 /// that here so we're looking at the right things.
-public class MinimalEchoProvider: Echo_EchoProvider {
+public final class MinimalEchoProvider: Echo_EchoProvider {
   public let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
   public init(interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil) {

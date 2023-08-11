@@ -32,7 +32,7 @@ class EchoModel {
   }
 
   /// Call 'get' with the given word and call the `callback` with the result.
-  func getWord(_ text: String, _ callback: @escaping (Result<String, Error>) -> Void) {
+  func getWord(_ text: String, _ callback: @escaping @Sendable (Result<String, Error>) -> Void) {
     let get = self.client.get(.with { $0.text = text })
     get.response.whenComplete { result in
       switch result {
@@ -48,8 +48,8 @@ class EchoModel {
   /// the RPC has completed.
   func updateWords(
     _ words: [String],
-    onResponse: @escaping (String) -> Void,
-    onEnd: @escaping (GRPCStatus) -> Void
+    onResponse: @escaping @Sendable (String) -> Void,
+    onEnd: @escaping @Sendable (GRPCStatus) -> Void
   ) {
     let update = self.client.update { response in
       onResponse(response.text)

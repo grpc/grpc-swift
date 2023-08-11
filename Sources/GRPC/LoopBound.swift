@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, gRPC Authors All rights reserved.
+ * Copyright 2023, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import SwiftProtobuf
+import NIOCore
 
-/// An event that can occur on a client-streaming RPC. Provided to the event observer registered for that call.
-public enum StreamEvent<Message: Sendable>: Sendable {
-  case message(Message)
-  case end
-  //! FIXME: Also support errors in this type, to propagate them to the event handler.
+extension EventLoop {
+  @inlinable
+  func makeLoopBound<Value>(_ value: Value) -> NIOLoopBound<Value> {
+    return NIOLoopBound(value, eventLoop: self)
+  }
 }

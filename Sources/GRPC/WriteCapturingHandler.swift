@@ -19,9 +19,9 @@ import NIOCore
 /// all writes will be failed.
 ///
 /// This handler is intended for use with 'fake' response streams the 'FakeChannel'.
-internal final class WriteCapturingHandler<Request>: ChannelOutboundHandler {
+internal final class WriteCapturingHandler<Request: Sendable>: ChannelOutboundHandler {
   typealias OutboundIn = _GRPCClientRequestPart<Request>
-  typealias RequestHandler = (FakeRequestPart<Request>) -> Void
+  typealias RequestHandler = @Sendable (FakeRequestPart<Request>) -> Void
 
   private var state: State
   private enum State {

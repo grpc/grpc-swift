@@ -48,7 +48,10 @@ import NIOCore
 /// require any extra attention. However, if work is done on a `DispatchQueue` or _other_
 /// `EventLoop` then implementers should ensure that they use `context` from the correct
 /// `EventLoop`.
-@preconcurrency open class ClientInterceptor<Request, Response>: @unchecked Sendable {
+@preconcurrency open class ClientInterceptor<
+  Request: Sendable,
+  Response: Sendable
+>: @unchecked Sendable {
   public init() {}
 
   /// Called when the interceptor has received a response part to handle.

@@ -16,6 +16,7 @@
 import EchoImplementation
 import EchoModel
 import GRPC
+import NIOConcurrencyHelpers
 import NIOCore
 import XCTest
 
@@ -389,9 +390,9 @@ extension FakeResponseStreamExampleTests {
   }
 
   func testWeGetAllRequestParts() {
-    var requestParts: [FakeRequestPart<Echo_EchoRequest>] = []
+    let requestParts = NIOLockedValueBox([FakeRequestPart<Echo_EchoRequest>]())
     let updateResponseStream = self.client.makeUpdateResponseStream { request in
-      requestParts.append(request)
+      requestParts.withLockedValue { $0.append(request) }
     }
 
     let update = self.client.update(callOptions: CallOptions(customMetadata: ["foo": "bar"])) {
@@ -406,7 +407,7 @@ extension FakeResponseStreamExampleTests {
     update.sendEnd(promise: nil)
 
     // Check the expected request parts.
-    XCTAssertEqual(requestParts, [
+    XCTAssertEqual(requestParts.withLockedValue { $0 }, [
       .metadata(["foo": "bar"]),
       .message(.with { $0.text = "foo" }),
       .end,

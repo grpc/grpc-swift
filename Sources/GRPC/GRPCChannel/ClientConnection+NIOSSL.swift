@@ -89,7 +89,10 @@ extension ClientConnection.Builder.Secure {
   /// - Note: May only be used with the 'NIOSSL' TLS backend.
   @discardableResult
   public func withTLSCustomVerificationCallback(
-    _ callback: @escaping NIOSSLCustomVerificationCallback
+    _ callback: @escaping @Sendable (
+      [NIOSSLCertificate],
+      EventLoopPromise<NIOSSLVerificationResult>
+    ) -> Void
   ) -> Self {
     self.tls.updateNIOCustomVerificationCallback(to: callback)
     return self
