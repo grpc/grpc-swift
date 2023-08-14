@@ -303,7 +303,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     // If we express no event loop preference then we should not get the loaded loop.
     let indifferentLoopRPCs = (1 ... 10).map {
-      _ in echo.get(.with { $0.text = "" })
+      _ in self.echo.get(.with { $0.text = "" })
     }
 
     XCTAssert(indifferentLoopRPCs.map { $0.eventLoop }.allSatisfy { $0 !== loop })
