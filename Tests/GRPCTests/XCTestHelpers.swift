@@ -133,7 +133,7 @@ struct Matcher<Value> {
   }
 
   /// Matches if the value is `nil`.
-  static func `nil`<V>() -> Matcher<V?> {
+  static func none<V>() -> Matcher<V?> {
     return .init { actual in
       actual == nil
         ? .match
@@ -142,7 +142,7 @@ struct Matcher<Value> {
   }
 
   /// Matches if the value is not `nil`.
-  static func notNil<V>(_ matcher: Matcher<V>? = nil) -> Matcher<V?> {
+  static func some<V>(_ matcher: Matcher<V>? = nil) -> Matcher<V?> {
     return .init { actual in
       if let actual = actual {
         return matcher?.evaluate(actual) ?? .match

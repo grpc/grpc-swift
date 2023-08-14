@@ -149,7 +149,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
 
     assertThat(self.recorder.messages.first, .is(buffer))
     assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -199,7 +199,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testThrowingSerializer() {
@@ -219,7 +219,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveEnd()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testUserFunctionReturnsFailedFuture() {
@@ -234,7 +234,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.status?.message, .is(":("))
   }
 
@@ -242,9 +242,9 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     let handler = self.makeHandler(function: self.neverCalled(_:context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleHeaders() {
@@ -255,7 +255,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleMessages() {
@@ -271,17 +271,17 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testFinishBeforeStarting() {
     let handler = self.makeHandler(function: self.neverCalled(_:context:))
 
     handler.finish()
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .is(.nil()))
-    assertThat(self.recorder.trailers, .is(.nil()))
+    assertThat(self.recorder.status, .is(.none()))
+    assertThat(self.recorder.trailers, .is(.none()))
   }
 
   func testFinishAfterHeaders() {
@@ -292,7 +292,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -304,7 +304,7 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 }
@@ -376,7 +376,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
     assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
     assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -430,7 +430,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testThrowingSerializer() {
@@ -450,7 +450,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveEnd()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testObserverFactoryReturnsFailedFuture() {
@@ -460,7 +460,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.status?.message, .is(":("))
   }
 
@@ -485,7 +485,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveEnd()
 
     assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3 4 5")))
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
   }
 
   func testDelayedObserverFactoryAllMessagesBeforeSucceeding() {
@@ -506,16 +506,16 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     promise.succeed(())
 
     assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
   }
 
   func testReceiveMessageBeforeHeaders() {
     let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleHeaders() {
@@ -526,17 +526,17 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testFinishBeforeStarting() {
     let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
 
     handler.finish()
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .is(.nil()))
-    assertThat(self.recorder.trailers, .is(.nil()))
+    assertThat(self.recorder.status, .is(.none()))
+    assertThat(self.recorder.trailers, .is(.none()))
   }
 
   func testFinishAfterHeaders() {
@@ -547,7 +547,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -559,7 +559,7 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 }
@@ -620,7 +620,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       .is([ByteBuffer(string: "a"), ByteBuffer(string: "b")])
     )
     assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false]))
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -670,7 +670,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testThrowingSerializer() {
@@ -690,7 +690,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveEnd()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testUserFunctionReturnsFailedFuture() {
@@ -705,7 +705,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.status?.message, .is(":("))
   }
 
@@ -713,9 +713,9 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     let handler = self.makeHandler(userFunction: self.neverCalled(_:context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleHeaders() {
@@ -726,7 +726,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleMessages() {
@@ -742,17 +742,17 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testFinishBeforeStarting() {
     let handler = self.makeHandler(userFunction: self.neverCalled(_:context:))
 
     handler.finish()
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .is(.nil()))
-    assertThat(self.recorder.trailers, .is(.nil()))
+    assertThat(self.recorder.status, .is(.none()))
+    assertThat(self.recorder.trailers, .is(.none()))
   }
 
   func testFinishAfterHeaders() {
@@ -763,7 +763,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -775,7 +775,7 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 }
@@ -849,7 +849,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
     )
     assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false, false]))
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -909,7 +909,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testThrowingSerializer() {
@@ -929,7 +929,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveEnd()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testObserverFactoryReturnsFailedFuture() {
@@ -939,7 +939,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.status?.message, .is(":("))
   }
 
@@ -964,7 +964,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       self.recorder.messages,
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2")])
     )
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
   }
 
   func testDelayedObserverFactoryAllMessagesBeforeSucceeding() {
@@ -987,16 +987,16 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
       self.recorder.messages,
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2")])
     )
-    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.status, .some(.hasCode(.ok)))
   }
 
   func testReceiveMessageBeforeHeaders() {
     let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleHeaders() {
@@ -1007,17 +1007,17 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.status, .some(.hasCode(.internalError)))
   }
 
   func testFinishBeforeStarting() {
     let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
 
     handler.finish()
-    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.none()))
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .is(.nil()))
-    assertThat(self.recorder.trailers, .is(.nil()))
+    assertThat(self.recorder.status, .is(.none()))
+    assertThat(self.recorder.trailers, .is(.none()))
   }
 
   func testFinishAfterHeaders() {
@@ -1028,7 +1028,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages, .isEmpty())
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 
@@ -1040,7 +1040,7 @@ class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
     handler.finish()
 
     assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "hello")))
-    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status, .some(.hasCode(.unavailable)))
     assertThat(self.recorder.trailers, .is([:]))
   }
 }

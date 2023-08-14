@@ -60,7 +60,7 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
       onRequestPart: { requestParts.append($0) },
       onResponsePart: { part, promise in
         responseParts.append(part)
-        assertThat(promise, .is(.nil()))
+        assertThat(promise, .is(.none()))
       }
     )
 
@@ -80,7 +80,7 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
     assertThat(responseParts, .hasCount(3))
     assertThat(responseParts[0].metadata, .is([:]))
     assertThat(responseParts[1].message, .is("bar"))
-    assertThat(responseParts[2].end, .is(.notNil()))
+    assertThat(responseParts[2].end, .is(.some()))
 
     // Pipelines should now be closed. We can't send or receive.
     let p = self.embeddedEventLoop.makePromise(of: Void.self)
@@ -110,15 +110,15 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
 
     // Check the request parts are there.
     assertThat(recorder.requestParts, .hasCount(3))
-    assertThat(recorder.requestParts[0].metadata, .is(.notNil()))
-    assertThat(recorder.requestParts[1].message, .is(.notNil()))
+    assertThat(recorder.requestParts[0].metadata, .is(.some()))
+    assertThat(recorder.requestParts[1].message, .is(.some()))
     assertThat(recorder.requestParts[2].isEnd, .is(true))
 
     // Check the response parts are there.
     assertThat(recorder.responseParts, .hasCount(3))
-    assertThat(recorder.responseParts[0].metadata, .is(.notNil()))
-    assertThat(recorder.responseParts[1].message, .is(.notNil()))
-    assertThat(recorder.responseParts[2].end, .is(.notNil()))
+    assertThat(recorder.responseParts[0].metadata, .is(.some()))
+    assertThat(recorder.responseParts[1].message, .is(.some()))
+    assertThat(recorder.responseParts[2].end, .is(.some()))
   }
 }
 

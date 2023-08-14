@@ -68,7 +68,7 @@ final class AsyncPingPongRequestMaker: AsyncRequestMaker, @unchecked Sendable {
     while !self.stopRequested.load(ordering: .relaxed),
           self.messagesPerStream == 0 || messagesSent < self.messagesPerStream {
       try await streamingCall.requestStream.send(self.requestMessage)
-      let _ = try await responseStream.next()
+      _ = try await responseStream.next()
       let endTime = grpcTimeNow()
       self.stats.add(latency: endTime - startTime)
       messagesSent += 1

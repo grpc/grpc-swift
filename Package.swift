@@ -16,7 +16,7 @@
  */
 import PackageDescription
 // swiftformat puts the next import before the tools version.
-// swiftformat:disable:next sortedImports
+// swiftformat:disable:next sortImports
 import class Foundation.ProcessInfo
 
 let grpcPackageName = "grpc-swift"

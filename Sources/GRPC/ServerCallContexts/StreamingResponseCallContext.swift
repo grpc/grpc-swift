@@ -237,7 +237,9 @@ internal final class _StreamingResponseCallContext<Request, Response>:
 /// Concrete implementation of `StreamingResponseCallContext` used for testing.
 ///
 /// Simply records all sent messages.
-open class StreamingResponseCallContextTestStub<ResponsePayload>: StreamingResponseCallContext<ResponsePayload> {
+open class StreamingResponseCallContextTestStub<ResponsePayload>: StreamingResponseCallContext<
+  ResponsePayload
+> {
   open var recordedResponses: [ResponsePayload] = []
 
   override open func sendResponse(

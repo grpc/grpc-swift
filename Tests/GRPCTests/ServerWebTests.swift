@@ -157,7 +157,7 @@ extension ServerWebTests {
     var expectedData = Data()
     var index = 0
     message.split(separator: " ").forEach { component in
-      expectedData.append(gRPCEncodedEchoRequest("Swift echo expand (\(index)): \(component)"))
+      expectedData.append(self.gRPCEncodedEchoRequest("Swift echo expand (\(index)): \(component)"))
       index += 1
     }
     expectedData.append(self.gRPCWebTrailers())

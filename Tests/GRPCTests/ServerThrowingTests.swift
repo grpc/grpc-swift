@@ -150,7 +150,7 @@ class ServerThrowingTests: EchoTestCaseBase {
       }
     }
     XCTAssertThrowsError(try call.response.wait()) {
-      XCTAssertEqual(expectedError, $0 as? GRPCStatus)
+      XCTAssertEqual(self.expectedError, $0 as? GRPCStatus)
     }
   }
 
@@ -170,7 +170,7 @@ class ServerThrowingTests: EchoTestCaseBase {
       // With `ErrorReturningEchoProvider` we actually _return_ a response, which means that the `response` future
       // will _not_ fail, so in that case this test doesn't apply.
       XCTAssertThrowsError(try call.response.wait()) {
-        XCTAssertEqual(expectedError, $0 as? GRPCStatus)
+        XCTAssertEqual(self.expectedError, $0 as? GRPCStatus)
       }
     }
   }

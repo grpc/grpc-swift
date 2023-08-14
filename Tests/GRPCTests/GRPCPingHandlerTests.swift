@@ -387,7 +387,7 @@ extension PingHandler.Action: Equatable {
 extension GRPCPingHandlerTests {
   func testSingleAckIsEmittedOnPing() throws {
     let client = EmbeddedChannel()
-    let _ = try client.configureHTTP2Pipeline(mode: .client) { _ in
+    _ = try client.configureHTTP2Pipeline(mode: .client) { _ in
       fatalError("Unexpected inbound stream")
     }.wait()
 
