@@ -47,7 +47,7 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     )
     assertThat(try channel.writeInbound(HTTPServerRequestPart.head(head)), .doesNotThrow())
     let headersPayload = try channel.readInbound(as: HTTP2Frame.FramePayload.self)
-    assertThat(headersPayload, .notNil(.headers(.contains(":path", [path]))))
+    assertThat(headersPayload, .some(.headers(.contains(":path", [path]))))
   }
 
   private func receiveBytes(
@@ -59,14 +59,14 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
 
     if let expectedBytes = expectedBytes {
       let dataPayload = try channel.readInbound(as: HTTP2Frame.FramePayload.self)
-      assertThat(dataPayload, .notNil(.data(buffer: ByteBuffer(bytes: expectedBytes))))
+      assertThat(dataPayload, .some(.data(buffer: ByteBuffer(bytes: expectedBytes))))
     }
   }
 
   private func receiveEnd(on channel: EmbeddedChannel) throws {
     assertThat(try channel.writeInbound(HTTPServerRequestPart.end(nil)), .doesNotThrow())
     let dataEndPayload = try channel.readInbound(as: HTTP2Frame.FramePayload.self)
-    assertThat(dataEndPayload, .notNil(.data(buffer: ByteBuffer(), endStream: true)))
+    assertThat(dataEndPayload, .some(.data(buffer: ByteBuffer(), endStream: true)))
   }
 
   private func sendResponseHeaders(on channel: EmbeddedChannel) throws {
@@ -74,7 +74,7 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     let headerPayload: HTTP2Frame.FramePayload = .headers(.init(headers: responseHeaders))
     assertThat(try channel.writeOutbound(headerPayload), .doesNotThrow())
     let responseHead = try channel.readOutbound(as: HTTPServerResponsePart.self)
-    assertThat(responseHead, .notNil(.head(status: .ok)))
+    assertThat(responseHead, .some(.head(status: .ok)))
   }
 
   private func sendTrailersOnlyResponse(on channel: EmbeddedChannel) throws {
@@ -83,9 +83,9 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
 
     assertThat(try channel.writeOutbound(headerPayload), .doesNotThrow())
     let responseHead = try channel.readOutbound(as: HTTPServerResponsePart.self)
-    assertThat(responseHead, .notNil(.head(status: .ok)))
+    assertThat(responseHead, .some(.head(status: .ok)))
     let end = try channel.readOutbound(as: HTTPServerResponsePart.self)
-    assertThat(end, .notNil(.end()))
+    assertThat(end, .some(.end()))
   }
 
   private func sendBytes(
@@ -99,9 +99,9 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
 
     if let expectedBytes = expectedBytes {
       let expectedBuffer = ByteBuffer(bytes: expectedBytes)
-      assertThat(try channel.readOutbound(), .notNil(.body(.is(expectedBuffer))))
+      assertThat(try channel.readOutbound(), .some(.body(.is(expectedBuffer))))
     } else {
-      assertThat(try channel.readOutbound(as: HTTPServerResponsePart.self), .doesNotThrow(.nil()))
+      assertThat(try channel.readOutbound(as: HTTPServerResponsePart.self), .doesNotThrow(.none()))
     }
   }
 
@@ -115,10 +115,10 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     assertThat(try channel.writeOutbound(headersPayload), .doesNotThrow())
 
     if let expectedBytes = expectedBytes {
-      assertThat(try channel.readOutbound(), .notNil(.body(.is(expectedBytes))))
+      assertThat(try channel.readOutbound(), .some(.body(.is(expectedBytes))))
     }
 
-    assertThat(try channel.readOutbound(), .notNil(.end()))
+    assertThat(try channel.readOutbound(), .some(.end()))
   }
 
   func testWebBinaryHappyPath() throws {

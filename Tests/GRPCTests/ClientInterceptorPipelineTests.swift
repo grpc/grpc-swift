@@ -159,7 +159,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
         assertThat(cancelled, .is(false))
         cancelled = true
         // We don't expect a promise: this cancellation is fired by the pipeline.
-        assertThat(promise, .is(.nil()))
+        assertThat(promise, .is(.none()))
       },
       onRequestPart: { _, _ in
         XCTFail("Unexpected request part")
@@ -202,14 +202,14 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
         assertThat(cancellations, .is(0))
         cancellations += 1
         // We don't expect a promise: this cancellation is fired by the pipeline.
-        assertThat(promise, .is(.nil()))
+        assertThat(promise, .is(.none()))
       },
       onRequestPart: { _, _ in
         XCTFail("Unexpected request part")
       },
       onResponsePart: { part in
         // We only expect the end.
-        assertThat(part.end, .is(.notNil()))
+        assertThat(part.end, .is(.some()))
       }
     )
 

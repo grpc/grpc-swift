@@ -98,9 +98,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Expect responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(1))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
 
     // We expect 2 request parts: the provider responds before it sees end, that's fine.
     assertThat(recordingInterceptor.requestParts, .hasCount(2))
@@ -123,9 +123,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(1))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 
   func testClientStreamingFromInterceptor() throws {
@@ -140,9 +140,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(1))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 
   func testServerStreamingFromInterceptor() throws {
@@ -155,9 +155,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(3))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 
   func testBidirectionalStreamingFromInterceptor() throws {
@@ -172,9 +172,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(3))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 }
 

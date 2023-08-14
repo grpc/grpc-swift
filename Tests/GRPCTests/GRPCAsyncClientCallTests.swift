@@ -160,12 +160,12 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     var responseStreamIterator = update.responseStream.makeAsyncIterator()
     for word in ["boyle", "jeffers", "holt"] {
       try await update.requestStream.send(.with { $0.text = word })
-      await assertThat(try await responseStreamIterator.next(), .is(.notNil()))
+      await assertThat(try await responseStreamIterator.next(), .is(.some()))
     }
 
     update.requestStream.finish()
 
-    await assertThat(try await responseStreamIterator.next(), .is(.nil()))
+    await assertThat(try await responseStreamIterator.next(), .is(.none()))
 
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))

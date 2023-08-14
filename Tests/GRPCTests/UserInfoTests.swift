@@ -26,10 +26,10 @@ class UserInfoTests: GRPCTestCase {
     assertThat(userInfo[BarKey.self], .is(42))
 
     userInfo[FooKey.self] = nil
-    assertThat(userInfo[FooKey.self], .is(.nil()))
+    assertThat(userInfo[FooKey.self], .is(.none()))
 
     userInfo[BarKey.self] = nil
-    assertThat(userInfo[BarKey.self], .is(.nil()))
+    assertThat(userInfo[BarKey.self], .is(.none()))
   }
 
   func testWithExtensions() {
@@ -42,10 +42,10 @@ class UserInfoTests: GRPCTestCase {
     assertThat(userInfo.bar, .is(42))
 
     userInfo.foo = nil
-    assertThat(userInfo.foo, .is(.nil()))
+    assertThat(userInfo.foo, .is(.none()))
 
     userInfo.bar = nil
-    assertThat(userInfo.bar, .is(.nil()))
+    assertThat(userInfo.bar, .is(.none()))
   }
 
   func testDescription() {
