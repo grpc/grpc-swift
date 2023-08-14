@@ -41,3 +41,20 @@
 
 # Put ACLs on declarations within an extension rather than the extension itself.
 --extensionacl on-declarations
+
+# Don't remove internal ACLs
+--disable redundantInternal
+
+# Don't remove redundant parenstheses, because no all of them are redundant.
+--disable redundantParens
+
+# Don't remove static Self
+--disable redundantStaticSelf
+
+# Hoisting try and await causes a bunch of issues (and churn) in 0.52.0. Disable
+# them for the time being.
+--disable hoistTry
+--disable hoistAwait
+
+# Disabled as enabling causes a lot of churn.
+--disable wrapSingleLineComments
