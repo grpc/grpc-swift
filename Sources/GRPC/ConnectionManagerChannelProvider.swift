@@ -69,7 +69,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider, Sendab
   @usableFromInline
   internal var errorDelegate: Optional<ClientErrorDelegate>
   @usableFromInline
-  internal var debugChannelInitializer: Optional<@Sendable (Channel) -> EventLoopFuture <Void>>
+  internal var debugChannelInitializer: Optional< @Sendable (Channel) -> EventLoopFuture <Void>>
 
   @inlinable
   internal init(

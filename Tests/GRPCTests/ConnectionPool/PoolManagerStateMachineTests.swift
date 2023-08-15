@@ -346,7 +346,7 @@ private final class EmbeddedEventLoopGroup: EventLoopGroup, Sendable {
     return EventLoopIterator(self.loops)
   }
 
-  internal func shutdownGracefully(
+  private func _shutdownGracefully(
     queue: DispatchQueue,
     _ callback: @escaping @Sendable (Error?) -> Void
   ) {
@@ -364,4 +364,20 @@ private final class EmbeddedEventLoopGroup: EventLoopGroup, Sendable {
       callback(lockedError.withLockedValue { $0 })
     }
   }
+
+  #if swift(>=5.7)
+  internal func shutdownGracefully(
+    queue: DispatchQueue,
+    _ callback: @escaping @Sendable (Error?) -> Void
+  ) {
+    self._shutdownGracefully(queue: queue) { callback($0) }
+  }
+  #else
+  internal func shutdownGracefully(
+    queue: DispatchQueue,
+    _ callback: @escaping (Error?) -> Void
+  ) {
+    self._shutdownGracefully(queue: queue) { callback($0) }
+  }
+  #endif
 }
