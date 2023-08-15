@@ -346,19 +346,22 @@ private final class EmbeddedEventLoopGroup: EventLoopGroup, Sendable {
     return EventLoopIterator(self.loops)
   }
 
-  internal func shutdownGracefully(queue: DispatchQueue, _ callback: @escaping (Error?) -> Void) {
-    var shutdownError: Error?
+  internal func shutdownGracefully(
+    queue: DispatchQueue,
+    _ callback: @escaping @Sendable (Error?) -> Void
+  ) {
+    let lockedError = NIOLockedValueBox<Error?>(nil)
 
     for loop in self.loops {
       loop.shutdownGracefully(queue: queue) { error in
         if let error = error {
-          shutdownError = error
+          lockedError.withLockedValue { $0 = error }
         }
       }
     }
 
     queue.sync {
-      callback(shutdownError)
+      callback(lockedError.withLockedValue { $0 })
     }
   }
 }

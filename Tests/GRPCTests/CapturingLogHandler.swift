@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if os(Linux)
+@preconcurrency import struct Foundation.Date
+#else
 import struct Foundation.Date
+#endif
 import class Foundation.DateFormatter
 import Logging
 import NIOConcurrencyHelpers
