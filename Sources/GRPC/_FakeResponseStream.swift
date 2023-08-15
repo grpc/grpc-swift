@@ -207,7 +207,7 @@ public class _FakeResponseStream<Request: Sendable, Response: Sendable>: @unchec
   }
 
   private func writeOrBuffer(_ event: StreamEvent) {
-    let write = self.state.withLockedValue {
+    let write: Bool = self.state.withLockedValue {
       switch $0.activeState {
       case .inactive:
         $0.responseBuffer.append(event)
@@ -256,7 +256,7 @@ public class _FakeResponseStream<Request: Sendable, Response: Sendable>: @unchec
 public final class FakeUnaryResponse<
   Request: Sendable,
   Response: Sendable
->: _FakeResponseStream<Request, Response>, Sendable {
+>: _FakeResponseStream<Request, Response> {
   override public init(
     requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void = { _ in
     }
@@ -296,6 +296,12 @@ public final class FakeUnaryResponse<
   }
 }
 
+#if swift(>=5.7)
+// 5.6 produces errors because the Sendable conformance is "redundant" because it inherits
+// from the base class.
+extension FakeUnaryResponse: Sendable {}
+#endif
+
 // MARK: - Streaming Response
 
 /// A fake streaming response to be used with a generated test client.
@@ -325,7 +331,7 @@ public final class FakeUnaryResponse<
 public final class FakeStreamingResponse<
   Request: Sendable,
   Response: Sendable
->: _FakeResponseStream<Request, Response>, Sendable {
+>: _FakeResponseStream<Request, Response> {
   override public init(
     requestHandler: @escaping @Sendable (FakeRequestPart<Request>) -> Void = { _ in
     }
@@ -378,3 +384,9 @@ public final class FakeStreamingResponse<
     try self._sendError(error)
   }
 }
+
+#if swift(>=5.7)
+// 5.6 produces errors because the Sendable conformance is "redundant" because it inherits
+// from the base class.
+extension FakeStreamingResponse: Sendable {}
+#endif

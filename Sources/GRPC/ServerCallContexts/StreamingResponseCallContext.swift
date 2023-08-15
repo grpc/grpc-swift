@@ -147,7 +147,7 @@ open class StreamingResponseCallContext<ResponsePayload: Sendable>: ServerCallCo
 /// A concrete implementation of `StreamingResponseCallContext` used internally.
 @usableFromInline
 internal final class _StreamingResponseCallContext<Request: Sendable, Response: Sendable>:
-  StreamingResponseCallContext<Response>, @unchecked Sendable {
+  StreamingResponseCallContext<Response> {
   @usableFromInline
   internal let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
 
@@ -233,6 +233,11 @@ internal final class _StreamingResponseCallContext<Request: Sendable, Response: 
     }
   }
 }
+
+#if swift(>=5.7)
+// 5.6 errors because the base class is marked as Sendable.
+extension _StreamingResponseCallContext: @unchecked Sendable {}
+#endif
 
 /// Concrete implementation of `StreamingResponseCallContext` used for testing.
 ///
