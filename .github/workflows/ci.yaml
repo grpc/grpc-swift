@@ -29,9 +29,8 @@ jobs:
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             swift-test-flags: "-Xswiftc -strict-concurrency=complete" # "--sanitize=thread"
           - image: swift:5.8-jammy
-            swift-build-flags: "-Xswiftc -strict-concurrency=complete"
             # No TSAN because of: https://github.com/apple/swift/issues/59068
-            swift-test-flags: "-Xswiftc -strict-concurrency=complete" # "--sanitize=thread"
+            # swift-test-flags: "--sanitize=thread"
           - image: swift:5.7-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
