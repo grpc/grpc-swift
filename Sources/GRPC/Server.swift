@@ -54,6 +54,10 @@ import Network
 ///    `GRPCServerPipelineConfigurator`. In the case of HTTP/2:
 ///
 ///                           ┌─────────────────────────────────┐
+///                           │      HTTP2StreamMultiplexer     │
+///                           └─▲─────────────────────────────┬─┘
+///                   HTTP2Frame│                             │HTTP2Frame
+///                           ┌─┴─────────────────────────────▼─┐
 ///                           │           HTTP2Handler          │
 ///                           └─▲─────────────────────────────┬─┘
 ///                   ByteBuffer│                             │ByteBuffer
@@ -63,7 +67,7 @@ import Network
 ///                   ByteBuffer│                             │ByteBuffer
 ///                             │                             ▼
 ///
-///    The `NIOHTTP2Handler.StreamMultiplexer` provides one `Channel` for each HTTP/2 stream (and thus each
+///    The `HTTP2StreamMultiplexer` provides one `Channel` for each HTTP/2 stream (and thus each
 ///    RPC).
 ///
 /// 3. The frames for each stream channel are routed by the `HTTP2ToRawGRPCServerCodec` handler to

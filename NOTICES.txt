@@ -25,11 +25,3 @@ framework: 'test_01_allocation_counts.sh', 'run-nio-alloc-counter-tests.sh' and
     * https://github.com/apple/swift-nio/blob/main/LICENSE.txt
   * HOMEPAGE:
     * https://github.com/apple/swift-nio
-
-This product contains a simplified derivation of SwiftNIO HTTP/2's
-'HTTP2FrameEncoder' for testing purposes.
-
-  * LICENSE (Apache License 2.0):
-    * https://github.com/apple/swift-nio-http2/blob/main/LICENSE.txt
-  * HOMEPAGE:
-    * https://github.com/apple/swift-nio-http2

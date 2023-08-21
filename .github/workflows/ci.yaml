@@ -95,7 +95,6 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 130000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 137000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 137000
-
     name: Performance Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
