@@ -35,71 +35,22 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   private var scheduledPing: RepeatedTask?
 
   /// The mode we're operating in.
-  ///
-  /// This is a `var` to allow the client configuration state to be updated.
-  private var mode: Mode
+  private let mode: Mode
 
   private var context: ChannelHandlerContext?
-
-  /// Keeps track of the client configuration state.
-  /// We need two levels of configuration to break the dependency cycle with the stream multiplexer.
-  internal enum ClientConfigurationState {
-    case partial(ConnectionManager)
-    case complete(ConnectionManager, NIOHTTP2Handler.StreamMultiplexer)
-    case deinitialized
-
-    mutating func setMultiplexer(_ multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
-      switch self {
-      case let .partial(connectionManager):
-        self = .complete(connectionManager, multiplexer)
-      case .complete:
-        preconditionFailure("Setting the multiplexer twice is not supported.")
-      case .deinitialized:
-        preconditionFailure(
-          "Setting the multiplexer after removing from a channel is not supported."
-        )
-      }
-    }
-  }
 
   /// The mode of operation: the client tracks additional connection state in the connection
   /// manager.
   internal enum Mode {
-    case client(ClientConfigurationState)
+    case client(ConnectionManager, HTTP2StreamMultiplexer)
     case server
-
-    mutating func setMultiplexer(_ multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
-      switch self {
-      case var .client(clientConfigurationState):
-        clientConfigurationState.setMultiplexer(multiplexer)
-        self = .client(clientConfigurationState)
-      case .server:
-        preconditionFailure("Setting the multiplexer in server mode is not supported.")
-      }
-    }
 
     var connectionManager: ConnectionManager? {
       switch self {
-      case let .client(configurationState):
-        switch configurationState {
-        case let .complete(connectionManager, _):
-          return connectionManager
-        case let .partial(connectionManager):
-          return connectionManager
-        case .deinitialized:
-          return nil
-        }
+      case let .client(manager, _):
+        return manager
       case .server:
         return nil
-      }
-    }
-
-    mutating func deinitialize() {
-      switch self {
-      case .client:
-        self = .client(.deinitialized)
-      case .server:
-        break // nothing to drop
       }
     }
   }
@@ -109,11 +60,12 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
   init(
     connectionManager: ConnectionManager,
+    multiplexer: HTTP2StreamMultiplexer,
     idleTimeout: TimeAmount,
     keepalive configuration: ClientConnectionKeepalive,
     logger: Logger
   ) {
-    self.mode = .client(.partial(connectionManager))
+    self.mode = .client(connectionManager, multiplexer)
     self.idleTimeout = idleTimeout
     self.stateMachine = .init(role: .client, logger: logger)
     self.pingHandler = PingHandler(
@@ -144,10 +96,6 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       minimumReceivedPingIntervalWithoutData: configuration.minimumReceivedPingIntervalWithoutData,
       maximumPingStrikes: configuration.maximumPingStrikes
     )
-  }
-
-  internal func setMultiplexer(_ multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
-    self.mode.setMultiplexer(multiplexer)
   }
 
   private func sendGoAway(lastStreamID streamID: HTTP2StreamID) {
@@ -291,11 +239,20 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
   func handlerRemoved(context: ChannelHandlerContext) {
     self.context = nil
-    self.mode.deinitialize()
   }
 
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
-    if event is ChannelShouldQuiesceEvent {
+    if let created = event as? NIOHTTP2StreamCreatedEvent {
+      self.perform(operations: self.stateMachine.streamCreated(withID: created.streamID))
+      self.handlePingAction(self.pingHandler.streamCreated())
+      self.mode.connectionManager?.streamOpened()
+      context.fireUserInboundEventTriggered(event)
+    } else if let closed = event as? StreamClosedEvent {
+      self.perform(operations: self.stateMachine.streamClosed(withID: closed.streamID))
+      self.handlePingAction(self.pingHandler.streamClosed())
+      self.mode.connectionManager?.streamClosed()
+      context.fireUserInboundEventTriggered(event)
+    } else if event is ChannelShouldQuiesceEvent {
       self.perform(operations: self.stateMachine.initiateGracefulShutdown())
       // Swallow this event.
     } else if case let .handshakeCompleted(negotiatedProtocol) = event as? TLSUserEvent {
@@ -324,15 +281,8 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     // No state machine action here.
     switch self.mode {
-    case let .client(configurationState):
-      switch configurationState {
-      case let .complete(connectionManager, multiplexer):
-        connectionManager.channelActive(channel: context.channel, multiplexer: multiplexer)
-      case .partial:
-        preconditionFailure("not yet initialised")
-      case .deinitialized:
-        preconditionFailure("removed from channel")
-      }
+    case let .client(connectionManager, multiplexer):
+      connectionManager.channelActive(channel: context.channel, multiplexer: multiplexer)
     case .server:
       ()
     }
@@ -368,20 +318,6 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     }
 
     context.fireChannelRead(data)
-  }
-}
-
-extension GRPCIdleHandler: NIOHTTP2StreamDelegate {
-  func streamCreated(_ id: NIOHTTP2.HTTP2StreamID, channel: NIOCore.Channel) {
-    self.perform(operations: self.stateMachine.streamCreated(withID: id))
-    self.handlePingAction(self.pingHandler.streamCreated())
-    self.mode.connectionManager?.streamOpened()
-  }
-
-  func streamClosed(_ id: NIOHTTP2.HTTP2StreamID, channel: NIOCore.Channel) {
-    self.perform(operations: self.stateMachine.streamClosed(withID: id))
-    self.handlePingAction(self.pingHandler.streamClosed())
-    self.mode.connectionManager?.streamClosed()
   }
 }
 

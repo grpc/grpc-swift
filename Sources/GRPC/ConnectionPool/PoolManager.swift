@@ -278,7 +278,7 @@ internal final class PoolManager {
     preferredEventLoop: EventLoop?,
     deadline: NIODeadline,
     logger: GRPCLogger,
-    streamInitializer initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+    streamInitializer initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> PooledStreamChannel {
     let preferredEventLoopID = preferredEventLoop.map { EventLoopID($0) }
     let reservedPool = self.lock.withLock {

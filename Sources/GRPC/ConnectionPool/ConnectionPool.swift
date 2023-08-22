@@ -215,7 +215,7 @@ internal final class ConnectionPool {
     deadline: NIODeadline,
     promise: EventLoopPromise<Channel>,
     logger: GRPCLogger,
-    initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+    initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) {
     if self.eventLoop.inEventLoop {
       self._makeStream(
@@ -241,7 +241,7 @@ internal final class ConnectionPool {
   internal func makeStream(
     deadline: NIODeadline,
     logger: GRPCLogger,
-    initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+    initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> EventLoopFuture<Channel> {
     let promise = self.eventLoop.makePromise(of: Channel.self)
     self.makeStream(deadline: deadline, promise: promise, logger: logger, initializer: initializer)
@@ -277,7 +277,7 @@ internal final class ConnectionPool {
     deadline: NIODeadline,
     promise: EventLoopPromise<Channel>,
     logger: GRPCLogger,
-    initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+    initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) {
     self.eventLoop.assertInEventLoop()
 
@@ -310,7 +310,7 @@ internal final class ConnectionPool {
   @inlinable
   internal func _tryMakeStream(
     promise: EventLoopPromise<Channel>,
-    initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+    initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> Bool {
     // We shouldn't jump the queue.
     guard self.waiters.isEmpty else {
@@ -344,7 +344,7 @@ internal final class ConnectionPool {
     deadline: NIODeadline,
     promise: EventLoopPromise<Channel>,
     logger: GRPCLogger,
-    initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
+    initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) {
     // Don't overwhelm the pool with too many waiters.
     guard self.waiters.count < self.maxWaiters else {
@@ -479,10 +479,10 @@ internal final class ConnectionPool {
 
   /// Reserves a stream from the connection with the most available streams, if one exists.
   ///
-  /// - Returns: The `NIOHTTP2Handler.StreamMultiplexer` from the connection the stream was reserved from,
+  /// - Returns: The `HTTP2StreamMultiplexer` from the connection the stream was reserved from,
   ///     or `nil` if no stream could be reserved.
   @usableFromInline
-  internal func _reserveStreamFromMostAvailableConnection() -> NIOHTTP2Handler.StreamMultiplexer? {
+  internal func _reserveStreamFromMostAvailableConnection() -> HTTP2StreamMultiplexer? {
     let index = self._mostAvailableConnectionIndex()
 
     if index != self._connections.endIndex {
