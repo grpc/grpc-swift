@@ -83,7 +83,7 @@ public enum ClientRequest {
 
   /// A request created by the client containing a message producer.
   public struct Stream<Message: Sendable>: Sendable {
-    public typealias Producer = @Sendable (any Writer<Message>) async throws -> Void
+    public typealias Producer = @Sendable (RPCWriter<Message>) async throws -> Void
 
     /// Metadata sent at the begining of the RPC.
     public var metadata: Metadata
@@ -185,7 +185,7 @@ public enum ServerResponse {
 
     /// A closure which, when called, writes values into the provided writer and
     /// returns trailing metadata indicating the end of the response stream.
-    public typealias Producer = @Sendable (any Writer<Message>) async throws -> Metadata
+    public typealias Producer = @Sendable (RPCWriter<Message>) async throws -> Metadata
 
     /// An accepted RPC.
     public struct Accepted: Sendable {
@@ -355,6 +355,13 @@ extension Writer {
     for try await element in elements {
       try await self.write(element)
     }
+  }
+}
+
+/// A type-erasing `Writer`.
+public struct RPCWriter<Element: Sendable>: Writer {
+  public init<Other: Writer>(wrapping other: Other) where Other.Element == Element {
+    // ...
   }
 }
 
@@ -939,9 +946,9 @@ struct AuthenticatingServerInterceptor: ServerInterceptor {
 
 struct LoggingClientInterceptor: ClientInterceptor {
   struct LoggingWriter<Value>: Writer {
-    var base: any Writer<Value>
+    let base: RPCWriter<Value>
 
-    init(wrapping base: some Writer<Value>) {
+    init(wrapping base: RPCWriter<Value>) {
       self.base = base
     }
 
