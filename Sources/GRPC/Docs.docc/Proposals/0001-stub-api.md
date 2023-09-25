@@ -124,14 +124,10 @@ public enum ServerRequest {
     public var metadata: Metadata
 
     /// An `AsyncSequence` of messages received from the client.
-    public var messages: any AsyncSequence<Message>
-
-    // Note: the above syntax does not compilee as `AsyncSequence` does not have a
-    //   primary associated type. However the shape of API is illustrative and
-    //   the exact type is to be determined.
+    public var messages: RPCAsyncSequence<Message>
 
     /// Create a new streaming server request.
-    public init(metadata: Metadata, messages: any AsyncSequence<Message>) {
+    public init(metadata: Metadata, messages: RPCAsyncSequence<Message>) {
       // ...
     }
   }
@@ -289,7 +285,7 @@ public enum ClientResponse {
       /// if the RPC succeeded.
       ///
       /// If the RPC fails then the sequence will throw an error.
-      public var bodyParts: any AsyncSequence<BodyPart>
+      public var bodyParts: RPCAsyncSequence<BodyPart>
 
       public enum BodyPart: Sendable {
         case message(Message)
@@ -321,7 +317,7 @@ public enum ClientResponse {
     }
 
     /// The stream of messages received from the server.
-    public var messages: any AsyncSequence<Message> {
+    public var messages: RPCAsyncSequence<Message> {
       get {
         // ...
       }
@@ -359,6 +355,13 @@ extension Writer {
     for try await element in elements {
       try await self.write(element)
     }
+  }
+}
+
+/// A type-erasing `AsyncSequence`.
+public struct RPCAsyncSequence<Element: Sendable>: AsyncSequence, Sendable {
+  public init<Other: AsyncSequence>(wrapping other: Other) where Other.Element == Element {
+    // ...
   }
 }
 
