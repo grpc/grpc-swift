@@ -351,6 +351,15 @@ extension Writer {
   public func write(_ element: Element) async throws {
     try await self.write(contentsOf: CollectionOfOne(element))
   }
+
+  /// Write an `AsyncSequence` of elements.
+  public func write<Source: AsyncSequence>(
+    contentsOf elements: Source
+  ) async throws where Source.Element == Element {
+    for try await element in elements {
+      try await self.write(element)
+    }
+  }
 }
 
 /// An RPC error.
