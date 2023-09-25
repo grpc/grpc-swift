@@ -1095,9 +1095,6 @@ undesirable performance characteristics requiring expensive suspension points
 for each message. The `Writer` approach allows the transport to directly exert
 backpressure on the writer.
 
-Another drawback is that to produce a sequence of values the `AsyncSequence`
-must "run" somewhere this typically results in creating unstructured tasks.
-
 Finally, on the server, to allow users to send trailing metadata, the
 caller would have to deal with an `enum` of messages and metadata. The onus
 would fall on the implementer of the service to ensure that metadata only
@@ -1121,3 +1118,12 @@ possible to do without resorting to unstructured concurrency. Using a response
 handler allows the client to run the RPC within a `TaskGroup` and have the
 response handler run as a child task next to any tasks which require running
 concurrently.
+
+One workaround is for clients to have a long running `TaskGroup` for executing
+such tasks required by RPCs. This would allow a model whereby the request is
+intercepted in the callers task (and would therefore also have access to task
+local values) and then be transferred to the clients long running task for
+execution. In this model the lifetime of the RPC would be bounded by the
+lifetime of the response object. One major downside to this approach is that
+task locals are only reachable from the interceptors: they wouldn't be reachable
+from the transport layer which may have its own transport-specific interceptors.
