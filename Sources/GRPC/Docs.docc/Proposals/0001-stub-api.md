@@ -453,7 +453,7 @@ public typealias EchoResponse = ...
 /// implement ``EchoServiceProtocol`` which refines this protocol. However, if
 /// you require more granular control over your RPCs then they may implement
 /// this protocol, or methods from this protocol, instead.
-public protocol EchoServiceStreamingProtocol: BindableService, Sendable {
+public protocol EchoServiceStreamingProtocol: RPCService, Sendable {
   func get(
     request: ServerRequest.Stream<EchoRequest>
   ) async throws -> ServerResponse.Stream<EchoResponse>
@@ -471,9 +471,9 @@ public protocol EchoServiceStreamingProtocol: BindableService, Sendable {
   ) async throws -> ServerResponse.Stream<EchoResponse>
 }
 
-// Generated conformance to `BindableService`.
+// Generated conformance to `RPCService`.
 extension EchoServiceStreamingProtocol {
-  public func bind(to router: inout RPCRouter) {
+  public func registerRPCs(with router: inout RPCRouter) {
     // Implementation elided.
   }
 }
