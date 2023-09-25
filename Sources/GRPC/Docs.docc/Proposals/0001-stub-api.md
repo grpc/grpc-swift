@@ -4,6 +4,12 @@
 
 - Proposal: gRPC-0001
 - Author(s): [George Barnett](https://github.com/glbrntt)
+- Revisions:
+  - v1 (25/09/23):
+    - Adds type-erased wrappers for `AsyncSequence` and `Writer`.
+    - Renames `BindableService` to `RPCService`
+    - Add `AsyncSequence` conveneince API to `Writer`
+    - Add note about possible workaround for clients returning responses
 
 ## Introduction
 
