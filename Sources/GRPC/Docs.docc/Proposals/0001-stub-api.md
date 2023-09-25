@@ -787,7 +787,11 @@ func serverStreaming(echo: some EchoClientProtocol) async throws {
   // Note: there is no generated 'default' handler, the function body defines
   // the lifetime of the RPC and the RPC is cancelled once the closure exits.
   // Therefore escaping the message sequence would result in the sequence
-  // throwing an error. It must be consumed from within the handler.
+  // throwing an error. It must be consumed from within the handler. It may
+  // be possible for the compiler to enforce this in the future with
+  // `~Escapable`.
+  //
+  // See: https://github.com/atrick/swift-evolution/blob/bufferview-roadmap/visions/language-support-for-BufferView.md
 }
 
 func bidirectional(echo: some EchoClient) async throws {
