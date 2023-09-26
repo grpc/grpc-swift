@@ -1049,9 +1049,9 @@ non-throwing and use `Result` types as their `Element`.
 One appealing aspect of `~Copyable` types and ownership modifiers is that it's
 easy to represent an writer as a kind of state machine. Consider a writer passed
 to a server handler, for example. Initially it may either send metadata or it
-may a status as its first and only value. If it writes metadata it may then
-write messages. After any number of messages it may then write a final status.
-This composes naturally with `~Copyable` types:
+may return a status as its first and only value. If it writes metadata it may
+then write messages. After any number of messages it may then write a final
+status. This composes naturally with `~Copyable` types:
 
 ```swift
 struct Writer<Message>: ~Copyable {
