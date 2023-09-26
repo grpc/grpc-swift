@@ -42,8 +42,7 @@ function check_license_headers() {
 }
 
 function check_formatting() {
-  hash swiftformat 2> /dev/null || { printf "\033[0;31mERROR\033[0m swiftformat must be installed (see: https://github.com/nicklockwood/SwiftFormat)\n"; exit 1; }
-  run_logged "Checking formatting (swiftformat $(swiftformat --version))" "swiftformat --lint --verbose $HERE/.."
+  run_logged "Checking formatting" "$HERE/format.sh lint"
 }
 
 errors=0
