@@ -187,9 +187,11 @@ private class AuthorityCheckingEcho: Echo_EchoProvider {
     XCTAssertEqual(authority, SampleCertificate.exampleServer.commonName)
     XCTAssertNotEqual(authority, "localhost")
 
-    return context.eventLoop.makeSucceededFuture(.with {
-      $0.text = "Swift echo get: \(request.text)"
-    })
+    return context.eventLoop.makeSucceededFuture(
+      .with {
+        $0.text = "Swift echo get: \(request.text)"
+      }
+    )
   }
 
   func expand(
@@ -212,4 +214,4 @@ private class AuthorityCheckingEcho: Echo_EchoProvider {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

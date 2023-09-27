@@ -161,15 +161,17 @@ class HelloWorldProvider: Helloworld_GreeterProvider {
 extension HelloWorldClientInterceptorFactory: @unchecked Sendable {}
 
 private class HelloWorldClientInterceptorFactory:
-  Helloworld_GreeterClientInterceptorFactoryProtocol {
+  Helloworld_GreeterClientInterceptorFactoryProtocol
+{
   var client: Helloworld_GreeterNIOClient
 
   init(client: Helloworld_GreeterNIOClient) {
     self.client = client
   }
 
-  func makeSayHelloInterceptors(
-  ) -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>] {
+  func makeSayHelloInterceptors() -> [ClientInterceptor<
+    Helloworld_HelloRequest, Helloworld_HelloReply
+  >] {
     return [NotReallyAuthClientInterceptor(client: self.client)]
   }
 }
@@ -185,7 +187,8 @@ class RemoteAddressExistsInterceptor<Request, Response>: ServerInterceptor<Reque
 }
 
 class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
-  ServerInterceptor<Request, Response> {
+  ServerInterceptor<Request, Response>
+{
   override func receive(
     _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
@@ -209,14 +212,16 @@ class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
 }
 
 final class HelloWorldServerInterceptorFactory: Helloworld_GreeterServerInterceptorFactoryProtocol {
-  func makeSayHelloInterceptors(
-  ) -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>] {
+  func makeSayHelloInterceptors() -> [ServerInterceptor<
+    Helloworld_HelloRequest, Helloworld_HelloReply
+  >] {
     return [RemoteAddressExistsInterceptor(), NotReallyAuthServerInterceptor()]
   }
 }
 
 class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
-  ClientInterceptor<Request, Response> {
+  ClientInterceptor<Request, Response>
+{
   private let client: Helloworld_GreeterNIOClient
 
   private enum State {

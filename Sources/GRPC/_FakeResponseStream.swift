@@ -137,8 +137,8 @@ public class _FakeResponseStream<Request, Response> {
       return .valid
 
     case (.responsePart(.initialMetadata), .sending),
-         (.responsePart(.initialMetadata), .closing),
-         (.responsePart(.initialMetadata), .closed):
+      (.responsePart(.initialMetadata), .closing),
+      (.responsePart(.initialMetadata), .closed):
       // We can only send initial metadata from '.idle'.
       return .invalid(reason: "Initial metadata has already been sent")
 
@@ -152,32 +152,32 @@ public class _FakeResponseStream<Request, Response> {
       return .valid
 
     case (.responsePart(.message), .closing),
-         (.responsePart(.message), .closed):
+      (.responsePart(.message), .closed):
       // We can't send messages once we're closing or closed.
       return .invalid(reason: "Messages can't be sent after the stream has been closed")
 
     case (.responsePart(.trailingMetadata), .idle),
-         (.responsePart(.trailingMetadata), .sending):
+      (.responsePart(.trailingMetadata), .sending):
       self.sendState = .closing
       return .valid
 
     case (.responsePart(.trailingMetadata), .closing),
-         (.responsePart(.trailingMetadata), .closed):
+      (.responsePart(.trailingMetadata), .closed):
       // We're already closing or closed.
       return .invalid(reason: "Trailing metadata can't be sent after the stream has been closed")
 
     case (.responsePart(.status), .idle),
-         (.error, .idle),
-         (.responsePart(.status), .sending),
-         (.error, .sending),
-         (.responsePart(.status), .closed),
-         (.error, .closed):
+      (.error, .idle),
+      (.responsePart(.status), .sending),
+      (.error, .sending),
+      (.responsePart(.status), .closed),
+      (.error, .closed):
       // We can only error/close if we're closing (i.e. have already sent trailers which we enforce
       // from the API in the subclasses).
       return .invalid(reason: "Status/error can only be sent after trailing metadata has been sent")
 
     case (.responsePart(.status), .closing),
-         (.error, .closing):
+      (.error, .closing):
       self.sendState = .closed
       return .valid
     }

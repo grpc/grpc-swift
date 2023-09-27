@@ -431,8 +431,8 @@ extension ClientQuiescingTests {
       self.lock.withLock {
         switch (self.state, state) {
         case (.active, .active),
-             (.shutdownRequested, .shutdownRequested),
-             (.shutdown, .shutdown):
+          (.shutdownRequested, .shutdownRequested),
+          (.shutdown, .shutdown):
           ()
         default:
           XCTFail("Expected \(state) but state is \(self.state)", line: line)

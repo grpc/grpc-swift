@@ -16,13 +16,14 @@
 import EchoImplementation
 import EchoModel
 import Foundation
-@testable import GRPC
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 private class ServerErrorDelegateMock: ServerErrorDelegate {
   private let transformLibraryErrorHandler: (Error) -> (GRPCStatusAndTrailers?)
@@ -104,8 +105,9 @@ class ServerErrorDelegateTests: GRPCTestCase {
       .testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Expand")
   }
 
-  func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_bidirectionalStreaming(
-  ) throws {
+  func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_bidirectionalStreaming()
+    throws
+  {
     try self
       .testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Update")
   }

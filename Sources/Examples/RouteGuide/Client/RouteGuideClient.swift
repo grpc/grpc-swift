@@ -23,8 +23,8 @@ import RouteGuideModel
 /// Loads the features from `route_guide_db.json`, assumed to be in the directory above this file.
 func loadFeatures() throws -> [Routeguide_Feature] {
   let url = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent() // main.swift
-    .deletingLastPathComponent() // Client/
+    .deletingLastPathComponent()  // main.swift
+    .deletingLastPathComponent()  // Client/
     .appendingPathComponent("route_guide_db.json")
 
   let data = try Data(contentsOf: url)
@@ -146,8 +146,8 @@ extension RouteGuideExample {
       let summary = try await recordRoute.response
 
       print(
-        "Finished trip with \(summary.pointCount) points. Passed \(summary.featureCount) features. " +
-          "Travelled \(summary.distance) meters. It took \(summary.elapsedTime) seconds."
+        "Finished trip with \(summary.pointCount) points. Passed \(summary.featureCount) features. "
+          + "Travelled \(summary.distance) meters. It took \(summary.elapsedTime) seconds."
       )
     } catch {
       print("RecordRoute Failed: \(error)")

@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 struct UnwrapError: Error {}
 
@@ -458,7 +460,7 @@ struct Matcher<Value> {
 
         switch headersMatch {
         case .none,
-             .some(.match):
+          .some(.match):
           return endStream.map { Matcher.is($0).evaluate(payload.endStream) } ?? .match
         case .some(.noMatch):
           return headersMatch!
@@ -480,7 +482,7 @@ struct Matcher<Value> {
 
         switch (endStreamMatches, payload.data) {
         case let (.none, .byteBuffer(b)),
-             let (.some(.match), .byteBuffer(b)):
+          let (.some(.match), .byteBuffer(b)):
           return buffer.map { Matcher.is($0).evaluate(b) } ?? .match
 
         case (.some(.noMatch), .byteBuffer):
@@ -596,7 +598,8 @@ struct Matcher<Value> {
   }
 
   static func forwardHeadersThenRead()
-    -> Matcher<HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction> {
+    -> Matcher<HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction>
+  {
     return .init { actual in
       switch actual {
       case .forwardHeadersAndRead:
@@ -608,7 +611,8 @@ struct Matcher<Value> {
   }
 
   static func forwardMessageThenRead()
-    -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
+    -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction>
+  {
     return .init { actual in
       switch actual {
       case .forwardMessageThenReadNextMessage:

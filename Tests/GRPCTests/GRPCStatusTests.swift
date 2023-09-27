@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import XCTest
+
+@testable import GRPC
 
 class GRPCStatusTests: GRPCTestCase {
   func testStatusDescriptionWithoutMessage() {
@@ -58,11 +60,13 @@ class GRPCStatusTests: GRPCTestCase {
     let cause = UnderlyingError()
     XCTAssertEqual(
       "internal error (13): unknown error processing request, cause: \(cause.description)",
-      String(describing: GRPCStatus(
-        code: .internalError,
-        message: "unknown error processing request",
-        cause: cause
-      ))
+      String(
+        describing: GRPCStatus(
+          code: .internalError,
+          message: "unknown error processing request",
+          cause: cause
+        )
+      )
     )
   }
 
@@ -73,11 +77,13 @@ class GRPCStatusTests: GRPCTestCase {
     let cause = UnderlyingError()
     XCTAssertEqual(
       "internal error (13), cause: \(cause.description)",
-      String(describing: GRPCStatus(
-        code: .internalError,
-        message: nil,
-        cause: cause
-      ))
+      String(
+        describing: GRPCStatus(
+          code: .internalError,
+          message: nil,
+          cause: cause
+        )
+      )
     )
   }
 

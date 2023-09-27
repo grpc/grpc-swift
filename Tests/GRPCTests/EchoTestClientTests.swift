@@ -164,13 +164,17 @@ class EchoTestClientTests: GRPCTestCase {
     // Create a response stream for 'Update'.
     let stream = client.makeUpdateResponseStream()
 
-    model.updateWords(["foo", "bar", "baz"], onResponse: { response in
-      XCTAssertEqual(response, "Expected response")
-      responses.fulfill()
-    }, onEnd: { status in
-      XCTAssertEqual(status.code, .ok)
-      completed.fulfill()
-    })
+    model.updateWords(
+      ["foo", "bar", "baz"],
+      onResponse: { response in
+        XCTAssertEqual(response, "Expected response")
+        responses.fulfill()
+      },
+      onEnd: { status in
+        XCTAssertEqual(status.code, .ok)
+        completed.fulfill()
+      }
+    )
 
     // Send some responses:
     XCTAssertNoThrow(try stream.sendMessage(.with { $0.text = "Expected response" }))
@@ -193,13 +197,17 @@ class EchoTestClientTests: GRPCTestCase {
     let responses = self.expectation(description: "Received responses")
     responses.expectedFulfillmentCount = 3
 
-    model.updateWords(["foo", "bar", "baz"], onResponse: { response in
-      XCTAssertTrue(response.hasPrefix("Swift echo update"))
-      responses.fulfill()
-    }, onEnd: { status in
-      XCTAssertEqual(status.code, .ok)
-      completed.fulfill()
-    })
+    model.updateWords(
+      ["foo", "bar", "baz"],
+      onResponse: { response in
+        XCTAssertTrue(response.hasPrefix("Swift echo update"))
+        responses.fulfill()
+      },
+      onEnd: { status in
+        XCTAssertEqual(status.code, .ok)
+        completed.fulfill()
+      }
+    )
 
     self.wait(for: [responses, completed], timeout: 10.0)
   }

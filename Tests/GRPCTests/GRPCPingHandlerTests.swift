@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 class GRPCPingHandlerTests: GRPCTestCase {
   var pingHandler: PingHandler!
@@ -319,11 +321,13 @@ class GRPCPingHandlerTests: GRPCTestCase {
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
     XCTAssertEqual(
       response,
-      .reply(HTTP2Frame.FramePayload.goAway(
-        lastStreamID: .rootStream,
-        errorCode: .enhanceYourCalm,
-        opaqueData: nil
-      ))
+      .reply(
+        HTTP2Frame.FramePayload.goAway(
+          lastStreamID: .rootStream,
+          errorCode: .enhanceYourCalm,
+          opaqueData: nil
+        )
+      )
     )
   }
 

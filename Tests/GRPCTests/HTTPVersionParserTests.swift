@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import XCTest
+
+@testable import GRPC
 
 class HTTPVersionParserTests: GRPCTestCase {
   private let preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"

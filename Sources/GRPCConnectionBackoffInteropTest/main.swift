@@ -121,4 +121,4 @@ struct ConnectionBackoffInteropTest: ParsableCommand {
 }
 
 ConnectionBackoffInteropTest.main()
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

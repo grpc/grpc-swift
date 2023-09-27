@@ -15,11 +15,13 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOPosix
-import protocol SwiftProtobuf.Message
 import XCTest
+
+import protocol SwiftProtobuf.Message
+
+@testable import GRPC
 
 final class InterceptedRPCCancellationTests: GRPCTestCase {
   func testCancellationWithinInterceptedRPC() throws {

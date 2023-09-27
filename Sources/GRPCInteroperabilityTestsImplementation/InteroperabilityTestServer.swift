@@ -16,6 +16,7 @@
 import GRPC
 import Logging
 import NIOCore
+
 #if canImport(NIOSSL)
 import NIOSSL
 #endif
@@ -56,7 +57,7 @@ public func makeInteroperabilityTestServer(
     .withTLS(trustRoots: .certificates([caCert]))
     #else
     fatalError("'useTLS: true' passed to \(#function) but NIOSSL is not available")
-    #endif // canImport(NIOSSL)
+    #endif  // canImport(NIOSSL)
   } else {
     builder = Server.insecure(group: eventLoopGroup)
   }
@@ -65,7 +66,8 @@ public func makeInteroperabilityTestServer(
     builder.withLogger(logger)
   }
 
-  return builder
+  return
+    builder
     .withMessageCompression(.enabled(.init(decompressionLimit: .absolute(1024 * 1024))))
     .withServiceProviders(serviceProviders)
     .bind(host: host, port: port)

@@ -45,8 +45,9 @@ public final class ServerStreamingServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let userFunction: (Request, StreamingResponseCallContext<Response>)
-    -> EventLoopFuture<GRPCStatus>
+  internal let userFunction:
+    (Request, StreamingResponseCallContext<Response>)
+      -> EventLoopFuture<GRPCStatus>
 
   /// The state of the handler.
   @usableFromInline
@@ -132,7 +133,7 @@ public final class ServerStreamingServerHandler<
       self.state = .completed
 
     case let .createdContext(context),
-         let .invokedFunction(context):
+      let .invokedFunction(context):
       context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
       self.context.eventLoop.execute {
         self.interceptors = nil
@@ -259,7 +260,7 @@ public final class ServerStreamingServerHandler<
       preconditionFailure()
 
     case let .createdContext(context),
-         let .invokedFunction(context):
+      let .invokedFunction(context):
 
       switch result {
       case let .success(status):
@@ -320,7 +321,7 @@ public final class ServerStreamingServerHandler<
       self.interceptors.send(.end(status, trailers), promise: nil)
 
     case let .createdContext(context),
-         let .invokedFunction(context):
+      let .invokedFunction(context):
       // We don't have a promise to fail. Just send back end.
       self.state = .completed
 

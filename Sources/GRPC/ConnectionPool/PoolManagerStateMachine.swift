@@ -45,13 +45,15 @@ internal struct PoolManagerStateMachine {
       poolKeys: [PoolManager.ConnectionPoolKey],
       assumedMaxAvailableStreamsPerPool: Int
     ) {
-      self.pools = Dictionary(uniqueKeysWithValues: poolKeys.map { key in
-        let value = PerPoolState(
-          poolIndex: key.index,
-          assumedMaxAvailableStreams: assumedMaxAvailableStreamsPerPool
-        )
-        return (key.eventLoopID, value)
-      })
+      self.pools = Dictionary(
+        uniqueKeysWithValues: poolKeys.map { key in
+          let value = PerPoolState(
+            poolIndex: key.index,
+            assumedMaxAvailableStreams: assumedMaxAvailableStreamsPerPool
+          )
+          return (key.eventLoopID, value)
+        }
+      )
     }
   }
 

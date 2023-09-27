@@ -528,9 +528,12 @@ struct GRPCIdleHandlerStateMachine {
     // Log the change in settings.
     self.logger.debug(
       "HTTP2 settings update",
-      metadata: Dictionary(settings.map {
-        ("\($0.parameter.loggingMetadataKey)", "\($0.value)")
-      }, uniquingKeysWith: { a, _ in a })
+      metadata: Dictionary(
+        settings.map {
+          ("\($0.parameter.loggingMetadataKey)", "\($0.value)")
+        },
+        uniquingKeysWith: { a, _ in a }
+      )
     )
 
     var operations: Operations = .none
@@ -673,15 +676,21 @@ extension CanOpenStreams {
       ()
     }
 
-    logger.debug("HTTP2 stream created", metadata: [
-      MetadataKey.h2StreamID: "\(streamID)",
-      MetadataKey.h2ActiveStreams: "\(self.openStreams)",
-    ])
+    logger.debug(
+      "HTTP2 stream created",
+      metadata: [
+        MetadataKey.h2StreamID: "\(streamID)",
+        MetadataKey.h2ActiveStreams: "\(self.openStreams)",
+      ]
+    )
 
     if self.openStreams == self.maxConcurrentStreams {
-      logger.warning("HTTP2 max concurrent stream limit reached", metadata: [
-        MetadataKey.h2ActiveStreams: "\(self.openStreams)",
-      ])
+      logger.warning(
+        "HTTP2 max concurrent stream limit reached",
+        metadata: [
+          MetadataKey.h2ActiveStreams: "\(self.openStreams)"
+        ]
+      )
     }
   }
 }
@@ -695,9 +704,12 @@ extension CanCloseStreams {
   fileprivate mutating func streamClosed(_ streamID: HTTP2StreamID, logger: Logger) {
     self.openStreams -= 1
 
-    logger.debug("HTTP2 stream closed", metadata: [
-      MetadataKey.h2StreamID: "\(streamID)",
-      MetadataKey.h2ActiveStreams: "\(self.openStreams)",
-    ])
+    logger.debug(
+      "HTTP2 stream closed",
+      metadata: [
+        MetadataKey.h2StreamID: "\(streamID)",
+        MetadataKey.h2ActiveStreams: "\(self.openStreams)",
+      ]
+    )
   }
 }

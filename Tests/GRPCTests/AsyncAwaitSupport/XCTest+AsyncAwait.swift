@@ -71,7 +71,7 @@ func withTaskCancelledAfter<Result>(
     // Check which task completed.
     switch firstResult {
     case .cancellation:
-      () // Fine, what we expect.
+      ()  // Fine, what we expect.
     case .operation:
       XCTFail("Operation completed before cancellation")
     case .none:

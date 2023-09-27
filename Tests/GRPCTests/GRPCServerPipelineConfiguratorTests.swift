@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import NIOTLS
 import XCTest
+
+@testable import GRPC
 
 class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
   private var channel: EmbeddedChannel!
@@ -125,7 +127,7 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     self.assertConfigurator(isPresent: false)
     self.assertHTTP2Handler(isPresent: true)
   }
-  #endif // canImport(NIOSSL)
+  #endif  // canImport(NIOSSL)
 
   func testHTTP2SetupViaBytes() {
     self.setUp(tls: false)
@@ -201,10 +203,10 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     // A SETTINGS frame MUST follow the connection preface. Append one so that the HTTP/2 handler
     // responds with its initial settings (and we validate that we forward frames once configuring).
     let emptySettingsFrameBytes: [UInt8] = [
-      0x00, 0x00, 0x00, // 3-byte payload length (0 bytes)
-      0x04, // 1-byte frame type (SETTINGS)
-      0x00, // 1-byte flags (none)
-      0x00, 0x00, 0x00, 0x00, // 4-byte stream identifier
+      0x00, 0x00, 0x00,  // 3-byte payload length (0 bytes)
+      0x04,  // 1-byte frame type (SETTINGS)
+      0x00,  // 1-byte flags (none)
+      0x00, 0x00, 0x00, 0x00,  // 4-byte stream identifier
     ]
     bytes.writeBytes(emptySettingsFrameBytes)
 
@@ -267,5 +269,5 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     self.assertConfigurator(isPresent: false)
     self.assertHTTP2Handler(isPresent: true)
   }
-  #endif // canImport(NIOSSL)
+  #endif  // canImport(NIOSSL)
 }

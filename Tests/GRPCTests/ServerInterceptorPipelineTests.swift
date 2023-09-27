@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
+
+@testable import GRPC
 
 class ServerInterceptorPipelineTests: GRPCTestCase {
   override func setUp() {
@@ -123,7 +125,8 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
 }
 
 internal class RecordingServerInterceptor<Request, Response>:
-  ServerInterceptor<Request, Response> {
+  ServerInterceptor<Request, Response>
+{
   var requestParts: [GRPCServerRequestPart<Request>] = []
   var responseParts: [GRPCServerResponsePart<Response>] = []
 

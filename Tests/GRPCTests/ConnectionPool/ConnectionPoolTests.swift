@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 final class ConnectionPoolTests: GRPCTestCase {
   private enum TestError: Error {

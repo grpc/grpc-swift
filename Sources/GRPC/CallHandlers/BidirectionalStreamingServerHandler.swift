@@ -49,8 +49,9 @@ public final class BidirectionalStreamingServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let observerFactory: (_StreamingResponseCallContext<Request, Response>)
-    -> EventLoopFuture<(StreamEvent<Request>) -> Void>
+  internal let observerFactory:
+    (_StreamingResponseCallContext<Request, Response>)
+      -> EventLoopFuture<(StreamEvent<Request>) -> Void>
 
   /// The state of the handler.
   @usableFromInline
@@ -135,7 +136,7 @@ public final class BidirectionalStreamingServerHandler<
       self.state = .completed
 
     case let .creatingObserver(context),
-         let .observing(_, context):
+      let .observing(_, context):
       context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
       self.context.eventLoop.execute {
         self.interceptors = nil
@@ -320,7 +321,7 @@ public final class BidirectionalStreamingServerHandler<
       self.interceptors.send(.end(status, trailers), promise: nil)
 
     case let .creatingObserver(context),
-         let .observing(_, context):
+      let .observing(_, context):
       // We don't have a promise to fail. Just send back end.
       self.state = .completed
 

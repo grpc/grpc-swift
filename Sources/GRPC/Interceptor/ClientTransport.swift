@@ -785,7 +785,7 @@ extension ClientTransportState {
       return .propagateError
 
     case .activatingTransport,
-         .active:
+      .active:
       // We're either fully active or unbuffering. Forward an error, fail any writes and then close.
       self = .closing
       return .propagateErrorAndClose
@@ -855,10 +855,13 @@ extension ClientTransport {
     promise: EventLoopPromise<Void>?
   ) {
     self.callEventLoop.assertInEventLoop()
-    self.logger.trace("buffering request part", metadata: [
-      "request_part": "\(part.name)",
-      "call_state": self.stateForLogging,
-    ])
+    self.logger.trace(
+      "buffering request part",
+      metadata: [
+        "request_part": "\(part.name)",
+        "call_state": self.stateForLogging,
+      ]
+    )
     self.writeBuffer.append(.init(request: part, promise: promise))
   }
 
@@ -873,9 +876,12 @@ extension ClientTransport {
     // Save any flushing until we're done writing.
     var shouldFlush = false
 
-    self.logger.trace("unbuffering request parts", metadata: [
-      "request_parts": "\(self.writeBuffer.count)",
-    ])
+    self.logger.trace(
+      "unbuffering request parts",
+      metadata: [
+        "request_parts": "\(self.writeBuffer.count)"
+      ]
+    )
 
     // Why the double loop? A promise completed as a result of the flush may enqueue more writes,
     // or causes us to change state (i.e. we may have to close). If we didn't loop around then we
@@ -883,9 +889,12 @@ extension ClientTransport {
     while self.state.isUnbuffering, !self.writeBuffer.isEmpty {
       // Pull out as many writes as possible.
       while let write = self.writeBuffer.popFirst() {
-        self.logger.trace("unbuffering request part", metadata: [
-          "request_part": "\(write.request.name)",
-        ])
+        self.logger.trace(
+          "unbuffering request part",
+          metadata: [
+            "request_part": "\(write.request.name)"
+          ]
+        )
 
         if !shouldFlush {
           shouldFlush = self.shouldFlush(after: write.request)

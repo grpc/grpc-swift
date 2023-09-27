@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import Logging
 import NIOCore
 import XCTest
+
+@testable import GRPC
 
 class LengthPrefixedMessageReaderTests: GRPCTestCase {
   var reader: LengthPrefixedMessageReader!
@@ -37,8 +39,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
   final let twoByteMessage: [UInt8] = [0x01, 0x02]
   func lengthPrefixedTwoByteMessage(withCompression compression: Bool = false) -> [UInt8] {
     return [
-      compression ? 0x01 : 0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
+      compression ? 0x01 : 0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
     ] + self.twoByteMessage
   }
 
@@ -76,8 +78,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageReturnsMessageForZeroLengthMessage() throws {
     let bytes: [UInt8] = [
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x00, // 4-byte message length (0)
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x00,  // 4-byte message length (0)
       // 0-byte message
     ]
 
@@ -89,13 +91,13 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageDeliveredAcrossMultipleByteBuffers() throws {
     let firstBytes: [UInt8] = [
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, // first 3 bytes of 4-byte message length
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00,  // first 3 bytes of 4-byte message length
     ]
 
     let secondBytes: [UInt8] = [
-      0x02, // fourth byte of 4-byte message length (2)
-      0xF0, 0xBA, // 2-byte message
+      0x02,  // fourth byte of 4-byte message length (2)
+      0xF0, 0xBA,  // 2-byte message
     ]
 
     var firstBuffer = self.byteBuffer(withBytes: firstBytes)
@@ -109,17 +111,17 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
   func testNextMessageWhenMultipleMessagesAreBuffered() throws {
     let bytes: [UInt8] = [
       // 1st message
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
-      0x0F, 0x00, // 2-byte message
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
+      0x0F, 0x00,  // 2-byte message
       // 2nd message
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x04, // 4-byte message length (4)
-      0xDE, 0xAD, 0xBE, 0xEF, // 4-byte message
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x04,  // 4-byte message length (4)
+      0xDE, 0xAD, 0xBE, 0xEF,  // 4-byte message
       // 3rd message
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x01, // 4-byte message length (1)
-      0x01, // 1-byte message
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x01,  // 4-byte message length (1)
+      0x01,  // 1-byte message
     ]
 
     var buffer = self.byteBuffer(withBytes: bytes)
@@ -135,7 +137,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageReturnsNilWhenNoMessageLengthIsAvailable() throws {
     let bytes: [UInt8] = [
-      0x00, // 1-byte compression flag
+      0x00  // 1-byte compression flag
     ]
 
     var buffer = self.byteBuffer(withBytes: bytes)
@@ -145,8 +147,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
     // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
-      0x00, 0x00, 0x00, 0x01, // 4-byte message length (1)
-      0x00, // 1-byte message
+      0x00, 0x00, 0x00, 0x01,  // 4-byte message length (1)
+      0x00,  // 1-byte message
     ]
 
     var secondBuffer = self.byteBuffer(withBytes: restOfBytes)
@@ -156,8 +158,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageReturnsNilWhenNotAllMessageLengthIsAvailable() throws {
     let bytes: [UInt8] = [
-      0x00, // 1-byte compression flag
-      0x00, 0x00, // 2-bytes of message length (should be 4)
+      0x00,  // 1-byte compression flag
+      0x00, 0x00,  // 2-bytes of message length (should be 4)
     ]
 
     var buffer = self.byteBuffer(withBytes: bytes)
@@ -167,8 +169,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
     // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
-      0x00, 0x01, // 4-byte message length (1)
-      0x00, // 1-byte message
+      0x00, 0x01,  // 4-byte message length (1)
+      0x00,  // 1-byte message
     ]
 
     var secondBuffer = self.byteBuffer(withBytes: restOfBytes)
@@ -178,8 +180,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageReturnsNilWhenNoMessageBytesAreAvailable() throws {
     let bytes: [UInt8] = [
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
     ]
 
     var buffer = self.byteBuffer(withBytes: bytes)
@@ -195,9 +197,9 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageReturnsNilWhenNotAllMessageBytesAreAvailable() throws {
     let bytes: [UInt8] = [
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
-      0x00, // 1-byte of message
+      0x00,  // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
+      0x00,  // 1-byte of message
     ]
 
     var buffer = self.byteBuffer(withBytes: bytes)
@@ -207,7 +209,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
     // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
-      0x01, // final byte of message
+      0x01  // final byte of message
     ]
 
     var secondBuffer = self.byteBuffer(withBytes: restOfBytes)
@@ -220,7 +222,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     // compression flag is set as it indicates a lack of message encoding header.
     XCTAssertNil(self.reader.compression)
 
-    var buffer = self
+    var buffer =
+      self
       .byteBuffer(withBytes: self.lengthPrefixedTwoByteMessage(withCompression: true))
     self.reader.append(buffer: &buffer)
 
@@ -250,10 +253,11 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
   func testExcessiveBytesAreDiscarded() throws {
     // We're going to use a 1kB message here for ease of testing.
     let message = Array(repeating: UInt8(0), count: 1024)
-    let largeMessage: [UInt8] = [
-      0x00, // 1-byte compression flag
-      0x00, 0x00, 0x04, 0x00, // 4-byte message length (1024)
-    ] + message
+    let largeMessage: [UInt8] =
+      [
+        0x00,  // 1-byte compression flag
+        0x00, 0x00, 0x04, 0x00,  // 4-byte message length (1024)
+      ] + message
     var buffer = self.byteBuffer(withBytes: largeMessage)
     buffer.writeBytes(largeMessage)
     buffer.writeBytes(largeMessage)

@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import struct Foundation.Data
+
 import GRPC
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import NIOHTTP2
+
+import struct Foundation.Data
 
 /// Tests the throughput on the client side by firing a unary request through an embedded channel
 /// and writing back enough gRPC as HTTP/2 frames to get through the state machine.
@@ -64,15 +66,16 @@ class EmbeddedClientThroughput: Benchmark {
 
     let serializedResponse = try response.serializedData()
     var buffer = ByteBufferAllocator().buffer(capacity: serializedResponse.count + 5)
-    buffer.writeInteger(UInt8(0)) // compression byte
+    buffer.writeInteger(UInt8(0))  // compression byte
     buffer.writeInteger(UInt32(serializedResponse.count))
     buffer.writeContiguousBytes(serializedResponse)
 
     self.responseDataChunks = []
     while buffer.readableBytes > 0,
-          let slice = buffer.readSlice(
-            length: min(maximumResponseFrameSize, buffer.readableBytes)
-          ) {
+      let slice = buffer.readSlice(
+        length: min(maximumResponseFrameSize, buffer.readableBytes)
+      )
+    {
       self.responseDataChunks.append(slice)
     }
   }

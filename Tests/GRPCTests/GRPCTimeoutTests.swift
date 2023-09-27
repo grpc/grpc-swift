@@ -15,9 +15,10 @@
  */
 import Dispatch
 import Foundation
-@testable import GRPC
 import NIOCore
 import XCTest
+
+@testable import GRPC
 
 class GRPCTimeoutTests: GRPCTestCase {
   func testRoundingNegativeTimeout() {

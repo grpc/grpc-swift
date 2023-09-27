@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 import Foundation
-@testable import GRPC
 import XCTest
+
+@testable import GRPC
 
 class StopwatchTests: GRPCTestCase {
   func testElapsed() {

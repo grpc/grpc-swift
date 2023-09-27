@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 import EchoModel
-@testable import GRPC
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 class ConnectionManagerTests: GRPCTestCase {
   private let loop = EmbeddedEventLoop()
@@ -116,7 +117,8 @@ extension ConnectionManagerTests {
       return channelPromise.futureResult
     }
 
-    let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let channel = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -188,7 +190,8 @@ extension ConnectionManagerTests {
     }
 
     // Start the connection.
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -279,8 +282,10 @@ extension ConnectionManagerTests {
 
   func testChannelInactiveBeforeActiveWillReconnect() throws {
     var channels = [EmbeddedChannel(loop: self.loop), EmbeddedChannel(loop: self.loop)]
-    var channelPromises: [EventLoopPromise<Channel>] = [self.loop.makePromise(),
-                                                        self.loop.makePromise()]
+    var channelPromises: [EventLoopPromise<Channel>] = [
+      self.loop.makePromise(),
+      self.loop.makePromise(),
+    ]
     var channelFutures = Array(channelPromises.map { $0.futureResult })
 
     var configuration = self.defaultConfiguration
@@ -359,7 +364,8 @@ extension ConnectionManagerTests {
     }
 
     // Start the connection.
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -431,7 +437,8 @@ extension ConnectionManagerTests {
       return channelPromise.futureResult
     }
 
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -556,7 +563,8 @@ extension ConnectionManagerTests {
       return channelPromise.futureResult
     }
 
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -619,7 +627,8 @@ extension ConnectionManagerTests {
       return channelPromise.futureResult
     }
 
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -694,7 +703,8 @@ extension ConnectionManagerTests {
       return next
     }
 
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -770,7 +780,8 @@ extension ConnectionManagerTests {
       return next
     }
 
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -867,7 +878,8 @@ extension ConnectionManagerTests {
       return channelPromise.futureResult
     }
 
-    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
+    let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> =
+      self
       .waitForStateChange(from: .idle, to: .connecting) {
         let readyChannelMux = manager.getHTTP2Multiplexer()
         self.loop.run()
@@ -1034,15 +1046,17 @@ extension ConnectionManagerTests {
       channel: channel,
       inboundStreamInitializer: nil
     )
-    XCTAssertNoThrow(try channel.pipeline.addHandlers([
-      GRPCIdleHandler(
-        connectionManager: manager,
-        multiplexer: h2mux,
-        idleTimeout: .minutes(5),
-        keepalive: .init(),
-        logger: self.logger
-      ),
-    ]).wait())
+    XCTAssertNoThrow(
+      try channel.pipeline.addHandlers([
+        GRPCIdleHandler(
+          connectionManager: manager,
+          multiplexer: h2mux,
+          idleTimeout: .minutes(5),
+          keepalive: .init(),
+          logger: self.logger
+        )
+      ]).wait()
+    )
     channelPromise.succeed(channel)
     self.loop.run()
 
@@ -1089,15 +1103,17 @@ extension ConnectionManagerTests {
       channel: channel,
       inboundStreamInitializer: nil
     )
-    XCTAssertNoThrow(try channel.pipeline.addHandlers([
-      GRPCIdleHandler(
-        connectionManager: manager,
-        multiplexer: h2mux,
-        idleTimeout: .minutes(5),
-        keepalive: .init(),
-        logger: self.logger
-      ),
-    ]).wait())
+    XCTAssertNoThrow(
+      try channel.pipeline.addHandlers([
+        GRPCIdleHandler(
+          connectionManager: manager,
+          multiplexer: h2mux,
+          idleTimeout: .minutes(5),
+          keepalive: .init(),
+          logger: self.logger
+        )
+      ]).wait()
+    )
     channelPromise.succeed(channel)
     self.loop.run()
 
@@ -1369,7 +1385,8 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     case .timedOut:
       XCTFail(
         "Timed out before verifying \(self.expectation.count) change(s)",
-        file: file, line: line
+        file: file,
+        line: line
       )
     }
   }
