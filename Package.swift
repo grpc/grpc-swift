@@ -119,6 +119,8 @@ extension Target.Dependency {
     name: "SwiftProtobufPluginLibrary",
     package: "swift-protobuf"
   )
+
+  static let grpcCore: Self = .target(name: "GRPCCore")
 }
 
 // MARK: - Targets
@@ -144,6 +146,12 @@ extension Target {
       .nioSSL, if: includeNIOSSL
     ),
     path: "Sources/GRPC"
+  )
+
+  static let grpcCore: Target = .target(
+    name: "GRPCCore",
+    dependencies: [],
+    path: "Sources/GRPCCore"
   )
 
   static let cgrpcZlib: Target = .target(
@@ -197,6 +205,13 @@ extension Target {
     ),
     exclude: [
       "Codegen/Normalization/normalization.proto",
+    ]
+  )
+
+  static let grpcCoreTests: Target = .testTarget(
+    name: "GRPCCoreTests",
+    dependencies: [
+      .grpcCore,
     ]
   )
 
@@ -476,6 +491,12 @@ let package = Package(
     .routeGuideClient,
     .routeGuideServer,
     .packetCapture,
+
+    // v2
+    .grpcCore,
+
+    // v2 tests
+    .grpcCoreTests,
   ]
 )
 
