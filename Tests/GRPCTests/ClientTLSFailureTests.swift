@@ -112,10 +112,13 @@ class ClientTLSFailureTests: GRPCTestCase {
 
     let stateChangeDelegate = RecordingConnectivityDelegate()
     stateChangeDelegate.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .shutdown),
+        ]
+      )
     }
     configuration.connectivityStateDelegate = stateChangeDelegate
 
@@ -127,7 +130,8 @@ class ClientTLSFailureTests: GRPCTestCase {
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
 
     if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
-       case .handshakeFailed(.sslError) = nioSSLError {
+      case .handshakeFailed(.sslError) = nioSSLError
+    {
       // Expected case.
     } else {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
@@ -149,10 +153,13 @@ class ClientTLSFailureTests: GRPCTestCase {
 
     let stateChangeDelegate = RecordingConnectivityDelegate()
     stateChangeDelegate.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .shutdown),
+        ]
+      )
     }
     configuration.connectivityStateDelegate = stateChangeDelegate
 
@@ -194,10 +201,13 @@ class ClientTLSFailureTests: GRPCTestCase {
 
     let stateChangeDelegate = RecordingConnectivityDelegate()
     stateChangeDelegate.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .shutdown),
+        ]
+      )
     }
     configuration.connectivityStateDelegate = stateChangeDelegate
 
@@ -209,7 +219,8 @@ class ClientTLSFailureTests: GRPCTestCase {
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
 
     if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
-       case .handshakeFailed(.sslError) = nioSSLError {
+      case .handshakeFailed(.sslError) = nioSSLError
+    {
       // Expected case.
     } else {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
@@ -217,4 +228,4 @@ class ClientTLSFailureTests: GRPCTestCase {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

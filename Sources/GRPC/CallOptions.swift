@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import struct Foundation.UUID
-
-import NIOCore
-
 import Logging
+import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
+
+import struct Foundation.UUID
 
 /// Options to use for GRPC calls.
 public struct CallOptions: Sendable {

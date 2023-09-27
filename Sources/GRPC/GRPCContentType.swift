@@ -25,15 +25,15 @@ internal enum ContentType {
   init?(value: String) {
     switch value {
     case "application/grpc",
-         "application/grpc+proto":
+      "application/grpc+proto":
       self = .protobuf
 
     case "application/grpc-web",
-         "application/grpc-web+proto":
+      "application/grpc-web+proto":
       self = .webProtobuf
 
     case "application/grpc-web-text",
-         "application/grpc-web-text+proto":
+      "application/grpc-web-text+proto":
       self = .webTextProtobuf
 
     default:

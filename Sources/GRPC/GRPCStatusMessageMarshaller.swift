@@ -59,7 +59,7 @@ extension GRPCStatusMessageMarshaller {
       switch char {
       // See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
       case 0x20 ... 0x24,
-           0x26 ... 0x7E:
+        0x26 ... 0x7E:
         bytes.append(char)
 
       default:
@@ -78,7 +78,7 @@ extension GRPCStatusMessageMarshaller {
     for byte in view {
       switch byte {
       case 0x20 ... 0x24,
-           0x26 ... 0x7E:
+        0x26 ... 0x7E:
         ()
 
       default:
@@ -131,8 +131,8 @@ extension GRPCStatusMessageMarshaller {
       switch byte {
       case UInt8(ascii: "%"):
         guard let (nextIndex, nextNextIndex) = utf8.nextTwoIndices(after: currentIndex),
-              let nextHex = fromHex(utf8[nextIndex]),
-              let nextNextHex = fromHex(utf8[nextNextIndex])
+          let nextHex = fromHex(utf8[nextIndex]),
+          let nextNextHex = fromHex(utf8[nextNextIndex])
         else {
           // If we can't decode the message, aborting and returning the encoded message is fine
           // according to the spec.

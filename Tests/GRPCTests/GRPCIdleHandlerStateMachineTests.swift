@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
   private func makeClientStateMachine() -> GRPCIdleHandlerStateMachine {

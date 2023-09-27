@@ -15,13 +15,14 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import HelloWorldModel
 import NIOCore
 import NIOEmbedded
 import NIOHTTP1
 import SwiftProtobuf
 import XCTest
+
+@testable import GRPC
 
 extension GRPCServerHandlerProtocol {
   fileprivate func receiveRequest(_ request: Echo_EchoRequest) {
@@ -45,7 +46,8 @@ class ServerInterceptorTests: GRPCTestCase {
   }
 
   private func makeRecordingInterceptor()
-    -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+    -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>
+  {
     return .init()
   }
 
@@ -225,8 +227,8 @@ class ExtraRequestPartEmitter: ServerInterceptor<Echo_EchoRequest, Echo_EchoResp
 
     switch (self.part, part) {
     case (.metadata, .metadata),
-         (.message, .message),
-         (.end, .end):
+      (.message, .message),
+      (.end, .end):
       count = self.count
     default:
       count = 1

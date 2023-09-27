@@ -176,7 +176,7 @@ extension Generator {
           self.println("return nil")
         }
 
-        self.println("}") // switch
+        self.println("}")  // switch
       }
     }
   }

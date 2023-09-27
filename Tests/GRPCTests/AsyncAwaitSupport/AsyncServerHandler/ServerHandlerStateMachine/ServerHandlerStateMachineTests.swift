@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
+
+@testable import GRPC
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class ServerHandlerStateMachineTests: GRPCTestCase {

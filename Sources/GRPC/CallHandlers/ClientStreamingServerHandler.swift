@@ -49,8 +49,9 @@ public final class ClientStreamingServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let handlerFactory: (UnaryResponseCallContext<Response>)
-    -> EventLoopFuture<(StreamEvent<Request>) -> Void>
+  internal let handlerFactory:
+    (UnaryResponseCallContext<Response>)
+      -> EventLoopFuture<(StreamEvent<Request>) -> Void>
 
   /// The state of the handler.
   @usableFromInline
@@ -136,7 +137,7 @@ public final class ClientStreamingServerHandler<
       self.state = .completed
 
     case let .creatingObserver(context),
-         let .observing(_, context):
+      let .observing(_, context):
       context.responsePromise.fail(GRPCStatus(code: .unavailable, message: nil))
       self.context.eventLoop.execute {
         self.interceptors = nil
@@ -266,7 +267,7 @@ public final class ClientStreamingServerHandler<
       preconditionFailure()
 
     case let .creatingObserver(context),
-         let .observing(_, context):
+      let .observing(_, context):
       switch result {
       case let .success(response):
         // Complete when we send end.
@@ -303,7 +304,7 @@ public final class ClientStreamingServerHandler<
       self.interceptors.send(.end(status, trailers), promise: nil)
 
     case let .creatingObserver(context),
-         let .observing(_, context):
+      let .observing(_, context):
       // We don't have a promise to fail. Just send back end.
       self.state = .completed
 

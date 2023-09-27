@@ -38,9 +38,9 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   private let queue = DispatchQueue(label: "io.grpc.verify-handshake")
 
   private static let p12bundleURL = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent() // (this file)
-    .deletingLastPathComponent() // GRPCTests
-    .deletingLastPathComponent() // Tests
+    .deletingLastPathComponent()  // (this file)
+    .deletingLastPathComponent()  // GRPCTests
+    .deletingLastPathComponent()  // Tests
     .appendingPathComponent("Sources")
     .appendingPathComponent("GRPCSampleData")
     .appendingPathComponent("bundle")
@@ -106,7 +106,8 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   }
 
   private func startServer(_ builder: Server.Builder) throws {
-    self.server = try builder
+    self.server =
+      try builder
       .withServiceProviders([EchoProvider()])
       .withLogger(self.serverLogger)
       .bind(host: "127.0.0.1", port: 0)
@@ -114,7 +115,8 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   }
 
   private func startClient(_ builder: ClientConnection.Builder) {
-    self.client = builder
+    self.client =
+      builder
       .withBackgroundActivityLogger(self.clientLogger)
       .withConnectionReestablishment(enabled: false)
       .connect(host: "127.0.0.1", port: self.server.channel.localAddress!.port!)
@@ -208,5 +210,5 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
   }
 }
 
-#endif // canImport(Network)
-#endif // canImport(NIOSSL)
+#endif  // canImport(Network)
+#endif  // canImport(NIOSSL)

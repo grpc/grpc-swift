@@ -147,7 +147,8 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
 /// A concrete implementation of `StreamingResponseCallContext` used internally.
 @usableFromInline
 internal final class _StreamingResponseCallContext<Request, Response>:
-  StreamingResponseCallContext<Response> {
+  StreamingResponseCallContext<Response>
+{
   @usableFromInline
   internal let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
 
@@ -239,7 +240,8 @@ internal final class _StreamingResponseCallContext<Request, Response>:
 /// Simply records all sent messages.
 open class StreamingResponseCallContextTestStub<ResponsePayload>: StreamingResponseCallContext<
   ResponsePayload
-> {
+>
+{
   open var recordedResponses: [ResponsePayload] = []
 
   override open func sendResponse(

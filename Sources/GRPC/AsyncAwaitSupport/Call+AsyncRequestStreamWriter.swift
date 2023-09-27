@@ -22,11 +22,13 @@ extension Call where Request: Sendable, Response: Sendable {
     GRPCAsyncWriterSinkDelegate<(Request, Compression)>
   >
   internal func makeRequestStreamWriter()
-    -> (GRPCAsyncRequestStreamWriter<Request>, AsyncWriter.Sink) {
+    -> (GRPCAsyncRequestStreamWriter<Request>, AsyncWriter.Sink)
+  {
     let delegate = GRPCAsyncWriterSinkDelegate<(Request, Compression)>(
       didYield: { requests in
         for (request, compression) in requests {
-          let compress = compression
+          let compress =
+            compression
             .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
 
           // TODO: be smarter about inserting flushes.

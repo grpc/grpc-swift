@@ -34,7 +34,8 @@ extension FakeChannel: @unchecked Sendable {}
 @available(
   swift,
   deprecated: 5.6,
-  message: "GRPCChannel implementations must be Sendable but this implementation is not. Using a client and server on localhost is the recommended alternative."
+  message:
+    "GRPCChannel implementations must be Sendable but this implementation is not. Using a client and server on localhost is the recommended alternative."
 )
 public class FakeChannel: GRPCChannel {
   /// Fake response streams keyed by their path.
@@ -43,9 +44,14 @@ public class FakeChannel: GRPCChannel {
   /// A logger.
   public let logger: Logger
 
-  public init(logger: Logger = Logger(label: "io.grpc", factory: { _ in
-    SwiftLogNoOpLogHandler()
-  })) {
+  public init(
+    logger: Logger = Logger(
+      label: "io.grpc",
+      factory: { _ in
+        SwiftLogNoOpLogHandler()
+      }
+    )
+  ) {
     self.responseStreams = [:]
     self.logger = logger
   }

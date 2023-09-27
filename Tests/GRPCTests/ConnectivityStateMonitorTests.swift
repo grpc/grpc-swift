@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import Logging
 import XCTest
+
+@testable import GRPC
 
 class ConnectivityStateMonitorTests: GRPCTestCase {
   // Ensure `.idle` isn't first since it is the initial state and we only trigger callbacks
@@ -26,11 +28,14 @@ class ConnectivityStateMonitorTests: GRPCTestCase {
     let recorder = RecordingConnectivityDelegate()
 
     recorder.expectChanges(3) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .ready),
-        Change(from: .ready, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .ready),
+          Change(from: .ready, to: .shutdown),
+        ]
+      )
     }
 
     let monitor = ConnectivityStateMonitor(delegate: recorder, queue: nil)

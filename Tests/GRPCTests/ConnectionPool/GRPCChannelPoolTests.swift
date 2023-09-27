@@ -67,7 +67,8 @@ final class GRPCChannelPoolTests: GRPCTestCase {
       builder = Server.insecure(group: self.group)
     }
 
-    return builder
+    return
+      builder
       .withLogger(self.serverLogger)
       .withServiceProviders([EchoProvider()])
   }
@@ -327,7 +328,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     // MAX_CONCURRENT_STREAMS should be 100, we'll create 101 RPCs, 100 of which should not have to
     // wait because there's already an active connection.
-    let rpcs = (0 ..< 101).map { _ in self.echo.update { _ in }}
+    let rpcs = (0 ..< 101).map { _ in self.echo.update { _ in } }
     // The first RPC should (obviously) complete first.
     rpcs.first!.status.whenComplete { _ in
       lock.withLock {
@@ -502,7 +503,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     // Start shutting the server down.
     let didShutdown = self.server!.initiateGracefulShutdown()
-    self.server = nil // Avoid shutting down again in tearDown
+    self.server = nil  // Avoid shutting down again in tearDown
 
     // Pause a moment so we know the client received the GOAWAY.
     let sleep = self.group.any().scheduleTask(in: .milliseconds(50)) {}
@@ -589,4 +590,4 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try EventLoopFuture.andAllSucceed(rpcs, on: self.group.any()).wait())
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

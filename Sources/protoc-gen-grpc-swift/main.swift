@@ -141,7 +141,7 @@ func main(args: [String]) throws {
   // Only generate output for services.
   for name in request.fileToGenerate {
     if let fileDescriptor = descriptorSet.fileDescriptor(named: name) {
-      if (options.generateReflectionData) {
+      if options.generateReflectionData {
         var binaryFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         let binaryFileName = uniqueOutputFileName(
           component: "grpc.reflection",
@@ -156,10 +156,7 @@ func main(args: [String]) throws {
         binaryFile.content = serializedFileDescriptorProto
         response.file.append(binaryFile)
       }
-      if (
-        !fileDescriptor.services
-          .isEmpty && (options.generateClient || options.generateServer)
-      ) {
+      if !fileDescriptor.services.isEmpty && (options.generateClient || options.generateServer) {
         var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         let grpcFileName = uniqueOutputFileName(
           component: "grpc",

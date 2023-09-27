@@ -194,7 +194,7 @@ class MutualTLSTests: GRPCTestCase {
       certificateChain: [.certificate(SampleCertificate.clientSignedByOtherCA.certificate)],
       privateKey: .privateKey(SamplePrivateKey.client),
       trustRoots: .certificates([
-        SampleCertificate.otherCA.certificate,
+        SampleCertificate.otherCA.certificate
       ]),
       certificateVerification: .fullVerification
     )
@@ -211,7 +211,7 @@ class MutualTLSTests: GRPCTestCase {
       certificateChain: [.certificate(SampleCertificate.server.certificate)],
       privateKey: .privateKey(SamplePrivateKey.server),
       trustRoots: .certificates([
-        SampleCertificate.ca.certificate,
+        SampleCertificate.ca.certificate
       ]),
       certificateVerification: .noHostnameVerification
     )
@@ -269,4 +269,4 @@ class MutualTLSTests: GRPCTestCase {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

@@ -15,13 +15,14 @@
  */
 import EchoModel
 import Foundation
-@testable import GRPC
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import SwiftProtobuf
 import XCTest
+
+@testable import GRPC
 
 class ClientTimeoutTests: GRPCTestCase {
   var channel: EmbeddedChannel!

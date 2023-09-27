@@ -15,12 +15,13 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOPosix
 import XCTest
+
+@testable import GRPC
 
 class EchoMetadataValidator: Echo_EchoProvider {
   let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil
@@ -31,11 +32,13 @@ class EchoMetadataValidator: Echo_EchoProvider {
   ) {
     // Header lookup is case-insensitive so we need to pull out the values we know the client sent
     // as custom-metadata and then compare a new set of headers.
-    let customMetadata = HPACKHeaders(headers.filter { _, value, _ in
-      value == "client"
-    }.map {
-      ($0.name, $0.value)
-    })
+    let customMetadata = HPACKHeaders(
+      headers.filter { _, value, _ in
+        value == "client"
+      }.map {
+        ($0.name, $0.value)
+      }
+    )
     XCTAssertEqual(customMetadata, ["client": "client"], line: line)
   }
 

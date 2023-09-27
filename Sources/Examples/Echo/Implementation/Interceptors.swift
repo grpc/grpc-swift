@@ -107,7 +107,8 @@ public final class ExampleClientInterceptorFactory: Echo_EchoClientInterceptorFa
 
   // Returns an array of interceptors to use for the 'Collect' RPC.
   public func makeCollectInterceptors()
-    -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+  {
     return [LoggingEchoClientInterceptor()]
   }
 

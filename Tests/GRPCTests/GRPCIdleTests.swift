@@ -15,10 +15,11 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOPosix
 import XCTest
+
+@testable import GRPC
 
 class GRPCIdleTests: GRPCTestCase {
   func testClientIdleTimeout() {
@@ -55,11 +56,14 @@ class GRPCIdleTests: GRPCTestCase {
     // Setup a state change recorder for the client.
     let stateRecorder = RecordingConnectivityDelegate()
     stateRecorder.expectChanges(3) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .ready),
-        Change(from: .ready, to: .idle),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .ready),
+          Change(from: .ready, to: .idle),
+        ]
+      )
     }
 
     // Setup a connection.

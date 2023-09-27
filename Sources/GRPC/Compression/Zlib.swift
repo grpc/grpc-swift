@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 import CGRPCZlib
-import struct Foundation.Data
 import NIOCore
+
+import struct Foundation.Data
 
 /// Provides minimally configurable wrappers around zlib's compression and decompression
 /// functionality.
@@ -67,7 +68,8 @@ enum Zlib {
           self.stream.availableInputBytes = 0
         }
 
-        let writtenBytes = try output
+        let writtenBytes =
+          try output
           .writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
             try self.stream.deflate(
               outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
@@ -108,11 +110,11 @@ enum Zlib {
     private func initialize() {
       let rc = CGRPCZlib_deflateInit2(
         &self.stream.zstream,
-        Z_DEFAULT_COMPRESSION, // compression level
-        Z_DEFLATED, // compression method (this must be Z_DEFLATED)
-        self.format.windowBits, // window size, i.e. deflate/gzip
-        8, // memory level (this is the default value in the docs)
-        Z_DEFAULT_STRATEGY // compression strategy
+        Z_DEFAULT_COMPRESSION,  // compression level
+        Z_DEFLATED,  // compression method (this must be Z_DEFLATED)
+        self.format.windowBits,  // window size, i.e. deflate/gzip
+        8,  // memory level (this is the default value in the docs)
+        Z_DEFAULT_STRATEGY  // compression strategy
       )
 
       // Possible return codes:
@@ -180,7 +182,7 @@ enum Zlib {
           self = .inflated
 
         case (.complete, .inflated),
-             (.outputBufferTooSmall, .inflated):
+          (.outputBufferTooSmall, .inflated):
           preconditionFailure("invalid outcome '\(result.outcome)'; inflation is already complete")
         }
       }
@@ -280,8 +282,10 @@ enum Zlib {
           // account here.
           let writerIndex = output.writerIndex
           let minimumWritableBytes = inflationState.outputBufferSize - writerIndex
-          bytesWritten = try output
-            .writeWithUnsafeMutableBytes(minimumWritableBytes: minimumWritableBytes) { outputPointer in
+          bytesWritten =
+            try output
+            .writeWithUnsafeMutableBytes(minimumWritableBytes: minimumWritableBytes) {
+              outputPointer in
               let inflateResult = try self.stream.inflate(
                 outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
                 outputBufferSize: outputPointer.count
@@ -366,7 +370,8 @@ enum Zlib {
         return Int(self.zstream.avail_out)
       }
       set {
-        return self.zstream.avail_out = UInt32(newValue)
+        self.zstream.avail_out = UInt32(newValue)
+        return
       }
     }
 

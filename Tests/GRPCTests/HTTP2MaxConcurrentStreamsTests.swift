@@ -15,11 +15,12 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOHTTP2
 import NIOPosix
 import XCTest
+
+@testable import GRPC
 
 class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {
   enum Constants {
@@ -57,11 +58,12 @@ class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {
 
     var clientStreamingCalls =
       (0 ..< Constants.testNumberOfConcurrentStreams)
-        .map { _ in echoClient.collect() }
+      .map { _ in echoClient.collect() }
 
     let allMessagesSentExpectation = self.expectation(description: "all messages sent")
 
-    let sendMessageFutures = clientStreamingCalls
+    let sendMessageFutures =
+      clientStreamingCalls
       .map { $0.sendMessage(.with { $0.text = "Hi!" }) }
 
     EventLoopFuture<Void>

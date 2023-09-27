@@ -348,9 +348,12 @@ internal final class ConnectionPool {
   ) {
     // Don't overwhelm the pool with too many waiters.
     guard self.waiters.count < self.maxWaiters else {
-      logger.trace("connection pool has too many waiters", metadata: [
-        Metadata.waitersMax: "\(self.maxWaiters)",
-      ])
+      logger.trace(
+        "connection pool has too many waiters",
+        metadata: [
+          Metadata.waitersMax: "\(self.maxWaiters)"
+        ]
+      )
       promise.fail(ConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
       return
     }
@@ -366,25 +369,34 @@ internal final class ConnectionPool {
       if let index = self.waiters.firstIndex(where: { $0.id == waiter.id }) {
         self.waiters.remove(at: index)
 
-        logger.trace("timed out waiting for a connection", metadata: [
-          Metadata.waiterID: "\(waiter.id)",
-          Metadata.waitersCount: "\(self.waiters.count)",
-        ])
+        logger.trace(
+          "timed out waiting for a connection",
+          metadata: [
+            Metadata.waiterID: "\(waiter.id)",
+            Metadata.waitersCount: "\(self.waiters.count)",
+          ]
+        )
       }
     }
 
     // request logger
-    logger.debug("waiting for a connection to become available", metadata: [
-      Metadata.waiterID: "\(waiter.id)",
-      Metadata.waitersCount: "\(self.waiters.count)",
-    ])
+    logger.debug(
+      "waiting for a connection to become available",
+      metadata: [
+        Metadata.waiterID: "\(waiter.id)",
+        Metadata.waitersCount: "\(self.waiters.count)",
+      ]
+    )
 
     self.waiters.append(waiter)
 
     // pool logger
-    self.logger.trace("enqueued connection waiter", metadata: [
-      Metadata.waitersCount: "\(self.waiters.count)",
-    ])
+    self.logger.trace(
+      "enqueued connection waiter",
+      metadata: [
+        Metadata.waitersCount: "\(self.waiters.count)"
+      ]
+    )
 
     if self._shouldBringUpAnotherConnection() {
       self._startConnectingIdleConnection()
@@ -458,8 +470,9 @@ internal final class ConnectionPool {
   ///
   /// - Note: this is linear in the number of connections.
   @usableFromInline
-  internal func _mostAvailableConnectionIndex(
-  ) -> Dictionary<ConnectionManagerID, PerConnectionState>.Index {
+  internal func _mostAvailableConnectionIndex()
+    -> Dictionary<ConnectionManagerID, PerConnectionState>.Index
+  {
     var index = self._connections.values.startIndex
     var selectedIndex = self._connections.values.endIndex
     var mostAvailableStreams = 0
@@ -571,16 +584,16 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
   ) {
     switch (oldState, newState) {
     case let (.ready, .transientFailure(error)),
-         let (.ready, .idle(.some(error))):
+      let (.ready, .idle(.some(error))):
       self.updateMostRecentError(error)
       self.connectionUnavailable(manager.id)
 
     case (.ready, .idle(.none)),
-         (.ready, .shutdown):
+      (.ready, .shutdown):
       self.connectionUnavailable(manager.id)
 
     case let (_, .transientFailure(error)),
-         let (_, .idle(.some(error))):
+      let (_, .idle(.some(error))):
       self.updateMostRecentError(error)
 
     default:
@@ -591,7 +604,7 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
 
     switch (oldState, newState) {
     case (.idle, .connecting),
-         (.transientFailure, .connecting):
+      (.transientFailure, .connecting):
       delegate.startedConnecting(id: .init(manager.id))
 
     case (.connecting, .ready):
@@ -675,7 +688,8 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
   internal func streamOpened(_ manager: ConnectionManager) {
     self.eventLoop.assertInEventLoop()
     if let utilization = self._connections[manager.id]?.openedStream(),
-       let delegate = self.delegate {
+      let delegate = self.delegate
+    {
       delegate.connectionUtilizationChanged(
         id: .init(manager.id),
         streamsUsed: utilization.used,
@@ -693,7 +707,8 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
 
     // Return the stream the connection and to the pool manager.
     if let utilization = self._connections.values[index].returnStream(),
-       let delegate = self.delegate {
+      let delegate = self.delegate
+    {
       delegate.connectionUtilizationChanged(
         id: .init(manager.id),
         streamsUsed: utilization.used,
@@ -765,9 +780,12 @@ extension ConnectionPool {
   private func tryServiceWaiters() {
     if self.waiters.isEmpty { return }
 
-    self.logger.trace("servicing waiters", metadata: [
-      Metadata.waitersCount: "\(self.waiters.count)",
-    ])
+    self.logger.trace(
+      "servicing waiters",
+      metadata: [
+        Metadata.waitersCount: "\(self.waiters.count)"
+      ]
+    )
 
     let now = self.now()
     var serviced = 0
@@ -791,10 +809,13 @@ extension ConnectionPool {
       }
     }
 
-    self.logger.trace("done servicing waiters", metadata: [
-      Metadata.waitersCount: "\(self.waiters.count)",
-      Metadata.waitersServiced: "\(serviced)",
-    ])
+    self.logger.trace(
+      "done servicing waiters",
+      metadata: [
+        Metadata.waitersCount: "\(self.waiters.count)",
+        Metadata.waitersServiced: "\(serviced)",
+      ]
+    )
   }
 }
 

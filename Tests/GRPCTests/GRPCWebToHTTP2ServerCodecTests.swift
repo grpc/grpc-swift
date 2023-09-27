@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import struct Foundation.Data
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+
+import struct Foundation.Data
+
+@testable import GRPC
 
 class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
   private func writeTrailers(_ trailers: HPACKHeaders, into buffer: inout ByteBuffer) {

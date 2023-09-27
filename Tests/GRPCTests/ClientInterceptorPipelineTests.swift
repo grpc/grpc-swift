@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
+
+@testable import GRPC
 
 class ClientInterceptorPipelineTests: GRPCTestCase {
   override func setUp() {
@@ -262,7 +264,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 
         // Check the file and line, if expected.
         if let expectedFile = self.file, let expectedLine = self.line {
-          XCTAssertEqual("\(file)", "\(expectedFile)") // StaticString isn't Equatable
+          XCTAssertEqual("\(file)", "\(expectedFile)")  // StaticString isn't Equatable
           XCTAssertEqual(line, expectedLine)
         }
       }

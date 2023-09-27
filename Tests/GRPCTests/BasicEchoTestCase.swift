@@ -20,10 +20,11 @@ import Foundation
 import GRPC
 import GRPCSampleData
 import NIOCore
+import XCTest
+
 #if canImport(NIOSSL)
 import NIOSSL
 #endif
-import XCTest
 
 extension Echo_EchoRequest {
   init(text: String) {

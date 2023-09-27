@@ -265,4 +265,4 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

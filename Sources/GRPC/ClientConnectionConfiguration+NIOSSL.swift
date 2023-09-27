@@ -130,4 +130,4 @@ extension ClientConnection.Configuration {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

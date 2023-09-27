@@ -78,10 +78,13 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
   func testClientConnectionFailsWithNoBackoff() throws {
     self.connectionStateRecorder.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .shutdown),
+        ]
+      )
     }
 
     self.client = self.connectionBuilder()
@@ -100,12 +103,15 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
   func testClientConnectionFailureIsLimited() throws {
     self.connectionStateRecorder.expectChanges(4) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .transientFailure),
-        Change(from: .transientFailure, to: .connecting),
-        Change(from: .connecting, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .transientFailure),
+          Change(from: .transientFailure, to: .connecting),
+          Change(from: .connecting, to: .shutdown),
+        ]
+      )
     }
 
     self.client = self.connectionBuilder()
@@ -124,10 +130,13 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
   func testClientEventuallyConnects() throws {
     self.connectionStateRecorder.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .transientFailure),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .transientFailure),
+        ]
+      )
     }
 
     // Start the client first.
@@ -144,10 +153,13 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
 
     self.connectionStateRecorder.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .transientFailure, to: .connecting),
-        Change(from: .connecting, to: .ready),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .transientFailure, to: .connecting),
+          Change(from: .connecting, to: .ready),
+        ]
+      )
     }
 
     self.server = self.makeServer()
@@ -165,10 +177,13 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
     // Prepare the delegate so it expects the connection to hit `.ready`.
     self.connectionStateRecorder.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .ready),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .ready),
+        ]
+      )
     }
 
     // Configure the client backoff to have a short backoff.
@@ -192,11 +207,14 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     // 1. when the server has been killed, and
     // 2. when the client attempts to reconnect.
     self.connectionStateRecorder.expectChanges(3) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .ready, to: .transientFailure),
-        Change(from: .transientFailure, to: .connecting),
-        Change(from: .connecting, to: .transientFailure),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .ready, to: .transientFailure),
+          Change(from: .transientFailure, to: .connecting),
+          Change(from: .connecting, to: .transientFailure),
+        ]
+      )
     }
 
     // Okay, kill the server!
@@ -210,10 +228,13 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
     // Get ready for the new healthy connection.
     self.connectionStateRecorder.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .transientFailure, to: .connecting),
-        Change(from: .connecting, to: .ready),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .transientFailure, to: .connecting),
+          Change(from: .connecting, to: .ready),
+        ]
+      )
     }
 
     // This should succeed once we get a connection again.

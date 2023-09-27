@@ -15,6 +15,7 @@
  */
 import NIOCore
 import NIOHTTP2
+
 import protocol SwiftProtobuf.Message
 
 /// A `ClientTransport` factory for an RPC.
@@ -51,8 +52,11 @@ internal struct ClientTransportFactory<Request, Response> {
     scheme: String,
     maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
-  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message {
+  ) -> ClientTransportFactory<Request, Response>
+  where
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  {
     let http2 = HTTP2ClientTransportFactory<Request, Response>(
       streamChannel: channel,
       scheme: scheme,
@@ -98,8 +102,11 @@ internal struct ClientTransportFactory<Request, Response> {
   @usableFromInline
   internal static func fake(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
-  ) -> ClientTransportFactory<Request, Response> where Request: SwiftProtobuf.Message,
-    Response: SwiftProtobuf.Message {
+  ) -> ClientTransportFactory<Request, Response>
+  where
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  {
     let factory = FakeClientTransportFactory(
       fakeResponse,
       requestSerializer: ProtobufSerializer(),
@@ -303,10 +310,13 @@ internal struct FakeClientTransportFactory<Request, Response> {
     requestDeserializer: RequestDeserializer,
     responseSerializer: ResponseSerializer,
     responseDeserializer: ResponseDeserializer
-  ) where RequestSerializer.Input == Request,
+  )
+  where
+    RequestSerializer.Input == Request,
     RequestDeserializer.Output == Request,
     ResponseSerializer.Input == Response,
-    ResponseDeserializer.Output == Response {
+    ResponseDeserializer.Output == Response
+  {
     self.fakeResponseStream = fakeResponseStream
     self.requestSerializer = AnySerializer(wrapping: requestSerializer)
     self.responseDeserializer = AnyDeserializer(wrapping: responseDeserializer)

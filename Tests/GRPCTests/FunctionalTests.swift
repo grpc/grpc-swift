@@ -16,11 +16,12 @@
 import Dispatch
 import EchoModel
 import Foundation
-@testable import GRPC
 import NIOCore
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   override var transportSecurity: TransportSecurity {
@@ -88,7 +89,8 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     for lowerBound in stride(from: 0, to: numberOfRequests, by: batchSize) {
       let upperBound = min(lowerBound + batchSize, numberOfRequests)
       let numberOfCalls = upperBound - lowerBound
-      let responseExpectation = self
+      let responseExpectation =
+        self
         .makeResponseExpectation(expectedFulfillmentCount: numberOfCalls)
       let statusExpectation = self.makeStatusExpectation(expectedFulfillmentCount: numberOfCalls)
 
@@ -362,7 +364,7 @@ class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
     try super.testBidirectionalStreamingLotsOfMessagesPingPong()
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)
 
 // MARK: - Variants using NIO TS and Network.framework
 
@@ -564,4 +566,4 @@ class FunctionalTestsMutualAuthenticationNIOTS: FunctionalTestsInsecureTransport
     try super.testBidirectionalStreamingLotsOfMessagesPingPong()
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

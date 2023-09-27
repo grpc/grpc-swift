@@ -15,10 +15,11 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOPosix
 import XCTest
+
+@testable import GRPC
 
 class ClientCallTests: GRPCTestCase {
   private var group: MultiThreadedEventLoopGroup!
@@ -220,7 +221,7 @@ class ClientCallTests: GRPCTestCase {
           .message(.with { $0.text = "foo" }, .init(compress: false, flush: false)),
           promise: promise
         )
-      } onError: { _ in // ignore errors
+      } onError: { _ in  // ignore errors
       } onResponsePart: {
         switch $0 {
         case .metadata, .message:

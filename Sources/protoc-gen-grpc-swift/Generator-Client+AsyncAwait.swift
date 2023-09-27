@@ -49,7 +49,7 @@ extension Generator {
 
         case .clientStreaming, .bidirectionalStreaming:
           arguments = [
-            "callOptions: \(Types.clientCallOptions)?",
+            "callOptions: \(Types.clientCallOptions)?"
           ]
         }
 
@@ -61,7 +61,7 @@ extension Generator {
         )
       }
     }
-    self.println("}") // protocol
+    self.println("}")  // protocol
   }
 }
 
@@ -156,7 +156,8 @@ extension Generator {
         let streamsRequests = [.clientStreaming, .bidirectionalStreaming].contains(rpcType)
 
         // (protocol, requires sendable)
-        let sequenceProtocols: [(String, Bool)?] = streamsRequests
+        let sequenceProtocols: [(String, Bool)?] =
+          streamsRequests
           ? [("Sequence", false), ("AsyncSequence", true)]
           : [nil]
 
@@ -165,12 +166,14 @@ extension Generator {
           if i > 0 || j > 0 {
             self.println()
           }
-          let functionName = streamsRequests
+          let functionName =
+            streamsRequests
             ? "\(self.methodFunctionName)<RequestStream>"
             : self.methodFunctionName
           let requestParamName = streamsRequests ? "requests" : "request"
           let requestParamType = streamsRequests ? "RequestStream" : self.methodInputName
-          let returnType = streamsResponses
+          let returnType =
+            streamsResponses
             ? Types.responseStream(of: self.methodOutputName)
             : self.methodOutputName
           let maybeWhereClause = sequenceProtocol.map { protocolName, mustBeSendable -> String in

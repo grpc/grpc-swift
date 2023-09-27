@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 import Foundation
-@testable import GRPC
 import NIOCore
 import NIOPosix
 import NIOTransportServices
 import XCTest
+
+@testable import GRPC
 
 #if canImport(Network)
 import Network

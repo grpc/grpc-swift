@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import EchoModel
 import Foundation
+import NIOCore
+import XCTest
+
+@testable import GRPC
+
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-import EchoModel
-@testable import GRPC
-import NIOCore
-import XCTest
 
 // Only test Unary and ServerStreaming, as ClientStreaming is not
 // supported in HTTP1.
@@ -80,8 +83,8 @@ class ServerWebTests: EchoTestCaseBase {
 extension ServerWebTests {
   func testUnary() {
     let message = "hello, world!"
-    let expectedData = self.gRPCEncodedEchoRequest("Swift echo get: \(message)") + self
-      .gRPCWebTrailers()
+    let expectedData =
+      self.gRPCEncodedEchoRequest("Swift echo get: \(message)") + self.gRPCWebTrailers()
     let expectedResponse = expectedData.base64EncodedString()
 
     let completionHandlerExpectation = expectation(description: "completion handler called")
@@ -134,8 +137,8 @@ extension ServerWebTests {
 
     for i in 0 ..< numberOfRequests {
       let message = "foo \(i)"
-      let expectedData = self.gRPCEncodedEchoRequest("Swift echo get: \(message)") + self
-        .gRPCWebTrailers()
+      let expectedData =
+        self.gRPCEncodedEchoRequest("Swift echo get: \(message)") + self.gRPCWebTrailers()
       let expectedResponse = expectedData.base64EncodedString()
       self.sendOverHTTP1(rpcMethod: "Get", message: message) { data, error in
         XCTAssertNil(error)
