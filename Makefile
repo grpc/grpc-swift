@@ -117,6 +117,20 @@ ${NORMALIZATION_GRPC}: ${NORMALIZATION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-normalization: ${NORMALIZATION_PB} ${NORMALIZATION_GRPC}
 
+SERIALIZATION_PATH=Tests/GRPCTests/Codegen/Serialization/
+
+# For serialization we'll set the ReflectionService option to true.
+${SERIALIZATION_GRPC}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=ReflectionService=true \
+		--grpc-swift_out=$(dir ${SERIALIZATION_PATH})
+
+# Generates protobufs and gRPC client and server for the Serialization test
+.PHONY:
+test-serialization: ${SERIALIZATION_GRPC}
+
 ### Testing ####################################################################
 
 # Normal test suite.
