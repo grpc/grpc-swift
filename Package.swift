@@ -205,6 +205,7 @@ extension Target {
     ),
     exclude: [
       "Codegen/Normalization/normalization.proto",
+      "Codegen/Serialization/echo.grpc.reflection.txt",
     ]
   )
 
