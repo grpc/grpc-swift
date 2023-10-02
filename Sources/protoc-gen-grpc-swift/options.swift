@@ -143,13 +143,13 @@ final class GeneratorOptions {
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
-    
-      case "ReflectionService":
-          if let value = Bool(pair.value) {
-              self.reflectionService = value
-          } else {
-              throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-          }
+
+      case "ReflectionData":
+        if let value = Bool(pair.value) {
+          self.reflectionService = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
 
       default:
         throw GenerationError.unknownParameter(name: pair.key)
