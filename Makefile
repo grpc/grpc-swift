@@ -118,7 +118,6 @@ ${NORMALIZATION_GRPC}: ${NORMALIZATION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 generate-normalization: ${NORMALIZATION_PB} ${NORMALIZATION_GRPC}
 
 SERIALIZATION_GRPC_REFLECTION=Tests/GRPCTests/Codegen/Serialization/echo.grpc.reflection.txt
-SERIALIZATION_PATH=Tests/GRPCTests/Codegen/Serialization/
 
 # For serialization we'll set the ReflectionData option to true.
 ${SERIALIZATION_GRPC_REFLECTION}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
@@ -126,7 +125,7 @@ ${SERIALIZATION_GRPC_REFLECTION}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
 		--grpc-swift_opt=Client=false,Server=false,ReflectionData=true \
-		--grpc-swift_out=$(dir ${SERIALIZATION_PATH})
+		--grpc-swift_out=$(dir ${SERIALIZATION_GRPC_REFLECTION})
 
 # Generates binary file containing the serialized file descriptor proto for the Serialization test
 .PHONY:

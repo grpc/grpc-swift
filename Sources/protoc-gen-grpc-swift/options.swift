@@ -64,7 +64,7 @@ final class GeneratorOptions {
   private(set) var extraModuleImports: [String] = []
   private(set) var gRPCModuleName = "GRPC"
   private(set) var swiftProtobufModuleName = "SwiftProtobuf"
-  private(set) var reflectionService = false
+  private(set) var generateReflectionData = false
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -146,7 +146,7 @@ final class GeneratorOptions {
 
       case "ReflectionData":
         if let value = Bool(pair.value) {
-          self.reflectionService = value
+          self.generateReflectionData = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

@@ -65,9 +65,9 @@ func outputFileName(
   component: String,
   fileDescriptor: FileDescriptor,
   fileNamingOption: FileNaming,
-  extensionType: String
+  extension: String
 ) -> String {
-  let ext = "." + component + extensionType
+  let ext = "." + component + "." + `extension`
   let pathParts = splitPath(pathname: fileDescriptor.name)
   switch fileNamingOption {
   case .FullPath:
@@ -86,13 +86,13 @@ func uniqueOutputFileName(
   fileDescriptor: FileDescriptor,
   fileNamingOption: FileNaming,
   generatedFiles: inout [String: Int],
-  extensionType: String = ".swift"
+  extension: String = "swift"
 ) -> String {
   let defaultName = outputFileName(
     component: component,
     fileDescriptor: fileDescriptor,
     fileNamingOption: fileNamingOption,
-    extensionType: extensionType
+    extension: `extension`
   )
   if let count = generatedFiles[defaultName] {
     generatedFiles[defaultName] = count + 1
@@ -100,7 +100,7 @@ func uniqueOutputFileName(
       component: "\(count)." + component,
       fileDescriptor: fileDescriptor,
       fileNamingOption: fileNamingOption,
-      extensionType: extensionType
+      extension: `extension`
     )
   } else {
     generatedFiles[defaultName] = 1
@@ -141,22 +141,20 @@ func main(args: [String]) throws {
   // Only generate output for services.
   for name in request.fileToGenerate {
     if let fileDescriptor = descriptorSet.fileDescriptor(named: name) {
-      if (!fileDescriptor.services.isEmpty || !fileDescriptor.messages.isEmpty) {
+      if (options.generateReflectionData) {
         var binaryFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-        if (!fileDescriptor.messages.isEmpty && options.reflectionService) {
-          let binaryFileName = uniqueOutputFileName(
-            component: "grpc.reflection",
-            fileDescriptor: fileDescriptor,
-            fileNamingOption: options.fileNaming,
-            generatedFiles: &generatedFiles,
-            extensionType: ".txt"
-          )
-          let serializedFileDescriptorProto = try fileDescriptor.proto.serializedData()
-            .base64EncodedString()
-          binaryFile.name = binaryFileName
-          binaryFile.content = serializedFileDescriptorProto
-          response.file.append(binaryFile)
-        }
+        let binaryFileName = uniqueOutputFileName(
+          component: "grpc.reflection",
+          fileDescriptor: fileDescriptor,
+          fileNamingOption: options.fileNaming,
+          generatedFiles: &generatedFiles,
+          extension: "txt"
+        )
+        let serializedFileDescriptorProto = try fileDescriptor.proto.serializedData()
+          .base64EncodedString()
+        binaryFile.name = binaryFileName
+        binaryFile.content = serializedFileDescriptorProto
+        response.file.append(binaryFile)
       }
       if (
         !fileDescriptor.services
