@@ -25,6 +25,8 @@
 /// is similar to ``Status`` but only represents error cases, in other words represents all status
 /// codes apart from ``Code-swift.struct/ok``.
 public struct Status: @unchecked Sendable, Hashable {
+  // @unchecked because it relies on heap allocated storage and 'isKnownUniquelyReferenced'
+
   private var storage: Storage
   private mutating func ensureStorageIsUnique() {
     if !isKnownUniquelyReferenced(&self.storage) {

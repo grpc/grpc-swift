@@ -18,6 +18,8 @@
 ///
 /// See also ``Status``.
 public struct RPCError: @unchecked Sendable, Hashable, Error {
+  // @unchecked because it relies on heap allocated storage and 'isKnownUniquelyReferenced'
+
   private var storage: Storage
   private mutating func ensureStorageIsUnique() {
     if !isKnownUniquelyReferenced(&self.storage) {
@@ -44,6 +46,11 @@ public struct RPCError: @unchecked Sendable, Hashable, Error {
   }
 
   /// Metadata associated with the error.
+  ///
+  /// Any metadata included in the error thrown from a service will be sent back to the client and
+  /// conversely any ``RPCError`` received by the client may include metadata sent by a service.
+  ///
+  /// Note that clients and servers may synthesise errors which may not include metadata.
   public var metadata: Metadata {
     get { self.storage.metadata }
     set {
