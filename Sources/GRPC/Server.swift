@@ -569,11 +569,7 @@ extension Server.Configuration.CORS.AllowedOrigins {
   struct AnyCustomCORSAllowedOrigin: GRPCCustomCORSAllowedOrigin {
     private var checkOrigin: @Sendable (String) -> String?
     private let hashInto: @Sendable (inout Hasher) -> Void
-    #if swift(>=5.7)
     private let isEqualTo: @Sendable (any GRPCCustomCORSAllowedOrigin) -> Bool
-    #else
-    private let isEqualTo: @Sendable (Any) -> Bool
-    #endif
 
     init<W: GRPCCustomCORSAllowedOrigin>(_ wrap: W) {
       self.checkOrigin = { wrap.check(origin: $0) }

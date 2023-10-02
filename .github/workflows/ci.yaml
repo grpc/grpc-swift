@@ -24,16 +24,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-focal
+          - image: swiftlang/swift:nightly-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.8-jammy
+          - image: swift:5.9-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.7-jammy
+          - image: swift:5.8-focal
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.6-focal
+          - image: swift:5.7-focal
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
     name: Build and Test on ${{ matrix.image }}
@@ -46,8 +46,6 @@ jobs:
       run: swift build ${{ matrix.swift-build-flags }}
       timeout-minutes: 20
     - name: 🧪 Test
-      # Skip tests on 5.6: https://bugs.swift.org/browse/SR-15955
-      if: ${{ matrix.image != 'swift:5.6-focal' }}
       run: swift test ${{ matrix.swift-test-flags }}
       timeout-minutes: 20
   performance-tests:
@@ -55,7 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-focal
+          - image: swiftlang/swift:nightly-jammy
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -65,7 +63,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.8-jammy
+          - image: swift:5.9-jammy
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -75,7 +73,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.7-jammy
+          - image: swift:5.8-focal
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -85,16 +83,16 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.6-focal
+          - image: swift:5.7-focal
             env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 324000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 162000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
               MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
               MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 164000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 171000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 171000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
     name: Performance Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
@@ -110,10 +108,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: swiftlang/swift:nightly-focal
-          - image: swift:5.8-jammy
-          - image: swift:5.7-jammy
-          - image: swift:5.6-focal
+          - image: swiftlang/swift:nightly-jammy
+          - image: swift:5.9-jammy
+          - image: swift:5.8-focal
+          - image: swift:5.7-focal
     name: Integration Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
