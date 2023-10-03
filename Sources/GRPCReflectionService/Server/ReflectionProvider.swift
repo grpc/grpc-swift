@@ -19,7 +19,16 @@ import GRPC
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ReflectionProvider: Reflection_ServerReflectionAsyncProvider {
-    func serverReflectionInfo(requestStream: GRPC.GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>, responseStream: GRPC.GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>, context: GRPC.GRPCAsyncServerCallContext) async throws {
-        throw GRPCStatus(code: .unimplemented)
+  func serverReflectionInfo(
+    requestStream: GRPC.GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
+    responseStream: GRPC.GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
+    context: GRPC.GRPCAsyncServerCallContext
+  ) async throws {
+    for try await request in requestStream {
+      switch request.messageRequest {
+      case let .fileByFilename(filename):
+      }
     }
+    throw GRPCStatus(code: .unimplemented)
+  }
 }
