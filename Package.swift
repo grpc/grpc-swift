@@ -89,7 +89,8 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
-
+  static let reflectionService: Self = .target(name: "ReflectionService")
+    
   // Product dependencies
   static let argumentParser: Self = .product(
     name: "ArgumentParser",
@@ -428,6 +429,19 @@ extension Target {
       "README.md",
     ]
   )
+    
+    static let reflectionService: Target = .target(
+      name: "ReflectionService",
+      dependencies: [
+        .grpc,
+        .nio,
+        .protobuf,
+      ],
+      path: "Sources/GRPCReflectionService",
+      exclude: [
+        "Model/reflection.proto",
+      ]
+    )
 }
 
 // MARK: - Products
@@ -471,6 +485,7 @@ let package = Package(
     .cgrpcZlib,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
+    .reflectionService,
 
     // Tests etc.
     .grpcTests,
