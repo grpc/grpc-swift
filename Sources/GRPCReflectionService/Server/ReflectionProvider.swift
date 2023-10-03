@@ -24,11 +24,6 @@ final class ReflectionProvider: Reflection_ServerReflectionAsyncProvider {
     responseStream: GRPC.GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
     context: GRPC.GRPCAsyncServerCallContext
   ) async throws {
-    for try await request in requestStream {
-      switch request.messageRequest {
-      case let .fileByFilename(filename):
-      }
-    }
     throw GRPCStatus(code: .unimplemented)
   }
 }
