@@ -89,7 +89,7 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
-  static let reflectionService: Self = .target(name: "ReflectionService")
+  static let reflectionService: Self = .target(name: "GRPCReflectionService")
 
   // Product dependencies
   static let argumentParser: Self = .product(
@@ -431,7 +431,7 @@ extension Target {
   )
 
   static let reflectionService: Target = .target(
-    name: "ReflectionService",
+    name: "GRPCReflectionService",
     dependencies: [
       .grpc,
       .nio,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, gRPC Authors All rights reserved.
+ * Copyright 2023, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ import Foundation
 import GRPC
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-final class ReflectionProvider: Reflection_ServerReflectionAsyncProvider {
+final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
   func serverReflectionInfo(
-    requestStream: GRPC.GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
-    responseStream: GRPC.GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
-    context: GRPC.GRPCAsyncServerCallContext
+    requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
+    context: GRPCAsyncServerCallContext
   ) async throws {
     throw GRPCStatus(code: .unimplemented)
   }
