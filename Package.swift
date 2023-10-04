@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -89,6 +89,7 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
+  static let reflectionService: Self = .target(name: "GRPCReflectionService")
 
   // Product dependencies
   static let argumentParser: Self = .product(
@@ -119,6 +120,8 @@ extension Target.Dependency {
     name: "SwiftProtobufPluginLibrary",
     package: "swift-protobuf"
   )
+
+  static let grpcCore: Self = .target(name: "GRPCCore")
 }
 
 // MARK: - Targets
@@ -144,6 +147,12 @@ extension Target {
       .nioSSL, if: includeNIOSSL
     ),
     path: "Sources/GRPC"
+  )
+
+  static let grpcCore: Target = .target(
+    name: "GRPCCore",
+    dependencies: [],
+    path: "Sources/GRPCCore"
   )
 
   static let cgrpcZlib: Target = .target(
@@ -197,6 +206,14 @@ extension Target {
     ),
     exclude: [
       "Codegen/Normalization/normalization.proto",
+      "Codegen/Serialization/echo.grpc.reflection.txt",
+    ]
+  )
+
+  static let grpcCoreTests: Target = .testTarget(
+    name: "GRPCCoreTests",
+    dependencies: [
+      .grpcCore,
     ]
   )
 
@@ -412,6 +429,19 @@ extension Target {
       "README.md",
     ]
   )
+
+  static let reflectionService: Target = .target(
+    name: "GRPCReflectionService",
+    dependencies: [
+      .grpc,
+      .nio,
+      .protobuf,
+    ],
+    path: "Sources/GRPCReflectionService",
+    exclude: [
+      "Model/reflection.proto",
+    ]
+  )
 }
 
 // MARK: - Products
@@ -455,6 +485,7 @@ let package = Package(
     .cgrpcZlib,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
+    .reflectionService,
 
     // Tests etc.
     .grpcTests,
@@ -476,6 +507,12 @@ let package = Package(
     .routeGuideClient,
     .routeGuideServer,
     .packetCapture,
+
+    // v2
+    .grpcCore,
+
+    // v2 tests
+    .grpcCoreTests,
   ]
 )
 
