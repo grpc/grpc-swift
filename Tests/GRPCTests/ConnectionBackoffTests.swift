@@ -43,7 +43,7 @@ class ConnectionBackoffTests: GRPCTestCase {
         pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
         self.backoff.maximumBackoff
       )
-      XCTAssertEqual(expected, backoff, accuracy: 1e-6)
+      XCTAssertEqual(expected, backoff!, accuracy: 1e-6)
     }
   }
 
@@ -55,7 +55,7 @@ class ConnectionBackoffTests: GRPCTestCase {
       )
       let halfJitterRange = self.backoff.jitter * unjittered
       let jitteredRange = (unjittered - halfJitterRange) ... (unjittered + halfJitterRange)
-      XCTAssert(jitteredRange.contains(timeoutAndBackoff.backoff))
+      XCTAssert(jitteredRange.contains(timeoutAndBackoff.backoff!))
     }
   }
 
@@ -65,7 +65,7 @@ class ConnectionBackoffTests: GRPCTestCase {
     self.backoff.jitter = 0.0
 
     for backoff in self.backoff.prefix(100).map({ $0.backoff }) {
-      XCTAssertLessThanOrEqual(backoff, self.backoff.maximumBackoff)
+      XCTAssertLessThanOrEqual(backoff!, self.backoff.maximumBackoff)
     }
   }
 
@@ -79,19 +79,19 @@ class ConnectionBackoffTests: GRPCTestCase {
     for limit in [1, 3, 5] {
       let backoff = ConnectionBackoff(retries: .upTo(limit))
       let values = Array(backoff)
-      XCTAssertEqual(values.count, limit)
+      XCTAssertEqual(values.count, limit+1)
     }
   }
 
   func testConnectionBackoffWhenLimitedToZeroRetries() {
     let backoff = ConnectionBackoff(retries: .upTo(0))
     let values = Array(backoff)
-    XCTAssertTrue(values.isEmpty)
+      XCTAssertEqual(values.count, 1)
   }
 
   func testConnectionBackoffWithNoRetries() {
     let backoff = ConnectionBackoff(retries: .none)
     let values = Array(backoff)
-    XCTAssertTrue(values.isEmpty)
+      XCTAssertEqual(values.count, 1)
   }
 }
