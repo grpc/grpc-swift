@@ -997,7 +997,10 @@ extension ConnectionManager {
     }
 
     // Should we reconnect if the candidate channel fails?
-    let reconnect: Reconnect = timeoutAndBackoff.map { .after($0.backoff) } ?? .none
+    var reconnect = Reconnect.none
+    if let backoff = timeoutAndBackoff?.backoff {
+        reconnect = Reconnect.after(backoff)
+    }
     let connecting = ConnectingState(
       backoffIterator: backoffIterator,
       reconnect: reconnect,

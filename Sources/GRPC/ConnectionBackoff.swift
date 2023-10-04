@@ -99,7 +99,7 @@ public struct ConnectionBackoff: Sequence, Sendable {
 
 /// An iterator for ``ConnectionBackoff``.
 public class ConnectionBackoffIterator: IteratorProtocol {
-  public typealias Element = (timeout: TimeInterval, backoff: TimeInterval)
+  public typealias Element = (timeout: TimeInterval, backoff: TimeInterval?)
 
   /// Creates a new connection backoff iterator with the given configuration.
   public init(connectionBackoff: ConnectionBackoff) {
@@ -135,7 +135,12 @@ public class ConnectionBackoffIterator: IteratorProtocol {
     case let .limited(limit) where limit > 0:
       self.connectionBackoff.retries.limit = .limited(limit - 1)
 
-    // limit must be <= 0, no new element.
+    // limit is reached, return an element with only a timeout.
+    case let .limited(limit) where limit == 0:
+      self.connectionBackoff.retries.limit = .limited(limit - 1)
+      return self.makeElement(backoff: nil)
+
+    // limit must be < 0, no new element.
     case .limited:
       return nil
     }
@@ -159,8 +164,8 @@ public class ConnectionBackoffIterator: IteratorProtocol {
 
   /// Make a timeout-backoff pair from the given backoff. The timeout is the `max` of the backoff
   /// and `connectionBackoff.minimumConnectionTimeout`.
-  private func makeElement(backoff: TimeInterval) -> Element {
-    let timeout = max(backoff, self.connectionBackoff.minimumConnectionTimeout)
+  private func makeElement(backoff: TimeInterval?) -> Element {
+    let timeout = max(backoff ?? self.unjitteredBackoff, self.connectionBackoff.minimumConnectionTimeout)
     return (timeout, backoff)
   }
 
