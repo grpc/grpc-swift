@@ -942,24 +942,18 @@ extension ConnectionManager {
   // states. Must be called on the `EventLoop`.
   private func startConnecting() {
     self.eventLoop.assertInEventLoop()
-    var timeout: TimeAmount?
-    if let backoff = self.connectionBackoff {
-      timeout = TimeAmount.seconds(timeInterval: backoff.minimumConnectionTimeout)
-    }
     switch self.state {
     case .idle:
       let iterator = self.connectionBackoff?.makeIterator()
       self.startConnecting(
         backoffIterator: iterator,
-        muxPromise: self.eventLoop.makePromise(),
-        connectTimeout: timeout
+        muxPromise: self.eventLoop.makePromise()
       )
 
     case let .transientFailure(pending):
       self.startConnecting(
         backoffIterator: pending.backoffIterator,
-        muxPromise: pending.readyChannelMuxPromise,
-        connectTimeout: timeout
+        muxPromise: pending.readyChannelMuxPromise
       )
 
     // We shutdown before a scheduled connection attempt had started.
@@ -979,8 +973,7 @@ extension ConnectionManager {
 
   private func startConnecting(
     backoffIterator: ConnectionBackoffIterator?,
-    muxPromise: EventLoopPromise<HTTP2StreamMultiplexer>,
-    connectTimeout: TimeAmount? = nil
+    muxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
   ) {
     let timeoutAndBackoff = backoffIterator?.next()
 
@@ -992,7 +985,7 @@ extension ConnectionManager {
       let channel: EventLoopFuture<Channel> = self.channelProvider.makeChannel(
         managedBy: self,
         onEventLoop: self.eventLoop,
-        connectTimeout: connectTimeout,
+        connectTimeout: timeoutAndBackoff.map { .seconds(timeInterval: $0.timeout) },
         logger: self.logger
       )
 
