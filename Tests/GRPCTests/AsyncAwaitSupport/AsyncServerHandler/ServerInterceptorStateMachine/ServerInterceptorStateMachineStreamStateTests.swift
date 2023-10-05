@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import XCTest
+
+@testable import GRPC
 
 internal final class ServerInterceptorStateMachineStreamStateTests: GRPCTestCase {
   func testInboundStreamState_receiveMetadataWhileIdle() {

@@ -114,11 +114,14 @@ final class AsyncIntegrationTests: GRPCTestCase {
     initialMetadata.assertFirst("200", forName: ":status")
 
     let responses = try await expand.responseStream.map { $0.text }.collect()
-    XCTAssertEqual(responses, [
-      "Swift echo expand (0): boyle",
-      "Swift echo expand (1): jeffers",
-      "Swift echo expand (2): holt",
-    ])
+    XCTAssertEqual(
+      responses,
+      [
+        "Swift echo expand (0): boyle",
+        "Swift echo expand (1): jeffers",
+        "Swift echo expand (2): holt",
+      ]
+    )
 
     let trailingMetadata = try await expand.trailingMetadata
     trailingMetadata.assertFirst("0", forName: "grpc-status")
@@ -130,11 +133,14 @@ final class AsyncIntegrationTests: GRPCTestCase {
   func testServerStreamingWrapper() async throws {
     let responseStream = self.echo.expand(.with { $0.text = "boyle jeffers holt" })
     let responses = try await responseStream.map { $0.text }.collect()
-    XCTAssertEqual(responses, [
-      "Swift echo expand (0): boyle",
-      "Swift echo expand (1): jeffers",
-      "Swift echo expand (2): holt",
-    ])
+    XCTAssertEqual(
+      responses,
+      [
+        "Swift echo expand (0): boyle",
+        "Swift echo expand (1): jeffers",
+        "Swift echo expand (2): holt",
+      ]
+    )
   }
 
   func testBidirectionalStreaming() async throws {
@@ -172,11 +178,14 @@ final class AsyncIntegrationTests: GRPCTestCase {
 
     let responseStream = self.echo.update(requests)
     let responses = try await responseStream.map { $0.text }.collect()
-    XCTAssertEqual(responses, [
-      "Swift echo update (0): boyle",
-      "Swift echo update (1): jeffers",
-      "Swift echo update (2): holt",
-    ])
+    XCTAssertEqual(
+      responses,
+      [
+        "Swift echo update (0): boyle",
+        "Swift echo update (1): jeffers",
+        "Swift echo update (2): holt",
+      ]
+    )
   }
 
   func testServerCloseAfterMessage() async throws {
@@ -184,7 +193,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
     try await update.requestStream.send(.with { $0.text = "hello" })
     _ = try await update.responseStream.first(where: { _ in true })
     XCTAssertNoThrow(try self.server.close().wait())
-    self.server = nil // So that tearDown() does not call close() again.
+    self.server = nil  // So that tearDown() does not call close() again.
     update.requestStream.finish()
   }
 }

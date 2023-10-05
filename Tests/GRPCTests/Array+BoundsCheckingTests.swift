@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-@testable import GRPC
 import XCTest
+
+@testable import GRPC
 
 class ArrayBoundsCheckingTests: GRPCTestCase {
   func testBoundsCheckEmpty() {

@@ -379,10 +379,10 @@ extension GRPCClientStateMachine.State {
       )
 
     case .clientActiveServerIdle,
-         .clientClosedServerIdle,
-         .clientClosedServerActive,
-         .clientActiveServerActive,
-         .clientClosedServerClosed:
+      .clientClosedServerIdle,
+      .clientClosedServerActive,
+      .clientActiveServerActive,
+      .clientClosedServerClosed:
       result = .failure(.invalidState)
 
     case .modifying:
@@ -412,8 +412,8 @@ extension GRPCClientStateMachine.State {
       return result
 
     case .clientClosedServerIdle,
-         .clientClosedServerActive,
-         .clientClosedServerClosed:
+      .clientClosedServerActive,
+      .clientClosedServerClosed:
       result = .failure(.cardinalityViolation)
 
     case .clientIdleServerIdle:
@@ -441,9 +441,9 @@ extension GRPCClientStateMachine.State {
       return result
 
     case .clientIdleServerIdle,
-         .clientClosedServerIdle,
-         .clientClosedServerActive,
-         .clientClosedServerClosed:
+      .clientClosedServerIdle,
+      .clientClosedServerActive,
+      .clientClosedServerClosed:
       return nil
 
     case .modifying:
@@ -465,8 +465,8 @@ extension GRPCClientStateMachine.State {
       self = .clientClosedServerActive(readState: readState)
 
     case .clientClosedServerIdle,
-         .clientClosedServerActive,
-         .clientClosedServerClosed:
+      .clientClosedServerActive,
+      .clientClosedServerClosed:
       result = .failure(.alreadyClosed)
 
     case .clientIdleServerIdle:
@@ -499,9 +499,9 @@ extension GRPCClientStateMachine.State {
         }
 
     case .clientIdleServerIdle,
-         .clientClosedServerActive,
-         .clientActiveServerActive,
-         .clientClosedServerClosed:
+      .clientClosedServerActive,
+      .clientActiveServerActive,
+      .clientClosedServerClosed:
       result = .failure(.invalidState)
 
     case .modifying:
@@ -528,9 +528,9 @@ extension GRPCClientStateMachine.State {
       self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientIdleServerIdle,
-         .clientActiveServerIdle,
-         .clientClosedServerIdle,
-         .clientClosedServerClosed:
+      .clientActiveServerIdle,
+      .clientClosedServerIdle,
+      .clientClosedServerClosed:
       result = .failure(.invalidState)
 
     case .modifying:
@@ -548,19 +548,19 @@ extension GRPCClientStateMachine.State {
 
     switch self {
     case .clientActiveServerIdle,
-         .clientClosedServerIdle:
+      .clientClosedServerIdle:
       result = self.parseTrailersOnly(trailers).map { status in
         self = .clientClosedServerClosed
         return status
       }
 
     case .clientActiveServerActive,
-         .clientClosedServerActive:
+      .clientClosedServerActive:
       result = .success(self.parseTrailers(trailers))
       self = .clientClosedServerClosed
 
     case .clientIdleServerIdle,
-         .clientClosedServerClosed:
+      .clientClosedServerClosed:
       result = .failure(.invalidState)
 
     case .modifying:
@@ -580,9 +580,9 @@ extension GRPCClientStateMachine.State {
       preconditionFailure()
 
     case .clientActiveServerIdle,
-         .clientActiveServerActive,
-         .clientClosedServerIdle,
-         .clientClosedServerActive:
+      .clientActiveServerActive,
+      .clientClosedServerIdle,
+      .clientClosedServerActive:
       self = .clientClosedServerClosed
       status = .init(
         code: .internalError,
@@ -656,9 +656,11 @@ extension GRPCClientStateMachine.State {
 
     // Add user-defined custom metadata: this should come after the call definition headers.
     // TODO: make header normalization user-configurable.
-    headers.add(contentsOf: customMetadata.lazy.map { name, value, indexing in
-      (name.lowercased(), value, indexing)
-    })
+    headers.add(
+      contentsOf: customMetadata.lazy.map { name, value, indexing in
+        (name.lowercased(), value, indexing)
+      }
+    )
 
     // Add default user-agent value, if `customMetadata` didn't contain user-agent
     if !customMetadata.contains(name: "user-agent") {
@@ -685,7 +687,8 @@ extension GRPCClientStateMachine.State {
     // Implementations must synthesize a Status & Status-Message to propagate to the application
     // layer when this occurs."
     let statusHeader = headers.first(name: ":status")
-    let responseStatus = statusHeader
+    let responseStatus =
+      statusHeader
       .flatMap(Int.init)
       .map { code in
         HTTPResponseStatus(statusCode: code)
@@ -771,7 +774,8 @@ extension GRPCClientStateMachine.State {
     guard httpResponseStatus == .ok else {
       // Non-200 response. If there's a 'grpc-status' message we should use that otherwise try
       // to create one from the HTTP status code.
-      let grpcStatusCode = self.readStatusCode(from: trailers)
+      let grpcStatusCode =
+        self.readStatusCode(from: trailers)
         ?? GRPCStatus.Code(httpStatus: Int(httpResponseStatus.code))
         ?? .unknown
       let message = self.readStatusMessage(from: trailers)
@@ -783,7 +787,8 @@ extension GRPCClientStateMachine.State {
     // missing then we should avoid the error and propagate the status code and message sent by
     // the server instead.
     if let contentTypeHeader = trailers.first(name: "content-type"),
-       ContentType(value: contentTypeHeader) == nil {
+      ContentType(value: contentTypeHeader) == nil
+    {
       return .failure(.invalidContentType(contentTypeHeader))
     }
 

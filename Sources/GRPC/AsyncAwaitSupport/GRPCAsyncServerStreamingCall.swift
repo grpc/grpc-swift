@@ -22,12 +22,13 @@ import NIOHPACK
 public struct GRPCAsyncServerStreamingCall<Request: Sendable, Response: Sendable> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
-  private let responseSource: NIOThrowingAsyncSequenceProducer<
-    Response,
-    Error,
-    NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
-    GRPCAsyncSequenceProducerDelegate
-  >.Source
+  private let responseSource:
+    NIOThrowingAsyncSequenceProducer<
+      Response,
+      Error,
+      NIOAsyncSequenceProducerBackPressureStrategies.HighLowWatermark,
+      GRPCAsyncSequenceProducerDelegate
+    >.Source
 
   /// The stream of responses from the server.
   public let responseStream: GRPCAsyncResponseStream<Response>

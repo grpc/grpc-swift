@@ -122,4 +122,4 @@ extension Server.Configuration {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

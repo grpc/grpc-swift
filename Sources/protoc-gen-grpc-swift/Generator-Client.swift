@@ -89,11 +89,14 @@ extension Generator {
       self.println("\(functionHead)func \(name)(")
       self.withIndentation {
         // Add a comma after each argument except the last.
-        arguments.forEach(beforeLast: {
-          self.println($0 + ",")
-        }, onLast: {
-          self.println($0)
-        })
+        arguments.forEach(
+          beforeLast: {
+            self.println($0 + ",")
+          },
+          onLast: {
+            self.println($0)
+          }
+        )
       }
       self.println(")\(asyncThrows)\(`return`)\(genericWhere)", newline: !hasBody)
     }
@@ -504,7 +507,7 @@ extension Generator {
     self.printFunction(
       name: "make\(self.method.name)ResponseStream",
       arguments: [
-        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
+        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }"
       ],
       returnType: "\(type)<\(self.methodInputName), \(self.methodOutputName)>",
       access: self.access
@@ -569,7 +572,7 @@ extension Generator {
       self.printFakeResponseStreams()
     }
 
-    self.println("}") // end class
+    self.println("}")  // end class
   }
 }
 
@@ -664,9 +667,9 @@ extension MethodDescriptor {
     let sourceComments = self.protoSourceComments()
 
     if sourceComments.isEmpty {
-      return "/// \(streamingType.name) call to \(self.name)\n" // comments end with "\n" already.
+      return "/// \(streamingType.name) call to \(self.name)\n"  // comments end with "\n" already.
     } else {
-      return sourceComments // already prefixed with "///"
+      return sourceComments  // already prefixed with "///"
     }
   }
 }

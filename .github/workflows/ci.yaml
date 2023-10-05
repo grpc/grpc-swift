@@ -14,10 +14,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: "Formatting and License Headers check"
       run: |
-        SWIFTFORMAT_VERSION=0.52.0
-        git clone --depth 1 --branch "$SWIFTFORMAT_VERSION" "https://github.com/nicklockwood/SwiftFormat" "$HOME/SwiftFormat"
-        swift build -c release --package-path "$HOME/SwiftFormat" --product swiftformat
-        export PATH=$PATH:"$(swift build -c release --package-path "$HOME/SwiftFormat" --show-bin-path)"
         ./scripts/sanity.sh
   unit-tests:
     strategy:

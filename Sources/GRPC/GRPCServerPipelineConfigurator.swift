@@ -114,9 +114,10 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       // Sync options were added to the HTTP/2 stream channel in 1.17.0 (we require at least this)
       // so this shouldn't be `nil`, but it's not a problem if it is.
       let http2StreamID = try? stream.syncOptions?.getOption(HTTP2StreamChannelOptions.streamID)
-      let streamID = http2StreamID.map { streamID in
-        return String(Int(streamID))
-      } ?? "<unknown>"
+      let streamID =
+        http2StreamID.map { streamID in
+          return String(Int(streamID))
+        } ?? "<unknown>"
 
       logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
 
@@ -222,7 +223,7 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       self.configuration.logger.error("Unable to determine http version, closing")
       context.close(mode: .all, promise: nil)
     case .notEnoughBytes:
-      () // Try again with more bytes.
+      ()  // Try again with more bytes.
     }
   }
 
@@ -236,10 +237,13 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
     switch event {
     case let .handshakeCompleted(negotiatedProtocol):
       let tlsVersion = try? context.channel.getTLSVersionSync()
-      self.configuration.logger.debug("TLS handshake completed", metadata: [
-        "alpn": "\(negotiatedProtocol ?? "nil")",
-        "tls_version": "\(tlsVersion.map(String.init(describing:)) ?? "nil")",
-      ])
+      self.configuration.logger.debug(
+        "TLS handshake completed",
+        metadata: [
+          "alpn": "\(negotiatedProtocol ?? "nil")",
+          "tls_version": "\(tlsVersion.map(String.init(describing:)) ?? "nil")",
+        ]
+      )
 
       switch negotiatedProtocol {
       case let .some(negotiated):
@@ -303,8 +307,8 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       }
 
     case .notConfigured(alpn: .expectedButFallingBack),
-         .notConfigured(alpn: .notExpected),
-         .configuring:
+      .notConfigured(alpn: .notExpected),
+      .configuring:
       ()
     }
 
@@ -317,13 +321,13 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
 
     switch self.state {
     case .notConfigured(alpn: .notExpected),
-         .notConfigured(alpn: .expectedButFallingBack):
+      .notConfigured(alpn: .expectedButFallingBack):
       // If ALPN isn't expected, or we didn't negotiate via ALPN and we don't require it then we
       // can try parsing the data we just buffered.
       self.tryParsingBufferedData(context: context)
 
     case .notConfigured(alpn: .expected),
-         .configuring:
+      .configuring:
       // We expect ALPN or we're being configured, just buffer the data, we'll forward it later.
       ()
     }
@@ -476,7 +480,8 @@ struct HTTPVersionParser {
     }
 
     guard let version = readableBytesView.dropPrefix(through: UInt8(ascii: "\r")),
-          readableBytesView.first == UInt8(ascii: "\n") else {
+      readableBytesView.first == UInt8(ascii: "\n")
+    else {
       // If we didn't drop the prefix OR we did and the next byte wasn't '\n', then we had enough
       // bytes but the '\r\n' wasn't present: reject this as being HTTP1.
       return .rejected

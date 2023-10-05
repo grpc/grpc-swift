@@ -20,8 +20,10 @@ import NIOSSL
 extension ClientConnection {
   /// Returns a `ClientConnection` builder configured with TLS.
   @available(
-    *, deprecated,
-    message: "Use one of 'usingPlatformAppropriateTLS(for:)', 'usingTLSBackedByNIOSSL(on:)' or 'usingTLSBackedByNetworkFramework(on:)' or 'usingTLS(on:with:)'"
+    *,
+    deprecated,
+    message:
+      "Use one of 'usingPlatformAppropriateTLS(for:)', 'usingTLSBackedByNIOSSL(on:)' or 'usingTLSBackedByNetworkFramework(on:)' or 'usingTLS(on:with:)'"
   )
   public static func secure(group: EventLoopGroup) -> ClientConnection.Builder.Secure {
     return ClientConnection.usingTLSBackedByNIOSSL(on: group)
@@ -96,4 +98,4 @@ extension ClientConnection.Builder.Secure {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

@@ -130,7 +130,7 @@ public final class UnaryServerHandler<
       self.state = .completed
 
     case let .createdContext(context),
-         let .invokedFunction(context):
+      let .invokedFunction(context):
       context.responsePromise.fail(GRPCStatus(code: .unavailable, message: nil))
       self.context.eventLoop.execute {
         self.interceptors = nil
@@ -236,7 +236,7 @@ public final class UnaryServerHandler<
     // 'created' is allowed here: we may have to (and tear down) after receiving headers
     // but before receiving a message.
     case let .createdContext(context),
-         let .invokedFunction(context):
+      let .invokedFunction(context):
 
       switch result {
       case let .success(response):
@@ -304,7 +304,7 @@ public final class UnaryServerHandler<
       self.interceptors.send(.end(status, trailers), promise: nil)
 
     case let .createdContext(context),
-         let .invokedFunction(context):
+      let .invokedFunction(context):
       // We don't have a promise to fail. Just send back end.
       self.state = .completed
 

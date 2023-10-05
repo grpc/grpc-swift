@@ -18,7 +18,7 @@ import GRPC
 import Logging
 
 let smallRequest = String(repeating: "x", count: 8)
-let largeRequest = String(repeating: "x", count: 1 << 16) // 65k
+let largeRequest = String(repeating: "x", count: 1 << 16)  // 65k
 
 // Add benchmarks here!
 func runBenchmarks(spec: TestSpec) {
@@ -264,9 +264,11 @@ struct PerformanceTests: ParsableCommand {
   }
 }
 
-assert({
-  print("⚠️ WARNING: YOU ARE RUNNING IN DEBUG MODE ⚠️")
-  return true
-}())
+assert(
+  {
+    print("⚠️ WARNING: YOU ARE RUNNING IN DEBUG MODE ⚠️")
+    return true
+  }()
+)
 
 PerformanceTests.main()

@@ -29,4 +29,4 @@ extension SampleCertificate {
     )
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

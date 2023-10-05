@@ -66,5 +66,5 @@ extension ClientConnection.Builder.Secure {
   }
 }
 
-#endif // canImport(Network)
-#endif // canImport(Security)
+#endif  // canImport(Network)
+#endif  // canImport(Security)

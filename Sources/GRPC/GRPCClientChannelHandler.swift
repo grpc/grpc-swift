@@ -352,11 +352,14 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
     content: HTTP2Frame.FramePayload.Headers,
     context: ChannelHandlerContext
   ) {
-    self.logger.trace("received HTTP2 frame", metadata: [
-      MetadataKey.h2Payload: "HEADERS",
-      MetadataKey.h2Headers: "\(content.headers)",
-      MetadataKey.h2EndStream: "\(content.endStream)",
-    ])
+    self.logger.trace(
+      "received HTTP2 frame",
+      metadata: [
+        MetadataKey.h2Payload: "HEADERS",
+        MetadataKey.h2Headers: "\(content.headers)",
+        MetadataKey.h2EndStream: "\(content.endStream)",
+      ]
+    )
 
     // In the case of a "Trailers-Only" response there's no guarantee that end-of-stream will be set
     // on the headers frame: end stream may be sent on an empty data frame as well. If the headers
@@ -424,11 +427,14 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
       preconditionFailure("Received DATA frame with non-ByteBuffer IOData")
     }
 
-    self.logger.trace("received HTTP2 frame", metadata: [
-      MetadataKey.h2Payload: "DATA",
-      MetadataKey.h2DataBytes: "\(content.data.readableBytes)",
-      MetadataKey.h2EndStream: "\(content.endStream)",
-    ])
+    self.logger.trace(
+      "received HTTP2 frame",
+      metadata: [
+        MetadataKey.h2Payload: "DATA",
+        MetadataKey.h2DataBytes: "\(content.data.readableBytes)",
+        MetadataKey.h2EndStream: "\(content.endStream)",
+      ]
+    )
 
     self.consumeBytes(from: &buffer, context: context)
 
@@ -507,11 +513,14 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       case let .success(headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
         let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
-        self.logger.trace("writing HTTP2 frame", metadata: [
-          MetadataKey.h2Payload: "HEADERS",
-          MetadataKey.h2Headers: "\(headers)",
-          MetadataKey.h2EndStream: "false",
-        ])
+        self.logger.trace(
+          "writing HTTP2 frame",
+          metadata: [
+            MetadataKey.h2Payload: "HEADERS",
+            MetadataKey.h2Headers: "\(headers)",
+            MetadataKey.h2EndStream: "false",
+          ]
+        )
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(sendRequestHeadersError):
@@ -562,11 +571,14 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
             .init(data: .byteBuffer(buffer), endStream: false)
           )
 
-          self.logger.trace("writing HTTP2 frame", metadata: [
-            MetadataKey.h2Payload: "DATA",
-            MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
-            MetadataKey.h2EndStream: "false",
-          ])
+          self.logger.trace(
+            "writing HTTP2 frame",
+            metadata: [
+              MetadataKey.h2Payload: "DATA",
+              MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
+              MetadataKey.h2EndStream: "false",
+            ]
+          )
           context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
         case let .failure(error):
@@ -585,11 +597,14 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
           .init(data: .byteBuffer(empty), endStream: true)
         )
 
-        self.logger.trace("writing HTTP2 frame", metadata: [
-          MetadataKey.h2Payload: "DATA",
-          MetadataKey.h2DataBytes: "0",
-          MetadataKey.h2EndStream: "true",
-        ])
+        self.logger.trace(
+          "writing HTTP2 frame",
+          metadata: [
+            MetadataKey.h2Payload: "DATA",
+            MetadataKey.h2DataBytes: "0",
+            MetadataKey.h2EndStream: "true",
+          ]
+        )
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(error):
@@ -621,11 +636,14 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
           .init(data: .byteBuffer(buffer), endStream: false)
         )
 
-        self.logger.trace("writing HTTP2 frame", metadata: [
-          MetadataKey.h2Payload: "DATA",
-          MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
-          MetadataKey.h2EndStream: "false",
-        ])
+        self.logger.trace(
+          "writing HTTP2 frame",
+          metadata: [
+            MetadataKey.h2Payload: "DATA",
+            MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
+            MetadataKey.h2EndStream: "false",
+          ]
+        )
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(error):

@@ -120,10 +120,13 @@ public class ConnectivityStateMonitor: @unchecked Sendable {
     }
 
     if let (oldState, newState) = change {
-      logger.debug("connectivity state change", metadata: [
-        "old_state": "\(oldState)",
-        "new_state": "\(newState)",
-      ])
+      logger.debug(
+        "connectivity state change",
+        metadata: [
+          "old_state": "\(oldState)",
+          "new_state": "\(newState)",
+        ]
+      )
 
       self.delegateCallbackQueue.async {
         if let delegate = self.delegate {

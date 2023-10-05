@@ -99,10 +99,13 @@ class ServerTLSErrorTests: GRPCTestCase {
 
     let stateChangeDelegate = RecordingConnectivityDelegate()
     stateChangeDelegate.expectChanges(2) { changes in
-      XCTAssertEqual(changes, [
-        Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown),
-      ])
+      XCTAssertEqual(
+        changes,
+        [
+          Change(from: .idle, to: .connecting),
+          Change(from: .connecting, to: .shutdown),
+        ]
+      )
     }
 
     configuration.connectivityStateDelegate = stateChangeDelegate
@@ -118,7 +121,8 @@ class ServerTLSErrorTests: GRPCTestCase {
     stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(1))
 
     if let nioSSLError = errorDelegate.errors.first as? NIOSSLError,
-       case .failedToLoadCertificate = nioSSLError {
+      case .failedToLoadCertificate = nioSSLError
+    {
       // Expected case.
     } else {
       XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
@@ -203,4 +207,4 @@ class ServerTLSErrorTests: GRPCTestCase {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

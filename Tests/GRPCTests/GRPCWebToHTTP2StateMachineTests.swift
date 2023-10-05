@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-@testable import GRPC
 import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
   fileprivate typealias StateMachine = GRPCWebToHTTP2ServerCodec.StateMachine
@@ -408,7 +409,9 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
 
     // More writes should be told to fail their promise.
     state.processOutbound(
-      framePayload: .headers(.init(headers: .init())), promise: nil, allocator: self.allocator
+      framePayload: .headers(.init(headers: .init())),
+      promise: nil,
+      allocator: self.allocator
     ).assertCompletePromise { error in
       XCTAssertNotNil(error)
     }
@@ -423,10 +426,16 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
   }
 
   func test_handleMultipleRequests() {
-    func sendRequestHead(_ state: inout StateMachine, contentType: ContentType) -> StateMachine
-      .Action {
+    func sendRequestHead(
+      _ state: inout StateMachine,
+      contentType: ContentType
+    )
+      -> StateMachine
+      .Action
+    {
       let requestHead = self.makeRequestHead(
-        uri: "/echo", headers: ["content-type": contentType.canonicalValue]
+        uri: "/echo",
+        headers: ["content-type": contentType.canonicalValue]
       )
       return state.processInbound(serverRequestPart: requestHead, allocator: self.allocator)
     }

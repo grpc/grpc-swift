@@ -20,8 +20,10 @@ import NIOSSL
 extension Server {
   /// Returns a `Server` builder configured with TLS.
   @available(
-    *, deprecated,
-    message: "Use one of 'usingTLSBackedByNIOSSL(on:certificateChain:privateKey:)', 'usingTLSBackedByNetworkFramework(on:with:)' or 'usingTLS(with:on:)'"
+    *,
+    deprecated,
+    message:
+      "Use one of 'usingTLSBackedByNIOSSL(on:certificateChain:privateKey:)', 'usingTLSBackedByNetworkFramework(on:with:)' or 'usingTLS(with:on:)'"
   )
   public static func secure(
     group: EventLoopGroup,
@@ -76,4 +78,4 @@ extension Server.Builder.Secure {
   }
 }
 
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

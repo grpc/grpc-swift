@@ -295,7 +295,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
     }
 
     guard let callPath = CallPath(requestURI: path),
-          let service = services[Substring(callPath.service)] else {
+      let service = services[Substring(callPath.service)]
+    else {
       return self.methodNotImplemented(path, contentType: contentType)
     }
 
@@ -415,8 +416,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
       acceptEncoding = advertisedEncoding.joined(separator: ",")
       status = GRPCStatus(
         code: .unimplemented,
-        message: "\(encoding) compression is not supported, supported algorithms are " +
-          "listed in '\(GRPCHeaderName.acceptEncoding)'"
+        message: "\(encoding) compression is not supported, supported algorithms are "
+          + "listed in '\(GRPCHeaderName.acceptEncoding)'"
       )
     }
 
@@ -462,7 +463,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
       }
       let status = GRPCStatus(
         code: .invalidArgument,
-        message: "'\(GRPCHeaderName.encoding)' must contain no more than one value but was '\(encodings.joined(separator: ", "))'"
+        message:
+          "'\(GRPCHeaderName.encoding)' must contain no more than one value but was '\(encodings.joined(separator: ", "))'"
       )
       return .invalid(status: status, acceptEncoding: nil)
     }
@@ -911,9 +913,9 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return action
 
     case .requestOpenResponseOpen,
-         .requestOpenResponseClosed,
-         .requestClosedResponseOpen,
-         .requestClosedResponseClosed:
+      .requestOpenResponseClosed,
+      .requestClosedResponseOpen,
+      .requestClosedResponseClosed:
       preconditionFailure("Invalid state: response stream opened before pipeline was configured")
     }
   }
@@ -934,7 +936,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     switch self {
     // These are the only states in which we can receive headers. Everything else is invalid.
     case .requestIdleResponseIdle,
-         .requestClosedResponseClosed:
+      .requestClosedResponseClosed:
       let stateAndAction = self._receive(
         headers: headers,
         eventLoop: eventLoop,
@@ -953,10 +955,10 @@ extension HTTP2ToRawGRPCStateMachine.State {
 
     // We can't receive headers in any of these states.
     case .requestOpenResponseIdle,
-         .requestOpenResponseOpen,
-         .requestOpenResponseClosed,
-         .requestClosedResponseIdle,
-         .requestClosedResponseOpen:
+      .requestOpenResponseOpen,
+      .requestOpenResponseClosed,
+      .requestClosedResponseIdle,
+      .requestClosedResponseOpen:
       preconditionFailure("Invalid state: \(self)")
     }
   }
@@ -982,7 +984,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return stateAndAction.action
 
     case .requestClosedResponseIdle,
-         .requestClosedResponseOpen:
+      .requestClosedResponseOpen:
       preconditionFailure("Invalid state: the request stream is already closed")
 
     case .requestOpenResponseClosed:
@@ -1030,7 +1032,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return action
 
     case .requestOpenResponseClosed,
-         .requestClosedResponseClosed:
+      .requestClosedResponseClosed:
       return .none
     }
   }
@@ -1051,9 +1053,9 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return .success(headers)
 
     case .requestOpenResponseOpen,
-         .requestOpenResponseClosed,
-         .requestClosedResponseOpen,
-         .requestClosedResponseClosed:
+      .requestOpenResponseClosed,
+      .requestClosedResponseOpen,
+      .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
     }
   }
@@ -1068,7 +1070,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       preconditionFailure("Invalid state: the request stream is still closed")
 
     case .requestOpenResponseIdle,
-         .requestClosedResponseIdle:
+      .requestClosedResponseIdle:
       let error = GRPCError.InvalidState("Response headers must be sent before response message")
       return .failure(error)
 
@@ -1085,7 +1087,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return .success(())
 
     case .requestOpenResponseClosed,
-         .requestClosedResponseClosed:
+      .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
     }
   }
@@ -1096,7 +1098,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       preconditionFailure("Invalid state: the request stream is still closed")
 
     case .requestOpenResponseIdle,
-         .requestClosedResponseIdle:
+      .requestClosedResponseIdle:
       return nil
 
     case var .requestOpenResponseOpen(state):
@@ -1112,7 +1114,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return result
 
     case .requestOpenResponseClosed,
-         .requestClosedResponseClosed:
+      .requestClosedResponseClosed:
       return nil
     }
   }
@@ -1142,7 +1144,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return .sendTrailersAndFinish(state.send(status: status, trailers: trailers))
 
     case .requestOpenResponseClosed,
-         .requestClosedResponseClosed:
+      .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
     }
   }
@@ -1250,16 +1252,18 @@ extension HTTP2ToRawGRPCStateMachine {
   }
 
   private static let gRPCStatusOkTrailers: HPACKHeaders = [
-    GRPCHeaderName.statusCode: String(describing: GRPCStatus.Code.ok.rawValue),
+    GRPCHeaderName.statusCode: String(describing: GRPCStatus.Code.ok.rawValue)
   ]
 }
 
 extension HPACKHeaders {
   fileprivate mutating func add(contentsOf other: HPACKHeaders, normalize: Bool) {
     if normalize {
-      self.add(contentsOf: other.lazy.map { name, value, indexable in
-        (name: name.lowercased(), value: value, indexable: indexable)
-      })
+      self.add(
+        contentsOf: other.lazy.map { name, value, indexable in
+          (name: name.lowercased(), value: value, indexable: indexable)
+        }
+      )
     } else {
       self.add(contentsOf: other)
     }

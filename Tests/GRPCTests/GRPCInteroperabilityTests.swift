@@ -250,7 +250,7 @@ class GRPCSecureInteroperabilityTests: GRPCInsecureInteroperabilityTests {
     super.testTimeoutOnSleepingServer()
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 class GRPCInsecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityTests {
@@ -416,4 +416,4 @@ class GRPCSecureInteroperabilityAsyncTests: GRPCInsecureInteroperabilityAsyncTes
     super.testClientCompressedStreaming()
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

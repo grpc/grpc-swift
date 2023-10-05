@@ -172,11 +172,14 @@ internal final class PoolManager {
 
     let pools = self.makePools(perPoolConfiguration: configuration, logger: logger)
 
-    logger.debug("initializing connection pool manager", metadata: [
-      Metadata.poolCount: "\(pools.count)",
-      Metadata.connectionsPerPool: "\(configuration.maxConnections)",
-      Metadata.waitersPerPool: "\(configuration.maxWaiters)",
-    ])
+    logger.debug(
+      "initializing connection pool manager",
+      metadata: [
+        Metadata.poolCount: "\(pools.count)",
+        Metadata.connectionsPerPool: "\(configuration.maxConnections)",
+        Metadata.waitersPerPool: "\(configuration.maxWaiters)",
+      ]
+    )
 
     // The assumed maximum number of streams concurrently available in each pool.
     let assumedCapacity = configuration.assumedStreamCapacity
@@ -331,8 +334,8 @@ internal final class PoolManager {
       promise.succeed(())
 
     case (.shutdownPools, .none),
-         (.alreadyShuttingDown, .some),
-         (.alreadyShutdown, .some):
+      (.alreadyShuttingDown, .some),
+      (.alreadyShutdown, .some):
       preconditionFailure()
     }
   }

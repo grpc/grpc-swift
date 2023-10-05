@@ -15,7 +15,6 @@
  */
 import EchoModel
 import Foundation
-@testable import GRPC
 import Logging
 import NIOCore
 import NIOEmbedded
@@ -23,6 +22,8 @@ import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
@@ -65,7 +66,8 @@ class GRPCStatusCodeTests: GRPCTestCase {
         .writeInbound(self.headersFramePayload(status: status))
     ) { error in
       guard let withContext = error as? GRPCError.WithContext,
-            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus else {
+        let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus
+      else {
         XCTFail("Unexpected error: \(error)")
         return
       }

@@ -13,23 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if os(Linux)
-@preconcurrency import Foundation
-#else
-import Foundation
-#endif
 
 import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
 import NIOPosix
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
 import NIOTLS
 import NIOTransportServices
 import SwiftProtobuf
+
+#if os(Linux)
+@preconcurrency import Foundation
+#else
+import Foundation
+#endif
+
+#if canImport(NIOSSL)
+import NIOSSL
+#endif
 
 /// Provides a single, managed connection to a server which is guaranteed to always use the same
 /// `EventLoop`.
@@ -396,7 +398,7 @@ extension ClientConnection {
         self.tlsConfiguration = newValue.map { .init(transforming: $0) }
       }
     }
-    #endif // canImport(NIOSSL)
+    #endif  // canImport(NIOSSL)
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tlsConfiguration: GRPCTLSConfiguration?
@@ -523,7 +525,7 @@ extension ClientConnection {
       self.backgroundActivityLogger = backgroundActivityLogger
       self.debugChannelInitializer = debugChannelInitializer
     }
-    #endif // canImport(NIOSSL)
+    #endif  // canImport(NIOSSL)
 
     private init(eventLoopGroup: EventLoopGroup, target: ConnectionTarget) {
       self.eventLoopGroup = eventLoopGroup
@@ -598,7 +600,7 @@ extension ChannelPipeline.SynchronousOperations {
     try self.addHandler(TLSVerificationHandler(logger: logger))
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)
 
 extension ChannelPipeline.SynchronousOperations {
   internal func configureHTTP2AndGRPCHandlersForGRPCClient(
@@ -635,13 +637,15 @@ extension ChannelPipeline.SynchronousOperations {
     // The multiplexer is passed through the idle handler so it is only reported on
     // successful channel activation - with happy eyeballs multiple pipelines can
     // be constructed so it's not safe to report just yet.
-    try self.addHandler(GRPCIdleHandler(
-      connectionManager: connectionManager,
-      multiplexer: h2Multiplexer,
-      idleTimeout: connectionIdleTimeout,
-      keepalive: connectionKeepalive,
-      logger: logger
-    ))
+    try self.addHandler(
+      GRPCIdleHandler(
+        connectionManager: connectionManager,
+        multiplexer: h2Multiplexer,
+        idleTimeout: connectionIdleTimeout,
+        keepalive: connectionKeepalive,
+        logger: logger
+      )
+    )
 
     try self.addHandler(h2Multiplexer)
     try self.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
@@ -675,8 +679,7 @@ extension String {
     var ipv6Addr = in6_addr()
 
     return self.withCString { ptr in
-      inet_pton(AF_INET, ptr, &ipv4Addr) == 1 ||
-        inet_pton(AF_INET6, ptr, &ipv6Addr) == 1
+      inet_pton(AF_INET, ptr, &ipv4Addr) == 1 || inet_pton(AF_INET6, ptr, &ipv6Addr) == 1
     }
   }
 }

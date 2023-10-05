@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 import EchoImplementation
-import struct Foundation.Data
-import struct Foundation.URL
 import GRPC
 import NIOCore
 import NIOEmbedded
 import XCTest
 
+import struct Foundation.Data
+import struct Foundation.URL
+
 final class ServerFuzzingRegressionTests: GRPCTestCase {
   private static let failCasesURL = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent() // ServerFuzzingRegressionTests.swift
-    .deletingLastPathComponent() // GRPCTests
-    .deletingLastPathComponent() // Tests
+    .deletingLastPathComponent()  // ServerFuzzingRegressionTests.swift
+    .deletingLastPathComponent()  // GRPCTests
+    .deletingLastPathComponent()  // Tests
     .appendingPathComponent("FuzzTesting")
     .appendingPathComponent("FailCases")
 

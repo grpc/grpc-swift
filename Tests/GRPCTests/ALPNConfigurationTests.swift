@@ -101,4 +101,4 @@ class ALPNConfigurationTests: GRPCTestCase {
     XCTAssertEqual(config.nioConfiguration!.configuration.applicationProtocols, ["foo"])
   }
 }
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)

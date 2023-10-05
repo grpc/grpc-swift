@@ -47,4 +47,4 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
 
 // Unchecked because the error recorder is only ever used in the context of an EmbeddedChannel.
 extension DelegatingErrorHandlerTests.ErrorRecorder: @unchecked Sendable {}
-#endif // canImport(NIOSSL)
+#endif  // canImport(NIOSSL)
