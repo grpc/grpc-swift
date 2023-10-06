@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import GRPCCore
 import XCTest
 
 func XCTAssertDescription(
@@ -22,4 +23,31 @@ func XCTAssertDescription(
   line: UInt = #line
 ) {
   XCTAssertEqual(String(describing: subject), expected, file: file, line: line)
+}
+
+func XCTAssertThrowsRPCError<T>(
+  _ expression: @autoclosure () throws -> T,
+  _ errorHandler: (RPCError) -> Void
+) {
+  XCTAssertThrowsError(try expression()) { error in
+    guard let error = error as? RPCError else {
+      return XCTFail("Error had unexpected type '\(type(of: error))'")
+    }
+
+    errorHandler(error)
+  }
+}
+
+func XCTAssertThrowsRPCErrorAsync<T>(
+  _ expression: () async throws -> T,
+  errorHandler: (RPCError) -> Void
+) async {
+  do {
+    _ = try await expression()
+    XCTFail("Expression didn't throw")
+  } catch let error as RPCError {
+    errorHandler(error)
+  } catch {
+    XCTFail("Error had unexpected type '\(type(of: error))'")
+  }
 }
