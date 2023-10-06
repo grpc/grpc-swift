@@ -16,34 +16,34 @@
 import GRPCCore
 import XCTest
 
-final class ClientExecutionConfigurationTests: XCTestCase {
+final class ClientRPCExecutionConfigurationTests: XCTestCase {
   func testRetryPolicyClampsMaxAttempts() {
     var policy = RetryPolicy(
-      maxAttempts: 10,
+      maximumAttempts: 10,
       initialBackoff: .seconds(1),
-      maxBackoff: .seconds(1),
+      maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
 
     // Should be clamped on init
-    XCTAssertEqual(policy.maxAttempts, 5)
+    XCTAssertEqual(policy.maximumAttempts, 5)
     // and when modifying
-    policy.maxAttempts = 10
-    XCTAssertEqual(policy.maxAttempts, 5)
+    policy.maximumAttempts = 10
+    XCTAssertEqual(policy.maximumAttempts, 5)
   }
 
   func testHedgingPolicyClampsMaxAttempts() {
     var policy = HedgingPolicy(
-      maxAttempts: 10,
+      maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
 
     // Should be clamped on init
-    XCTAssertEqual(policy.maxAttempts, 5)
+    XCTAssertEqual(policy.maximumAttempts, 5)
     // and when modifying
-    policy.maxAttempts = 10
-    XCTAssertEqual(policy.maxAttempts, 5)
+    policy.maximumAttempts = 10
+    XCTAssertEqual(policy.maximumAttempts, 5)
   }
 }

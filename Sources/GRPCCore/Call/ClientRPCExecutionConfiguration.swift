@@ -15,7 +15,7 @@
  */
 
 /// Configuration values for executing an RPC.
-public struct ClientExecutionConfiguration: Hashable, Sendable {
+public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   /// The default timeout for the RPC.
   ///
   /// If no reply is received in the specified amount of time the request is aborted
@@ -45,7 +45,12 @@ public struct ClientExecutionConfiguration: Hashable, Sendable {
   /// each execution will be staggered by some delay. The first successful response will be
   /// reported to the client. Hedging is only suitable for idempotent RPCs.
   public var executionPolicy: ExecutionPolicy?
-
+  
+  /// Create an execution configuration.
+  ///
+  /// - Parameters:
+  ///   - executionPolicy: The execution policy to use for the RPC.
+  ///   - timeout: The default timeout for the RPC.
   public init(
     executionPolicy: ExecutionPolicy?,
     timeout: RPCDuration?
@@ -53,7 +58,12 @@ public struct ClientExecutionConfiguration: Hashable, Sendable {
     self.executionPolicy = executionPolicy
     self.timeout = timeout
   }
-
+  
+  /// Create an execution configuration with a retry policy.
+  ///
+  /// - Parameters:
+  ///   - retryPolicy: The policy for retrying the RPC.
+  ///   - timeout: The default timeout for the RPC.
   public init(
     retryPolicy: RetryPolicy,
     timeout: RPCDuration? = nil
@@ -62,6 +72,11 @@ public struct ClientExecutionConfiguration: Hashable, Sendable {
     self.timeout = timeout
   }
 
+  /// Create an execution configuration with a hedging policy.
+  ///
+  /// - Parameters:
+  ///   - hedgingPolicy: The policy for hedging the RPC.
+  ///   - timeout: The default timeout for the RPC.
   public init(
     hedgingPolicy: HedgingPolicy,
     timeout: RPCDuration? = nil
@@ -71,7 +86,7 @@ public struct ClientExecutionConfiguration: Hashable, Sendable {
   }
 }
 
-extension ClientExecutionConfiguration {
+extension ClientRPCExecutionConfiguration {
   /// The execution policy for an RPC.
   public enum ExecutionPolicy: Hashable, Sendable {
     /// Policy for retrying an RPC.
@@ -93,13 +108,13 @@ extension ClientExecutionConfiguration {
 /// first responds with metadata and later responds with a retryable status code then the RPC
 /// won't be retried.
 ///
-/// Execution attempts are limited by ``maxAttempts`` which includes the original attempt. The
+/// Execution attempts are limited by ``maximumAttempts`` which includes the original attempt. The
 /// maximum number of attempts is limited to five.
 ///
 /// Subsequent attempts are executed after some delay. The first _retry_, or second attempt, will
 /// be started after a randomly chosen delay between zero and ``initialBackoff``. More generally,
 /// the nth retry will happen after a randomly chosen delay between zero
-/// and `min(initialBackoff * backoffMultiplier^(n-1), maxBackoff)`.
+/// and `min(initialBackoff * backoffMultiplier^(n-1), maximumBackoff)`.
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
@@ -107,57 +122,67 @@ public struct RetryPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
   /// Must be greater than one, values greater than five are treated as five.
-  public var maxAttempts: Int {
-    didSet { self.maxAttempts = validateMaxAttempts(self.maxAttempts) }
+  public var maximumAttempts: Int {
+    didSet { self.maximumAttempts = validateMaxAttempts(self.maximumAttempts) }
   }
 
   /// The initial backoff duration.
   ///
-  /// The initial retry will occur after a random amount of time up to this value. Must be
-  /// greater than zero.
+  /// The initial retry will occur after a random amount of time up to this value.
+  ///
+  /// - Precondition: Must be greater than zero.
   public var initialBackoff: RPCDuration {
     willSet { Self.validateInitialBackoff(newValue) }
   }
 
-  /// The maximum amount of time to backoff for. Must be greater than zero.
-  public var maxBackoff: RPCDuration {
+  /// The maximum amount of time to backoff for.
+  ///
+  /// - Precondition: Must be greater than zero.
+  public var maximumBackoff: RPCDuration {
     willSet { Self.validateMaxBackoff(newValue) }
   }
 
-  /// The multiplier to apply to backoff. Must be greater than zero.
+  /// The multiplier to apply to backoff.
+  ///
+  /// - Precondition: Must be greater than zero.
   public var backoffMultiplier: Double {
     willSet { Self.validateBackoffMultiplier(newValue) }
   }
 
-  /// The set of status codes which may be retried. Mustn't be empty.
-  public var retryableStatusCodes: [Status.Code] {
+  /// The set of status codes which may be retried.
+  ///
+  /// - Precondition: Must not be empty.
+  public var retryableStatusCodes: Set<Status.Code> {
     willSet { Self.validateRetryableStatusCodes(newValue) }
   }
 
   /// Create a new retry policy.
   ///
   /// - Parameters:
-  ///   - maxAttempts: The maximum number of attempts allowed for the RPC.
+  ///   - maximumAttempts: The maximum number of attempts allowed for the RPC.
   ///   - initialBackoff: The initial backoff period for the first retry attempt. Must be
   ///       greater than zero.
-  ///   - maxBackoff: The maximum period of time to wait between attempts. Must be greater than
+  ///   - maximumBackoff: The maximum period of time to wait between attempts. Must be greater than
   ///       zero.
   ///   - backoffMultiplier: The exponential backoff multiplier. Must be greater than zero.
   ///   - retryableStatusCodes: The set of status codes which may be retried. Must not be empty.
+  /// - Precondition: `maximumAttempts`, `initialBackoff`, `maximumBackoff` and `backoffMultiplier`
+  ///     must be greater than zero.
+  /// - Precondition: `retryableStatusCodes` must not be empty.
   public init(
-    maxAttempts: Int,
+    maximumAttempts: Int,
     initialBackoff: RPCDuration,
-    maxBackoff: RPCDuration,
+    maximumBackoff: RPCDuration,
     backoffMultiplier: Double,
-    retryableStatusCodes: [Status.Code]
+    retryableStatusCodes: Set<Status.Code>
   ) {
-    self.maxAttempts = validateMaxAttempts(maxAttempts)
+    self.maximumAttempts = validateMaxAttempts(maximumAttempts)
 
     Self.validateInitialBackoff(initialBackoff)
     self.initialBackoff = initialBackoff
 
-    Self.validateMaxBackoff(maxBackoff)
-    self.maxBackoff = maxBackoff
+    Self.validateMaxBackoff(maximumBackoff)
+    self.maximumBackoff = maximumBackoff
 
     Self.validateBackoffMultiplier(backoffMultiplier)
     self.backoffMultiplier = backoffMultiplier
@@ -171,14 +196,14 @@ public struct RetryPolicy: Hashable, Sendable {
   }
 
   private static func validateMaxBackoff(_ value: RPCDuration) {
-    precondition(value.nanoseconds > 0, "maxBackoff must be greater than zero")
+    precondition(value.nanoseconds > 0, "maximumBackoff must be greater than zero")
   }
 
   private static func validateBackoffMultiplier(_ value: Double) {
     precondition(value > 0, "backoffMultiplier must be greater than zero")
   }
 
-  private static func validateRetryableStatusCodes(_ value: [Status.Code]) {
+  private static func validateRetryableStatusCodes(_ value: Set<Status.Code>) {
     precondition(!value.isEmpty, "retryableStatusCodes mustn't be empty")
   }
 }
@@ -188,7 +213,7 @@ public struct RetryPolicy: Hashable, Sendable {
 /// Hedged RPCs may execute more than once on a server so only idempotent methods should
 /// be hedged.
 ///
-/// gRPC executes the RPC at most ``maxAttempts`` times, staggering each attempt
+/// gRPC executes the RPC at most ``maximumAttempts`` times, staggering each attempt
 /// by ``hedgingDelay``.
 ///
 /// For more information see [gRFC A6 Client
@@ -196,9 +221,11 @@ public struct RetryPolicy: Hashable, Sendable {
 public struct HedgingPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
-  /// Must be greater than one, values greater than five are treated as five.
-  public var maxAttempts: Int {
-    didSet { self.maxAttempts = validateMaxAttempts(self.maxAttempts) }
+  /// Values greater than five are treated as five.
+  ///
+  /// - Precondition: Must be greater than one.
+  public var maximumAttempts: Int {
+    didSet { self.maximumAttempts = validateMaxAttempts(self.maximumAttempts) }
   }
 
   /// The first RPC will be sent immediately, but each subsequent RPC will be sent at intervals
@@ -212,14 +239,22 @@ public struct HedgingPolicy: Hashable, Sendable {
   /// If a non-fatal status code is returned by the server, hedged RPCs will continue.
   /// Otherwise, outstanding requests will be cancelled and the error returned to the
   /// application layer.
-  public var nonFatalStatusCodes: [Status.Code]
+  public var nonFatalStatusCodes: Set<Status.Code>
 
+  /// Create a new hedging policy.
+  ///
+  /// - Parameters:
+  ///   - maximumAttempts: The maximum number of attempts allowed for the RPC.
+  ///   - hedgingDelay: The delay between each hedged RPC.
+  ///   - nonFatalStatusCodes: The set of status codes which indicated other hedged RPCs may still
+  ///       succeed.
+  /// - Precondition: `maximumAttempts` must be greater than zero.
   public init(
-    maxAttempts: Int,
+    maximumAttempts: Int,
     hedgingDelay: RPCDuration,
-    nonFatalStatusCodes: [Status.Code]
+    nonFatalStatusCodes: Set<Status.Code>
   ) {
-    self.maxAttempts = validateMaxAttempts(maxAttempts)
+    self.maximumAttempts = validateMaxAttempts(maximumAttempts)
 
     Self.validateHedgingDelay(hedgingDelay)
     self.hedgingDelay = hedgingDelay
@@ -232,6 +267,6 @@ public struct HedgingPolicy: Hashable, Sendable {
 }
 
 private func validateMaxAttempts(_ value: Int) -> Int {
-  precondition(value > 0, "maxAttempts must be greater than zero")
+  precondition(value > 0, "maximumAttempts must be greater than zero")
   return min(value, 5)
 }
