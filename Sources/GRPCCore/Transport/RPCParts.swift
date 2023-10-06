@@ -23,7 +23,7 @@ public enum RPCRequestPart: Hashable, Sendable {
   /// The bytes of a serialized message to send to the server. A stream may have any number of
   /// messages sent on it. Restrictions for unary request or response streams are imposed at a
   /// higher level.
-  case message(ArraySlice<UInt8>)
+  case message([UInt8])
 }
 
 /// Part of a response sent from a server to a client in a stream.
@@ -36,7 +36,7 @@ public enum RPCResponsePart: Hashable, Sendable {
   /// The bytes of a serialized message to send to the client. A stream may have any number of
   /// messages sent on it. Restrictions for unary request or response streams are imposed at a
   /// higher level.
-  case message(ArraySlice<UInt8>)
+  case message([UInt8])
 
   /// A status and key-value pairs sent to the client at the end of the response stream. Every
   /// response stream must have exactly one ``status(_:_:)`` as the final part of the request
