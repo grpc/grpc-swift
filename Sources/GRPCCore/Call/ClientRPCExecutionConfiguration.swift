@@ -46,7 +46,7 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   /// each execution will be staggered by some delay. The first successful response will be
   /// reported to the client. Hedging is only suitable for idempotent RPCs.
   public var executionPolicy: ExecutionPolicy?
-  
+
   /// Create an execution configuration.
   ///
   /// - Parameters:
@@ -59,7 +59,7 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
     self.executionPolicy = executionPolicy
     self.timeout = timeout
   }
-  
+
   /// Create an execution configuration with a retry policy.
   ///
   /// - Parameters:
