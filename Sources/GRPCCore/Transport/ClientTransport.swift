@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public protocol ClientTransport: Sendable {
   associatedtype Inbound: (AsyncSequence & Sendable) where Inbound.Element == RPCResponsePart
   associatedtype Outbound: ClosableRPCWriterProtocol<RPCRequestPart>

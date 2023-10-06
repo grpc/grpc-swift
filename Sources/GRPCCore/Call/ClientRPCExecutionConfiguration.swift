@@ -15,6 +15,7 @@
  */
 
 /// Configuration values for executing an RPC.
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   /// The default timeout for the RPC.
   ///
@@ -28,7 +29,7 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   /// The timeout applies to the overall execution of an RPC. If, for example, a retry
   /// policy is set then the timeout begins when the first attempt is started and _isn't_ reset
   /// when subsequent attempts start.
-  public var timeout: RPCDuration?
+  public var timeout: Duration?
 
   /// The policy determining how many times, and when, the RPC is executed.
   ///
@@ -53,7 +54,7 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   ///   - timeout: The default timeout for the RPC.
   public init(
     executionPolicy: ExecutionPolicy?,
-    timeout: RPCDuration?
+    timeout: Duration?
   ) {
     self.executionPolicy = executionPolicy
     self.timeout = timeout
@@ -66,7 +67,7 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   ///   - timeout: The default timeout for the RPC.
   public init(
     retryPolicy: RetryPolicy,
-    timeout: RPCDuration? = nil
+    timeout: Duration? = nil
   ) {
     self.executionPolicy = .retry(retryPolicy)
     self.timeout = timeout
@@ -79,13 +80,14 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
   ///   - timeout: The default timeout for the RPC.
   public init(
     hedgingPolicy: HedgingPolicy,
-    timeout: RPCDuration? = nil
+    timeout: Duration? = nil
   ) {
     self.executionPolicy = .hedge(hedgingPolicy)
     self.timeout = timeout
   }
 }
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ClientRPCExecutionConfiguration {
   /// The execution policy for an RPC.
   public enum ExecutionPolicy: Hashable, Sendable {
@@ -118,6 +120,7 @@ extension ClientRPCExecutionConfiguration {
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct RetryPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -131,14 +134,14 @@ public struct RetryPolicy: Hashable, Sendable {
   /// The initial retry will occur after a random amount of time up to this value.
   ///
   /// - Precondition: Must be greater than zero.
-  public var initialBackoff: RPCDuration {
+  public var initialBackoff: Duration {
     willSet { Self.validateInitialBackoff(newValue) }
   }
 
   /// The maximum amount of time to backoff for.
   ///
   /// - Precondition: Must be greater than zero.
-  public var maximumBackoff: RPCDuration {
+  public var maximumBackoff: Duration {
     willSet { Self.validateMaxBackoff(newValue) }
   }
 
@@ -171,8 +174,8 @@ public struct RetryPolicy: Hashable, Sendable {
   /// - Precondition: `retryableStatusCodes` must not be empty.
   public init(
     maximumAttempts: Int,
-    initialBackoff: RPCDuration,
-    maximumBackoff: RPCDuration,
+    initialBackoff: Duration,
+    maximumBackoff: Duration,
     backoffMultiplier: Double,
     retryableStatusCodes: Set<Status.Code>
   ) {
@@ -191,12 +194,12 @@ public struct RetryPolicy: Hashable, Sendable {
     self.retryableStatusCodes = retryableStatusCodes
   }
 
-  private static func validateInitialBackoff(_ value: RPCDuration) {
-    precondition(value.nanoseconds > 0, "initialBackoff must be greater than zero")
+  private static func validateInitialBackoff(_ value: Duration) {
+    precondition(value.isGreaterThanZero, "initialBackoff must be greater than zero")
   }
 
-  private static func validateMaxBackoff(_ value: RPCDuration) {
-    precondition(value.nanoseconds > 0, "maximumBackoff must be greater than zero")
+  private static func validateMaxBackoff(_ value: Duration) {
+    precondition(value.isGreaterThanZero, "maximumBackoff must be greater than zero")
   }
 
   private static func validateBackoffMultiplier(_ value: Double) {
@@ -218,6 +221,7 @@ public struct RetryPolicy: Hashable, Sendable {
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct HedgingPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -230,7 +234,7 @@ public struct HedgingPolicy: Hashable, Sendable {
 
   /// The first RPC will be sent immediately, but each subsequent RPC will be sent at intervals
   /// of `hedgingDelay`. Set this to zero to immediately send all RPCs.
-  public var hedgingDelay: RPCDuration {
+  public var hedgingDelay: Duration {
     willSet { Self.validateHedgingDelay(newValue) }
   }
 
@@ -251,7 +255,7 @@ public struct HedgingPolicy: Hashable, Sendable {
   /// - Precondition: `maximumAttempts` must be greater than zero.
   public init(
     maximumAttempts: Int,
-    hedgingDelay: RPCDuration,
+    hedgingDelay: Duration,
     nonFatalStatusCodes: Set<Status.Code>
   ) {
     self.maximumAttempts = validateMaxAttempts(maximumAttempts)
@@ -261,12 +265,26 @@ public struct HedgingPolicy: Hashable, Sendable {
     self.nonFatalStatusCodes = nonFatalStatusCodes
   }
 
-  private static func validateHedgingDelay(_ value: RPCDuration) {
-    precondition(value.nanoseconds >= 0, "hedgingDelay must be greater than or equal to zero")
+  private static func validateHedgingDelay(_ value: Duration) {
+    precondition(
+      value.isGreaterThanOrEqualToZero,
+      "hedgingDelay must be greater than or equal to zero"
+    )
   }
 }
 
 private func validateMaxAttempts(_ value: Int) -> Int {
   precondition(value > 0, "maximumAttempts must be greater than zero")
   return min(value, 5)
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension Duration {
+  fileprivate var isGreaterThanZero: Bool {
+    self.components.seconds > 0 || self.components.attoseconds > 0
+  }
+
+  fileprivate var isGreaterThanOrEqualToZero: Bool {
+    self.components.seconds >= 0 || self.components.attoseconds >= 0
+  }
 }
