@@ -15,7 +15,7 @@
  */
 
 /// A type-erasing ``RPCWriterProtocol``.
-public struct RPCWriter<Element: Sendable>: Sendable, RPCWriterProtocol {
+public struct RPCWriter<Element>: Sendable, RPCWriterProtocol {
   private let writer: any RPCWriterProtocol<Element>
 
   /// Creates an ``RPCWriter`` by wrapping the `other` writer.

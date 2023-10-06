@@ -17,7 +17,7 @@
 /// A sink for values which are produced over time.
 public protocol RPCWriterProtocol<Element>: Sendable {
   /// The type of value written.
-  associatedtype Element: Sendable
+  associatedtype Element
 
   /// Writes a sequence of elements.
   ///

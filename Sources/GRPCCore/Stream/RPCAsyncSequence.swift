@@ -16,10 +16,8 @@
 
 /// A type-erasing `AsyncSequence`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct RPCAsyncSequence<Element: Sendable>: AsyncSequence {
-  public typealias Element = Element
-
-  private let _makeAsyncIterator: () -> AsyncIterator
+public struct RPCAsyncSequence<Element>: AsyncSequence, Sendable {
+  private let _makeAsyncIterator: @Sendable () -> AsyncIterator
 
   /// Creates an ``RPCAsyncSequence`` by wrapping another `AsyncSequence`.
   public init<S: AsyncSequence>(wrapping other: S) where S.Element == Element {
@@ -46,3 +44,6 @@ public struct RPCAsyncSequence<Element: Sendable>: AsyncSequence {
     }
   }
 }
+
+@available(*, unavailable)
+extension RPCAsyncSequence.AsyncIterator: Sendable {}
