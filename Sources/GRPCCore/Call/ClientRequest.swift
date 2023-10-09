@@ -33,7 +33,7 @@ extension ClientRequest {
   /// print(request.message)  // prints 'Hello, gRPC!'
   /// ```
   public struct Single<Message: Sendable>: Sendable {
-    /// Caller-specified metadata sent to the server at the start of the RPC.
+    /// Caller-specified metadata to send to the server at the start of the RPC.
     ///
     /// Both gRPC Swift and its transport layer may insert additional metadata. Keys prefixed with
     /// "grpc-" are prohibited and may result in undefined behaviour. Transports may also insert
@@ -67,9 +67,8 @@ extension ClientRequest {
   ///
   /// See ``ClientRequest/Single`` for single-message requests and ``ServerRequest/Stream`` for the
   /// servers representation of a streaming-message request.
+  @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
   public struct Stream<Message: Sendable>: Sendable {
-    public typealias Producer = @Sendable (RPCWriter<Message>) async throws -> Void
-
     /// Caller-specified metadata sent to the server at the start of the RPC.
     ///
     /// Both gRPC Swift and its transport layer may insert additional metadata. Keys prefixed with
@@ -84,7 +83,7 @@ extension ClientRequest {
     /// The producer will only be consumed once by gRPC and therefore isn't required to be
     /// idempotent. If the producer throws an error then the RPC will be cancelled. Once the
     /// producer returns the request stream is closed.
-    public var producer: Producer
+    public var producer: @Sendable (RPCWriter<Message>) async throws -> Void
 
     /// Create a new streaming client request.
     ///
@@ -96,7 +95,7 @@ extension ClientRequest {
     public init(
       of messageType: Message.Type = Message.self,
       metadata: Metadata = [:],
-      producer: @escaping Producer
+      producer: @escaping @Sendable (RPCWriter<Message>) async throws -> Void
     ) {
       self.metadata = metadata
       self.producer = producer
@@ -106,6 +105,7 @@ extension ClientRequest {
 
 // MARK: - Conversion
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ClientRequest.Stream {
   @_spi(Testing)
   public init(single request: ClientRequest.Single<Message>) {
