@@ -15,6 +15,7 @@
  */
 
 /// A type-erasing ``RPCWriterProtocol``.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct RPCWriter<Element>: Sendable, RPCWriterProtocol {
   private let writer: any RPCWriterProtocol<Element>
 
