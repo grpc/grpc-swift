@@ -15,6 +15,7 @@
  */
 
 /// A sink for values which are produced over time.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol RPCWriterProtocol<Element>: Sendable {
   /// The type of value written.
   associatedtype Element
@@ -28,6 +29,7 @@ public protocol RPCWriterProtocol<Element>: Sendable {
   func write(contentsOf elements: some Sequence<Element>) async throws
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCWriterProtocol {
   /// Writes a single element into the sink.
   ///
@@ -39,7 +41,6 @@ extension RPCWriterProtocol {
   /// Writes an `AsyncSequence` of values into the sink.
   ///
   /// - Parameter elements: The elements to write.
-  @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
   public func write<Elements: AsyncSequence>(
     _ elements: Elements
   ) async throws where Elements.Element == Element {
@@ -49,6 +50,7 @@ extension RPCWriterProtocol {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol ClosableRPCWriterProtocol<Element>: RPCWriterProtocol {
   /// Indicate to the writer that no more writes are to be accepted.
   ///
