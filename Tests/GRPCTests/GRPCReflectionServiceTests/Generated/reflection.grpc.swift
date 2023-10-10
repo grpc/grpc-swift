@@ -9,7 +9,6 @@ import GRPC
 import NIO
 import NIOConcurrencyHelpers
 import SwiftProtobuf
-import GRPCReflectionService
 
 
 /// Usage: instantiate `Reflection_ServerReflectionClient`, then call methods of this protocol to make API calls.

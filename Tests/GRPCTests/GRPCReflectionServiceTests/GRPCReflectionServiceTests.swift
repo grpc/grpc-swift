@@ -21,83 +21,97 @@ import NIOPosix
 import SwiftProtobuf
 import XCTest
 
+@testable import GRPCReflectionService
+
 final class GRPCReflectionServiceTests: GRPCTestCase {
   private var group: MultiThreadedEventLoopGroup?
   private var server: Server?
   private var channel: GRPCChannel?
 
-  private var fileDescriptorProto: Google_Protobuf_FileDescriptorProto? = nil
-  private var protos: [Google_Protobuf_FileDescriptorProto] = []
-  private var servicesNames: [String] = []
-
-  /// Creates the dependencies of the proto used in the testing context.
-  private func createDependencies() -> [String] {
-    var fileDependencies: [String] = []
-    for id in 1 ... 4 {
-      let inputMessage = Google_Protobuf_DescriptorProto.with {
-        $0.name = "inputMessage"
-        $0.field = [Google_Protobuf_FieldDescriptorProto.with {
+  private func generateProto(name: String, id: Int) -> Google_Protobuf_FileDescriptorProto {
+    let inputMessage = Google_Protobuf_DescriptorProto.with {
+      $0.name = "inputMessage"
+      $0.field = [
+        Google_Protobuf_FieldDescriptorProto.with {
           $0.name = "inputField"
           $0.type = .bool
-        }]
-      }
+        }
+      ]
+    }
 
-      let outputMessage = Google_Protobuf_DescriptorProto.with {
-        $0.name = "inputMessage"
-        $0.field = [Google_Protobuf_FieldDescriptorProto.with {
+    let outputMessage = Google_Protobuf_DescriptorProto.with {
+      $0.name = "outputMessage"
+      $0.field = [
+        Google_Protobuf_FieldDescriptorProto.with {
           $0.name = "outputField"
           $0.type = .int32
-        }]
-      }
+        }
+      ]
+    }
 
-      let method = Google_Protobuf_MethodDescriptorProto.with {
-        $0.name = "testMethod" + String(id)
-        $0.inputType = inputMessage.name
-        $0.outputType = outputMessage.name
-      }
-      let serviceDescriptor = Google_Protobuf_ServiceDescriptorProto.with {
-        $0.method = [method]
-        $0.name = "service" + String(id)
-      }
-      self.servicesNames.append("service" + String(id))
-      let fileDescriptorProto = Google_Protobuf_FileDescriptorProto.with {
-        $0.service = [serviceDescriptor]
-        $0.name = "bar" + String(id) + ".proto"
-        $0.messageType = [inputMessage, outputMessage]
-      }
-      self.protos.append(fileDescriptorProto)
-      if (id == 4) {
+    let method = Google_Protobuf_MethodDescriptorProto.with {
+      $0.name = "testMethod" + String(id)
+      $0.inputType = inputMessage.name
+      $0.outputType = outputMessage.name
+    }
+
+    let serviceDescriptor = Google_Protobuf_ServiceDescriptorProto.with {
+      $0.method = [method]
+      $0.name = "service" + String(id)
+    }
+
+    let fileDescriptorProto = Google_Protobuf_FileDescriptorProto.with {
+      $0.service = [serviceDescriptor]
+      $0.name = name + String(id) + ".proto"
+      $0.messageType = [inputMessage, outputMessage]
+    }
+
+    return fileDescriptorProto
+  }
+
+  /// Creates the dependencies of the proto used in the testing context.
+  private func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto] {
+    var fileDependencies: [Google_Protobuf_FileDescriptorProto] = []
+    for id in 1 ... 4 {
+      let fileDescriptorProto = generateProto(name: "bar", id: id)
+      if id != 1 {
         // Dependency of the first dependency.
-        self.protos[0].dependency = [fileDescriptorProto.name]
-      } else {
-        fileDependencies.append(fileDescriptorProto.name)
+        fileDependencies[0].dependency.append(fileDescriptorProto.name)
       }
+      fileDependencies.append(fileDescriptorProto)
     }
     return fileDependencies
   }
 
-  private func createFileDescriptorProto() {
-    let method = Google_Protobuf_MethodDescriptorProto.with {
-      $0.name = "testMethod0"
+  private func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescriptorProto] {
+    var protos: [Google_Protobuf_FileDescriptorProto] = []
+    protos.append(generateProto(name: "foo", id: 0))
+    for id in 1 ... 10 {
+      var root = protos.count
+      let fileDescriptorProtoA = generateProto(name: "fooA", id: id)
+      let fileDescriptorProtoB = generateProto(name: "fooB", id: id)
+      root = root > 1 ? root - Int.random(in: 1 ..< 3) : root - 1
+      protos[id - 1].dependency.append(fileDescriptorProtoA.name)
+      protos[id - 1].dependency.append(fileDescriptorProtoB.name)
+      protos.append(fileDescriptorProtoA)
+      protos.append(fileDescriptorProtoB)
     }
+    return protos
+  }
 
-    let servicedescriptor = Google_Protobuf_ServiceDescriptorProto.with {
-      $0.method = [method]
-      $0.name = "service0"
+  private func getServicesNamesFromProtos(protos: [Google_Protobuf_FileDescriptorProto]) -> [String]
+  {
+    var servicesNames: [String] = []
+    for proto in protos {
+      servicesNames.append(contentsOf: proto.service.map { $0.name })
     }
-    self.servicesNames.append("service0")
-    let fileDescriptorProto = Google_Protobuf_FileDescriptorProto.with {
-      $0.service = [servicedescriptor]
-      $0.name = "bar.proto"
-      $0.dependency = self.createDependencies()
-    }
-    self.protos.append(fileDescriptorProto)
-    self.fileDescriptorProto = fileDescriptorProto
+    return servicesNames
   }
 
   private func setUpServerAndChannel() throws {
-    self.createFileDescriptorProto()
-    let reflectionService = try ReflectionService(fileDescriptorProtos: self.protos)
+    let reflectionService = try ReflectionService(
+      fileDescriptorProtos: self.makeProtosWithDependencies()
+    )
 
     let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
       .withServiceProviders([reflectionService])
@@ -131,111 +145,218 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
     try self.setUpServerAndChannel()
     let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
-    try await serviceReflectionInfo.requestStream.send(.with {
-      $0.host = "127.0.0.1"
-      $0.fileByFilename = "bar.proto"
-    })
+    try await serviceReflectionInfo.requestStream.send(
+      .with {
+        $0.host = "127.0.0.1"
+        $0.fileByFilename = "bar1.proto"
+      }
+    )
     serviceReflectionInfo.requestStream.finish()
 
     var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
     let message = try await iterator.next()
     let receivedFileDescriptorProto =
-      try Google_Protobuf_FileDescriptorProto(serializedData: (
-        message?.fileDescriptorResponse
-          .fileDescriptorProto[0]
-      )!)
-    XCTAssertEqual(receivedFileDescriptorProto.name, self.fileDescriptorProto!.name)
+      try Google_Protobuf_FileDescriptorProto(
+        serializedData: (message?.fileDescriptorResponse
+          .fileDescriptorProto[0])!
+      )
+    XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
     XCTAssertEqual(
       receivedFileDescriptorProto.service.count,
-      self.fileDescriptorProto!.service.count
+      1
     )
     XCTAssertEqual(
       receivedFileDescriptorProto.service.first!.method.first!.name,
-      self.fileDescriptorProto!.service.first!.method.first!.name
+      "testMethod1"
     )
-    XCTAssertEqual(message?.fileDescriptorResponse.fileDescriptorProto.count, 5)
+    XCTAssertEqual(message?.fileDescriptorResponse.fileDescriptorProto.count, 4)
   }
 
   func testListServices() async throws {
     try self.setUpServerAndChannel()
     let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
-    try await serviceReflectionInfo.requestStream.send(.with {
-      $0.host = "127.0.0.1"
-      $0.listServices = "services"
-    })
+
+    try await serviceReflectionInfo.requestStream.send(
+      .with {
+        $0.host = "127.0.0.1"
+        $0.listServices = "services"
+      }
+    )
+
     serviceReflectionInfo.requestStream.finish()
     var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
     let message = try await iterator.next()
     let receivedServices = message?.listServicesResponse.service.map { $0.name }
-    XCTAssertEqual(receivedServices?.count, 5)
+    XCTAssertEqual(receivedServices?.count, 4)
+
+    let servicesNames = self.getServicesNamesFromProtos(protos: self.makeProtosWithDependencies())
     for serviceName in receivedServices! {
-      XCTAssertTrue(self.servicesNames.contains(serviceName))
+      XCTAssertTrue(servicesNames.contains(serviceName))
     }
   }
 
-  func testReflectionServiceData() throws {
-    self.createFileDescriptorProto()
-    do {
-      let registry = try ReflectionServiceData(fileDescriptorProtos: self.protos)
-      let registryFileDescriptorData = registry.getfileDescriptorData()
-      let services = registry.getServices()
+  func testReflectionServiceDataFileDescriptorDataByFilename() throws {
+    var protos = self.makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
 
-      for (fileName, protoData) in registryFileDescriptorData {
-        let serializedFiledescriptorData = protoData.getSerializedFileDescriptorProto()
-        let dependecies = protoData.getDependency()
+    let registryFileDescriptorData = registry.fileDescriptorDataByFilename
 
-        let originalIndex = self.protos.firstIndex(where: { $0.name == fileName })
-        XCTAssertNotNil(originalIndex)
+    for (fileName, protoData) in registryFileDescriptorData {
+      let serializedFiledescriptorData = protoData.serializedFileDescriptorProto
+      let dependecies = protoData.dependencyNames
 
-        let originalProto = self.protos[originalIndex!]
-        XCTAssertEqual(originalProto.name, fileName)
-        XCTAssertEqual(try originalProto.serializedData(), serializedFiledescriptorData)
-        XCTAssertEqual(originalProto.dependency, dependecies)
+      let originalIndex = protos.firstIndex(where: { $0.name == fileName })
+      XCTAssertNotNil(originalIndex)
 
-        self.protos.remove(at: originalIndex!)
-      }
+      let originalProto = protos[originalIndex!]
+      XCTAssertEqual(originalProto.name, fileName)
+      XCTAssertEqual(try originalProto.serializedData(), serializedFiledescriptorData)
+      XCTAssertEqual(originalProto.dependency, dependecies)
 
-      for serviceName in services {
-        XCTAssert(self.servicesNames.contains(serviceName))
-        self.servicesNames.removeAll { $0 == serviceName }
-      }
-    } catch {
-      XCTFail(error.localizedDescription)
+      protos.remove(at: originalIndex!)
     }
+    XCTAssert(protos.isEmpty)
+  }
+
+  func testReflectionServiceServicesNames() throws {
+    let protos = self.makeProtosWithDependencies()
+    var servicesNames = self.getServicesNamesFromProtos(protos: protos)
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registryServices = registry.serviceNames
+    for serviceName in registryServices {
+      XCTAssert(servicesNames.contains(serviceName))
+      servicesNames.removeAll { $0 == serviceName }
+    }
+    XCTAssert(servicesNames.isEmpty)
   }
 
   func testGetSerializedFileDescriptorProtos() throws {
-    self.createFileDescriptorProto()
-    do {
-      let registry = try ReflectionServiceData(fileDescriptorProtos: self.protos)
-      let serializedFileDescriptorProtos = try registry
-        .getSerializedFileDescriptorProtos(fileName: "bar.proto")
-      let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
-      }
-      // Tests that the functions returns all the tranzitive dependencies, with their services and
-      // methods, together with the initial proto, as serialized data.
-      XCTAssertEqual(fileDescriptorProtos.count, 5)
-      for fileDescriptorProto in fileDescriptorProtos {
-        XCTAssert(self.protos.contains(fileDescriptorProto))
-        let protoIndex = self.protos.firstIndex(of: fileDescriptorProto)
-        for service in fileDescriptorProto.service {
-          XCTAssert(self.protos[protoIndex!].service.contains(service))
-          let serviceIndex = self.protos[protoIndex!].service.firstIndex(of: service)
-          let originalMethods = self.protos[protoIndex!].service[serviceIndex!].method
-          for method in service.method {
-            XCTAssert(originalMethods.contains(method))
-          }
-          for messageType in fileDescriptorProto.messageType {
-            XCTAssert(self.protos[protoIndex!].messageType.contains(messageType))
-          }
+    var protos = self.makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let serializedFileDescriptorProtos =
+      try registry
+      .getSerializedFileDescriptorProtos(fileName: "bar1.proto")
+    let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
+      try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+    }
+    // Tests that the functions returns all the tranzitive dependencies, with their services and
+    // methods, together with the initial proto, as serialized data.
+    XCTAssertEqual(fileDescriptorProtos.count, 4)
+    for fileDescriptorProto in fileDescriptorProtos {
+      XCTAssert(protos.contains(fileDescriptorProto))
+      let protoIndex = protos.firstIndex(of: fileDescriptorProto)
+      for service in fileDescriptorProto.service {
+        XCTAssert(protos[protoIndex!].service.contains(service))
+        let serviceIndex = protos[protoIndex!].service.firstIndex(of: service)
+        let originalMethods = protos[protoIndex!].service[serviceIndex!].method
+        for method in service.method {
+          XCTAssert(originalMethods.contains(method))
         }
-        self.protos.removeAll { $0 == fileDescriptorProto }
+        for messageType in fileDescriptorProto.messageType {
+          XCTAssert(protos[protoIndex!].messageType.contains(messageType))
+        }
       }
-      XCTAssert(self.protos.isEmpty)
-    } catch {
-      XCTFail(error.localizedDescription)
+      protos.removeAll { $0 == fileDescriptorProto }
+    }
+    XCTAssert(protos.isEmpty)
+  }
+
+  func testGetSerializedFileDescriptorProtosDependencyComplexGraph() throws {
+    var protos = self.makeProtosWithComplexDependencies()
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let serializedFileDescriptorProtos =
+      try registry
+      .getSerializedFileDescriptorProtos(fileName: "foo0.proto")
+    let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
+      try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+    }
+    // Tests that the functions returns all the tranzitive dependencies, with their services and
+    // methods, together with the initial proto, as serialized data.
+    XCTAssertEqual(fileDescriptorProtos.count, 21)
+    for fileDescriptorProto in fileDescriptorProtos {
+      XCTAssert(protos.contains(fileDescriptorProto))
+      let protoIndex = protos.firstIndex(of: fileDescriptorProto)
+      for service in fileDescriptorProto.service {
+        XCTAssert(protos[protoIndex!].service.contains(service))
+        let serviceIndex = protos[protoIndex!].service.firstIndex(of: service)
+        let originalMethods = protos[protoIndex!].service[serviceIndex!].method
+        for method in service.method {
+          XCTAssert(originalMethods.contains(method))
+        }
+        for messageType in fileDescriptorProto.messageType {
+          XCTAssert(protos[protoIndex!].messageType.contains(messageType))
+        }
+      }
+      protos.removeAll { $0 == fileDescriptorProto }
+    }
+    XCTAssert(protos.isEmpty)
+  }
+
+  func testGetSerializedFileDescriptorProtosDependencyLoops() throws {
+    var protos = self.makeProtosWithDependencies()
+    // Making dependencies of the "bar1.proto" to depend on "bar1.proto".
+    protos[1].dependency.append("bar1.proto")
+    protos[2].dependency.append("bar1.proto")
+    protos[3].dependency.append("bar1.proto")
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let serializedFileDescriptorProtos =
+      try registry
+      .getSerializedFileDescriptorProtos(fileName: "bar1.proto")
+    let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
+      try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+    }
+    // Test that we get only 4 serialized File Descriptor Protos as response.
+    XCTAssertEqual(fileDescriptorProtos.count, 4)
+    for fileDescriptorProto in fileDescriptorProtos {
+      XCTAssert(protos.contains(fileDescriptorProto))
+      let protoIndex = protos.firstIndex(of: fileDescriptorProto)
+      for service in fileDescriptorProto.service {
+        XCTAssert(protos[protoIndex!].service.contains(service))
+        let serviceIndex = protos[protoIndex!].service.firstIndex(of: service)
+        let originalMethods = protos[protoIndex!].service[serviceIndex!].method
+        for method in service.method {
+          XCTAssert(originalMethods.contains(method))
+        }
+        for messageType in fileDescriptorProto.messageType {
+          XCTAssert(protos[protoIndex!].messageType.contains(messageType))
+        }
+      }
+      protos.removeAll { $0 == fileDescriptorProto }
+    }
+    XCTAssert(protos.isEmpty)
+  }
+
+  func testGetSerializedFileDescriptorProtosInvalidFile() throws {
+    let protos = self.makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    XCTAssertThrowsError(
+      try registry.getSerializedFileDescriptorProtos(fileName: "invalid.proto")
+    ) { error in
+      XCTAssertEqual(
+        error as! GRPCStatus,
+        GRPCStatus(
+          code: .notFound,
+          message: "The provided file or a dependency of the provided file could not be found."
+        )
+      )
+    }
+  }
+
+  func testGetSerializedFileDescriptorProtosDependencyNotProto() throws {
+    var protos = self.makeProtosWithDependencies()
+    protos[0].dependency.append("invalidDependency")
+    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    XCTAssertThrowsError(
+      try registry.getSerializedFileDescriptorProtos(fileName: "bar1.proto")
+    ) { error in
+      XCTAssertEqual(
+        error as! GRPCStatus,
+        GRPCStatus(
+          code: .notFound,
+          message: "The provided file or a dependency of the provided file could not be found."
+        )
+      )
     }
   }
 }
