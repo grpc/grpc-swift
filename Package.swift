@@ -47,6 +47,10 @@ let packageDependencies: [Package.Dependency] = [
     from: "1.4.0"
   ),
   .package(
+    url: "https://github.com/apple/swift-collections.git",
+    from: "1.0.5"
+  ),
+  .package(
     url: "https://github.com/apple/swift-protobuf.git",
     from: "1.20.2"
   ),
@@ -120,6 +124,7 @@ extension Target.Dependency {
     name: "SwiftProtobufPluginLibrary",
     package: "swift-protobuf"
   )
+  static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
 
   static let grpcCore: Self = .target(name: "GRPCCore")
 }
@@ -143,6 +148,7 @@ extension Target {
       .nioExtras,
       .logging,
       .protobuf,
+      .dequeModule,
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
