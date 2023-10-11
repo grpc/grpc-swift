@@ -73,7 +73,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   private func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto] {
     var fileDependencies: [Google_Protobuf_FileDescriptorProto] = []
     for id in 1 ... 4 {
-      let fileDescriptorProto = generateProto(name: "bar", id: id)
+        let fileDescriptorProto = self.generateProto(name: "bar", id: id)
       if id != 1 {
         // Dependency of the first dependency.
         fileDependencies[0].dependency.append(fileDescriptorProto.name)
@@ -85,22 +85,22 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
 
   private func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescriptorProto] {
     var protos: [Google_Protobuf_FileDescriptorProto] = []
-    protos.append(generateProto(name: "foo", id: 0))
+      protos.append(self.generateProto(name: "foo", id: 0))
     for id in 1 ... 10 {
-      var root = protos.count
-      let fileDescriptorProtoA = generateProto(name: "fooA", id: id)
-      let fileDescriptorProtoB = generateProto(name: "fooB", id: id)
-      root = root > 1 ? root - Int.random(in: 1 ..< 3) : root - 1
-      protos[id - 1].dependency.append(fileDescriptorProtoA.name)
-      protos[id - 1].dependency.append(fileDescriptorProtoB.name)
+        let fileDescriptorProtoA = self.generateProto(name: "fooA", id: id)
+        let fileDescriptorProtoB = self.generateProto(name: "fooB", id: id)
+      let parent = protos.count > 1 ? protos.count - Int.random(in: 1 ..< 3) : protos.count - 1
+      protos[parent].dependency.append(fileDescriptorProtoA.name)
+      protos[parent].dependency.append(fileDescriptorProtoB.name)
       protos.append(fileDescriptorProtoA)
       protos.append(fileDescriptorProtoB)
     }
     return protos
   }
 
-  private func getServicesNamesFromProtos(protos: [Google_Protobuf_FileDescriptorProto]) -> [String]
-  {
+  private func getServicesNamesFromProtos(
+    protos: [Google_Protobuf_FileDescriptorProto]
+  ) -> [String] {
     var servicesNames: [String] = []
     for proto in protos {
       servicesNames.append(contentsOf: proto.service.map { $0.name })
@@ -198,13 +198,13 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
 
   func testReflectionServiceDataFileDescriptorDataByFilename() throws {
     var protos = self.makeProtosWithDependencies()
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
 
     let registryFileDescriptorData = registry.fileDescriptorDataByFilename
 
     for (fileName, protoData) in registryFileDescriptorData {
       let serializedFiledescriptorData = protoData.serializedFileDescriptorProto
-      let dependecies = protoData.dependencyNames
+      let dependecies = protoData.dependencyFileNames
 
       let originalIndex = protos.firstIndex(where: { $0.name == fileName })
       XCTAssertNotNil(originalIndex)
@@ -222,7 +222,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   func testReflectionServiceServicesNames() throws {
     let protos = self.makeProtosWithDependencies()
     var servicesNames = self.getServicesNamesFromProtos(protos: protos)
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryServices = registry.serviceNames
     for serviceName in registryServices {
       XCTAssert(servicesNames.contains(serviceName))
@@ -233,7 +233,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
 
   func testGetSerializedFileDescriptorProtos() throws {
     var protos = self.makeProtosWithDependencies()
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
     let serializedFileDescriptorProtos =
       try registry
       .getSerializedFileDescriptorProtos(fileName: "bar1.proto")
@@ -264,7 +264,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
 
   func testGetSerializedFileDescriptorProtosDependencyComplexGraph() throws {
     var protos = self.makeProtosWithComplexDependencies()
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
     let serializedFileDescriptorProtos =
       try registry
       .getSerializedFileDescriptorProtos(fileName: "foo0.proto")
@@ -299,7 +299,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
     protos[1].dependency.append("bar1.proto")
     protos[2].dependency.append("bar1.proto")
     protos[3].dependency.append("bar1.proto")
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
     let serializedFileDescriptorProtos =
       try registry
       .getSerializedFileDescriptorProtos(fileName: "bar1.proto")
@@ -329,7 +329,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
 
   func testGetSerializedFileDescriptorProtosInvalidFile() throws {
     let protos = self.makeProtosWithDependencies()
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
     XCTAssertThrowsError(
       try registry.getSerializedFileDescriptorProtos(fileName: "invalid.proto")
     ) { error in
@@ -346,7 +346,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   func testGetSerializedFileDescriptorProtosDependencyNotProto() throws {
     var protos = self.makeProtosWithDependencies()
     protos[0].dependency.append("invalidDependency")
-    let registry = try ReflectionServiceData(fileDescriptor: protos)
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
     XCTAssertThrowsError(
       try registry.getSerializedFileDescriptorProtos(fileName: "bar1.proto")
     ) { error in

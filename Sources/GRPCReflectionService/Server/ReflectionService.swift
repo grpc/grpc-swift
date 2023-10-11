@@ -21,39 +21,31 @@ import SwiftProtobuf
 
 internal struct ReflectionServiceData: Sendable {
   internal struct FileDescriptorProtoData: Sendable {
-    internal let serializedFileDescriptorProto: Data
-    internal let dependencyNames: [String]
-    internal init(serializedFileDescriptorProto: Data, dependenciesNames: [String]) {
-      self.serializedFileDescriptorProto = serializedFileDescriptorProto
-      self.dependencyNames = dependenciesNames
-    }
+    internal var serializedFileDescriptorProto: Data
+    internal var dependencyFileNames: [String]
   }
 
-  internal let fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
-  internal let serviceNames: [String]
+  internal var fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
+  internal var serviceNames: [String]
 
-  public init(fileDescriptor: [Google_Protobuf_FileDescriptorProto]) throws {
-    var fileDescriptorDataAux: [String: FileDescriptorProtoData] = [:]
-    var servicesAux: [String] = []
-
+  public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
+      self.serviceNames = []
+      self.fileDescriptorDataByFilename = [:]
     do {
-      for fileDescriptorProto in fileDescriptor {
+      for fileDescriptorProto in fileDescriptors {
         let protoDataObj = FileDescriptorProtoData(
           serializedFileDescriptorProto: try fileDescriptorProto.serializedData(),
-          dependenciesNames: fileDescriptorProto.dependency
+          dependencyFileNames: fileDescriptorProto.dependency
         )
-        fileDescriptorDataAux[fileDescriptorProto.name] = protoDataObj
-        servicesAux.append(contentsOf: fileDescriptorProto.service.map { $0.name })
+          self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoDataObj
+          self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
       }
     } catch {
       throw GRPCStatus(
         code: .invalidArgument,
-        message: "One of the provided file descriptor protos is invalid."
+        message: "The \(fileDescriptors[self.fileDescriptorDataByFilename.count].name) could not be serialized."
       )
     }
-
-    self.fileDescriptorDataByFilename = fileDescriptorDataAux
-    self.serviceNames = servicesAux
   }
 
   public func getSerializedFileDescriptorProtos(fileName: String) throws -> [Data] {
@@ -62,19 +54,15 @@ internal struct ReflectionServiceData: Sendable {
     var serializedFileDescriptorProtos: [Data] = []
     toVisit.append(fileName)
 
-    while !toVisit.isEmpty {
-      let currentFileName = toVisit.popFirst()
-      if let protoData = self.fileDescriptorDataByFilename[currentFileName!] {
+      while let currentFileName = toVisit.popFirst() {
+      if let protoData = self.fileDescriptorDataByFilename[currentFileName] {
         let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
-        if !protoData.dependencyNames.isEmpty {
-          toVisit
-            .append(
-              contentsOf: protoData.dependencyNames
+          toVisit.append(
+              contentsOf: protoData.dependencyFileNames
                 .filter { name in
                   return !visited.contains(name)
                 }
             )
-        }
         serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
       } else {
         throw GRPCStatus(
@@ -82,7 +70,7 @@ internal struct ReflectionServiceData: Sendable {
           message: "The provided file or a dependency of the provided file could not be found."
         )
       }
-      visited.insert(currentFileName!)
+      visited.insert(currentFileName)
     }
     return serializedFileDescriptorProtos
   }
@@ -94,20 +82,19 @@ public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
 
   public init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
     self.protoRegistry = try ReflectionServiceData(
-      fileDescriptor: fileDescriptorProtos
+      fileDescriptors: fileDescriptorProtos
     )
   }
 
   internal func findFileByFileName(
-    fileName: String,
+    _ fileName: String,
     request: Reflection_ServerReflectionRequest
   ) throws -> Reflection_ServerReflectionResponse {
-    var fileDescriptorResponse = Reflection_FileDescriptorResponse()
-    fileDescriptorResponse.fileDescriptorProto = try self.protoRegistry
-      .getSerializedFileDescriptorProtos(fileName: fileName)
     return Reflection_ServerReflectionResponse(
       request: request,
-      fileDescriptorResponse: fileDescriptorResponse
+      fileDescriptorResponse: try .with {
+          $0.fileDescriptorProto = try self.protoRegistry.getSerializedFileDescriptorProtos(fileName: fileName)
+      }
     )
   }
 
@@ -115,11 +102,11 @@ public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
     request: Reflection_ServerReflectionRequest
   ) throws -> Reflection_ServerReflectionResponse {
     var listServicesResponse = Reflection_ListServiceResponse()
-    listServicesResponse.service = self.protoRegistry.serviceNames.map({ serviceName in
+    listServicesResponse.service = self.protoRegistry.serviceNames.map{ serviceName in
       Reflection_ServiceResponse.with {
         $0.name = serviceName
       }
-    })
+    }
     return Reflection_ServerReflectionResponse(
       request: request,
       listServicesResponse: listServicesResponse
@@ -135,7 +122,7 @@ public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
       switch request.messageRequest {
       case let .fileByFilename(fileName):
         let response = try self.findFileByFileName(
-          fileName: fileName,
+          fileName,
           request: request
         )
         try await responseStream.send(response)
