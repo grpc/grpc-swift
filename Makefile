@@ -140,7 +140,7 @@ ${REFLECTION_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
-		--grpc-swift_opt=Client=false,Visibility=Public \
+		--grpc-swift_opt=Client=false \
 		--grpc-swift_out=$(dir $<)
 
 # Generates protobufs and gRPC server for the Reflection Service

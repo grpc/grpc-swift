@@ -105,12 +105,12 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   }
 
   private func setUpServerAndChannel() throws {
-    let reflectionService = try ReflectionService(
-      fileDescriptorProtos: self.makeProtosWithDependencies()
+    let reflectionServiceProvider = try ReflectionServiceProvider(
+      fileDescriptors: self.makeProtosWithDependencies()
     )
 
     let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
-      .withServiceProviders([reflectionService])
+      .withServiceProviders([reflectionServiceProvider])
       .withLogger(self.serverLogger)
       .bind(host: "127.0.0.1", port: 0)
       .wait()

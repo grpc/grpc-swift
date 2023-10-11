@@ -19,6 +19,21 @@ import Foundation
 import GRPC
 import SwiftProtobuf
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public final class ReflectionServiceProvider: CallHandlerProvider {
+    public var serviceName: Substring
+    private let reflectionService: ReflectionService
+    
+    public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
+        self.reflectionService = try ReflectionService(fileDescriptorProtos: fileDescriptors)
+        self.serviceName = self.reflectionService.serviceName
+    }
+    
+    public func handle(method name: Substring, context: GRPC.CallHandlerContext) -> GRPC.GRPCServerHandlerProtocol? {
+        self.reflectionService.handle(method: name, context: context)
+    }
+}
+
 internal struct ReflectionServiceData: Sendable {
   internal struct FileDescriptorProtoData: Sendable {
     internal var serializedFileDescriptorProto: Data
@@ -28,7 +43,7 @@ internal struct ReflectionServiceData: Sendable {
   internal var fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
   internal var serviceNames: [String]
 
-  public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
+  internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
     self.fileDescriptorDataByFilename = [:]
     do {
@@ -78,10 +93,10 @@ internal struct ReflectionServiceData: Sendable {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
+internal final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
   private let protoRegistry: ReflectionServiceData
 
-  public init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
+  internal init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
     self.protoRegistry = try ReflectionServiceData(
       fileDescriptors: fileDescriptorProtos
     )
@@ -116,7 +131,7 @@ public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
     )
   }
 
-  public func serverReflectionInfo(
+  internal func serverReflectionInfo(
     requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
     context: GRPCAsyncServerCallContext

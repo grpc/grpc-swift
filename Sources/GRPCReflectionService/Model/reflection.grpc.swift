@@ -12,7 +12,7 @@ import SwiftProtobuf
 
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Reflection_ServerReflectionProvider: CallHandlerProvider {
+internal protocol Reflection_ServerReflectionProvider: CallHandlerProvider {
   var interceptors: Reflection_ServerReflectionServerInterceptorFactoryProtocol? { get }
 
   /// The reflection service is structured as a bidirectional stream, ensuring
@@ -21,13 +21,13 @@ public protocol Reflection_ServerReflectionProvider: CallHandlerProvider {
 }
 
 extension Reflection_ServerReflectionProvider {
-  public var serviceName: Substring {
+  internal var serviceName: Substring {
     return Reflection_ServerReflectionServerMetadata.serviceDescriptor.fullName[...]
   }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handle(
+  internal func handle(
     method name: Substring,
     context: CallHandlerContext
   ) -> GRPCServerHandlerProtocol? {
@@ -49,7 +49,7 @@ extension Reflection_ServerReflectionProvider {
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Reflection_ServerReflectionAsyncProvider: CallHandlerProvider, Sendable {
+internal protocol Reflection_ServerReflectionAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Reflection_ServerReflectionServerInterceptorFactoryProtocol? { get }
 
@@ -64,19 +64,19 @@ public protocol Reflection_ServerReflectionAsyncProvider: CallHandlerProvider, S
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Reflection_ServerReflectionAsyncProvider {
-  public static var serviceDescriptor: GRPCServiceDescriptor {
+  internal static var serviceDescriptor: GRPCServiceDescriptor {
     return Reflection_ServerReflectionServerMetadata.serviceDescriptor
   }
 
-  public var serviceName: Substring {
+  internal var serviceName: Substring {
     return Reflection_ServerReflectionServerMetadata.serviceDescriptor.fullName[...]
   }
 
-  public var interceptors: Reflection_ServerReflectionServerInterceptorFactoryProtocol? {
+  internal var interceptors: Reflection_ServerReflectionServerInterceptorFactoryProtocol? {
     return nil
   }
 
-  public func handle(
+  internal func handle(
     method name: Substring,
     context: CallHandlerContext
   ) -> GRPCServerHandlerProtocol? {
@@ -96,15 +96,15 @@ extension Reflection_ServerReflectionAsyncProvider {
   }
 }
 
-public protocol Reflection_ServerReflectionServerInterceptorFactoryProtocol: Sendable {
+internal protocol Reflection_ServerReflectionServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'serverReflectionInfo'.
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeServerReflectionInfoInterceptors() -> [ServerInterceptor<Reflection_ServerReflectionRequest, Reflection_ServerReflectionResponse>]
 }
 
-public enum Reflection_ServerReflectionServerMetadata {
-  public static let serviceDescriptor = GRPCServiceDescriptor(
+internal enum Reflection_ServerReflectionServerMetadata {
+  internal static let serviceDescriptor = GRPCServiceDescriptor(
     name: "ServerReflection",
     fullName: "reflection.ServerReflection",
     methods: [
@@ -112,8 +112,8 @@ public enum Reflection_ServerReflectionServerMetadata {
     ]
   )
 
-  public enum Methods {
-    public static let serverReflectionInfo = GRPCMethodDescriptor(
+  internal enum Methods {
+    internal static let serverReflectionInfo = GRPCMethodDescriptor(
       name: "ServerReflectionInfo",
       path: "/reflection.ServerReflection/ServerReflectionInfo",
       type: GRPCCallType.bidirectionalStreaming
