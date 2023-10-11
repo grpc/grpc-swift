@@ -29,21 +29,22 @@ internal struct ReflectionServiceData: Sendable {
   internal var serviceNames: [String]
 
   public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
-      self.serviceNames = []
-      self.fileDescriptorDataByFilename = [:]
+    self.serviceNames = []
+    self.fileDescriptorDataByFilename = [:]
     do {
       for fileDescriptorProto in fileDescriptors {
         let protoDataObj = FileDescriptorProtoData(
           serializedFileDescriptorProto: try fileDescriptorProto.serializedData(),
           dependencyFileNames: fileDescriptorProto.dependency
         )
-          self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoDataObj
-          self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
+        self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoDataObj
+        self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
       }
     } catch {
       throw GRPCStatus(
         code: .invalidArgument,
-        message: "The \(fileDescriptors[self.fileDescriptorDataByFilename.count].name) could not be serialized."
+        message:
+          "The \(fileDescriptors[self.fileDescriptorDataByFilename.count].name) could not be serialized."
       )
     }
   }
@@ -54,15 +55,15 @@ internal struct ReflectionServiceData: Sendable {
     var serializedFileDescriptorProtos: [Data] = []
     toVisit.append(fileName)
 
-      while let currentFileName = toVisit.popFirst() {
+    while let currentFileName = toVisit.popFirst() {
       if let protoData = self.fileDescriptorDataByFilename[currentFileName] {
         let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
-          toVisit.append(
-              contentsOf: protoData.dependencyFileNames
-                .filter { name in
-                  return !visited.contains(name)
-                }
-            )
+        toVisit.append(
+          contentsOf: protoData.dependencyFileNames
+            .filter { name in
+              return !visited.contains(name)
+            }
+        )
         serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
       } else {
         throw GRPCStatus(
@@ -93,7 +94,9 @@ public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
     return Reflection_ServerReflectionResponse(
       request: request,
       fileDescriptorResponse: try .with {
-          $0.fileDescriptorProto = try self.protoRegistry.getSerializedFileDescriptorProtos(fileName: fileName)
+        $0.fileDescriptorProto = try self.protoRegistry.getSerializedFileDescriptorProtos(
+          fileName: fileName
+        )
       }
     )
   }
@@ -102,7 +105,7 @@ public final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
     request: Reflection_ServerReflectionRequest
   ) throws -> Reflection_ServerReflectionResponse {
     var listServicesResponse = Reflection_ListServiceResponse()
-    listServicesResponse.service = self.protoRegistry.serviceNames.map{ serviceName in
+    listServicesResponse.service = self.protoRegistry.serviceNames.map { serviceName in
       Reflection_ServiceResponse.with {
         $0.name = serviceName
       }
