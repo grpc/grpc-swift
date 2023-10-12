@@ -207,6 +207,7 @@ extension Target {
       .nioEmbedded,
       .nioTransportServices,
       .logging,
+      .reflectionService,
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
