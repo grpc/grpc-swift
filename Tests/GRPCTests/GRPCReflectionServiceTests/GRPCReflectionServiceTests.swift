@@ -105,7 +105,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   }
 
   private func setUpServerAndChannel() throws {
-    let reflectionServiceProvider = try ReflectionServiceProvider(
+    let reflectionServiceProvider = try ReflectionService(
       fileDescriptors: self.makeProtosWithDependencies()
     )
 

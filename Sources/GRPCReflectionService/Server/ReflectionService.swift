@@ -20,18 +20,21 @@ import GRPC
 import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public final class ReflectionServiceProvider: CallHandlerProvider {
-    public var serviceName: Substring
-    private let reflectionService: ReflectionService
-    
-    public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
-        self.reflectionService = try ReflectionService(fileDescriptorProtos: fileDescriptors)
-        self.serviceName = self.reflectionService.serviceName
-    }
-    
-    public func handle(method name: Substring, context: GRPC.CallHandlerContext) -> GRPC.GRPCServerHandlerProtocol? {
-        self.reflectionService.handle(method: name, context: context)
-    }
+public class ReflectionService: CallHandlerProvider {
+  public var serviceName: Substring
+  private let reflectionService: ReflectionServiceProvider
+
+  public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
+    self.reflectionService = try ReflectionServiceProvider(fileDescriptorProtos: fileDescriptors)
+    self.serviceName = self.reflectionService.serviceName
+  }
+
+  public func handle(
+    method name: Substring,
+    context: GRPC.CallHandlerContext
+  ) -> GRPC.GRPCServerHandlerProtocol? {
+    self.reflectionService.handle(method: name, context: context)
+  }
 }
 
 internal struct ReflectionServiceData: Sendable {
@@ -93,7 +96,7 @@ internal struct ReflectionServiceData: Sendable {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal final class ReflectionService: Reflection_ServerReflectionAsyncProvider {
+internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsyncProvider {
   private let protoRegistry: ReflectionServiceData
 
   internal init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
