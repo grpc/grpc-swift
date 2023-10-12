@@ -20,13 +20,14 @@ import GRPC
 import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public class ReflectionService: CallHandlerProvider {
-  public var serviceName: Substring
+public final class ReflectionService: CallHandlerProvider, Sendable {
   private let reflectionService: ReflectionServiceProvider
+  public var serviceName: Substring {
+    self.reflectionService.serviceName
+  }
 
   public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.reflectionService = try ReflectionServiceProvider(fileDescriptorProtos: fileDescriptors)
-    self.serviceName = self.reflectionService.serviceName
   }
 
   public func handle(
@@ -49,25 +50,29 @@ internal struct ReflectionServiceData: Sendable {
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
     self.fileDescriptorDataByFilename = [:]
-    do {
-      for fileDescriptorProto in fileDescriptors {
-        let protoDataObj = FileDescriptorProtoData(
-          serializedFileDescriptorProto: try fileDescriptorProto.serializedData(),
-          dependencyFileNames: fileDescriptorProto.dependency
+    for fileDescriptorProto in fileDescriptors {
+      let serializedFileDescriptorProto: Data
+      do {
+        serializedFileDescriptorProto = try fileDescriptorProto.serializedData()
+      } catch {
+        throw GRPCStatus(
+          code: .invalidArgument,
+          message:
+            "The \(fileDescriptorProto.name) could not be serialized."
         )
-        self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoDataObj
-        self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
       }
-    } catch {
-      throw GRPCStatus(
-        code: .invalidArgument,
-        message:
-          "The \(fileDescriptors[self.fileDescriptorDataByFilename.count].name) could not be serialized."
+      let protoData = FileDescriptorProtoData(
+        serializedFileDescriptorProto: serializedFileDescriptorProto,
+        dependencyFileNames: fileDescriptorProto.dependency
       )
+      self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoData
+      self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
     }
   }
 
-  public func getSerializedFileDescriptorProtos(fileName: String) throws -> [Data] {
+  internal func serialisedFileDescriptorProtosForDependenciesOfFile(
+    named fileName: String
+  ) throws -> [Data] {
     var toVisit = Deque<String>()
     var visited = Set<String>()
     var serializedFileDescriptorProtos: [Data] = []
@@ -75,13 +80,14 @@ internal struct ReflectionServiceData: Sendable {
 
     while let currentFileName = toVisit.popFirst() {
       if let protoData = self.fileDescriptorDataByFilename[currentFileName] {
-        let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
         toVisit.append(
           contentsOf: protoData.dependencyFileNames
             .filter { name in
               return !visited.contains(name)
             }
         )
+
+        let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
         serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
       } else {
         throw GRPCStatus(
@@ -112,9 +118,8 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     return Reflection_ServerReflectionResponse(
       request: request,
       fileDescriptorResponse: try .with {
-        $0.fileDescriptorProto = try self.protoRegistry.getSerializedFileDescriptorProtos(
-          fileName: fileName
-        )
+        $0.fileDescriptorProto = try self.protoRegistry
+          .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
       }
     )
   }
