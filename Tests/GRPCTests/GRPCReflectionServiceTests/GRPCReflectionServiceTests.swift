@@ -123,6 +123,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
     ) {
       $0.backgroundActivityLogger = self.clientLogger
     }
+
     self.channel = channel
   }
 
@@ -150,22 +151,27 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
     serviceReflectionInfo.requestStream.finish()
 
     var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
-    let message = try await iterator.next()
+    guard let message = try await iterator.next() else {
+      return XCTFail("Could not get a response message.")
+    }
+
     let receivedFileDescriptorProto =
       try Google_Protobuf_FileDescriptorProto(
-        serializedData: (message?.fileDescriptorResponse
-          .fileDescriptorProto[0])!
+        serializedData: (message.fileDescriptorResponse
+          .fileDescriptorProto[0])
       )
+
     XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
-    XCTAssertEqual(
-      receivedFileDescriptorProto.service.count,
-      1
-    )
-    XCTAssertEqual(
-      receivedFileDescriptorProto.service.first!.method.first!.name,
-      "testMethod1"
-    )
-    XCTAssertEqual(message?.fileDescriptorResponse.fileDescriptorProto.count, 4)
+    XCTAssertEqual(receivedFileDescriptorProto.service.count, 1)
+
+    guard let service = receivedFileDescriptorProto.service.first else {
+      return XCTFail("The received file descriptor proto doesn't have any services.")
+    }
+    guard let method = service.method.first else {
+      return XCTFail("The service of the received file descriptor proto doesn't have any methods.")
+    }
+    XCTAssertEqual(method.name, "testMethod1")
+    XCTAssertEqual(message.fileDescriptorResponse.fileDescriptorProto.count, 4)
   }
 
   func testListServices() async throws {
@@ -182,17 +188,16 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
 
     serviceReflectionInfo.requestStream.finish()
     var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
-    let message = try await iterator.next()
-    let receivedServices = message?.listServicesResponse.service.map { $0.name }.sorted()
-    XCTAssertEqual(receivedServices?.count, 4)
+    guard let message = try await iterator.next() else {
+      return XCTFail("Could not get a response message.")
+    }
 
+    let receivedServices = message.listServicesResponse.service.map { $0.name }.sorted()
     let servicesNames = self.getServicesNamesFromProtos(
       protos: self.makeProtosWithDependencies()
     ).sorted()
 
-    for index in 0 ... servicesNames.count - 1 {
-      XCTAssertEqual(receivedServices![index], servicesNames[index])
-    }
+    XCTAssertEqual(receivedServices, servicesNames)
   }
 
   func testReflectionServiceDataFileDescriptorDataByFilename() throws {
@@ -208,7 +213,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
       guard let index = protos.firstIndex(where: { $0.name == fileName }) else {
         return XCTFail(
           """
-          Could not find the file descriptor proto of \(fileName)
+          Could not find the file descriptor proto of \(fileName) \
           in the original file descriptor protos list.
           """
         )
@@ -229,10 +234,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
     let servicesNames = self.getServicesNamesFromProtos(protos: protos).sorted()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryServices = registry.serviceNames.sorted()
-    XCTAssertEqual(registryServices.count, servicesNames.count)
-    for index in 0 ... servicesNames.count - 1 {
-      XCTAssertEqual(registryServices[index], servicesNames[index])
-    }
+    XCTAssertEqual(registryServices, servicesNames)
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFile() throws {
@@ -251,28 +253,32 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
       guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
         return XCTFail(
           """
-          Could not find the file descriptor proto of \(fileDescriptorProto.name)
+          Could not find the file descriptor proto of \(fileDescriptorProto.name) \
           in the original file descriptor protos list.
           """
         )
       }
+
       for service in fileDescriptorProto.service {
         guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
           return XCTFail(
             """
-            Could not find the \(service.name) in the service
+            Could not find the \(service.name) in the service \
             list of the \(fileDescriptorProto.name) file descriptor proto.
             """
           )
         }
+
         let originalMethods = protos[protoIndex].service[serviceIndex].method
         for method in service.method {
           XCTAssert(originalMethods.contains(method))
         }
+
         for messageType in fileDescriptorProto.messageType {
           XCTAssert(protos[protoIndex].messageType.contains(messageType))
         }
       }
+
       protos.removeAll { $0 == fileDescriptorProto }
     }
     XCTAssert(protos.isEmpty)
@@ -294,28 +300,32 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
       guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
         return XCTFail(
           """
-          Could not find the file descriptor proto of \(fileDescriptorProto.name)
+          Could not find the file descriptor proto of \(fileDescriptorProto.name) \
           in the original file descriptor protos list.
           """
         )
       }
+
       for service in fileDescriptorProto.service {
         guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
           return XCTFail(
             """
-            Could not find the \(service.name) in the service
+            Could not find the \(service.name) in the service \
             list of the \(fileDescriptorProto.name) file descriptor proto.
             """
           )
         }
+
         let originalMethods = protos[protoIndex].service[serviceIndex].method
         for method in service.method {
           XCTAssert(originalMethods.contains(method))
         }
+
         for messageType in fileDescriptorProto.messageType {
           XCTAssert(protos[protoIndex].messageType.contains(messageType))
         }
       }
+
       protos.removeAll { $0 == fileDescriptorProto }
     }
     XCTAssert(protos.isEmpty)
@@ -340,28 +350,32 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
       guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
         return XCTFail(
           """
-          Could not find the file descriptor proto of \(fileDescriptorProto.name)
+          Could not find the file descriptor proto of \(fileDescriptorProto.name) \
           in the original file descriptor protos list.
           """
         )
       }
+
       for service in fileDescriptorProto.service {
         guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
           return XCTFail(
             """
-            Could not find the \(service.name) in the service
+            Could not find the \(service.name) in the service \
             list of the \(fileDescriptorProto.name) file descriptor proto.
             """
           )
         }
+
         let originalMethods = protos[protoIndex].service[serviceIndex].method
         for method in service.method {
           XCTAssert(originalMethods.contains(method))
         }
+
         for messageType in fileDescriptorProto.messageType {
           XCTAssert(protos[protoIndex].messageType.contains(messageType))
         }
       }
+
       protos.removeAll { $0 == fileDescriptorProto }
     }
     XCTAssert(protos.isEmpty)
