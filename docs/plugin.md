@@ -27,7 +27,7 @@ when invoking `protoc`.
 
 The **Visibility** option determines the access control for generated code.
 
-- **Possible values:** Public, Internal
+- **Possible values:** Public, Internal, Package
 - **Default value:** Internal
 
 ### Server

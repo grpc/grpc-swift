@@ -40,6 +40,7 @@ final class GeneratorOptions {
   enum Visibility: String {
     case `internal` = "Internal"
     case `public` = "Public"
+    case `package` = "Package"
 
     var sourceSnippet: String {
       switch self {
@@ -47,6 +48,8 @@ final class GeneratorOptions {
         return "internal"
       case .public:
         return "public"
+      case .package:
+        return "package"
       }
     }
   }
