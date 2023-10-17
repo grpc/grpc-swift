@@ -42,7 +42,7 @@ function check_license_headers() {
 }
 
 function check_formatting() {
-  run_logged "Checking formatting" "$HERE/format.sh lint"
+  run_logged "Checking formatting" "$HERE/format.sh -l"
 }
 
 errors=0
