@@ -46,10 +46,13 @@ internal struct ReflectionServiceData: Sendable {
 
   internal var fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
   internal var serviceNames: [String]
+  internal var fileNameBySymbol: [String: String]
 
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
     self.fileDescriptorDataByFilename = [:]
+    self.fileNameBySymbol = [:]
+
     for fileDescriptorProto in fileDescriptors {
       let serializedFileDescriptorProto: Data
       do {
@@ -67,6 +70,19 @@ internal struct ReflectionServiceData: Sendable {
       )
       self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoData
       self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
+      for qualifiedSybolName in fileDescriptorProto.qualifiedSymbolNames {
+        let oldValue = self.fileNameBySymbol.updateValue(
+          fileDescriptorProto.name,
+          forKey: qualifiedSybolName
+        )
+        if let oldValue = oldValue {
+          throw GRPCStatus(
+            code: .alreadyExists,
+            message:
+              "The \(qualifiedSybolName) symbol from \(fileDescriptorProto.name) already exists in \(oldValue)."
+          )
+        }
+      }
     }
   }
 
@@ -98,6 +114,10 @@ internal struct ReflectionServiceData: Sendable {
       visited.insert(currentFileName)
     }
     return serializedFileDescriptorProtos
+  }
+
+  internal func nameOfFileContainingSymbol(named symbolName: String) -> String? {
+    return self.fileNameBySymbol[symbolName]
   }
 }
 
@@ -139,6 +159,19 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     )
   }
 
+  internal func findFileBySymbol(
+    _ symbolName: String,
+    request: Reflection_ServerReflectionRequest
+  ) throws -> Reflection_ServerReflectionResponse {
+    guard let fileName = self.protoRegistry.nameOfFileContainingSymbol(named: symbolName) else {
+      throw GRPCStatus(
+        code: .notFound,
+        message: "The provided symbol could not be found."
+      )
+    }
+    return try self.findFileByFileName(fileName, request: request)
+  }
+
   internal func serverReflectionInfo(
     requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
@@ -155,6 +188,13 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 
       case .listServices:
         let response = try self.getServicesNames(request: request)
+        try await responseStream.send(response)
+
+      case let .fileContainingSymbol(symbolName):
+        let response = try self.findFileBySymbol(
+          symbolName,
+          request: request
+        )
         try await responseStream.send(response)
 
       default:
@@ -185,5 +225,39 @@ extension Reflection_ServerReflectionResponse {
       $0.originalRequest = request
       $0.listServicesResponse = listServicesResponse
     }
+  }
+}
+
+extension Google_Protobuf_FileDescriptorProto {
+  var qualifiedServiceAndMethodNames: [String] {
+    var names: [String] = []
+
+    for service in self.service {
+      names.append(self.package + "." + service.name)
+      names.append(
+        contentsOf: service.method
+          .map { self.package + "." + service.name + "." + $0.name }
+      )
+    }
+    return names
+  }
+
+  var qualifiedMessageTypes: [String] {
+    return self.messageType.map {
+      self.package + "." + $0.name
+    }
+  }
+
+  var qualifiedEnumTypes: [String] {
+    return self.enumType.map {
+      self.package + "." + $0.name
+    }
+  }
+
+  var qualifiedSymbolNames: [String] {
+    var names = self.qualifiedServiceAndMethodNames
+    names.append(contentsOf: self.qualifiedMessageTypes)
+    names.append(contentsOf: self.qualifiedEnumTypes)
+    return names
   }
 }

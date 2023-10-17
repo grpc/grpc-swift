@@ -17,191 +17,15 @@
 import Foundation
 import GRPC
 import GRPCReflectionService
-import NIOPosix
 import SwiftProtobuf
 import XCTest
 
 @testable import GRPCReflectionService
 
-final class GRPCReflectionServiceTests: GRPCTestCase {
-  private var group: MultiThreadedEventLoopGroup?
-  private var server: Server?
-  private var channel: GRPCChannel?
-
-  private func generateProto(name: String, id: Int) -> Google_Protobuf_FileDescriptorProto {
-    let inputMessage = Google_Protobuf_DescriptorProto.with {
-      $0.name = "inputMessage"
-      $0.field = [
-        Google_Protobuf_FieldDescriptorProto.with {
-          $0.name = "inputField"
-          $0.type = .bool
-        }
-      ]
-    }
-
-    let outputMessage = Google_Protobuf_DescriptorProto.with {
-      $0.name = "outputMessage"
-      $0.field = [
-        Google_Protobuf_FieldDescriptorProto.with {
-          $0.name = "outputField"
-          $0.type = .int32
-        }
-      ]
-    }
-
-    let method = Google_Protobuf_MethodDescriptorProto.with {
-      $0.name = "testMethod" + String(id)
-      $0.inputType = inputMessage.name
-      $0.outputType = outputMessage.name
-    }
-
-    let serviceDescriptor = Google_Protobuf_ServiceDescriptorProto.with {
-      $0.method = [method]
-      $0.name = "service" + String(id)
-    }
-
-    let fileDescriptorProto = Google_Protobuf_FileDescriptorProto.with {
-      $0.service = [serviceDescriptor]
-      $0.name = name + String(id) + ".proto"
-      $0.messageType = [inputMessage, outputMessage]
-    }
-
-    return fileDescriptorProto
-  }
-
-  /// Creates the dependencies of the proto used in the testing context.
-  private func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto] {
-    var fileDependencies: [Google_Protobuf_FileDescriptorProto] = []
-    for id in 1 ... 4 {
-      let fileDescriptorProto = self.generateProto(name: "bar", id: id)
-      if id != 1 {
-        // Dependency of the first dependency.
-        fileDependencies[0].dependency.append(fileDescriptorProto.name)
-      }
-      fileDependencies.append(fileDescriptorProto)
-    }
-    return fileDependencies
-  }
-
-  private func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescriptorProto] {
-    var protos: [Google_Protobuf_FileDescriptorProto] = []
-    protos.append(self.generateProto(name: "foo", id: 0))
-    for id in 1 ... 10 {
-      let fileDescriptorProtoA = self.generateProto(name: "fooA", id: id)
-      let fileDescriptorProtoB = self.generateProto(name: "fooB", id: id)
-      let parent = protos.count > 1 ? protos.count - Int.random(in: 1 ..< 3) : protos.count - 1
-      protos[parent].dependency.append(fileDescriptorProtoA.name)
-      protos[parent].dependency.append(fileDescriptorProtoB.name)
-      protos.append(fileDescriptorProtoA)
-      protos.append(fileDescriptorProtoB)
-    }
-    return protos
-  }
-
-  private func getServicesNamesFromProtos(
-    protos: [Google_Protobuf_FileDescriptorProto]
-  ) -> [String] {
-    return protos.serviceNames
-  }
-
-  private func setUpServerAndChannel() throws {
-    let reflectionServiceProvider = try ReflectionService(
-      fileDescriptors: self.makeProtosWithDependencies()
-    )
-
-    let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
-      .withServiceProviders([reflectionServiceProvider])
-      .withLogger(self.serverLogger)
-      .bind(host: "127.0.0.1", port: 0)
-      .wait()
-    self.server = server
-
-    let channel = try GRPCChannelPool.with(
-      target: .hostAndPort("127.0.0.1", server.channel.localAddress!.port!),
-      transportSecurity: .plaintext,
-      eventLoopGroup: MultiThreadedEventLoopGroup.singleton
-    ) {
-      $0.backgroundActivityLogger = self.clientLogger
-    }
-
-    self.channel = channel
-  }
-
-  override func tearDown() {
-    if let channel = self.channel {
-      XCTAssertNoThrow(try channel.close().wait())
-    }
-    if let server = self.server {
-      XCTAssertNoThrow(try server.close().wait())
-    }
-
-    super.tearDown()
-  }
-
-  func testFileByFileName() async throws {
-    try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
-    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
-    try await serviceReflectionInfo.requestStream.send(
-      .with {
-        $0.host = "127.0.0.1"
-        $0.fileByFilename = "bar1.proto"
-      }
-    )
-    serviceReflectionInfo.requestStream.finish()
-
-    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
-    guard let message = try await iterator.next() else {
-      return XCTFail("Could not get a response message.")
-    }
-
-    let receivedFileDescriptorProto =
-      try Google_Protobuf_FileDescriptorProto(
-        serializedData: (message.fileDescriptorResponse
-          .fileDescriptorProto[0])
-      )
-
-    XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
-    XCTAssertEqual(receivedFileDescriptorProto.service.count, 1)
-
-    guard let service = receivedFileDescriptorProto.service.first else {
-      return XCTFail("The received file descriptor proto doesn't have any services.")
-    }
-    guard let method = service.method.first else {
-      return XCTFail("The service of the received file descriptor proto doesn't have any methods.")
-    }
-    XCTAssertEqual(method.name, "testMethod1")
-    XCTAssertEqual(message.fileDescriptorResponse.fileDescriptorProto.count, 4)
-  }
-
-  func testListServices() async throws {
-    try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
-    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
-
-    try await serviceReflectionInfo.requestStream.send(
-      .with {
-        $0.host = "127.0.0.1"
-        $0.listServices = "services"
-      }
-    )
-
-    serviceReflectionInfo.requestStream.finish()
-    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
-    guard let message = try await iterator.next() else {
-      return XCTFail("Could not get a response message.")
-    }
-
-    let receivedServices = message.listServicesResponse.service.map { $0.name }.sorted()
-    let servicesNames = self.getServicesNamesFromProtos(
-      protos: self.makeProtosWithDependencies()
-    ).sorted()
-
-    XCTAssertEqual(receivedServices, servicesNames)
-  }
-
-  func testReflectionServiceDataFileDescriptorDataByFilename() throws {
-    var protos = self.makeProtosWithDependencies()
+final class ReflectionServiceUnitTests: GRPCTestCase {
+  /// Testing the fileDescriptorDataByFilename dictionary of the ReflectionServiceData object.
+  func testFileDescriptorDataByFilename() throws {
+    var protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
 
     let registryFileDescriptorData = registry.fileDescriptorDataByFilename
@@ -229,16 +53,108 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
     XCTAssert(protos.isEmpty)
   }
 
-  func testReflectionServiceServicesNames() throws {
-    let protos = self.makeProtosWithDependencies()
-    let servicesNames = self.getServicesNamesFromProtos(protos: protos).sorted()
+  /// Testing the serviceNames array of the ReflectionServiceData object.
+  func testServiceNames() throws {
+    let protos = makeProtosWithDependencies()
+    let servicesNames = protos.serviceNames.sorted()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryServices = registry.serviceNames.sorted()
     XCTAssertEqual(registryServices, servicesNames)
   }
 
+  /// Testing the fileNameBySymbol array of the ReflectionServiceData object.
+  func testFileNameBySymbol() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let registryFileNameBySymbol = registry.fileNameBySymbol
+
+    var symbolsCount = 0
+
+    for proto in protos {
+      let qualifiedSymbolNames = proto.qualifiedSymbolNames
+      symbolsCount += qualifiedSymbolNames.count
+      for qualifiedSymbolName in qualifiedSymbolNames {
+        XCTAssertEqual(registryFileNameBySymbol[qualifiedSymbolName], proto.name)
+      }
+    }
+
+    XCTAssertEqual(symbolsCount, registryFileNameBySymbol.count)
+  }
+
+  func testFileNameBySymbolDuplicatedSymbol() throws {
+    var protos = makeProtosWithDependencies()
+    protos[1].messageType.append(
+      Google_Protobuf_DescriptorProto.with {
+        $0.name = "inputMessage"
+        $0.field = [
+          Google_Protobuf_FieldDescriptorProto.with {
+            $0.name = "inputField"
+            $0.type = .bool
+          }
+        ]
+      }
+    )
+
+    XCTAssertThrowsError(
+      try ReflectionServiceData(fileDescriptors: protos)
+    ) { error in
+      XCTAssertEqual(
+        error as? GRPCStatus,
+        GRPCStatus(
+          code: .alreadyExists,
+          message:
+            """
+            The packagebar2.inputMessage symbol from bar2.proto \
+            already exists in bar2.proto.
+            """
+        )
+      )
+    }
+  }
+
+  // Testing the nameOfFileContainingSymbol method for different types of symbols.
+
+  func testNameOfFileContainingSymbolEnum() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType2")
+    XCTAssertEqual(fileName, "bar2.proto")
+  }
+
+  func testNameOfFileContainingSymbolMessage() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage")
+    XCTAssertEqual(fileName, "bar1.proto")
+  }
+
+  func testNameOfFileContainingSymbolService() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar3.service3")
+    XCTAssertEqual(fileName, "bar3.proto")
+  }
+
+  func testNameOfFileContainingSymbolMethod() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let fileName = registry.nameOfFileContainingSymbol(
+      named: "packagebar4.service4.testMethod4"
+    )
+    XCTAssertEqual(fileName, "bar4.proto")
+  }
+
+  func testNameOfFileContainingSymbolNonExistentSymbol() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
+    XCTAssertEqual(fileName, nil)
+  }
+
+  // Testing the serializedFileDescriptorProto method in different cases.
+
   func testSerialisedFileDescriptorProtosForDependenciesOfFile() throws {
-    var protos = self.makeProtosWithDependencies()
+    var protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let serializedFileDescriptorProtos =
       try registry
@@ -285,7 +201,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileComplexDependencyGraph() throws {
-    var protos = self.makeProtosWithComplexDependencies()
+    var protos = makeProtosWithComplexDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let serializedFileDescriptorProtos =
       try registry
@@ -332,7 +248,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileDependencyLoops() throws {
-    var protos = self.makeProtosWithDependencies()
+    var protos = makeProtosWithDependencies()
     // Making dependencies of the "bar1.proto" to depend on "bar1.proto".
     protos[1].dependency.append("bar1.proto")
     protos[2].dependency.append("bar1.proto")
@@ -382,7 +298,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileInvalidFile() throws {
-    let protos = self.makeProtosWithDependencies()
+    let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     XCTAssertThrowsError(
       try registry.serialisedFileDescriptorProtosForDependenciesOfFile(named: "invalid.proto")
@@ -398,7 +314,7 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileDependencyNotProto() throws {
-    var protos = self.makeProtosWithDependencies()
+    var protos = makeProtosWithDependencies()
     protos[0].dependency.append("invalidDependency")
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     XCTAssertThrowsError(
@@ -412,11 +328,5 @@ final class GRPCReflectionServiceTests: GRPCTestCase {
         )
       )
     }
-  }
-}
-
-extension Sequence where Element == Google_Protobuf_FileDescriptorProto {
-  var serviceNames: [String] {
-    self.flatMap { $0.service.map { $0.name } }
   }
 }
