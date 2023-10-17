@@ -147,6 +147,27 @@ ${REFLECTION_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-reflection: ${REFLECTION_PB} ${REFLECTION_GRPC}
 
+TEST_REFLECTION_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/reflection.grpc.swift
+TEST_REFLECTION_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/reflection.pb.swift
+
+# For Reflection we'll generate only the Server code.
+${TEST_REFLECTION_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=true,Server=false \
+		--grpc-swift_out=$(dir ${TEST_REFLECTION_GRPC})
+
+${TEST_REFLECTION_PB}: ${REFLECTION_PROTO} ${PROTOC_GEN_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_SWIFT} \
+		--swift_out=$(dir ${TEST_REFLECTION_PB})
+		
+# Generates protobufs and gRPC client for the Reflection Service Tests
+.PHONY:
+generate-reflection-client: ${TEST_REFLECTION_PB} ${TEST_REFLECTION_GRPC}
+
 ### Testing ####################################################################
 
 # Normal test suite.

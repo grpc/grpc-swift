@@ -42,20 +42,20 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// The message sent by the client when calling ServerReflectionInfo method.
-public struct Reflection_ServerReflectionRequest {
+struct Reflection_ServerReflectionRequest {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var host: String = String()
+  var host: String = String()
 
   /// To use reflection service, the client should set one of the following
   /// fields in message_request. The server distinguishes requests by their
   /// defined field and then handles them using corresponding methods.
-  public var messageRequest: Reflection_ServerReflectionRequest.OneOf_MessageRequest? = nil
+  var messageRequest: Reflection_ServerReflectionRequest.OneOf_MessageRequest? = nil
 
   /// Find a proto file by the file name.
-  public var fileByFilename: String {
+  var fileByFilename: String {
     get {
       if case .fileByFilename(let v)? = messageRequest {return v}
       return String()
@@ -66,7 +66,7 @@ public struct Reflection_ServerReflectionRequest {
   /// Find the proto file that declares the given fully-qualified symbol name.
   /// This field should be a fully-qualified symbol name
   /// (e.g. <package>.<service>[.<method>] or <package>.<type>).
-  public var fileContainingSymbol: String {
+  var fileContainingSymbol: String {
     get {
       if case .fileContainingSymbol(let v)? = messageRequest {return v}
       return String()
@@ -76,7 +76,7 @@ public struct Reflection_ServerReflectionRequest {
 
   /// Find the proto file which defines an extension extending the given
   /// message type with the given field number.
-  public var fileContainingExtension: Reflection_ExtensionRequest {
+  var fileContainingExtension: Reflection_ExtensionRequest {
     get {
       if case .fileContainingExtension(let v)? = messageRequest {return v}
       return Reflection_ExtensionRequest()
@@ -92,7 +92,7 @@ public struct Reflection_ServerReflectionRequest {
   /// StatusCode::UNIMPLEMENTED if it's not implemented.
   /// This field should be a fully-qualified type name. The format is
   /// <package>.<type>
-  public var allExtensionNumbersOfType: String {
+  var allExtensionNumbersOfType: String {
     get {
       if case .allExtensionNumbersOfType(let v)? = messageRequest {return v}
       return String()
@@ -102,7 +102,7 @@ public struct Reflection_ServerReflectionRequest {
 
   /// List the full names of registered services. The content will not be
   /// checked.
-  public var listServices: String {
+  var listServices: String {
     get {
       if case .listServices(let v)? = messageRequest {return v}
       return String()
@@ -110,12 +110,12 @@ public struct Reflection_ServerReflectionRequest {
     set {messageRequest = .listServices(newValue)}
   }
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// To use reflection service, the client should set one of the following
   /// fields in message_request. The server distinguishes requests by their
   /// defined field and then handles them using corresponding methods.
-  public enum OneOf_MessageRequest: Equatable {
+  enum OneOf_MessageRequest: Equatable {
     /// Find a proto file by the file name.
     case fileByFilename(String)
     /// Find the proto file that declares the given fully-qualified symbol name.
@@ -139,7 +139,7 @@ public struct Reflection_ServerReflectionRequest {
     case listServices(String)
 
   #if !swift(>=4.1)
-    public static func ==(lhs: Reflection_ServerReflectionRequest.OneOf_MessageRequest, rhs: Reflection_ServerReflectionRequest.OneOf_MessageRequest) -> Bool {
+    static func ==(lhs: Reflection_ServerReflectionRequest.OneOf_MessageRequest, rhs: Reflection_ServerReflectionRequest.OneOf_MessageRequest) -> Bool {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
@@ -170,46 +170,46 @@ public struct Reflection_ServerReflectionRequest {
   #endif
   }
 
-  public init() {}
+  init() {}
 }
 
 /// The type name and extension number sent by the client when requesting
 /// file_containing_extension.
-public struct Reflection_ExtensionRequest {
+struct Reflection_ExtensionRequest {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// Fully-qualified type name. The format should be <package>.<type>
-  public var containingType: String = String()
+  var containingType: String = String()
 
-  public var extensionNumber: Int32 = 0
+  var extensionNumber: Int32 = 0
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 }
 
 /// The message sent by the server to answer ServerReflectionInfo method.
-public struct Reflection_ServerReflectionResponse {
+struct Reflection_ServerReflectionResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var validHost: String = String()
+  var validHost: String = String()
 
-  public var originalRequest: Reflection_ServerReflectionRequest {
+  var originalRequest: Reflection_ServerReflectionRequest {
     get {return _originalRequest ?? Reflection_ServerReflectionRequest()}
     set {_originalRequest = newValue}
   }
   /// Returns true if `originalRequest` has been explicitly set.
-  public var hasOriginalRequest: Bool {return self._originalRequest != nil}
+  var hasOriginalRequest: Bool {return self._originalRequest != nil}
   /// Clears the value of `originalRequest`. Subsequent reads from it will return its default value.
-  public mutating func clearOriginalRequest() {self._originalRequest = nil}
+  mutating func clearOriginalRequest() {self._originalRequest = nil}
 
   /// The server sets one of the following fields according to the message_request
   /// in the request.
-  public var messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse? = nil
+  var messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse? = nil
 
   /// This message is used to answer file_by_filename, file_containing_symbol,
   /// file_containing_extension requests with transitive dependencies.
@@ -217,7 +217,7 @@ public struct Reflection_ServerReflectionResponse {
   /// FileDescriptorResponse message to encapsulate the repeated fields.
   /// The reflection service is allowed to avoid sending FileDescriptorProtos
   /// that were previously sent in response to earlier requests in the stream.
-  public var fileDescriptorResponse: Reflection_FileDescriptorResponse {
+  var fileDescriptorResponse: Reflection_FileDescriptorResponse {
     get {
       if case .fileDescriptorResponse(let v)? = messageResponse {return v}
       return Reflection_FileDescriptorResponse()
@@ -226,7 +226,7 @@ public struct Reflection_ServerReflectionResponse {
   }
 
   /// This message is used to answer all_extension_numbers_of_type requests.
-  public var allExtensionNumbersResponse: Reflection_ExtensionNumberResponse {
+  var allExtensionNumbersResponse: Reflection_ExtensionNumberResponse {
     get {
       if case .allExtensionNumbersResponse(let v)? = messageResponse {return v}
       return Reflection_ExtensionNumberResponse()
@@ -235,7 +235,7 @@ public struct Reflection_ServerReflectionResponse {
   }
 
   /// This message is used to answer list_services requests.
-  public var listServicesResponse: Reflection_ListServiceResponse {
+  var listServicesResponse: Reflection_ListServiceResponse {
     get {
       if case .listServicesResponse(let v)? = messageResponse {return v}
       return Reflection_ListServiceResponse()
@@ -244,7 +244,7 @@ public struct Reflection_ServerReflectionResponse {
   }
 
   /// This message is used when an error occurs.
-  public var errorResponse: Reflection_ErrorResponse {
+  var errorResponse: Reflection_ErrorResponse {
     get {
       if case .errorResponse(let v)? = messageResponse {return v}
       return Reflection_ErrorResponse()
@@ -252,11 +252,11 @@ public struct Reflection_ServerReflectionResponse {
     set {messageResponse = .errorResponse(newValue)}
   }
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// The server sets one of the following fields according to the message_request
   /// in the request.
-  public enum OneOf_MessageResponse: Equatable {
+  enum OneOf_MessageResponse: Equatable {
     /// This message is used to answer file_by_filename, file_containing_symbol,
     /// file_containing_extension requests with transitive dependencies.
     /// As the repeated label is not allowed in oneof fields, we use a
@@ -272,7 +272,7 @@ public struct Reflection_ServerReflectionResponse {
     case errorResponse(Reflection_ErrorResponse)
 
   #if !swift(>=4.1)
-    public static func ==(lhs: Reflection_ServerReflectionResponse.OneOf_MessageResponse, rhs: Reflection_ServerReflectionResponse.OneOf_MessageResponse) -> Bool {
+    static func ==(lhs: Reflection_ServerReflectionResponse.OneOf_MessageResponse, rhs: Reflection_ServerReflectionResponse.OneOf_MessageResponse) -> Bool {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
@@ -299,7 +299,7 @@ public struct Reflection_ServerReflectionResponse {
   #endif
   }
 
-  public init() {}
+  init() {}
 
   fileprivate var _originalRequest: Reflection_ServerReflectionRequest? = nil
 }
@@ -307,7 +307,7 @@ public struct Reflection_ServerReflectionResponse {
 /// Serialized FileDescriptorProto messages sent by the server answering
 /// a file_by_filename, file_containing_symbol, or file_containing_extension
 /// request.
-public struct Reflection_FileDescriptorResponse {
+struct Reflection_FileDescriptorResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -315,76 +315,76 @@ public struct Reflection_FileDescriptorResponse {
   /// Serialized FileDescriptorProto messages. We avoid taking a dependency on
   /// descriptor.proto, which uses proto2 only features, by making them opaque
   /// bytes instead.
-  public var fileDescriptorProto: [Data] = []
+  var fileDescriptorProto: [Data] = []
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 }
 
 /// A list of extension numbers sent by the server answering
 /// all_extension_numbers_of_type request.
-public struct Reflection_ExtensionNumberResponse {
+struct Reflection_ExtensionNumberResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// Full name of the base type, including the package name. The format
   /// is <package>.<type>
-  public var baseTypeName: String = String()
+  var baseTypeName: String = String()
 
-  public var extensionNumber: [Int32] = []
+  var extensionNumber: [Int32] = []
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 }
 
 /// A list of ServiceResponse sent by the server answering list_services request.
-public struct Reflection_ListServiceResponse {
+struct Reflection_ListServiceResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// The information of each service may be expanded in the future, so we use
   /// ServiceResponse message to encapsulate it.
-  public var service: [Reflection_ServiceResponse] = []
+  var service: [Reflection_ServiceResponse] = []
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 }
 
 /// The information of a single service used by ListServiceResponse to answer
 /// list_services request.
-public struct Reflection_ServiceResponse {
+struct Reflection_ServiceResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// Full name of a registered service, including its package name. The format
   /// is <package>.<service>
-  public var name: String = String()
+  var name: String = String()
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 }
 
 /// The error code and error message sent by the server when an error occurs.
-public struct Reflection_ErrorResponse {
+struct Reflection_ErrorResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// This field uses the error codes defined in grpc::StatusCode.
-  public var errorCode: Int32 = 0
+  var errorCode: Int32 = 0
 
-  public var errorMessage: String = String()
+  var errorMessage: String = String()
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 }
 
 #if swift(>=5.5) && canImport(_Concurrency)
@@ -405,8 +405,8 @@ extension Reflection_ErrorResponse: @unchecked Sendable {}
 fileprivate let _protobuf_package = "reflection"
 
 extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ServerReflectionRequest"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ServerReflectionRequest"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "host"),
     3: .standard(proto: "file_by_filename"),
     4: .standard(proto: "file_containing_symbol"),
@@ -415,7 +415,7 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
     7: .standard(proto: "list_services"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -472,7 +472,7 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     // The use of inline closures is to circumvent an issue where the compiler
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
@@ -506,7 +506,7 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ServerReflectionRequest, rhs: Reflection_ServerReflectionRequest) -> Bool {
+  static func ==(lhs: Reflection_ServerReflectionRequest, rhs: Reflection_ServerReflectionRequest) -> Bool {
     if lhs.host != rhs.host {return false}
     if lhs.messageRequest != rhs.messageRequest {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -515,13 +515,13 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
 }
 
 extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ExtensionRequest"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ExtensionRequest"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "containing_type"),
     2: .standard(proto: "extension_number"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -534,7 +534,7 @@ extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._Mes
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.containingType.isEmpty {
       try visitor.visitSingularStringField(value: self.containingType, fieldNumber: 1)
     }
@@ -544,7 +544,7 @@ extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._Mes
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ExtensionRequest, rhs: Reflection_ExtensionRequest) -> Bool {
+  static func ==(lhs: Reflection_ExtensionRequest, rhs: Reflection_ExtensionRequest) -> Bool {
     if lhs.containingType != rhs.containingType {return false}
     if lhs.extensionNumber != rhs.extensionNumber {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -553,8 +553,8 @@ extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._Mes
 }
 
 extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ServerReflectionResponse"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ServerReflectionResponse"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "valid_host"),
     2: .standard(proto: "original_request"),
     4: .standard(proto: "file_descriptor_response"),
@@ -563,7 +563,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
     7: .standard(proto: "error_response"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -628,7 +628,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     // The use of inline closures is to circumvent an issue where the compiler
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
@@ -661,7 +661,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ServerReflectionResponse, rhs: Reflection_ServerReflectionResponse) -> Bool {
+  static func ==(lhs: Reflection_ServerReflectionResponse, rhs: Reflection_ServerReflectionResponse) -> Bool {
     if lhs.validHost != rhs.validHost {return false}
     if lhs._originalRequest != rhs._originalRequest {return false}
     if lhs.messageResponse != rhs.messageResponse {return false}
@@ -671,12 +671,12 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
 }
 
 extension Reflection_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".FileDescriptorResponse"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".FileDescriptorResponse"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "file_descriptor_proto"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -688,14 +688,14 @@ extension Reflection_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobu
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.fileDescriptorProto.isEmpty {
       try visitor.visitRepeatedBytesField(value: self.fileDescriptorProto, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_FileDescriptorResponse, rhs: Reflection_FileDescriptorResponse) -> Bool {
+  static func ==(lhs: Reflection_FileDescriptorResponse, rhs: Reflection_FileDescriptorResponse) -> Bool {
     if lhs.fileDescriptorProto != rhs.fileDescriptorProto {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -703,13 +703,13 @@ extension Reflection_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobu
 }
 
 extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ExtensionNumberResponse"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ExtensionNumberResponse"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "base_type_name"),
     2: .standard(proto: "extension_number"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -722,7 +722,7 @@ extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtob
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.baseTypeName.isEmpty {
       try visitor.visitSingularStringField(value: self.baseTypeName, fieldNumber: 1)
     }
@@ -732,7 +732,7 @@ extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtob
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ExtensionNumberResponse, rhs: Reflection_ExtensionNumberResponse) -> Bool {
+  static func ==(lhs: Reflection_ExtensionNumberResponse, rhs: Reflection_ExtensionNumberResponse) -> Bool {
     if lhs.baseTypeName != rhs.baseTypeName {return false}
     if lhs.extensionNumber != rhs.extensionNumber {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -741,12 +741,12 @@ extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtob
 }
 
 extension Reflection_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ListServiceResponse"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ListServiceResponse"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "service"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -758,14 +758,14 @@ extension Reflection_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.service.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.service, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ListServiceResponse, rhs: Reflection_ListServiceResponse) -> Bool {
+  static func ==(lhs: Reflection_ListServiceResponse, rhs: Reflection_ListServiceResponse) -> Bool {
     if lhs.service != rhs.service {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -773,12 +773,12 @@ extension Reflection_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._
 }
 
 extension Reflection_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ServiceResponse"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ServiceResponse"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -790,14 +790,14 @@ extension Reflection_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.name.isEmpty {
       try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ServiceResponse, rhs: Reflection_ServiceResponse) -> Bool {
+  static func ==(lhs: Reflection_ServiceResponse, rhs: Reflection_ServiceResponse) -> Bool {
     if lhs.name != rhs.name {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -805,13 +805,13 @@ extension Reflection_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
 }
 
 extension Reflection_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ErrorResponse"
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let protoMessageName: String = _protobuf_package + ".ErrorResponse"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "error_code"),
     2: .standard(proto: "error_message"),
   ]
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
@@ -824,7 +824,7 @@ extension Reflection_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._Messag
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if self.errorCode != 0 {
       try visitor.visitSingularInt32Field(value: self.errorCode, fieldNumber: 1)
     }
@@ -834,7 +834,7 @@ extension Reflection_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._Messag
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Reflection_ErrorResponse, rhs: Reflection_ErrorResponse) -> Bool {
+  static func ==(lhs: Reflection_ErrorResponse, rhs: Reflection_ErrorResponse) -> Bool {
     if lhs.errorCode != rhs.errorCode {return false}
     if lhs.errorMessage != rhs.errorMessage {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}

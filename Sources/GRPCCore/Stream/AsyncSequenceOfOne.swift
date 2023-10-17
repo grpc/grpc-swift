@@ -30,6 +30,7 @@ extension RPCAsyncSequence {
 }
 
 /// An `AsyncSequence` of a single value.
+@available(macOS 10.15, iOS 13.0, tvOS 13, watchOS 6, *)
 private struct AsyncSequenceOfOne<Element: Sendable, Failure: Error>: AsyncSequence {
   private let result: Result<Element, Failure>
 
