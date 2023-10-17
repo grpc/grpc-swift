@@ -112,52 +112,43 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     }
   }
 
-  // Testing the getFileBySymbol methid for different types of symbols.
+  // Testing the nameOfFileContainingSymbol method for different types of symbols.
 
-  func testGetFileNameBySymbolEnum() throws {
+  func testNameOfFileContainingSymbolEnum() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.nameOfFileContainingSymbol(named: "packagebar2.enumType2")
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType2")
     XCTAssertEqual(fileName, "bar2.proto")
   }
 
-  func testGetFileNameBySymbolMessage() throws {
+  func testNameOfFileContainingSymbolMessage() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage")
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage")
     XCTAssertEqual(fileName, "bar1.proto")
   }
 
-  func testGetFileNameBySymbolService() throws {
+  func testNameOfFileContainingSymbolService() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.nameOfFileContainingSymbol(named: "packagebar3.service3")
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar3.service3")
     XCTAssertEqual(fileName, "bar3.proto")
   }
 
-  func testGetFileNameBySymbolMethod() throws {
+  func testNameOfFileContainingSymbolMethod() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.nameOfFileContainingSymbol(
+    let fileName = registry.nameOfFileContainingSymbol(
       named: "packagebar4.service4.testMethod4"
     )
     XCTAssertEqual(fileName, "bar4.proto")
   }
 
-  func testGetFileNameBySymbolNonExistentSymbol() throws {
+  func testNameOfFileContainingSymbolNonExistentSymbol() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    XCTAssertThrowsError(
-      try registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
-    ) { error in
-      XCTAssertEqual(
-        error as? GRPCStatus,
-        GRPCStatus(
-          code: .notFound,
-          message: "The provided symbol could not be found."
-        )
-      )
-    }
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
+    XCTAssertEqual(fileName, nil)
   }
 
   // Testing the serializedFileDescriptorProto method in different cases.

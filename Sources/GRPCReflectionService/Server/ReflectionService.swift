@@ -81,8 +81,6 @@ internal struct ReflectionServiceData: Sendable {
             message:
               "The \(qualifiedSybolName) symbol from \(fileDescriptorProto.name) already exists in \(oldValue)."
           )
-        } else {
-          self.fileNameBySymbol[qualifiedSybolName] = fileDescriptorProto.name
         }
       }
     }
@@ -96,36 +94,30 @@ internal struct ReflectionServiceData: Sendable {
     var serializedFileDescriptorProtos: [Data] = []
     toVisit.append(fileName)
 
-    while let currentFileName = toVisit.popFirst() {
-      if let protoData = self.fileDescriptorDataByFilename[currentFileName] {
-        toVisit.append(
-          contentsOf: protoData.dependencyFileNames
-            .filter { name in
-              return !visited.contains(name)
-            }
-        )
-
-        let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
-        serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
-      } else {
-        throw GRPCStatus(
-          code: .notFound,
-          message: "The provided file or a dependency of the provided file could not be found."
-        )
+      while let currentFileName = toVisit.popFirst() {
+          if let protoData = self.fileDescriptorDataByFilename[currentFileName] {
+              toVisit.append(
+                contentsOf: protoData.dependencyFileNames
+                    .filter { name in
+                        return !visited.contains(name)
+                    }
+              )
+              
+              let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
+              serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
+          } else {
+              throw GRPCStatus(
+                code: .notFound,
+                message: "The provided file or a dependency of the provided file could not be found."
+              )
+          }
+          visited.insert(currentFileName)
       }
-      visited.insert(currentFileName)
-    }
     return serializedFileDescriptorProtos
   }
 
-  internal func nameOfFileContainingSymbol(named symbolName: String) throws -> String {
-    guard let fileName = self.fileNameBySymbol[symbolName] else {
-      throw GRPCStatus(
-        code: .notFound,
-        message: "The provided symbol could not be found."
-      )
-    }
-    return fileName
+  internal func nameOfFileContainingSymbol(named symbolName: String) -> String? {
+    return self.fileNameBySymbol[symbolName]
   }
 }
 
@@ -171,7 +163,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     _ symbolName: String,
     request: Reflection_ServerReflectionRequest
   ) throws -> Reflection_ServerReflectionResponse {
-    let fileName = try self.protoRegistry.nameOfFileContainingSymbol(named: symbolName)
+      guard let fileName = self.protoRegistry.nameOfFileContainingSymbol(named: symbolName) else {
+          throw GRPCStatus(
+            code: .notFound,
+            message: "The provided symbol could not be found."
+          )
+      }
     return try self.findFileByFileName(fileName, request: request)
   }
 
