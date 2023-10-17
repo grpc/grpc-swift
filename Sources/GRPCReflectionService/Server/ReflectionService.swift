@@ -71,11 +71,15 @@ internal struct ReflectionServiceData: Sendable {
       self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoData
       self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
       for qualifiedSybolName in fileDescriptorProto.qualifiedSymbolNames {
-        if let value = self.fileNameBySymbol[qualifiedSybolName] {
+        let oldValue = self.fileNameBySymbol.updateValue(
+          fileDescriptorProto.name,
+          forKey: qualifiedSybolName
+        )
+        if let oldValue = oldValue {
           throw GRPCStatus(
             code: .alreadyExists,
             message:
-              "The \(qualifiedSybolName) symbol from \(fileDescriptorProto.name) already exists in \(value)."
+              "The \(qualifiedSybolName) symbol from \(fileDescriptorProto.name) already exists in \(oldValue)."
           )
         } else {
           self.fileNameBySymbol[qualifiedSybolName] = fileDescriptorProto.name
@@ -114,7 +118,7 @@ internal struct ReflectionServiceData: Sendable {
     return serializedFileDescriptorProtos
   }
 
-  internal func getFileNameBySymbol(named symbolName: String) throws -> String {
+  internal func nameOfFileContainingSymbol(named symbolName: String) throws -> String {
     guard let fileName = self.fileNameBySymbol[symbolName] else {
       throw GRPCStatus(
         code: .notFound,
@@ -167,7 +171,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     _ symbolName: String,
     request: Reflection_ServerReflectionRequest
   ) throws -> Reflection_ServerReflectionResponse {
-    let fileName = try self.protoRegistry.getFileNameBySymbol(named: symbolName)
+    let fileName = try self.protoRegistry.nameOfFileContainingSymbol(named: symbolName)
     return try self.findFileByFileName(fileName, request: request)
   }
 
@@ -229,18 +233,16 @@ extension Reflection_ServerReflectionResponse {
 
 extension Google_Protobuf_FileDescriptorProto {
   var qualifiedServiceAndMethodNames: [String] {
-    var qualifiedServiceAndMethodNames: [String] = []
+    var names: [String] = []
 
     for service in self.service {
-      qualifiedServiceAndMethodNames
-        .append(self.package + "." + service.name)
-      qualifiedServiceAndMethodNames
-        .append(
-          contentsOf: service.method
-            .map { self.package + "." + service.name + "." + $0.name }
-        )
+      names.append(self.package + "." + service.name)
+      names.append(
+        contentsOf: service.method
+          .map { self.package + "." + service.name + "." + $0.name }
+      )
     }
-    return qualifiedServiceAndMethodNames
+    return names
   }
 
   var qualifiedMessageTypes: [String] {
@@ -256,10 +258,9 @@ extension Google_Protobuf_FileDescriptorProto {
   }
 
   var qualifiedSymbolNames: [String] {
-    [
-      self.qualifiedServiceAndMethodNames,
-      self.qualifiedMessageTypes,
-      self.qualifiedEnumTypes,
-    ].flatMap { $0 }
+    var names = self.qualifiedServiceAndMethodNames
+    names.append(contentsOf: self.qualifiedMessageTypes)
+    names.append(contentsOf: self.qualifiedEnumTypes)
+    return names
   }
 }

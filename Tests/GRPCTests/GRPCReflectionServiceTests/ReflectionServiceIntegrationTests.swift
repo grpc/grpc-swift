@@ -24,16 +24,13 @@ import XCTest
 @testable import GRPCReflectionService
 
 final class ReflectionServiceIntegrationTests: GRPCTestCase {
-  private var group: MultiThreadedEventLoopGroup?
   private var server: Server?
   private var channel: GRPCChannel?
-  private var protos: [Google_Protobuf_FileDescriptorProto] {
-    makeProtosWithDependencies()
-  }
-
-  private var independentProto: Google_Protobuf_FileDescriptorProto {
-    generateProto(name: "independentBar", id: 5)
-  }
+  private let protos: [Google_Protobuf_FileDescriptorProto] = makeProtosWithDependencies()
+  private let independentProto: Google_Protobuf_FileDescriptorProto = generateFileDescriptorProto(
+    fileName: "independentBar",
+    suffix: 5
+  )
 
   private func setUpServerAndChannel() throws {
     let reflectionServiceProvider = try ReflectionService(
@@ -124,7 +121,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     }
 
     let receivedServices = message.listServicesResponse.service.map { $0.name }.sorted()
-    var servicesNames = (self.protos + [self.independentProto]).serviceNames.sorted()
+    let servicesNames = (self.protos + [self.independentProto]).serviceNames.sorted()
 
     XCTAssertEqual(receivedServices, servicesNames)
   }

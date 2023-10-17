@@ -17,7 +17,6 @@
 import Foundation
 import GRPC
 import GRPCReflectionService
-import NIOPosix
 import SwiftProtobuf
 import XCTest
 
@@ -73,7 +72,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
 
     for proto in protos {
       let qualifiedSymbolNames = proto.qualifiedSymbolNames
-      symbolsCount = symbolsCount + qualifiedSymbolNames.count
+      symbolsCount += qualifiedSymbolNames.count
       for qualifiedSymbolName in qualifiedSymbolNames {
         XCTAssertEqual(registryFileNameBySymbol[qualifiedSymbolName], proto.name)
       }
@@ -118,28 +117,30 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testGetFileNameBySymbolEnum() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.getFileNameBySymbol(named: "packagebar2.enumType2")
+    let fileName = try registry.nameOfFileContainingSymbol(named: "packagebar2.enumType2")
     XCTAssertEqual(fileName, "bar2.proto")
   }
 
   func testGetFileNameBySymbolMessage() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.getFileNameBySymbol(named: "packagebar1.inputMessage")
+    let fileName = try registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage")
     XCTAssertEqual(fileName, "bar1.proto")
   }
 
   func testGetFileNameBySymbolService() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.getFileNameBySymbol(named: "packagebar3.service3")
+    let fileName = try registry.nameOfFileContainingSymbol(named: "packagebar3.service3")
     XCTAssertEqual(fileName, "bar3.proto")
   }
 
   func testGetFileNameBySymbolMethod() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = try registry.getFileNameBySymbol(named: "packagebar4.service4.testMethod4")
+    let fileName = try registry.nameOfFileContainingSymbol(
+      named: "packagebar4.service4.testMethod4"
+    )
     XCTAssertEqual(fileName, "bar4.proto")
   }
 
@@ -147,7 +148,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     XCTAssertThrowsError(
-      try registry.getFileNameBySymbol(named: "packagebar2.enumType3")
+      try registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
     ) { error in
       XCTAssertEqual(
         error as? GRPCStatus,

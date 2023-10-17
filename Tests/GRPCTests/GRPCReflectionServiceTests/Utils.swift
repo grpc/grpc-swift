@@ -16,11 +16,12 @@
 
 import Foundation
 import GRPC
-import GRPCReflectionService
-import NIOPosix
 import SwiftProtobuf
 
-public func generateProto(name: String, id: Int) -> Google_Protobuf_FileDescriptorProto {
+internal func generateFileDescriptorProto(
+  fileName name: String,
+  suffix id: Int
+) -> Google_Protobuf_FileDescriptorProto {
   let inputMessage = Google_Protobuf_DescriptorProto.with {
     $0.name = "inputMessage"
     $0.field = [
@@ -76,10 +77,10 @@ public func generateProto(name: String, id: Int) -> Google_Protobuf_FileDescript
 }
 
 /// Creates the dependencies of the proto used in the testing context.
-public func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto] {
+internal func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto] {
   var fileDependencies: [Google_Protobuf_FileDescriptorProto] = []
   for id in 1 ... 4 {
-    let fileDescriptorProto = generateProto(name: "bar", id: id)
+    let fileDescriptorProto = generateFileDescriptorProto(fileName: "bar", suffix: id)
     if id != 1 {
       // Dependency of the first dependency.
       fileDependencies[0].dependency.append(fileDescriptorProto.name)
@@ -89,12 +90,12 @@ public func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto
   return fileDependencies
 }
 
-public func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescriptorProto] {
+internal func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescriptorProto] {
   var protos: [Google_Protobuf_FileDescriptorProto] = []
-  protos.append(generateProto(name: "foo", id: 0))
+  protos.append(generateFileDescriptorProto(fileName: "foo", suffix: 0))
   for id in 1 ... 10 {
-    let fileDescriptorProtoA = generateProto(name: "fooA", id: id)
-    let fileDescriptorProtoB = generateProto(name: "fooB", id: id)
+    let fileDescriptorProtoA = generateFileDescriptorProto(fileName: "fooA", suffix: id)
+    let fileDescriptorProtoB = generateFileDescriptorProto(fileName: "fooB", suffix: id)
     let parent = protos.count > 1 ? protos.count - Int.random(in: 1 ..< 3) : protos.count - 1
     protos[parent].dependency.append(fileDescriptorProtoA.name)
     protos[parent].dependency.append(fileDescriptorProtoB.name)
