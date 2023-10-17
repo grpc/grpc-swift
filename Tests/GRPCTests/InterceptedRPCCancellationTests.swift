@@ -170,10 +170,10 @@ final class MagicAddingClientInterceptor<
         interceptors: []
       )
 
-      self.retry!.invoke(onError: {
+      self.retry!.invoke {
         context.log.debug("intercepting error from retried rpc")
         context.errorCaught($0)
-      }) { responsePart in
+      } onResponsePart: { responsePart in
         context.log.debug("intercepting response part from retried rpc")
         context.receive(responsePart)
       }
