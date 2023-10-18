@@ -50,6 +50,7 @@ jobs:
       matrix:
         include:
           - image: swiftlang/swift:nightly-jammy
+            swift-version: main
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -60,6 +61,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
           - image: swift:5.9-jammy
+            swift-version: 5.9
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -70,6 +72,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
           - image: swift:5.8-focal
+            swift-version: 5.8
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -80,6 +83,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
           - image: swift:5.7-focal
+            swift-version: 5.7
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -98,6 +102,13 @@ jobs:
     - name: 🧮 Allocation Counting Tests
       run: ./Performance/allocations/test-allocation-counts.sh
       env: ${{ matrix.env }}
+      timeout-minutes: 20
+    - name: Install jemalloc for benchmarking
+      run: apt update && apt-get install -y libjemalloc-dev
+      timeout-minutes: 20
+    - name: Run Benchmarks
+      working-directory: ./Performance/Benchmarks
+      run: swift package benchmark baseline check --check-absolute-path Thresholds/${{ matrix.swift-version }}/
       timeout-minutes: 20
   integration-tests:
     strategy:

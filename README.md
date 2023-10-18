@@ -140,6 +140,25 @@ The `docs` directory contains documentation, including:
 - How to configure keepalive in [`docs/keepalive.md`][docs-keepalive]
 - Support for Apple Platforms and NIO Transport Services in
   [`docs/apple-platforms.md`][docs-apple]
+  
+## Benchmarks
+
+Benchmarks for `grpc-swift` are in a separate Swift Package in the `Performance/Benchmarks` subfolder of this repository. 
+They use the [`package-benchmark`](https://github.com/ordo-one/package-benchmark) plugin.
+Benchmarks depends on the [`jemalloc`](https://jemalloc.net) memory allocation library, which is used by `package-benchmark` to capture memory allocation statistics.
+An installation guide can be found in the [Getting Started article](https://swiftpackageindex.com/ordo-one/package-benchmark/documentation/benchmark/gettingstarted#Installing-Prerequisites-and-Platform-Support) of `package-benchmark`. 
+Afterwards you can run the benchmarks from CLI by going to the `Performance/Benchmarks` subfolder (e.g. `cd Performance/Benchmarks`) and invoking:
+```
+swift package benchmark
+```
+
+Profiling benchmarks or building the benchmarks in release mode in Xcode with `jemalloc` is currently not supported and requires disabling `jemalloc`. 
+Make sure Xcode is closed and then open it from the CLI with the `BENCHMARK_DISABLE_JEMALLOC=true` environment variable set e.g.:
+```
+BENCHMARK_DISABLE_JEMALLOC=true xed .
+```
+
+For more information please refer to `swift package benchmark --help` or the [documentation of `package-benchmark`](https://swiftpackageindex.com/ordo-one/package-benchmark/documentation/benchmark). 
 
 ## Security
 
