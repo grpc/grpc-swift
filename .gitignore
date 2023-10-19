@@ -22,3 +22,4 @@ dev/codegen-tests/**/generated/*
 /scripts/.swift-format-source/
 Package.resolved
 *.out.*
+/Performance/Benchmarks/.benchmarkBaselines/
