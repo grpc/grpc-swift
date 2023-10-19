@@ -151,12 +151,11 @@ internal struct ReflectionServiceData: Sendable {
   }
 
   internal func nameOfFileContainingExtension(
-    extendeeTypeName extendeeName: String,
+    named extendeeName: String,
     fieldNumber number: Int32
   ) -> String? {
-    return self.fileNameByExtensionDescriptor[
-      ExtensionDescriptor(extendeeTypeName: extendeeName, fieldNumber: number)
-    ]
+    let key = ExtensionDescriptor(extendeeTypeName: extendeeName, fieldNumber: number)
+    return self.fileNameByExtensionDescriptor[key]
   }
 }
 
@@ -217,7 +216,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   ) throws -> Reflection_ServerReflectionResponse {
     guard
       let fileName = self.protoRegistry.nameOfFileContainingExtension(
-        extendeeTypeName: extensionRequest.containingType,
+        named: extensionRequest.containingType,
         fieldNumber: extensionRequest.extensionNumber
       )
     else {

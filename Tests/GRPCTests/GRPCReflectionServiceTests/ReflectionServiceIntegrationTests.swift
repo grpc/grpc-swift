@@ -206,16 +206,20 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
     let fileToFind = self.protos[0]
     let dependentProtos = self.protos[1...]
+    var receivedProtoContainingExtension = 0
+    var dependenciesCount = 0
     for fileDescriptorProto in receivedData {
       if fileDescriptorProto == fileToFind {
+        receivedProtoContainingExtension += 1
         XCTAssert(
-          fileDescriptorProto.extension.names.contains("extensionInputMessage1"),
+          fileDescriptorProto.extension.map { $0.name }.contains("extensionInputMessage1"),
           """
           The response doesn't contain the serialized file descriptor proto \
           containing the \"extensionInputMessage1\" extension.
           """
         )
       } else {
+        dependenciesCount += 1
         XCTAssert(
           dependentProtos.contains(fileDescriptorProto),
           """
@@ -225,5 +229,11 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
         )
       }
     }
+    XCTAssertEqual(
+      receivedProtoContainingExtension,
+      1,
+      "The file descriptor proto of the proto containing the extension was not received."
+    )
+    XCTAssertEqual(dependenciesCount, 3)
   }
 }

@@ -148,7 +148,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
-    XCTAssertEqual(fileName, nil)
+    XCTAssertNil(fileName)
   }
 
   // Testing the serializedFileDescriptorProto method in different cases.
@@ -338,7 +338,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     for proto in protos {
       for `extension` in proto.extension {
         let registryFileName = registry.nameOfFileContainingExtension(
-          extendeeTypeName: `extension`.extendee,
+          named: `extension`.extendee,
           fieldNumber: `extension`.number
         )
         XCTAssertEqual(registryFileName, proto.name)
@@ -359,7 +359,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     for proto in protos {
       for `extension` in proto.extension {
         let registryFileName = registry.nameOfFileContainingExtension(
-          extendeeTypeName: `extension`.extendee,
+          named: `extension`.extendee,
           fieldNumber: `extension`.number
         )
         XCTAssertEqual(registryFileName, proto.name)
@@ -371,20 +371,20 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryFileName = registry.nameOfFileContainingExtension(
-      extendeeTypeName: "InvalidType",
+      named: "InvalidType",
       fieldNumber: 2
     )
-    XCTAssertEqual(registryFileName, nil)
+    XCTAssertNil(registryFileName)
   }
 
   func testNameOfFileContainingExtensionsInvalidFieldNumber() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryFileName = registry.nameOfFileContainingExtension(
-      extendeeTypeName: protos[0].extension[0].extendee,
+      named: protos[0].extension[0].extendee,
       fieldNumber: 4
     )
-    XCTAssertEqual(registryFileName, nil)
+    XCTAssertNil(registryFileName)
   }
 
   func testNameOfFileContainingExtensionsDuplicatedExtensions() throws {

@@ -129,9 +129,3 @@ extension Sequence where Element == Google_Protobuf_EnumDescriptorProto {
     self.map { $0.name }
   }
 }
-
-extension Sequence where Element == Google_Protobuf_FieldDescriptorProto {
-  var names: [String] {
-    self.map { $0.name }
-  }
-}
