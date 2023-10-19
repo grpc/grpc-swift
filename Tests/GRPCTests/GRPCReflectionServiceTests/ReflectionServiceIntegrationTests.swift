@@ -174,6 +174,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       }
     }
   }
+<<<<<<< Updated upstream
 
   func testFileByExtension() async throws {
     try self.setUpServerAndChannel()
@@ -236,4 +237,58 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     )
     XCTAssertEqual(dependenciesCount, 3)
   }
+=======
+    
+    func testFileByExtension() async throws {
+         try self.setUpServerAndChannel()
+         let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+         let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+
+         try await serviceReflectionInfo.requestStream.send(
+           .with {
+             $0.host = "127.0.0.1"
+             $0.fileContainingExtension = .with {
+               $0.containingType = "inputMessage1"
+               $0.extensionNumber = 2
+             }
+           }
+         )
+
+         serviceReflectionInfo.requestStream.finish()
+         var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+         guard let message = try await iterator.next() else {
+           return XCTFail("Could not get a response message.")
+         }
+         let receivedData: [Google_Protobuf_FileDescriptorProto]
+         do {
+           receivedData = try message.fileDescriptorResponse.fileDescriptorProto.map {
+             try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+           }
+         } catch {
+           return XCTFail("Could not serialize data received as a message.")
+         }
+
+         let fileToFind = self.protos[0]
+         let dependentProtos = self.protos[1...]
+         for fileDescriptorProto in receivedData {
+           if fileDescriptorProto == fileToFind {
+             XCTAssert(
+               fileDescriptorProto.extension.names.contains("extensionInputMessage1"),
+               """
+               The response doesn't contain the serialized file descriptor proto \
+               containing the \"extensionInputMessage1\" extension.
+               """
+             )
+           } else {
+             XCTAssert(
+               dependentProtos.contains(fileDescriptorProto),
+               """
+               The \(fileDescriptorProto.name) is not a dependency of the \
+               proto file containing the \"extensionInputMessage1\" symbol.
+               """
+             )
+           }
+         }
+       }
+>>>>>>> Stashed changes
 }

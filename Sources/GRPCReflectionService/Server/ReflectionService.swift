@@ -51,13 +51,21 @@ internal struct ReflectionServiceData: Sendable {
   internal var fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
   internal var serviceNames: [String]
   internal var fileNameBySymbol: [String: String]
+<<<<<<< Updated upstream
   private var fileNameByExtensionDescriptor: [ExtensionDescriptor: String]
 
+=======
+  internal var fieldNumbersByType: [String: Set<Int32>]
+>>>>>>> Stashed changes
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
     self.fileDescriptorDataByFilename = [:]
     self.fileNameBySymbol = [:]
+<<<<<<< Updated upstream
     self.fileNameByExtensionDescriptor = [:]
+=======
+    self.fieldNumbersByType = [:]
+>>>>>>> Stashed changes
 
     for fileDescriptorProto in fileDescriptors {
       let serializedFileDescriptorProto: Data
@@ -91,6 +99,7 @@ internal struct ReflectionServiceData: Sendable {
           )
         }
       }
+<<<<<<< Updated upstream
 
       // Populating the <extension descriptor, file name> dictionary.
       for `extension` in fileDescriptorProto.extension {
@@ -113,6 +122,15 @@ internal struct ReflectionServiceData: Sendable {
           )
         }
       }
+=======
+        
+         for `extension` in fileDescriptorProto.extension {
+            if self.fieldNumbersByType[`extension`.extendee] == nil {
+                self.fieldNumbersByType[`extension`.extendee] = Set<Int32>()
+            }
+            self.fieldNumbersByType[`extension`.extendee]?.insert(`extension`.number)
+        }
+>>>>>>> Stashed changes
     }
   }
 
@@ -149,6 +167,7 @@ internal struct ReflectionServiceData: Sendable {
   internal func nameOfFileContainingSymbol(named symbolName: String) -> String? {
     return self.fileNameBySymbol[symbolName]
   }
+<<<<<<< Updated upstream
 
   internal func nameOfFileContainingExtension(
     named extendeeName: String,
@@ -158,6 +177,13 @@ internal struct ReflectionServiceData: Sendable {
     return self.fileNameByExtensionDescriptor[key]
   }
 }
+=======
+    
+    internal func extensionsFieldNumbersOfType(named typeName: String) -> Set<Int32>? {
+        return self.fieldNumbersByType[typeName]
+    }
+ }
+>>>>>>> Stashed changes
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsyncProvider {
@@ -210,6 +236,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     return try self.findFileByFileName(fileName, request: request)
   }
 
+<<<<<<< Updated upstream
   internal func findFileByExtension(
     extensionRequest: Reflection_ExtensionRequest,
     request: Reflection_ServerReflectionRequest
@@ -228,6 +255,20 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     return try self.findFileByFileName(fileName, request: request)
   }
 
+=======
+    internal func findExtensionsFieldNumbersOfType(
+        named typeName: String,
+        request: Reflection_ServerReflectionRequest) throws -> Reflection_ServerReflectionResponse {
+            guard let fieldNumbers = self.protoRegistry.extensionsFieldNumbersOfType(named: typeName) else {
+                throw GRPCStatus(
+                  code: .notFound,
+                  message: "The provided symbol could not be found."
+                )
+            }
+            
+    }
+    
+>>>>>>> Stashed changes
   internal func serverReflectionInfo(
     requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
@@ -253,6 +294,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         )
         try await responseStream.send(response)
 
+<<<<<<< Updated upstream
       case let .fileContainingExtension(extensionRequest):
         let response = try self.findFileByExtension(
           extensionRequest: extensionRequest,
@@ -260,6 +302,15 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         )
         try await responseStream.send(response)
 
+=======
+      case let .allExtensionNumbersOfType(typeName):
+          let response = try self.findExtensionsFieldNumbersOfType(
+            named: typeName,
+            request: request
+          )
+          try await responseStream.send(response)
+          
+>>>>>>> Stashed changes
       default:
         throw GRPCStatus(code: .unimplemented)
       }
