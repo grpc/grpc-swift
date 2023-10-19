@@ -62,7 +62,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     XCTAssertEqual(registryServices, servicesNames)
   }
 
-  /// Testing the fileNameBySymbol array of the ReflectionServiceData object.
+  /// Testing the fileNameBySymbol dictionary of the ReflectionServiceData object.
   func testFileNameBySymbol() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
@@ -85,7 +85,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     var protos = makeProtosWithDependencies()
     protos[1].messageType.append(
       Google_Protobuf_DescriptorProto.with {
-        $0.name = "inputMessage"
+        $0.name = "inputMessage2"
         $0.field = [
           Google_Protobuf_FieldDescriptorProto.with {
             $0.name = "inputField"
@@ -104,7 +104,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
           code: .alreadyExists,
           message:
             """
-            The packagebar2.inputMessage symbol from bar2.proto \
+            The packagebar2.inputMessage2 symbol from bar2.proto \
             already exists in bar2.proto.
             """
         )
@@ -124,7 +124,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testNameOfFileContainingSymbolMessage() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage")
+    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage1")
     XCTAssertEqual(fileName, "bar1.proto")
   }
 
@@ -148,7 +148,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
-    XCTAssertEqual(fileName, nil)
+    XCTAssertNil(fileName)
   }
 
   // Testing the serializedFileDescriptorProto method in different cases.
@@ -325,6 +325,88 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         GRPCStatus(
           code: .notFound,
           message: "The provided file or a dependency of the provided file could not be found."
+        )
+      )
+    }
+  }
+
+  // Testing the nameOfFileContainingExtension() method.
+
+  func testNameOfFileContainingExtensions() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    for proto in protos {
+      for `extension` in proto.extension {
+        let registryFileName = registry.nameOfFileContainingExtension(
+          named: `extension`.extendee,
+          fieldNumber: `extension`.number
+        )
+        XCTAssertEqual(registryFileName, proto.name)
+      }
+    }
+  }
+
+  func testNameOfFileContainingExtensionsSameTypeExtensionsDifferentNumbers() throws {
+    var protos = makeProtosWithDependencies()
+    protos[0].extension.append(
+      .with {
+        $0.extendee = "inputMessage1"
+        $0.number = 3
+      }
+    )
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+
+    for proto in protos {
+      for `extension` in proto.extension {
+        let registryFileName = registry.nameOfFileContainingExtension(
+          named: `extension`.extendee,
+          fieldNumber: `extension`.number
+        )
+        XCTAssertEqual(registryFileName, proto.name)
+      }
+    }
+  }
+
+  func testNameOfFileContainingExtensionsInvalidTypeName() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let registryFileName = registry.nameOfFileContainingExtension(
+      named: "InvalidType",
+      fieldNumber: 2
+    )
+    XCTAssertNil(registryFileName)
+  }
+
+  func testNameOfFileContainingExtensionsInvalidFieldNumber() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let registryFileName = registry.nameOfFileContainingExtension(
+      named: protos[0].extension[0].extendee,
+      fieldNumber: 4
+    )
+    XCTAssertNil(registryFileName)
+  }
+
+  func testNameOfFileContainingExtensionsDuplicatedExtensions() throws {
+    var protos = makeProtosWithDependencies()
+    protos[0].extension.append(
+      .with {
+        $0.extendee = "inputMessage1"
+        $0.number = 2
+      }
+    )
+    XCTAssertThrowsError(
+      try ReflectionServiceData(fileDescriptors: protos)
+    ) { error in
+      XCTAssertEqual(
+        error as? GRPCStatus,
+        GRPCStatus(
+          code: .alreadyExists,
+          message:
+            """
+            The extension of the inputMessage1 type with the field number equal to \
+            2 from \(protos[0].name) already exists in \(protos[0].name).
+            """
         )
       )
     }

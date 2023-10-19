@@ -43,15 +43,21 @@ internal struct ReflectionServiceData: Sendable {
     internal var serializedFileDescriptorProto: Data
     internal var dependencyFileNames: [String]
   }
+  private struct ExtensionDescriptor: Sendable, Hashable {
+    internal let extendeeTypeName: String
+    internal let fieldNumber: Int32
+  }
 
   internal var fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
   internal var serviceNames: [String]
   internal var fileNameBySymbol: [String: String]
+  private var fileNameByExtensionDescriptor: [ExtensionDescriptor: String]
 
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
     self.fileDescriptorDataByFilename = [:]
     self.fileNameBySymbol = [:]
+    self.fileNameByExtensionDescriptor = [:]
 
     for fileDescriptorProto in fileDescriptors {
       let serializedFileDescriptorProto: Data
@@ -70,6 +76,8 @@ internal struct ReflectionServiceData: Sendable {
       )
       self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoData
       self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
+
+      // Populating the <symbol, file name> dictionary.
       for qualifiedSybolName in fileDescriptorProto.qualifiedSymbolNames {
         let oldValue = self.fileNameBySymbol.updateValue(
           fileDescriptorProto.name,
@@ -80,6 +88,28 @@ internal struct ReflectionServiceData: Sendable {
             code: .alreadyExists,
             message:
               "The \(qualifiedSybolName) symbol from \(fileDescriptorProto.name) already exists in \(oldValue)."
+          )
+        }
+      }
+
+      // Populating the <extension descriptor, file name> dictionary.
+      for `extension` in fileDescriptorProto.extension {
+        let extensionDescriptor = ExtensionDescriptor(
+          extendeeTypeName: `extension`.extendee,
+          fieldNumber: `extension`.number
+        )
+        let oldFileName = self.fileNameByExtensionDescriptor.updateValue(
+          fileDescriptorProto.name,
+          forKey: extensionDescriptor
+        )
+        if let oldFileName = oldFileName {
+          throw GRPCStatus(
+            code: .alreadyExists,
+            message:
+              """
+              The extension of the \(extensionDescriptor.extendeeTypeName) type with the field number equal to \
+              \(extensionDescriptor.fieldNumber) from \(fileDescriptorProto.name) already exists in \(oldFileName).
+              """
           )
         }
       }
@@ -118,6 +148,14 @@ internal struct ReflectionServiceData: Sendable {
 
   internal func nameOfFileContainingSymbol(named symbolName: String) -> String? {
     return self.fileNameBySymbol[symbolName]
+  }
+
+  internal func nameOfFileContainingExtension(
+    named extendeeName: String,
+    fieldNumber number: Int32
+  ) -> String? {
+    let key = ExtensionDescriptor(extendeeTypeName: extendeeName, fieldNumber: number)
+    return self.fileNameByExtensionDescriptor[key]
   }
 }
 
@@ -172,6 +210,24 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     return try self.findFileByFileName(fileName, request: request)
   }
 
+  internal func findFileByExtension(
+    extensionRequest: Reflection_ExtensionRequest,
+    request: Reflection_ServerReflectionRequest
+  ) throws -> Reflection_ServerReflectionResponse {
+    guard
+      let fileName = self.protoRegistry.nameOfFileContainingExtension(
+        named: extensionRequest.containingType,
+        fieldNumber: extensionRequest.extensionNumber
+      )
+    else {
+      throw GRPCStatus(
+        code: .notFound,
+        message: "The provided extension could not be found."
+      )
+    }
+    return try self.findFileByFileName(fileName, request: request)
+  }
+
   internal func serverReflectionInfo(
     requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
@@ -193,6 +249,13 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
       case let .fileContainingSymbol(symbolName):
         let response = try self.findFileBySymbol(
           symbolName,
+          request: request
+        )
+        try await responseStream.send(response)
+
+      case let .fileContainingExtension(extensionRequest):
+        let response = try self.findFileByExtension(
+          extensionRequest: extensionRequest,
           request: request
         )
         try await responseStream.send(response)

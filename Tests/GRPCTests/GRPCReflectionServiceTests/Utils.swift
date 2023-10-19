@@ -20,10 +20,10 @@ import SwiftProtobuf
 
 internal func generateFileDescriptorProto(
   fileName name: String,
-  suffix id: Int
+  suffix: String
 ) -> Google_Protobuf_FileDescriptorProto {
   let inputMessage = Google_Protobuf_DescriptorProto.with {
-    $0.name = "inputMessage"
+    $0.name = "inputMessage" + suffix
     $0.field = [
       Google_Protobuf_FieldDescriptorProto.with {
         $0.name = "inputField"
@@ -32,8 +32,14 @@ internal func generateFileDescriptorProto(
     ]
   }
 
+  let inputMessageExtension = Google_Protobuf_FieldDescriptorProto.with {
+    $0.name = "extensionInputMessage" + suffix
+    $0.extendee = "inputMessage" + suffix
+    $0.number = 2
+  }
+
   let outputMessage = Google_Protobuf_DescriptorProto.with {
-    $0.name = "outputMessage"
+    $0.name = "outputMessage" + suffix
     $0.field = [
       Google_Protobuf_FieldDescriptorProto.with {
         $0.name = "outputField"
@@ -43,7 +49,7 @@ internal func generateFileDescriptorProto(
   }
 
   let enumType = Google_Protobuf_EnumDescriptorProto.with {
-    $0.name = "enumType" + String(id)
+    $0.name = "enumType" + suffix
     $0.value = [
       Google_Protobuf_EnumValueDescriptorProto.with {
         $0.name = "value1"
@@ -55,22 +61,23 @@ internal func generateFileDescriptorProto(
   }
 
   let method = Google_Protobuf_MethodDescriptorProto.with {
-    $0.name = "testMethod" + String(id)
+    $0.name = "testMethod" + suffix
     $0.inputType = inputMessage.name
     $0.outputType = outputMessage.name
   }
 
   let serviceDescriptor = Google_Protobuf_ServiceDescriptorProto.with {
     $0.method = [method]
-    $0.name = "service" + String(id)
+    $0.name = "service" + suffix
   }
 
   let fileDescriptorProto = Google_Protobuf_FileDescriptorProto.with {
     $0.service = [serviceDescriptor]
-    $0.name = name + String(id) + ".proto"
-    $0.package = "package" + name + String(id)
+    $0.name = name + suffix + ".proto"
+    $0.package = "package" + name + suffix
     $0.messageType = [inputMessage, outputMessage]
     $0.enumType = [enumType]
+    $0.extension = [inputMessageExtension]
   }
 
   return fileDescriptorProto
@@ -80,7 +87,7 @@ internal func generateFileDescriptorProto(
 internal func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorProto] {
   var fileDependencies: [Google_Protobuf_FileDescriptorProto] = []
   for id in 1 ... 4 {
-    let fileDescriptorProto = generateFileDescriptorProto(fileName: "bar", suffix: id)
+    let fileDescriptorProto = generateFileDescriptorProto(fileName: "bar", suffix: String(id))
     if id != 1 {
       // Dependency of the first dependency.
       fileDependencies[0].dependency.append(fileDescriptorProto.name)
@@ -92,10 +99,16 @@ internal func makeProtosWithDependencies() -> [Google_Protobuf_FileDescriptorPro
 
 internal func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescriptorProto] {
   var protos: [Google_Protobuf_FileDescriptorProto] = []
-  protos.append(generateFileDescriptorProto(fileName: "foo", suffix: 0))
+  protos.append(generateFileDescriptorProto(fileName: "foo", suffix: "0"))
   for id in 1 ... 10 {
-    let fileDescriptorProtoA = generateFileDescriptorProto(fileName: "fooA", suffix: id)
-    let fileDescriptorProtoB = generateFileDescriptorProto(fileName: "fooB", suffix: id)
+    let fileDescriptorProtoA = generateFileDescriptorProto(
+      fileName: "fooA",
+      suffix: String(id) + "A"
+    )
+    let fileDescriptorProtoB = generateFileDescriptorProto(
+      fileName: "fooB",
+      suffix: String(id) + "B"
+    )
     let parent = protos.count > 1 ? protos.count - Int.random(in: 1 ..< 3) : protos.count - 1
     protos[parent].dependency.append(fileDescriptorProtoA.name)
     protos[parent].dependency.append(fileDescriptorProtoB.name)
