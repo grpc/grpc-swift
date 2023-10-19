@@ -20,11 +20,7 @@ import SwiftProtobuf
 
 internal func generateFileDescriptorProto(
   fileName name: String,
-<<<<<<< Updated upstream
   suffix: String
-=======
-  suffix : String
->>>>>>> Stashed changes
 ) -> Google_Protobuf_FileDescriptorProto {
   let inputMessage = Google_Protobuf_DescriptorProto.with {
     $0.name = "inputMessage" + suffix
@@ -36,21 +32,12 @@ internal func generateFileDescriptorProto(
     ]
   }
 
-<<<<<<< Updated upstream
   let inputMessageExtension = Google_Protobuf_FieldDescriptorProto.with {
     $0.name = "extensionInputMessage" + suffix
     $0.extendee = "inputMessage" + suffix
     $0.number = 2
   }
 
-=======
-    let inputMessageExtension = Google_Protobuf_FieldDescriptorProto.with {
-         $0.name = "extensionInputMessage" + suffix
-         $0.extendee = "inputMessage" + suffix
-         $0.number = 2
-       }
-    
->>>>>>> Stashed changes
   let outputMessage = Google_Protobuf_DescriptorProto.with {
     $0.name = "outputMessage" + suffix
     $0.field = [
@@ -114,7 +101,6 @@ internal func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescri
   var protos: [Google_Protobuf_FileDescriptorProto] = []
   protos.append(generateFileDescriptorProto(fileName: "foo", suffix: "0"))
   for id in 1 ... 10 {
-<<<<<<< Updated upstream
     let fileDescriptorProtoA = generateFileDescriptorProto(
       fileName: "fooA",
       suffix: String(id) + "A"
@@ -123,10 +109,7 @@ internal func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescri
       fileName: "fooB",
       suffix: String(id) + "B"
     )
-=======
-    let fileDescriptorProtoA = generateFileDescriptorProto(fileName: "fooA", suffix: String(id))
-    let fileDescriptorProtoB = generateFileDescriptorProto(fileName: "fooB", suffix: String(id))
->>>>>>> Stashed changes
+
     let parent = protos.count > 1 ? protos.count - Int.random(in: 1 ..< 3) : protos.count - 1
     protos[parent].dependency.append(fileDescriptorProtoA.name)
     protos[parent].dependency.append(fileDescriptorProtoB.name)
