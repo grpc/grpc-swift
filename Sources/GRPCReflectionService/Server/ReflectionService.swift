@@ -52,14 +52,16 @@ internal struct ReflectionServiceData: Sendable {
   internal var serviceNames: [String]
   internal var fileNameBySymbol: [String: String]
   private var fileNameByExtensionDescriptor: [ExtensionDescriptor: String]
-  internal var fieldNumbersByType: [String: Set<Int32>]
-    
+  private var fieldNumbersByType: [String: [Int32]]
+  private var messageTypeNames: [String]
+
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
     self.fileDescriptorDataByFilename = [:]
     self.fileNameBySymbol = [:]
     self.fileNameByExtensionDescriptor = [:]
     self.fieldNumbersByType = [:]
+    self.messageTypeNames = []
 
     for fileDescriptorProto in fileDescriptors {
       let serializedFileDescriptorProto: Data
@@ -94,7 +96,7 @@ internal struct ReflectionServiceData: Sendable {
         }
       }
 
-      // Populating the <extension descriptor, file name> dictionary.
+      // Populating the <extension descriptor, file name> dictionary and the <typeName, [FieldNumber]> one.
       for `extension` in fileDescriptorProto.extension {
         let extensionDescriptor = ExtensionDescriptor(
           extendeeTypeName: `extension`.extendee,
@@ -114,15 +116,22 @@ internal struct ReflectionServiceData: Sendable {
               """
           )
         }
-    }
 
-        
-         for `extension` in fileDescriptorProto.extension {
-            if self.fieldNumbersByType[`extension`.extendee] == nil {
-                self.fieldNumbersByType[`extension`.extendee] = Set<Int32>()
-            }
-            self.fieldNumbersByType[`extension`.extendee]?.insert(`extension`.number)
+        if self.fieldNumbersByType[`extension`.extendee] == nil {
+          self.fieldNumbersByType[`extension`.extendee] = []
         }
+        let numberPosition = self.fieldNumbersByType[`extension`.extendee]!.count
+        self.fieldNumbersByType[`extension`.extendee]?.insert(
+          `extension`.number,
+          at: numberPosition
+        )
+      }
+      // Populating messageTypeNames array.
+      self.messageTypeNames.append(
+        contentsOf: fileDescriptorProto.messageType.map {
+          $0.name
+        }
+      )
     }
   }
 
@@ -167,11 +176,15 @@ internal struct ReflectionServiceData: Sendable {
     let key = ExtensionDescriptor(extendeeTypeName: extendeeName, fieldNumber: number)
     return self.fileNameByExtensionDescriptor[key]
   }
-    
-    internal func extensionsFieldNumbersOfType(named typeName: String) -> Set<Int32>? {
-        return self.fieldNumbersByType[typeName]
-    }
- }
+
+  internal func extensionsFieldNumbersOfType(named typeName: String) -> [Int32]? {
+    return self.fieldNumbersByType[typeName]
+  }
+
+  internal func containsMessageType(name typeName: String) -> Bool {
+    return self.messageTypeNames.contains(typeName)
+  }
+}
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsyncProvider {
@@ -242,18 +255,29 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     return try self.findFileByFileName(fileName, request: request)
   }
 
-    internal func findExtensionsFieldNumbersOfType(
-        named typeName: String,
-        request: Reflection_ServerReflectionRequest) throws -> Reflection_ServerReflectionResponse {
-            guard let fieldNumbers = self.protoRegistry.extensionsFieldNumbersOfType(named: typeName) else {
-                throw GRPCStatus(
-                  code: .notFound,
-                  message: "The provided symbol could not be found."
-                )
-            }
-            
+  internal func findExtensionsFieldNumbersOfType(
+    named typeName: String,
+    request: Reflection_ServerReflectionRequest
+  ) throws -> Reflection_ServerReflectionResponse {
+    var fieldNumbers = self.protoRegistry.extensionsFieldNumbersOfType(named: typeName)
+    if fieldNumbers == nil {
+      guard self.protoRegistry.containsMessageType(name: typeName) else {
+        throw GRPCStatus(
+          code: .notFound,
+          message: "The provided type doesn't have any extensions."
+        )
+      }
+      fieldNumbers = []
     }
-    
+    return Reflection_ServerReflectionResponse(
+      request: request,
+      extensionNumberResponse: .with {
+        $0.baseTypeName = typeName
+        $0.extensionNumber = fieldNumbers!
+      }
+    )
+  }
+
   internal func serverReflectionInfo(
     requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
     responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
@@ -287,12 +311,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         try await responseStream.send(response)
 
       case let .allExtensionNumbersOfType(typeName):
-          let response = try self.findExtensionsFieldNumbersOfType(
-            named: typeName,
-            request: request
-          )
-          try await responseStream.send(response)
-          
+        let response = try self.findExtensionsFieldNumbersOfType(
+          named: typeName,
+          request: request
+        )
+        try await responseStream.send(response)
+
       default:
         throw GRPCStatus(code: .unimplemented)
       }
@@ -320,6 +344,17 @@ extension Reflection_ServerReflectionResponse {
       $0.validHost = request.host
       $0.originalRequest = request
       $0.listServicesResponse = listServicesResponse
+    }
+  }
+
+  init(
+    request: Reflection_ServerReflectionRequest,
+    extensionNumberResponse: Reflection_ExtensionNumberResponse
+  ) {
+    self = .with {
+      $0.validHost = request.host
+      $0.originalRequest = request
+      $0.allExtensionNumbersResponse = extensionNumberResponse
     }
   }
 }
