@@ -98,7 +98,9 @@ internal struct ReflectionServiceData: Sendable {
 
       // Populating the <extension descriptor, file name> dictionary and the <typeName, [FieldNumber]> one.
       for `extension` in fileDescriptorProto.extension {
-        let typeName = ReflectionServiceData.extractTypeNameFrom(fullyQualifiedName: `extension`.extendee)
+        let typeName = ReflectionServiceData.extractTypeNameFrom(
+          fullyQualifiedName: `extension`.extendee
+        )
         let extensionDescriptor = ExtensionDescriptor(
           extendeeTypeName: typeName,
           fieldNumber: `extension`.number
@@ -133,14 +135,14 @@ internal struct ReflectionServiceData: Sendable {
     }
   }
 
-    internal static func extractTypeNameFrom(fullyQualifiedName name: String) -> String {
-        var nameCopy = name
-        if (nameCopy.first == ".") {
-            nameCopy.removeFirst()
-        }
-        return nameCopy
+  internal static func extractTypeNameFrom(fullyQualifiedName name: String) -> String {
+    var nameCopy = name
+    if nameCopy.first == "." {
+      nameCopy.removeFirst()
     }
-    
+    return nameCopy
+  }
+
   internal func serialisedFileDescriptorProtosForDependenciesOfFile(
     named fileName: String
   ) throws -> [Data] {

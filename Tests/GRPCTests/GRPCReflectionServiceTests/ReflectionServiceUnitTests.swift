@@ -330,16 +330,16 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     }
   }
 
-    func testExtractTypeNameFrom() throws {
-        let initialExtendeeName = ".package.extendeeName"
-        XCTAssertEqual(
-            ReflectionServiceData.extractTypeNameFrom(
-                fullyQualifiedName: initialExtendeeName
-            ),
-            "package.extendeeName"
-        )
-    }
-    
+  func testExtractTypeNameFrom() throws {
+    let initialExtendeeName = ".package.extendeeName"
+    XCTAssertEqual(
+      ReflectionServiceData.extractTypeNameFrom(
+        fullyQualifiedName: initialExtendeeName
+      ),
+      "package.extendeeName"
+    )
+  }
+
   // Testing the nameOfFileContainingExtension() method.
 
   func testNameOfFileContainingExtensions() throws {
@@ -347,9 +347,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     for proto in protos {
       for `extension` in proto.extension {
-          let typeName = ReflectionServiceData.extractTypeNameFrom(
-            fullyQualifiedName: `extension`.extendee
-          )
+        let typeName = ReflectionServiceData.extractTypeNameFrom(
+          fullyQualifiedName: `extension`.extendee
+        )
         let registryFileName = registry.nameOfFileContainingExtension(
           extendeeName: typeName,
           fieldNumber: `extension`.number
@@ -431,15 +431,19 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = registry.extensionsFieldNumbersOfType(named: "packagebar1.noExtensionMessage")
+    let extensionNumbers = registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.noExtensionMessage"
+    )
     XCTAssertNil(extensionNumbers)
     XCTAssertTrue(registry.containsMessageType(name: "packagebar1.noExtensionMessage"))
   }
 
   func testExtensionsFieldNumbersOfTypeInvalidTypeName() throws {
-      let protos = makeProtosWithDependencies()
+    let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = registry.extensionsFieldNumbersOfType(named: "packagebar1.invalidTypeMessage")
+    let extensionNumbers = registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.invalidTypeMessage"
+    )
     XCTAssertNil(extensionNumbers)
     XCTAssertFalse(registry.containsMessageType(name: "packagebar1.noExtensionMessage"))
   }

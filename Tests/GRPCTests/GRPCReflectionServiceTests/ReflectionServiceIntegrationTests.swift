@@ -212,7 +212,9 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       if fileDescriptorProto == fileToFind {
         receivedProtoContainingExtension += 1
         XCTAssert(
-          fileDescriptorProto.extension.map { $0.name }.contains("extension.packagebar1.inputMessage1-2"),
+          fileDescriptorProto.extension.map { $0.name }.contains(
+            "extension.packagebar1.inputMessage1-2"
+          ),
           """
           The response doesn't contain the serialized file descriptor proto \
           containing the \"extensioninputMessage1-2\" extension.
