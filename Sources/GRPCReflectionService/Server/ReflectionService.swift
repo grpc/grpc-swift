@@ -51,8 +51,12 @@ internal struct ReflectionServiceData: Sendable {
   internal var fileDescriptorDataByFilename: [String: FileDescriptorProtoData]
   internal var serviceNames: [String]
   internal var fileNameBySymbol: [String: String]
+
+  // Stores the file names for each extension identified by an ExtensionDescriptor object.
   private var fileNameByExtensionDescriptor: [ExtensionDescriptor: String]
+  // Stores the field numbers for each type that has extensions.
   private var fieldNumbersByType: [String: [Int32]]
+  // Stores all the messageTypeNames from the protos.
   private var messageTypeNames: [String]
 
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
@@ -98,9 +102,7 @@ internal struct ReflectionServiceData: Sendable {
 
       // Populating the <extension descriptor, file name> dictionary and the <typeName, [FieldNumber]> one.
       for `extension` in fileDescriptorProto.extension {
-        let typeName = ReflectionServiceData.extractTypeNameFrom(
-          fullyQualifiedName: `extension`.extendee
-        )
+        let typeName = String(`extension`.extendee.drop(while: { $0 == "." }))
         let extensionDescriptor = ExtensionDescriptor(
           extendeeTypeName: typeName,
           fieldNumber: `extension`.number
@@ -119,28 +121,13 @@ internal struct ReflectionServiceData: Sendable {
               """
           )
         }
-        if self.fieldNumbersByType[typeName] == nil {
-          self.fieldNumbersByType[typeName] = []
-        }
-        let numberPosition = self.fieldNumbersByType[typeName]!.count
-        self.fieldNumbersByType[typeName]?.insert(
-          `extension`.number,
-          at: numberPosition
-        )
+        self.fieldNumbersByType[typeName, default: []].append(`extension`.number)
       }
       // Populating messageTypeNames array.
       self.messageTypeNames.append(
         contentsOf: fileDescriptorProto.qualifiedMessageTypes
       )
     }
-  }
-
-  internal static func extractTypeNameFrom(fullyQualifiedName name: String) -> String {
-    var nameCopy = name
-    if nameCopy.first == "." {
-      nameCopy.removeFirst()
-    }
-    return nameCopy
   }
 
   internal func serialisedFileDescriptorProtosForDependenciesOfFile(
@@ -185,6 +172,7 @@ internal struct ReflectionServiceData: Sendable {
     return self.fileNameByExtensionDescriptor[key]
   }
 
+  // Returns nil if the type has no extensions or if it doesn't exist.
   internal func extensionsFieldNumbersOfType(named typeName: String) -> [Int32]? {
     return self.fieldNumbersByType[typeName]
   }
@@ -269,6 +257,8 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   ) throws -> Reflection_ServerReflectionResponse {
     var fieldNumbers = self.protoRegistry.extensionsFieldNumbersOfType(named: typeName)
     if fieldNumbers == nil {
+      // Checks if the typeName is a valid Message type name, that has no extensions,
+      // or if it is invalid.
       guard self.protoRegistry.containsMessageType(name: typeName) else {
         throw GRPCStatus(
           code: .notFound,
