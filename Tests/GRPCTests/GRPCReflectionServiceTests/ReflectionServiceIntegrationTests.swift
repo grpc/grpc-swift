@@ -184,7 +184,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       .with {
         $0.host = "127.0.0.1"
         $0.fileContainingExtension = .with {
-          $0.containingType = "inputMessage1"
+          $0.containingType = "packagebar1.inputMessage1"
           $0.extensionNumber = 2
         }
       }
@@ -212,7 +212,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       if fileDescriptorProto == fileToFind {
         receivedProtoContainingExtension += 1
         XCTAssert(
-          fileDescriptorProto.extension.map { $0.name }.contains("extensioninputMessage1-2"),
+          fileDescriptorProto.extension.map { $0.name }.contains("extension.packagebar1.inputMessage1-2"),
           """
           The response doesn't contain the serialized file descriptor proto \
           containing the \"extensioninputMessage1-2\" extension.
@@ -245,7 +245,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     try await serviceReflectionInfo.requestStream.send(
       .with {
         $0.host = "127.0.0.1"
-        $0.allExtensionNumbersOfType = "inputMessage2"
+        $0.allExtensionNumbersOfType = "packagebar2.inputMessage2"
       }
     )
 
@@ -254,7 +254,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     guard let message = try await iterator.next() else {
       return XCTFail("Could not get a response message.")
     }
-    XCTAssertEqual(message.allExtensionNumbersResponse.baseTypeName, "inputMessage2")
+    XCTAssertEqual(message.allExtensionNumbersResponse.baseTypeName, "packagebar2.inputMessage2")
     XCTAssertEqual(message.allExtensionNumbersResponse.extensionNumber, [1, 2, 3, 4, 5])
   }
 }

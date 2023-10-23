@@ -98,8 +98,9 @@ internal struct ReflectionServiceData: Sendable {
 
       // Populating the <extension descriptor, file name> dictionary and the <typeName, [FieldNumber]> one.
       for `extension` in fileDescriptorProto.extension {
+        let typeName = ReflectionServiceData.extractTypeNameFrom(fullyQualifiedName: `extension`.extendee)
         let extensionDescriptor = ExtensionDescriptor(
-          extendeeTypeName: `extension`.extendee,
+          extendeeTypeName: typeName,
           fieldNumber: `extension`.number
         )
         let oldFileName = self.fileNameByExtensionDescriptor.updateValue(
@@ -116,25 +117,30 @@ internal struct ReflectionServiceData: Sendable {
               """
           )
         }
-
-        if self.fieldNumbersByType[`extension`.extendee] == nil {
-          self.fieldNumbersByType[`extension`.extendee] = []
+        if self.fieldNumbersByType[typeName] == nil {
+          self.fieldNumbersByType[typeName] = []
         }
-        let numberPosition = self.fieldNumbersByType[`extension`.extendee]!.count
-        self.fieldNumbersByType[`extension`.extendee]?.insert(
+        let numberPosition = self.fieldNumbersByType[typeName]!.count
+        self.fieldNumbersByType[typeName]?.insert(
           `extension`.number,
           at: numberPosition
         )
       }
       // Populating messageTypeNames array.
       self.messageTypeNames.append(
-        contentsOf: fileDescriptorProto.messageType.map {
-          $0.name
-        }
+        contentsOf: fileDescriptorProto.qualifiedMessageTypes
       )
     }
   }
 
+    internal static func extractTypeNameFrom(fullyQualifiedName name: String) -> String {
+        var nameCopy = name
+        if (nameCopy.first == ".") {
+            nameCopy.removeFirst()
+        }
+        return nameCopy
+    }
+    
   internal func serialisedFileDescriptorProtosForDependenciesOfFile(
     named fileName: String
   ) throws -> [Data] {
@@ -170,7 +176,7 @@ internal struct ReflectionServiceData: Sendable {
   }
 
   internal func nameOfFileContainingExtension(
-    named extendeeName: String,
+    extendeeName: String,
     fieldNumber number: Int32
   ) -> String? {
     let key = ExtensionDescriptor(extendeeTypeName: extendeeName, fieldNumber: number)
@@ -243,7 +249,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   ) throws -> Reflection_ServerReflectionResponse {
     guard
       let fileName = self.protoRegistry.nameOfFileContainingExtension(
-        named: extensionRequest.containingType,
+        extendeeName: extensionRequest.containingType,
         fieldNumber: extensionRequest.extensionNumber
       )
     else {

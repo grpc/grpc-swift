@@ -49,7 +49,11 @@ internal func generateFileDescriptorProto(
     ]
   }
 
-  let inputMessageExtensions = makeExtensions(forType: "inputMessage" + suffix, number: 5)
+    let packageName = "package" + name + suffix
+    let inputMessageExtensions = makeExtensions(
+        forType: "." + packageName + "." + "inputMessage" + suffix,
+        number: 5
+    )
 
   let outputMessage = Google_Protobuf_DescriptorProto.with {
     $0.name = "outputMessage" + suffix
