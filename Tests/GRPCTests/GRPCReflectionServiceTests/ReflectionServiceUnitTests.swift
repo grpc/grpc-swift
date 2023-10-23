@@ -392,6 +392,25 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     }
   }
 
+  // Testing the containsFullyQualifiedMessageType() method.
+
+  func testContainsMessageType() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    for proto in protos {
+      for messageType in proto.qualifiedMessageTypes {
+        XCTAssertTrue(registry.containsFullyQualifiedMessageType(name: messageType))
+      }
+    }
+
+    // Invalid type name.
+    XCTAssertFalse(
+      registry.containsFullyQualifiedMessageType(name: "packagebar1.invalidMessageType")
+    )
+  }
+
+  // Testing the extensionsFieldNumbersOfType() method.
+
   func testExtensionsFieldNumbersOfType() throws {
     var protos = makeProtosWithDependencies()
     protos[0].extension.append(
@@ -401,7 +420,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = registry.extensionsFieldNumbersOfType(named: "packagebar1.inputMessage1")
+    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.inputMessage1"
+    )
     XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 120])
   }
 
@@ -419,21 +440,31 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = registry.extensionsFieldNumbersOfType(
+    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
       named: "packagebar1.noExtensionMessage"
     )
-    XCTAssertNil(extensionNumbers)
-    XCTAssertTrue(registry.containsMessageType(name: "packagebar1.noExtensionMessage"))
+    XCTAssertEqual(extensionNumbers, [])
+    XCTAssertTrue(
+      registry.containsFullyQualifiedMessageType(name: "packagebar1.noExtensionMessage")
+    )
   }
 
   func testExtensionsFieldNumbersOfTypeInvalidTypeName() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = registry.extensionsFieldNumbersOfType(
-      named: "packagebar1.invalidTypeMessage"
-    )
-    XCTAssertNil(extensionNumbers)
-    XCTAssertFalse(registry.containsMessageType(name: "packagebar1.noExtensionMessage"))
+    XCTAssertThrowsError(
+      try registry.extensionsFieldNumbersOfType(
+        named: "packagebar1.invalidTypeMessage"
+      )
+    ) { error in
+      XCTAssertEqual(
+        error as? GRPCStatus,
+        GRPCStatus(
+          code: .invalidArgument,
+          message: "The provided type is invalid."
+        )
+      )
+    }
   }
 
   func testExtensionsFieldNumbersOfTypeExtensionsInDifferentProtoFiles() throws {
@@ -445,7 +476,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = registry.extensionsFieldNumbersOfType(named: "packagebar1.inputMessage1")
+    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.inputMessage1"
+    )
     XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 130])
   }
 }

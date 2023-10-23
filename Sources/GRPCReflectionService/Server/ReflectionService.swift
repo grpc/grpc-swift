@@ -173,11 +173,20 @@ internal struct ReflectionServiceData: Sendable {
   }
 
   // Returns nil if the type has no extensions or if it doesn't exist.
-  internal func extensionsFieldNumbersOfType(named typeName: String) -> [Int32]? {
-    return self.fieldNumbersByType[typeName]
+  internal func extensionsFieldNumbersOfType(named typeName: String) throws -> [Int32] {
+    if let fieldNumbers = self.fieldNumbersByType[typeName] {
+      return fieldNumbers
+    }
+    guard self.containsFullyQualifiedMessageType(name: typeName) else {
+      throw GRPCStatus(
+        code: .invalidArgument,
+        message: "The provided type is invalid."
+      )
+    }
+    return []
   }
 
-  internal func containsMessageType(name typeName: String) -> Bool {
+  internal func containsFullyQualifiedMessageType(name typeName: String) -> Bool {
     return self.messageTypeNames.contains(typeName)
   }
 }
@@ -255,23 +264,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     named typeName: String,
     request: Reflection_ServerReflectionRequest
   ) throws -> Reflection_ServerReflectionResponse {
-    var fieldNumbers = self.protoRegistry.extensionsFieldNumbersOfType(named: typeName)
-    if fieldNumbers == nil {
-      // Checks if the typeName is a valid Message type name, that has no extensions,
-      // or if it is invalid.
-      guard self.protoRegistry.containsMessageType(name: typeName) else {
-        throw GRPCStatus(
-          code: .notFound,
-          message: "The provided type doesn't have any extensions."
-        )
-      }
-      fieldNumbers = []
-    }
+    let fieldNumbers = try self.protoRegistry.extensionsFieldNumbersOfType(named: typeName)
     return Reflection_ServerReflectionResponse(
       request: request,
       extensionNumberResponse: .with {
         $0.baseTypeName = typeName
-        $0.extensionNumber = fieldNumbers!
+        $0.extensionNumber = fieldNumbers
       }
     )
   }
