@@ -93,8 +93,16 @@ final class RPCErrorTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"]),
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
+      RPCError(
+        code: .cancelled,
+        message: "message",
+        metadata: ["foo": Metadata.MetadataValue.string("bar")]
+      ),
+      RPCError(
+        code: .cancelled,
+        message: "message",
+        metadata: ["foo": Metadata.MetadataValue.string("bar")]
+      )
     )
 
     XCTAssertNotEqual(
@@ -108,8 +116,16 @@ final class RPCErrorTests: XCTestCase {
     )
 
     XCTAssertNotEqual(
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"]),
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "baz"])
+      RPCError(
+        code: .cancelled,
+        message: "message",
+        metadata: ["foo": Metadata.MetadataValue.string("bar")]
+      ),
+      RPCError(
+        code: .cancelled,
+        message: "message",
+        metadata: ["foo": Metadata.MetadataValue.string("baz")]
+      )
     )
   }
 

@@ -18,10 +18,13 @@ import XCTest
 
 final class ServerRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
-    let single = ServerRequest.Single(metadata: ["bar": "baz"], message: "foo")
+    let single = ServerRequest.Single(
+      metadata: ["bar": Metadata.MetadataValue.string("baz")],
+      message: "foo"
+    )
     let stream = ServerRequest.Stream(single: single)
 
-    XCTAssertEqual(stream.metadata, ["bar": "baz"])
+    XCTAssertEqual(stream.metadata, ["bar": Metadata.MetadataValue.string("baz")])
     let collected = try await stream.messages.collect()
     XCTAssertEqual(collected, ["foo"])
   }

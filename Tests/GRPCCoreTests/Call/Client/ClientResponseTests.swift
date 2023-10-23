@@ -22,48 +22,56 @@ final class ClientResponseTests: XCTestCase {
   func testAcceptedSingleResponseConvenienceMethods() {
     let response = ClientResponse.Single(
       message: "message",
-      metadata: ["foo": "bar"],
-      trailingMetadata: ["bar": "baz"]
+      metadata: ["foo": Metadata.MetadataValue.string("bar")],
+      trailingMetadata: ["bar": Metadata.MetadataValue.string("baz")]
     )
 
-    XCTAssertEqual(response.metadata, ["foo": "bar"])
+    XCTAssertEqual(response.metadata, ["foo": Metadata.MetadataValue.string("bar")])
     XCTAssertEqual(try response.message, "message")
-    XCTAssertEqual(response.trailingMetadata, ["bar": "baz"])
+    XCTAssertEqual(response.trailingMetadata, ["bar": Metadata.MetadataValue.string("baz")])
   }
 
   func testRejectedSingleResponseConvenienceMethods() {
-    let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
+    let error = RPCError(
+      code: .aborted,
+      message: "error message",
+      metadata: ["bar": Metadata.MetadataValue.string("baz")]
+    )
     let response = ClientResponse.Single(of: String.self, error: error)
 
     XCTAssertEqual(response.metadata, [:])
     XCTAssertThrowsRPCError(try response.message) {
       XCTAssertEqual($0, error)
     }
-    XCTAssertEqual(response.trailingMetadata, ["bar": "baz"])
+    XCTAssertEqual(response.trailingMetadata, ["bar": Metadata.MetadataValue.string("baz")])
   }
 
   func testAcceptedStreamResponseConvenienceMethods() async throws {
     let response = ClientResponse.Stream(
       of: String.self,
-      metadata: ["foo": "bar"],
+      metadata: ["foo": Metadata.MetadataValue.string("bar")],
       bodyParts: RPCAsyncSequence(
         wrapping: AsyncStream {
           $0.yield(.message("foo"))
           $0.yield(.message("bar"))
           $0.yield(.message("baz"))
-          $0.yield(.trailingMetadata(["baz": "baz"]))
+          $0.yield(.trailingMetadata(["baz": Metadata.MetadataValue.string("baz")]))
           $0.finish()
         }
       )
     )
 
-    XCTAssertEqual(response.metadata, ["foo": "bar"])
+    XCTAssertEqual(response.metadata, ["foo": Metadata.MetadataValue.string("bar")])
     let messages = try await response.messages.collect()
     XCTAssertEqual(messages, ["foo", "bar", "baz"])
   }
 
   func testRejectedStreamResponseConvenienceMethods() async throws {
-    let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
+    let error = RPCError(
+      code: .aborted,
+      message: "error message",
+      metadata: ["bar": Metadata.MetadataValue.string("baz")]
+    )
     let response = ClientResponse.Stream(of: String.self, error: error)
 
     XCTAssertEqual(response.metadata, [:])
@@ -77,18 +85,25 @@ final class ClientResponseTests: XCTestCase {
   func testStreamToSingleConversionForValidStream() async throws {
     let stream = ClientResponse.Stream(
       of: String.self,
-      metadata: ["foo": "bar"],
-      bodyParts: .elements(.message("foo"), .trailingMetadata(["bar": "baz"]))
+      metadata: ["foo": Metadata.MetadataValue.string("bar")],
+      bodyParts: .elements(
+        .message("foo"),
+        .trailingMetadata(["bar": Metadata.MetadataValue.string("baz")])
+      )
     )
 
     let single = await ClientResponse.Single(stream: stream)
-    XCTAssertEqual(single.metadata, ["foo": "bar"])
+    XCTAssertEqual(single.metadata, ["foo": Metadata.MetadataValue.string("bar")])
     XCTAssertEqual(try single.message, "foo")
-    XCTAssertEqual(single.trailingMetadata, ["bar": "baz"])
+    XCTAssertEqual(single.trailingMetadata, ["bar": Metadata.MetadataValue.string("baz")])
   }
 
   func testStreamToSingleConversionForFailedStream() async throws {
-    let error = RPCError(code: .aborted, message: "aborted", metadata: ["bar": "baz"])
+    let error = RPCError(
+      code: .aborted,
+      message: "aborted",
+      metadata: ["bar": Metadata.MetadataValue.string("baz")]
+    )
     let stream = ClientResponse.Stream(of: String.self, error: error)
 
     let single = await ClientResponse.Single(stream: stream)
@@ -96,7 +111,7 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertThrowsRPCError(try single.message) {
       XCTAssertEqual($0, error)
     }
-    XCTAssertEqual(single.trailingMetadata, ["bar": "baz"])
+    XCTAssertEqual(single.trailingMetadata, ["bar": Metadata.MetadataValue.string("baz")])
   }
 
   func testStreamToSingleConversionForInvalidSingleStream() async throws {
@@ -108,7 +123,7 @@ final class ClientResponseTests: XCTestCase {
     for body in bodies {
       let stream = ClientResponse.Stream(
         of: String.self,
-        metadata: ["foo": "bar"],
+        metadata: ["foo": Metadata.MetadataValue.string("bar")],
         bodyParts: .elements(body)
       )
 
@@ -131,7 +146,7 @@ final class ClientResponseTests: XCTestCase {
     for body in bodies {
       let stream = ClientResponse.Stream(
         of: String.self,
-        metadata: ["foo": "bar"],
+        metadata: ["foo": Metadata.MetadataValue.string("bar")],
         bodyParts: .elements(body)
       )
 
