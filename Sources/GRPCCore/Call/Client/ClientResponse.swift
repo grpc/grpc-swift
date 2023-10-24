@@ -371,8 +371,7 @@ extension ClientResponse.Stream {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ClientResponse.Single {
-  @_spi(Testing)
-  public init(stream response: ClientResponse.Stream<Message>) async {
+  init(stream response: ClientResponse.Stream<Message>) async {
     switch response.accepted {
     case .success(let contents):
       do {

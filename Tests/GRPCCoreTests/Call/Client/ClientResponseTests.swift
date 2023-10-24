@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@_spi(Testing) import GRPCCore
+@testable import GRPCCore
 import XCTest
 
 final class ClientResponseTests: XCTestCase {
