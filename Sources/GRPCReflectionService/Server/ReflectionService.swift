@@ -169,7 +169,7 @@ internal struct ReflectionServiceData: Sendable {
     return self.fileNameByExtensionDescriptor[key]
   }
 
-  // Returns nil if the type has no extensions.
+  // Returns an empty array if the type has no extensions.
   internal func extensionsFieldNumbersOfType(named typeName: String) throws -> [Int32] {
     guard let fieldNumbers = self.fieldNumbersByType[typeName] else {
       throw GRPCStatus(
