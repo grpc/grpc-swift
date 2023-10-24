@@ -160,7 +160,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     }
 
     XCTAssertThrowsError(try stream.wait()) { error in
-      XCTAssert((error as? ConnectionPoolError).isShutdown)
+      XCTAssert((error as? GRPCConnectionPoolError).isShutdown)
     }
   }
 
@@ -181,14 +181,14 @@ final class ConnectionPoolTests: GRPCTestCase {
     }
 
     XCTAssertThrowsError(try tooManyWaiters.wait()) { error in
-      XCTAssert((error as? ConnectionPoolError).isTooManyWaiters)
+      XCTAssert((error as? GRPCConnectionPoolError).isTooManyWaiters)
     }
 
     XCTAssertNoThrow(try pool.shutdown().wait())
     // All 'waiting' futures will be failed by the shutdown promise.
     for waiter in waiting {
       XCTAssertThrowsError(try waiter.wait()) { error in
-        XCTAssert((error as? ConnectionPoolError).isShutdown)
+        XCTAssert((error as? GRPCConnectionPoolError).isShutdown)
       }
     }
   }
@@ -205,7 +205,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
     XCTAssertThrowsError(try waiter.wait()) { error in
-      XCTAssert((error as? ConnectionPoolError).isDeadlineExceeded)
+      XCTAssert((error as? GRPCConnectionPoolError).isDeadlineExceeded)
     }
 
     XCTAssertEqual(pool.sync.waiters, 0)
@@ -225,7 +225,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     self.eventLoop.run()
     XCTAssertThrowsError(try waiter.wait()) { error in
-      XCTAssert((error as? ConnectionPoolError).isDeadlineExceeded)
+      XCTAssert((error as? GRPCConnectionPoolError).isDeadlineExceeded)
     }
 
     XCTAssertEqual(pool.sync.waiters, 0)
@@ -358,7 +358,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try shutdown.wait())
     for waiter in others {
       XCTAssertThrowsError(try waiter.wait()) { error in
-        XCTAssert((error as? ConnectionPoolError).isShutdown)
+        XCTAssert((error as? GRPCConnectionPoolError).isShutdown)
       }
     }
   }
@@ -503,7 +503,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // We need to advance the time to fire the timeout to fail the waiter.
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
     XCTAssertThrowsError(try waiter1.wait()) { error in
-      XCTAssert((error as? ConnectionPoolError).isDeadlineExceeded)
+      XCTAssert((error as? GRPCConnectionPoolError).isDeadlineExceeded)
     }
 
     self.eventLoop.run()
@@ -758,8 +758,10 @@ final class ConnectionPoolTests: GRPCTestCase {
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
 
     XCTAssertThrowsError(try w1.wait()) { error in
-      switch error as? ConnectionPoolError {
-      case .some(.deadlineExceeded(.none)):
+      switch error as? GRPCConnectionPoolError {
+      case .some(let error):
+        XCTAssertEqual(error.code, .deadlineExceeded)
+        XCTAssertNil(error.underlyingError)
         // Deadline exceeded but no underlying error, as expected.
         ()
       default:
@@ -774,10 +776,11 @@ final class ConnectionPoolTests: GRPCTestCase {
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(20))
 
     XCTAssertThrowsError(try w2.wait()) { error in
-      switch error as? ConnectionPoolError {
-      case let .some(.deadlineExceeded(.some(wrappedError))):
+      switch error as? GRPCConnectionPoolError {
+      case let .some(error):
+        XCTAssertEqual(error.code, .deadlineExceeded)
         // Deadline exceeded and we have the underlying error.
-        XCTAssert(wrappedError is DummyError)
+        XCTAssert(error.underlyingError is DummyError)
       default:
         XCTFail("Expected ConnectionPoolError.deadlineExceeded(.some) but got \(error)")
       }
@@ -837,9 +840,10 @@ final class ConnectionPoolTests: GRPCTestCase {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertThrowsError(try tooManyWaiters.wait()) { error in
-      switch error as? ConnectionPoolError {
-      case .some(.tooManyWaiters(.none)):
-        ()
+      switch error as? GRPCConnectionPoolError {
+      case .some(let error):
+        XCTAssertEqual(error.code, .tooManyWaiters)
+        XCTAssertNil(error.underlyingError)
       default:
         XCTFail("Expected ConnectionPoolError.tooManyWaiters(.none) but got \(error)")
       }
@@ -849,9 +853,10 @@ final class ConnectionPoolTests: GRPCTestCase {
     self.eventLoop.advanceTime(by: .seconds(1))
     for waiter in waiters {
       XCTAssertThrowsError(try waiter.wait()) { error in
-        switch error as? ConnectionPoolError {
-        case .some(.deadlineExceeded(.none)):
-          ()
+        switch error as? GRPCConnectionPoolError {
+        case .some(let error):
+          XCTAssertEqual(error.code, .deadlineExceeded)
+          XCTAssertNil(error.underlyingError)
         default:
           XCTFail("Expected ConnectionPoolError.deadlineExceeded(.none) but got \(error)")
         }
@@ -869,7 +874,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNil(waiter._scheduledTimeout)
 
     waiter.scheduleTimeout(on: self.eventLoop) {
-      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: nil))
+      waiter.fail(GRPCConnectionPoolError.deadlineExceeded(connectionError: nil))
     }
 
     XCTAssertNotNil(waiter._scheduledTimeout)
@@ -1045,6 +1050,25 @@ final class ConnectionPoolTests: GRPCTestCase {
       }
     }
   }
+
+  func testConnectionPoolErrorDescription() {
+    var error = GRPCConnectionPoolError(code: .deadlineExceeded)
+    XCTAssertEqual(String(describing: error), "deadlineExceeded")
+    error.code = .shutdown
+    XCTAssertEqual(String(describing: error), "shutdown")
+    error.code = .tooManyWaiters
+    XCTAssertEqual(String(describing: error), "tooManyWaiters")
+
+    struct DummyError: Error {}
+    error.underlyingError = DummyError()
+    XCTAssertEqual(String(describing: error), "tooManyWaiters (DummyError())")
+  }
+
+  func testConnectionPoolErrorCodeEquality() {
+    let error = GRPCConnectionPoolError(code: .deadlineExceeded)
+    XCTAssertEqual(error.code, .deadlineExceeded)
+    XCTAssertNotEqual(error.code, .shutdown)
+  }
 }
 
 extension ConnectionPool {
@@ -1216,31 +1240,16 @@ internal struct HookedStreamLender: StreamLender {
   }
 }
 
-extension Optional where Wrapped == ConnectionPoolError {
+extension Optional where Wrapped == GRPCConnectionPoolError {
   internal var isTooManyWaiters: Bool {
-    switch self {
-    case .some(.tooManyWaiters):
-      return true
-    case .some(.deadlineExceeded), .some(.shutdown), .none:
-      return false
-    }
+    self?.code == .tooManyWaiters
   }
 
   internal var isDeadlineExceeded: Bool {
-    switch self {
-    case .some(.deadlineExceeded):
-      return true
-    case .some(.tooManyWaiters), .some(.shutdown), .none:
-      return false
-    }
+    self?.code == .deadlineExceeded
   }
 
   internal var isShutdown: Bool {
-    switch self {
-    case .some(.shutdown):
-      return true
-    case .some(.tooManyWaiters), .some(.deadlineExceeded), .none:
-      return false
-    }
+    self?.code == .shutdown
   }
 }
