@@ -255,17 +255,19 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     code: GRPCStatus.Code,
     message: String
   ) -> Reflection_ServerReflectionResponse {
-    let errorResponse = Reflection_ErrorResponse.with {
-      $0.errorCode = Int32(code.rawValue)
-      $0.errorMessage = message
-    }
-    return Reflection_ServerReflectionResponse(
-      request: request,
-      errorResponse: errorResponse
+      let errorResponse = Reflection_ErrorResponse.with {
+          $0.errorCode = Int32(code.rawValue)
+          $0.errorMessage = message
+      }
+      return Reflection_ServerReflectionResponse(
+        request: request,
+        errorResponse: errorResponse
+      )
+  }
+      
   internal func findExtensionsFieldNumbersOfType(
     named typeName: String,
-    request: Reflection_ServerReflectionRequest
-  ) throws -> Reflection_ServerReflectionResponse {
+    request: Reflection_ServerReflectionRequest) throws -> Reflection_ServerReflectionResponse {
     let fieldNumbers = try self.protoRegistry.extensionsFieldNumbersOfType(named: typeName)
     return Reflection_ServerReflectionResponse(
       request: request,
@@ -356,7 +358,7 @@ extension Reflection_ServerReflectionResponse {
   ) {
     self = .with {
       $0.validHost = request.host
-      $0.originalResponse = request
+      $0.originalRequest = request
       $0.errorResponse = errorResponse
     }
   }
@@ -368,7 +370,7 @@ init(
     self = .with {
       $0.validHost = request.host
       $0.originalRequest = request
-      $0.allExtensionNumberResponse = extensionNumberResponse
+      $0.allExtensionNumbersResponse = extensionNumberResponse
     }
   }
 
