@@ -56,8 +56,6 @@ internal struct ReflectionServiceData: Sendable {
   private var fileNameByExtensionDescriptor: [ExtensionDescriptor: String]
   // Stores the field numbers for each type that has extensions.
   private var fieldNumbersByType: [String: [Int32]]
-  // Stores all the messageTypeNames from the protos.
-  private var messageTypeNames: [String]
 
   internal init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.serviceNames = []
@@ -65,7 +63,6 @@ internal struct ReflectionServiceData: Sendable {
     self.fileNameBySymbol = [:]
     self.fileNameByExtensionDescriptor = [:]
     self.fieldNumbersByType = [:]
-    self.messageTypeNames = []
 
     for fileDescriptorProto in fileDescriptors {
       let serializedFileDescriptorProto: Data
@@ -100,6 +97,10 @@ internal struct ReflectionServiceData: Sendable {
         }
       }
 
+      for typeName in fileDescriptorProto.qualifiedMessageTypes {
+        self.fieldNumbersByType[typeName] = []
+      }
+
       // Populating the <extension descriptor, file name> dictionary and the <typeName, [FieldNumber]> one.
       for `extension` in fileDescriptorProto.extension {
         let typeName = String(`extension`.extendee.drop(while: { $0 == "." }))
@@ -123,10 +124,6 @@ internal struct ReflectionServiceData: Sendable {
         }
         self.fieldNumbersByType[typeName, default: []].append(`extension`.number)
       }
-      // Populating messageTypeNames array.
-      self.messageTypeNames.append(
-        contentsOf: fileDescriptorProto.qualifiedMessageTypes
-      )
     }
   }
 
@@ -172,22 +169,15 @@ internal struct ReflectionServiceData: Sendable {
     return self.fileNameByExtensionDescriptor[key]
   }
 
-  // Returns nil if the type has no extensions or if it doesn't exist.
+  // Returns nil if the type has no extensions.
   internal func extensionsFieldNumbersOfType(named typeName: String) throws -> [Int32] {
-    if let fieldNumbers = self.fieldNumbersByType[typeName] {
-      return fieldNumbers
-    }
-    guard self.containsFullyQualifiedMessageType(name: typeName) else {
+    guard let fieldNumbers = self.fieldNumbersByType[typeName] else {
       throw GRPCStatus(
         code: .invalidArgument,
         message: "The provided type is invalid."
       )
     }
-    return []
-  }
-
-  internal func containsFullyQualifiedMessageType(name typeName: String) -> Bool {
-    return self.messageTypeNames.contains(typeName)
+    return fieldNumbers
   }
 }
 

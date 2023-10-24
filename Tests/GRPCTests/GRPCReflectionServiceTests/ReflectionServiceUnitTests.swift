@@ -392,23 +392,6 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     }
   }
 
-  // Testing the containsFullyQualifiedMessageType() method.
-
-  func testContainsMessageType() throws {
-    let protos = makeProtosWithDependencies()
-    let registry = try ReflectionServiceData(fileDescriptors: protos)
-    for proto in protos {
-      for messageType in proto.qualifiedMessageTypes {
-        XCTAssertTrue(registry.containsFullyQualifiedMessageType(name: messageType))
-      }
-    }
-
-    // Invalid type name.
-    XCTAssertFalse(
-      registry.containsFullyQualifiedMessageType(name: "packagebar1.invalidMessageType")
-    )
-  }
-
   // Testing the extensionsFieldNumbersOfType() method.
 
   func testExtensionsFieldNumbersOfType() throws {
@@ -444,9 +427,6 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       named: "packagebar1.noExtensionMessage"
     )
     XCTAssertEqual(extensionNumbers, [])
-    XCTAssertTrue(
-      registry.containsFullyQualifiedMessageType(name: "packagebar1.noExtensionMessage")
-    )
   }
 
   func testExtensionsFieldNumbersOfTypeInvalidTypeName() throws {
