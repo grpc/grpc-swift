@@ -118,7 +118,7 @@ internal struct ReflectionServiceData: Sendable {
 
   internal func serialisedFileDescriptorProtosForDependenciesOfFile(
     named fileName: String
-  ) throws -> [Data] {
+  ) -> Result<[Data], GRPCStatus> {
     var toVisit = Deque<String>()
     var visited = Set<String>()
     var serializedFileDescriptorProtos: [Data] = []
@@ -136,14 +136,15 @@ internal struct ReflectionServiceData: Sendable {
         let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
         serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
       } else {
-        throw GRPCStatus(
+        let gRPCStatus = GRPCStatus(
           code: .notFound,
           message: "The provided file or a dependency of the provided file could not be found."
         )
+        return .failure(gRPCStatus)
       }
       visited.insert(currentFileName)
     }
-    return serializedFileDescriptorProtos
+    return .success(serializedFileDescriptorProtos)
   }
 
   internal func nameOfFileContainingSymbol(named symbolName: String) -> String? {
@@ -175,10 +176,8 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   ) throws -> Reflection_ServerReflectionResponse {
     return Reflection_ServerReflectionResponse(
       request: request,
-      fileDescriptorResponse: try .with {
-        $0.fileDescriptorProto = try self.protoRegistry
-          .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
-      }
+      result: self.protoRegistry
+        .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
     )
   }
 
@@ -220,12 +219,28 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         fieldNumber: extensionRequest.extensionNumber
       )
     else {
-      throw GRPCStatus(
+      return createErrorResponse(
+        request: request,
         code: .notFound,
         message: "The provided extension could not be found."
       )
     }
     return try self.findFileByFileName(fileName, request: request)
+  }
+
+  internal func createErrorResponse(
+    request: Reflection_ServerReflectionRequest,
+    code: GRPCStatus.Code,
+    message: String
+  ) -> Reflection_ServerReflectionResponse {
+    let errorResponse = Reflection_ErrorResponse.with {
+      $0.errorCode = Int32(code.rawValue)
+      $0.errorMessage = message
+    }
+    return Reflection_ServerReflectionResponse(
+      request: request,
+      errorResponse: errorResponse
+    )
   }
 
   internal func serverReflectionInfo(
@@ -261,7 +276,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         try await responseStream.send(response)
 
       default:
-        throw GRPCStatus(code: .unimplemented)
+        let response = self.createErrorResponse(
+          request: request,
+          code: .unimplemented,
+          message: "The request is not implemented."
+        )
+        try await responseStream.send(response)
       }
     }
   }
@@ -287,6 +307,42 @@ extension Reflection_ServerReflectionResponse {
       $0.validHost = request.host
       $0.originalRequest = request
       $0.listServicesResponse = listServicesResponse
+    }
+  }
+
+  init(
+    request: Reflection_ServerReflectionRequest,
+    errorResponse: Reflection_ErrorResponse
+  ) {
+    self = .with {
+      $0.validHost = request.host
+      $0.originalRequest = request
+      $0.errorResponse = errorResponse
+    }
+  }
+
+  init(
+    request: Reflection_ServerReflectionRequest,
+    result: Result<[Data], GRPCStatus>
+  ) {
+    switch result {
+    case .success(let dataResponse):
+      self = .with {
+        $0.validHost = request.host
+        $0.originalRequest = request
+        $0.fileDescriptorResponse = Reflection_FileDescriptorResponse.with {
+          $0.fileDescriptorProto = dataResponse
+        }
+      }
+    case .failure(let gRPCStatus):
+      self = .with {
+        $0.validHost = request.host
+        $0.originalRequest = request
+        $0.errorResponse = Reflection_ErrorResponse.with {
+          $0.errorCode = Int32(gRPCStatus.code.rawValue)
+          $0.errorMessage = gRPCStatus.message ?? ""
+        }
+      }
     }
   }
 }
