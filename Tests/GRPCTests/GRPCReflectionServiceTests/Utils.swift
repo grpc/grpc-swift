@@ -18,6 +18,23 @@ import Foundation
 import GRPC
 import SwiftProtobuf
 
+internal func makeExtensions(
+  forType typeName: String,
+  number: Int
+) -> [Google_Protobuf_FieldDescriptorProto] {
+  var extensions: [Google_Protobuf_FieldDescriptorProto] = []
+  for id in 1 ... number {
+    extensions.append(
+      Google_Protobuf_FieldDescriptorProto.with {
+        $0.name = "extension" + typeName + "-" + String(id)
+        $0.extendee = typeName
+        $0.number = Int32(id)
+      }
+    )
+  }
+  return extensions
+}
+
 internal func generateFileDescriptorProto(
   fileName name: String,
   suffix: String
@@ -32,11 +49,11 @@ internal func generateFileDescriptorProto(
     ]
   }
 
-  let inputMessageExtension = Google_Protobuf_FieldDescriptorProto.with {
-    $0.name = "extensionInputMessage" + suffix
-    $0.extendee = "inputMessage" + suffix
-    $0.number = 2
-  }
+  let packageName = "package" + name + suffix
+  let inputMessageExtensions = makeExtensions(
+    forType: "." + packageName + "." + "inputMessage" + suffix,
+    number: 5
+  )
 
   let outputMessage = Google_Protobuf_DescriptorProto.with {
     $0.name = "outputMessage" + suffix
@@ -77,7 +94,7 @@ internal func generateFileDescriptorProto(
     $0.package = "package" + name + suffix
     $0.messageType = [inputMessage, outputMessage]
     $0.enumType = [enumType]
-    $0.extension = [inputMessageExtension]
+    $0.extension = inputMessageExtensions
   }
 
   return fileDescriptorProto
@@ -109,6 +126,7 @@ internal func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescri
       fileName: "fooB",
       suffix: String(id) + "B"
     )
+
     let parent = protos.count > 1 ? protos.count - Int.random(in: 1 ..< 3) : protos.count - 1
     protos[parent].dependency.append(fileDescriptorProtoA.name)
     protos[parent].dependency.append(fileDescriptorProtoB.name)
