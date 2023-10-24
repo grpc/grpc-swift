@@ -21,6 +21,9 @@ This product uses scripts derived from SwiftNIO's integration testing
 framework: 'test_01_allocation_counts.sh', 'run-nio-alloc-counter-tests.sh' and
 'test_functions.sh'.
 
+It also uses derivations of SwiftNIO's lock 'NIOLock.swift' and locked value box
+'NIOLockedValueBox.swift'.
+
   * LICENSE (Apache License 2.0):
     * https://github.com/apple/swift-nio/blob/main/LICENSE.txt
   * HOMEPAGE:
