@@ -62,8 +62,20 @@ extension Server {
       return Server.start(configuration: self.configuration)
     }
 
+    public func bind(to socketAddress: SocketAddress) -> EventLoopFuture<Server> {
+      self.configuration.target = .socketAddress(socketAddress)
+      self.configuration.tlsConfiguration = self.maybeTLS
+      return Server.start(configuration: self.configuration)
+    }
+
     public func bind(vsockAddress: VsockAddress) -> EventLoopFuture<Server> {
       self.configuration.target = .vsockAddress(vsockAddress)
+      self.configuration.tlsConfiguration = self.maybeTLS
+      return Server.start(configuration: self.configuration)
+    }
+
+    public func bind(to target: BindTarget) -> EventLoopFuture<Server> {
+      self.configuration.target = target
       self.configuration.tlsConfiguration = self.maybeTLS
       return Server.start(configuration: self.configuration)
     }
