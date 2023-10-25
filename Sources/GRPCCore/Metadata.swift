@@ -273,8 +273,12 @@ extension Metadata {
     public mutating func next() -> [UInt8]? {
       while let value = self.values.next() {
         switch value {
-        case .string:
-          continue
+        case .string(let stringValue):
+          do {
+            return try Base64.decode(string: stringValue)
+          } catch {
+            continue
+          }
         case .binary(let binaryValue):
           return binaryValue
         }

@@ -147,13 +147,13 @@ final class MetadataTests: XCTestCase {
     XCTAssertNil(stringIterator.next())
   }
 
-  func testBinaryValuesIteration() {
+  func testBinaryValuesIteration_InvalidBase64EncodedStrings() {
     let metadata: Metadata = [
-      "testKey-bin": "string1",
+      "testKey-bin": "invalidBase64-1",
       "testKey-bin": .binary(.init("data1".utf8)),
-      "testKey-bin": "string2",
+      "testKey-bin": "invalidBase64-2",
       "testKey-bin": .binary(.init("data2".utf8)),
-      "testKey-bin": "string3",
+      "testKey-bin": "invalidBase64-3",
       "testKey-bin": .binary(.init("data3".utf8)),
     ]
     XCTAssertEqual(metadata.count, 6)
@@ -162,6 +162,28 @@ final class MetadataTests: XCTestCase {
     var binaryIterator = binarySequence.makeIterator()
     XCTAssertEqual(binaryIterator.next(), Array("data1".utf8))
     XCTAssertEqual(binaryIterator.next(), Array("data2".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("data3".utf8))
+    XCTAssertNil(binaryIterator.next())
+  }
+
+  func testBinaryValuesIteration_ValidBase64EncodedStrings() {
+    let metadata: Metadata = [
+      "testKey-bin": "c3RyaW5nMQ==",
+      "testKey-bin": .binary(.init("data1".utf8)),
+      "testKey-bin": "c3RyaW5nMg==",
+      "testKey-bin": .binary(.init("data2".utf8)),
+      "testKey-bin": "c3RyaW5nMw==",
+      "testKey-bin": .binary(.init("data3".utf8)),
+    ]
+    XCTAssertEqual(metadata.count, 6)
+
+    let binarySequence = metadata[binaryValues: "testKey-bin"]
+    var binaryIterator = binarySequence.makeIterator()
+    XCTAssertEqual(binaryIterator.next(), Array("string1".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("data1".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("string2".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("data2".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("string3".utf8))
     XCTAssertEqual(binaryIterator.next(), Array("data3".utf8))
     XCTAssertNil(binaryIterator.next())
   }
