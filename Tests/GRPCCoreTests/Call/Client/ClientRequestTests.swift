@@ -19,13 +19,10 @@ import XCTest
 final class ClientRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
     let (messages, continuation) = AsyncStream.makeStream(of: String.self)
-    let single = ClientRequest.Single(
-      message: "foo",
-      metadata: ["bar": Metadata.MetadataValue.string("baz")]
-    )
+    let single = ClientRequest.Single(message: "foo", metadata: ["bar": "baz"])
     let stream = ClientRequest.Stream(single: single)
 
-    XCTAssertEqual(stream.metadata, ["bar": Metadata.MetadataValue.string("baz")])
+    XCTAssertEqual(stream.metadata, ["bar": "baz"])
     try await stream.producer(.gathering(into: continuation))
     continuation.finish()
     let collected = try await messages.collect()

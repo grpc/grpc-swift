@@ -20,18 +20,15 @@ final class ServerResponseTests: XCTestCase {
   func testSingleConvenienceInit() {
     var response = ServerResponse.Single(
       message: "message",
-      metadata: ["metadata": Metadata.MetadataValue.string("initial")],
-      trailingMetadata: ["metadata": Metadata.MetadataValue.string("trailing")]
+      metadata: ["metadata": "initial"],
+      trailingMetadata: ["metadata": "trailing"]
     )
 
     switch response.accepted {
     case .success(let contents):
       XCTAssertEqual(contents.message, "message")
-      XCTAssertEqual(contents.metadata, ["metadata": Metadata.MetadataValue.string("initial")])
-      XCTAssertEqual(
-        contents.trailingMetadata,
-        ["metadata": Metadata.MetadataValue.string("trailing")]
-      )
+      XCTAssertEqual(contents.metadata, ["metadata": "initial"])
+      XCTAssertEqual(contents.trailingMetadata, ["metadata": "trailing"])
     case .failure:
       XCTFail("Unexpected error")
     }
@@ -47,19 +44,16 @@ final class ServerResponseTests: XCTestCase {
   }
 
   func testStreamConvenienceInit() async throws {
-    var response = ServerResponse.Stream(
-      of: String.self,
-      metadata: ["metadata": Metadata.MetadataValue.string("initial")]
-    ) { _ in
+    var response = ServerResponse.Stream(of: String.self, metadata: ["metadata": "initial"]) { _ in
       // Empty body.
-      return ["metadata": Metadata.MetadataValue.string("trailing")]
+      return ["metadata": "trailing"]
     }
 
     switch response.accepted {
     case .success(let contents):
-      XCTAssertEqual(contents.metadata, ["metadata": Metadata.MetadataValue.string("initial")])
+      XCTAssertEqual(contents.metadata, ["metadata": "initial"])
       let trailingMetadata = try await contents.producer(.failTestOnWrite())
-      XCTAssertEqual(trailingMetadata, ["metadata": Metadata.MetadataValue.string("trailing")])
+      XCTAssertEqual(trailingMetadata, ["metadata": "trailing"])
     case .failure:
       XCTFail("Unexpected error")
     }
@@ -77,8 +71,8 @@ final class ServerResponseTests: XCTestCase {
   func testSingleToStreamConversionForSuccessfulResponse() async throws {
     let single = ServerResponse.Single(
       message: "foo",
-      metadata: ["metadata": Metadata.MetadataValue.string("initial")],
-      trailingMetadata: ["metadata": Metadata.MetadataValue.string("trailing")]
+      metadata: ["metadata": "initial"],
+      trailingMetadata: ["metadata": "trailing"]
     )
 
     let stream = ServerResponse.Stream(single: single)
@@ -93,10 +87,10 @@ final class ServerResponseTests: XCTestCase {
       throw error
     }
 
-    XCTAssertEqual(stream.metadata, ["metadata": Metadata.MetadataValue.string("initial")])
+    XCTAssertEqual(stream.metadata, ["metadata": "initial"])
     let collected = try await messages.collect()
     XCTAssertEqual(collected, ["foo"])
-    XCTAssertEqual(trailingMetadata, ["metadata": Metadata.MetadataValue.string("trailing")])
+    XCTAssertEqual(trailingMetadata, ["metadata": "trailing"])
   }
 
   func testSingleToStreamConversionForFailedResponse() async throws {

@@ -13,79 +13,87 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 import GRPCCore
 import XCTest
 
 final class MetadataTests: XCTestCase {
   func testAddStringValue() {
     var metadata = Metadata()
-    XCTAssertEqual(metadata.count, 0)
+    XCTAssertTrue(metadata.isEmpty)
 
-    metadata.add(key: "testString", stringValue: "testValue")
+    metadata.addString("testValue", forKey: "testString")
     XCTAssertEqual(metadata.count, 1)
 
-    var iterator = metadata[keyForStringValues: "testString"]
+    let sequence = metadata[stringValues: "testString"]
+    var iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), "testValue")
     XCTAssertNil(iterator.next())
   }
 
   func testAddBinaryValue() {
     var metadata = Metadata()
-    XCTAssertEqual(metadata.count, 0)
+    XCTAssertTrue(metadata.isEmpty)
 
-    metadata.add(key: "testBinary-bin", binaryValue: Data("base64encodedString".utf8))
+    metadata.addBinary(Array("base64encodedString".utf8), forKey: "testBinary-bin")
     XCTAssertEqual(metadata.count, 1)
 
-    var iterator = metadata[keyForBinaryValues: "testBinary-bin"]
-    XCTAssertEqual(iterator.next(), Data("base64encodedString".utf8))
+    let sequence = metadata[binaryValues: "testBinary-bin"]
+    var iterator = sequence.makeIterator()
+    XCTAssertEqual(iterator.next(), Array("base64encodedString".utf8))
     XCTAssertNil(iterator.next())
   }
 
   func testCreateFromDictionaryLiteral() {
-    let metadata = Metadata(
-      dictionaryLiteral: ("testKey", .string("stringValue")),
-      ("testKey-bin", .binary(Data("base64encodedString".utf8)))
-    )
+    let metadata: Metadata = [
+      "testKey": "stringValue",
+      "testKey-bin": .binary(Array("base64encodedString".utf8)),
+    ]
     XCTAssertEqual(metadata.count, 2)
 
-    var stringIterator = metadata[keyForStringValues: "testKey"]
+    let stringSequence = metadata[stringValues: "testKey"]
+    var stringIterator = stringSequence.makeIterator()
     XCTAssertEqual(stringIterator.next(), "stringValue")
     XCTAssertNil(stringIterator.next())
 
-    var binaryIterator = metadata[keyForBinaryValues: "testKey-bin"]
-    XCTAssertEqual(binaryIterator.next(), Data("base64encodedString".utf8))
+    let binarySequence = metadata[binaryValues: "testKey-bin"]
+    var binaryIterator = binarySequence.makeIterator()
+    XCTAssertEqual(binaryIterator.next(), Array("base64encodedString".utf8))
     XCTAssertNil(binaryIterator.next())
   }
 
   func testReplaceOrAddValue() {
-    var metadata = Metadata(
-      dictionaryLiteral: ("testKey", .string("value1")),
-      ("testKey", .string("value2"))
-    )
+    var metadata: Metadata = [
+      "testKey": "value1",
+      "testKey": "value2",
+    ]
     XCTAssertEqual(metadata.count, 2)
 
-    var iterator = metadata[keyForStringValues: "testKey"]
+    var sequence = metadata[stringValues: "testKey"]
+    var iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), "value1")
     XCTAssertEqual(iterator.next(), "value2")
     XCTAssertNil(iterator.next())
 
-    metadata.replaceOrAdd(key: "testKey2", stringValue: "anotherValue")
+    metadata.replaceOrAddString("anotherValue", forKey: "testKey2")
     XCTAssertEqual(metadata.count, 3)
-    iterator = metadata[keyForStringValues: "testKey"]
+    sequence = metadata[stringValues: "testKey"]
+    iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), "value1")
     XCTAssertEqual(iterator.next(), "value2")
     XCTAssertNil(iterator.next())
-    iterator = metadata[keyForStringValues: "testKey2"]
+    sequence = metadata[stringValues: "testKey2"]
+    iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), "anotherValue")
     XCTAssertNil(iterator.next())
 
-    metadata.replaceOrAdd(key: "testKey", stringValue: "newValue")
+    metadata.replaceOrAddString("newValue", forKey: "testKey")
     XCTAssertEqual(metadata.count, 2)
-    iterator = metadata[keyForStringValues: "testKey"]
+    sequence = metadata[stringValues: "testKey"]
+    iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), "newValue")
     XCTAssertNil(iterator.next())
-    iterator = metadata[keyForStringValues: "testKey2"]
+    sequence = metadata[stringValues: "testKey2"]
+    iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), "anotherValue")
     XCTAssertNil(iterator.next())
   }
@@ -98,39 +106,63 @@ final class MetadataTests: XCTestCase {
     XCTAssertEqual(metadata.capacity, 10)
   }
 
-  func testStringIterator() {
-    let metadata = Metadata(
-      dictionaryLiteral: ("testKey-bin", .string("string1")),
-      ("testKey-bin", .binary(.init("data1".utf8))),
-      ("testKey-bin", .string("string2")),
-      ("testKey-bin", .binary(.init("data2".utf8))),
-      ("testKey-bin", .string("string3")),
-      ("testKey-bin", .binary(.init("data3".utf8)))
-    )
+  func testValuesIteration() {
+    let metadata: Metadata = [
+      "testKey-bin": "string1",
+      "testKey-bin": .binary(.init("data1".utf8)),
+      "testKey-bin": "string2",
+      "testKey-bin": .binary(.init("data2".utf8)),
+      "testKey-bin": "string3",
+      "testKey-bin": .binary(.init("data3".utf8)),
+    ]
     XCTAssertEqual(metadata.count, 6)
 
-    var stringIterator = metadata[keyForStringValues: "testKey-bin"]
+    let sequence = metadata[values: "testKey-bin"]
+    var iterator = sequence.makeIterator()
+    XCTAssertEqual(iterator.next(), .string("string1"))
+    XCTAssertEqual(iterator.next(), .binary(.init("data1".utf8)))
+    XCTAssertEqual(iterator.next(), .string("string2"))
+    XCTAssertEqual(iterator.next(), .binary(.init("data2".utf8)))
+    XCTAssertEqual(iterator.next(), .string("string3"))
+    XCTAssertEqual(iterator.next(), .binary(.init("data3".utf8)))
+    XCTAssertNil(iterator.next())
+  }
+
+  func testStringValuesIteration() {
+    let metadata: Metadata = [
+      "testKey-bin": "string1",
+      "testKey-bin": .binary(.init("data1".utf8)),
+      "testKey-bin": "string2",
+      "testKey-bin": .binary(.init("data2".utf8)),
+      "testKey-bin": "string3",
+      "testKey-bin": .binary(.init("data3".utf8)),
+    ]
+    XCTAssertEqual(metadata.count, 6)
+
+    let stringSequence = metadata[stringValues: "testKey-bin"]
+    var stringIterator = stringSequence.makeIterator()
     XCTAssertEqual(stringIterator.next(), "string1")
     XCTAssertEqual(stringIterator.next(), "string2")
     XCTAssertEqual(stringIterator.next(), "string3")
     XCTAssertNil(stringIterator.next())
   }
 
-  func testBinaryIterator() {
-    let metadata = Metadata(
-      dictionaryLiteral: ("testKey-bin", .string("string1")),
-      ("testKey-bin", .binary(.init("data1".utf8))),
-      ("testKey-bin", .string("string2")),
-      ("testKey-bin", .binary(.init("data2".utf8))),
-      ("testKey-bin", .string("string3")),
-      ("testKey-bin", .binary(.init("data3".utf8)))
-    )
+  func testBinaryValuesIteration() {
+    let metadata: Metadata = [
+      "testKey-bin": "string1",
+      "testKey-bin": .binary(.init("data1".utf8)),
+      "testKey-bin": "string2",
+      "testKey-bin": .binary(.init("data2".utf8)),
+      "testKey-bin": "string3",
+      "testKey-bin": .binary(.init("data3".utf8)),
+    ]
     XCTAssertEqual(metadata.count, 6)
 
-    var binaryIterator = metadata[keyForBinaryValues: "testKey-bin"]
-    XCTAssertEqual(binaryIterator.next(), Data("data1".utf8))
-    XCTAssertEqual(binaryIterator.next(), Data("data2".utf8))
-    XCTAssertEqual(binaryIterator.next(), Data("data3".utf8))
+    let binarySequence = metadata[binaryValues: "testKey-bin"]
+    var binaryIterator = binarySequence.makeIterator()
+    XCTAssertEqual(binaryIterator.next(), Array("data1".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("data2".utf8))
+    XCTAssertEqual(binaryIterator.next(), Array("data3".utf8))
     XCTAssertNil(binaryIterator.next())
   }
 }

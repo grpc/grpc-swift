@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import Foundation
-
 /// A collection of metadata key-value pairs, found in RPC streams.
 /// A key can have multiple values associated to it.
 /// Values can be either strings or binary data, in the form of `Data`.
@@ -23,22 +21,22 @@ import Foundation
 public struct Metadata: Sendable, Hashable {
 
   /// A metadata value. It can either be a simple string, or binary data.
-  public enum MetadataValue: Sendable, Hashable {
+  public enum Value: Sendable, Hashable {
     case string(String)
-    case binary(Data)
+    case binary([UInt8])
   }
 
   /// A metadata key-value pair.
-  public struct MetadataKeyValue: Sendable, Hashable {
+  internal struct KeyValuePair: Sendable, Hashable {
     internal let key: String
-    internal let value: MetadataValue
+    internal let value: Value
 
     /// Constructor for a metadata key-value pair.
     /// - Parameters:
     ///   - key: The key for the key-value pair.
     ///   - value: The value to be associated to the given key. If it's a binary value, then the associated
     ///   key must end in `-bin`, otherwise, this method will produce an assertion failure.
-    init(key: String, value: MetadataValue) {
+    init(key: String, value: Value) {
       if case .binary = value {
         assert(key.hasSuffix("-bin"), "Keys for binary values must end in -bin")
       }
@@ -47,15 +45,9 @@ public struct Metadata: Sendable, Hashable {
     }
   }
 
-  private let lockedElements: LockedValueBox<[MetadataKeyValue]>
-  private var elements: [MetadataKeyValue] {
-    get {
-      self.lockedElements.withLockedValue { $0 }
-    }
-    set {
-      self.lockedElements.withLockedValue { $0 = newValue }
-    }
-  }
+  public typealias KeyValue = (key: String, value: Value)
+
+  private var elements: [KeyValuePair]
 
   /// The Metadata collection's capacity.
   public var capacity: Int {
@@ -64,15 +56,7 @@ public struct Metadata: Sendable, Hashable {
 
   /// Initialize an empty Metadata collection.
   public init() {
-    self.lockedElements = .init([])
-  }
-
-  public static func == (lhs: Metadata, rhs: Metadata) -> Bool {
-    lhs.elements == rhs.elements
-  }
-
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(self.elements)
+    self.elements = []
   }
 
   /// Reserve the specified minimum capacity in the collection.
@@ -83,76 +67,70 @@ public struct Metadata: Sendable, Hashable {
 
   /// Add a new key-value pair, where the value is a string.
   /// - Parameters:
-  ///   - key: The key to be associated with the given value.
   ///   - stringValue: The string value to be associated with the given key.
-  public mutating func add(key: String, stringValue: String) {
-    self.add(key: key, value: .string(stringValue))
+  ///   - key: The key to be associated with the given value.
+  public mutating func addString(_ stringValue: String, forKey key: String) {
+    self.addValue(.string(stringValue), forKey: key)
   }
 
   /// Add a new key-value pair, where the value is binary data, in the form of `Data`.
   /// - Parameters:
-  ///   - key: The key to be associated with the given value. Must end in `-bin`.
   ///   - binaryValue: The `Data` to be associated with the given key.
-  public mutating func add(key: String, binaryValue: Data) {
-    self.add(key: key, value: .binary(binaryValue))
+  ///   - key: The key to be associated with the given value. Must end in `-bin`.
+  public mutating func addBinary(_ binaryValue: [UInt8], forKey key: String) {
+    self.addValue(.binary(binaryValue), forKey: key)
   }
 
   /// Add a new key-value pair.
   /// - Parameters:
+  ///   - value: The ``Value`` to be associated with the given key.
   ///   - key: The key to be associated with the given value. If value is binary, it must end in `-bin`.
-  ///   - value: The ``MetadataValue`` to be associated with the given key.
-  public mutating func add(key: String, value: MetadataValue) {
+  public mutating func addValue(_ value: Value, forKey key: String) {
     self.elements.append(.init(key: key, value: value))
+  }
+
+  /// Removes all values associated with the given key.
+  /// - Parameter key: The key for which all values should be removed.
+  public mutating func removeAllValues(forKey key: String) {
+    elements.removeAll { metadataKeyValue in
+      metadataKeyValue.key == key
+    }
   }
 
   /// Adds a key-value pair to the collection, where the value is a string.
   /// If there are pairs already associated to the given key, they will all be removed first, and the new pair
   /// will be added. If no pairs are present with the given key, a new one will be added.
   /// - Parameters:
-  ///   - key: The key to be associated with the given value.
   ///   - stringValue: The string value to be associated with the given key.
-  public mutating func replaceOrAdd(key: String, stringValue: String) {
-    self.lockedElements.withLockedValue { elements in
-      elements.removeAll { metadataKeyValue in
-        metadataKeyValue.key == key
-      }
-      elements.append(.init(key: key, value: .string(stringValue)))
-    }
+  ///   - key: The key to be associated with the given value.
+  public mutating func replaceOrAddString(_ stringValue: String, forKey key: String) {
+    self.replaceOrAddValue(.string(stringValue), forKey: key)
   }
 
   /// Adds a key-value pair to the collection, where the value is `Data`.
   /// If there are pairs already associated to the given key, they will all be removed first, and the new pair
   /// will be added. If no pairs are present with the given key, a new one will be added.
   /// - Parameters:
-  ///   - key: The key to be associated with the given value. Must end in `-bin`.
   ///   - binaryValue: The `Data` to be associated with the given key.
-  public mutating func replaceOrAdd(key: String, binaryValue: Data) {
-    self.lockedElements.withLockedValue { elements in
-      elements.removeAll { metadataKeyValue in
-        metadataKeyValue.key == key
-      }
-      elements.append(.init(key: key, value: .binary(binaryValue)))
-    }
+  ///   - key: The key to be associated with the given value. Must end in `-bin`.
+  public mutating func replaceOrAddBinary(_ binaryValue: [UInt8], forKey key: String) {
+    self.replaceOrAddValue(.binary(binaryValue), forKey: key)
   }
 
   /// Adds a key-value pair to the collection.
   /// If there are pairs already associated to the given key, they will all be removed first, and the new pair
   /// will be added. If no pairs are present with the given key, a new one will be added.
   /// - Parameters:
-  ///   - key: The key to be associated with the given value. If value is binary, it must end in `-bin`.
   ///   - value: The ``MetadataValue`` to be associated with the given key.
-  public mutating func replaceOrAdd(key: String, value: MetadataValue) {
-    self.lockedElements.withLockedValue { elements in
-      elements.removeAll { metadataKeyValue in
-        metadataKeyValue.key == key
-      }
-      elements.append(.init(key: key, value: value))
-    }
+  ///   - key: The key to be associated with the given value. If value is binary, it must end in `-bin`.
+  public mutating func replaceOrAddValue(_ value: Value, forKey key: String) {
+    self.removeAllValues(forKey: key)
+    elements.append(.init(key: key, value: value))
   }
 }
 
 extension Metadata: RandomAccessCollection {
-  public typealias Element = MetadataKeyValue
+  public typealias Element = KeyValue
 
   public struct Index: Comparable, Sendable {
     @usableFromInline
@@ -186,7 +164,52 @@ extension Metadata: RandomAccessCollection {
   }
 
   public subscript(position: Index) -> Element {
-    self.elements[position._base]
+    let keyValuePair = self.elements[position._base]
+    return (key: keyValuePair.key, value: keyValuePair.value)
+  }
+}
+
+extension Metadata {
+
+  /// An iterator for all metadata ``Value``s associated with a given key.
+  public struct ValuesIterator: IteratorProtocol {
+    private var metadataIterator: Metadata.Iterator
+    private let key: String
+
+    init(forKey key: String, metadata: Metadata) {
+      self.metadataIterator = metadata.makeIterator()
+      self.key = key
+    }
+
+    public mutating func next() -> Value? {
+      while let nextKeyValue = self.metadataIterator.next() {
+        if nextKeyValue.key == self.key {
+          return nextKeyValue.value
+        }
+      }
+      return nil
+    }
+  }
+
+  public struct Values: Sequence {
+    private let key: String
+    private let metadata: Metadata
+
+    internal init(key: String, metadata: Metadata) {
+      self.key = key
+      self.metadata = metadata
+    }
+
+    public func makeIterator() -> ValuesIterator {
+      ValuesIterator(forKey: self.key, metadata: self.metadata)
+    }
+  }
+
+  /// A subscript to get a ``Values`` sequence for a given key.
+  /// - Parameter key: The returned sequence will only return values for this key.
+  /// - Returns: A sequence containing all values for the given key.
+  public subscript(values key: String) -> Values {
+    Values(key: key, metadata: self)
   }
 }
 
@@ -195,39 +218,44 @@ extension Metadata {
   /// An iterator for all string values associated with a given key.
   /// This iterator will only return values originally stored as strings for a given key.
   public struct StringValuesIterator: IteratorProtocol {
-    private var metadataIterator: Metadata.Iterator
-    private let key: String
+    private var values: ValuesIterator
 
-    init(forKey key: String, metadata: Metadata) {
-      self.metadataIterator = metadata.makeIterator()
-      self.key = key
+    init(values: Values) {
+      self.values = values.makeIterator()
     }
 
     public mutating func next() -> String? {
-      while let nextKeyValue = self.metadataIterator.next() {
-        if nextKeyValue.key == self.key {
-          switch nextKeyValue.value {
-          case .string(let stringValue):
-            return stringValue
-          case .binary:
-            continue
-          }
+      while let value = self.values.next() {
+        switch value {
+        case .string(let stringValue):
+          return stringValue
+        case .binary:
+          continue
         }
       }
       return nil
     }
   }
 
-  /// Create a new ``StringValuesIterator`` that iterates over the string values for the given key.
-  /// - Parameter key: The key over whose string values this iterator will iterate.
-  /// - Returns: An iterator to iterate over string values for the given key.
-  public func makeStringValuesIterator(forKey key: String) -> StringValuesIterator {
-    StringValuesIterator(forKey: key, metadata: self)
+  public struct StringValues: Sequence {
+    private let key: String
+    private let metadata: Metadata
+
+    internal init(key: String, metadata: Metadata) {
+      self.key = key
+      self.metadata = metadata
+    }
+
+    public func makeIterator() -> StringValuesIterator {
+      StringValuesIterator(values: Values(key: self.key, metadata: self.metadata))
+    }
   }
 
-  /// A subscript to get a ``StringValuesIterator`` for a given key.
-  public subscript(keyForStringValues key: String) -> StringValuesIterator {
-    StringValuesIterator(forKey: key, metadata: self)
+  /// A subscript to get a ``StringValues`` sequence for a given key.
+  /// - Parameter key: The returned sequence will only return string values for this key.
+  /// - Returns: A sequence containing string values for the given key.
+  public subscript(stringValues key: String) -> StringValues {
+    StringValues(key: key, metadata: self)
   }
 }
 
@@ -236,45 +264,75 @@ extension Metadata {
   /// An iterator for all binary data values associated with a given key.
   /// This iterator will only return values originally stored as binary data for a given key.
   public struct BinaryValuesIterator: IteratorProtocol {
-    private var metadataIterator: Metadata.Iterator
-    private let key: String
+    private var values: ValuesIterator
 
-    init(forKey key: String, metadata: Metadata) {
-      self.metadataIterator = metadata.makeIterator()
-      self.key = key
+    init(values: Values) {
+      self.values = values.makeIterator()
     }
 
-    public mutating func next() -> Data? {
-      while let nextKeyValue = self.metadataIterator.next() {
-        if nextKeyValue.key == self.key {
-          switch nextKeyValue.value {
-          case .string:
-            continue
-          case .binary(let binaryValue):
-            return binaryValue
-          }
+    public mutating func next() -> [UInt8]? {
+      while let value = self.values.next() {
+        switch value {
+        case .string:
+          continue
+        case .binary(let binaryValue):
+          return binaryValue
         }
       }
       return nil
     }
   }
 
-  /// Create a new ``BinaryValuesIterator`` that iterates over the `Data` values for the given key.
-  /// - Parameter key: The key over whose `Data` values this iterator will iterate.
-  /// - Returns: An iterator to iterate over `Data` values for the given key.
-  public func makeBinaryValuesIterator(forKey key: String) -> BinaryValuesIterator {
-    BinaryValuesIterator(forKey: key, metadata: self)
+  public struct BinaryValues: Sequence {
+    private let key: String
+    private let metadata: Metadata
+
+    internal init(key: String, metadata: Metadata) {
+      self.key = key
+      self.metadata = metadata
+    }
+
+    public func makeIterator() -> BinaryValuesIterator {
+      BinaryValuesIterator(values: Values(key: self.key, metadata: self.metadata))
+    }
   }
 
-  /// A subscript to get a ``BinaryValuesIterator`` for a given key.
-  public subscript(keyForBinaryValues key: String) -> BinaryValuesIterator {
-    BinaryValuesIterator(forKey: key, metadata: self)
+  /// A subscript to get a ``BinaryValues`` sequence for a given key.
+  /// - Parameter key: The returned sequence will only return binary (i.e. `[UInt8]`) values for this key.
+  /// - Returns: A sequence containing binary (i.e. `[UInt8]`) values for the given key.
+  public subscript(binaryValues key: String) -> BinaryValues {
+    BinaryValues(key: key, metadata: self)
   }
 }
 
 extension Metadata: ExpressibleByDictionaryLiteral {
-  public init(dictionaryLiteral elements: (String, MetadataValue)...) {
-    let elements = elements.map { MetadataKeyValue(key: $0, value: $1) }
-    self.lockedElements = .init(elements)
+  public init(dictionaryLiteral elements: (String, Value)...) {
+    self.elements = elements.map { KeyValuePair(key: $0, value: $1) }
+  }
+}
+
+extension Metadata: ExpressibleByArrayLiteral {
+  public init(arrayLiteral elements: (String, Value)...) {
+    self.elements = elements.map { KeyValuePair(key: $0, value: $1) }
+  }
+}
+
+extension Metadata.Value: ExpressibleByStringLiteral {
+  public init(stringLiteral value: StringLiteralType) {
+    self = .string(value)
+  }
+}
+
+extension Metadata.Value: ExpressibleByStringInterpolation {
+  public init(stringInterpolation: DefaultStringInterpolation) {
+    self = .string(String(stringInterpolation: stringInterpolation))
+  }
+}
+
+extension Metadata.Value: ExpressibleByArrayLiteral {
+  public typealias ArrayLiteralElement = UInt8
+
+  public init(arrayLiteral elements: ArrayLiteralElement...) {
+    self = .binary(elements)
   }
 }
