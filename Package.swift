@@ -47,6 +47,10 @@ let packageDependencies: [Package.Dependency] = [
     from: "1.4.0"
   ),
   .package(
+    url: "https://github.com/apple/swift-atomics.git",
+    from: "1.1.0"
+  ),
+  .package(
     url: "https://github.com/apple/swift-collections.git",
     from: "1.0.5"
   ),
@@ -125,6 +129,7 @@ extension Target.Dependency {
     package: "swift-protobuf"
   )
   static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
+  static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
 
   static let grpcCore: Self = .target(name: "GRPCCore")
 }
@@ -158,7 +163,8 @@ extension Target {
   static let grpcCore: Target = .target(
     name: "GRPCCore",
     dependencies: [
-      .dequeModule
+      .dequeModule,
+      .atomics,
     ],
     path: "Sources/GRPCCore"
   )
@@ -224,6 +230,7 @@ extension Target {
     dependencies: [
       .grpcCore,
       .dequeModule,
+      .atomics
     ]
   )
 
