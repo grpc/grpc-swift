@@ -117,38 +117,86 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testNameOfFileContainingSymbolEnum() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType2")
-    XCTAssertEqual(fileName, "bar2.proto")
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar2.enumType2"
+    )
+    switch nameOfFileContainingSymbolResult {
+    case .success(let fileName):
+      XCTAssertEqual(fileName, "bar2.proto")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 
   func testNameOfFileContainingSymbolMessage() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage1")
-    XCTAssertEqual(fileName, "bar1.proto")
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar1.inputMessage1"
+    )
+    switch nameOfFileContainingSymbolResult {
+    case .success(let fileName):
+      XCTAssertEqual(fileName, "bar1.proto")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 
   func testNameOfFileContainingSymbolService() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar3.service3")
-    XCTAssertEqual(fileName, "bar3.proto")
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar3.service3"
+    )
+    switch nameOfFileContainingSymbolResult {
+    case .success(let fileName):
+      XCTAssertEqual(fileName, "bar3.proto")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 
   func testNameOfFileContainingSymbolMethod() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
       named: "packagebar4.service4.testMethod4"
     )
-    XCTAssertEqual(fileName, "bar4.proto")
+    switch nameOfFileContainingSymbolResult {
+    case .success(let fileName):
+      XCTAssertEqual(fileName, "bar4.proto")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 
   func testNameOfFileContainingSymbolNonExistentSymbol() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
-    XCTAssertNil(fileName)
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar2.enumType3"
+    )
+    switch nameOfFileContainingSymbolResult {
+    case .success(_):
+      XCTFail("The result should have been a failure.")
+    case .failure(let gRPCStatus):
+      XCTAssertEqual(
+        gRPCStatus,
+        GRPCStatus(code: .notFound, message: "The provided symbol could not be found.")
+      )
+    }
   }
 
   // Testing the serializedFileDescriptorProto method in different cases.
@@ -330,7 +378,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
 
     switch serializedFileDescriptorProtosForDependenciesOfFileResult {
     case .success(_):
-      XCTFail("The result should be a failure.")
+      XCTFail("The result should have been a failure.")
     case .failure(let gRPCStatus):
       XCTAssertEqual(
         gRPCStatus,
@@ -350,7 +398,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       registry.serialisedFileDescriptorProtosForDependenciesOfFile(named: "bar1.proto")
     switch serializedFileDescriptorProtosForDependenciesOfFileResult {
     case .success(_):
-      XCTFail("The result should be a failure.")
+      XCTFail("The result should have been a failure.")
     case .failure(let gRPCStatus):
       XCTAssertEqual(
         gRPCStatus,
@@ -370,11 +418,19 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     for proto in protos {
       for `extension` in proto.extension {
         let typeName = String(`extension`.extendee.drop(while: { $0 == "." }))
-        let registryFileName = registry.nameOfFileContainingExtension(
+        let registryFileNameResult = registry.nameOfFileContainingExtension(
           extendeeName: typeName,
           fieldNumber: `extension`.number
         )
-        XCTAssertEqual(registryFileName, proto.name)
+        switch registryFileNameResult {
+        case .success(let registryFileName):
+          XCTAssertEqual(registryFileName, proto.name)
+        case .failure(let gRPCStatus):
+          XCTFail(
+            "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+              + (gRPCStatus.message ?? "empty") + "."
+          )
+        }
       }
     }
   }
@@ -382,21 +438,43 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testNameOfFileContainingExtensionsInvalidTypeName() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let registryFileName = registry.nameOfFileContainingExtension(
+    let registryFileNameResult = registry.nameOfFileContainingExtension(
       extendeeName: "InvalidType",
       fieldNumber: 2
     )
-    XCTAssertNil(registryFileName)
+    switch registryFileNameResult {
+    case .success(_):
+      XCTFail("The result should have been a failure.")
+    case .failure(let gRPCStatus):
+      XCTAssertEqual(
+        gRPCStatus,
+        GRPCStatus(
+          code: .notFound,
+          message: "The provided extension could not be found."
+        )
+      )
+    }
   }
 
   func testNameOfFileContainingExtensionsInvalidFieldNumber() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let registryFileName = registry.nameOfFileContainingExtension(
+    let registryFileNameResult = registry.nameOfFileContainingExtension(
       extendeeName: protos[0].extension[0].extendee,
       fieldNumber: 9
     )
-    XCTAssertNil(registryFileName)
+    switch registryFileNameResult {
+    case .success(_):
+      XCTFail("The result should have been a failure.")
+    case .failure(let gRPCStatus):
+      XCTAssertEqual(
+        gRPCStatus,
+        GRPCStatus(
+          code: .notFound,
+          message: "The provided extension could not be found."
+        )
+      )
+    }
   }
 
   func testNameOfFileContainingExtensionsDuplicatedExtensions() throws {
@@ -435,10 +513,19 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
       named: "packagebar1.inputMessage1"
     )
-    XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 120])
+    switch extensionsFieldNumbersOfTypeResult {
+    case .success((let typeName, let extensionsNumber)):
+      XCTAssertEqual(extensionsNumber, [1, 2, 3, 4, 5, 120])
+      XCTAssertEqual(typeName, "packagebar1.inputMessage1")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 
   func testExtensionsFieldNumbersOfTypeNoExtensionsType() throws {
@@ -455,22 +542,33 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
       named: "packagebar1.noExtensionMessage"
     )
-    XCTAssertEqual(extensionNumbers, [])
+    switch extensionsFieldNumbersOfTypeResult {
+    case .success((let typeName, let extensionsNumber)):
+      XCTAssertEqual(extensionsNumber, [])
+      XCTAssertEqual(typeName, "packagebar1.noExtensionMessage")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 
   func testExtensionsFieldNumbersOfTypeInvalidTypeName() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    XCTAssertThrowsError(
-      try registry.extensionsFieldNumbersOfType(
-        named: "packagebar1.invalidTypeMessage"
-      )
-    ) { error in
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.invalidTypeMessage"
+    )
+    switch extensionsFieldNumbersOfTypeResult {
+    case .success((_, _)):
+      XCTFail("The result should have been a failure.")
+    case .failure(let gRPCStatus):
       XCTAssertEqual(
-        error as? GRPCStatus,
+        gRPCStatus,
         GRPCStatus(
           code: .invalidArgument,
           message: "The provided type is invalid."
@@ -488,9 +586,18 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
       named: "packagebar1.inputMessage1"
     )
-    XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 130])
+    switch extensionsFieldNumbersOfTypeResult {
+    case .success((let typeName, let extensionsNumber)):
+      XCTAssertEqual(extensionsNumber, [1, 2, 3, 4, 5, 130])
+      XCTAssertEqual(typeName, "packagebar1.inputMessage1")
+    case .failure(let gRPCStatus):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
+          + (gRPCStatus.message ?? "empty") + "."
+      )
+    }
   }
 }
