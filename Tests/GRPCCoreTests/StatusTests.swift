@@ -50,6 +50,25 @@ final class StatusTests: XCTestCase {
     }
   }
 
+  func testStatusCodeFromErrorCode() throws {
+    XCTAssertEqual(Status.Code(RPCError.Code.cancelled), .cancelled)
+    XCTAssertEqual(Status.Code(RPCError.Code.unknown), .unknown)
+    XCTAssertEqual(Status.Code(RPCError.Code.invalidArgument), .invalidArgument)
+    XCTAssertEqual(Status.Code(RPCError.Code.deadlineExceeded), .deadlineExceeded)
+    XCTAssertEqual(Status.Code(RPCError.Code.notFound), .notFound)
+    XCTAssertEqual(Status.Code(RPCError.Code.alreadyExists), .alreadyExists)
+    XCTAssertEqual(Status.Code(RPCError.Code.permissionDenied), .permissionDenied)
+    XCTAssertEqual(Status.Code(RPCError.Code.resourceExhausted), .resourceExhausted)
+    XCTAssertEqual(Status.Code(RPCError.Code.failedPrecondition), .failedPrecondition)
+    XCTAssertEqual(Status.Code(RPCError.Code.aborted), .aborted)
+    XCTAssertEqual(Status.Code(RPCError.Code.outOfRange), .outOfRange)
+    XCTAssertEqual(Status.Code(RPCError.Code.unimplemented), .unimplemented)
+    XCTAssertEqual(Status.Code(RPCError.Code.internalError), .internalError)
+    XCTAssertEqual(Status.Code(RPCError.Code.unavailable), .unavailable)
+    XCTAssertEqual(Status.Code(RPCError.Code.dataLoss), .dataLoss)
+    XCTAssertEqual(Status.Code(RPCError.Code.unauthenticated), .unauthenticated)
+  }
+
   func testStatusCodeFromValidRawValue() {
     for (expected, rawValue) in Self.statusCodeRawValue {
       XCTAssertEqual(

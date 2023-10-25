@@ -61,6 +61,26 @@ final class RPCErrorTests: XCTestCase {
     XCTAssertEqual(error.metadata, [:])
   }
 
+  func testErrorCodeFromStatusCode() throws {
+    XCTAssertNil(RPCError.Code(Status.Code.ok))
+    XCTAssertEqual(RPCError.Code(Status.Code.cancelled), .cancelled)
+    XCTAssertEqual(RPCError.Code(Status.Code.unknown), .unknown)
+    XCTAssertEqual(RPCError.Code(Status.Code.invalidArgument), .invalidArgument)
+    XCTAssertEqual(RPCError.Code(Status.Code.deadlineExceeded), .deadlineExceeded)
+    XCTAssertEqual(RPCError.Code(Status.Code.notFound), .notFound)
+    XCTAssertEqual(RPCError.Code(Status.Code.alreadyExists), .alreadyExists)
+    XCTAssertEqual(RPCError.Code(Status.Code.permissionDenied), .permissionDenied)
+    XCTAssertEqual(RPCError.Code(Status.Code.resourceExhausted), .resourceExhausted)
+    XCTAssertEqual(RPCError.Code(Status.Code.failedPrecondition), .failedPrecondition)
+    XCTAssertEqual(RPCError.Code(Status.Code.aborted), .aborted)
+    XCTAssertEqual(RPCError.Code(Status.Code.outOfRange), .outOfRange)
+    XCTAssertEqual(RPCError.Code(Status.Code.unimplemented), .unimplemented)
+    XCTAssertEqual(RPCError.Code(Status.Code.internalError), .internalError)
+    XCTAssertEqual(RPCError.Code(Status.Code.unavailable), .unavailable)
+    XCTAssertEqual(RPCError.Code(Status.Code.dataLoss), .dataLoss)
+    XCTAssertEqual(RPCError.Code(Status.Code.unauthenticated), .unauthenticated)
+  }
+
   func testEquatableConformance() {
     XCTAssertEqual(
       RPCError(code: .cancelled, message: ""),
