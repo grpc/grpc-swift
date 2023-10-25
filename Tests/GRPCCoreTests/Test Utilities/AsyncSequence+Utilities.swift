@@ -33,4 +33,20 @@ extension AsyncStream {
     return (stream, continuation)
   }
 }
+
+extension AsyncThrowingStream {
+  static func makeStream(
+    of elementType: Element.Type = Element.self,
+    throwing failureType: Failure.Type = Failure.self,
+    bufferingPolicy limit: AsyncThrowingStream<Element, Failure>.Continuation.BufferingPolicy =
+      .unbounded
+  ) -> (
+    stream: AsyncThrowingStream<Element, Failure>,
+    continuation: AsyncThrowingStream<Element, Failure>.Continuation
+  ) where Failure == Error {
+    var continuation: AsyncThrowingStream<Element, Failure>.Continuation!
+    let stream = AsyncThrowingStream(bufferingPolicy: limit) { continuation = $0 }
+    return (stream, continuation!)
+  }
+}
 #endif

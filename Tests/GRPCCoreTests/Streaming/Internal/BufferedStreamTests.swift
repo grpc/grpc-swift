@@ -1102,29 +1102,3 @@ extension BufferedStream.Source.WriteResult {
   }
 }
 
-extension AsyncStream {
-  static func makeStream(
-    of elementType: Element.Type = Element.self,
-    bufferingPolicy limit: AsyncStream<Element>.Continuation.BufferingPolicy = .unbounded
-  ) -> (stream: AsyncStream<Element>, continuation: AsyncStream<Element>.Continuation) {
-    var continuation: AsyncStream<Element>.Continuation!
-    let stream = AsyncStream(bufferingPolicy: limit) { continuation = $0 }
-    return (stream, continuation!)
-  }
-}
-
-extension AsyncThrowingStream {
-  static func makeStream(
-    of elementType: Element.Type = Element.self,
-    throwing failureType: Failure.Type = Failure.self,
-    bufferingPolicy limit: AsyncThrowingStream<Element, Failure>.Continuation.BufferingPolicy =
-      .unbounded
-  ) -> (
-    stream: AsyncThrowingStream<Element, Failure>,
-    continuation: AsyncThrowingStream<Element, Failure>.Continuation
-  ) where Failure == Error {
-    var continuation: AsyncThrowingStream<Element, Failure>.Continuation!
-    let stream = AsyncThrowingStream(bufferingPolicy: limit) { continuation = $0 }
-    return (stream, continuation!)
-  }
-}
