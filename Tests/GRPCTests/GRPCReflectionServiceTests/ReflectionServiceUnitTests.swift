@@ -123,10 +123,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch nameOfFileContainingSymbolResult {
     case .success(let fileName):
       XCTAssertEqual(fileName, "bar2.proto")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -140,10 +140,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch nameOfFileContainingSymbolResult {
     case .success(let fileName):
       XCTAssertEqual(fileName, "bar1.proto")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -157,10 +157,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch nameOfFileContainingSymbolResult {
     case .success(let fileName):
       XCTAssertEqual(fileName, "bar3.proto")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -174,10 +174,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch nameOfFileContainingSymbolResult {
     case .success(let fileName):
       XCTAssertEqual(fileName, "bar4.proto")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -191,9 +191,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch nameOfFileContainingSymbolResult {
     case .success(_):
       XCTFail("The result should have been a failure.")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTAssertEqual(
-        gRPCStatus,
+        status,
         GRPCStatus(code: .notFound, message: "The provided symbol could not be found.")
       )
     }
@@ -249,10 +249,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         protos.removeAll { $0 == fileDescriptorProto }
       }
       XCTAssert(protos.isEmpty)
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -304,10 +304,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         protos.removeAll { $0 == fileDescriptorProto }
       }
       XCTAssert(protos.isEmpty)
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -362,10 +362,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         protos.removeAll { $0 == fileDescriptorProto }
       }
       XCTAssert(protos.isEmpty)
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -379,9 +379,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch serializedFileDescriptorProtosForDependenciesOfFileResult {
     case .success(_):
       XCTFail("The result should have been a failure.")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTAssertEqual(
-        gRPCStatus,
+        status,
         GRPCStatus(
           code: .notFound,
           message: "The provided file or a dependency of the provided file could not be found."
@@ -399,9 +399,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch serializedFileDescriptorProtosForDependenciesOfFileResult {
     case .success(_):
       XCTFail("The result should have been a failure.")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTAssertEqual(
-        gRPCStatus,
+        status,
         GRPCStatus(
           code: .notFound,
           message: "The provided file or a dependency of the provided file could not be found."
@@ -425,10 +425,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         switch registryFileNameResult {
         case .success(let registryFileName):
           XCTAssertEqual(registryFileName, proto.name)
-        case .failure(let gRPCStatus):
+        case .failure(let status):
           XCTFail(
-            "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-              + (gRPCStatus.message ?? "empty") + "."
+            "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+              + (status.message ?? "empty") + "."
           )
         }
       }
@@ -445,9 +445,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch registryFileNameResult {
     case .success(_):
       XCTFail("The result should have been a failure.")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTAssertEqual(
-        gRPCStatus,
+        status,
         GRPCStatus(
           code: .notFound,
           message: "The provided extension could not be found."
@@ -466,9 +466,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch registryFileNameResult {
     case .success(_):
       XCTFail("The result should have been a failure.")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTAssertEqual(
-        gRPCStatus,
+        status,
         GRPCStatus(
           code: .notFound,
           message: "The provided extension could not be found."
@@ -517,13 +517,12 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       named: "packagebar1.inputMessage1"
     )
     switch extensionsFieldNumbersOfTypeResult {
-    case .success((let typeName, let extensionsNumber)):
+    case .success(let extensionsNumber):
       XCTAssertEqual(extensionsNumber, [1, 2, 3, 4, 5, 120])
-      XCTAssertEqual(typeName, "packagebar1.inputMessage1")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -546,13 +545,12 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       named: "packagebar1.noExtensionMessage"
     )
     switch extensionsFieldNumbersOfTypeResult {
-    case .success((let typeName, let extensionsNumber)):
+    case .success(let extensionsNumber):
       XCTAssertEqual(extensionsNumber, [])
-      XCTAssertEqual(typeName, "packagebar1.noExtensionMessage")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }
@@ -564,11 +562,11 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       named: "packagebar1.invalidTypeMessage"
     )
     switch extensionsFieldNumbersOfTypeResult {
-    case .success((_, _)):
+    case .success(_):
       XCTFail("The result should have been a failure.")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTAssertEqual(
-        gRPCStatus,
+        status,
         GRPCStatus(
           code: .invalidArgument,
           message: "The provided type is invalid."
@@ -590,13 +588,12 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       named: "packagebar1.inputMessage1"
     )
     switch extensionsFieldNumbersOfTypeResult {
-    case .success((let typeName, let extensionsNumber)):
+    case .success(let extensionsNumber):
       XCTAssertEqual(extensionsNumber, [1, 2, 3, 4, 5, 130])
-      XCTAssertEqual(typeName, "packagebar1.inputMessage1")
-    case .failure(let gRPCStatus):
+    case .failure(let status):
       XCTFail(
-        "Faild with GRPCStatus code: " + String(gRPCStatus.code.rawValue) + " and message: "
-          + (gRPCStatus.message ?? "empty") + "."
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
       )
     }
   }

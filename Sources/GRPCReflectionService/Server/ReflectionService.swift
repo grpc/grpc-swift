@@ -190,7 +190,7 @@ internal struct ReflectionServiceData: Sendable {
   // Returns an empty array if the type has no extensions.
   internal func extensionsFieldNumbersOfType(
     named typeName: String
-  ) -> Result<(String, [Int32]), GRPCStatus> {
+  ) -> Result<[Int32], GRPCStatus> {
     guard let fieldNumbers = self.fieldNumbersByType[typeName] else {
       return .failure(
         GRPCStatus(
@@ -199,7 +199,7 @@ internal struct ReflectionServiceData: Sendable {
         )
       )
     }
-    return .success((typeName, fieldNumbers))
+    return .success(fieldNumbers)
   }
 }
 
@@ -217,11 +217,16 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     _ fileName: String,
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
-    return Reflection_ServerReflectionResponse(
-      request: request,
-      result: self.protoRegistry
-        .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
-    )
+    let result = self.protoRegistry
+      .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
+      .map { fileDescriptorProtos in
+        Reflection_FileDescriptorResponse.with {
+          $0.fileDescriptorProto = fileDescriptorProtos
+        }
+      }.map {
+        Reflection_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse($0)
+      }
+    return result.makeResponse(request: request)
   }
 
   internal func getServicesNames(
@@ -249,8 +254,8 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     switch nameOfFileContainingSymbolResult {
     case .success(let fileName):
       return findFileByFileName(fileName, request: request)
-    case .failure(let gRPCStatus):
-      return Reflection_ServerReflectionResponse(request: request, gRPCStatus: gRPCStatus)
+    case .failure(let status):
+      return Reflection_ServerReflectionResponse(request: request, gRPCStatus: status)
     }
   }
 
@@ -258,11 +263,11 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     extensionRequest: Reflection_ExtensionRequest,
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
-    let nameOfFileContainingExtensionResult = self.protoRegistry.nameOfFileContainingExtension(
+    let result = self.protoRegistry.nameOfFileContainingExtension(
       extendeeName: extensionRequest.containingType,
       fieldNumber: extensionRequest.extensionNumber
     )
-    switch nameOfFileContainingExtensionResult {
+    switch result {
     case .success(let fileName):
       return self.findFileByFileName(fileName, request: request)
     case .failure(let gRPCStatus):
@@ -274,13 +279,17 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     named typeName: String,
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
-    let extensionsFieldNumbersOfTypeResult = self.protoRegistry.extensionsFieldNumbersOfType(
+    let result = self.protoRegistry.extensionsFieldNumbersOfType(
       named: typeName
-    )
-    return Reflection_ServerReflectionResponse(
-      request: request,
-      result: extensionsFieldNumbersOfTypeResult
-    )
+    ).map { fieldNumbers in
+      Reflection_ExtensionNumberResponse.with {
+        $0.baseTypeName = typeName
+        $0.extensionNumber = fieldNumbers
+      }
+    }.map {
+      Reflection_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse($0)
+    }
+    return result.makeResponse(request: request)
   }
 
   internal func serverReflectionInfo(
@@ -350,43 +359,6 @@ extension Reflection_ServerReflectionResponse {
 
   init(
     request: Reflection_ServerReflectionRequest,
-    result: Result<[Data], GRPCStatus>
-  ) {
-    switch result {
-    case .success(let dataResponse):
-      self = .with {
-        $0.validHost = request.host
-        $0.originalRequest = request
-        $0.fileDescriptorResponse = Reflection_FileDescriptorResponse.with {
-          $0.fileDescriptorProto = dataResponse
-        }
-      }
-    case .failure(let gRPCStatus):
-      self = .init(request: request, gRPCStatus: gRPCStatus)
-    }
-  }
-
-  init(
-    request: Reflection_ServerReflectionRequest,
-    result: Result<(String, [Int32]), GRPCStatus>
-  ) {
-    switch result {
-    case .success(let (typeName, fieldNumbers)):
-      self = .with {
-        $0.validHost = request.host
-        $0.originalRequest = request
-        $0.allExtensionNumbersResponse = .with {
-          $0.baseTypeName = typeName
-          $0.extensionNumber = fieldNumbers
-        }
-      }
-    case .failure(let gRPCStatus):
-      self = .init(request: request, gRPCStatus: gRPCStatus)
-    }
-  }
-
-  init(
-    request: Reflection_ServerReflectionRequest,
     gRPCStatus: GRPCStatus
   ) {
     self = .with {
@@ -431,5 +403,43 @@ extension Google_Protobuf_FileDescriptorProto {
     names.append(contentsOf: self.qualifiedMessageTypes)
     names.append(contentsOf: self.qualifiedEnumTypes)
     return names
+  }
+}
+
+extension Result
+where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse, Failure == GRPCStatus {
+  func recover() -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, Never> {
+    self.flatMapError { status in
+      let error = Reflection_ErrorResponse.with {
+        $0.errorCode = Int32(status.code.rawValue)
+        $0.errorMessage = status.message ?? ""
+      }
+      return .success(.errorResponse(error))
+    }
+  }
+}
+
+extension Result where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse {
+  func attachRequest(
+    _ request: Reflection_ServerReflectionRequest
+  ) -> Result<Reflection_ServerReflectionResponse, Failure> {
+    self.map { message in
+      Reflection_ServerReflectionResponse.with {
+        $0.validHost = request.host
+        $0.originalRequest = request
+        $0.messageResponse = message
+      }
+    }
+  }
+}
+
+extension Result
+where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse, Failure == GRPCStatus {
+  func makeResponse(
+    request: Reflection_ServerReflectionRequest
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.recover().attachRequest(request)
+    // Safe to '!' as the failure type is 'Never'.
+    return try! result.get()
   }
 }
