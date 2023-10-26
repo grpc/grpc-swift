@@ -337,29 +337,9 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     for proto in protos {
       for `extension` in proto.extension {
+        let typeName = String(`extension`.extendee.drop(while: { $0 == "." }))
         let registryFileName = registry.nameOfFileContainingExtension(
-          named: `extension`.extendee,
-          fieldNumber: `extension`.number
-        )
-        XCTAssertEqual(registryFileName, proto.name)
-      }
-    }
-  }
-
-  func testNameOfFileContainingExtensionsSameTypeExtensionsDifferentNumbers() throws {
-    var protos = makeProtosWithDependencies()
-    protos[0].extension.append(
-      .with {
-        $0.extendee = "inputMessage1"
-        $0.number = 3
-      }
-    )
-    let registry = try ReflectionServiceData(fileDescriptors: protos)
-
-    for proto in protos {
-      for `extension` in proto.extension {
-        let registryFileName = registry.nameOfFileContainingExtension(
-          named: `extension`.extendee,
+          extendeeName: typeName,
           fieldNumber: `extension`.number
         )
         XCTAssertEqual(registryFileName, proto.name)
@@ -371,7 +351,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryFileName = registry.nameOfFileContainingExtension(
-      named: "InvalidType",
+      extendeeName: "InvalidType",
       fieldNumber: 2
     )
     XCTAssertNil(registryFileName)
@@ -381,8 +361,8 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryFileName = registry.nameOfFileContainingExtension(
-      named: protos[0].extension[0].extendee,
-      fieldNumber: 4
+      extendeeName: protos[0].extension[0].extendee,
+      fieldNumber: 9
     )
     XCTAssertNil(registryFileName)
   }
@@ -391,7 +371,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     var protos = makeProtosWithDependencies()
     protos[0].extension.append(
       .with {
-        $0.extendee = "inputMessage1"
+        $0.extendee = ".packagebar1.inputMessage1"
         $0.number = 2
       }
     )
@@ -404,11 +384,81 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
           code: .alreadyExists,
           message:
             """
-            The extension of the inputMessage1 type with the field number equal to \
+            The extension of the packagebar1.inputMessage1 type with the field number equal to \
             2 from \(protos[0].name) already exists in \(protos[0].name).
             """
         )
       )
     }
+  }
+
+  // Testing the extensionsFieldNumbersOfType() method.
+
+  func testExtensionsFieldNumbersOfType() throws {
+    var protos = makeProtosWithDependencies()
+    protos[0].extension.append(
+      .with {
+        $0.extendee = ".packagebar1.inputMessage1"
+        $0.number = 120
+      }
+    )
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.inputMessage1"
+    )
+    XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 120])
+  }
+
+  func testExtensionsFieldNumbersOfTypeNoExtensionsType() throws {
+    var protos = makeProtosWithDependencies()
+    protos[0].messageType.append(
+      Google_Protobuf_DescriptorProto.with {
+        $0.name = "noExtensionMessage"
+        $0.field = [
+          Google_Protobuf_FieldDescriptorProto.with {
+            $0.name = "noExtensionField"
+            $0.type = .bool
+          }
+        ]
+      }
+    )
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.noExtensionMessage"
+    )
+    XCTAssertEqual(extensionNumbers, [])
+  }
+
+  func testExtensionsFieldNumbersOfTypeInvalidTypeName() throws {
+    let protos = makeProtosWithDependencies()
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    XCTAssertThrowsError(
+      try registry.extensionsFieldNumbersOfType(
+        named: "packagebar1.invalidTypeMessage"
+      )
+    ) { error in
+      XCTAssertEqual(
+        error as? GRPCStatus,
+        GRPCStatus(
+          code: .invalidArgument,
+          message: "The provided type is invalid."
+        )
+      )
+    }
+  }
+
+  func testExtensionsFieldNumbersOfTypeExtensionsInDifferentProtoFiles() throws {
+    var protos = makeProtosWithDependencies()
+    protos[2].extension.append(
+      .with {
+        $0.extendee = ".packagebar1.inputMessage1"
+        $0.number = 130
+      }
+    )
+    let registry = try ReflectionServiceData(fileDescriptors: protos)
+    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.inputMessage1"
+    )
+    XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 130])
   }
 }

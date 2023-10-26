@@ -223,6 +223,7 @@ extension Target {
     name: "GRPCCoreTests",
     dependencies: [
       .grpcCore,
+      .dequeModule,
     ]
   )
 

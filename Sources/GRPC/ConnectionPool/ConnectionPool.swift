@@ -283,7 +283,7 @@ internal final class ConnectionPool {
 
     guard case .active = self._state else {
       // Fail the promise right away if we're shutting down or already shut down.
-      promise.fail(ConnectionPoolError.shutdown)
+      promise.fail(GRPCConnectionPoolError.shutdown)
       return
     }
 
@@ -354,7 +354,7 @@ internal final class ConnectionPool {
           Metadata.waitersMax: "\(self.maxWaiters)"
         ]
       )
-      promise.fail(ConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
+      promise.fail(GRPCConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
       return
     }
 
@@ -364,7 +364,7 @@ internal final class ConnectionPool {
     // timeout before appending it to the waiters, it wont run until the next event loop tick at the
     // earliest (even if the deadline has already passed).
     waiter.scheduleTimeout(on: self.eventLoop) {
-      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: self._mostRecentError))
+      waiter.fail(GRPCConnectionPoolError.deadlineExceeded(connectionError: self._mostRecentError))
 
       if let index = self.waiters.firstIndex(where: { $0.id == waiter.id }) {
         self.waiters.remove(at: index)
@@ -550,7 +550,7 @@ internal final class ConnectionPool {
 
       // Fail the outstanding waiters.
       while let waiter = self.waiters.popFirst() {
-        waiter.fail(ConnectionPoolError.shutdown)
+        waiter.fail(GRPCConnectionPoolError.shutdown)
       }
 
       // Cascade the result of the shutdown into the promise.
@@ -864,40 +864,97 @@ extension ConnectionPool {
   }
 }
 
-@usableFromInline
-internal enum ConnectionPoolError: Error {
-  /// The pool is shutdown or shutting down.
-  case shutdown
+/// An error thrown from the ``GRPCChannelPool``.
+public struct GRPCConnectionPoolError: Error, CustomStringConvertible {
+  public struct Code: Hashable, Sendable, CustomStringConvertible {
+    enum Code {
+      case shutdown
+      case tooManyWaiters
+      case deadlineExceeded
+    }
 
-  /// There are too many waiters in the pool.
-  case tooManyWaiters(connectionError: Error?)
+    fileprivate var code: Code
 
-  /// The deadline for creating a stream has passed.
-  case deadlineExceeded(connectionError: Error?)
+    private init(_ code: Code) {
+      self.code = code
+    }
+
+    public var description: String {
+      String(describing: self.code)
+    }
+
+    /// The pool is shutdown or shutting down.
+    public static var shutdown: Self { Self(.shutdown) }
+
+    /// There are too many waiters in the pool.
+    public static var tooManyWaiters: Self { Self(.tooManyWaiters) }
+
+    /// The deadline for creating a stream has passed.
+    public static var deadlineExceeded: Self { Self(.deadlineExceeded) }
+  }
+
+  /// The error code.
+  public var code: Code
+
+  /// An underlying error which caused this error to be thrown.
+  public var underlyingError: Error?
+
+  public var description: String {
+    if let underlyingError = self.underlyingError {
+      return "\(self.code) (\(underlyingError))"
+    } else {
+      return String(describing: self.code)
+    }
+  }
+
+  /// Create a new connection pool error with the given code and underlying error.
+  ///
+  /// - Parameters:
+  ///   - code: The error code.
+  ///   - underlyingError: The underlying error which led to this error being thrown.
+  public init(code: Code, underlyingError: Error? = nil) {
+    self.code = code
+    self.underlyingError = underlyingError
+  }
 }
 
-extension ConnectionPoolError: GRPCStatusTransformable {
+extension GRPCConnectionPoolError {
   @usableFromInline
-  internal func makeGRPCStatus() -> GRPCStatus {
-    switch self {
+  static let shutdown = Self(code: .shutdown)
+
+  @inlinable
+  static func tooManyWaiters(connectionError: Error?) -> Self {
+    Self(code: .tooManyWaiters, underlyingError: connectionError)
+  }
+
+  @inlinable
+  static func deadlineExceeded(connectionError: Error?) -> Self {
+    Self(code: .deadlineExceeded, underlyingError: connectionError)
+  }
+}
+
+extension GRPCConnectionPoolError: GRPCStatusTransformable {
+  public func makeGRPCStatus() -> GRPCStatus {
+    switch self.code.code {
     case .shutdown:
       return GRPCStatus(
         code: .unavailable,
-        message: "The connection pool is shutdown"
+        message: "The connection pool is shutdown",
+        cause: self.underlyingError
       )
 
-    case let .tooManyWaiters(error):
+    case .tooManyWaiters:
       return GRPCStatus(
         code: .resourceExhausted,
         message: "The connection pool has no capacity for new RPCs or RPC waiters",
-        cause: error
+        cause: self.underlyingError
       )
 
-    case let .deadlineExceeded(error):
+    case .deadlineExceeded:
       return GRPCStatus(
         code: .deadlineExceeded,
         message: "Timed out waiting for an HTTP/2 stream from the connection pool",
-        cause: error
+        cause: self.underlyingError
       )
     }
   }
