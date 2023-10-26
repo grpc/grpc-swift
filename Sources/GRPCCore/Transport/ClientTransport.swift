@@ -19,6 +19,13 @@ public protocol ClientTransport: Sendable {
   associatedtype Inbound: (AsyncSequence & Sendable) where Inbound.Element == RPCResponsePart
   associatedtype Outbound: ClosableRPCWriterProtocol<RPCRequestPart>
 
+  /// Returns a throttle which gRPC uses to determine whether retries can be executed.
+  ///
+  /// Client transports don't need to implement the throttle or interact with it beyond its
+  /// creation. gRPC will record the results of requests to determine whether retries can be
+  /// performed.
+  var retryThrottle: RetryThrottle { get }
+
   /// Establish and maintain a connection to the remote destination.
   ///
   /// Maintains a long-lived connection, or set of connections, to a remote destination.
