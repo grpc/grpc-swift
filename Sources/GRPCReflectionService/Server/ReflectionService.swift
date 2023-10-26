@@ -213,17 +213,17 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     )
   }
 
-  internal func findFileByFileName(
+  internal func _findFileByFileName(
     _ fileName: String
   ) -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
     return self.protoRegistry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
       .map { fileDescriptorProtos in
-        Reflection_FileDescriptorResponse.with {
-          $0.fileDescriptorProto = fileDescriptorProtos
-        }
-      }.map {
-        Reflection_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse($0)
+        Reflection_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse(
+          .with {
+            $0.fileDescriptorProto = fileDescriptorProtos
+          }
+        )
       }
   }
 
@@ -231,7 +231,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     _ fileName: String,
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
-    let result = self.findFileByFileName(fileName)
+    let result = self._findFileByFileName(fileName)
     return result.makeResponse(request: request)
   }
 
@@ -260,7 +260,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     let result = self.protoRegistry.nameOfFileContainingSymbol(
       named: symbolName
     ).flatMap {
-      self.findFileByFileName($0)
+      self._findFileByFileName($0)
     }
     return result.makeResponse(request: request)
   }
@@ -273,7 +273,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
       extendeeName: extensionRequest.containingType,
       fieldNumber: extensionRequest.extensionNumber
     ).flatMap {
-      self.findFileByFileName($0)
+      self._findFileByFileName($0)
     }
     return result.makeResponse(request: request)
   }
@@ -285,12 +285,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     let result = self.protoRegistry.extensionsFieldNumbersOfType(
       named: typeName
     ).map { fieldNumbers in
-      Reflection_ExtensionNumberResponse.with {
-        $0.baseTypeName = typeName
-        $0.extensionNumber = fieldNumbers
-      }
-    }.map {
-      Reflection_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse($0)
+      Reflection_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse(
+        Reflection_ExtensionNumberResponse.with {
+          $0.baseTypeName = typeName
+          $0.extensionNumber = fieldNumbers
+        }
+      )
     }
     return result.makeResponse(request: request)
   }
