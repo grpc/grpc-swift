@@ -21,15 +21,15 @@ import XCTest
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class BroadcastAsyncSequenceTests: XCTestCase {
   func testSingleSubscriberToEmptyStream() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
-    continuation.finish()
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    source.finish()
     let elements = try await stream.collect()
     XCTAssertEqual(elements, [])
   }
 
   func testMultipleSubscribersToEmptyStream() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
-    continuation.finish()
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    source.finish()
     do {
       let elements = try await stream.collect()
       XCTAssertEqual(elements, [])
@@ -41,20 +41,20 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
   }
 
   func testSubscribeToEmptyStreamBeforeFinish() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
     var iterator = stream.makeAsyncIterator()
-    continuation.finish()
+    source.finish()
     let element = try await iterator.next()
     XCTAssertNil(element)
   }
 
   func testSlowConsumerIsLeftBehind() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
     var consumer1 = stream.makeAsyncIterator()
     var consumer2 = stream.makeAsyncIterator()
 
     for element in 0 ..< 15 {
-      try await continuation.yield(element)
+      try await source.write(element)
     }
 
     // Buffer should now be full. Consume with one consumer so that the other is dropped on
@@ -63,7 +63,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
     XCTAssertEqual(element, 0)
 
     // Will invalidate consumer2 as the slowest consumer.
-    try await continuation.yield(15)
+    try await source.write(15)
 
     await XCTAssertThrowsErrorAsync {
       try await consumer2.next()
@@ -78,15 +78,15 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
     }
 
     // consumer1 should end as expected.
-    continuation.finish()
+    source.finish()
     let end = try await consumer1.next()
     XCTAssertNil(end)
   }
 
   func testConsumerJoiningAfterSomeElements() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
     for element in 0 ..< 10 {
-      try await continuation.yield(element)
+      try await source.write(element)
     }
 
     var consumer1 = stream.makeAsyncIterator()
@@ -117,7 +117,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
 
     // Advance each consumer in lock-step.
     for offset in 0 ..< 10 {
-      try await continuation.yield(10 + offset)
+      try await source.write(10 + offset)
       let element1 = try await consumer1.next()
       XCTAssertEqual(element1, 8 + offset)
       let element2 = try await consumer2.next()
@@ -133,7 +133,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
       XCTAssertEqual(error as? BroadcastAsyncSequenceError, .consumingTooSlow)
     }
 
-    continuation.finish()
+    source.finish()
 
     // All elements are present. The existing consumers can finish however they choose.
     do {
@@ -165,9 +165,9 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
   }
 
   func testInvalidateAllConsumersForSingleConcurrentConsumer() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
     for element in 0 ..< 10 {
-      try await continuation.yield(element)
+      try await source.write(element)
     }
 
     var consumer1 = stream.makeAsyncIterator()
@@ -193,9 +193,9 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
   }
 
   func testInvalidateAllConsumersForMultipleConcurrentConsumer() async throws {
-    let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
     for element in 0 ..< 10 {
-      try await continuation.yield(element)
+      try await source.write(element)
     }
 
     let consumers: [BroadcastAsyncSequence<Int>.AsyncIterator] = (0 ..< 5).map { _ in
@@ -234,16 +234,16 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
   }
 
   func testCancelProducer() async throws {
-    let (_, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
+    let (_, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
     for i in 0 ..< 15 {
-      try await continuation.yield(i)
+      try await source.write(i)
     }
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.cancelAll()
       for _ in 0 ..< 10 {
         group.addTask {
-          try await continuation.yield(42)
+          try await source.write(42)
         }
       }
 

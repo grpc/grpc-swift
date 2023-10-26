@@ -50,10 +50,10 @@ struct BroadcastAsyncSequence<Element: Sendable>: Sendable, AsyncSequence {
   static func makeStream(
     of elementType: Element.Type = Element.self,
     bufferSize: Int
-  ) -> (stream: Self, continuation: Self.Continuation) {
+  ) -> (stream: Self, continuation: Self.Source) {
     let storage = _BroadcastSequenceStorage<Element>(bufferSize: bufferSize)
     let stream = Self(_storage: storage)
-    let continuation = Self.Continuation(_storage: storage)
+    let continuation = Self.Source(_storage: storage)
     return (stream, continuation)
   }
 
@@ -114,7 +114,7 @@ extension BroadcastAsyncSequence {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension BroadcastAsyncSequence {
   @usableFromInline
-  struct Continuation: Sendable {
+  struct Source: Sendable {
     @usableFromInline
     let _storage: _BroadcastSequenceStorage<Element>
 
@@ -124,7 +124,7 @@ extension BroadcastAsyncSequence {
     }
 
     @inlinable
-    func yield(_ element: Element) async throws {
+    func write(_ element: Element) async throws {
       try await self._storage.yield(element)
     }
 
@@ -184,7 +184,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
 
   /// Yield a single element to the stream. Suspends if the stream's buffer is full.
   ///
-  /// - Parameter element: The element to yield.
+  /// - Parameter element: The element to write.
   @inlinable
   func yield(_ element: Element) async throws {
     let onYield = self._state.withLockedValue { state in state.yield(element) }
