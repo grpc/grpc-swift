@@ -214,10 +214,9 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   }
 
   internal func findFileByFileName(
-    _ fileName: String,
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
-    let result = self.protoRegistry
+    _ fileName: String
+  ) -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
+    return self.protoRegistry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
       .map { fileDescriptorProtos in
         Reflection_FileDescriptorResponse.with {
@@ -226,6 +225,13 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
       }.map {
         Reflection_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse($0)
       }
+  }
+
+  internal func findFileByFileName(
+    _ fileName: String,
+    request: Reflection_ServerReflectionRequest
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.findFileByFileName(fileName)
     return result.makeResponse(request: request)
   }
 
@@ -240,7 +246,10 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     }
     return Reflection_ServerReflectionResponse(
       request: request,
-      listServicesResponse: listServicesResponse
+      messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse
+        .listServicesResponse(
+          listServicesResponse
+        )
     )
   }
 
@@ -248,15 +257,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     _ symbolName: String,
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
-    let nameOfFileContainingSymbolResult = self.protoRegistry.nameOfFileContainingSymbol(
+    let result = self.protoRegistry.nameOfFileContainingSymbol(
       named: symbolName
-    )
-    switch nameOfFileContainingSymbolResult {
-    case .success(let fileName):
-      return findFileByFileName(fileName, request: request)
-    case .failure(let status):
-      return Reflection_ServerReflectionResponse(request: request, gRPCStatus: status)
+    ).flatMap {
+      self.findFileByFileName($0)
     }
+    return result.makeResponse(request: request)
   }
 
   internal func findFileByExtension(
@@ -266,13 +272,10 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     let result = self.protoRegistry.nameOfFileContainingExtension(
       extendeeName: extensionRequest.containingType,
       fieldNumber: extensionRequest.extensionNumber
-    )
-    switch result {
-    case .success(let fileName):
-      return self.findFileByFileName(fileName, request: request)
-    case .failure(let gRPCStatus):
-      return Reflection_ServerReflectionResponse(request: request, gRPCStatus: gRPCStatus)
+    ).flatMap {
+      self.findFileByFileName($0)
     }
+    return result.makeResponse(request: request)
   }
 
   internal func findExtensionsFieldNumbersOfType(
@@ -334,9 +337,11 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
       default:
         let response = Reflection_ServerReflectionResponse(
           request: request,
-          gRPCStatus: GRPCStatus(
-            code: .unimplemented,
-            message: "The request is not implemented."
+          messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse.errorResponse(
+            Reflection_ErrorResponse.with {
+              $0.errorCode = Int32(GRPCStatus.Code.unimplemented.rawValue)
+              $0.errorMessage = "The request is not implemented."
+            }
           )
         )
         try await responseStream.send(response)
@@ -348,26 +353,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 extension Reflection_ServerReflectionResponse {
   init(
     request: Reflection_ServerReflectionRequest,
-    listServicesResponse: Reflection_ListServiceResponse
+    messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse
   ) {
     self = .with {
       $0.validHost = request.host
       $0.originalRequest = request
-      $0.listServicesResponse = listServicesResponse
-    }
-  }
-
-  init(
-    request: Reflection_ServerReflectionRequest,
-    gRPCStatus: GRPCStatus
-  ) {
-    self = .with {
-      $0.validHost = request.host
-      $0.originalRequest = request
-      $0.errorResponse = Reflection_ErrorResponse.with {
-        $0.errorCode = Int32(gRPCStatus.code.rawValue)
-        $0.errorMessage = gRPCStatus.message ?? ""
-      }
+      $0.messageResponse = messageResponse
     }
   }
 }
@@ -406,8 +397,7 @@ extension Google_Protobuf_FileDescriptorProto {
   }
 }
 
-extension Result
-where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse, Failure == GRPCStatus {
+extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
   func recover() -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, Never> {
     self.flatMapError { status in
       let error = Reflection_ErrorResponse.with {
@@ -424,17 +414,12 @@ extension Result where Success == Reflection_ServerReflectionResponse.OneOf_Mess
     _ request: Reflection_ServerReflectionRequest
   ) -> Result<Reflection_ServerReflectionResponse, Failure> {
     self.map { message in
-      Reflection_ServerReflectionResponse.with {
-        $0.validHost = request.host
-        $0.originalRequest = request
-        $0.messageResponse = message
-      }
+      Reflection_ServerReflectionResponse(request: request, messageResponse: message)
     }
   }
 }
 
-extension Result
-where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse, Failure == GRPCStatus {
+extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
   func makeResponse(
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
