@@ -111,7 +111,7 @@ public struct RetryThrottle: Sendable {
     }
   }
 
-  /// Records a failure, removing tokens from the throttle. 
+  /// Records a failure, removing tokens from the throttle.
   /// - Returns: Whether retries will now be throttled.
   @usableFromInline
   @discardableResult
