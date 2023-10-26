@@ -407,6 +407,13 @@ extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPC
       return .success(.errorResponse(error))
     }
   }
+  func makeResponse(
+    request: Reflection_ServerReflectionRequest
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.recover().attachRequest(request)
+    // Safe to '!' as the failure type is 'Never'.
+    return try! result.get()
+  }
 }
 
 extension Result where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse {
@@ -416,15 +423,5 @@ extension Result where Success == Reflection_ServerReflectionResponse.OneOf_Mess
     self.map { message in
       Reflection_ServerReflectionResponse(request: request, messageResponse: message)
     }
-  }
-}
-
-extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
-  func makeResponse(
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
-    let result = self.recover().attachRequest(request)
-    // Safe to '!' as the failure type is 'Never'.
-    return try! result.get()
   }
 }
