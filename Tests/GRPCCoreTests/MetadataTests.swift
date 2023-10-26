@@ -117,7 +117,7 @@ final class MetadataTests: XCTestCase {
     ]
     XCTAssertEqual(metadata.count, 6)
 
-    let sequence = metadata[values: "testKey-bin"]
+    let sequence = metadata["testKey-bin"]
     var iterator = sequence.makeIterator()
     XCTAssertEqual(iterator.next(), .string("string1"))
     XCTAssertEqual(iterator.next(), .binary(.init("data1".utf8)))

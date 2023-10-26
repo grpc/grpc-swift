@@ -16,10 +16,69 @@
 
 /// A collection of metadata key-value pairs, found in RPC streams.
 ///
-/// A key can have multiple values associated to it.
-/// Values can be either strings or binary data, in the form of `[UInt8]`.
+/// Metadata is a side channel associated with an RPC, that allows you to send information between clients
+/// and servers. Metadata is stored as a list of key-value pairs where keys aren't required to be unique;
+/// a single key may have multiple values associated with it.
 ///
-/// - Note: Binary values must have keys ending in "-bin", and this will be checked when adding pairs.
+/// Keys are case-insensitive ASCII strings. Values may be ASCII strings or binary data. The keys
+/// for binary data should end with "-bin": this will be asserted when adding a new binary value.
+/// Keys must not be prefixed with "grpc-" as these are reserved for gRPC.
+///
+/// # Using Metadata
+///
+/// You can add values to ``Metadata`` using the ``addString(_:forKey:)`` and
+/// ``addBinary(_:forKey:)`` methods:
+///
+/// ```swift
+/// var metadata = Metadata()
+/// metadata.addString("value", forKey: "key")
+/// metadata.addBinary([118, 97, 108, 117, 101], forKey: "key-bin")
+/// ```
+///
+/// As ``Metadata`` conforms to `RandomAccessCollection` you can iterate over its values.
+/// Because metadata can store strings and binary values, its `Element` type is an `enum` representing
+/// both possibilities:
+///
+/// ```swift
+/// for (key, value) in metadata {
+///   switch value {
+///   case .string(let value):
+///     print("'\(key)' has a string value: '\(value)'")
+///   case .binary(let value):
+///     print("'\(key)' has a binary value: '\(value)'")
+///   }
+/// }
+/// ```
+///
+/// You can also iterate over the values for a specific key:
+///
+/// ```swift
+/// for value in metadata["key"] {
+///   switch value {
+///   case .string(let value):
+///     print("'key' has a string value: '\(value)'")
+///   case .binary(let value):
+///     print("'key' has a binary value: '\(value)'")
+///   }
+/// }
+/// ```
+///
+/// You can get only string or binary values for a key using ``subscript(stringValues:)`` and
+/// ``subscript(binaryValues:)``:
+///
+/// ```swift
+/// for value in metadata[stringValues: "key"] {
+///   print("'key' has a string value: '\(value)'")
+/// }
+///
+/// for value in metadata[binaryValues: "key"] {
+///   print("'key' has a binary value: '\(value)'")
+/// }
+/// ```
+///
+/// - Note: Binary values are encoded as base64 strings when they are sent over the wire, so keys with
+/// the "-bin" suffix may have string values (rather than binary). These are deserialized automatically when
+/// using ``subscript(binaryValues:)``.
 public struct Metadata: Sendable, Hashable {
 
   /// A metadata value. It can either be a simple string, or binary data.
@@ -90,7 +149,7 @@ public struct Metadata: Sendable, Hashable {
   /// - Parameters:
   ///   - value: The ``Value`` to be associated with the given key.
   ///   - key: The key to be associated with the given value. If value is binary, it must end in "-bin".
-  public mutating func addValue(_ value: Value, forKey key: String) {
+  internal mutating func addValue(_ value: Value, forKey key: String) {
     self.elements.append(.init(key: key, value: value))
   }
 
@@ -98,7 +157,7 @@ public struct Metadata: Sendable, Hashable {
   ///
   /// - Parameter key: The key for which all values should be removed.
   ///
-  /// - Complexity: O(*n*), where *n* is the number of entries in metadata instance.
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
   public mutating func removeAllValues(forKey key: String) {
     elements.removeAll { metadataKeyValue in
       metadataKeyValue.key.isEqualCaseInsensitiveASCIIBytes(to: key)
@@ -114,7 +173,7 @@ public struct Metadata: Sendable, Hashable {
   ///   - stringValue: The string value to be associated with the given key.
   ///   - key: The key to be associated with the given value.
   ///
-  /// - Complexity: O(*n*), where *n* is  number of entries in metadata instance.
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
   public mutating func replaceOrAddString(_ stringValue: String, forKey key: String) {
     self.replaceOrAddValue(.string(stringValue), forKey: key)
   }
@@ -128,7 +187,7 @@ public struct Metadata: Sendable, Hashable {
   ///   - binaryValue: The `[UInt8]` to be associated with the given key.
   ///   - key: The key to be associated with the given value. Must end in "-bin".
   ///
-  /// - Complexity: O(*n*), where *n* is number of entries in metadata instance.
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
   public mutating func replaceOrAddBinary(_ binaryValue: [UInt8], forKey key: String) {
     self.replaceOrAddValue(.binary(binaryValue), forKey: key)
   }
@@ -142,8 +201,8 @@ public struct Metadata: Sendable, Hashable {
   ///   - value: The ``Value`` to be associated with the given key.
   ///   - key: The key to be associated with the given value. If value is binary, it must end in "-bin".
   ///
-  /// - Complexity: O(*n*), where *n* is number of entries in metadata instance.
-  public mutating func replaceOrAddValue(_ value: Value, forKey key: String) {
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
+  internal mutating func replaceOrAddValue(_ value: Value, forKey key: String) {
     self.removeAllValues(forKey: key)
     self.elements.append(.init(key: key, value: value))
   }
@@ -152,7 +211,7 @@ public struct Metadata: Sendable, Hashable {
   ///
   /// - Parameter keepingCapacity: Whether the current capacity should be kept or reset.
   ///
-  /// - Complexity: O(*n*), where *n* is the length of the array.
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
   public mutating func removeAll(keepingCapacity: Bool) {
     self.elements.removeAll(keepingCapacity: keepingCapacity)
   }
@@ -241,7 +300,7 @@ extension Metadata {
   /// - Parameter key: The returned sequence will only return values for this key.
   ///
   /// - Returns: A sequence containing all values for the given key.
-  public subscript(values key: String) -> Values {
+  public subscript(_ key: String) -> Values {
     Values(key: key, metadata: self)
   }
 }
@@ -345,8 +404,15 @@ extension Metadata {
 
   /// A subscript to get a ``BinaryValues`` sequence for a given key.
   ///
+  /// As it's iterated, this sequence will return values originally stored as binary data for a given key, and will
+  /// also try to decode values stored as strings as if they were base64-encoded strings; only strings that
+  /// are successfully decoded will be returned.
+  ///
   /// - Parameter key: The returned sequence will only return binary (i.e. `[UInt8]`) values for this key.
+  ///
   /// - Returns: A sequence containing binary (i.e. `[UInt8]`) values for the given key.
+  ///
+  /// - SeeAlso: ``BinaryValues/Iterator``.
   public subscript(binaryValues key: String) -> BinaryValues {
     BinaryValues(key: key, metadata: self)
   }
@@ -386,7 +452,7 @@ extension Metadata.Value: ExpressibleByArrayLiteral {
 
 extension Metadata: CustomStringConvertible {
   public var description: String {
-    self.map({ ($0.key, $0.value) }).description
+    String(describing: self.map({ ($0.key, $0.value) }))
   }
 }
 
@@ -394,9 +460,9 @@ extension Metadata.Value: CustomStringConvertible {
   public var description: String {
     switch self {
     case .string(let stringValue):
-      return "String(\(stringValue))"
+      return String(describing: stringValue)
     case .binary(let binaryValue):
-      return "Binary(\(binaryValue))"
+      return String(describing: binaryValue)
     }
   }
 }

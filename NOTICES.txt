@@ -31,7 +31,8 @@ It also uses derivations of SwiftNIO's lock 'NIOLock.swift' and locked value box
 
 ---
 
-This product uses derivations of SwiftNIO's HTTP2 implementation 'HPACKHeader.swift'.
+This product uses derivations of SwiftNIOHTTP2's implementation of case
+insensitive comparison of strings, found in 'HPACKHeader.swift'.
     
     * LICENSE (Apache License 2.0):
       * https://github.com/apple/swift-nio-http2/blob/main/LICENSE.txt
