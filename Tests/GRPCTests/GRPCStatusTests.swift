@@ -113,10 +113,10 @@ class GRPCStatusTests: GRPCTestCase {
     // No message/cause, so uses the nil backing storage.
     XCTAssertEqual(status.testingOnly_storageObjectIdentifier, nilStorageID)
 
-    status.cause = ConnectionPoolError.tooManyWaiters(connectionError: nil)
+    status.cause = GRPCConnectionPoolError.tooManyWaiters(connectionError: nil)
     let storageID = status.testingOnly_storageObjectIdentifier
     XCTAssertNotEqual(storageID, nilStorageID)
-    XCTAssert(status.cause is ConnectionPoolError)
+    XCTAssert(status.cause is GRPCConnectionPoolError)
 
     // The storage of status should be uniquely ref'd, so setting cause to nil should not change
     // the backing storage (even if the nil storage could now be used).
