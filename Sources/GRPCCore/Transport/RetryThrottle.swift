@@ -30,7 +30,7 @@
 /// See also [gRFC A6: client retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
 public struct RetryThrottle: Sendable {
   // Note: only three figures after the decimal point from the original token ratio are used so
-  //   all computation is done a scaled number of tokens (tokens * 1000). This allows us to all
+  //   all computation is done a scaled number of tokens (tokens * 1000). This allows us to do all
   //   computation in integer space.
 
   /// The number of tokens available, multiplied by 1000.
@@ -111,8 +111,8 @@ public struct RetryThrottle: Sendable {
     }
   }
 
-  /// Records a failure, removing tokens from the throttle. Returns whether retries will now be
-  /// throttled.
+  /// Records a failure, removing tokens from the throttle. 
+  /// - Returns: Whether retries will now be throttled.
   @usableFromInline
   @discardableResult
   func recordFailure() -> Bool {
