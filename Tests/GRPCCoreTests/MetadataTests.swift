@@ -187,4 +187,22 @@ final class MetadataTests: XCTestCase {
     XCTAssertEqual(binaryIterator.next(), Array("data3".utf8))
     XCTAssertNil(binaryIterator.next())
   }
+
+  func testKeysAreCaseInsensitive() {
+    let metadata: Metadata = [
+      "testkey1": "value1",
+      "TESTKEY2": "value2",
+    ]
+    XCTAssertEqual(metadata.count, 2)
+
+    var stringSequence = metadata[stringValues: "TESTKEY1"]
+    var stringIterator = stringSequence.makeIterator()
+    XCTAssertEqual(stringIterator.next(), "value1")
+    XCTAssertNil(stringIterator.next())
+
+    stringSequence = metadata[stringValues: "testkey2"]
+    stringIterator = stringSequence.makeIterator()
+    XCTAssertEqual(stringIterator.next(), "value2")
+    XCTAssertNil(stringIterator.next())
+  }
 }

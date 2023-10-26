@@ -70,26 +70,28 @@
  SOFTWARE.
  */
 
-public enum Base64 {}
+internal enum Base64 {}
 
 extension Base64 {
-  public struct DecodingOptions: OptionSet {
-    public let rawValue: UInt
-    public init(rawValue: UInt) { self.rawValue = rawValue }
+  internal struct DecodingOptions: OptionSet {
+    internal let rawValue: UInt
+    internal init(rawValue: UInt) { self.rawValue = rawValue }
 
-    public static let base64UrlAlphabet = DecodingOptions(rawValue: UInt(1 << 0))
-    public static let omitPaddingCharacter = DecodingOptions(rawValue: UInt(1 << 1))
+    internal static let base64UrlAlphabet = DecodingOptions(rawValue: UInt(1 << 0))
+    internal static let omitPaddingCharacter = DecodingOptions(rawValue: UInt(1 << 1))
   }
 
-  public enum DecodingError: Error, Equatable {
+  internal enum DecodingError: Error, Equatable {
     case invalidLength
     case invalidCharacter(UInt8)
     case unexpectedPaddingCharacter
     case unexpectedEnd
   }
 
-  public static func decode(string encoded: String, options: DecodingOptions = []) throws -> [UInt8]
-  {
+  internal static func decode(
+    string encoded: String,
+    options: DecodingOptions = []
+  ) throws -> [UInt8] {
     let decoded = try encoded.utf8.withContiguousStorageIfAvailable {
       (characterPointer) -> [UInt8] in
       guard characterPointer.count > 0 else {
