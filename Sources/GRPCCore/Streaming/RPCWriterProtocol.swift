@@ -42,7 +42,7 @@ extension RPCWriterProtocol {
   ///
   /// - Parameter elements: The elements to write.
   public func write<Elements: AsyncSequence>(
-    _ elements: Elements
+    contentsOf elements: Elements
   ) async throws where Elements.Element == Element {
     for try await element in elements {
       try await self.write(element)
@@ -57,4 +57,10 @@ public protocol ClosableRPCWriterProtocol<Element>: RPCWriterProtocol {
   /// All writes after ``finish()`` has been called should result in an error
   /// being thrown.
   func finish()
+
+  /// Indicate to the writer that no more writes are to be accepted because an error occurred.
+  ///
+  /// All writes after ``finish(throwing:)`` has been called should result in an error
+  /// being thrown.
+  func finish(throwing error: Error)
 }
