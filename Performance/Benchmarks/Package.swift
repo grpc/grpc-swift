@@ -30,7 +30,7 @@ let package = Package(
             name: "GRPCSwiftBenchmark",
             dependencies: [
                 .product(name: "Benchmark", package: "package-benchmark"),
-                .product(name: "GRPC", package: "grpc-swift")
+                .product(name: "_GRPCCore", package: "grpc-swift")
             ],
             path: "Benchmarks/GRPCSwiftBenchmark",
             plugins: [

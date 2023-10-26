@@ -461,6 +461,11 @@ extension Product {
     name: grpcProductName,
     targets: [grpcTargetName]
   )
+    
+  static let grpcCore: Product = .library(
+    name: "_GRPCCore",
+    targets: ["GRPCCore"]
+  )
 
   static let cgrpcZlib: Product = .library(
     name: cgrpcZlibProductName,
@@ -484,6 +489,7 @@ let package = Package(
   name: grpcPackageName,
   products: [
     .grpc,
+    .grpcCore,
     .cgrpcZlib,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
