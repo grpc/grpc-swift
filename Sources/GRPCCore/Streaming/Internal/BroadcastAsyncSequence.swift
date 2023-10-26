@@ -103,7 +103,7 @@ extension BroadcastAsyncSequence {
     }
 
     @inlinable
-    func next() async throws -> Element? {
+    mutating func next() async throws -> Element? {
       try await self._storage.nextElement(forSubscriber: self._subscriberID)
     }
   }

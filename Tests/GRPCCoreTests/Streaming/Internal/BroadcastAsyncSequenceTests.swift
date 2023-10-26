@@ -42,7 +42,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
 
   func testSubscribeToEmptyStreamBeforeFinish() async throws {
     let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
-    let iterator = stream.makeAsyncIterator()
+    var iterator = stream.makeAsyncIterator()
     continuation.finish()
     let element = try await iterator.next()
     XCTAssertNil(element)
@@ -50,8 +50,8 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
 
   func testSlowConsumerIsLeftBehind() async throws {
     let (stream, continuation) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)
-    let consumer1 = stream.makeAsyncIterator()
-    let consumer2 = stream.makeAsyncIterator()
+    var consumer1 = stream.makeAsyncIterator()
+    var consumer2 = stream.makeAsyncIterator()
 
     for element in 0 ..< 15 {
       try await continuation.yield(element)
@@ -89,7 +89,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
       try await continuation.yield(element)
     }
 
-    let consumer1 = stream.makeAsyncIterator()
+    var consumer1 = stream.makeAsyncIterator()
     do {
       for expected in 0 ..< 8 {
         let element = try await consumer1.next()
@@ -98,7 +98,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
     }
 
     // Add a second consumer, consume the first four elements.
-    let consumer2 = stream.makeAsyncIterator()
+    var consumer2 = stream.makeAsyncIterator()
     do {
       for expected in 0 ..< 4 {
         let element = try await consumer2.next()
@@ -107,7 +107,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
     }
 
     // Add another consumer, consume the first two elements.
-    let consumer3 = stream.makeAsyncIterator()
+    var consumer3 = stream.makeAsyncIterator()
     do {
       for expected in 0 ..< 2 {
         let element = try await consumer3.next()
@@ -170,7 +170,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
       try await continuation.yield(element)
     }
 
-    let consumer1 = stream.makeAsyncIterator()
+    var consumer1 = stream.makeAsyncIterator()
     stream.invalidateAllSubscriptions()
     await XCTAssertThrowsErrorAsync {
       try await consumer1.next()
@@ -179,7 +179,7 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
     }
 
     // Subscribe, consume one, then cancel.
-    let consumer2 = stream.makeAsyncIterator()
+    var consumer2 = stream.makeAsyncIterator()
     do {
       let value = try await consumer2.next()
       XCTAssertEqual(value, 0)
@@ -202,14 +202,14 @@ final class BroadcastAsyncSequenceTests: XCTestCase {
       stream.makeAsyncIterator()
     }
 
-    for consumer in consumers {
+    for var consumer in consumers {
       let value = try await consumer.next()
       XCTAssertEqual(value, 0)
     }
 
     stream.invalidateAllSubscriptions()
 
-    for consumer in consumers {
+    for var consumer in consumers {
       await XCTAssertThrowsErrorAsync {
         try await consumer.next()
       } errorHandler: { error in
