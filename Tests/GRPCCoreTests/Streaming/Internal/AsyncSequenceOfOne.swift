@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@_spi(Testing) import GRPCCore
+
 import XCTest
+
+@testable import GRPCCore
 
 internal final class AsyncSequenceOfOneTests: XCTestCase {
   func testSuccessPath() async throws {
