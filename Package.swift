@@ -158,7 +158,7 @@ extension Target {
   static let grpcCore: Target = .target(
     name: "GRPCCore",
     dependencies: [
-      .dequeModule
+      .dequeModule,
     ],
     path: "Sources/GRPCCore"
   )

@@ -25,6 +25,18 @@ func XCTAssertDescription(
   XCTAssertEqual(String(describing: subject), expected, file: file, line: line)
 }
 
+func XCTAssertThrowsErrorAsync<T>(
+  _ expression: () async throws -> T,
+  errorHandler: (Error) -> Void
+) async {
+  do {
+    _ = try await expression()
+    XCTFail("Expression didn't throw")
+  } catch {
+    errorHandler(error)
+  }
+}
+
 func XCTAssertThrowsRPCError<T>(
   _ expression: @autoclosure () throws -> T,
   _ errorHandler: (RPCError) -> Void
