@@ -63,8 +63,8 @@ public struct RetryThrottle: Sendable {
 
   /// The number of tokens the throttle currently has.
   ///
-  /// If this value is less than or equal to half of ``maximumTokens`` then RPCs will not be retried
-  /// and hedging will be disabled.
+  /// If this value is less than or equal to the retry threshold (defined as `maximumTokens / 2`)
+  /// then RPCs will not be retried and hedging will be disabled.
   public var tokens: Double {
     self.scaledTokensAvailable.withLockedValue {
       Double($0) / 1000
@@ -107,7 +107,7 @@ public struct RetryThrottle: Sendable {
   @usableFromInline
   func recordSuccess() {
     self.scaledTokensAvailable.withLockedValue { value in
-      value = Swift.min(self.scaledMaximumTokens, value &+ self.scaledTokenRatio)
+      value = min(self.scaledMaximumTokens, value &+ self.scaledTokenRatio)
     }
   }
 
@@ -117,7 +117,7 @@ public struct RetryThrottle: Sendable {
   @discardableResult
   func recordFailure() -> Bool {
     self.scaledTokensAvailable.withLockedValue { value in
-      value = Swift.max(0, value &- 1000)
+      value = max(0, value &- 1000)
       return value <= self.scaledRetryThreshold
     }
   }
