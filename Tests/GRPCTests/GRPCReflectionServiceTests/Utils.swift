@@ -17,6 +17,7 @@
 import Foundation
 import GRPC
 import SwiftProtobuf
+import XCTest
 
 internal func makeExtensions(
   forType typeName: String,
@@ -134,6 +135,19 @@ internal func makeProtosWithComplexDependencies() -> [Google_Protobuf_FileDescri
     protos.append(fileDescriptorProtoB)
   }
   return protos
+}
+
+func XCTAssertThrowsGRPCStatus<T>(
+  _ expression: @autoclosure () throws -> T,
+  _ errorHandler: (GRPCStatus) -> Void
+) {
+  XCTAssertThrowsError(try expression()) { error in
+    guard let error = error as? GRPCStatus else {
+      return XCTFail("Error had unexpected type '\(type(of: error))'")
+    }
+
+    errorHandler(error)
+  }
 }
 
 extension Sequence where Element == Google_Protobuf_FileDescriptorProto {

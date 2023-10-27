@@ -246,10 +246,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     }
     return Reflection_ServerReflectionResponse(
       request: request,
-      messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse
-        .listServicesResponse(
-          listServicesResponse
-        )
+      messageResponse: .listServicesResponse(listServicesResponse)
     )
   }
 
@@ -337,7 +334,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
       default:
         let response = Reflection_ServerReflectionResponse(
           request: request,
-          messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse.errorResponse(
+          messageResponse: .errorResponse(
             Reflection_ErrorResponse.with {
               $0.errorCode = Int32(GRPCStatus.Code.unimplemented.rawValue)
               $0.errorMessage = "The request is not implemented."
@@ -407,6 +404,7 @@ extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPC
       return .success(.errorResponse(error))
     }
   }
+
   func makeResponse(
     request: Reflection_ServerReflectionRequest
   ) -> Reflection_ServerReflectionResponse {
