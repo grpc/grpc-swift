@@ -38,7 +38,7 @@ class GRPCTestCase: XCTestCase {
   override func tearDown() {
     // Only print logs when there's a failure and we're *not* always logging (when we are always
     // logging, logs will be printed as they're caught).
-    if !GRPCTestCase.alwaysLog, self.testRun.map { $0.totalFailureCount > 0 } ?? false {
+    if !GRPCTestCase.alwaysLog, self.testRun.map({ $0.totalFailureCount > 0 }) ?? false {
       let logs = self.capturedLogs()
       self.printCapturedLogs(logs)
     }
