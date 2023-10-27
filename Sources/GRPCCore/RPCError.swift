@@ -59,24 +59,36 @@ public struct RPCError: @unchecked Sendable, Hashable, Error {
     }
   }
 
+  /// The original error which led to this error being thrown.
+  public var cause: Error? {
+    get { self.storage.cause }
+    set {
+      self.ensureStorageIsUnique()
+      self.storage.cause = newValue
+    }
+  }
+
   /// Create a new RPC error.
   ///
   /// - Parameters:
   ///   - code: The status code.
   ///   - message: A message providing additional context about the code.
   ///   - metadata: Any metadata to attach to the error.
-  public init(code: Code, message: String, metadata: Metadata = [:]) {
-    self.storage = Storage(code: code, message: message, metadata: metadata)
+  ///   - cause: An underlying error which led to this error being thrown.
+  public init(code: Code, message: String, metadata: Metadata = [:], cause: Error? = nil) {
+    self.storage = Storage(code: code, message: message, metadata: metadata, cause: cause)
   }
 
   /// Create a new RPC error from the provided ``Status``.
   ///
   /// Returns `nil` if the provided ``Status`` has code ``Status/Code-swift.struct/ok``.
   ///
-  /// - Parameter status: The status to convert.
-  public init?(status: Status) {
+  /// - Parameters:
+  ///   - status: The status to convert.
+  ///   - metadata: Any metadata to attach to the error.
+  public init?(status: Status, metadata: Metadata = [:]) {
     guard let code = Code(status.code) else { return nil }
-    self.init(code: code, message: status.message, metadata: [:])
+    self.init(code: code, message: status.message, metadata: metadata)
   }
 }
 
@@ -91,15 +103,17 @@ extension RPCError {
     var code: RPCError.Code
     var message: String
     var metadata: Metadata
+    var cause: Error?
 
-    init(code: RPCError.Code, message: String, metadata: Metadata) {
+    init(code: RPCError.Code, message: String, metadata: Metadata, cause: Error?) {
       self.code = code
       self.message = message
       self.metadata = metadata
+      self.cause = cause
     }
 
     func copy() -> Self {
-      Self(code: self.code, message: self.message, metadata: self.metadata)
+      Self(code: self.code, message: self.message, metadata: self.metadata, cause: self.cause)
     }
 
     func hash(into hasher: inout Hasher) {
