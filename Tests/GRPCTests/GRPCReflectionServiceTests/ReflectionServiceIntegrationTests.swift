@@ -259,4 +259,90 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     XCTAssertEqual(message.allExtensionNumbersResponse.baseTypeName, "packagebar2.inputMessage2")
     XCTAssertEqual(message.allExtensionNumbersResponse.extensionNumber, [1, 2, 3, 4, 5])
   }
+
+  func testErrorResponseFileByFileNameRequest() async throws {
+    try self.setUpServerAndChannel()
+    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+    try await serviceReflectionInfo.requestStream.send(
+      .with {
+        $0.host = "127.0.0.1"
+        $0.fileByFilename = "invalidFileName.proto"
+      }
+    )
+    serviceReflectionInfo.requestStream.finish()
+    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+    guard let message = try await iterator.next() else {
+      return XCTFail("Could not get a response message.")
+    }
+
+    XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
+    XCTAssertEqual(
+      message.errorResponse.errorMessage,
+      "The provided file or a dependency of the provided file could not be found."
+    )
+  }
+
+  func testErrorResponseFileBySymbolRequest() async throws {
+    try self.setUpServerAndChannel()
+    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+    try await serviceReflectionInfo.requestStream.send(
+      .with {
+        $0.host = "127.0.0.1"
+        $0.fileContainingSymbol = "packagebar1.invalidEnumType1"
+      }
+    )
+    serviceReflectionInfo.requestStream.finish()
+    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+    guard let message = try await iterator.next() else {
+      return XCTFail("Could not get a response message.")
+    }
+
+    XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
+    XCTAssertEqual(message.errorResponse.errorMessage, "The provided symbol could not be found.")
+  }
+
+  func testErrorResponseFileByExtensionRequest() async throws {
+    try self.setUpServerAndChannel()
+    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+    try await serviceReflectionInfo.requestStream.send(
+      .with {
+        $0.host = "127.0.0.1"
+        $0.fileContainingExtension = .with {
+          $0.containingType = "packagebar1.invalidInputMessage1"
+          $0.extensionNumber = 2
+        }
+      }
+    )
+    serviceReflectionInfo.requestStream.finish()
+    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+    guard let message = try await iterator.next() else {
+      return XCTFail("Could not get a response message.")
+    }
+
+    XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
+    XCTAssertEqual(message.errorResponse.errorMessage, "The provided extension could not be found.")
+  }
+
+  func testErrorResponseAllExtensionNumbersOfTypeRequest() async throws {
+    try self.setUpServerAndChannel()
+    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+    try await serviceReflectionInfo.requestStream.send(
+      .with {
+        $0.host = "127.0.0.1"
+        $0.allExtensionNumbersOfType = "packagebar2.invalidInputMessage2"
+      }
+    )
+    serviceReflectionInfo.requestStream.finish()
+    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+    guard let message = try await iterator.next() else {
+      return XCTFail("Could not get a response message.")
+    }
+
+    XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.invalidArgument.rawValue))
+    XCTAssertEqual(message.errorResponse.errorMessage, "The provided type is invalid.")
+  }
 }
