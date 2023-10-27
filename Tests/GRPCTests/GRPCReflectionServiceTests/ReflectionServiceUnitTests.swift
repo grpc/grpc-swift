@@ -117,38 +117,52 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testNameOfFileContainingSymbolEnum() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType2")
-    XCTAssertEqual(fileName, "bar2.proto")
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar2.enumType2"
+    )
+    XCTAssertEqual(try nameOfFileContainingSymbolResult.get(), "bar2.proto")
   }
 
   func testNameOfFileContainingSymbolMessage() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar1.inputMessage1")
-    XCTAssertEqual(fileName, "bar1.proto")
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar1.inputMessage1"
+    )
+    XCTAssertEqual(try nameOfFileContainingSymbolResult.get(), "bar1.proto")
   }
 
   func testNameOfFileContainingSymbolService() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar3.service3")
-    XCTAssertEqual(fileName, "bar3.proto")
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar3.service3"
+    )
+    XCTAssertEqual(try nameOfFileContainingSymbolResult.get(), "bar3.proto")
   }
 
   func testNameOfFileContainingSymbolMethod() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
       named: "packagebar4.service4.testMethod4"
     )
-    XCTAssertEqual(fileName, "bar4.proto")
+    XCTAssertEqual(try nameOfFileContainingSymbolResult.get(), "bar4.proto")
   }
 
   func testNameOfFileContainingSymbolNonExistentSymbol() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let fileName = registry.nameOfFileContainingSymbol(named: "packagebar2.enumType3")
-    XCTAssertNil(fileName)
+    let nameOfFileContainingSymbolResult = registry.nameOfFileContainingSymbol(
+      named: "packagebar2.enumType3"
+    )
+    XCTAssertThrowsGRPCStatus(try nameOfFileContainingSymbolResult.get()) {
+      status in
+      XCTAssertEqual(
+        status,
+        GRPCStatus(code: .notFound, message: "The provided symbol could not be found.")
+      )
+    }
   }
 
   // Testing the serializedFileDescriptorProto method in different cases.
@@ -156,95 +170,112 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testSerialisedFileDescriptorProtosForDependenciesOfFile() throws {
     var protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let serializedFileDescriptorProtos =
-      try registry
+    let serializedFileDescriptorProtosResult =
+      registry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: "bar1.proto")
-    let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-      try Google_Protobuf_FileDescriptorProto(serializedData: $0)
-    }
-    // Tests that the functions returns all the transitive dependencies, with their services and
-    // methods, together with the initial proto, as serialized data.
-    XCTAssertEqual(fileDescriptorProtos.count, 4)
-    for fileDescriptorProto in fileDescriptorProtos {
-      guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
-        return XCTFail(
-          """
-          Could not find the file descriptor proto of \(fileDescriptorProto.name) \
-          in the original file descriptor protos list.
-          """
-        )
-      }
 
-      for service in fileDescriptorProto.service {
-        guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
+    switch serializedFileDescriptorProtosResult {
+    case .success(let serializedFileDescriptorProtos):
+      let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
+        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+      }
+      // Tests that the functions returns all the transitive dependencies, with their services and
+      // methods, together with the initial proto, as serialized data.
+      XCTAssertEqual(fileDescriptorProtos.count, 4)
+      for fileDescriptorProto in fileDescriptorProtos {
+        guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
           return XCTFail(
             """
-            Could not find the \(service.name) in the service \
-            list of the \(fileDescriptorProto.name) file descriptor proto.
+            Could not find the file descriptor proto of \(fileDescriptorProto.name) \
+            in the original file descriptor protos list.
             """
           )
         }
 
-        let originalMethods = protos[protoIndex].service[serviceIndex].method
-        for method in service.method {
-          XCTAssert(originalMethods.contains(method))
+        for service in fileDescriptorProto.service {
+          guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
+            return XCTFail(
+              """
+              Could not find the \(service.name) in the service \
+              list of the \(fileDescriptorProto.name) file descriptor proto.
+              """
+            )
+          }
+
+          let originalMethods = protos[protoIndex].service[serviceIndex].method
+          for method in service.method {
+            XCTAssert(originalMethods.contains(method))
+          }
+
+          for messageType in fileDescriptorProto.messageType {
+            XCTAssert(protos[protoIndex].messageType.contains(messageType))
+          }
         }
 
-        for messageType in fileDescriptorProto.messageType {
-          XCTAssert(protos[protoIndex].messageType.contains(messageType))
-        }
+        protos.removeAll { $0 == fileDescriptorProto }
       }
-
-      protos.removeAll { $0 == fileDescriptorProto }
+      XCTAssert(protos.isEmpty)
+    case .failure(let status):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
+      )
     }
-    XCTAssert(protos.isEmpty)
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileComplexDependencyGraph() throws {
     var protos = makeProtosWithComplexDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let serializedFileDescriptorProtos =
-      try registry
+    let serializedFileDescriptorProtosResult =
+      registry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: "foo0.proto")
-    let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-      try Google_Protobuf_FileDescriptorProto(serializedData: $0)
-    }
-    // Tests that the functions returns all the tranzitive dependencies, with their services and
-    // methods, together with the initial proto, as serialized data.
-    XCTAssertEqual(fileDescriptorProtos.count, 21)
-    for fileDescriptorProto in fileDescriptorProtos {
-      guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
-        return XCTFail(
-          """
-          Could not find the file descriptor proto of \(fileDescriptorProto.name) \
-          in the original file descriptor protos list.
-          """
-        )
+    switch serializedFileDescriptorProtosResult {
+    case .success(let serializedFileDescriptorProtos):
+      let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
+        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
       }
-
-      for service in fileDescriptorProto.service {
-        guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
+      // Tests that the functions returns all the tranzitive dependencies, with their services and
+      // methods, together with the initial proto, as serialized data.
+      XCTAssertEqual(fileDescriptorProtos.count, 21)
+      for fileDescriptorProto in fileDescriptorProtos {
+        guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
           return XCTFail(
             """
-            Could not find the \(service.name) in the service \
-            list of the \(fileDescriptorProto.name) file descriptor proto.
+            Could not find the file descriptor proto of \(fileDescriptorProto.name) \
+            in the original file descriptor protos list.
             """
           )
         }
 
-        let originalMethods = protos[protoIndex].service[serviceIndex].method
-        for method in service.method {
-          XCTAssert(originalMethods.contains(method))
+        for service in fileDescriptorProto.service {
+          guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
+            return XCTFail(
+              """
+              Could not find the \(service.name) in the service \
+              list of the \(fileDescriptorProto.name) file descriptor proto.
+              """
+            )
+          }
+
+          let originalMethods = protos[protoIndex].service[serviceIndex].method
+          for method in service.method {
+            XCTAssert(originalMethods.contains(method))
+          }
+
+          for messageType in fileDescriptorProto.messageType {
+            XCTAssert(protos[protoIndex].messageType.contains(messageType))
+          }
         }
 
-        for messageType in fileDescriptorProto.messageType {
-          XCTAssert(protos[protoIndex].messageType.contains(messageType))
-        }
+        protos.removeAll { $0 == fileDescriptorProto }
       }
-
-      protos.removeAll { $0 == fileDescriptorProto }
+      XCTAssert(protos.isEmpty)
+    case .failure(let status):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
+      )
     }
-    XCTAssert(protos.isEmpty)
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileDependencyLoops() throws {
@@ -254,57 +285,67 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     protos[2].dependency.append("bar1.proto")
     protos[3].dependency.append("bar1.proto")
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let serializedFileDescriptorProtos =
-      try registry
+    let serializedFileDescriptorProtosResult =
+      registry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: "bar1.proto")
-    let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-      try Google_Protobuf_FileDescriptorProto(serializedData: $0)
-    }
-    // Test that we get only 4 serialized File Descriptor Protos as response.
-    XCTAssertEqual(fileDescriptorProtos.count, 4)
-    for fileDescriptorProto in fileDescriptorProtos {
-      guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
-        return XCTFail(
-          """
-          Could not find the file descriptor proto of \(fileDescriptorProto.name) \
-          in the original file descriptor protos list.
-          """
-        )
+    switch serializedFileDescriptorProtosResult {
+    case .success(let serializedFileDescriptorProtos):
+      let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
+        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
       }
-
-      for service in fileDescriptorProto.service {
-        guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
+      // Test that we get only 4 serialized File Descriptor Protos as response.
+      XCTAssertEqual(fileDescriptorProtos.count, 4)
+      for fileDescriptorProto in fileDescriptorProtos {
+        guard let protoIndex = protos.firstIndex(of: fileDescriptorProto) else {
           return XCTFail(
             """
-            Could not find the \(service.name) in the service \
-            list of the \(fileDescriptorProto.name) file descriptor proto.
+            Could not find the file descriptor proto of \(fileDescriptorProto.name) \
+            in the original file descriptor protos list.
             """
           )
         }
 
-        let originalMethods = protos[protoIndex].service[serviceIndex].method
-        for method in service.method {
-          XCTAssert(originalMethods.contains(method))
+        for service in fileDescriptorProto.service {
+          guard let serviceIndex = protos[protoIndex].service.firstIndex(of: service) else {
+            return XCTFail(
+              """
+              Could not find the \(service.name) in the service \
+              list of the \(fileDescriptorProto.name) file descriptor proto.
+              """
+            )
+          }
+
+          let originalMethods = protos[protoIndex].service[serviceIndex].method
+          for method in service.method {
+            XCTAssert(originalMethods.contains(method))
+          }
+
+          for messageType in fileDescriptorProto.messageType {
+            XCTAssert(protos[protoIndex].messageType.contains(messageType))
+          }
         }
 
-        for messageType in fileDescriptorProto.messageType {
-          XCTAssert(protos[protoIndex].messageType.contains(messageType))
-        }
+        protos.removeAll { $0 == fileDescriptorProto }
       }
-
-      protos.removeAll { $0 == fileDescriptorProto }
+      XCTAssert(protos.isEmpty)
+    case .failure(let status):
+      XCTFail(
+        "Faild with GRPCStatus code: " + String(status.code.rawValue) + " and message: "
+          + (status.message ?? "empty") + "."
+      )
     }
-    XCTAssert(protos.isEmpty)
   }
 
   func testSerialisedFileDescriptorProtosForDependenciesOfFileInvalidFile() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    XCTAssertThrowsError(
-      try registry.serialisedFileDescriptorProtosForDependenciesOfFile(named: "invalid.proto")
-    ) { error in
+    let serializedFileDescriptorProtosForDependenciesOfFileResult =
+      registry.serialisedFileDescriptorProtosForDependenciesOfFile(named: "invalid.proto")
+
+    XCTAssertThrowsGRPCStatus(try serializedFileDescriptorProtosForDependenciesOfFileResult.get()) {
+      status in
       XCTAssertEqual(
-        error as? GRPCStatus,
+        status,
         GRPCStatus(
           code: .notFound,
           message: "The provided file or a dependency of the provided file could not be found."
@@ -317,11 +358,13 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     var protos = makeProtosWithDependencies()
     protos[0].dependency.append("invalidDependency")
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    XCTAssertThrowsError(
-      try registry.serialisedFileDescriptorProtosForDependenciesOfFile(named: "bar1.proto")
-    ) { error in
+    let serializedFileDescriptorProtosForDependenciesOfFileResult =
+      registry.serialisedFileDescriptorProtosForDependenciesOfFile(named: "bar1.proto")
+
+    XCTAssertThrowsGRPCStatus(try serializedFileDescriptorProtosForDependenciesOfFileResult.get()) {
+      status in
       XCTAssertEqual(
-        error as? GRPCStatus,
+        status,
         GRPCStatus(
           code: .notFound,
           message: "The provided file or a dependency of the provided file could not be found."
@@ -338,11 +381,11 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     for proto in protos {
       for `extension` in proto.extension {
         let typeName = String(`extension`.extendee.drop(while: { $0 == "." }))
-        let registryFileName = registry.nameOfFileContainingExtension(
+        let registryFileNameResult = registry.nameOfFileContainingExtension(
           extendeeName: typeName,
           fieldNumber: `extension`.number
         )
-        XCTAssertEqual(registryFileName, proto.name)
+        XCTAssertEqual(try registryFileNameResult.get(), proto.name)
       }
     }
   }
@@ -350,21 +393,35 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testNameOfFileContainingExtensionsInvalidTypeName() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let registryFileName = registry.nameOfFileContainingExtension(
+    let registryFileNameResult = registry.nameOfFileContainingExtension(
       extendeeName: "InvalidType",
       fieldNumber: 2
     )
-    XCTAssertNil(registryFileName)
+
+    XCTAssertThrowsGRPCStatus(try registryFileNameResult.get()) {
+      status in
+      XCTAssertEqual(
+        status,
+        GRPCStatus(code: .notFound, message: "The provided extension could not be found.")
+      )
+    }
   }
 
   func testNameOfFileContainingExtensionsInvalidFieldNumber() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let registryFileName = registry.nameOfFileContainingExtension(
+    let registryFileNameResult = registry.nameOfFileContainingExtension(
       extendeeName: protos[0].extension[0].extendee,
       fieldNumber: 9
     )
-    XCTAssertNil(registryFileName)
+
+    XCTAssertThrowsGRPCStatus(try registryFileNameResult.get()) {
+      status in
+      XCTAssertEqual(
+        status,
+        GRPCStatus(code: .notFound, message: "The provided extension could not be found.")
+      )
+    }
   }
 
   func testNameOfFileContainingExtensionsDuplicatedExtensions() throws {
@@ -403,10 +460,11 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
       named: "packagebar1.inputMessage1"
     )
-    XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 120])
+
+    XCTAssertEqual(try extensionsFieldNumbersOfTypeResult.get(), [1, 2, 3, 4, 5, 120])
   }
 
   func testExtensionsFieldNumbersOfTypeNoExtensionsType() throws {
@@ -423,26 +481,25 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
       named: "packagebar1.noExtensionMessage"
     )
-    XCTAssertEqual(extensionNumbers, [])
+
+    XCTAssertEqual(try extensionsFieldNumbersOfTypeResult.get(), [])
   }
 
   func testExtensionsFieldNumbersOfTypeInvalidTypeName() throws {
     let protos = makeProtosWithDependencies()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    XCTAssertThrowsError(
-      try registry.extensionsFieldNumbersOfType(
-        named: "packagebar1.invalidTypeMessage"
-      )
-    ) { error in
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
+      named: "packagebar1.invalidTypeMessage"
+    )
+
+    XCTAssertThrowsGRPCStatus(try extensionsFieldNumbersOfTypeResult.get()) {
+      status in
       XCTAssertEqual(
-        error as? GRPCStatus,
-        GRPCStatus(
-          code: .invalidArgument,
-          message: "The provided type is invalid."
-        )
+        status,
+        GRPCStatus(code: .invalidArgument, message: "The provided type is invalid.")
       )
     }
   }
@@ -456,9 +513,10 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
       }
     )
     let registry = try ReflectionServiceData(fileDescriptors: protos)
-    let extensionNumbers = try registry.extensionsFieldNumbersOfType(
+    let extensionsFieldNumbersOfTypeResult = registry.extensionsFieldNumbersOfType(
       named: "packagebar1.inputMessage1"
     )
-    XCTAssertEqual(extensionNumbers, [1, 2, 3, 4, 5, 130])
+
+    XCTAssertEqual(try extensionsFieldNumbersOfTypeResult.get(), [1, 2, 3, 4, 5, 130])
   }
 }

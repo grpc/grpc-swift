@@ -129,7 +129,7 @@ internal struct ReflectionServiceData: Sendable {
 
   internal func serialisedFileDescriptorProtosForDependenciesOfFile(
     named fileName: String
-  ) throws -> [Data] {
+  ) -> Result<[Data], GRPCStatus> {
     var toVisit = Deque<String>()
     var visited = Set<String>()
     var serializedFileDescriptorProtos: [Data] = []
@@ -147,37 +147,59 @@ internal struct ReflectionServiceData: Sendable {
         let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
         serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
       } else {
-        throw GRPCStatus(
-          code: .notFound,
-          message: "The provided file or a dependency of the provided file could not be found."
+        return .failure(
+          GRPCStatus(
+            code: .notFound,
+            message: "The provided file or a dependency of the provided file could not be found."
+          )
         )
       }
       visited.insert(currentFileName)
     }
-    return serializedFileDescriptorProtos
+    return .success(serializedFileDescriptorProtos)
   }
 
-  internal func nameOfFileContainingSymbol(named symbolName: String) -> String? {
-    return self.fileNameBySymbol[symbolName]
+  internal func nameOfFileContainingSymbol(named symbolName: String) -> Result<String, GRPCStatus> {
+    guard let fileName = self.fileNameBySymbol[symbolName] else {
+      return .failure(
+        GRPCStatus(
+          code: .notFound,
+          message: "The provided symbol could not be found."
+        )
+      )
+    }
+    return .success(fileName)
   }
 
   internal func nameOfFileContainingExtension(
     extendeeName: String,
     fieldNumber number: Int32
-  ) -> String? {
+  ) -> Result<String, GRPCStatus> {
     let key = ExtensionDescriptor(extendeeTypeName: extendeeName, fieldNumber: number)
-    return self.fileNameByExtensionDescriptor[key]
+    guard let fileName = self.fileNameByExtensionDescriptor[key] else {
+      return .failure(
+        GRPCStatus(
+          code: .notFound,
+          message: "The provided extension could not be found."
+        )
+      )
+    }
+    return .success(fileName)
   }
 
   // Returns an empty array if the type has no extensions.
-  internal func extensionsFieldNumbersOfType(named typeName: String) throws -> [Int32] {
+  internal func extensionsFieldNumbersOfType(
+    named typeName: String
+  ) -> Result<[Int32], GRPCStatus> {
     guard let fieldNumbers = self.fieldNumbersByType[typeName] else {
-      throw GRPCStatus(
-        code: .invalidArgument,
-        message: "The provided type is invalid."
+      return .failure(
+        GRPCStatus(
+          code: .invalidArgument,
+          message: "The provided type is invalid."
+        )
       )
     }
-    return fieldNumbers
+    return .success(fieldNumbers)
   }
 }
 
@@ -191,17 +213,26 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     )
   }
 
+  internal func _findFileByFileName(
+    _ fileName: String
+  ) -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
+    return self.protoRegistry
+      .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
+      .map { fileDescriptorProtos in
+        Reflection_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse(
+          .with {
+            $0.fileDescriptorProto = fileDescriptorProtos
+          }
+        )
+      }
+  }
+
   internal func findFileByFileName(
     _ fileName: String,
     request: Reflection_ServerReflectionRequest
-  ) throws -> Reflection_ServerReflectionResponse {
-    return Reflection_ServerReflectionResponse(
-      request: request,
-      fileDescriptorResponse: try .with {
-        $0.fileDescriptorProto = try self.protoRegistry
-          .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
-      }
-    )
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self._findFileByFileName(fileName)
+    return result.makeResponse(request: request)
   }
 
   internal func getServicesNames(
@@ -215,53 +246,50 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     }
     return Reflection_ServerReflectionResponse(
       request: request,
-      listServicesResponse: listServicesResponse
+      messageResponse: .listServicesResponse(listServicesResponse)
     )
   }
 
   internal func findFileBySymbol(
     _ symbolName: String,
     request: Reflection_ServerReflectionRequest
-  ) throws -> Reflection_ServerReflectionResponse {
-    guard let fileName = self.protoRegistry.nameOfFileContainingSymbol(named: symbolName) else {
-      throw GRPCStatus(
-        code: .notFound,
-        message: "The provided symbol could not be found."
-      )
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.protoRegistry.nameOfFileContainingSymbol(
+      named: symbolName
+    ).flatMap {
+      self._findFileByFileName($0)
     }
-    return try self.findFileByFileName(fileName, request: request)
+    return result.makeResponse(request: request)
   }
 
   internal func findFileByExtension(
     extensionRequest: Reflection_ExtensionRequest,
     request: Reflection_ServerReflectionRequest
-  ) throws -> Reflection_ServerReflectionResponse {
-    guard
-      let fileName = self.protoRegistry.nameOfFileContainingExtension(
-        extendeeName: extensionRequest.containingType,
-        fieldNumber: extensionRequest.extensionNumber
-      )
-    else {
-      throw GRPCStatus(
-        code: .notFound,
-        message: "The provided extension could not be found."
-      )
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.protoRegistry.nameOfFileContainingExtension(
+      extendeeName: extensionRequest.containingType,
+      fieldNumber: extensionRequest.extensionNumber
+    ).flatMap {
+      self._findFileByFileName($0)
     }
-    return try self.findFileByFileName(fileName, request: request)
+    return result.makeResponse(request: request)
   }
 
   internal func findExtensionsFieldNumbersOfType(
     named typeName: String,
     request: Reflection_ServerReflectionRequest
-  ) throws -> Reflection_ServerReflectionResponse {
-    let fieldNumbers = try self.protoRegistry.extensionsFieldNumbersOfType(named: typeName)
-    return Reflection_ServerReflectionResponse(
-      request: request,
-      extensionNumberResponse: .with {
-        $0.baseTypeName = typeName
-        $0.extensionNumber = fieldNumbers
-      }
-    )
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.protoRegistry.extensionsFieldNumbersOfType(
+      named: typeName
+    ).map { fieldNumbers in
+      Reflection_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse(
+        Reflection_ExtensionNumberResponse.with {
+          $0.baseTypeName = typeName
+          $0.extensionNumber = fieldNumbers
+        }
+      )
+    }
+    return result.makeResponse(request: request)
   }
 
   internal func serverReflectionInfo(
@@ -272,7 +300,7 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
     for try await request in requestStream {
       switch request.messageRequest {
       case let .fileByFilename(fileName):
-        let response = try self.findFileByFileName(
+        let response = self.findFileByFileName(
           fileName,
           request: request
         )
@@ -283,28 +311,37 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         try await responseStream.send(response)
 
       case let .fileContainingSymbol(symbolName):
-        let response = try self.findFileBySymbol(
+        let response = self.findFileBySymbol(
           symbolName,
           request: request
         )
         try await responseStream.send(response)
 
       case let .fileContainingExtension(extensionRequest):
-        let response = try self.findFileByExtension(
+        let response = self.findFileByExtension(
           extensionRequest: extensionRequest,
           request: request
         )
         try await responseStream.send(response)
 
       case let .allExtensionNumbersOfType(typeName):
-        let response = try self.findExtensionsFieldNumbersOfType(
+        let response = self.findExtensionsFieldNumbersOfType(
           named: typeName,
           request: request
         )
         try await responseStream.send(response)
 
       default:
-        throw GRPCStatus(code: .unimplemented)
+        let response = Reflection_ServerReflectionResponse(
+          request: request,
+          messageResponse: .errorResponse(
+            Reflection_ErrorResponse.with {
+              $0.errorCode = Int32(GRPCStatus.Code.unimplemented.rawValue)
+              $0.errorMessage = "The request is not implemented."
+            }
+          )
+        )
+        try await responseStream.send(response)
       }
     }
   }
@@ -313,34 +350,12 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 extension Reflection_ServerReflectionResponse {
   init(
     request: Reflection_ServerReflectionRequest,
-    fileDescriptorResponse: Reflection_FileDescriptorResponse
+    messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse
   ) {
     self = .with {
       $0.validHost = request.host
       $0.originalRequest = request
-      $0.fileDescriptorResponse = fileDescriptorResponse
-    }
-  }
-
-  init(
-    request: Reflection_ServerReflectionRequest,
-    listServicesResponse: Reflection_ListServiceResponse
-  ) {
-    self = .with {
-      $0.validHost = request.host
-      $0.originalRequest = request
-      $0.listServicesResponse = listServicesResponse
-    }
-  }
-
-  init(
-    request: Reflection_ServerReflectionRequest,
-    extensionNumberResponse: Reflection_ExtensionNumberResponse
-  ) {
-    self = .with {
-      $0.validHost = request.host
-      $0.originalRequest = request
-      $0.allExtensionNumbersResponse = extensionNumberResponse
+      $0.messageResponse = messageResponse
     }
   }
 }
@@ -376,5 +391,35 @@ extension Google_Protobuf_FileDescriptorProto {
     names.append(contentsOf: self.qualifiedMessageTypes)
     names.append(contentsOf: self.qualifiedEnumTypes)
     return names
+  }
+}
+
+extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
+  func recover() -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, Never> {
+    self.flatMapError { status in
+      let error = Reflection_ErrorResponse.with {
+        $0.errorCode = Int32(status.code.rawValue)
+        $0.errorMessage = status.message ?? ""
+      }
+      return .success(.errorResponse(error))
+    }
+  }
+
+  func makeResponse(
+    request: Reflection_ServerReflectionRequest
+  ) -> Reflection_ServerReflectionResponse {
+    let result = self.recover().attachRequest(request)
+    // Safe to '!' as the failure type is 'Never'.
+    return try! result.get()
+  }
+}
+
+extension Result where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse {
+  func attachRequest(
+    _ request: Reflection_ServerReflectionRequest
+  ) -> Result<Reflection_ServerReflectionResponse, Failure> {
+    self.map { message in
+      Reflection_ServerReflectionResponse(request: request, messageResponse: message)
+    }
   }
 }
