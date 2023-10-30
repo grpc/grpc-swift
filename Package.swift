@@ -452,6 +452,24 @@ extension Target {
       "Model/reflection.proto",
     ]
   )
+  
+  static let reflectionServer: Target = .executableTarget(
+    name: "ReflectionServiceServer",
+    dependencies: [
+      .grpc,
+      .reflectionService,
+      .helloWorldModel,
+      .nioCore,
+      .nioPosix,
+      .argumentParser,
+    ],
+    path: "Sources/Examples/ReflectionService",
+    exclude: [
+      "Generated/helloworld.grpc.reflection.txt",
+      "Generated/echo.grpc.reflection.txt",
+      "Generated/reflection.grpc.reflection.txt",
+    ]
+  )
 }
 
 // MARK: - Products
@@ -517,6 +535,7 @@ let package = Package(
     .routeGuideClient,
     .routeGuideServer,
     .packetCapture,
+    .reflectionServer,
 
     // v2
     .grpcCore,
