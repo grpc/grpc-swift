@@ -68,7 +68,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testFileByFileName() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
       .with {
@@ -104,7 +104,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testListServices() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
     try await serviceReflectionInfo.requestStream.send(
@@ -128,7 +128,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testFileBySymbol() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
     try await serviceReflectionInfo.requestStream.send(
@@ -177,7 +177,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testFileByExtension() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
     try await serviceReflectionInfo.requestStream.send(
@@ -241,7 +241,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testAllExtensionNumbersOfType() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
     try await serviceReflectionInfo.requestStream.send(
@@ -262,7 +262,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testErrorResponseFileByFileNameRequest() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
       .with {
@@ -285,7 +285,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testErrorResponseFileBySymbolRequest() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
       .with {
@@ -305,7 +305,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testErrorResponseFileByExtensionRequest() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
       .with {
@@ -328,7 +328,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   func testErrorResponseAllExtensionNumbersOfTypeRequest() async throws {
     try self.setUpServerAndChannel()
-    let client = Reflection_ServerReflectionAsyncClient(channel: self.channel!)
+    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
       .with {

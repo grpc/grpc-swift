@@ -21,7 +21,7 @@
 
 syntax = "proto3";
 
-package reflection;
+package grpc.reflection.v1;
 
 service ServerReflection {
   // The reflection service is structured as a bidirectional stream, ensuring
