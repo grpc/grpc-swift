@@ -31,6 +31,10 @@ enum MetadataKey {
   static let h2DataBytes = "h2_data_bytes"
   static let h2GoAwayError = "h2_goaway_error"
   static let h2GoAwayLastStreamID = "h2_goaway_last_stream_id"
+  static let h2PingAck = "h2_ping_ack"
+
+  static let delayMs = "delay_ms"
+  static let intervalMs = "interval_ms"
 
   static let error = "error"
 }

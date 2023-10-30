@@ -131,7 +131,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
         if self.idleTimeout != .nanoseconds(.max), let context = self.context {
           self.stateMachine.logger.debug(
             "scheduling idle timeout task",
-            metadata: ["delay_ms": "\(self.idleTimeout.milliseconds)"]
+            metadata: [MetadataKey.delayMs: "\(self.idleTimeout.milliseconds)"]
           )
           let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
             self.stateMachine.logger.debug("idle timeout task fired")
@@ -189,7 +189,10 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     case .ack:
       // NIO's HTTP2 handler acks for us so this is a no-op. Log so it doesn't appear that we are
       // ignoring pings.
-      self.stateMachine.logger.debug("sending PING frame", metadata: ["ack": "true"])
+      self.stateMachine.logger.debug(
+        "sending PING frame",
+        metadata: [MetadataKey.h2PingAck: "true"]
+      )
 
     case .cancelScheduledTimeout:
       self.scheduledClose?.cancel()
@@ -201,7 +204,10 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     case let .reply(framePayload):
       switch framePayload {
       case .ping(_, let ack):
-        self.stateMachine.logger.debug("sending PING frame", metadata: ["ack": "\(ack)"])
+        self.stateMachine.logger.debug(
+          "sending PING frame",
+          metadata: [MetadataKey.h2PingAck: "\(ack)"]
+        )
       default:
         ()
       }
@@ -220,7 +226,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
 
     self.stateMachine.logger.debug(
       "scheduled keepalive pings",
-      metadata: ["interval_ms": "\(delay.milliseconds)"]
+      metadata: [MetadataKey.intervalMs: "\(delay.milliseconds)"]
     )
 
     self.scheduledPing = self.context?.eventLoop.scheduleRepeatedTask(
@@ -332,7 +338,10 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     case let .settings(.settings(settings)):
       self.perform(operations: self.stateMachine.receiveSettings(settings))
     case let .ping(data, ack):
-      self.stateMachine.logger.debug("received PING frame", metadata: ["ack": "\(ack)"])
+      self.stateMachine.logger.debug(
+        "received PING frame",
+        metadata: [MetadataKey.h2PingAck: "\(ack)"]
+      )
       self.handlePingAction(self.pingHandler.read(pingData: data, ack: ack))
     default:
       // We're not interested in other events.
