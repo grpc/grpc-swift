@@ -152,7 +152,7 @@ extension ClientRPCExecutor {
   static func _intercept<Input, Output>(
     request: ClientRequest.Stream<Input>,
     context: ClientInterceptorContext,
-    iterator: [any ClientInterceptor].Iterator,
+    iterator: Array<any ClientInterceptor>.Iterator,
     finally: @escaping @Sendable (
       _ request: ClientRequest.Stream<Input>,
       _ context: ClientInterceptorContext
