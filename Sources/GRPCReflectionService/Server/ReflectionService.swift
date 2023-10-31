@@ -204,7 +204,7 @@ internal struct ReflectionServiceData: Sendable {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsyncProvider {
+internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflectionAsyncProvider {
   private let protoRegistry: ReflectionServiceData
 
   internal init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
@@ -215,11 +215,11 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 
   internal func _findFileByFileName(
     _ fileName: String
-  ) -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
+  ) -> Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
     return self.protoRegistry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
       .map { fileDescriptorProtos in
-        Reflection_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse(
+        Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse(
           .with {
             $0.fileDescriptorProto = fileDescriptorProtos
           }
@@ -229,22 +229,22 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 
   internal func findFileByFileName(
     _ fileName: String,
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
+    request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
     let result = self._findFileByFileName(fileName)
     return result.makeResponse(request: request)
   }
 
   internal func getServicesNames(
-    request: Reflection_ServerReflectionRequest
-  ) throws -> Reflection_ServerReflectionResponse {
-    var listServicesResponse = Reflection_ListServiceResponse()
+    request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) throws -> Grpc_Reflection_V1_ServerReflectionResponse {
+    var listServicesResponse = Grpc_Reflection_V1_ListServiceResponse()
     listServicesResponse.service = self.protoRegistry.serviceNames.map { serviceName in
-      Reflection_ServiceResponse.with {
+      Grpc_Reflection_V1_ServiceResponse.with {
         $0.name = serviceName
       }
     }
-    return Reflection_ServerReflectionResponse(
+    return Grpc_Reflection_V1_ServerReflectionResponse(
       request: request,
       messageResponse: .listServicesResponse(listServicesResponse)
     )
@@ -252,8 +252,8 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 
   internal func findFileBySymbol(
     _ symbolName: String,
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
+    request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
     let result = self.protoRegistry.nameOfFileContainingSymbol(
       named: symbolName
     ).flatMap {
@@ -263,9 +263,9 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   }
 
   internal func findFileByExtension(
-    extensionRequest: Reflection_ExtensionRequest,
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
+    extensionRequest: Grpc_Reflection_V1_ExtensionRequest,
+    request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
     let result = self.protoRegistry.nameOfFileContainingExtension(
       extendeeName: extensionRequest.containingType,
       fieldNumber: extensionRequest.extensionNumber
@@ -277,13 +277,13 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
 
   internal func findExtensionsFieldNumbersOfType(
     named typeName: String,
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
+    request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
     let result = self.protoRegistry.extensionsFieldNumbersOfType(
       named: typeName
     ).map { fieldNumbers in
-      Reflection_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse(
-        Reflection_ExtensionNumberResponse.with {
+      Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse(
+        Grpc_Reflection_V1_ExtensionNumberResponse.with {
           $0.baseTypeName = typeName
           $0.extensionNumber = fieldNumbers
         }
@@ -293,8 +293,8 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   }
 
   internal func serverReflectionInfo(
-    requestStream: GRPCAsyncRequestStream<Reflection_ServerReflectionRequest>,
-    responseStream: GRPCAsyncResponseStreamWriter<Reflection_ServerReflectionResponse>,
+    requestStream: GRPCAsyncRequestStream<Grpc_Reflection_V1_ServerReflectionRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Reflection_V1_ServerReflectionResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws {
     for try await request in requestStream {
@@ -332,10 +332,10 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
         try await responseStream.send(response)
 
       default:
-        let response = Reflection_ServerReflectionResponse(
+        let response = Grpc_Reflection_V1_ServerReflectionResponse(
           request: request,
           messageResponse: .errorResponse(
-            Reflection_ErrorResponse.with {
+            Grpc_Reflection_V1_ErrorResponse.with {
               $0.errorCode = Int32(GRPCStatus.Code.unimplemented.rawValue)
               $0.errorMessage = "The request is not implemented."
             }
@@ -347,10 +347,10 @@ internal final class ReflectionServiceProvider: Reflection_ServerReflectionAsync
   }
 }
 
-extension Reflection_ServerReflectionResponse {
+extension Grpc_Reflection_V1_ServerReflectionResponse {
   init(
-    request: Reflection_ServerReflectionRequest,
-    messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse
+    request: Grpc_Reflection_V1_ServerReflectionRequest,
+    messageResponse: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse
   ) {
     self = .with {
       $0.validHost = request.host
@@ -394,10 +394,11 @@ extension Google_Protobuf_FileDescriptorProto {
   }
 }
 
-extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
-  func recover() -> Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, Never> {
+extension Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
+  func recover() -> Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, Never>
+  {
     self.flatMapError { status in
-      let error = Reflection_ErrorResponse.with {
+      let error = Grpc_Reflection_V1_ErrorResponse.with {
         $0.errorCode = Int32(status.code.rawValue)
         $0.errorMessage = status.message ?? ""
       }
@@ -406,20 +407,21 @@ extension Result<Reflection_ServerReflectionResponse.OneOf_MessageResponse, GRPC
   }
 
   func makeResponse(
-    request: Reflection_ServerReflectionRequest
-  ) -> Reflection_ServerReflectionResponse {
+    request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
     let result = self.recover().attachRequest(request)
     // Safe to '!' as the failure type is 'Never'.
     return try! result.get()
   }
 }
 
-extension Result where Success == Reflection_ServerReflectionResponse.OneOf_MessageResponse {
+extension Result
+where Success == Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse {
   func attachRequest(
-    _ request: Reflection_ServerReflectionRequest
-  ) -> Result<Reflection_ServerReflectionResponse, Failure> {
+    _ request: Grpc_Reflection_V1_ServerReflectionRequest
+  ) -> Result<Grpc_Reflection_V1_ServerReflectionResponse, Failure> {
     self.map { message in
-      Reflection_ServerReflectionResponse(request: request, messageResponse: message)
+      Grpc_Reflection_V1_ServerReflectionResponse(request: request, messageResponse: message)
     }
   }
 }
