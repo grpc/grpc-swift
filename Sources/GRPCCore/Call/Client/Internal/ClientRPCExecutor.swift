@@ -68,8 +68,8 @@ enum ClientRPCExecutor {
 extension ClientRPCExecutor {
   /// Executes a request on a given stream processor.
   ///
-  /// Note: this method is "unsafe" because the `streamProcessor` must be running in a task while
-  /// this function is executing.
+  /// - Warning: This method is "unsafe" because the `streamProcessor` must be running in a task
+  ///   while this function is executing.
   ///
   /// - Parameters:
   ///   - request: The request to execute.
