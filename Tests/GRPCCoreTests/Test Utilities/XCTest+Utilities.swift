@@ -63,3 +63,16 @@ func XCTAssertThrowsRPCErrorAsync<T>(
     XCTFail("Error had unexpected type '\(type(of: error))'")
   }
 }
+
+func XCTAssertRejected<T>(
+  _ response: ClientResponse.Stream<T>,
+  errorHandler: (RPCError) -> Void
+) {
+  switch response.accepted {
+  case .success:
+    XCTFail("Expected RPC to be rejected")
+  case .failure(let error):
+    errorHandler(error)
+  }
+
+}
