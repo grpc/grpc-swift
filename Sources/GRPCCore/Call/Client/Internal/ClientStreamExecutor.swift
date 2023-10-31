@@ -17,7 +17,7 @@
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 internal struct ClientStreamExecutor<Transport: ClientTransport> {
-  /// The client transport to execute the stream on .
+  /// The client transport to execute the stream on.
   @usableFromInline
   let _transport: Transport
 

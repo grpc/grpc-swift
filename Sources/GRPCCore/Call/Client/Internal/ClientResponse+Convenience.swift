@@ -84,7 +84,7 @@ extension ClientResponse.Single {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ClientResponse.Stream {
-  /// Creates an streaming response from the given status and metadata.
+  /// Creates a streaming response from the given status and metadata.
   ///
   /// If the ``Status`` has code ``Status/Code-swift.struct/ok`` then an accepted stream is created
   /// containing only the provided metadata. Otherwise a failed response is returned with an error
