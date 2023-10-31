@@ -42,7 +42,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// The message sent by the client when calling ServerReflectionInfo method.
-struct Reflection_ServerReflectionRequest {
+struct Grpc_Reflection_V1_ServerReflectionRequest {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -52,7 +52,7 @@ struct Reflection_ServerReflectionRequest {
   /// To use reflection service, the client should set one of the following
   /// fields in message_request. The server distinguishes requests by their
   /// defined field and then handles them using corresponding methods.
-  var messageRequest: Reflection_ServerReflectionRequest.OneOf_MessageRequest? = nil
+  var messageRequest: Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest? = nil
 
   /// Find a proto file by the file name.
   var fileByFilename: String {
@@ -76,10 +76,10 @@ struct Reflection_ServerReflectionRequest {
 
   /// Find the proto file which defines an extension extending the given
   /// message type with the given field number.
-  var fileContainingExtension: Reflection_ExtensionRequest {
+  var fileContainingExtension: Grpc_Reflection_V1_ExtensionRequest {
     get {
       if case .fileContainingExtension(let v)? = messageRequest {return v}
-      return Reflection_ExtensionRequest()
+      return Grpc_Reflection_V1_ExtensionRequest()
     }
     set {messageRequest = .fileContainingExtension(newValue)}
   }
@@ -124,7 +124,7 @@ struct Reflection_ServerReflectionRequest {
     case fileContainingSymbol(String)
     /// Find the proto file which defines an extension extending the given
     /// message type with the given field number.
-    case fileContainingExtension(Reflection_ExtensionRequest)
+    case fileContainingExtension(Grpc_Reflection_V1_ExtensionRequest)
     /// Finds the tag numbers used by all known extensions of the given message
     /// type, and appends them to ExtensionNumberResponse in an undefined order.
     /// Its corresponding method is best-effort: it's not guaranteed that the
@@ -139,7 +139,7 @@ struct Reflection_ServerReflectionRequest {
     case listServices(String)
 
   #if !swift(>=4.1)
-    static func ==(lhs: Reflection_ServerReflectionRequest.OneOf_MessageRequest, rhs: Reflection_ServerReflectionRequest.OneOf_MessageRequest) -> Bool {
+    static func ==(lhs: Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest, rhs: Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest) -> Bool {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
@@ -175,7 +175,7 @@ struct Reflection_ServerReflectionRequest {
 
 /// The type name and extension number sent by the client when requesting
 /// file_containing_extension.
-struct Reflection_ExtensionRequest {
+struct Grpc_Reflection_V1_ExtensionRequest {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -191,15 +191,15 @@ struct Reflection_ExtensionRequest {
 }
 
 /// The message sent by the server to answer ServerReflectionInfo method.
-struct Reflection_ServerReflectionResponse {
+struct Grpc_Reflection_V1_ServerReflectionResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   var validHost: String = String()
 
-  var originalRequest: Reflection_ServerReflectionRequest {
-    get {return _originalRequest ?? Reflection_ServerReflectionRequest()}
+  var originalRequest: Grpc_Reflection_V1_ServerReflectionRequest {
+    get {return _originalRequest ?? Grpc_Reflection_V1_ServerReflectionRequest()}
     set {_originalRequest = newValue}
   }
   /// Returns true if `originalRequest` has been explicitly set.
@@ -209,7 +209,7 @@ struct Reflection_ServerReflectionResponse {
 
   /// The server sets one of the following fields according to the message_request
   /// in the request.
-  var messageResponse: Reflection_ServerReflectionResponse.OneOf_MessageResponse? = nil
+  var messageResponse: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse? = nil
 
   /// This message is used to answer file_by_filename, file_containing_symbol,
   /// file_containing_extension requests with transitive dependencies.
@@ -217,37 +217,37 @@ struct Reflection_ServerReflectionResponse {
   /// FileDescriptorResponse message to encapsulate the repeated fields.
   /// The reflection service is allowed to avoid sending FileDescriptorProtos
   /// that were previously sent in response to earlier requests in the stream.
-  var fileDescriptorResponse: Reflection_FileDescriptorResponse {
+  var fileDescriptorResponse: Grpc_Reflection_V1_FileDescriptorResponse {
     get {
       if case .fileDescriptorResponse(let v)? = messageResponse {return v}
-      return Reflection_FileDescriptorResponse()
+      return Grpc_Reflection_V1_FileDescriptorResponse()
     }
     set {messageResponse = .fileDescriptorResponse(newValue)}
   }
 
   /// This message is used to answer all_extension_numbers_of_type requests.
-  var allExtensionNumbersResponse: Reflection_ExtensionNumberResponse {
+  var allExtensionNumbersResponse: Grpc_Reflection_V1_ExtensionNumberResponse {
     get {
       if case .allExtensionNumbersResponse(let v)? = messageResponse {return v}
-      return Reflection_ExtensionNumberResponse()
+      return Grpc_Reflection_V1_ExtensionNumberResponse()
     }
     set {messageResponse = .allExtensionNumbersResponse(newValue)}
   }
 
   /// This message is used to answer list_services requests.
-  var listServicesResponse: Reflection_ListServiceResponse {
+  var listServicesResponse: Grpc_Reflection_V1_ListServiceResponse {
     get {
       if case .listServicesResponse(let v)? = messageResponse {return v}
-      return Reflection_ListServiceResponse()
+      return Grpc_Reflection_V1_ListServiceResponse()
     }
     set {messageResponse = .listServicesResponse(newValue)}
   }
 
   /// This message is used when an error occurs.
-  var errorResponse: Reflection_ErrorResponse {
+  var errorResponse: Grpc_Reflection_V1_ErrorResponse {
     get {
       if case .errorResponse(let v)? = messageResponse {return v}
-      return Reflection_ErrorResponse()
+      return Grpc_Reflection_V1_ErrorResponse()
     }
     set {messageResponse = .errorResponse(newValue)}
   }
@@ -263,16 +263,16 @@ struct Reflection_ServerReflectionResponse {
     /// FileDescriptorResponse message to encapsulate the repeated fields.
     /// The reflection service is allowed to avoid sending FileDescriptorProtos
     /// that were previously sent in response to earlier requests in the stream.
-    case fileDescriptorResponse(Reflection_FileDescriptorResponse)
+    case fileDescriptorResponse(Grpc_Reflection_V1_FileDescriptorResponse)
     /// This message is used to answer all_extension_numbers_of_type requests.
-    case allExtensionNumbersResponse(Reflection_ExtensionNumberResponse)
+    case allExtensionNumbersResponse(Grpc_Reflection_V1_ExtensionNumberResponse)
     /// This message is used to answer list_services requests.
-    case listServicesResponse(Reflection_ListServiceResponse)
+    case listServicesResponse(Grpc_Reflection_V1_ListServiceResponse)
     /// This message is used when an error occurs.
-    case errorResponse(Reflection_ErrorResponse)
+    case errorResponse(Grpc_Reflection_V1_ErrorResponse)
 
   #if !swift(>=4.1)
-    static func ==(lhs: Reflection_ServerReflectionResponse.OneOf_MessageResponse, rhs: Reflection_ServerReflectionResponse.OneOf_MessageResponse) -> Bool {
+    static func ==(lhs: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, rhs: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse) -> Bool {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
@@ -301,13 +301,13 @@ struct Reflection_ServerReflectionResponse {
 
   init() {}
 
-  fileprivate var _originalRequest: Reflection_ServerReflectionRequest? = nil
+  fileprivate var _originalRequest: Grpc_Reflection_V1_ServerReflectionRequest? = nil
 }
 
 /// Serialized FileDescriptorProto messages sent by the server answering
 /// a file_by_filename, file_containing_symbol, or file_containing_extension
 /// request.
-struct Reflection_FileDescriptorResponse {
+struct Grpc_Reflection_V1_FileDescriptorResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -324,7 +324,7 @@ struct Reflection_FileDescriptorResponse {
 
 /// A list of extension numbers sent by the server answering
 /// all_extension_numbers_of_type request.
-struct Reflection_ExtensionNumberResponse {
+struct Grpc_Reflection_V1_ExtensionNumberResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -341,14 +341,14 @@ struct Reflection_ExtensionNumberResponse {
 }
 
 /// A list of ServiceResponse sent by the server answering list_services request.
-struct Reflection_ListServiceResponse {
+struct Grpc_Reflection_V1_ListServiceResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// The information of each service may be expanded in the future, so we use
   /// ServiceResponse message to encapsulate it.
-  var service: [Reflection_ServiceResponse] = []
+  var service: [Grpc_Reflection_V1_ServiceResponse] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -357,7 +357,7 @@ struct Reflection_ListServiceResponse {
 
 /// The information of a single service used by ListServiceResponse to answer
 /// list_services request.
-struct Reflection_ServiceResponse {
+struct Grpc_Reflection_V1_ServiceResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -372,7 +372,7 @@ struct Reflection_ServiceResponse {
 }
 
 /// The error code and error message sent by the server when an error occurs.
-struct Reflection_ErrorResponse {
+struct Grpc_Reflection_V1_ErrorResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -388,23 +388,23 @@ struct Reflection_ErrorResponse {
 }
 
 #if swift(>=5.5) && canImport(_Concurrency)
-extension Reflection_ServerReflectionRequest: @unchecked Sendable {}
-extension Reflection_ServerReflectionRequest.OneOf_MessageRequest: @unchecked Sendable {}
-extension Reflection_ExtensionRequest: @unchecked Sendable {}
-extension Reflection_ServerReflectionResponse: @unchecked Sendable {}
-extension Reflection_ServerReflectionResponse.OneOf_MessageResponse: @unchecked Sendable {}
-extension Reflection_FileDescriptorResponse: @unchecked Sendable {}
-extension Reflection_ExtensionNumberResponse: @unchecked Sendable {}
-extension Reflection_ListServiceResponse: @unchecked Sendable {}
-extension Reflection_ServiceResponse: @unchecked Sendable {}
-extension Reflection_ErrorResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ServerReflectionRequest: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ExtensionRequest: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ServerReflectionResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_FileDescriptorResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ExtensionNumberResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ListServiceResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ServiceResponse: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ErrorResponse: @unchecked Sendable {}
 #endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
-fileprivate let _protobuf_package = "reflection"
+fileprivate let _protobuf_package = "grpc.reflection.v1"
 
-extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ServerReflectionRequest"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "host"),
@@ -439,7 +439,7 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
         }
       }()
       case 5: try {
-        var v: Reflection_ExtensionRequest?
+        var v: Grpc_Reflection_V1_ExtensionRequest?
         var hadOneofValue = false
         if let current = self.messageRequest {
           hadOneofValue = true
@@ -506,7 +506,7 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ServerReflectionRequest, rhs: Reflection_ServerReflectionRequest) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ServerReflectionRequest, rhs: Grpc_Reflection_V1_ServerReflectionRequest) -> Bool {
     if lhs.host != rhs.host {return false}
     if lhs.messageRequest != rhs.messageRequest {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -514,7 +514,7 @@ extension Reflection_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtob
   }
 }
 
-extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ExtensionRequest"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "containing_type"),
@@ -544,7 +544,7 @@ extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._Mes
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ExtensionRequest, rhs: Reflection_ExtensionRequest) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ExtensionRequest, rhs: Grpc_Reflection_V1_ExtensionRequest) -> Bool {
     if lhs.containingType != rhs.containingType {return false}
     if lhs.extensionNumber != rhs.extensionNumber {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -552,7 +552,7 @@ extension Reflection_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 }
 
-extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ServerReflectionResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "valid_host"),
@@ -572,7 +572,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
       case 1: try { try decoder.decodeSingularStringField(value: &self.validHost) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._originalRequest) }()
       case 4: try {
-        var v: Reflection_FileDescriptorResponse?
+        var v: Grpc_Reflection_V1_FileDescriptorResponse?
         var hadOneofValue = false
         if let current = self.messageResponse {
           hadOneofValue = true
@@ -585,7 +585,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
         }
       }()
       case 5: try {
-        var v: Reflection_ExtensionNumberResponse?
+        var v: Grpc_Reflection_V1_ExtensionNumberResponse?
         var hadOneofValue = false
         if let current = self.messageResponse {
           hadOneofValue = true
@@ -598,7 +598,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
         }
       }()
       case 6: try {
-        var v: Reflection_ListServiceResponse?
+        var v: Grpc_Reflection_V1_ListServiceResponse?
         var hadOneofValue = false
         if let current = self.messageResponse {
           hadOneofValue = true
@@ -611,7 +611,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
         }
       }()
       case 7: try {
-        var v: Reflection_ErrorResponse?
+        var v: Grpc_Reflection_V1_ErrorResponse?
         var hadOneofValue = false
         if let current = self.messageResponse {
           hadOneofValue = true
@@ -661,7 +661,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ServerReflectionResponse, rhs: Reflection_ServerReflectionResponse) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ServerReflectionResponse, rhs: Grpc_Reflection_V1_ServerReflectionResponse) -> Bool {
     if lhs.validHost != rhs.validHost {return false}
     if lhs._originalRequest != rhs._originalRequest {return false}
     if lhs.messageResponse != rhs.messageResponse {return false}
@@ -670,7 +670,7 @@ extension Reflection_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProto
   }
 }
 
-extension Reflection_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FileDescriptorResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "file_descriptor_proto"),
@@ -695,14 +695,14 @@ extension Reflection_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobu
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_FileDescriptorResponse, rhs: Reflection_FileDescriptorResponse) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_FileDescriptorResponse, rhs: Grpc_Reflection_V1_FileDescriptorResponse) -> Bool {
     if lhs.fileDescriptorProto != rhs.fileDescriptorProto {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ExtensionNumberResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "base_type_name"),
@@ -732,7 +732,7 @@ extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtob
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ExtensionNumberResponse, rhs: Reflection_ExtensionNumberResponse) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ExtensionNumberResponse, rhs: Grpc_Reflection_V1_ExtensionNumberResponse) -> Bool {
     if lhs.baseTypeName != rhs.baseTypeName {return false}
     if lhs.extensionNumber != rhs.extensionNumber {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -740,7 +740,7 @@ extension Reflection_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtob
   }
 }
 
-extension Reflection_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ListServiceResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "service"),
@@ -765,14 +765,14 @@ extension Reflection_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ListServiceResponse, rhs: Reflection_ListServiceResponse) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ListServiceResponse, rhs: Grpc_Reflection_V1_ListServiceResponse) -> Bool {
     if lhs.service != rhs.service {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Reflection_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ServiceResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
@@ -797,14 +797,14 @@ extension Reflection_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ServiceResponse, rhs: Reflection_ServiceResponse) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ServiceResponse, rhs: Grpc_Reflection_V1_ServiceResponse) -> Bool {
     if lhs.name != rhs.name {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Reflection_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Grpc_Reflection_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ErrorResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "error_code"),
@@ -834,7 +834,7 @@ extension Reflection_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._Messag
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Reflection_ErrorResponse, rhs: Reflection_ErrorResponse) -> Bool {
+  static func ==(lhs: Grpc_Reflection_V1_ErrorResponse, rhs: Grpc_Reflection_V1_ErrorResponse) -> Bool {
     if lhs.errorCode != rhs.errorCode {return false}
     if lhs.errorMessage != rhs.errorMessage {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}

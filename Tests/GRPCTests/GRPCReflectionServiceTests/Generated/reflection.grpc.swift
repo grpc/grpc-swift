@@ -11,20 +11,20 @@ import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
-/// Usage: instantiate `Reflection_ServerReflectionClient`, then call methods of this protocol to make API calls.
-internal protocol Reflection_ServerReflectionClientProtocol: GRPCClient {
+/// Usage: instantiate `Grpc_Reflection_V1_ServerReflectionClient`, then call methods of this protocol to make API calls.
+internal protocol Grpc_Reflection_V1_ServerReflectionClientProtocol: GRPCClient {
   var serviceName: String { get }
-  var interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? { get }
+  var interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? { get }
 
   func serverReflectionInfo(
     callOptions: CallOptions?,
-    handler: @escaping (Reflection_ServerReflectionResponse) -> Void
-  ) -> BidirectionalStreamingCall<Reflection_ServerReflectionRequest, Reflection_ServerReflectionResponse>
+    handler: @escaping (Grpc_Reflection_V1_ServerReflectionResponse) -> Void
+  ) -> BidirectionalStreamingCall<Grpc_Reflection_V1_ServerReflectionRequest, Grpc_Reflection_V1_ServerReflectionResponse>
 }
 
-extension Reflection_ServerReflectionClientProtocol {
+extension Grpc_Reflection_V1_ServerReflectionClientProtocol {
   internal var serviceName: String {
-    return "reflection.ServerReflection"
+    return "grpc.reflection.v1.ServerReflection"
   }
 
   /// The reflection service is structured as a bidirectional stream, ensuring
@@ -39,10 +39,10 @@ extension Reflection_ServerReflectionClientProtocol {
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   internal func serverReflectionInfo(
     callOptions: CallOptions? = nil,
-    handler: @escaping (Reflection_ServerReflectionResponse) -> Void
-  ) -> BidirectionalStreamingCall<Reflection_ServerReflectionRequest, Reflection_ServerReflectionResponse> {
+    handler: @escaping (Grpc_Reflection_V1_ServerReflectionResponse) -> Void
+  ) -> BidirectionalStreamingCall<Grpc_Reflection_V1_ServerReflectionRequest, Grpc_Reflection_V1_ServerReflectionResponse> {
     return self.makeBidirectionalStreamingCall(
-      path: Reflection_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
+      path: Grpc_Reflection_V1_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeServerReflectionInfoInterceptors() ?? [],
       handler: handler
@@ -51,24 +51,24 @@ extension Reflection_ServerReflectionClientProtocol {
 }
 
 @available(*, deprecated)
-extension Reflection_ServerReflectionClient: @unchecked Sendable {}
+extension Grpc_Reflection_V1_ServerReflectionClient: @unchecked Sendable {}
 
-@available(*, deprecated, renamed: "Reflection_ServerReflectionNIOClient")
-internal final class Reflection_ServerReflectionClient: Reflection_ServerReflectionClientProtocol {
+@available(*, deprecated, renamed: "Grpc_Reflection_V1_ServerReflectionNIOClient")
+internal final class Grpc_Reflection_V1_ServerReflectionClient: Grpc_Reflection_V1_ServerReflectionClientProtocol {
   private let lock = Lock()
   private var _defaultCallOptions: CallOptions
-  private var _interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol?
+  private var _interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol?
   internal let channel: GRPCChannel
   internal var defaultCallOptions: CallOptions {
     get { self.lock.withLock { return self._defaultCallOptions } }
     set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
   }
-  internal var interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? {
+  internal var interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? {
     get { self.lock.withLock { return self._interceptors } }
     set { self.lock.withLockVoid { self._interceptors = newValue } }
   }
 
-  /// Creates a client for the reflection.ServerReflection service.
+  /// Creates a client for the grpc.reflection.v1.ServerReflection service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
@@ -77,7 +77,7 @@ internal final class Reflection_ServerReflectionClient: Reflection_ServerReflect
   internal init(
     channel: GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? = nil
+    interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? = nil
   ) {
     self.channel = channel
     self._defaultCallOptions = defaultCallOptions
@@ -85,12 +85,12 @@ internal final class Reflection_ServerReflectionClient: Reflection_ServerReflect
   }
 }
 
-internal struct Reflection_ServerReflectionNIOClient: Reflection_ServerReflectionClientProtocol {
+internal struct Grpc_Reflection_V1_ServerReflectionNIOClient: Grpc_Reflection_V1_ServerReflectionClientProtocol {
   internal var channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
-  internal var interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol?
+  internal var interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol?
 
-  /// Creates a client for the reflection.ServerReflection service.
+  /// Creates a client for the grpc.reflection.v1.ServerReflection service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
@@ -99,7 +99,7 @@ internal struct Reflection_ServerReflectionNIOClient: Reflection_ServerReflectio
   internal init(
     channel: GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? = nil
+    interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -108,30 +108,30 @@ internal struct Reflection_ServerReflectionNIOClient: Reflection_ServerReflectio
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal protocol Reflection_ServerReflectionAsyncClientProtocol: GRPCClient {
+internal protocol Grpc_Reflection_V1_ServerReflectionAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
-  var interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? { get }
+  var interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? { get }
 
   func makeServerReflectionInfoCall(
     callOptions: CallOptions?
-  ) -> GRPCAsyncBidirectionalStreamingCall<Reflection_ServerReflectionRequest, Reflection_ServerReflectionResponse>
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Reflection_V1_ServerReflectionRequest, Grpc_Reflection_V1_ServerReflectionResponse>
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension Reflection_ServerReflectionAsyncClientProtocol {
+extension Grpc_Reflection_V1_ServerReflectionAsyncClientProtocol {
   internal static var serviceDescriptor: GRPCServiceDescriptor {
-    return Reflection_ServerReflectionClientMetadata.serviceDescriptor
+    return Grpc_Reflection_V1_ServerReflectionClientMetadata.serviceDescriptor
   }
 
-  internal var interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? {
+  internal var interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? {
     return nil
   }
 
   internal func makeServerReflectionInfoCall(
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncBidirectionalStreamingCall<Reflection_ServerReflectionRequest, Reflection_ServerReflectionResponse> {
+  ) -> GRPCAsyncBidirectionalStreamingCall<Grpc_Reflection_V1_ServerReflectionRequest, Grpc_Reflection_V1_ServerReflectionResponse> {
     return self.makeAsyncBidirectionalStreamingCall(
-      path: Reflection_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
+      path: Grpc_Reflection_V1_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeServerReflectionInfoInterceptors() ?? []
     )
@@ -139,13 +139,13 @@ extension Reflection_ServerReflectionAsyncClientProtocol {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension Reflection_ServerReflectionAsyncClientProtocol {
+extension Grpc_Reflection_V1_ServerReflectionAsyncClientProtocol {
   internal func serverReflectionInfo<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Reflection_ServerReflectionResponse> where RequestStream: Sequence, RequestStream.Element == Reflection_ServerReflectionRequest {
+  ) -> GRPCAsyncResponseStream<Grpc_Reflection_V1_ServerReflectionResponse> where RequestStream: Sequence, RequestStream.Element == Grpc_Reflection_V1_ServerReflectionRequest {
     return self.performAsyncBidirectionalStreamingCall(
-      path: Reflection_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
+      path: Grpc_Reflection_V1_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeServerReflectionInfoInterceptors() ?? []
@@ -155,9 +155,9 @@ extension Reflection_ServerReflectionAsyncClientProtocol {
   internal func serverReflectionInfo<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Reflection_ServerReflectionResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Reflection_ServerReflectionRequest {
+  ) -> GRPCAsyncResponseStream<Grpc_Reflection_V1_ServerReflectionResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Grpc_Reflection_V1_ServerReflectionRequest {
     return self.performAsyncBidirectionalStreamingCall(
-      path: Reflection_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
+      path: Grpc_Reflection_V1_ServerReflectionClientMetadata.Methods.serverReflectionInfo.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeServerReflectionInfoInterceptors() ?? []
@@ -166,15 +166,15 @@ extension Reflection_ServerReflectionAsyncClientProtocol {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal struct Reflection_ServerReflectionAsyncClient: Reflection_ServerReflectionAsyncClientProtocol {
+internal struct Grpc_Reflection_V1_ServerReflectionAsyncClient: Grpc_Reflection_V1_ServerReflectionAsyncClientProtocol {
   internal var channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
-  internal var interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol?
+  internal var interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol?
 
   internal init(
     channel: GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Reflection_ServerReflectionClientInterceptorFactoryProtocol? = nil
+    interceptors: Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -182,25 +182,25 @@ internal struct Reflection_ServerReflectionAsyncClient: Reflection_ServerReflect
   }
 }
 
-internal protocol Reflection_ServerReflectionClientInterceptorFactoryProtocol: Sendable {
+internal protocol Grpc_Reflection_V1_ServerReflectionClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'serverReflectionInfo'.
-  func makeServerReflectionInfoInterceptors() -> [ClientInterceptor<Reflection_ServerReflectionRequest, Reflection_ServerReflectionResponse>]
+  func makeServerReflectionInfoInterceptors() -> [ClientInterceptor<Grpc_Reflection_V1_ServerReflectionRequest, Grpc_Reflection_V1_ServerReflectionResponse>]
 }
 
-internal enum Reflection_ServerReflectionClientMetadata {
+internal enum Grpc_Reflection_V1_ServerReflectionClientMetadata {
   internal static let serviceDescriptor = GRPCServiceDescriptor(
     name: "ServerReflection",
-    fullName: "reflection.ServerReflection",
+    fullName: "grpc.reflection.v1.ServerReflection",
     methods: [
-      Reflection_ServerReflectionClientMetadata.Methods.serverReflectionInfo,
+      Grpc_Reflection_V1_ServerReflectionClientMetadata.Methods.serverReflectionInfo,
     ]
   )
 
   internal enum Methods {
     internal static let serverReflectionInfo = GRPCMethodDescriptor(
       name: "ServerReflectionInfo",
-      path: "/reflection.ServerReflection/ServerReflectionInfo",
+      path: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
       type: GRPCCallType.bidirectionalStreaming
     )
   }
