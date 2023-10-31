@@ -110,7 +110,6 @@ extension ClientRPCExecutor.OneShotExecutor {
         case .streamExecutorCompleted(.failure):
           // Stream execution threw: cancel and wait.
           group.cancelAll()
-          ()
 
         case .timedOut(.success):
           // The deadline passed; cancel the ongoing work group.
