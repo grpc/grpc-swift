@@ -33,7 +33,7 @@ struct MapRPCWriter<Value, Mapped>: RPCWriterProtocol {
 
   @inlinable
   func write(contentsOf elements: some Sequence<Value>) async throws {
-    let transformed = elements.map { self.transform($0) }
+    let transformed = elements.lazy.map { self.transform($0) }
     try await self.base.write(contentsOf: transformed)
   }
 }
