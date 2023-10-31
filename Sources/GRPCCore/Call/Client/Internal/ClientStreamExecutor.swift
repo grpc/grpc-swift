@@ -124,7 +124,7 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
 
       // TODO: (optimisation) use a hint about whether the response is streamed. Use a specialised
       // sequence to avoid allocations if it isn't
-      let responses = RPCAsyncSequence.makeBufferedStream(
+      let responses = RPCAsyncSequence.makeBackpressuredStream(
         of: ClientResponse.Stream<[UInt8]>.Contents.BodyPart.self,
         watermarks: self._watermarks
       )

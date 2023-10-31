@@ -17,7 +17,7 @@
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCAsyncSequence {
   @inlinable
-  static func makeBufferedStream(
+  static func makeBackpressuredStream(
     of elementType: Element.Type = Element.self,
     watermarks: (low: Int, high: Int)
   ) -> (stream: Self, writer: RPCWriter<Element>.Closable) {

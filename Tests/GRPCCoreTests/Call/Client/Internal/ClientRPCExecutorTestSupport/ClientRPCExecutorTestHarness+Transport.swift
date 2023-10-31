@@ -88,8 +88,8 @@ final class TestingClientTransport: ClientTransport, Sendable {
   func openStream(
     descriptor: MethodDescriptor
   ) async throws -> RPCStream<Inbound, Outbound> {
-    let request = RPCAsyncSequence<RPCRequestPart>.makeBufferedStream(watermarks: (16, 32))
-    let response = RPCAsyncSequence<RPCResponsePart>.makeBufferedStream(watermarks: (16, 32))
+    let request = RPCAsyncSequence<RPCRequestPart>.makeBackpressuredStream(watermarks: (16, 32))
+    let response = RPCAsyncSequence<RPCResponsePart>.makeBackpressuredStream(watermarks: (16, 32))
 
     let clientStream = RPCStream(
       descriptor: descriptor,
