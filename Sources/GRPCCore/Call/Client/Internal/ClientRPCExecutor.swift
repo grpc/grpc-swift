@@ -32,7 +32,7 @@ enum ClientRPCExecutor {
   ///       the RPC will be torn down.
   /// - Returns: The result returns from the `handler`.
   @inlinable
-  static func execute<Input: Sendable, Output: Sendable, R: Sendable>(
+  static func execute<Input: Sendable, Output: Sendable, Result: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     configuration: ClientRPCExecutionConfiguration,
@@ -40,8 +40,8 @@ enum ClientRPCExecutor {
     deserializer: some MessageDeserializer<Output>,
     transport: some ClientTransport,
     interceptors: [any ClientInterceptor],
-    handler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
-  ) async throws -> R {
+    handler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> Result
+  ) async throws -> Result {
     switch configuration.executionPolicy {
     case .none:
       let oneShotExecutor = OneShotExecutor(
