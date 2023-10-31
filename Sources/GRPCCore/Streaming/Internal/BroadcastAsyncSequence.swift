@@ -430,10 +430,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
 
       @inlinable
       mutating func finish(result: Result<Void, Error>) -> OnFinish {
-        guard let continuations = self.subscriptions.removeSubscribersWithContinuations() else {
-          return .none
-        }
-
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
         return .resume(
           .init(continuations: continuations, result: result.map { nil }),
           .init(continuations: [], result: .success(()))
@@ -455,8 +452,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       mutating func cancel(
         _ id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
       ) -> OnCancelSubscription {
-        let (removed, continuation) = self.subscriptions.removeSubscriber(withID: id)
-        assert(removed)
+        let (_, continuation) = self.subscriptions.removeSubscriber(withID: id)
         if let continuation = continuation {
           return .resume(continuation, .failure(CancellationError()))
         } else {
@@ -469,8 +465,11 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
         _ continuation: ConsumerContinuation,
         forSubscription id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
       ) -> OnSetContinuation {
-        let didSet = self.subscriptions.setContinuation(continuation, forSubscriber: id)
-        return didSet ? .none : .resume(continuation, .failure(CancellationError()))
+        if self.subscriptions.setContinuation(continuation, forSubscriber: id) {
+          return .none
+        } else {
+          return .resume(continuation, .failure(CancellationError()))
+        }
       }
 
       @inlinable
@@ -480,23 +479,28 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
 
       @inlinable
       mutating func invalidateAllSubscriptions() -> OnInvalidateAllSubscriptions {
+        // Remove subscriptions with continuations, they need to be failed.
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
+        let consumerContinuations = ConsumerContinuations(
+          continuations: continuations,
+          result: .failure(BroadcastAsyncSequenceError.consumingTooSlow)
+        )
+
+        // Remove any others to be failed when they next call 'next'.
         let ids = self.subscriptions.removeAllSubscribers()
         self.subscriptionsToDrop.append(contentsOf: ids)
-        return .none
+        return .resume(consumerContinuations)
       }
 
       @inlinable
       mutating func dropResources(error: BroadcastAsyncSequenceError) -> OnDropResources {
-        if let continuations = self.subscriptions.removeSubscribersWithContinuations() {
-          let consumerContinuations = ConsumerContinuations(
-            continuations: continuations,
-            result: .failure(error)
-          )
-          let producerContinuations = ProducerContinuations(continuations: [], result: .success(()))
-          return .resume(consumerContinuations, producerContinuations)
-        } else {
-          return .none
-        }
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
+        let consumerContinuations = ConsumerContinuations(
+          continuations: continuations,
+          result: .failure(error)
+        )
+        let producerContinuations = ProducerContinuations(continuations: [], result: .success(()))
+        return .resume(consumerContinuations, producerContinuations)
       }
     }
 
@@ -682,16 +686,18 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
         _ continuation: ConsumerContinuation,
         forSubscription id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
       ) -> OnSetContinuation {
-        let didSet = self.subscriptions.setContinuation(continuation, forSubscriber: id)
-        return didSet ? .none : .resume(continuation, .failure(CancellationError()))
+        if self.subscriptions.setContinuation(continuation, forSubscriber: id) {
+          return .none
+        } else {
+          return .resume(continuation, .failure(CancellationError()))
+        }
       }
 
       @inlinable
       mutating func cancel(
         _ id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
       ) -> OnCancelSubscription {
-        let (removed, continuation) = self.subscriptions.removeSubscriber(withID: id)
-        assert(removed)
+        let (_, continuation) = self.subscriptions.removeSubscriber(withID: id)
         if let continuation = continuation {
           return .resume(continuation, .failure(CancellationError()))
         } else {
@@ -739,7 +745,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
         let producers = self.producers.map { $0.0 }
         self.producers.removeAll()
         return .resume(
-          .init(continuations: continuations ?? .many([]), result: result.map { nil }),
+          .init(continuations: continuations, result: result.map { nil }),
           .init(continuations: producers, result: .success(()))
         )
       }
@@ -751,33 +757,26 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
 
       @inlinable
       mutating func invalidateAllSubscriptions() -> OnInvalidateAllSubscriptions {
-        let onCancel: OnInvalidateAllSubscriptions
-
         // Remove subscriptions with continuations, they need to be failed.
-        switch self.subscriptions.removeSubscribersWithContinuations() {
-        case .some(let oneOrMany):
-          let continuations = ConsumerContinuations(
-            continuations: oneOrMany,
-            result: .failure(
-              BroadcastAsyncSequenceError.consumingTooSlow
-            )
-          )
-          onCancel = .resume(continuations)
-        case .none:
-          onCancel = .none
-        }
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
+        let consumerContinuations = ConsumerContinuations(
+          continuations: continuations,
+          result: .failure(BroadcastAsyncSequenceError.consumingTooSlow)
+        )
 
         // Remove any others to be failed when they next call 'next'.
         let ids = self.subscriptions.removeAllSubscribers()
         self.subscriptionsToDrop.append(contentsOf: ids)
-        return onCancel
+        return .resume(consumerContinuations)
       }
 
       @inlinable
       mutating func dropResources(error: BroadcastAsyncSequenceError) -> OnDropResources {
-        let consumers = self.subscriptions.removeSubscribersWithContinuations().map {
-          ConsumerContinuations(continuations: $0, result: .failure(error))
-        }
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
+        let consumerContinuations = ConsumerContinuations(
+          continuations: continuations,
+          result: .failure(error)
+        )
 
         let producers = ProducerContinuations(
           continuations: self.producers.map { $0.0 },
@@ -786,10 +785,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
 
         self.producers.removeAll()
 
-        return .resume(
-          consumers ?? ConsumerContinuations(continuations: .many([]), result: .failure(error)),
-          producers
-        )
+        return .resume(consumerContinuations, producers)
       }
 
       @inlinable
@@ -895,8 +891,47 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       }
 
       @inlinable
+      mutating func invalidateAllSubscriptions() -> OnInvalidateAllSubscriptions {
+        // Remove subscriptions with continuations, they need to be failed.
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
+        let consumerContinuations = ConsumerContinuations(
+          continuations: continuations,
+          result: .failure(BroadcastAsyncSequenceError.consumingTooSlow)
+        )
+
+        // Remove any others to be failed when they next call 'next'.
+        let ids = self.subscriptions.removeAllSubscribers()
+        self.subscriptionsToDrop.append(contentsOf: ids)
+        return .resume(consumerContinuations)
+      }
+
+      @inlinable
+      mutating func dropResources(error: BroadcastAsyncSequenceError) -> OnDropResources {
+        let continuations = self.subscriptions.removeSubscribersWithContinuations()
+        let consumerContinuations = ConsumerContinuations(
+          continuations: continuations,
+          result: .failure(error)
+        )
+
+        let producers = ProducerContinuations(continuations: [], result: .failure(error))
+        return .resume(consumerContinuations, producers)
+      }
+
+      @inlinable
       func nextSubscriptionIsValid() -> Bool {
         self.elements.lowestID == .initial
+      }
+
+      @inlinable
+      mutating func cancel(
+        _ id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
+      ) -> OnCancelSubscription {
+        let (_, continuation) = self.subscriptions.removeSubscriber(withID: id)
+        if let continuation = continuation {
+          return .resume(continuation, .failure(CancellationError()))
+        } else {
+          return .none
+        }
       }
     }
   }
@@ -944,15 +979,19 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       onCancel = .none
 
     case .subscribed(var state):
+      self._state = ._modifying
       onCancel = state.invalidateAllSubscriptions()
       self._state = .subscribed(state)
 
     case .streaming(var state):
+      self._state = ._modifying
       onCancel = state.invalidateAllSubscriptions()
       self._state = .streaming(state)
 
-    case .finished:
-      onCancel = .none
+    case .finished(var state):
+      self._state = ._modifying
+      onCancel = state.invalidateAllSubscriptions()
+      self._state = .finished(state)
 
     case ._modifying:
       fatalError("Internal inconsistency")
@@ -1124,7 +1163,10 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       onSetContinuation = state.setContinuation(continuation, forSubscription: id)
       self._state = .streaming(state)
 
-    case .finished, ._modifying:
+    case .finished(let state):
+      onSetContinuation = .resume(continuation, state.result.map { _ in nil })
+
+    case ._modifying:
       // All values must have been produced, nothing to wait for.
       fatalError("Internal inconsistency")
     }
@@ -1159,7 +1201,12 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       onCancel = state.cancel(id)
       self._state = .streaming(state)
 
-    case .finished, ._modifying:
+    case .finished(var state):
+      self._state = ._modifying
+      onCancel = state.cancel(id)
+      self._state = .finished(state)
+
+    case ._modifying:
       // All values must have been produced, nothing to wait for.
       fatalError("Internal inconsistency")
     }
@@ -1293,8 +1340,10 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       onDrop = state.dropResources(error: error)
       self._state = .finished(State.Finished(from: state, result: .failure(error)))
 
-    case .finished:
-      onDrop = .none
+    case .finished(var state):
+      self._state = ._modifying
+      onDrop = state.dropResources(error: error)
+      self._state = .finished(state)
 
     case ._modifying:
       fatalError("Internal inconsistency")
@@ -1461,7 +1510,7 @@ extension _BroadcastSequenceStateMachine {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension _BroadcastSequenceStateMachine {
-  /// A collection of subcriptions.
+  /// A collection of subscriptions.
   @usableFromInline
   struct Subscriptions: Sendable {
     @usableFromInline
@@ -1675,14 +1724,14 @@ extension _BroadcastSequenceStateMachine {
 
     /// Removes all subscribers which have continuations and return their continuations.
     @inlinable
-    mutating func removeSubscribersWithContinuations() -> _OneOrMany<ConsumerContinuation>? {
+    mutating func removeSubscribersWithContinuations() -> _OneOrMany<ConsumerContinuation> {
       // Avoid allocs if there's only one subscriber.
       let count = self._countPendingContinuations()
-      let result: _OneOrMany<ConsumerContinuation>?
+      let result: _OneOrMany<ConsumerContinuation>
 
       switch count {
       case 0:
-        result = nil
+        result = .many([])
 
       case 1:
         let index = self._subscribers.firstIndex(where: { $0.continuation != nil })!
