@@ -1,10 +1,13 @@
-#  Reflection Service
+# ReflectionServiceTutorial
 
-The Reflection Service can be added as a provider to any Server. 
-In this tutorial we will be using the Server implemented at 
+This tutorial goes through the process of adding the Reflection Service to a 
+Swift Server and testing it using [GRPCurl]. 
+
+ The Server used in this example is implemented at 
 `Sources/Examples/ReflectionService/ReflectionServiceServer.swift`
+and it exposes the `Greeter` provider, the `Echo` provider and the 
+`ReflectionService` provider. 
 
-## GRPCurl setup
 
 ## Adding the Reflection Service to a Server
 
@@ -20,8 +23,11 @@ in text files, by the code generator, when setting a sepcific option.
 
 ### Generating the serialized file descriptor protos for the Server
 
-The Server used in this example uses the `GreeterProvider` and the 
-`ReflectionService`.
+The Server from this example uses the `GreeterProvider`, `EchoProvider` and the 
+`ReflectionService`. The associated proto files are located at 
+`Sources/Examples/HelloWorld/Model/helloworld.proto`, 
+`Sources/Examples/Echo/Model/echo.proto`, and 
+`Sources/GRPCReflectionService/Model/reflection.proto` respectively.
 
 In order to generate the serialized file descriptor proto for the
 `helloworld.proto`, you can either run the following Makefile
@@ -88,5 +94,10 @@ $ protoc Sources/GRPCReflectionService/Model/reflection.proto \
 ### Instantiating the Reflection Service 
 
 In the Server implementation, we 
+
+
 ## Testing the Reflection Service
-- GRPCurl
+
+### GRPCurl setup
+Please follow the instructions from the GRPCurl Readme [] in order to set ot up.
+

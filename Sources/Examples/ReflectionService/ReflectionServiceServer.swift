@@ -60,7 +60,6 @@ struct ReflectionServiceServer: AsyncParsableCommand {
         .get()
 
       print("server started on port \(server.channel.localAddress!.port!)")
-      print("server started on port \(String(describing: server.channel.localAddress?.description))")
       // Wait on the server's `onClose` future to stop the program from exiting.
       try await server.onClose.get()
     }
