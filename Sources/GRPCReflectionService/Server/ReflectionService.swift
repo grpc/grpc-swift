@@ -214,7 +214,7 @@ internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflect
   internal init(protoFilePaths: [String]) throws {
     let binaryFilesURLs = protoFilePaths.map {
       if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
-        URL(filePath: $0)
+        URL(filePath: $0, directoryHint: .notDirectory)
       } else {
         URL(fileURLWithPath: $0)
       }
