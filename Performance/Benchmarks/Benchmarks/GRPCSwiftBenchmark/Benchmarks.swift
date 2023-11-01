@@ -44,12 +44,14 @@ let benchmarks = {
   
   Benchmark("Metadata_Add_binary") { benchmark in
     let value: [UInt8] = [1, 2, 3]
-    benchmark.startMeasurement()
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
+      
+      benchmark.startMeasurement()
       for i in 0..<1000 {
           metadata.addBinary(value, forKey: "\(i)")
       }
+      benchmark.stopMeasurement()
     }
   }
   
@@ -64,6 +66,7 @@ let benchmarks = {
       for i in 0..<1000 {
           metadata.removeAllValues(forKey: "\(i)")
       }
+      benchmark.stopMeasurement()
     }
   }
   
@@ -78,6 +81,7 @@ let benchmarks = {
       for value in metadata["key"] {
         blackHole(value)
       }
+      benchmark.stopMeasurement()
     }
   }
   
@@ -92,6 +96,7 @@ let benchmarks = {
       for value in metadata[stringValues: "key"] {
         blackHole(value)
       }
+      benchmark.stopMeasurement()
     }
   }
   
@@ -106,6 +111,7 @@ let benchmarks = {
       for value in metadata[binaryValues: "key"] {
         blackHole(value)
       }
+      benchmark.stopMeasurement()
     }
   }
   
@@ -120,6 +126,7 @@ let benchmarks = {
       for value in metadata[binaryValues: "key"] {
         blackHole(value)
       }
+      benchmark.stopMeasurement()
     }
   }
 }
