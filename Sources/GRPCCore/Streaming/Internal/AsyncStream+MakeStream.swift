@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-import XCTest
-
-@testable import GRPCCore
-
-final class ClientRequestTests: XCTestCase {
-  func testSingleToStreamConversion() async throws {
-    let (messages, continuation) = AsyncStream.makeStream(of: String.self)
-    let single = ClientRequest.Single(message: "foo", metadata: ["bar": "baz"])
-    let stream = ClientRequest.Stream(single: single)
-
-    XCTAssertEqual(stream.metadata, ["bar": "baz"])
-    try await stream.producer(.gathering(into: continuation))
-    continuation.finish()
-    let collected = try await messages.collect()
-    XCTAssertEqual(collected, ["foo"])
+#if swift(<5.9)
+extension AsyncStream {
+  @inlinable
+  static func makeStream(
+    of elementType: Element.Type = Element.self,
+    bufferingPolicy limit: AsyncStream<Element>.Continuation.BufferingPolicy = .unbounded
+  ) -> (stream: AsyncStream<Element>, continuation: AsyncStream<Element>.Continuation) {
+    var continuation: AsyncStream<Element>.Continuation!
+    let stream = AsyncStream(Element.self, bufferingPolicy: limit) {
+      continuation = $0
+    }
+    return (stream, continuation)
   }
 }
+#endif
