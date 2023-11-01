@@ -26,8 +26,11 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     self.reflectionService.serviceName
   }
 
-  public init(protoFilePaths: [String]) throws {
-    self.reflectionService = try ReflectionServiceProvider(protoFilePaths: protoFilePaths)
+  ///  Receives as parameter an array of strings representing the file paths to the binary files containing
+  ///  the serialised file descriptor protos describing the services supported by the Server and
+  ///  discovarable through Server Reflection.
+  public init(serializedFileDescriptorProtoFilePaths: [String]) throws {
+    self.reflectionService = try ReflectionServiceProvider(serializedFileDescriptorProtoFilePaths: serializedFileDescriptorProtoFilePaths)
   }
 
   public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
@@ -211,9 +214,8 @@ internal struct ReflectionServiceData: Sendable {
 internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflectionAsyncProvider {
   private let protoRegistry: ReflectionServiceData
 
-  internal init(protoFilePaths: [String]) throws {
-
-    let binaryFilesURLs = protoFilePaths.map {
+  internal init(serializedFileDescriptorProtoFilePaths: [String]) throws {
+    let binaryFilesURLs = serializedFileDescriptorProtoFilePaths.map {
       #if os(Linux)
       URL(fileURLWithPath: $0)
       #else
@@ -224,11 +226,21 @@ internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflect
       }
       #endif
     }
-    let binaryData = binaryFilesURLs.map { Data(base64Encoded: try! Data(contentsOf: $0)) }
-    let fileDescriptorProtos = binaryData.map {
-      try! Google_Protobuf_FileDescriptorProto(serializedData: $0!)
+    var fileDescriptorProtos = [Google_Protobuf_FileDescriptorProto]()
+    for fileURL in binaryFilesURLs {
+      let binaryData = try Data(contentsOf: fileURL)
+      guard let serializedData = Data(base64Encoded: binaryData) else {
+        throw GRPCStatus(
+          code: .invalidArgument,
+          message:
+            """
+            The \(fileURL.lastPathComponent) file contents could not be transformed \
+            into serialized data representing a file descriptor proto.
+            """
+        )
+      }
+      fileDescriptorProtos.append(try Google_Protobuf_FileDescriptorProto(serializedData: serializedData))
     }
-
     self.protoRegistry = try ReflectionServiceData(fileDescriptors: fileDescriptorProtos)
   }
 

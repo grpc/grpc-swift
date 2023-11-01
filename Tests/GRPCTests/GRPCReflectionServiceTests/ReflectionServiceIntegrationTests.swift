@@ -54,7 +54,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
         XCTAssertNoThrow(try fileManager.removeItem(atPath: filePath))
       }
     }
-    let reflectionServiceProvider = try ReflectionService(protoFilePaths: filePaths)
+    let reflectionServiceProvider = try ReflectionService(serializedFileDescriptorProtoFilePaths: filePaths)
 
     let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
       .withServiceProviders([reflectionServiceProvider])
