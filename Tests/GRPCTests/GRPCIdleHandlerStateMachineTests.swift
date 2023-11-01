@@ -548,8 +548,8 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     let op3 = stateMachine.receiveGoAway()
     op3.assertConnectionManager(.quiescing)
 
-    // Create a new stream. This can if the GOAWAY races with opening the stream; HTTP2 will open
-    // and then close the stream with an error.
+    // Create a new stream. This can happen if the GOAWAY races with opening the stream; HTTP2 will
+    // open and then close the stream with an error.
     let op4 = stateMachine.streamCreated(withID: 3)
     op4.assertDoNothing()
 
