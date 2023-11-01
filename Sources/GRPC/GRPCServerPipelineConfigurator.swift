@@ -104,13 +104,11 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
 
   /// Makes an HTTP/2 multiplexer suitable handling gRPC requests.
   private func makeHTTP2Multiplexer(for channel: Channel) -> HTTP2StreamMultiplexer {
-    var logger = self.configuration.logger
-
     return .init(
       mode: .server,
       channel: channel,
       targetWindowSize: self.configuration.httpTargetWindowSize
-    ) { stream in
+    ) { [logger = self.configuration.logger] stream in
       // Sync options were added to the HTTP/2 stream channel in 1.17.0 (we require at least this)
       // so this shouldn't be `nil`, but it's not a problem if it is.
       let http2StreamID = try? stream.syncOptions?.getOption(HTTP2StreamChannelOptions.streamID)
@@ -119,6 +117,7 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
           return String(Int(streamID))
         } ?? "<unknown>"
 
+      var logger = logger
       logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
 
       do {
