@@ -26,6 +26,10 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     self.reflectionService.serviceName
   }
 
+  public init(protoFilePaths: [String]) throws {
+    self.reflectionService = try ReflectionServiceProvider(protoFilePaths: protoFilePaths)
+  }
+
   public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.reflectionService = try ReflectionServiceProvider(fileDescriptorProtos: fileDescriptors)
   }
@@ -206,6 +210,22 @@ internal struct ReflectionServiceData: Sendable {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflectionAsyncProvider {
   private let protoRegistry: ReflectionServiceData
+
+  internal init(protoFilePaths: [String]) throws {
+    let binaryFilesURLs = protoFilePaths.map {
+      if #available(macOS 13.0, *) {
+        URL(filePath: $0)
+      } else {
+        URL(fileURLWithPath: $0)
+      }
+    }
+    let binaryData = binaryFilesURLs.map { Data(base64Encoded: try! Data(contentsOf: $0)) }
+    let fileDescriptorProtos = binaryData.map {
+      try! Google_Protobuf_FileDescriptorProto(serializedData: $0!)
+    }
+
+    self.protoRegistry = try ReflectionServiceData(fileDescriptors: fileDescriptorProtos)
+  }
 
   internal init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
     self.protoRegistry = try ReflectionServiceData(

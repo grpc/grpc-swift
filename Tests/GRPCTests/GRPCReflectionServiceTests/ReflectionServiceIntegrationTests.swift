@@ -33,9 +33,23 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   )
 
   private func setUpServerAndChannel() throws {
-    let reflectionServiceProvider = try ReflectionService(
-      fileDescriptors: self.protos + [self.independentProto]
-    )
+    var filePaths: [String] = []
+    let fileManager = FileManager.default
+
+    let fileDescriptorProtos = self.protos + [self.independentProto]
+    for fileDescriptorProto in fileDescriptorProtos {
+      let data = try fileDescriptorProto.serializedData()
+        .base64EncodedData()
+      let filePath = fileManager.temporaryDirectory.path() + fileDescriptorProto.name
+      fileManager.createFile(atPath: filePath, contents: data)
+      filePaths.append(filePath)
+    }
+    defer {
+      for filePath in filePaths {
+        XCTAssertNoThrow(try fileManager.removeItem(atPath: filePath))
+      }
+    }
+    let reflectionServiceProvider = try ReflectionService(protoFilePaths: filePaths)
 
     let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
       .withServiceProviders([reflectionServiceProvider])
