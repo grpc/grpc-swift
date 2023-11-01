@@ -13,21 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import GRPCCore
 
-import XCTest
+struct IdentitySerializer: MessageSerializer {
+  func serialize(_ message: [UInt8]) throws -> [UInt8] {
+    return message
+  }
+}
 
-@testable import GRPCCore
-
-final class ClientRequestTests: XCTestCase {
-  func testSingleToStreamConversion() async throws {
-    let (messages, continuation) = AsyncStream.makeStream(of: String.self)
-    let single = ClientRequest.Single(message: "foo", metadata: ["bar": "baz"])
-    let stream = ClientRequest.Stream(single: single)
-
-    XCTAssertEqual(stream.metadata, ["bar": "baz"])
-    try await stream.producer(.gathering(into: continuation))
-    continuation.finish()
-    let collected = try await messages.collect()
-    XCTAssertEqual(collected, ["foo"])
+struct IdentityDeserializer: MessageDeserializer {
+  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> [UInt8] {
+    return serializedMessageBytes
   }
 }
