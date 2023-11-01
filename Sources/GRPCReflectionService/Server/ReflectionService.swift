@@ -212,12 +212,17 @@ internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflect
   private let protoRegistry: ReflectionServiceData
 
   internal init(protoFilePaths: [String]) throws {
+
     let binaryFilesURLs = protoFilePaths.map {
+      #if os(Linux)
+      URL(fileURLWithPath: $0)
+      #else
       if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
         URL(filePath: $0, directoryHint: .notDirectory)
       } else {
         URL(fileURLWithPath: $0)
       }
+      #endif
     }
     let binaryData = binaryFilesURLs.map { Data(base64Encoded: try! Data(contentsOf: $0)) }
     let fileDescriptorProtos = binaryData.map {
