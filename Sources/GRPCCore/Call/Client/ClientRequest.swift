@@ -102,15 +102,3 @@ extension ClientRequest {
     }
   }
 }
-
-// MARK: - Conversion
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension ClientRequest.Stream {
-  @_spi(Testing)
-  public init(single request: ClientRequest.Single<Message>) {
-    self.init(metadata: request.metadata) {
-      try await $0.write(request.message)
-    }
-  }
-}

@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-import XCTest
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension RPCAsyncSequence {
+  @inlinable
+  static func makeBackpressuredStream(
+    of elementType: Element.Type = Element.self,
+    watermarks: (low: Int, high: Int)
+  ) -> (stream: Self, writer: RPCWriter<Element>.Closable) {
+    let (stream, continuation) = BufferedStream.makeStream(
+      of: Element.self,
+      backPressureStrategy: .watermark(low: watermarks.low, high: watermarks.high)
+    )
 
-@testable import GRPCCore
-
-final class ClientRequestTests: XCTestCase {
-  func testSingleToStreamConversion() async throws {
-    let (messages, continuation) = AsyncStream.makeStream(of: String.self)
-    let single = ClientRequest.Single(message: "foo", metadata: ["bar": "baz"])
-    let stream = ClientRequest.Stream(single: single)
-
-    XCTAssertEqual(stream.metadata, ["bar": "baz"])
-    try await stream.producer(.gathering(into: continuation))
-    continuation.finish()
-    let collected = try await messages.collect()
-    XCTAssertEqual(collected, ["foo"])
+    return (RPCAsyncSequence(wrapping: stream), RPCWriter.Closable(wrapping: continuation))
   }
 }
