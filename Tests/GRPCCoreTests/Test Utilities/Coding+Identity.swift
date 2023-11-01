@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, gRPC Authors All rights reserved.
+ * Copyright 2023, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import GRPCCore
 
-internal enum Version {
-  /// The major version.
-  internal static let major = 1
+struct IdentitySerializer: MessageSerializer {
+  func serialize(_ message: [UInt8]) throws -> [UInt8] {
+    return message
+  }
+}
 
-  /// The minor version.
-  internal static let minor = 20
-
-  /// The patch version.
-  internal static let patch = 0
-
-  /// The version string.
-  internal static let versionString = "\(major).\(minor).\(patch)"
+struct IdentityDeserializer: MessageDeserializer {
+  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> [UInt8] {
+    return serializedMessageBytes
+  }
 }

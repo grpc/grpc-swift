@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, gRPC Authors All rights reserved.
+ * Copyright 2023, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-internal enum Version {
-  /// The major version.
-  internal static let major = 1
-
-  /// The minor version.
-  internal static let minor = 20
-
-  /// The patch version.
-  internal static let patch = 0
-
-  /// The version string.
-  internal static let versionString = "\(major).\(minor).\(patch)"
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension ClientRequest.Stream {
+  internal init(single request: ClientRequest.Single<Message>) {
+    self.init(metadata: request.metadata) {
+      try await $0.write(request.message)
+    }
+  }
 }
