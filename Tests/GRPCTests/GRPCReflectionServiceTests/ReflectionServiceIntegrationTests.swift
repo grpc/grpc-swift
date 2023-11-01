@@ -41,7 +41,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       let data = try fileDescriptorProto.serializedData()
         .base64EncodedData()
       #if os(Linux)
-      let temporaryDirectory = "/tmp"
+      let temporaryDirectory = "/tmp/"
       #else
       let temporaryDirectory = fileManager.temporaryDirectory.path()
       #endif
