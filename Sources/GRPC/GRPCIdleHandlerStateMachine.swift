@@ -275,7 +275,15 @@ struct GRPCIdleHandlerStateMachine {
       operations.cancelIdleTask(state.idleTask)
 
     case var .quiescing(state):
-      state.lastPeerInitiatedStreamID = streamID
+      switch state.role {
+      case .client where streamID.isServerInitiated:
+        state.lastPeerInitiatedStreamID = streamID
+      case .server where streamID.isClientInitiated:
+        state.lastPeerInitiatedStreamID = streamID
+      default:
+        ()
+      }
+
       state.openStreams += 1
       self.state = .quiescing(state)
 
