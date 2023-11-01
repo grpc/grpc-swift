@@ -455,7 +455,8 @@ extension Target {
     ],
     path: "Sources/GRPCReflectionService",
     exclude: [
-      "Model/reflection.proto",
+      "v1/reflection.proto",
+      "v1Alpha/reflection.proto"
     ]
   )
 }
