@@ -1,0 +1,7 @@
+{
+  "mallocCountTotal" : 0,
+  "memoryLeaked" : 0,
+  "releaseCount" : 1002,
+  "retainCount" : 1001,
+  "syscalls" : 0
+}
