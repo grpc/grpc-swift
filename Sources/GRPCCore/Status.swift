@@ -65,6 +65,12 @@ public struct Status: @unchecked Sendable, Hashable {
       self.storage = Storage(code: code, message: message)
     }
   }
+
+  /// A status with code ``Code-swift.struct/ok`` and an empty message.
+  @inlinable
+  internal static var ok: Self {
+    Status(code: .ok, message: "")
+  }
 }
 
 extension Status: CustomStringConvertible {
