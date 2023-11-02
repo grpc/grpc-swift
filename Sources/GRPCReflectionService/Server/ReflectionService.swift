@@ -22,7 +22,7 @@ import SwiftProtobuf
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public final class ReflectionService: CallHandlerProvider, Sendable {
   private let reflectionServiceProvider: ProviderType
-  
+
   public var serviceName: Substring {
     switch self.reflectionServiceProvider {
     case .v1Provider(let reflectionV1Provider):
@@ -31,13 +31,17 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
       reflectionV1AlphaProvider.serviceName
     }
   }
-  
+
   public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto], version: Version) throws {
     switch version.wrapped {
     case .v1:
-      self.reflectionServiceProvider = .v1Provider(try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptors))
+      self.reflectionServiceProvider = .v1Provider(
+        try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptors)
+      )
     case .v1Alpha:
-      self.reflectionServiceProvider = .v1AlphaProvider(try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptors))
+      self.reflectionServiceProvider = .v1AlphaProvider(
+        try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptors)
+      )
     }
   }
 
@@ -255,18 +259,18 @@ extension Google_Protobuf_FileDescriptorProto {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ReflectionService {
-  public struct Version : Sendable {
+  public struct Version: Sendable {
     internal enum Wrapped {
       case v1
       case v1Alpha
     }
     var wrapped: Wrapped
     private init(_ wrapped: Wrapped) { self.wrapped = wrapped }
-    
+
     public static var v1: Self { Self(.v1) }
     public static var v1Alpha: Self { Self(.v1Alpha) }
   }
-  
+
   private enum ProviderType {
     case v1Provider(ReflectionServiceProviderV1)
     case v1AlphaProvider(ReflectionServiceProviderV1Alpha)

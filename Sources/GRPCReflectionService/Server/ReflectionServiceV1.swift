@@ -15,8 +15,8 @@
  */
 
 import Foundation
-import SwiftProtobuf
 import GRPC
+import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class ReflectionServiceProviderV1: Grpc_Reflection_V1_ServerReflectionAsyncProvider {

@@ -131,11 +131,11 @@ ${SERIALIZATION_GRPC_REFLECTION}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-reflection-data: ${SERIALIZATION_GRPC_REFLECTION}
 
-REFLECTION_PROTO=Sources/GRPCReflectionService/v1/reflection.proto
+REFLECTION_PROTO=Sources/GRPCReflectionService/v1/reflection-v1.proto
 REFLECTION_PB=$(REFLECTION_PROTO:.proto=.pb.swift)
 REFLECTION_GRPC=$(REFLECTION_PROTO:.proto=.grpc.swift)
 
-V1ALPHA_REFLECTION_PROTO=Sources/GRPCReflectionService/v1Alpha/reflection.proto
+V1ALPHA_REFLECTION_PROTO=Sources/GRPCReflectionService/v1Alpha/reflection-v1alpha.proto
 V1ALPHA_REFLECTION_PB=$(V1ALPHA_REFLECTION_PROTO:.proto=.pb.swift)
 V1ALPHA_REFLECTION_GRPC=$(V1ALPHA_REFLECTION_PROTO:.proto=.grpc.swift)
 
@@ -159,8 +159,10 @@ ${V1ALPHA_REFLECTION_GRPC}: ${V1ALPHA_REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-reflection: ${REFLECTION_PB} ${REFLECTION_GRPC} ${V1ALPHA_REFLECTION_PB} ${V1ALPHA_REFLECTION_GRPC}
 
-TEST_REFLECTION_V1_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection.grpc.swift
-TEST_REFLECTION_V1_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection.pb.swift
+TEST_REFLECTION_V1_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection-v1.grpc.swift
+TEST_REFLECTION_V1_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection-v1.pb.swift
+TEST_REFLECTION_V1ALPHA_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection-v1alpha.grpc.swift
+TEST_REFLECTION_V1ALPHA_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection-v1alpha.pb.swift
 
 # For Testing the Reflection we'll generate only the Client code.
 ${TEST_REFLECTION_V1_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
@@ -175,13 +177,6 @@ ${TEST_REFLECTION_V1_PB}: ${REFLECTION_PROTO} ${PROTOC_GEN_SWIFT}
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_SWIFT} \
 		--swift_out=$(dir ${TEST_REFLECTION_V1_PB})
-		
-# Generates protobufs and gRPC client for the Reflection Service Tests
-.PHONY:
-generate-reflection-v1-client: ${TEST_REFLECTION_V1_PB} ${TEST_REFLECTION_V1_GRPC}
-
-TEST_REFLECTION_V1ALPHA_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection.grpc.swift
-TEST_REFLECTION_V1ALPHA_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection.pb.swift
 
 # For Testing the Reflection we'll generate only the Client code.
 ${TEST_REFLECTION_V1ALPHA_GRPC}: ${V1ALPHA_REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
@@ -197,9 +192,9 @@ ${TEST_REFLECTION_V1ALPHA_PB}: ${V1ALPHA_REFLECTION_PROTO} ${PROTOC_GEN_SWIFT}
 		--plugin=${PROTOC_GEN_SWIFT} \
 		--swift_out=$(dir ${TEST_REFLECTION_V1ALPHA_PB})
 		
-# Generates protobufs and gRPC client for the Reflection Service Tests
+# Generates protobufs and gRPC clients for the Reflection Service Tests
 .PHONY:
-generate-reflection-v1alpha-client: ${TEST_REFLECTION_V1ALPHA_PB} ${TEST_REFLECTION_V1ALPHA_GRPC}
+generate-reflection-test-clients: ${TEST_REFLECTION_V1_PB} ${TEST_REFLECTION_V1_GRPC} ${TEST_REFLECTION_V1ALPHA_PB} ${TEST_REFLECTION_V1ALPHA_GRPC}
 
 ### Testing ####################################################################
 

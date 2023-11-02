@@ -15,11 +15,13 @@
  */
 
 import Foundation
-import SwiftProtobuf
 import GRPC
+import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal final class ReflectionServiceProviderV1Alpha: Grpc_Reflection_V1alpha_ServerReflectionAsyncProvider {
+internal final class ReflectionServiceProviderV1Alpha:
+  Grpc_Reflection_V1alpha_ServerReflectionAsyncProvider
+{
   private let protoRegistry: ReflectionServiceData
 
   internal init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
@@ -34,11 +36,12 @@ internal final class ReflectionServiceProviderV1Alpha: Grpc_Reflection_V1alpha_S
     return self.protoRegistry
       .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
       .map { fileDescriptorProtos in
-        Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse(
-          .with {
-            $0.fileDescriptorProto = fileDescriptorProtos
-          }
-        )
+        Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse
+          .fileDescriptorResponse(
+            .with {
+              $0.fileDescriptorProto = fileDescriptorProtos
+            }
+          )
       }
   }
 
@@ -97,12 +100,13 @@ internal final class ReflectionServiceProviderV1Alpha: Grpc_Reflection_V1alpha_S
     let result = self.protoRegistry.extensionsFieldNumbersOfType(
       named: typeName
     ).map { fieldNumbers in
-      Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse(
-        Grpc_Reflection_V1alpha_ExtensionNumberResponse.with {
-          $0.baseTypeName = typeName
-          $0.extensionNumber = fieldNumbers
-        }
-      )
+      Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse
+        .allExtensionNumbersResponse(
+          Grpc_Reflection_V1alpha_ExtensionNumberResponse.with {
+            $0.baseTypeName = typeName
+            $0.extensionNumber = fieldNumbers
+          }
+        )
     }
     return result.makeResponse(request: request)
   }
@@ -175,9 +179,11 @@ extension Grpc_Reflection_V1alpha_ServerReflectionResponse {
   }
 }
 
-extension Result<Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
-  func recover() -> Result<Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse, Never>
-  {
+extension Result<Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus>
+{
+  func recover() -> Result<
+    Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageResponse, Never
+  > {
     self.flatMapError { status in
       let error = Grpc_Reflection_V1alpha_ErrorResponse.with {
         $0.errorCode = Int32(status.code.rawValue)
@@ -206,4 +212,3 @@ where Success == Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageR
     }
   }
 }
-
