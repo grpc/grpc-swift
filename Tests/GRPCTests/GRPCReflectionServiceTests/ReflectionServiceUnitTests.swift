@@ -538,6 +538,37 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     XCTAssertEqual(reflectionServiceFileDescriptorProto, initialFileDescriptorProto)
   }
 
+  func testReadSerializedFileDescriptorProtoInvalidFileContents() throws {
+    let invalidData = "%%%%%££££".data(using: .utf8)
+    #if os(Linux)
+    let temporaryDirectory = "/tmp/"
+    #else
+    let temporaryDirectory = FileManager.default.temporaryDirectory.path()
+    #endif
+    let filePath = "\(temporaryDirectory)test\(UUID()).grpc.reflection"
+    FileManager.default.createFile(atPath: filePath, contents: invalidData)
+    defer {
+      XCTAssertNoThrow(try FileManager.default.removeItem(atPath: filePath))
+    }
+
+    XCTAssertThrowsGRPCStatus(
+      try ReflectionService.readSerializedFileDescriptorProto(atPath: filePath)
+    ) {
+      status in
+      XCTAssertEqual(
+        status,
+        GRPCStatus(
+          code: .invalidArgument,
+          message:
+            """
+            The \(filePath) file contents could not be transformed \
+            into serialized data representing a file descriptor proto.
+            """
+        )
+      )
+    }
+  }
+
   func testReadSerializedFileDescriptorProtos() throws {
     let initialFileDescriptorProtos = makeProtosWithDependencies()
     var filePaths: [String] = []

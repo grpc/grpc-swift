@@ -26,12 +26,17 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     self.reflectionService.serviceName
   }
 
-  ///  Receives as parameter an array of strings representing the file paths to the binary files containing
-  ///  the serialised file descriptor protos describing the services supported by the Server and
-  ///  discovarable through Server Reflection.
-  public init(serializedFileDescriptorProtoFilePaths: [String]) throws {
+  /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
+  ///
+  /// You can generate serialized reflection data using the `protoc-gen-grpc-swift` plugin for `protoc` by
+  /// setting the to `True`. The paths provided should be absolute or relative to the current working directory.
+  ///
+  /// - Parameter filePaths: The paths to files containing serialized reflection data.
+  ///
+  /// - Throws: When a file can't be read from disk or parsed.
+  public init(serializedFileDescriptorProtoFilePaths filePaths: [String]) throws {
     let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
-      atPaths: serializedFileDescriptorProtoFilePaths
+      atPaths: filePaths
     )
     self.reflectionService = try ReflectionServiceProvider(
       fileDescriptorProtos: fileDescriptorProtos
@@ -459,7 +464,7 @@ extension ReflectionService {
         code: .invalidArgument,
         message:
           """
-          The \(fileURL.lastPathComponent) file contents could not be transformed \
+          The \(path) file contents could not be transformed \
           into serialized data representing a file descriptor proto.
           """
       )
@@ -471,6 +476,7 @@ extension ReflectionService {
     atPaths paths: [String]
   ) throws -> [Google_Protobuf_FileDescriptorProto] {
     var fileDescriptorProtos = [Google_Protobuf_FileDescriptorProto]()
+    fileDescriptorProtos.reserveCapacity(paths.count)
     for path in paths {
       try fileDescriptorProtos.append(readSerializedFileDescriptorProto(atPath: path))
     }
