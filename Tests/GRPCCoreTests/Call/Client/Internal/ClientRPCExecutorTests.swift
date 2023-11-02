@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ClientRPCExecutorTests: XCTestCase {
   func testUnaryEcho() async throws {
     let tester = ClientRPCExecutorTestHarness(server: .echo)

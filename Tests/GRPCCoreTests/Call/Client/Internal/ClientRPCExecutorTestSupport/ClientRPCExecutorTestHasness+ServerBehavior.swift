@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ClientRPCExecutorTestHarness {
   struct ServerStreamHandler: Sendable {
     private let handler:
@@ -47,6 +48,7 @@ extension ClientRPCExecutorTestHarness {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ClientRPCExecutorTestHarness.ServerStreamHandler {
   static var echo: Self {
     return Self {

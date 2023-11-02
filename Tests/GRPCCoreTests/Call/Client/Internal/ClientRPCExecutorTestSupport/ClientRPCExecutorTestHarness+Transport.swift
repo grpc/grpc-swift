@@ -19,6 +19,7 @@ import Atomics
 
 // TODO: replace with real in-process transport
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class TestingClientTransport: ClientTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
@@ -130,6 +131,7 @@ final class TestingClientTransport: ClientTransport, Sendable {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class TestingServerTransport: ServerTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
