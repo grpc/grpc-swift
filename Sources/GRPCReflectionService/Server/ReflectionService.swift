@@ -26,9 +26,9 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   public var serviceName: Substring {
     switch self.reflectionServiceProvider {
     case .v1Provider(let reflectionV1Provider):
-      reflectionV1Provider.serviceName
+      return reflectionV1Provider.serviceName
     case .v1AlphaProvider(let reflectionV1AlphaProvider):
-      reflectionV1AlphaProvider.serviceName
+      return reflectionV1AlphaProvider.serviceName
     }
   }
 
@@ -51,9 +51,9 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   ) -> GRPC.GRPCServerHandlerProtocol? {
     switch self.reflectionServiceProvider {
     case .v1Provider(let reflectionV1Provider):
-      reflectionV1Provider.handle(method: name, context: context)
+      return reflectionV1Provider.handle(method: name, context: context)
     case .v1AlphaProvider(let reflectionV1AlphaProvider):
-      reflectionV1AlphaProvider.handle(method: name, context: context)
+      return reflectionV1AlphaProvider.handle(method: name, context: context)
     }
   }
 }
