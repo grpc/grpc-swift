@@ -23,7 +23,7 @@ import XCTest
 
 @testable import GRPCReflectionService
 
-final class ReflectionServiceIntegrationTests: GRPCTestCase {
+final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   private var server: Server?
   private var channel: GRPCChannel?
   private let protos: [Google_Protobuf_FileDescriptorProto] = makeProtosWithDependencies()
