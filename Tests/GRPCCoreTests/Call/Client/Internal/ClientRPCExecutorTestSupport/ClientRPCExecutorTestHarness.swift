@@ -24,7 +24,7 @@ import XCTest
 /// of the server to allow for flexible testing scenarios with minimal boilerplate. The harness
 /// also tracks how many streams the client has opened, how many streams the server accepted, and
 /// how many streams the client failed to open.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct ClientRPCExecutorTestHarness {
   private let server: ServerStreamHandler
   private let clientTransport: StreamCountingClientTransport
