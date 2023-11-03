@@ -29,7 +29,8 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
   ///
   /// You can generate serialized reflection data using the `protoc-gen-grpc-swift` plugin for `protoc` by
-  /// setting the to `True`. The paths provided should be absolute or relative to the current working directory.
+  /// setting the `ReflectionData` option  to `True`. The paths provided should be absolute or relative to the
+  /// current working directory.
   ///
   /// - Parameter filePaths: The paths to files containing serialized reflection data.
   ///
