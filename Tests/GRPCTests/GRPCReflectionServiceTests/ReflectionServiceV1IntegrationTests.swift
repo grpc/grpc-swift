@@ -23,7 +23,7 @@ import XCTest
 
 @testable import GRPCReflectionService
 
-final class ReflectionServiceIntegrationTests: GRPCTestCase {
+final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   private var server: Server?
   private var channel: GRPCChannel?
   private let protos: [Google_Protobuf_FileDescriptorProto] = makeProtosWithDependencies()
@@ -34,7 +34,8 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
 
   private func setUpServerAndChannel() throws {
     let reflectionServiceProvider = try ReflectionService(
-      fileDescriptors: self.protos + [self.independentProto]
+      fileDescriptorProtos: self.protos + [self.independentProto],
+      version: .v1
     )
 
     let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
