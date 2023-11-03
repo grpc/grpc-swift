@@ -57,7 +57,8 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     }
   }
 
-  public init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto], version: Version) throws {
+  public init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto], version: Version) throws
+  {
     switch version.wrapped {
     case .v1:
       self.reflectionServiceProvider = .v1Provider(
