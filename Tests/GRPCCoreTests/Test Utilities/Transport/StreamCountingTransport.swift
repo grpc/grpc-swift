@@ -17,6 +17,7 @@ import Atomics
 
 @testable import GRPCCore
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct StreamCountingClientTransport: ClientTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
@@ -69,6 +70,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct StreamCountingServerTransport: ServerTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
