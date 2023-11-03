@@ -34,7 +34,7 @@ final class ReflectionServiceV1AlphaIntegrationTests: GRPCTestCase {
 
   private func setUpServerAndChannel() throws {
     let reflectionServiceProvider = try ReflectionService(
-      fileDescriptors: self.protos + [self.independentProto],
+      fileDescriptorProtos: self.protos + [self.independentProto],
       version: .v1Alpha
     )
 

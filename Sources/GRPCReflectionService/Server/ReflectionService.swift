@@ -32,15 +32,40 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     }
   }
 
-  public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto], version: Version) throws {
+  /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
+  ///
+  /// You can generate serialized reflection data using the `protoc-gen-grpc-swift` plugin for `protoc` by
+  /// setting the `ReflectionData` option  to `True`. The paths provided should be absolute or relative to the
+  /// current working directory.
+  ///
+  /// - Parameter filePaths: The paths to files containing serialized reflection data.
+  ///
+  /// - Throws: When a file can't be read from disk or parsed.
+  public init(serializedFileDescriptorProtoFilePaths filePaths: [String], version: Version) throws {
+    let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
+      atPaths: filePaths
+    )
     switch version.wrapped {
     case .v1:
       self.reflectionServiceProvider = .v1Provider(
-        try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptors)
+        try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptorProtos)
       )
     case .v1Alpha:
       self.reflectionServiceProvider = .v1AlphaProvider(
-        try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptors)
+        try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptorProtos)
+      )
+    }
+  }
+
+  public init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto], version: Version) throws {
+    switch version.wrapped {
+    case .v1:
+      self.reflectionServiceProvider = .v1Provider(
+        try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptorProtos)
+      )
+    case .v1Alpha:
+      self.reflectionServiceProvider = .v1AlphaProvider(
+        try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptorProtos)
       )
     }
   }
@@ -274,5 +299,46 @@ extension ReflectionService {
   private enum ProviderType {
     case v1Provider(ReflectionServiceProviderV1)
     case v1AlphaProvider(ReflectionServiceProviderV1Alpha)
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension ReflectionService {
+  static func readSerializedFileDescriptorProto(
+    atPath path: String
+  ) throws -> Google_Protobuf_FileDescriptorProto {
+    let fileURL: URL
+    #if os(Linux)
+    fileURL = URL(fileURLWithPath: path)
+    #else
+    if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+      fileURL = URL(filePath: path, directoryHint: .notDirectory)
+    } else {
+      fileURL = URL(fileURLWithPath: path)
+    }
+    #endif
+    let binaryData = try Data(contentsOf: fileURL)
+    guard let serializedData = Data(base64Encoded: binaryData) else {
+      throw GRPCStatus(
+        code: .invalidArgument,
+        message:
+          """
+          The \(path) file contents could not be transformed \
+          into serialized data representing a file descriptor proto.
+          """
+      )
+    }
+    return try Google_Protobuf_FileDescriptorProto(serializedData: serializedData)
+  }
+
+  static func readSerializedFileDescriptorProtos(
+    atPaths paths: [String]
+  ) throws -> [Google_Protobuf_FileDescriptorProto] {
+    var fileDescriptorProtos = [Google_Protobuf_FileDescriptorProto]()
+    fileDescriptorProtos.reserveCapacity(paths.count)
+    for path in paths {
+      try fileDescriptorProtos.append(readSerializedFileDescriptorProto(atPath: path))
+    }
+    return fileDescriptorProtos
   }
 }
