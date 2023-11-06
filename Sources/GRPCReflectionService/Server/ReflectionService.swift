@@ -286,6 +286,10 @@ extension Google_Protobuf_FileDescriptorProto {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ReflectionService {
+  /// Represents the version of the `reflection.proto`.
+  ///
+  /// Depending in the version you are using, when creating the ReflectionService
+  /// provide the corresponding `Version` variable (`v1` or `v1Alpha`).
   public struct Version: Sendable, Hashable {
     internal enum Wrapped {
       case v1
