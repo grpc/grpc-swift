@@ -23,7 +23,7 @@ import XCTest
 
 @testable import GRPCReflectionService
 
-final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
+final class ReflectionServiceIntegrationTests: GRPCTestCase {
   private var server: Server?
   private var channel: GRPCChannel?
   private let protos: [Google_Protobuf_FileDescriptorProto] = makeProtosWithDependencies()
@@ -31,11 +31,12 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
     fileName: "independentBar",
     suffix: "5"
   )
+  private let versions: [ReflectionService.Version] = [.v1, .v1Alpha]
 
-  private func setUpServerAndChannel() throws {
+  private func setUpServerAndChannel(version: ReflectionService.Version) throws {
     let reflectionServiceProvider = try ReflectionService(
       fileDescriptorProtos: self.protos + [self.independentProto],
-      version: .v1
+      version: version
     )
 
     let server = try Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
@@ -68,43 +69,67 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testFileByFileName() async throws {
-    try self.setUpServerAndChannel()
-    let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
-    let serviceReflectionInfo = client.makeServerReflectionInfoCall()
-    try await serviceReflectionInfo.requestStream.send(
-      .with {
+    for version in [ReflectionService.Version.v1, ReflectionService.Version.v1Alpha] {
+      try self.setUpServerAndChannel(version: version)
+      let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileByFilename = "bar1.proto"
       }
-    )
-    serviceReflectionInfo.requestStream.finish()
+      let response: Grpc_Reflection_V1_ServerReflectionResponse?
+      switch version {
+      case .v1:
+        let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
+        let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+        try await serviceReflectionInfo.requestStream.send(request)
+        serviceReflectionInfo.requestStream.finish()
+        var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+        response = try await iterator.next()
+      case .v1Alpha:
+        let client = Grpc_Reflection_V1alpha_ServerReflectionAsyncClient(channel: self.channel!)
+        let serviceReflectionInfo = client.makeServerReflectionInfoCall()
+        try await serviceReflectionInfo.requestStream.send(
+          Grpc_Reflection_V1alpha_ServerReflectionRequest.with {
+            $0.host = request.host
+            $0.fileByFilename = request.fileByFilename
+          }
+        )
+        serviceReflectionInfo.requestStream.finish()
+        var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
+        response = try await iterator.next().map {
+          Grpc_Reflection_V1_ServerReflectionResponse(v1AlphaResponse: $0)
+        }
+      default:
+        return XCTFail("The version is neither v1 nor v1alpha, thus it is invalid.")
+      }
+      guard let message = response else {
+        return XCTFail("Could not get a response message.")
+      }
 
-    var iterator = serviceReflectionInfo.responseStream.makeAsyncIterator()
-    guard let message = try await iterator.next() else {
-      return XCTFail("Could not get a response message.")
+      // response can't be nil as we just checked it.
+      let receivedFileDescriptorProto =
+        try Google_Protobuf_FileDescriptorProto(
+          serializedData: (message.fileDescriptorResponse
+            .fileDescriptorProto[0])
+        )
+
+      XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
+      XCTAssertEqual(receivedFileDescriptorProto.service.count, 1)
+
+      guard let service = receivedFileDescriptorProto.service.first else {
+        return XCTFail("The received file descriptor proto doesn't have any services.")
+      }
+      guard let method = service.method.first else {
+        return XCTFail(
+          "The service of the received file descriptor proto doesn't have any methods."
+        )
+      }
+      XCTAssertEqual(method.name, "testMethod1")
+      XCTAssertEqual(message.fileDescriptorResponse.fileDescriptorProto.count, 4)
     }
-
-    let receivedFileDescriptorProto =
-      try Google_Protobuf_FileDescriptorProto(
-        serializedData: (message.fileDescriptorResponse
-          .fileDescriptorProto[0])
-      )
-
-    XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
-    XCTAssertEqual(receivedFileDescriptorProto.service.count, 1)
-
-    guard let service = receivedFileDescriptorProto.service.first else {
-      return XCTFail("The received file descriptor proto doesn't have any services.")
-    }
-    guard let method = service.method.first else {
-      return XCTFail("The service of the received file descriptor proto doesn't have any methods.")
-    }
-    XCTAssertEqual(method.name, "testMethod1")
-    XCTAssertEqual(message.fileDescriptorResponse.fileDescriptorProto.count, 4)
   }
 
   func testListServices() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
@@ -128,7 +153,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testFileBySymbol() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
@@ -177,7 +202,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testFileByExtension() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
@@ -241,7 +266,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testAllExtensionNumbersOfType() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
 
@@ -262,7 +287,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testErrorResponseFileByFileNameRequest() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
@@ -285,7 +310,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testErrorResponseFileBySymbolRequest() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
@@ -305,7 +330,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testErrorResponseFileByExtensionRequest() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(
@@ -328,7 +353,7 @@ final class ReflectionServiceV1IntegrationTests: GRPCTestCase {
   }
 
   func testErrorResponseAllExtensionNumbersOfTypeRequest() async throws {
-    try self.setUpServerAndChannel()
+    try self.setUpServerAndChannel(version: .v1)
     let client = Grpc_Reflection_V1_ServerReflectionAsyncClient(channel: self.channel!)
     let serviceReflectionInfo = client.makeServerReflectionInfoCall()
     try await serviceReflectionInfo.requestStream.send(

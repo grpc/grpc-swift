@@ -21,14 +21,14 @@ import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public final class ReflectionService: CallHandlerProvider, Sendable {
-  private let reflectionServiceProvider: ProviderType
+  private let provider: Provider
 
   public var serviceName: Substring {
-    switch self.reflectionServiceProvider {
-    case .v1Provider(let reflectionV1Provider):
-      return reflectionV1Provider.serviceName
-    case .v1AlphaProvider(let reflectionV1AlphaProvider):
-      return reflectionV1AlphaProvider.serviceName
+    switch self.provider {
+    case .v1(let provider):
+      return provider.serviceName
+    case .v1Alpha(let provider):
+      return provider.serviceName
     }
   }
 
@@ -39,6 +39,7 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// current working directory.
   ///
   /// - Parameter filePaths: The paths to files containing serialized reflection data.
+  /// - Parameter version: The version of the reflection, `v1` or `v1alpha`.
   ///
   /// - Throws: When a file can't be read from disk or parsed.
   public init(serializedFileDescriptorProtoFilePaths filePaths: [String], version: Version) throws {
@@ -47,11 +48,11 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     )
     switch version.wrapped {
     case .v1:
-      self.reflectionServiceProvider = .v1Provider(
+      self.provider = .v1(
         try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptorProtos)
       )
     case .v1Alpha:
-      self.reflectionServiceProvider = .v1AlphaProvider(
+      self.provider = .v1Alpha(
         try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptorProtos)
       )
     }
@@ -61,11 +62,11 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   {
     switch version.wrapped {
     case .v1:
-      self.reflectionServiceProvider = .v1Provider(
+      self.provider = .v1(
         try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptorProtos)
       )
     case .v1Alpha:
-      self.reflectionServiceProvider = .v1AlphaProvider(
+      self.provider = .v1Alpha(
         try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptorProtos)
       )
     }
@@ -75,10 +76,10 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     method name: Substring,
     context: GRPC.CallHandlerContext
   ) -> GRPC.GRPCServerHandlerProtocol? {
-    switch self.reflectionServiceProvider {
-    case .v1Provider(let reflectionV1Provider):
+    switch self.provider {
+    case .v1(let reflectionV1Provider):
       return reflectionV1Provider.handle(method: name, context: context)
-    case .v1AlphaProvider(let reflectionV1AlphaProvider):
+    case .v1Alpha(let reflectionV1AlphaProvider):
       return reflectionV1AlphaProvider.handle(method: name, context: context)
     }
   }
@@ -285,7 +286,7 @@ extension Google_Protobuf_FileDescriptorProto {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ReflectionService {
-  public struct Version: Sendable {
+  public struct Version: Sendable, Hashable {
     internal enum Wrapped {
       case v1
       case v1Alpha
@@ -297,9 +298,15 @@ extension ReflectionService {
     public static var v1Alpha: Self { Self(.v1Alpha) }
   }
 
-  private enum ProviderType {
-    case v1Provider(ReflectionServiceProviderV1)
-    case v1AlphaProvider(ReflectionServiceProviderV1Alpha)
+  /// Represents the two possible `Providers`.
+  ///
+  /// Depending on the reflection version `v1` or `v1alpha` you provided to the initialiser,
+  /// ``init(serializedFileDescriptorProtoFilePaths:version:)``,
+  /// or ``init(fileDescriptorProtos:version:)``,
+  /// the Reflection Service will select its provider accordingly.
+  private enum Provider {
+    case v1(ReflectionServiceProviderV1)
+    case v1Alpha(ReflectionServiceProviderV1Alpha)
   }
 }
 
