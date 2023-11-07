@@ -535,6 +535,34 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     _ = stateMachine.channelInactive()
     stateMachine.ratchetDownGoAwayStreamID().assertDoNothing()
   }
+
+  func testStreamIDWhenQuiescing() {
+    var stateMachine = self.makeClientStateMachine()
+    let op1 = stateMachine.receiveSettings([])
+    op1.assertConnectionManager(.ready)
+
+    // Open a stream so we enter quiescing when receiving the GOAWAY.
+    let op2 = stateMachine.streamCreated(withID: 1)
+    op2.assertDoNothing()
+
+    let op3 = stateMachine.receiveGoAway()
+    op3.assertConnectionManager(.quiescing)
+
+    // Create a new stream. This can happen if the GOAWAY races with opening the stream; HTTP2 will
+    // open and then close the stream with an error.
+    let op4 = stateMachine.streamCreated(withID: 3)
+    op4.assertDoNothing()
+
+    // Close the newly opened stream.
+    let op5 = stateMachine.streamClosed(withID: 3)
+    op5.assertDoNothing()
+
+    // Close the original stream.
+    let op6 = stateMachine.streamClosed(withID: 1)
+    // Now we can send a GOAWAY with stream ID zero (we're the client and the server didn't open
+    // any streams).
+    XCTAssertEqual(op6.sendGoAwayWithLastPeerInitiatedStreamID, 0)
+  }
 }
 
 extension GRPCIdleHandlerStateMachine.Operations {

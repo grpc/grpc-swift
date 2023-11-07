@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@_spi(Testing) import GRPCCore
+
 import XCTest
 
+@testable import GRPCCore
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ClientRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
     let (messages, continuation) = AsyncStream.makeStream(of: String.self)

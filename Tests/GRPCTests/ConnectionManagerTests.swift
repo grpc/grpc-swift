@@ -1277,6 +1277,40 @@ extension ConnectionManagerTests {
 
     XCTAssertThrowsError(try multiplexer.wait())
   }
+
+  func testClientKeepaliveJitterWithoutClamping() {
+    let original = ClientConnectionKeepalive(interval: .seconds(2), timeout: .seconds(1))
+    let keepalive = original.jitteringInterval(byAtMost: .milliseconds(500))
+
+    XCTAssertGreaterThanOrEqual(keepalive.interval, .milliseconds(1500))
+    XCTAssertLessThanOrEqual(keepalive.interval, .milliseconds(2500))
+  }
+
+  func testClientKeepaliveJitterClampedToTimeout() {
+    let original = ClientConnectionKeepalive(interval: .seconds(2), timeout: .seconds(1))
+    let keepalive = original.jitteringInterval(byAtMost: .seconds(2))
+
+    // Strictly greater than the timeout of 1 seconds.
+    XCTAssertGreaterThan(keepalive.interval, .seconds(1))
+    XCTAssertLessThanOrEqual(keepalive.interval, .seconds(4))
+  }
+
+  func testServerKeepaliveJitterWithoutClamping() {
+    let original = ServerConnectionKeepalive(interval: .seconds(2), timeout: .seconds(1))
+    let keepalive = original.jitteringInterval(byAtMost: .milliseconds(500))
+
+    XCTAssertGreaterThanOrEqual(keepalive.interval, .milliseconds(1500))
+    XCTAssertLessThanOrEqual(keepalive.interval, .milliseconds(2500))
+  }
+
+  func testServerKeepaliveJitterClampedToTimeout() {
+    let original = ServerConnectionKeepalive(interval: .seconds(2), timeout: .seconds(1))
+    let keepalive = original.jitteringInterval(byAtMost: .seconds(2))
+
+    // Strictly greater than the timeout of 1 seconds.
+    XCTAssertGreaterThan(keepalive.interval, .seconds(1))
+    XCTAssertLessThanOrEqual(keepalive.interval, .seconds(4))
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {

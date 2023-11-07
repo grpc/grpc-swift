@@ -30,7 +30,7 @@ extension ConnectionPool {
 
     /// The channel initializer.
     @usableFromInline
-    internal let _channelInitializer: (Channel) -> EventLoopFuture<Void>
+    internal let _channelInitializer: @Sendable (Channel) -> EventLoopFuture<Void>
 
     /// The deadline at which the timeout is scheduled.
     @usableFromInline
@@ -51,7 +51,7 @@ extension ConnectionPool {
     internal init(
       deadline: NIODeadline,
       promise: EventLoopPromise<Channel>,
-      channelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+      channelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
     ) {
       self._deadline = deadline
       self._promise = promise

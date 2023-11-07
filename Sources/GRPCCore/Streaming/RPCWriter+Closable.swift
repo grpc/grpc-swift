@@ -16,8 +16,7 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCWriter {
-  @usableFromInline
-  struct Closable: ClosableRPCWriterProtocol {
+  public struct Closable: ClosableRPCWriterProtocol {
     @usableFromInline
     let writer: any ClosableRPCWriterProtocol<Element>
 
@@ -36,7 +35,7 @@ extension RPCWriter {
     ///
     /// - Parameter elements: The elements to write.
     @inlinable
-    func write(contentsOf elements: some Sequence<Element>) async throws {
+    public func write(contentsOf elements: some Sequence<Element>) async throws {
       try await self.writer.write(contentsOf: elements)
     }
 
@@ -45,7 +44,7 @@ extension RPCWriter {
     /// All writes after ``finish()`` has been called should result in an error
     /// being thrown.
     @inlinable
-    func finish() {
+    public func finish() {
       self.writer.finish()
     }
 
@@ -54,7 +53,7 @@ extension RPCWriter {
     /// All writes after ``finish(throwing:)`` has been called should result in an error
     /// being thrown.
     @inlinable
-    func finish(throwing error: Error) {
+    public func finish(throwing error: Error) {
       self.writer.finish(throwing: error)
     }
   }

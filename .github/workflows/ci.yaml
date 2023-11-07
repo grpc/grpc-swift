@@ -108,7 +108,7 @@ jobs:
       timeout-minutes: 20
     - name: Run Benchmarks
       working-directory: ./Performance/Benchmarks
-      run: swift package benchmark baseline check --check-absolute-path Thresholds/${{ matrix.swift-version }}/
+      run: swift package benchmark baseline check --no-progress --check-absolute-path Thresholds/${{ matrix.swift-version }}/
       timeout-minutes: 20
   integration-tests:
     strategy:

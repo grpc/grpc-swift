@@ -26,6 +26,24 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
     self.reflectionService.serviceName
   }
 
+  /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
+  ///
+  /// You can generate serialized reflection data using the `protoc-gen-grpc-swift` plugin for `protoc` by
+  /// setting the `ReflectionData` option  to `True`. The paths provided should be absolute or relative to the
+  /// current working directory.
+  ///
+  /// - Parameter filePaths: The paths to files containing serialized reflection data.
+  ///
+  /// - Throws: When a file can't be read from disk or parsed.
+  public init(serializedFileDescriptorProtoFilePaths filePaths: [String]) throws {
+    let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
+      atPaths: filePaths
+    )
+    self.reflectionService = try ReflectionServiceProvider(
+      fileDescriptorProtos: fileDescriptorProtos
+    )
+  }
+
   public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
     self.reflectionService = try ReflectionServiceProvider(fileDescriptorProtos: fileDescriptors)
   }
@@ -423,5 +441,46 @@ where Success == Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageRespon
     self.map { message in
       Grpc_Reflection_V1_ServerReflectionResponse(request: request, messageResponse: message)
     }
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension ReflectionService {
+  static func readSerializedFileDescriptorProto(
+    atPath path: String
+  ) throws -> Google_Protobuf_FileDescriptorProto {
+    let fileURL: URL
+    #if os(Linux)
+    fileURL = URL(fileURLWithPath: path)
+    #else
+    if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+      fileURL = URL(filePath: path, directoryHint: .notDirectory)
+    } else {
+      fileURL = URL(fileURLWithPath: path)
+    }
+    #endif
+    let binaryData = try Data(contentsOf: fileURL)
+    guard let serializedData = Data(base64Encoded: binaryData) else {
+      throw GRPCStatus(
+        code: .invalidArgument,
+        message:
+          """
+          The \(path) file contents could not be transformed \
+          into serialized data representing a file descriptor proto.
+          """
+      )
+    }
+    return try Google_Protobuf_FileDescriptorProto(serializedData: serializedData)
+  }
+
+  static func readSerializedFileDescriptorProtos(
+    atPaths paths: [String]
+  ) throws -> [Google_Protobuf_FileDescriptorProto] {
+    var fileDescriptorProtos = [Google_Protobuf_FileDescriptorProto]()
+    fileDescriptorProtos.reserveCapacity(paths.count)
+    for path in paths {
+      try fileDescriptorProtos.append(readSerializedFileDescriptorProto(atPath: path))
+    }
+    return fileDescriptorProtos
   }
 }
