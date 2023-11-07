@@ -39,7 +39,7 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// current working directory.
   ///
   /// - Parameter filePaths: The paths to files containing serialized reflection data.
-  /// - Parameter version: The version of the reflection, `v1` or `v1alpha`.
+  /// - Parameter version: The version of the reflection service to create.
   ///
   /// - Throws: When a file can't be read from disk or parsed.
   public init(serializedFileDescriptorProtoFilePaths filePaths: [String], version: Version) throws {
@@ -286,7 +286,7 @@ extension Google_Protobuf_FileDescriptorProto {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ReflectionService {
-  /// Represents the version of the `reflection.proto`.
+  /// The version of the reflection service.
   ///
   /// Depending in the version you are using, when creating the ReflectionService
   /// provide the corresponding `Version` variable (`v1` or `v1Alpha`).
@@ -298,16 +298,12 @@ extension ReflectionService {
     var wrapped: Wrapped
     private init(_ wrapped: Wrapped) { self.wrapped = wrapped }
 
+    /// The v1 version of reflection service: https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1/reflection.proto.
     public static var v1: Self { Self(.v1) }
+    /// The v1alpha version of reflection service: https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto.
     public static var v1Alpha: Self { Self(.v1Alpha) }
   }
 
-  /// Represents the two possible `Providers`.
-  ///
-  /// Depending on the reflection version `v1` or `v1alpha` you provided to the initialiser,
-  /// ``init(serializedFileDescriptorProtoFilePaths:version:)``,
-  /// or ``init(fileDescriptorProtos:version:)``,
-  /// the Reflection Service will select its provider accordingly.
   private enum Provider {
     case v1(ReflectionServiceProviderV1)
     case v1Alpha(ReflectionServiceProviderV1Alpha)

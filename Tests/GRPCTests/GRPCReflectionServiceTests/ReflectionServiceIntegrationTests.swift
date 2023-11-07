@@ -98,17 +98,33 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     return response
   }
 
-  func testFileByFileName() async throws {
+  private func forEachVersion(
+    _ body: (GRPCChannel?, ReflectionService.Version) async throws -> Void
+  ) async throws {
     for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+      try setUpServerAndChannel(version: version)
+      let result: Result<Void, Error>
+      do {
+        try await body(self.channel, version)
+        result = .success(())
+      } catch {
+        result = .failure(error)
+      }
+      try result.get()
+      try await self.tearDown()
+    }
+  }
+
+  func testFileByFileName() async throws {
+    try await self.forEachVersion {
+      channel,
+      version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileByFilename = "bar1.proto"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
 
       // response can't be nil as we just checked it.
       let receivedFileDescriptorProto =
@@ -120,30 +136,29 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
       XCTAssertEqual(receivedFileDescriptorProto.service.count, 1)
 
-      guard let service = receivedFileDescriptorProto.service.first else {
-        return XCTFail("The received file descriptor proto doesn't have any services.")
-      }
-      guard let method = service.method.first else {
-        return XCTFail(
-          "The service of the received file descriptor proto doesn't have any methods."
-        )
-      }
+      let service = try XCTUnwrap(
+        receivedFileDescriptorProto.service.first,
+        "The received file descriptor proto doesn't have any services."
+      )
+      let method = try XCTUnwrap(
+        service.method.first,
+        "The service of the received file descriptor proto doesn't have any methods."
+      )
       XCTAssertEqual(method.name, "testMethod1")
       XCTAssertEqual(message.fileDescriptorResponse.fileDescriptorProto.count, 4)
     }
   }
 
   func testListServices() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion {
+      channel,
+      version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.listServices = "services"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       let receivedServices = message.listServicesResponse.service.map { $0.name }.sorted()
       let servicesNames = (self.protos + [self.independentProto]).serviceNames.sorted()
 
@@ -152,16 +167,13 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testFileBySymbol() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileContainingSymbol = "packagebar1.enumType1"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       let receivedData: [Google_Protobuf_FileDescriptorProto]
       do {
         receivedData = try message.fileDescriptorResponse.fileDescriptorProto.map {
@@ -196,8 +208,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testFileByExtension() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileContainingExtension = .with {
@@ -206,9 +217,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
         }
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       let receivedData: [Google_Protobuf_FileDescriptorProto]
       do {
         receivedData = try message.fileDescriptorResponse.fileDescriptorProto.map {
@@ -255,32 +264,26 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testAllExtensionNumbersOfType() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.allExtensionNumbersOfType = "packagebar2.inputMessage2"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       XCTAssertEqual(message.allExtensionNumbersResponse.baseTypeName, "packagebar2.inputMessage2")
       XCTAssertEqual(message.allExtensionNumbersResponse.extensionNumber, [1, 2, 3, 4, 5])
     }
   }
 
   func testErrorResponseFileByFileNameRequest() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileByFilename = "invalidFileName.proto"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
       XCTAssertEqual(
         message.errorResponse.errorMessage,
@@ -290,24 +293,20 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testErrorResponseFileBySymbolRequest() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileContainingSymbol = "packagebar1.invalidEnumType1"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
       XCTAssertEqual(message.errorResponse.errorMessage, "The provided symbol could not be found.")
     }
   }
 
   func testErrorResponseFileByExtensionRequest() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileContainingExtension = .with {
@@ -316,9 +315,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
         }
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
       XCTAssertEqual(
         message.errorResponse.errorMessage,
@@ -328,16 +325,13 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testErrorResponseAllExtensionNumbersOfTypeRequest() async throws {
-    for version in self.versions {
-      try self.setUpServerAndChannel(version: version)
+    try await self.forEachVersion { channel, version in
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.allExtensionNumbersOfType = "packagebar2.invalidInputMessage2"
       }
       let response = try await self.getServerReflectionResponse(for: request, version: version)
-      guard let message = response else {
-        return XCTFail("Could not get a response message.")
-      }
+      let message = try XCTUnwrap(response, "Could not get a response message.")
       XCTAssertEqual(
         message.errorResponse.errorCode,
         Int32(GRPCStatus.Code.invalidArgument.rawValue)
