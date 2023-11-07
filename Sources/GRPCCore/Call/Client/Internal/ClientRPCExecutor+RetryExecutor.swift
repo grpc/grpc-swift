@@ -195,7 +195,7 @@ extension ClientRPCExecutor.RetryExecutor {
 
               if shouldRetry {
                 // Cancel subscribers of the broadcast sequence. This is safe as we are the only
-                // subscriber and maximises the changes that 'isKnownSafeForNextSubscriber' will
+                // subscriber and maximises the chances that 'isKnownSafeForNextSubscriber' will
                 // return true.
                 //
                 // Note: this must only be called if we should retry, otherwise we may cancel a
@@ -203,7 +203,7 @@ extension ClientRPCExecutor.RetryExecutor {
                 retry.stream.invalidateAllSubscriptions()
 
                 // Only retry if we know it's safe for the next subscriber, that is, the first
-                // element is still in the buffer. It's safe the call this because there's only
+                // element is still in the buffer. It's safe to call this because there's only
                 // ever one attempt at a time and the existing subscribers have been invalidated.
                 if retry.stream.isKnownSafeForNextSubscriber {
                   return .retry(retryDelayOverride)
