@@ -99,14 +99,15 @@ extension ClientRPCExecutor {
   ///   - streamProcessor: A processor which executes the serialized request.
   /// - Returns: The deserialized response.
   @inlinable
-  static func unsafeExecute<Input: Sendable, Output: Sendable>(
+  static func unsafeExecute<Transport: ClientTransport, Input: Sendable, Output: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     interceptors: [any ClientInterceptor],
-    streamProcessor: ClientStreamExecutor<some ClientTransport>
+    streamProcessor: ClientStreamExecutor<Transport>,
+    stream: RPCStream<Transport.Inbound, Transport.Outbound>
   ) async -> ClientResponse.Stream<Output> {
     let context = ClientInterceptorContext(descriptor: method)
 
@@ -125,7 +126,8 @@ extension ClientRPCExecutor {
         request: ClientRequest.Stream<[UInt8]>(metadata: metadata) { writer in
           try await request.producer(.serializing(into: writer, with: serializer))
         },
-        method: context.descriptor
+        method: context.descriptor,
+        stream: stream
       )
 
       // Attach the number of previous attempts, it can be useful information for callers.

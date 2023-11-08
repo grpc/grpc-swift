@@ -33,9 +33,9 @@ public protocol ClientTransport: Sendable {
   /// demand for streams by the client.
   ///
   /// Implementations of this function will typically create a long-lived task group which
-  /// maintains connections. The function exits when connections are no longer required by
-  /// the caller who signals this by calling ``close()`` to indicate that no new streams are
-  /// required or by cancelling the task this function runs in.
+  /// maintains connections. The function exits when all open streams have been closed and new connections
+  /// are no longer required by the caller who signals this by calling ``close()``, or by cancelling the
+  /// task this function runs in.
   ///
   /// - Parameter lazily: Whether the transport should establish connections lazily, that is,
   ///     when the first stream is opened or eagerly, when this function is called. If `false`
@@ -53,18 +53,23 @@ public protocol ClientTransport: Sendable {
   /// running ``connect(lazily:)``.
   func close()
 
-  /// Open a stream using the transport.
+  /// Opens a stream using the transport, and uses it as input into a user-provided closure.
+  ///
+  /// The opened stream is closed after the closure is finished.
   ///
   /// Transport implementations should throw an ``RPCError`` with the following error codes:
   /// - ``RPCError/Code/failedPrecondition`` if the transport is closing or has been closed.
   /// - ``RPCError/Code/unavailable`` if it's temporarily not possible to create a stream and it
   ///   may be possible after some backoff period.
-  ///
-  /// - Parameter descriptor: A description of the method to open a stream for.
-  /// - Returns: A stream.
-  func openStream(
-    descriptor: MethodDescriptor
-  ) async throws -> RPCStream<Inbound, Outbound>
+  /// 
+  /// - Parameters:
+  ///   - descriptor: A description of the method to open a stream for.
+  ///   - closure: A closure that takes the opened stream as parameter.
+  /// - Returns: Whatever value was returned from `closure`.
+  func withStream<T>(
+    descriptor: MethodDescriptor,
+    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+  ) async throws -> T
 
   /// Returns the execution configuration for a given method.
   ///

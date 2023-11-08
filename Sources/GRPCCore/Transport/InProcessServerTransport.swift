@@ -16,7 +16,7 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 /// An in-process implementation of a ``ServerTransport``.
-public struct InProcessServerTransport: ServerTransport {
+public struct InProcessServerTransport: ServerTransport, Sendable {
   public typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 

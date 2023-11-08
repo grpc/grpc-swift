@@ -15,32 +15,24 @@
  */
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-struct ClientRPCExecutionConfigurationCollection: ExpressibleByDictionaryLiteral {
+public struct ClientRPCExecutionConfigurationCollection: Sendable {
   private var elements: [MethodDescriptor: ClientRPCExecutionConfiguration]
   private let defaultConfiguration: ClientRPCExecutionConfiguration
   
-  init(defaultConfiguration: ClientRPCExecutionConfiguration) {
+  public init(defaultConfiguration: ClientRPCExecutionConfiguration) {
     self.elements = [:]
     self.defaultConfiguration = defaultConfiguration
   }
   
-  init(dictionaryLiteral elements: (Key, Value)...) {
-    elements.forEach({ (key, value) in
-      self.elements[key] = value
-    })
-  }
-  
-  mutating func addConfiguration(_ configuration: ClientRPCExecutionConfiguration, forMethod descriptor: MethodDescriptor) {
+  public mutating func addConfiguration(_ configuration: ClientRPCExecutionConfiguration, forMethod descriptor: MethodDescriptor) {
     self.elements[descriptor] = configuration
   }
   
-  func getConfiguration(forMethod descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
-    self.elements[descriptor] ?? self.defaultConfiguration
+  public func getConfiguration(forMethod descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
+    self.elements[descriptor, default: self.defaultConfiguration]
   }
   
-  subscript(_ descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
+  public subscript(_ descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
     self.getConfiguration(forMethod: descriptor)
   }
-  
-  
 }
