@@ -80,7 +80,8 @@ extension ClientRPCExecutor.OneShotExecutor {
 
       let streamExecutor = ClientStreamExecutor(transport: self.transport)
       group.addTask {
-        return .streamExecutorCompleted(await streamExecutor.run())
+        await streamExecutor.run()
+        return .streamExecutorCompleted
       }
 
       group.addTask {
@@ -103,13 +104,9 @@ extension ClientRPCExecutor.OneShotExecutor {
 
       while let result = await group.next() {
         switch result {
-        case .streamExecutorCompleted(.success):
+        case .streamExecutorCompleted:
           // Stream finished; wait for the response to be handled.
           ()
-
-        case .streamExecutorCompleted(.failure):
-          // Stream execution threw: cancel and wait.
-          group.cancelAll()
 
         case .timedOut(.success):
           // The deadline passed; cancel the ongoing work group.
@@ -137,7 +134,7 @@ extension ClientRPCExecutor.OneShotExecutor {
 
 @usableFromInline
 enum _OneShotExecutorTask<R> {
-  case streamExecutorCompleted(Result<Void, RPCError>)
+  case streamExecutorCompleted
   case timedOut(Result<Void, Error>)
   case responseHandled(Result<R, Error>)
 }

@@ -58,7 +58,24 @@ enum ClientRPCExecutor {
         responseHandler: handler
       )
 
-    case .retry, .hedge:
+    case .retry(let policy):
+      let retryExecutor = RetryExecutor(
+        transport: transport,
+        policy: policy,
+        timeout: configuration.timeout,
+        interceptors: interceptors,
+        serializer: serializer,
+        deserializer: deserializer,
+        bufferSize: 64  // TODO: the client should have some control over this.
+      )
+
+      return try await retryExecutor.execute(
+        request: request,
+        method: method,
+        responseHandler: handler
+      )
+
+    case .hedge:
       fatalError()
     }
   }
