@@ -468,6 +468,8 @@ extension Target {
       .nioCore,
       .nioPosix,
       .argumentParser,
+      .echoModel,
+      .echoImplementation
     ],
     path: "Sources/Examples/ReflectionService",
     exclude: [

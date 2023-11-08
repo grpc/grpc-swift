@@ -7,6 +7,9 @@ Reflection and testing it using GRPCurl.
  `Sources/Examples/ReflectionService/ReflectionServiceServer.swift`
  and it supports the `HelloWord`, `Echo`, and `Reflection` services. 
 
+## Reflection Service
+?
+
 ## Adding the Reflection Service to a Server
 
 The Reflection Service provider has two initialisers:
@@ -68,11 +71,29 @@ The paths of the proto files are:
 
  ### Instantiating the Reflection Service 
 
- In the Server implementation, we have to instantiate each provider. 
+ In the Server implementation, we have to instantiate each provider.
+ For instantiating the `ReflectionService` provider we have to pass in an array
+ of Strings representing the paths to the binary files we have just generated,
+withing your project.
 
-// Link to basic tutorial / quick setup for creating a server
+```swift
+let paths = ["Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt", "Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt", "Sources/Examples/ReflectionService/Generated/reflection.grpc.reflection.txt"]
+
+let reflectionServiceProvider = try ReflectionService(serializedFileDescriptorProtoFilePaths: paths)
+```
 
 ### Running the Server
+
+In our example the server is not configured with TLS. The port is `1234`.
+Starting the server:
+
+```swift
+let server = try await Server.insecure(group: group)
+  .withServiceProviders([reflectionServiceProvider, GreeterProvider(), EchoProvider()])
+  .bind(host: "localhost", port: self.port)
+  .get()
+
+```
 
 To start the server, from the root of the package run:
 
@@ -82,11 +103,95 @@ $ swift run ReflectionServiceserver
 
  ## Testing the Reflection Service using GRPCurl
 
-From a different terminal than the one used for running the Server, 
+### GRPCurl setup
+Please follow the instructions from the [GRPCurl README][grpcurl-setup] in order to set gRPCurl up.
 
- ### GRPCurl setup
- Please follow the instructions from the GRPCurl Readme [] in order to set ot up.
+From a different terminal than the one used for running the Server, we will call gRPCurl commands,
+following the format: `grpcurl [flags] [address] [list|describe] [symbol]`.
+
+In our case we are using the `-plaintext` flag, because our server isn't configured with TLS, and 
+the address is set to `localhost:1234`.
+
+Here are some gRPCurl commands and the responses:
+
+- List services
+```sh
+$ grpcurl -plaintext localhost:1234 list
+```
+
+output:
+```sh
+Echo
+Greeter
+ServerReflection
+```
+
+- List methods of a service
+```sh
+$ grpcurl -plaintext localhost:1234 list echo.Echo
+```
+
+output:
+```sh
+echo.Echo.Collect
+echo.Echo.Expand
+echo.Echo.Get
+echo.Echo.Update
+```
+
+- Describe a service
+```sh
+$ grpcurl -plaintext localhost:1234 describe echo.Echo
+```
+
+output:
+```
+echo.Echo is a service:
+service Echo {
+  // Collects a stream of messages and returns them concatenated when the caller closes.
+  rpc Collect ( stream .echo.EchoRequest ) returns ( .echo.EchoResponse );
+  // Splits a request into words and returns each word in a stream of messages.
+  rpc Expand ( .echo.EchoRequest ) returns ( stream .echo.EchoResponse );
+  // Immediately returns an echo of a request.
+  rpc Get ( .echo.EchoRequest ) returns ( .echo.EchoResponse );
+  // Streams back messages as they are received in an input stream.
+  rpc Update ( stream .echo.EchoRequest ) returns ( stream .echo.EchoResponse );
+}
+```
+
+- Describe a method
+```sh
+$ grpcurl -plaintext localhost:1234 describe echo.Echo.Collect
+```
+
+output:
+```
+echo.Echo.Collect is a method:
+// Collects a stream of messages and returns them concatenated when the caller closes.
+rpc Collect ( stream .echo.EchoRequest ) returns ( .echo.EchoResponse );
+```
+
+- Describe a message type
+```sh
+$ grpcurl -plaintext localhost:1234 describe echo.EchoRequest
+```
+
+output:
+```
+echo.EchoRequest is a message:
+message EchoRequest {
+  // The text of a message to be echoed.
+  string text = 1;
+}
+```
+
+Note that when specifying a service, a method or a symbol, we have to use the fully qualified names:
+- service: <package>.<service>
+- method: <package>.<service>.<method>
+- type: <package>.<type>
+
 
 [helloworld-proto]: ../../Sources/Examples/HelloWorld/Model/helloworld.proto
 [echo-proto]: ../../../Sources/Examples/Echo/Model/echo.proto
 [reflection-proto]: ../../Sources/GRPCReflectionService/Model/reflection.proto
+[grpcurl-setup]: https://github.com/fullstorydev/grpcurl#grpcurl

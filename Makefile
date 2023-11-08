@@ -168,7 +168,7 @@ ${TEST_REFLECTION_PB}: ${REFLECTION_PROTO} ${PROTOC_GEN_SWIFT}
 .PHONY:
 generate-reflection-client: ${TEST_REFLECTION_PB} ${TEST_REFLECTION_GRPC}
 
-HELLOWORLD_SERIALIZED_PROTO_GRPC= Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt
+HELLOWORLD_SERIALIZED_PROTO_GRPC=Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt
 
 ${HELLOWORLD_SERIALIZED_PROTO_GRPC}: ${HELLOWORLD_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
@@ -180,7 +180,7 @@ ${HELLOWORLD_SERIALIZED_PROTO_GRPC}: ${HELLOWORLD_PROTO} ${PROTOC_GEN_GRPC_SWIFT
 .PHONY:
 generate-helloworld-reflection-data: ${HELLOWORLD_SERIALIZED_PROTO_GRPC}
 
-ECHO_SERIALIZED_PROTO_GRPC= Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt
+ECHO_SERIALIZED_PROTO_GRPC=Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt
 
 ${ECHO_SERIALIZED_PROTO_GRPC}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
@@ -192,7 +192,7 @@ ${ECHO_SERIALIZED_PROTO_GRPC}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-echo-reflection-data: ${ECHO_SERIALIZED_PROTO_GRPC}
 
-REFLECTION_SERIALIZED_PROTO_GRPC= Sources/Examples/ReflectionService/Generated/reflection.grpc.reflection.txt
+REFLECTION_SERIALIZED_PROTO_GRPC=Sources/Examples/ReflectionService/Generated/reflection.grpc.reflection.txt
 
 ${REFLECTION_SERIALIZED_PROTO_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
