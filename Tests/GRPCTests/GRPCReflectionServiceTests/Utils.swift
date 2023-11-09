@@ -150,9 +150,9 @@ func XCTAssertThrowsGRPCStatus<T>(
   }
 }
 
-extension Sequence where Element == Google_Protobuf_FileDescriptorProto {
-  var serviceNames: [String] {
-    self.flatMap { $0.service.map { $0.name } }
+extension Google_Protobuf_FileDescriptorProto {
+  var qualifiedServiceNames: [String] {
+    self.service.map { self.package + "." + $0.name }
   }
 }
 

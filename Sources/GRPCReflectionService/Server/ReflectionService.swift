@@ -98,8 +98,9 @@ internal struct ReflectionServiceData: Sendable {
         dependencyFileNames: fileDescriptorProto.dependency
       )
       self.fileDescriptorDataByFilename[fileDescriptorProto.name] = protoData
-      self.serviceNames.append(contentsOf: fileDescriptorProto.service.map { $0.name })
-
+      self.serviceNames.append(
+        contentsOf: fileDescriptorProto.service.map { fileDescriptorProto.package + "." + $0.name }
+      )
       // Populating the <symbol, file name> dictionary.
       for qualifiedSybolName in fileDescriptorProto.qualifiedSymbolNames {
         let oldValue = self.fileNameBySymbol.updateValue(
