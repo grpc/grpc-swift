@@ -131,42 +131,70 @@ ${SERIALIZATION_GRPC_REFLECTION}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-reflection-data: ${SERIALIZATION_GRPC_REFLECTION}
 
-REFLECTION_PROTO=Sources/GRPCReflectionService/Model/reflection.proto
-REFLECTION_PB=$(REFLECTION_PROTO:.proto=.pb.swift)
-REFLECTION_GRPC=$(REFLECTION_PROTO:.proto=.grpc.swift)
+REFLECTION_V1_PROTO=Sources/GRPCReflectionService/v1/reflection-v1.proto
+REFLECTION_V1_PB=$(REFLECTION_V1_PROTO:.proto=.pb.swift)
+REFLECTION_V1_GRPC=$(REFLECTION_V1_PROTO:.proto=.grpc.swift)
+
+REFLECTION_V1ALPHA_PROTO=Sources/GRPCReflectionService/v1Alpha/reflection-v1alpha.proto
+REFLECTION_V1ALPHA_PB=$(REFLECTION_V1ALPHA_PROTO:.proto=.pb.swift)
+REFLECTION_V1ALPHA_GRPC=$(REFLECTION_V1ALPHA_PROTO:.proto=.grpc.swift)
 
 # For Reflection we'll generate only the Server code.
-${REFLECTION_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+${REFLECTION_V1_GRPC}: ${REFLECTION_V1_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
 		--grpc-swift_opt=Client=false \
 		--grpc-swift_out=$(dir $<)
 
+# For Reflection we'll generate only the Server code.
+${REFLECTION_V1ALPHA_GRPC}: ${REFLECTION_V1ALPHA_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=false \
+		--grpc-swift_out=$(dir $<)
+		
 # Generates protobufs and gRPC server for the Reflection Service
 .PHONY:
-generate-reflection: ${REFLECTION_PB} ${REFLECTION_GRPC}
+generate-reflection: ${REFLECTION_V1_PB} ${REFLECTION_V1_GRPC} ${REFLECTION_V1ALPHA_PB} ${REFLECTION_V1ALPHA_GRPC}
 
-TEST_REFLECTION_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/reflection.grpc.swift
-TEST_REFLECTION_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/reflection.pb.swift
+TEST_REFLECTION_V1_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection-v1.grpc.swift
+TEST_REFLECTION_V1_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection-v1.pb.swift
+TEST_REFLECTION_V1ALPHA_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection-v1alpha.grpc.swift
+TEST_REFLECTION_V1ALPHA_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection-v1alpha.pb.swift
 
-# For Reflection we'll generate only the Server code.
-${TEST_REFLECTION_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+# For Testing the Reflection we'll generate only the Client code.
+${TEST_REFLECTION_V1_GRPC}: ${REFLECTION_V1_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
 		--grpc-swift_opt=Client=true,Server=false \
-		--grpc-swift_out=$(dir ${TEST_REFLECTION_GRPC})
+		--grpc-swift_out=$(dir ${TEST_REFLECTION_V1_GRPC})
 
-${TEST_REFLECTION_PB}: ${REFLECTION_PROTO} ${PROTOC_GEN_SWIFT}
+${TEST_REFLECTION_V1_PB}: ${REFLECTION_V1_PROTO} ${PROTOC_GEN_SWIFT}
 	protoc $< \
 		--proto_path=$(dir $<) \
 		--plugin=${PROTOC_GEN_SWIFT} \
-		--swift_out=$(dir ${TEST_REFLECTION_PB})
+		--swift_out=$(dir ${TEST_REFLECTION_V1_PB})
+
+# For Testing the Reflection we'll generate only the Client code.
+${TEST_REFLECTION_V1ALPHA_GRPC}: ${REFLECTION_V1ALPHA_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=true,Server=false \
+		--grpc-swift_out=$(dir ${TEST_REFLECTION_V1ALPHA_GRPC})
+
+${TEST_REFLECTION_V1ALPHA_PB}: ${REFLECTION_V1ALPHA_PROTO} ${PROTOC_GEN_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_SWIFT} \
+		--swift_out=$(dir ${TEST_REFLECTION_V1ALPHA_PB})
 		
-# Generates protobufs and gRPC client for the Reflection Service Tests
+# Generates protobufs and gRPC clients for the Reflection Service Tests
 .PHONY:
-generate-reflection-client: ${TEST_REFLECTION_PB} ${TEST_REFLECTION_GRPC}
+generate-reflection-test-clients: ${TEST_REFLECTION_V1_PB} ${TEST_REFLECTION_V1_GRPC} ${TEST_REFLECTION_V1ALPHA_PB} ${TEST_REFLECTION_V1ALPHA_GRPC}
 
 ### Testing ####################################################################
 

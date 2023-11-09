@@ -21,9 +21,15 @@ import SwiftProtobuf
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public final class ReflectionService: CallHandlerProvider, Sendable {
-  private let reflectionService: ReflectionServiceProvider
+  private let provider: Provider
+
   public var serviceName: Substring {
-    self.reflectionService.serviceName
+    switch self.provider {
+    case .v1(let provider):
+      return provider.serviceName
+    case .v1Alpha(let provider):
+      return provider.serviceName
+    }
   }
 
   /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
@@ -33,26 +39,49 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// current working directory.
   ///
   /// - Parameter filePaths: The paths to files containing serialized reflection data.
+  /// - Parameter version: The version of the reflection service to create.
   ///
   /// - Throws: When a file can't be read from disk or parsed.
-  public init(serializedFileDescriptorProtoFilePaths filePaths: [String]) throws {
+  public init(serializedFileDescriptorProtoFilePaths filePaths: [String], version: Version) throws {
     let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
       atPaths: filePaths
     )
-    self.reflectionService = try ReflectionServiceProvider(
-      fileDescriptorProtos: fileDescriptorProtos
-    )
+    switch version.wrapped {
+    case .v1:
+      self.provider = .v1(
+        try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptorProtos)
+      )
+    case .v1Alpha:
+      self.provider = .v1Alpha(
+        try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptorProtos)
+      )
+    }
   }
 
-  public init(fileDescriptors: [Google_Protobuf_FileDescriptorProto]) throws {
-    self.reflectionService = try ReflectionServiceProvider(fileDescriptorProtos: fileDescriptors)
+  public init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto], version: Version) throws
+  {
+    switch version.wrapped {
+    case .v1:
+      self.provider = .v1(
+        try ReflectionServiceProviderV1(fileDescriptorProtos: fileDescriptorProtos)
+      )
+    case .v1Alpha:
+      self.provider = .v1Alpha(
+        try ReflectionServiceProviderV1Alpha(fileDescriptorProtos: fileDescriptorProtos)
+      )
+    }
   }
 
   public func handle(
     method name: Substring,
     context: GRPC.CallHandlerContext
   ) -> GRPC.GRPCServerHandlerProtocol? {
-    self.reflectionService.handle(method: name, context: context)
+    switch self.provider {
+    case .v1(let reflectionV1Provider):
+      return reflectionV1Provider.handle(method: name, context: context)
+    case .v1Alpha(let reflectionV1AlphaProvider):
+      return reflectionV1AlphaProvider.handle(method: name, context: context)
+    }
   }
 }
 
@@ -222,163 +251,6 @@ internal struct ReflectionServiceData: Sendable {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal final class ReflectionServiceProvider: Grpc_Reflection_V1_ServerReflectionAsyncProvider {
-  private let protoRegistry: ReflectionServiceData
-
-  internal init(fileDescriptorProtos: [Google_Protobuf_FileDescriptorProto]) throws {
-    self.protoRegistry = try ReflectionServiceData(
-      fileDescriptors: fileDescriptorProtos
-    )
-  }
-
-  internal func _findFileByFileName(
-    _ fileName: String
-  ) -> Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
-    return self.protoRegistry
-      .serialisedFileDescriptorProtosForDependenciesOfFile(named: fileName)
-      .map { fileDescriptorProtos in
-        Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse.fileDescriptorResponse(
-          .with {
-            $0.fileDescriptorProto = fileDescriptorProtos
-          }
-        )
-      }
-  }
-
-  internal func findFileByFileName(
-    _ fileName: String,
-    request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
-    let result = self._findFileByFileName(fileName)
-    return result.makeResponse(request: request)
-  }
-
-  internal func getServicesNames(
-    request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) throws -> Grpc_Reflection_V1_ServerReflectionResponse {
-    var listServicesResponse = Grpc_Reflection_V1_ListServiceResponse()
-    listServicesResponse.service = self.protoRegistry.serviceNames.map { serviceName in
-      Grpc_Reflection_V1_ServiceResponse.with {
-        $0.name = serviceName
-      }
-    }
-    return Grpc_Reflection_V1_ServerReflectionResponse(
-      request: request,
-      messageResponse: .listServicesResponse(listServicesResponse)
-    )
-  }
-
-  internal func findFileBySymbol(
-    _ symbolName: String,
-    request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
-    let result = self.protoRegistry.nameOfFileContainingSymbol(
-      named: symbolName
-    ).flatMap {
-      self._findFileByFileName($0)
-    }
-    return result.makeResponse(request: request)
-  }
-
-  internal func findFileByExtension(
-    extensionRequest: Grpc_Reflection_V1_ExtensionRequest,
-    request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
-    let result = self.protoRegistry.nameOfFileContainingExtension(
-      extendeeName: extensionRequest.containingType,
-      fieldNumber: extensionRequest.extensionNumber
-    ).flatMap {
-      self._findFileByFileName($0)
-    }
-    return result.makeResponse(request: request)
-  }
-
-  internal func findExtensionsFieldNumbersOfType(
-    named typeName: String,
-    request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
-    let result = self.protoRegistry.extensionsFieldNumbersOfType(
-      named: typeName
-    ).map { fieldNumbers in
-      Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse.allExtensionNumbersResponse(
-        Grpc_Reflection_V1_ExtensionNumberResponse.with {
-          $0.baseTypeName = typeName
-          $0.extensionNumber = fieldNumbers
-        }
-      )
-    }
-    return result.makeResponse(request: request)
-  }
-
-  internal func serverReflectionInfo(
-    requestStream: GRPCAsyncRequestStream<Grpc_Reflection_V1_ServerReflectionRequest>,
-    responseStream: GRPCAsyncResponseStreamWriter<Grpc_Reflection_V1_ServerReflectionResponse>,
-    context: GRPCAsyncServerCallContext
-  ) async throws {
-    for try await request in requestStream {
-      switch request.messageRequest {
-      case let .fileByFilename(fileName):
-        let response = self.findFileByFileName(
-          fileName,
-          request: request
-        )
-        try await responseStream.send(response)
-
-      case .listServices:
-        let response = try self.getServicesNames(request: request)
-        try await responseStream.send(response)
-
-      case let .fileContainingSymbol(symbolName):
-        let response = self.findFileBySymbol(
-          symbolName,
-          request: request
-        )
-        try await responseStream.send(response)
-
-      case let .fileContainingExtension(extensionRequest):
-        let response = self.findFileByExtension(
-          extensionRequest: extensionRequest,
-          request: request
-        )
-        try await responseStream.send(response)
-
-      case let .allExtensionNumbersOfType(typeName):
-        let response = self.findExtensionsFieldNumbersOfType(
-          named: typeName,
-          request: request
-        )
-        try await responseStream.send(response)
-
-      default:
-        let response = Grpc_Reflection_V1_ServerReflectionResponse(
-          request: request,
-          messageResponse: .errorResponse(
-            Grpc_Reflection_V1_ErrorResponse.with {
-              $0.errorCode = Int32(GRPCStatus.Code.unimplemented.rawValue)
-              $0.errorMessage = "The request is not implemented."
-            }
-          )
-        )
-        try await responseStream.send(response)
-      }
-    }
-  }
-}
-
-extension Grpc_Reflection_V1_ServerReflectionResponse {
-  init(
-    request: Grpc_Reflection_V1_ServerReflectionRequest,
-    messageResponse: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse
-  ) {
-    self = .with {
-      $0.validHost = request.host
-      $0.originalRequest = request
-      $0.messageResponse = messageResponse
-    }
-  }
-}
-
 extension Google_Protobuf_FileDescriptorProto {
   var qualifiedServiceAndMethodNames: [String] {
     var names: [String] = []
@@ -413,35 +285,29 @@ extension Google_Protobuf_FileDescriptorProto {
   }
 }
 
-extension Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, GRPCStatus> {
-  func recover() -> Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, Never>
-  {
-    self.flatMapError { status in
-      let error = Grpc_Reflection_V1_ErrorResponse.with {
-        $0.errorCode = Int32(status.code.rawValue)
-        $0.errorMessage = status.message ?? ""
-      }
-      return .success(.errorResponse(error))
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension ReflectionService {
+  /// The version of the reflection service.
+  ///
+  /// Depending in the version you are using, when creating the ReflectionService
+  /// provide the corresponding `Version` variable (`v1` or `v1Alpha`).
+  public struct Version: Sendable, Hashable {
+    internal enum Wrapped {
+      case v1
+      case v1Alpha
     }
+    var wrapped: Wrapped
+    private init(_ wrapped: Wrapped) { self.wrapped = wrapped }
+
+    /// The v1 version of reflection service: https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1/reflection.proto.
+    public static var v1: Self { Self(.v1) }
+    /// The v1alpha version of reflection service: https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto.
+    public static var v1Alpha: Self { Self(.v1Alpha) }
   }
 
-  func makeResponse(
-    request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) -> Grpc_Reflection_V1_ServerReflectionResponse {
-    let result = self.recover().attachRequest(request)
-    // Safe to '!' as the failure type is 'Never'.
-    return try! result.get()
-  }
-}
-
-extension Result
-where Success == Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse {
-  func attachRequest(
-    _ request: Grpc_Reflection_V1_ServerReflectionRequest
-  ) -> Result<Grpc_Reflection_V1_ServerReflectionResponse, Failure> {
-    self.map { message in
-      Grpc_Reflection_V1_ServerReflectionResponse(request: request, messageResponse: message)
-    }
+  private enum Provider {
+    case v1(ReflectionServiceProviderV1)
+    case v1Alpha(ReflectionServiceProviderV1Alpha)
   }
 }
 

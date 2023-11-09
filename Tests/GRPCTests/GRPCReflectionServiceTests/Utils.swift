@@ -161,3 +161,187 @@ extension Sequence where Element == Google_Protobuf_EnumDescriptorProto {
     self.map { $0.name }
   }
 }
+
+extension Grpc_Reflection_V1_ExtensionRequest {
+  init(_ v1AlphaExtensionRequest: Grpc_Reflection_V1alpha_ExtensionRequest) {
+    self = .with {
+      $0.containingType = v1AlphaExtensionRequest.containingType
+      $0.extensionNumber = v1AlphaExtensionRequest.extensionNumber
+      $0.unknownFields = v1AlphaExtensionRequest.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest? {
+  init(_ v1AlphaRequest: Grpc_Reflection_V1alpha_ServerReflectionRequest) {
+    guard let messageRequest = v1AlphaRequest.messageRequest else {
+      self = nil
+      return
+    }
+    switch messageRequest {
+    case .allExtensionNumbersOfType(let typeName):
+      self = .allExtensionNumbersOfType(typeName)
+    case .fileByFilename(let fileName):
+      self = .fileByFilename(fileName)
+    case .fileContainingSymbol(let symbol):
+      self = .fileContainingSymbol(symbol)
+    case .fileContainingExtension(let v1AlphaExtensionRequest):
+      self = .fileContainingExtension(
+        Grpc_Reflection_V1_ExtensionRequest(v1AlphaExtensionRequest)
+      )
+    case .listServices(let parameter):
+      self = .listServices(parameter)
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ServerReflectionRequest {
+  init(_ v1AlphaRequest: Grpc_Reflection_V1alpha_ServerReflectionRequest) {
+    self = .with {
+      $0.host = v1AlphaRequest.host
+      $0.messageRequest = Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest?(
+        v1AlphaRequest
+      )
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_FileDescriptorResponse {
+  init(_ v1AlphaFileDescriptorResponse: Grpc_Reflection_V1alpha_FileDescriptorResponse) {
+    self = .with {
+      $0.fileDescriptorProto = v1AlphaFileDescriptorResponse.fileDescriptorProto
+      $0.unknownFields = v1AlphaFileDescriptorResponse.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ExtensionNumberResponse {
+  init(_ v1AlphaExtensionNumberResponse: Grpc_Reflection_V1alpha_ExtensionNumberResponse) {
+    self = .with {
+      $0.baseTypeName = v1AlphaExtensionNumberResponse.baseTypeName
+      $0.extensionNumber = v1AlphaExtensionNumberResponse.extensionNumber
+      $0.unknownFields = v1AlphaExtensionNumberResponse.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ServiceResponse {
+  init(_ v1AlphaServiceResponse: Grpc_Reflection_V1alpha_ServiceResponse) {
+    self = .with {
+      $0.name = v1AlphaServiceResponse.name
+      $0.unknownFields = v1AlphaServiceResponse.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ListServiceResponse {
+  init(_ v1AlphaListServicesResponse: Grpc_Reflection_V1alpha_ListServiceResponse) {
+    self = .with {
+      $0.service = v1AlphaListServicesResponse.service.map {
+        Grpc_Reflection_V1_ServiceResponse($0)
+      }
+      $0.unknownFields = v1AlphaListServicesResponse.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ErrorResponse {
+  init(_ v1AlphaErrorResponse: Grpc_Reflection_V1alpha_ErrorResponse) {
+    self = .with {
+      $0.errorCode = v1AlphaErrorResponse.errorCode
+      $0.errorMessage = v1AlphaErrorResponse.errorMessage
+      $0.unknownFields = v1AlphaErrorResponse.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse? {
+  init(_ v1AlphaResponse: Grpc_Reflection_V1alpha_ServerReflectionResponse) {
+    guard let messageRequest = v1AlphaResponse.messageResponse else {
+      self = nil
+      return
+    }
+    switch messageRequest {
+    case .fileDescriptorResponse(let v1AlphaFileDescriptorResponse):
+      self = .fileDescriptorResponse(
+        Grpc_Reflection_V1_FileDescriptorResponse(
+          v1AlphaFileDescriptorResponse
+        )
+      )
+    case .allExtensionNumbersResponse(let v1AlphaAllExtensionNumbersResponse):
+      self = .allExtensionNumbersResponse(
+        Grpc_Reflection_V1_ExtensionNumberResponse(
+          v1AlphaAllExtensionNumbersResponse
+        )
+      )
+    case .listServicesResponse(let v1AlphaListServicesResponse):
+      self = .listServicesResponse(
+        Grpc_Reflection_V1_ListServiceResponse(
+          v1AlphaListServicesResponse
+        )
+      )
+    case .errorResponse(let v1AlphaErrorResponse):
+      self = .errorResponse(
+        Grpc_Reflection_V1_ErrorResponse(v1AlphaErrorResponse)
+      )
+    }
+  }
+}
+
+extension Grpc_Reflection_V1_ServerReflectionResponse {
+  init(_ v1AlphaResponse: Grpc_Reflection_V1alpha_ServerReflectionResponse) {
+    self = .with {
+      $0.validHost = v1AlphaResponse.validHost
+      $0.originalRequest = Grpc_Reflection_V1_ServerReflectionRequest(
+        v1AlphaResponse.originalRequest
+      )
+      $0.messageResponse = Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse?(
+        v1AlphaResponse
+      )
+    }
+  }
+}
+
+extension Grpc_Reflection_V1alpha_ExtensionRequest {
+  init(_ v1ExtensionRequest: Grpc_Reflection_V1_ExtensionRequest) {
+    self = .with {
+      $0.containingType = v1ExtensionRequest.containingType
+      $0.extensionNumber = v1ExtensionRequest.extensionNumber
+      $0.unknownFields = v1ExtensionRequest.unknownFields
+    }
+  }
+}
+
+extension Grpc_Reflection_V1alpha_ServerReflectionRequest.OneOf_MessageRequest? {
+  init(_ v1Request: Grpc_Reflection_V1_ServerReflectionRequest) {
+    guard let messageRequest = v1Request.messageRequest else {
+      self = nil
+      return
+    }
+    switch messageRequest {
+    case .allExtensionNumbersOfType(let typeName):
+      self = .allExtensionNumbersOfType(typeName)
+    case .fileByFilename(let fileName):
+      self = .fileByFilename(fileName)
+    case .fileContainingSymbol(let symbol):
+      self = .fileContainingSymbol(symbol)
+    case .fileContainingExtension(let v1ExtensionRequest):
+      self = .fileContainingExtension(
+        Grpc_Reflection_V1alpha_ExtensionRequest(v1ExtensionRequest)
+      )
+    case .listServices(let parameter):
+      self = .listServices(parameter)
+    }
+  }
+}
+
+extension Grpc_Reflection_V1alpha_ServerReflectionRequest {
+  init(_ v1Request: Grpc_Reflection_V1_ServerReflectionRequest) {
+    self = .with {
+      $0.host = v1Request.host
+      $0.messageRequest = Grpc_Reflection_V1alpha_ServerReflectionRequest.OneOf_MessageRequest?(
+        v1Request
+      )
+    }
+  }
+}
