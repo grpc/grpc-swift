@@ -116,9 +116,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testFileByFileName() async throws {
-    try await self.forEachVersion {
-      channel,
-      version in
+    try await self.forEachVersion { channel, version in 
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.fileByFilename = "bar1.proto"
@@ -150,9 +148,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
   }
 
   func testListServices() async throws {
-    try await self.forEachVersion {
-      channel,
-      version in
+    try await self.forEachVersion { channel, version in 
       let request = Grpc_Reflection_V1_ServerReflectionRequest.with {
         $0.host = "127.0.0.1"
         $0.listServices = "services"
