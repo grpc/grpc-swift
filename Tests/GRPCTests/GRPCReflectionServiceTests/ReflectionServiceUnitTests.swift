@@ -56,7 +56,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   /// Testing the serviceNames array of the ReflectionServiceData object.
   func testServiceNames() throws {
     let protos = makeProtosWithDependencies()
-    let servicesNames = protos.serviceNames.sorted()
+    let servicesNames = protos.flatMap { $0.qualifiedServiceNames }.sorted()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryServices = registry.serviceNames.sorted()
     XCTAssertEqual(registryServices, servicesNames)
@@ -523,10 +523,15 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   func testReadSerializedFileDescriptorProto() throws {
     let initialFileDescriptorProto = generateFileDescriptorProto(fileName: "test", suffix: "1")
     let data = try initialFileDescriptorProto.serializedData().base64EncodedData()
+    let temporaryDirectory: String
     #if os(Linux)
-    let temporaryDirectory = "/tmp/"
+    temporaryDirectory = "/tmp/"
     #else
-    let temporaryDirectory = FileManager.default.temporaryDirectory.path()
+    if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+      temporaryDirectory = FileManager.default.temporaryDirectory.path()
+    } else {
+      temporaryDirectory = "/tmp/"
+    }
     #endif
     let filePath = "\(temporaryDirectory)test\(UUID()).grpc.reflection"
     FileManager.default.createFile(atPath: filePath, contents: data)
@@ -540,10 +545,15 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
 
   func testReadSerializedFileDescriptorProtoInvalidFileContents() throws {
     let invalidData = "%%%%%££££".data(using: .utf8)
+    let temporaryDirectory: String
     #if os(Linux)
-    let temporaryDirectory = "/tmp/"
+    temporaryDirectory = "/tmp/"
     #else
-    let temporaryDirectory = FileManager.default.temporaryDirectory.path()
+    if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+      temporaryDirectory = FileManager.default.temporaryDirectory.path()
+    } else {
+      temporaryDirectory = "/tmp/"
+    }
     #endif
     let filePath = "\(temporaryDirectory)test\(UUID()).grpc.reflection"
     FileManager.default.createFile(atPath: filePath, contents: invalidData)
@@ -576,10 +586,15 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     for initialFileDescriptorProto in initialFileDescriptorProtos {
       let data = try initialFileDescriptorProto.serializedData()
         .base64EncodedData()
+      let temporaryDirectory: String
       #if os(Linux)
-      let temporaryDirectory = "/tmp/"
+      temporaryDirectory = "/tmp/"
       #else
-      let temporaryDirectory = FileManager.default.temporaryDirectory.path()
+      if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+        temporaryDirectory = FileManager.default.temporaryDirectory.path()
+      } else {
+        temporaryDirectory = "/tmp/"
+      }
       #endif
       let filePath = "\(temporaryDirectory)test\(UUID()).grpc.reflection"
       FileManager.default.createFile(atPath: filePath, contents: data)

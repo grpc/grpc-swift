@@ -160,10 +160,10 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       let response = try await self.getServerReflectionResponse(for: request, version: version)
       let message = try XCTUnwrap(response, "Could not get a response message.")
       let receivedServices = message.listServicesResponse.service.map { $0.name }.sorted()
-      let servicesNames = (self.protos + [self.independentProto]).serviceNames.sorted()
+      let servicesNames = (self.protos + [self.independentProto]).flatMap { $0.qualifiedServiceNames }
+        .sorted()
 
       XCTAssertEqual(receivedServices, servicesNames)
-    }
   }
 
   func testFileBySymbol() async throws {
