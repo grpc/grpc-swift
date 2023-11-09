@@ -56,7 +56,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
   /// Testing the serviceNames array of the ReflectionServiceData object.
   func testServiceNames() throws {
     let protos = makeProtosWithDependencies()
-    let servicesNames = protos.serviceNames.sorted()
+    let servicesNames = protos.flatMap { $0.qualifiedServiceNames }.sorted()
     let registry = try ReflectionServiceData(fileDescriptors: protos)
     let registryServices = registry.serviceNames.sorted()
     XCTAssertEqual(registryServices, servicesNames)

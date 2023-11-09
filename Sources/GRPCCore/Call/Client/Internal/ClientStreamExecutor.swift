@@ -51,8 +51,8 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
   /// This is required to be running until the response returned from ``execute(request:method:)``
   /// has been processed.
   @inlinable
-  func run() async -> Result<Void, RPCError> {
-    await withTaskGroup(of: Result<Void, RPCError>.self) { group in
+  func run() async {
+    await withTaskGroup(of: Void.self) { group in
       for await event in self._work.stream {
         switch event {
         case .request(let request, let outboundStream):
@@ -66,18 +66,6 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
           }
         }
       }
-
-      while let result = await group.next() {
-        switch result {
-        case .success:
-          ()
-        case .failure:
-          group.cancelAll()
-          return result
-        }
-      }
-
-      return .success(())
     }
   }
 
@@ -117,8 +105,10 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
     // Start processing the request.
     self._work.continuation.yield(.request(request, stream.outbound))
 
+    let part = await self._waitForFirstResponsePart(on: stream.inbound)
+
     // Wait for the first response to determine how to handle the response.
-    switch await self._waitForFirstResponsePart(on: stream.inbound) {
+    switch part {
     case .metadata(let metadata, let iterator):
       // Expected happy case: the server is processing the request.
 
@@ -146,7 +136,7 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
   func _processRequest<Stream: ClosableRPCWriterProtocol<RPCRequestPart>>(
     _ request: ClientRequest.Stream<[UInt8]>,
     on stream: Stream
-  ) async -> Result<Void, RPCError> {
+  ) async {
     let result = await Result {
       try await stream.write(.metadata(request.metadata))
       try await request.producer(.map(into: stream) { .message($0) })
@@ -160,8 +150,6 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
     case .failure(let error):
       stream.finish(throwing: error)
     }
-
-    return result
   }
 
   @usableFromInline
@@ -224,7 +212,7 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
   func _processResponse(
     writer: RPCWriter<ClientResponse.Stream<[UInt8]>.Contents.BodyPart>.Closable,
     iterator: UnsafeTransfer<Transport.Inbound.AsyncIterator>
-  ) async -> Result<Void, RPCError> {
+  ) async {
     var iterator = iterator.wrappedValue
     let result = await Result {
       while let next = try await iterator.next() {
@@ -265,7 +253,5 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
     case .failure(let error):
       writer.finish(throwing: error)
     }
-
-    return result
   }
 }
