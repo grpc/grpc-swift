@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ClientRPCExecutorTests {
   fileprivate func makeHarnessForRetries(
     rejectUntilAttempt firstSuccessfulAttempt: Int,
@@ -284,6 +285,7 @@ extension ClientRPCExecutorTests {
   }
 }
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ClientRPCExecutionConfiguration {
   fileprivate static func retry(
     maximumAttempts: Int = 5,
