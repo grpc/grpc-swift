@@ -121,7 +121,8 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
     }
 
     let receivedServices = message.listServicesResponse.service.map { $0.name }.sorted()
-    let servicesNames = (self.protos + [self.independentProto]).serviceNames.sorted()
+    let servicesNames = (self.protos + [self.independentProto]).flatMap { $0.qualifiedServiceNames }
+      .sorted()
 
     XCTAssertEqual(receivedServices, servicesNames)
   }
