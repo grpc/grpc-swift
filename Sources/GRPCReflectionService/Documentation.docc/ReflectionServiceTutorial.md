@@ -1,39 +1,52 @@
 # ReflectionServiceTutorial
 
-This tutorial goes through the process of running a Server that supports
-Reflection and testing it using GRPCurl. 
+This tutorial goes through the steps of adding Reflection Service to a Swift
+Server, running it and testing it using GRPCurl. 
 
  The Server used in this example is implemented at 
- `Sources/Examples/ReflectionService/ReflectionServiceServer.swift`
+ [Sources/Examples/ReflectionService/ReflectionServiceServer.swift][reflectionservice-server]
  and it supports the `HelloWord`, `Echo`, and `Reflection` services. 
 
+
 ## Reflection Service
-?
+The Reflection Service provides information about the public RPCs on a Server and,
+at the moment, it is specific for Servers that use the Protobuf schema to define their RPCs. 
+Calling the Reflection Service, clients can construct and send requests at runtime, without 
+needing the proto files or the protoc generated code and types for this. 
+
+The Reflection Service is used by cli clients such as [gRPCurl][grpcurl-setup] and [gRPC command line tool][grpc-cli],
+to list and describe services and methods, or to describe symbols or extensions, but also
+to construct and make test RPCs to the servers.
+
+The Swift Reflection Service supports both v1 and v1alpha versions of reflection: 
+- [v1]
+- [v1alpha]
 
 ## Adding the Reflection Service to a Server
+The Swift Reflection Service is enabled by adding it in the providers list when constructing the Server.
 
 The Reflection Service provider has two initialisers:
-- init(fileDescriptors: [Google_Protobuf_FileDescriptorProto], version: ):
-  Receives as parameters the file descriptor protos of the proto files describing
-  the services of the Server that we want to be discoverable 
-  through reflection and the version of the reflection service.
-- init(filePaths: [String], version: ):
+- ``GRPCReflectionService/ReflectionService/init(serializedFileDescriptorProtoFilePaths:version:)``:
   Receives the paths to the files containing the base64 encoded 
   serialized file descriptor protos of the proto files describing 
   the services of the Server that we want to be discoverable through reflection
   and the version of the reflection service.
+- ``GRPCReflectionService/ReflectionService/init(fileDescriptorProtos:version:)``:
+  Receives as parameters the file descriptor protos of the proto files describing
+  the services of the Server that we want to be discoverable 
+  through reflection and the version of the reflection service.
 
-The latter is more convinient for the users, so we will use it in this example as well.
+We recommend using the first one as it is more convinient. We will use it in this example as well.
 Before initialising the ReflectionService provider we need to generate the
 files containing the base64 encoded serialized file descriptor protos.
 
 
 ### Generating the serialized file descriptor protos for the Server
  The Server from this example uses the `GreeterProvider`, `EchoProvider` and the 
- `ReflectionService`. The associated proto files are located at 
+ `ReflectionService` (v1 version). The associated proto files are located at 
  `Sources/Examples/HelloWorld/Model/helloworld.proto`, 
  `Sources/Examples/Echo/Model/echo.proto`, and 
- `Sources/GRPCReflectionService/Model/reflection.proto` respectively.
+ `Sources/GRPCReflectionService/v1/reflection-v1.proto` respectively.
 
  In order to generate the serialized file descriptor proto for the
  `helloworld.proto`, you can run the following command:
@@ -67,19 +80,28 @@ is the parent directory of the proto file.
 
 The paths of the proto files are: 
 - [Sources/Examples/Echo/Model/echo.proto][echo-proto]
-- [Sources/GRPCReflectionService/Model/reflection.proto][reflection-proto]
+- [Sources/GRPCReflectionService/v1/reflection-v1.proto][v1]
+
+Depending on the version of gRPCurl you are using you might need to use the v1alpha proto instead.
 
  ### Instantiating the Reflection Service 
 
  In the Server implementation, we have to instantiate each provider.
  For instantiating the `ReflectionService` provider we have to pass in an array
  of Strings representing the paths to the binary files we have just generated,
-withing your project.
+withing the project and the version of the reflection, in our case v1.
+
 
 ```swift
-let paths = ["Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt", "Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt", "Sources/Examples/ReflectionService/Generated/reflection.grpc.reflection.txt"]
+let paths = [
+  "Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt", 
+  "Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt", 
+  "Sources/Examples/ReflectionService/Generated/reflection.grpc.reflection.txt"
+  ]
 
-let reflectionServiceProvider = try ReflectionService(serializedFileDescriptorProtoFilePaths: paths)
+let reflectionServiceProvider = try ReflectionService(
+  serializedFileDescriptorProtoFilePaths: paths, version: .v1
+)
 ```
 
 ### Running the Server
@@ -95,43 +117,44 @@ let server = try await Server.insecure(group: group)
 
 ```
 
-To start the server, from the root of the package run:
+To run the server, from the root of the package run:
 
 ```sh
-$ swift run ReflectionServiceserver
+$ swift run ReflectionServiceServer
 ```
 
  ## Testing the Reflection Service using GRPCurl
 
-### GRPCurl setup
 Please follow the instructions from the [GRPCurl README][grpcurl-setup] in order to set gRPCurl up.
 
 From a different terminal than the one used for running the Server, we will call gRPCurl commands,
-following the format: `grpcurl [flags] [address] [list|describe] [symbol]`.
+following the format:
+
+`grpcurl [flags] [address] [list|describe] [symbol]`.
 
 In our case we are using the `-plaintext` flag, because our server isn't configured with TLS, and 
 the address is set to `localhost:1234`.
 
 Here are some gRPCurl commands and the responses:
 
-- List services
+- **List services**
 ```sh
 $ grpcurl -plaintext localhost:1234 list
 ```
 
-output:
+**output:**
 ```sh
 Echo
 Greeter
 ServerReflection
 ```
 
-- List methods of a service
+- **List methods of a service**
 ```sh
 $ grpcurl -plaintext localhost:1234 list echo.Echo
 ```
 
-output:
+**output:**
 ```sh
 echo.Echo.Collect
 echo.Echo.Expand
@@ -139,12 +162,12 @@ echo.Echo.Get
 echo.Echo.Update
 ```
 
-- Describe a service
+- **Describe a service**
 ```sh
 $ grpcurl -plaintext localhost:1234 describe echo.Echo
 ```
 
-output:
+**output:**
 ```
 echo.Echo is a service:
 service Echo {
@@ -159,24 +182,24 @@ service Echo {
 }
 ```
 
-- Describe a method
+- **Describe a method**
 ```sh
 $ grpcurl -plaintext localhost:1234 describe echo.Echo.Collect
 ```
 
-output:
+**output:**
 ```
 echo.Echo.Collect is a method:
 // Collects a stream of messages and returns them concatenated when the caller closes.
 rpc Collect ( stream .echo.EchoRequest ) returns ( .echo.EchoResponse );
 ```
 
-- Describe a message type
+- **Describe a message type**
 ```sh
 $ grpcurl -plaintext localhost:1234 describe echo.EchoRequest
 ```
 
-output:
+**output:**
 ```
 echo.EchoRequest is a message:
 message EchoRequest {
@@ -184,14 +207,29 @@ message EchoRequest {
   string text = 1;
 }
 ```
+- 
+
+-**Sending a request to the HelloWorld service**
+```sh
+$ grpcurl -d '{ "name": "World" }' -plaintext localhost:1234 helloworld.Greeter.SayHello
+```
+
+**output:**
+```
+{
+  "message": "Hello World!"
+}
+```
 
 Note that when specifying a service, a method or a symbol, we have to use the fully qualified names:
-- service: <package>.<service>
-- method: <package>.<service>.<method>
-- type: <package>.<type>
+- service: \<package\>.\<service\>
+- method: \<package\>.\<service\>.\<method\>
+- type: \<package\>.\<type\>
 
-
-[helloworld-proto]: ../../Sources/Examples/HelloWorld/Model/helloworld.proto
-[echo-proto]: ../../../Sources/Examples/Echo/Model/echo.proto
-[reflection-proto]: ../../Sources/GRPCReflectionService/Model/reflection.proto
 [grpcurl-setup]: https://github.com/fullstorydev/grpcurl#grpcurl
+[grpc-cli]: https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
+[v1]: ../v1/reflection-v1.proto
+[v1alpha]: ../v1Alpha/reflection-v1alpha.proto
+[reflectionservice-server]: ../../Examples/ReflectionService/ReflectionServiceServer.swift
+[helloworld-proto]: ../Examples/HelloWorld/Model/helloworld.proto
+[echo-proto]: ../../../Examples/Echo/Model/echo.proto

@@ -60,7 +60,8 @@ struct ReflectionServiceServer: AsyncParsableCommand {
     ]
 
     let reflectionServiceProvider = try ReflectionService(
-      serializedFileDescriptorProtoFilePaths: paths
+      serializedFileDescriptorProtoFilePaths: paths,
+      version: .v1
     )
 
     // Start the server and print its address once it has started.
