@@ -79,13 +79,13 @@ extension ClientRPCExecutor.OneShotExecutor {
               return .timedOut(result)
             }
           }
-          
+
           let streamExecutor = ClientStreamExecutor(transport: self.transport)
           group.addTask {
             await streamExecutor.run()
             return .streamExecutorCompleted
           }
-          
+
           group.addTask {
             let response = await ClientRPCExecutor.unsafeExecute(
               request: request,
@@ -97,36 +97,36 @@ extension ClientRPCExecutor.OneShotExecutor {
               streamProcessor: streamExecutor,
               stream: stream
             )
-            
+
             let result = await Result {
               try await responseHandler(response)
             }
-            
+
             return .responseHandled(result)
           }
-          
+
           while let result = await group.next() {
             switch result {
             case .streamExecutorCompleted:
               // Stream finished; wait for the response to be handled.
               ()
-              
+
             case .timedOut(.success):
               // The deadline passed; cancel the ongoing work group.
               group.cancelAll()
-              
+
             case .timedOut(.failure):
               // The deadline task failed (because the task was cancelled). Wait for the response
               // to be handled.
               ()
-              
+
             case .responseHandled(let result):
               // Response handled: cancel any other remaining tasks.
               group.cancelAll()
               return result
             }
           }
-          
+
           // Unreachable: exactly one task returns `responseHandled` and we return when it completes.
           fatalError("Internal inconsistency")
         }

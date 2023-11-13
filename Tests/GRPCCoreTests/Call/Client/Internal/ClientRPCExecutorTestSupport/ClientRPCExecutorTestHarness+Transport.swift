@@ -17,17 +17,21 @@ import Atomics
 
 @testable import GRPCCore
 
-internal extension InProcessServerTransport {
+extension InProcessServerTransport {
   func spawnClientTransport(
     throttle: RetryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
   ) -> InProcessClientTransport {
     return InProcessClientTransport(
       server: self,
-      executionConfigurations: .init(defaultConfiguration: .init(hedgingPolicy: .init(
-        maximumAttempts: 2,
-        hedgingDelay: .milliseconds(100),
-        nonFatalStatusCodes: []
-      )))
+      executionConfigurations: .init(
+        defaultConfiguration: .init(
+          hedgingPolicy: .init(
+            maximumAttempts: 2,
+            hedgingDelay: .milliseconds(100),
+            nonFatalStatusCodes: []
+          )
+        )
+      )
     )
   }
 }

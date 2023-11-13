@@ -34,7 +34,8 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     self._streamFailures.load(ordering: .sequentiallyConsistent)
   }
 
-  init<Transport: ClientTransport>(wrapping transport: Transport) where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
+  init<Transport: ClientTransport>(wrapping transport: Transport)
+  where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
     self.transport = AnyClientTransport(wrapping: transport)
   }
 

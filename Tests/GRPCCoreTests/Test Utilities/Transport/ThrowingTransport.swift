@@ -41,7 +41,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
   ) -> ClientRPCExecutionConfiguration? {
     return nil
   }
-  
+
   func withStream<T>(
     descriptor: MethodDescriptor,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T

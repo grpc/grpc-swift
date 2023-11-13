@@ -61,7 +61,7 @@ public protocol ClientTransport: Sendable {
   /// - ``RPCError/Code/failedPrecondition`` if the transport is closing or has been closed.
   /// - ``RPCError/Code/unavailable`` if it's temporarily not possible to create a stream and it
   ///   may be possible after some backoff period.
-  /// 
+  ///
   /// - Parameters:
   ///   - descriptor: A description of the method to open a stream for.
   ///   - closure: A closure that takes the opened stream as parameter.

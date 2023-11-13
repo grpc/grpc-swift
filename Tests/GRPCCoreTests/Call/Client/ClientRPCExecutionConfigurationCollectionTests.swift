@@ -25,12 +25,17 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(defaultConfiguration: defaultConfiguration)
-    
+    var configurations = ClientRPCExecutionConfigurationCollection(
+      defaultConfiguration: defaultConfiguration
+    )
+
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
     XCTAssertEqual(configurations[firstDescriptor], defaultConfiguration)
-    XCTAssertEqual(configurations.getConfiguration(forMethod: firstDescriptor), defaultConfiguration)
-    
+    XCTAssertEqual(
+      configurations.getConfiguration(forMethod: firstDescriptor),
+      defaultConfiguration
+    )
+
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
@@ -46,7 +51,13 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(configurations[firstDescriptor], overrideConfiguration)
     XCTAssertEqual(configurations[secondDescriptor], defaultConfiguration)
-    XCTAssertEqual(configurations.getConfiguration(forMethod: firstDescriptor), overrideConfiguration)
-    XCTAssertEqual(configurations.getConfiguration(forMethod: secondDescriptor), defaultConfiguration)
+    XCTAssertEqual(
+      configurations.getConfiguration(forMethod: firstDescriptor),
+      overrideConfiguration
+    )
+    XCTAssertEqual(
+      configurations.getConfiguration(forMethod: secondDescriptor),
+      defaultConfiguration
+    )
   }
 }

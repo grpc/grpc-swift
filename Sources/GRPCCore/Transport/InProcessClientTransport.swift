@@ -25,12 +25,12 @@ public struct InProcessClientTransport: ClientTransport {
 
   public typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   public typealias Outbound = RPCWriter<RPCRequestPart>.Closable
-  
+
   public var retryThrottle: RetryThrottle
-  
+
   private let executionConfigurations: ClientRPCExecutionConfigurationCollection
   private let state: LockedValueBox<State>
-  
+
   public init(
     server: InProcessServerTransport,
     executionConfigurations: ClientRPCExecutionConfigurationCollection
@@ -39,7 +39,7 @@ public struct InProcessClientTransport: ClientTransport {
     self.executionConfigurations = executionConfigurations
     self.state = .init(.unconnected(server))
   }
-  
+
   /// Establish and maintain a connection to the remote destination.
   ///
   /// Maintains a long-lived connection, or set of connections, to a remote destination.
@@ -71,7 +71,7 @@ public struct InProcessClientTransport: ClientTransport {
       }
     }
   }
-  
+
   public func close() {
     self.state.withLockedValue { state in
       switch state {
@@ -86,7 +86,7 @@ public struct InProcessClientTransport: ClientTransport {
       }
     }
   }
-  
+
   public func withStream<T>(
     descriptor: MethodDescriptor,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
@@ -105,7 +105,7 @@ public struct InProcessClientTransport: ClientTransport {
       inbound: request.stream,
       outbound: response.writer
     )
-    
+
     let error: RPCError? = try self.state.withLockedValue { state in
       switch state {
       case .connected(let transport):
@@ -136,16 +136,18 @@ public struct InProcessClientTransport: ClientTransport {
       clientStream.outbound.finish()
       throw error
     }
-    
+
     let result = try await closure(clientStream)
-    
+
     serverStream.outbound.finish()
     clientStream.outbound.finish()
-    
+
     return result
   }
-  
-  public func executionConfiguration(forMethod descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration? {
+
+  public func executionConfiguration(
+    forMethod descriptor: MethodDescriptor
+  ) -> ClientRPCExecutionConfiguration? {
     self.executionConfigurations[descriptor]
   }
 }

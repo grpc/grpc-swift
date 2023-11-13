@@ -130,7 +130,7 @@ extension ClientRPCExecutor.RetryExecutor {
                   await streamExecutor.run()
                   return .streamProcessed
                 }
-                
+
                 thisAttemptGroup.addTask {
                   let response = await ClientRPCExecutor.unsafeExecute(
                     request: ClientRequest.Stream(metadata: request.metadata) {
@@ -144,10 +144,10 @@ extension ClientRPCExecutor.RetryExecutor {
                     streamProcessor: streamExecutor,
                     stream: stream
                   )
-                  
+
                   let shouldRetry: Bool
                   let retryDelayOverride: Duration?
-                  
+
                   switch response.accepted {
                   case .success:
                     // Request was accepted. This counts as success to the throttle and there's no need
@@ -155,7 +155,7 @@ extension ClientRPCExecutor.RetryExecutor {
                     self.transport.retryThrottle.recordSuccess()
                     retryDelayOverride = nil
                     shouldRetry = false
-                    
+
                   case .failure(let error):
                     // The request was rejected. Determine whether a retry should be carried out. The
                     // following conditions must be checked:
@@ -167,11 +167,11 @@ extension ClientRPCExecutor.RetryExecutor {
                     //   the delay before the next retry.
                     let code = Status.Code(error.code)
                     let isRetryableStatusCode = self.policy.retryableStatusCodes.contains(code)
-                    
+
                     if isRetryableStatusCode {
                       // Counted as failure for throttling.
                       let throttled = self.transport.retryThrottle.recordFailure()
-                      
+
                       // Status code can be retried, Did the server send pushback?
                       switch error.metadata.retryPushback {
                       case .retryAfter(let delay):
@@ -195,7 +195,7 @@ extension ClientRPCExecutor.RetryExecutor {
                       retryDelayOverride = nil
                     }
                   }
-                  
+
                   if shouldRetry {
                     // Cancel subscribers of the broadcast sequence. This is safe as we are the only
                     // subscriber and maximises the chances that 'isKnownSafeForNextSubscriber' will
@@ -204,7 +204,7 @@ extension ClientRPCExecutor.RetryExecutor {
                     // Note: this must only be called if we should retry, otherwise we may cancel a
                     // subscriber for an accepted request.
                     retry.stream.invalidateAllSubscriptions()
-                    
+
                     // Only retry if we know it's safe for the next subscriber, that is, the first
                     // element is still in the buffer. It's safe to call this because there's only
                     // ever one attempt at a time and the existing subscribers have been invalidated.
@@ -212,7 +212,7 @@ extension ClientRPCExecutor.RetryExecutor {
                       return .retry(retryDelayOverride)
                     }
                   }
-                  
+
                   // Not retrying or not safe to retry.
                   let result = await Result {
                     // Check for cancellation; the RPC may have timed out in which case we should skip
@@ -222,33 +222,33 @@ extension ClientRPCExecutor.RetryExecutor {
                   }
                   return .handledResponse(result)
                 }
-                
+
                 while let result = await thisAttemptGroup.next() {
                   switch result {
                   case .streamProcessed:
                     ()  // Continue processing; wait for the response to be handled.
-                    
+
                   case .retry(let delayOverride):
                     thisAttemptGroup.cancelAll()
                     return .retry(delayOverride)
-                    
+
                   case .handledResponse(let result):
                     thisAttemptGroup.cancelAll()
                     return .handledResponse(result)
                   }
                 }
-                
+
                 fatalError("Internal inconsistency")
               }
             }
-            
+
             loop: while let next = await group.next() {
               switch next {
               case .handledResponse(let result):
                 // A usable response; cancel the remaining work and return the result.
                 group.cancelAll()
                 return Optional.some(result)
-                
+
               case .retry(let delayOverride):
                 // The attempt failed, wait a bit and then retry. The server might have overridden the
                 // delay via pushback so preferentially use that value.
@@ -268,14 +268,14 @@ extension ClientRPCExecutor.RetryExecutor {
                     clock: .continuous
                   )
                 }
-                
+
                 break loop  // from the while loop so another attempt can be started.
-                
+
               case .timedOut(.success), .outboundFinished(.failure):
                 // Timeout task fired successfully or failed to process the outbound stream. Cancel and
                 // wait for a usable response (which is likely to be an error).
                 group.cancelAll()
-                
+
               case .timedOut(.failure), .outboundFinished(.success):
                 // Timeout task failed which means it was cancelled (so no need to cancel again) or the
                 // outbound stream was successfully processed (so don't need to do anything).
@@ -284,7 +284,7 @@ extension ClientRPCExecutor.RetryExecutor {
             }
             return nil
           }
-          
+
           if let attemptResult {
             return attemptResult
           }

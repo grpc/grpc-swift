@@ -21,12 +21,15 @@ struct AnyClientTransport: ClientTransport, Sendable {
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   private let _retryThrottle: @Sendable () -> RetryThrottle
-  private let _withStream: @Sendable (MethodDescriptor, (RPCStream<Inbound, Outbound>) async throws -> Any) async throws -> Any
+  private let _withStream:
+    @Sendable (MethodDescriptor, (RPCStream<Inbound, Outbound>) async throws -> Any) async throws ->
+      Any
   private let _connect: @Sendable (Bool) async throws -> Void
   private let _close: @Sendable () -> Void
   private let _configuration: @Sendable (MethodDescriptor) -> ClientRPCExecutionConfiguration?
 
-  init<Transport: ClientTransport>(wrapping transport: Transport) where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
+  init<Transport: ClientTransport>(wrapping transport: Transport)
+  where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
     self._retryThrottle = { transport.retryThrottle }
     self._withStream = { descriptor, closure in
       try await transport.withStream(descriptor: descriptor) { stream in

@@ -18,20 +18,25 @@
 public struct ClientRPCExecutionConfigurationCollection: Sendable {
   private var elements: [MethodDescriptor: ClientRPCExecutionConfiguration]
   private let defaultConfiguration: ClientRPCExecutionConfiguration
-  
+
   public init(defaultConfiguration: ClientRPCExecutionConfiguration) {
     self.elements = [:]
     self.defaultConfiguration = defaultConfiguration
   }
-  
-  public mutating func addConfiguration(_ configuration: ClientRPCExecutionConfiguration, forMethod descriptor: MethodDescriptor) {
+
+  public mutating func addConfiguration(
+    _ configuration: ClientRPCExecutionConfiguration,
+    forMethod descriptor: MethodDescriptor
+  ) {
     self.elements[descriptor] = configuration
   }
-  
-  public func getConfiguration(forMethod descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
+
+  public func getConfiguration(
+    forMethod descriptor: MethodDescriptor
+  ) -> ClientRPCExecutionConfiguration {
     self.elements[descriptor, default: self.defaultConfiguration]
   }
-  
+
   public subscript(_ descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
     self.getConfiguration(forMethod: descriptor)
   }
