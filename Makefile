@@ -220,18 +220,6 @@ ${ECHO_SERIALIZED_PROTO_GRPC}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-echo-reflection-data: ${ECHO_SERIALIZED_PROTO_GRPC}
 
-REFLECTION_SERIALIZED_PROTO_GRPC=Sources/Examples/ReflectionService/Generated/reflection.grpc.reflection.txt
-
-${REFLECTION_SERIALIZED_PROTO_GRPC}: ${REFLECTION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
-	protoc $< \
-		--proto_path=$(dir $<) \
-		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
-		--grpc-swift_opt=Client=false,Server=false,ReflectionData=true \
-		--grpc-swift_out=$(dir ${REFLECTION_SERIALIZED_PROTO_GRPC})
-    
-.PHONY:
-generate-reflection-service-reflection-data: ${REFLECTION_SERIALIZED_PROTO_GRPC}
-
 ### Testing ####################################################################
 
 # Normal test suite.

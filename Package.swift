@@ -461,7 +461,7 @@ extension Target {
   )
   
   static let reflectionServer: Target = .executableTarget(
-    name: "ReflectionServiceServer",
+    name: "ReflectionServer",
     dependencies: [
       .grpc,
       .reflectionService,
