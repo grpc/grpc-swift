@@ -36,6 +36,10 @@ struct ReflectionServer: AsyncParsableCommand {
     let helloworldPath: String
     let echoPath: String
 
+    #if os(Linux)
+    helloworldPath = "Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt"
+    echoPath = "Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt"
+    #else
     if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
       helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path()
       echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path()
@@ -43,6 +47,7 @@ struct ReflectionServer: AsyncParsableCommand {
       helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path
       echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path
     }
+    #endif
 
     let reflectionService = try ReflectionService(
       serializedReflectionDataFilePaths: [helloworldPath, echoPath],
