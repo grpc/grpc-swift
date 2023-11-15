@@ -29,7 +29,7 @@ gRPC Swift supports both [v1][v1] and [v1alpha][v1alpha] of the reflection servi
 You can use the Reflection service by adding it in the providers when constructing your server.
 
 To initialise the Reflection service we will use 
-``ReflectionService/init(serializedReflectionDataFilePaths:version:)``.
+``GRPCReflectionService/ReflectionService/init(reflectionDataFilePaths:version:)``.
 It receives the paths to the files containing the reflection data of the proto files 
 describing the services of the server that we want to be discoverable through reflection
 and the version of the reflection service.
@@ -179,10 +179,9 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [grpcurl-setup]: https://github.com/fullstorydev/grpcurl#grpcurl
 [grpcurl]: https://github.com/fullstorydev/grpcurl
 [grpc-cli]: https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
-[v1]: ../v1/reflection-v1.proto
+[v1]: GRPCReflectionService/v1/reflection-v1.proto
 [v1alpha]: ../v1Alpha/reflection-v1alpha.proto
-[reflectionservice-server]: ../../Examples/ReflectionService/ReflectionServer.swift
+[reflectionservice-server]: ../ReflectionService/ReflectionServer.swift
 [helloworld-proto]: ../Examples/HelloWorld/Model/helloworld.proto
 [echo-proto]: ../../../Examples/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
-
