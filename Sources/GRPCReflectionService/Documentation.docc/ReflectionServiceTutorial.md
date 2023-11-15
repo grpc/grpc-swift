@@ -4,7 +4,7 @@ This tutorial goes through the steps of adding Reflection service to a
 server, running it and testing it using gRPCurl. 
 
  The server used in this example is implemented at 
- [Sources/Examples/ReflectionService/ReflectionServer.swift][reflectionservice-server]
+ [Sources/Examples/ReflectionService/ReflectionServer.swift][reflection-server]
  and it supports the "Greeter", "Echo", and "Reflection" services. 
 
 
@@ -179,9 +179,9 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [grpcurl-setup]: https://github.com/fullstorydev/grpcurl#grpcurl
 [grpcurl]: https://github.com/fullstorydev/grpcurl
 [grpc-cli]: https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
-[v1]: GRPCReflectionService/v1/reflection-v1.proto
+[v1]: ../v1/reflection-v1.proto
 [v1alpha]: ../v1Alpha/reflection-v1alpha.proto
-[reflectionservice-server]: ../ReflectionService/ReflectionServer.swift
-[helloworld-proto]: ../Examples/HelloWorld/Model/helloworld.proto
-[echo-proto]: ../../../Examples/Echo/Model/echo.proto
+[reflection-server]: ../../Examples/ReflectionService/ReflectionServer.swift
+[helloworld-proto]: ../../Examples/HelloWorld/Model/helloworld.proto
+[echo-proto]: ../../Examples/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
