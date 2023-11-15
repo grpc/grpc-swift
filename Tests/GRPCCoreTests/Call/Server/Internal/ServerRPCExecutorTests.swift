@@ -239,7 +239,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       serializer: IdentitySerializer()
     ) { request in
       do {
-        try await Task.sleep(until: .now.advanced(by: .seconds(180)))
+        try await Task.sleep(until: .now.advanced(by: .seconds(180)), clock: .continuous)
       } catch is CancellationError {
         throw RPCError(code: .cancelled, message: "Sleep was cancelled")
       }
