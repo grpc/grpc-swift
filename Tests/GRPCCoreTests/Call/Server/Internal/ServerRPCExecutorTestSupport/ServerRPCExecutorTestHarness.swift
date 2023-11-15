@@ -17,6 +17,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input, Output>: Sendable {
     let fn: @Sendable (ServerRequest.Stream<Input>) async throws -> ServerResponse.Stream<Output>
@@ -123,6 +124,7 @@ struct ServerRPCExecutorTestHarness {
   }
 }
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServerRPCExecutorTestHarness.ServerHandler where Input == Output {
   static var echo: Self {
     return Self { request in
