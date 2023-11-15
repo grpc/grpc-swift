@@ -164,6 +164,7 @@ extension Target {
     name: "GRPCCore",
     dependencies: [
       .dequeModule,
+      .atomics
     ],
     path: "Sources/GRPCCore"
   )
