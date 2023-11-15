@@ -134,7 +134,7 @@ echo.Echo
 helloworld.Greeter
 ```
 
-You can also see what methods are available for a service:
+To see what methods are available for a service:
 
 ```sh
 $ grpcurl -plaintext localhost:1234 list echo.Echo
@@ -162,7 +162,7 @@ service Echo {
 }
 ```
 
-You can also send requests to the services with gRPCurl:
+You can send requests to the services with gRPCurl:
 
 ```sh
 $ grpcurl -d '{ "text": "test" }' -plaintext localhost:1234 echo.Echo.Get
