@@ -23,7 +23,7 @@ import GRPCReflectionService
 import NIOPosix
 import SwiftProtobuf
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 @main
 struct ReflectionServer: AsyncParsableCommand {
   @Option(help: "The port to listen on for new connections")
@@ -37,16 +37,11 @@ struct ReflectionServer: AsyncParsableCommand {
     let echoPath: String
 
     #if os(Linux)
-    helloworldPath = "Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection.txt"
-    echoPath = "Sources/Examples/ReflectionService/Generated/echo.grpc.reflection.txt"
+    helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path
+    echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path
     #else
-    if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
-      helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path()
-      echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path()
-    } else {
-      helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path
-      echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path
-    }
+    helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path()
+    echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path()
     #endif
 
     let reflectionService = try ReflectionService(
@@ -54,9 +49,16 @@ struct ReflectionServer: AsyncParsableCommand {
       version: .v1
     )
 
+    let reflectionAlphaService = try ReflectionService(
+      serializedReflectionDataFilePaths: [helloworldPath, echoPath],
+      version: .v1Alpha
+    )
+
     // Start the server and print its address once it has started.
     let server = try await Server.insecure(group: group)
-      .withServiceProviders([reflectionService, GreeterProvider(), EchoProvider()])
+      .withServiceProviders([
+        reflectionService, reflectionAlphaService, GreeterProvider(), EchoProvider(),
+      ])
       .bind(host: "localhost", port: self.port)
       .get()
 

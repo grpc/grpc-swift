@@ -476,7 +476,6 @@ extension Target {
     exclude: [
       "Generated/helloworld.grpc.reflection.txt",
       "Generated/echo.grpc.reflection.txt",
-      "Generated/reflection.grpc.reflection.txt",
     ]
   )
 }
