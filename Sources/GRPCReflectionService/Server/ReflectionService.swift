@@ -42,7 +42,7 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// - Parameter version: The version of the reflection service to create.
   ///
   /// - Throws: When a file can't be read from disk or parsed.
-  public init(serializedReflectionDataFilePaths filePaths: [String], version: Version) throws {
+  public init(reflectionDataFilePaths filePaths: [String], version: Version) throws {
     let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
       atPaths: filePaths
     )

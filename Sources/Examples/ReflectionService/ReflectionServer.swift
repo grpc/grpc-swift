@@ -26,16 +26,12 @@ import SwiftProtobuf
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 @main
 struct ReflectionServer: AsyncParsableCommand {
-  @Option(help: "The port to listen on for new connections")
-  var port = 1234
-
   func run() async throws {
-    let group = MultiThreadedEventLoopGroup.singleton
-
+    // Constructing the absolute paths to the files containing the reflection data
+    // using their relative paths to #filePath.
     let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     let helloworldPath: String
     let echoPath: String
-
     #if os(Linux)
     helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path
     echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path
@@ -45,21 +41,14 @@ struct ReflectionServer: AsyncParsableCommand {
     #endif
 
     let reflectionService = try ReflectionService(
-      serializedReflectionDataFilePaths: [helloworldPath, echoPath],
+      reflectionDataFilePaths: [helloworldPath, echoPath],
       version: .v1
     )
 
-    let reflectionAlphaService = try ReflectionService(
-      serializedReflectionDataFilePaths: [helloworldPath, echoPath],
-      version: .v1Alpha
-    )
-
     // Start the server and print its address once it has started.
-    let server = try await Server.insecure(group: group)
-      .withServiceProviders([
-        reflectionService, reflectionAlphaService, GreeterProvider(), EchoProvider(),
-      ])
-      .bind(host: "localhost", port: self.port)
+    let server = try await Server.insecure(group: MultiThreadedEventLoopGroup.singleton)
+      .withServiceProviders([reflectionService, GreeterProvider(), EchoProvider()])
+      .bind(host: "localhost", port: 1234)
       .get()
 
     print("server started on port \(server.channel.localAddress!.port!)")
