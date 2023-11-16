@@ -66,7 +66,7 @@ extension ClientRPCExecutor {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ClientRPCExecutor.HedgingExecutor {
   @inlinable
-  func execute<R>(
+  func execute<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
