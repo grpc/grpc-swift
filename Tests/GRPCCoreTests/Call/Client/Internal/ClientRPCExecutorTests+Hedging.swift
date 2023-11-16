@@ -61,7 +61,7 @@ extension ClientRPCExecutorTests {
       }
     }
 
-    // The first response is fatal. Others
+    // The first response is fatal.
     XCTAssertEqual(harness.clientStreamsOpened, 1)
     XCTAssertEqual(harness.serverStreamsAccepted, 1)
 
