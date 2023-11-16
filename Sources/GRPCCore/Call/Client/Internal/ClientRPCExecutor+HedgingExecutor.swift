@@ -152,7 +152,7 @@ extension ClientRPCExecutor.HedgingExecutor {
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> Result<R, Error> {
     return await withTaskGroup(of: Void.self, returning: Result<R, Error>.self) { group in
-      var state = HedgingStateMachine(policy: policy, throttle: self.transport.retryThrottle)
+      var state = HedgingStateMachine(policy: self.policy, throttle: self.transport.retryThrottle)
       let event = AsyncStream.makeStream(of: _HedgingEvent<Output>.self)
       // Queue up the first attempt.
       event.continuation.yield(.start)
