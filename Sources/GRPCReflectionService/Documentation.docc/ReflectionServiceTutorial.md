@@ -91,6 +91,10 @@ else {
   print("The resource could not be loaded.")
   throw ExitCode.failure
 }
+let reflectionService = try ReflectionService(
+  reflectionDataFileURLs: [greeterURL, echoURL],
+  version: .v1
+)
 ```
 
 ### Running the server
