@@ -74,5 +74,4 @@ func XCTAssertRejected<T>(
   case .failure(let error):
     errorHandler(error)
   }
-
 }

@@ -173,10 +173,7 @@ extension ClientRPCExecutorTests {
         },
         configuration: .hedge(delay: .seconds(60), nonFatalCodes: [.unavailable])
       ) { response in
-        switch response.accepted {
-        case .success:
-          XCTFail("Expected RPC to fail")
-        case .failure(let error):
+        XCTAssertRejected(response) { error in
           XCTAssertEqual(error.code, .unavailable)
         }
       }
