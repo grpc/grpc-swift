@@ -101,11 +101,11 @@ reflection.
 
 ```swift
 // Getting the URLs of the files containing the reflection data.
-guard let helloworldURL = Bundle.module.url(forResource: "Generated/helloworld", withExtension: "grpc.reflection.txt") else {
+guard let helloworldURL = Bundle.module.url(forResource: "helloworld", withExtension: "grpc.reflection.txt") else {
   print("The resource could not be loaded.")
   throw ExitCode.failure
 }
-guard let echoURL = Bundle.module.url(forResource: "Generated/echo", withExtension: "grpc.reflection.txt") else {
+guard let echoURL = Bundle.module.url(forResource: "echo", withExtension: "grpc.reflection.txt") else {
   print("The resource could not be loaded.")
   throw ExitCode.failure
 }
