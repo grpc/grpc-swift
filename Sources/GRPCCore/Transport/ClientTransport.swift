@@ -46,7 +46,7 @@ public protocol ClientTransport: Sendable {
 
   /// Signal to the transport that no new streams may be created.
   ///
-  /// Existing streams may run to completion naturally but calling ``openStream(descriptor:)``
+  /// Existing streams may run to completion naturally but calling ``withStream(descriptor:_:)``
   /// should result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
   /// If you want to forcefully cancel all active streams then cancel the task
@@ -55,7 +55,7 @@ public protocol ClientTransport: Sendable {
 
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.
   ///
-  /// The opened stream is closed after the closure is finished.
+  /// - Important: The opened stream is closed after the closure is finished.
   ///
   /// Transport implementations should throw an ``RPCError`` with the following error codes:
   /// - ``RPCError/Code/failedPrecondition`` if the transport is closing or has been closed.

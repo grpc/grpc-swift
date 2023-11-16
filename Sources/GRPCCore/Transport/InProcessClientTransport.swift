@@ -16,6 +16,24 @@
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// An in-process implementation of a ``ClientTransport``.
+///
+/// This is useful when you're interested in testing your application without any actual networking layers
+/// involved, as the client and server will communicate directly with each other via in-process streams.
+///
+/// To use this client, you'll have to provide an ``InProcessServerTransport`` upon creation, as well
+/// as a ``ClientRPCExecutionConfigurationCollection``, containing a set of
+/// ``ClientRPCExecutionConfiguration``s which are specific, per-method configurations for your
+/// transport.
+///
+/// Once you have a client, you must keep a long-running task executing ``connect(lazily:)``, which
+/// will return only once all streams have been finished and ``close()`` has been called on this client; or
+/// when the containing task is cancelled.
+///
+/// To execute requests using this client, use ``withStream(descriptor:_:)``. If this function is
+/// called before ``connect(lazily:)`` is called, then any streams will remain pending and the call will
+/// block until ``connect(lazily:)`` is called or the task is cancelled.
+///
+/// - SeeAlso: ``ClientTransport``
 public struct InProcessClientTransport: ClientTransport {
   private enum State: Sendable {
     case unconnected(
@@ -93,6 +111,12 @@ public struct InProcessClientTransport: ClientTransport {
     }
   }
 
+  /// Signal to the transport that no new streams may be created.
+  ///
+  /// Existing streams may run to completion naturally but calling ``withStream(descriptor:_:)``
+  /// should result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
+  ///
+  /// If you want to forcefully cancel all active streams then cancel the task running ``connect(lazily:)``.
   public func close() {
     self.state.withLockedValue { state in
       switch state {
@@ -114,6 +138,23 @@ public struct InProcessClientTransport: ClientTransport {
     case pending(AsyncStream<Void>)
   }
 
+  /// Opens a stream using the transport, and uses it as input into a user-provided closure.
+  ///
+  /// - Important: The opened stream is closed after the closure is finished.
+  ///
+  /// Transport implementations should throw an ``RPCError`` with the following error codes:
+  /// - ``RPCError/Code/failedPrecondition`` if the transport is closing or has been closed.
+  /// - ``RPCError/Code/unavailable`` if it's temporarily not possible to create a stream and it
+  ///   may be possible after some backoff period.
+  ///
+  ///   This implementation will queue any streams (and thus block this call) if this function is called before
+  ///   ``connect(lazily:)``, until a connection is established - at which point all streams will be
+  ///   created.
+  ///
+  /// - Parameters:
+  ///   - descriptor: A description of the method to open a stream for.
+  ///   - closure: A closure that takes the opened stream as parameter.
+  /// - Returns: Whatever value was returned from `closure`.
   public func withStream<T>(
     descriptor: MethodDescriptor,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
@@ -227,6 +268,10 @@ public struct InProcessClientTransport: ClientTransport {
     return userResult
   }
 
+  /// Returns the execution configuration for a given method.
+  ///
+  /// - Parameter descriptor: The method to lookup configuration for.
+  /// - Returns: Execution configuration for the method, if it exists.
   public func executionConfiguration(
     forMethod descriptor: MethodDescriptor
   ) -> ClientRPCExecutionConfiguration? {
