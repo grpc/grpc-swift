@@ -18,15 +18,25 @@
 /// An in-process implementation of a ``ClientTransport``.
 public struct InProcessClientTransport: ClientTransport {
   private enum State: Sendable {
-    case unconnected(InProcessServerTransport)
-    case connected(InProcessServerTransport)
-    case closed
+    case unconnected(
+      _ serverTransport: InProcessServerTransport,
+      _ pendingStreams: [AsyncStream<Void>.Continuation]
+    )
+    case connected(
+      _ serverTransport: InProcessServerTransport,
+      _ openStreams: Int,
+      _ signalEndConnection: AsyncStream<Void>.Continuation
+    )
+    case closed(
+      _ openStreams: Int,
+      _ signalEndContinuation: AsyncStream<Void>.Continuation?
+    )
   }
 
   public typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   public typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
-  public var retryThrottle: RetryThrottle
+  public let retryThrottle: RetryThrottle
 
   private let executionConfigurations: ClientRPCExecutionConfigurationCollection
   private let state: LockedValueBox<State>
@@ -35,9 +45,9 @@ public struct InProcessClientTransport: ClientTransport {
     server: InProcessServerTransport,
     executionConfigurations: ClientRPCExecutionConfigurationCollection
   ) {
-    self.retryThrottle = .init(maximumTokens: 10, tokenRatio: 0.1)
+    self.retryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
     self.executionConfigurations = executionConfigurations
-    self.state = .init(.unconnected(server))
+    self.state = LockedValueBox(.unconnected(server, []))
   }
 
   /// Establish and maintain a connection to the remote destination.
@@ -53,11 +63,14 @@ public struct InProcessClientTransport: ClientTransport {
   ///
   /// - Parameter lazily: This parameter is ignored in this implementation.
   public func connect(lazily: Bool) async throws {
+    let (stream, continuation) = AsyncStream<Void>.makeStream()
     try self.state.withLockedValue { state in
       switch state {
-      case .unconnected(let server):
-        state = .connected(server)
-        _ = server.listen()
+      case .unconnected(let server, let pendingStreams):
+        state = .connected(server, 0, continuation)
+        for pendingStream in pendingStreams {
+          pendingStream.finish()
+        }
       case .connected:
         throw RPCError(
           code: .failedPrecondition,
@@ -70,21 +83,35 @@ public struct InProcessClientTransport: ClientTransport {
         )
       }
     }
+    
+    for await _ in stream {
+      // This for-await loop will exit (and thus `connect(lazily:)` will return)
+      // only when the task is cancelled, or when the stream's continuation is
+      // finished - whichever happens first.
+      // The continuation will be finished when `close()` is called and there
+      // are no more open streams.
+    }
   }
 
   public func close() {
     self.state.withLockedValue { state in
       switch state {
-      case .unconnected(let server):
-        state = .closed
-        server.stopListening()
-      case .connected(let server):
-        state = .closed
-        server.stopListening()
+      case .unconnected:
+        state = .closed(0, nil)
+      case .connected(_, let openStreams, let signalEndConnection):
+        state = .closed(openStreams, signalEndConnection)
+        if openStreams == 0 {
+          signalEndConnection.finish()
+        }
       case .closed:
         ()
       }
     }
+  }
+  
+  private enum WithStreamResult {
+    case success
+    case pending(AsyncStream<Void>)
   }
 
   public func withStream<T>(
@@ -106,43 +133,98 @@ public struct InProcessClientTransport: ClientTransport {
       outbound: response.writer
     )
 
-    let error: RPCError? = try self.state.withLockedValue { state in
+    let result: Result<WithStreamResult, RPCError> = self.state.withLockedValue { state in
       switch state {
-      case .connected(let transport):
+      case .connected(let serverTransport, let openStreams, let signalEndConnection):
         do {
-          try transport.acceptStream(serverStream)
-          state = .connected(transport)
+          try serverTransport.acceptStream(serverStream)
+          state = .connected(serverTransport, openStreams + 1, signalEndConnection)
         } catch let acceptStreamError as RPCError {
-          return acceptStreamError
+          return .failure(acceptStreamError)
+        } catch {
+          return .failure(RPCError(code: .unknown, message: "Unknown error: \(error)."))
         }
-        return nil
+        return .success(.success)
 
-      case .unconnected:
-        return RPCError(
-          code: .failedPrecondition,
-          message: "The client transport must be connected before streams can be created."
-        )
+      case .unconnected(let serverTransport, var pendingStreams):
+        let (stream, continuation) = AsyncStream<Void>.makeStream()
+        pendingStreams.append(continuation)
+        state = .unconnected(serverTransport, pendingStreams)
+        return .success(.pending(stream))
 
       case .closed:
-        return RPCError(
+        return .failure(RPCError(
           code: .failedPrecondition,
           message: "The client transport is closed."
-        )
+        ))
       }
     }
-
-    if let error = error {
+    
+    let withStreamResult: WithStreamResult
+    do {
+      withStreamResult = try result.get()
+    } catch {
       serverStream.outbound.finish()
       clientStream.outbound.finish()
       throw error
     }
+    
+    switch withStreamResult {
+    case .success:
+      ()
+    case .pending(let pendingStream):
+      for await _ in pendingStream {
+        // This loop will exit either when the task is cancelled or when the
+        // client connects and this stream can be opened.
+      }
+      try Task.checkCancellation()
+      
+      try self.state.withLockedValue { state in
+        switch state {
+        case .unconnected:
+          fatalError("Invalid state.")
+        case .connected(let serverTransport, let openStreams, let signalEndConnection):
+          do {
+            try serverTransport.acceptStream(serverStream)
+            state = .connected(serverTransport, openStreams + 1, signalEndConnection)
+          } catch let acceptStreamError as RPCError {
+            throw acceptStreamError
+          } catch {
+            throw RPCError(code: .unknown, message: "Unknown error: \(error).")
+          }
+        case .closed:
+          serverStream.outbound.finish()
+          clientStream.outbound.finish()
+          throw RPCError(
+            code: .failedPrecondition,
+            message: "The client transport is closed."
+          )
+        }
+      }
+    }
+    
+    defer {
+      self.state.withLockedValue { state in
+        switch state {
+        case .unconnected:
+          fatalError("Invalid state")
+        case .connected(let serverTransport, let openStreams, let signalEndContinuation):
+          state = .connected(serverTransport, openStreams - 1, signalEndContinuation)
+        case .closed(let openStreams, let signalEndConnection):
+          if openStreams == 1 {
+            // This was the last open stream: signal the closure of the client.
+            signalEndConnection?.finish()
+          }
+        }
+      }
+    }
 
-    let result = try await closure(clientStream)
+    let userResult = try await closure(clientStream)
 
     serverStream.outbound.finish()
     clientStream.outbound.finish()
 
-    return result
+    return userResult
   }
 
   public func executionConfiguration(

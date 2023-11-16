@@ -18,8 +18,8 @@ import XCTest
 
 @testable import GRPCCore
 
-final class InProcessClientTransportTest: XCTestCase {
-  func testConnectWhenConnected() async throws {
+final class InProcessClientTransportTests: XCTestCase {
+  func testConnectWhenConnected() async {
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
@@ -32,15 +32,15 @@ final class InProcessClientTransportTest: XCTestCase {
       executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
     )
 
-    try await withThrowingTaskGroup(of: Void.self) { group in
+    await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await client.connect(lazily: false)
       }
+      
       group.addTask {
         try await client.connect(lazily: false)
       }
 
-      try await group.next()
       await XCTAssertThrowsRPCErrorAsync({ try await group.next() }) { error in
         XCTAssertEqual(error.code, .failedPrecondition)
       }
@@ -159,7 +159,7 @@ final class InProcessClientTransportTest: XCTestCase {
     }
   }
 
-  func testOpenStreamWhenUnconnected() async {
+  func testOpenStreamWhenUnconnected() async throws {
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
@@ -171,11 +171,25 @@ final class InProcessClientTransportTest: XCTestCase {
       server: .init(),
       executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
     )
-
-    await XCTAssertThrowsRPCErrorAsync({
-      try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in }
-    }) { error in
-      XCTAssertEqual(error.code, .failedPrecondition)
+    
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in
+          // Once the pending stream is opened, close the client to new connections,
+          // so that, once this closure is executed and this stream is closed,
+          // the client will return from `connect(lazily:)`.
+          client.close()
+        }
+      }
+      
+      group.addTask {
+        // Add a sleep to make sure connection happens after `withStream` has been called,
+        // to test pending streams are handled correctly.
+        try await Task.sleep(for: .milliseconds(100))
+        try await client.connect(lazily: false)
+      }
+      
+      try await group.waitForAll()
     }
   }
 
@@ -217,9 +231,11 @@ final class InProcessClientTransportTest: XCTestCase {
 
     let receivedMessages = LockedValueBox([[UInt8]]())
 
-    try await client.connect(lazily: false)
-
     try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try await client.connect(lazily: false)
+      }
+
       group.addTask {
         try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
           try await stream.outbound.write(.message([1]))
@@ -299,10 +315,7 @@ final class InProcessClientTransportTest: XCTestCase {
       retryableStatusCodes: [.unavailable]
     )
     let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
-    configurations.addConfiguration(
-      overrideConfiguration,
-      forMethod: firstDescriptor
-    )
+    configurations[firstDescriptor] = overrideConfiguration
     client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
