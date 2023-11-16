@@ -36,12 +36,14 @@ final class InProcessClientTransportTests: XCTestCase {
       group.addTask {
         try await client.connect(lazily: false)
       }
-      
+
       group.addTask {
         try await client.connect(lazily: false)
       }
 
-      await XCTAssertThrowsRPCErrorAsync({ try await group.next() }) { error in
+      await XCTAssertThrowsRPCErrorAsync {
+        try await group.next()
+      } errorHandler: { error in
         XCTAssertEqual(error.code, .failedPrecondition)
       }
       group.cancelAll()
@@ -63,7 +65,9 @@ final class InProcessClientTransportTests: XCTestCase {
 
     client.close()
 
-    await XCTAssertThrowsRPCErrorAsync({ try await client.connect(lazily: false) }) { error in
+    await XCTAssertThrowsRPCErrorAsync {
+      try await client.connect(lazily: false)
+    } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
     }
   }
@@ -92,7 +96,9 @@ final class InProcessClientTransportTests: XCTestCase {
       try await group.next()
       group.cancelAll()
 
-      await XCTAssertThrowsRPCErrorAsync({ try await client.connect(lazily: false) }) { error in
+      await XCTAssertThrowsRPCErrorAsync {
+        try await client.connect(lazily: false)
+      } errorHandler: { error in
         XCTAssertEqual(error.code, .failedPrecondition)
       }
     }
@@ -171,7 +177,7 @@ final class InProcessClientTransportTests: XCTestCase {
       server: .init(),
       executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
     )
-    
+
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in
@@ -181,14 +187,14 @@ final class InProcessClientTransportTests: XCTestCase {
           client.close()
         }
       }
-      
+
       group.addTask {
         // Add a sleep to make sure connection happens after `withStream` has been called,
         // to test pending streams are handled correctly.
         try await Task.sleep(for: .milliseconds(100))
         try await client.connect(lazily: false)
       }
-      
+
       try await group.waitForAll()
     }
   }
@@ -208,9 +214,9 @@ final class InProcessClientTransportTests: XCTestCase {
 
     client.close()
 
-    await XCTAssertThrowsRPCErrorAsync({
+    await XCTAssertThrowsRPCErrorAsync {
       try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in }
-    }) { error in
+    } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
     }
   }

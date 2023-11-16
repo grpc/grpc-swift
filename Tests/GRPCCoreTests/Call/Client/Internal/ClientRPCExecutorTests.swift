@@ -149,7 +149,7 @@ final class ClientRPCExecutorTests: XCTestCase {
       transport: .throwsOnStreamCreation(code: .aborted),
       server: .failTest
     )
-      
+
     await XCTAssertThrowsRPCErrorAsync {
       try await tester.unary(
         request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])

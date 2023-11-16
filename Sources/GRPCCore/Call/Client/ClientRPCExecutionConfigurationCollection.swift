@@ -20,7 +20,10 @@ public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
   private let defaultConfiguration: ClientRPCExecutionConfiguration
 
   public init(
-    defaultConfiguration: ClientRPCExecutionConfiguration = ClientRPCExecutionConfiguration(executionPolicy: nil, timeout: nil)
+    defaultConfiguration: ClientRPCExecutionConfiguration = ClientRPCExecutionConfiguration(
+      executionPolicy: nil,
+      timeout: nil
+    )
   ) {
     self.elements = [:]
     self.defaultConfiguration = defaultConfiguration
@@ -35,7 +38,7 @@ public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
       serviceLevelDescriptor.method = ""
       return self.elements[serviceLevelDescriptor, default: self.defaultConfiguration]
     }
-    
+
     set {
       if descriptor.service.isEmpty {
         preconditionFailure("Method descriptor's service cannot be empty.")

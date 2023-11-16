@@ -38,10 +38,10 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
     )
     let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
     configurations[descriptor] = overrideConfiguration
-    
+
     XCTAssertEqual(configurations[descriptor], overrideConfiguration)
   }
-  
+
   func testGetConfigurationForUnknownMethodButServiceOverride() {
     let policy = HedgingPolicy(
       maximumAttempts: 10,
@@ -62,11 +62,11 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
     )
     let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
-    
+
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(configurations[secondDescriptor], overrideConfiguration)
   }
-  
+
   func testGetConfigurationForUnknownMethodDefaultValue() {
     let policy = HedgingPolicy(
       maximumAttempts: 10,
@@ -87,7 +87,7 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
     )
     let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
-    
+
     let secondDescriptor = MethodDescriptor(service: "test2", method: "second")
     XCTAssertEqual(configurations[secondDescriptor], defaultConfiguration)
   }

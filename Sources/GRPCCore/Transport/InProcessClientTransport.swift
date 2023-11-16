@@ -101,7 +101,7 @@ public struct InProcessClientTransport: ClientTransport {
         )
       }
     }
-    
+
     for await _ in stream {
       // This for-await loop will exit (and thus `connect(lazily:)` will return)
       // only when the task is cancelled, or when the stream's continuation is
@@ -132,7 +132,7 @@ public struct InProcessClientTransport: ClientTransport {
       }
     }
   }
-  
+
   private enum WithStreamResult {
     case success
     case pending(AsyncStream<Void>)
@@ -194,13 +194,15 @@ public struct InProcessClientTransport: ClientTransport {
         return .success(.pending(stream))
 
       case .closed:
-        return .failure(RPCError(
-          code: .failedPrecondition,
-          message: "The client transport is closed."
-        ))
+        return .failure(
+          RPCError(
+            code: .failedPrecondition,
+            message: "The client transport is closed."
+          )
+        )
       }
     }
-    
+
     let withStreamResult: WithStreamResult
     do {
       withStreamResult = try result.get()
@@ -209,7 +211,7 @@ public struct InProcessClientTransport: ClientTransport {
       clientStream.outbound.finish()
       throw error
     }
-    
+
     switch withStreamResult {
     case .success:
       ()
@@ -219,7 +221,7 @@ public struct InProcessClientTransport: ClientTransport {
         // client connects and this stream can be opened.
       }
       try Task.checkCancellation()
-      
+
       try self.state.withLockedValue { state in
         switch state {
         case .unconnected:
@@ -243,7 +245,7 @@ public struct InProcessClientTransport: ClientTransport {
         }
       }
     }
-    
+
     defer {
       self.state.withLockedValue { state in
         switch state {
