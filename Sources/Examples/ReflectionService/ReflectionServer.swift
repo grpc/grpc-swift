@@ -32,16 +32,8 @@ struct ReflectionServer: AsyncParsableCommand {
       let greeterURL = Bundle.module.url(
         forResource: "helloworld",
         withExtension: "grpc.reflection.txt"
-      )
-    else {
-      print("The resource could not be loaded.")
-      throw ExitCode.failure
-    }
-    guard
-      let echoURL = Bundle.module.url(
-        forResource: "echo",
-        withExtension: "grpc.reflection.txt"
-      )
+      ),
+      let echoURL = Bundle.module.url(forResource: "echo", withExtension: "grpc.reflection.txt")
     else {
       print("The resource could not be loaded.")
       throw ExitCode.failure

@@ -66,30 +66,9 @@ https://github.com/grpc/grpc-swift#getting-the-protoc-plugins.
 
 The command for generating the reflection data for the `Echo` service is similar.
 
-### Declare the generated files as resources
-
-Pass the name of the subfolder containing the generated files to the target's initializer in your package manifest,
-using the `copy(_:)` rule:
-
-```swift
-static let reflectionServer: Target = .executableTarget(
-  name: "ReflectionServer",
-  dependencies: [
-    .grpc,
-    .reflectionService,
-    .helloWorldModel,
-    .nioCore,
-    .nioPosix,
-    .argumentParser,
-    .echoModel,
-    .echoImplementation
-  ],
-  path: "Sources/Examples/ReflectionService",
-  resources: [
-    .copy("Generated")
-  ]
-)
-```
+You can use Swift Package Manager [resources][swiftpm-resources] to add the generated reflection data to your target. 
+In our example the reflection data is written into the "Generated" directory within the target 
+so we include the `.copy("Generated")` rule in our target's resource list.
 
 ### Instantiating the Reflection service 
 
@@ -102,19 +81,16 @@ reflection.
 
 ```swift
 // Getting the URLs of the files containing the reflection data.
-guard let greeterURL = Bundle.module.url(forResource: "helloworld", withExtension: "grpc.reflection.txt") else {
+guard
+  let greeterURL = Bundle.module.url(
+    forResource: "helloworld",
+    withExtension: "grpc.reflection.txt"
+  ),
+  let echoURL = Bundle.module.url(forResource: "echo", withExtension: "grpc.reflection.txt")
+else {
   print("The resource could not be loaded.")
   throw ExitCode.failure
 }
-guard let echoURL = Bundle.module.url(forResource: "echo", withExtension: "grpc.reflection.txt") else {
-  print("The resource could not be loaded.")
-  throw ExitCode.failure
-}
-
-let reflectionService = try ReflectionService(
-  reflectionDataFileURLs: [greeterURL, echoURL],
-  version: .v1
-)
 ```
 
 ### Running the server
@@ -206,3 +182,4 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [helloworld-proto]: ../../Examples/HelloWorld/Model/helloworld.proto
 [echo-proto]: ../../Examples/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
+[swiftpm-resources]: https://github.com/apple/swift-package-manager/blob/main/Documentation/PackageDescription.md#resource
