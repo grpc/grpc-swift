@@ -29,11 +29,9 @@ gRPC Swift supports both [v1][v1] and [v1alpha][v1alpha] of the reflection servi
 You can use the Reflection service by adding it in the providers when constructing your server.
 
 To initialise the Reflection service we will use 
-``GRPCReflectionService/ReflectionService/init(reflectionDataFilePaths:version:)``.
-It receives the paths to the files containing the reflection data of the proto files 
-describing the services of the server that we want to be discoverable through reflection
-and the version of the reflection service.
-
+``GRPCReflectionService/ReflectionService/init(reflectionDataFileURL:version:)``.
+It receives the URLs of the files containing the reflection data of the proto files 
+describing the services of the server and the version of the reflection service.
 
 ### Generating the reflection data
 
@@ -61,37 +59,59 @@ Let's break the command down:
 - The `grpc-swift_out` flag is used to set the path of the directory
   where the generated file will be located: `Sources/Examples/ReflectionService/Generated`.
 
-This command assumes that the `protoc-gen-grpc-swift` plugin is part of the $PATH environment variable.
+This command assumes that the `protoc-gen-grpc-swift` plugin is in your `$PATH` environment variable.
 You can learn how to get the plugin from this section of the `grpc-swift` README: 
 https://github.com/grpc/grpc-swift#getting-the-protoc-plugins.
 
 The command for generating the reflection data for the `Echo` service is similar.
 
+### Declare the generated files as resources
+
+Pass the name of the subfolder containing the generated files to the target's initializer in your package manifest,
+using the `copy(_:)` rule:
+
+```swift
+static let reflectionServer: Target = .executableTarget(
+  name: "ReflectionServer",
+  dependencies: [
+    .grpc,
+    .reflectionService,
+    .helloWorldModel,
+    .nioCore,
+    .nioPosix,
+    .argumentParser,
+    .echoModel,
+    .echoImplementation
+  ],
+  path: "Sources/Examples/ReflectionService",
+  resources: [
+    .copy("Generated")
+  ]
+)
+```
+
 ### Instantiating the Reflection service 
 
-To instantiate the `ReflectionService` you need to pass the file paths of
+To instantiate the `ReflectionService` you need to pass the URLs of the files containing 
 the generated reflection data and the version to use, in our case `.v1`.
 
-Depending on the version of [gRPCurl][grpcurl] you are using you might need to use the v1alpha proto instead.
+Depending on the version of [gRPCurl][grpcurl] you are using you might need to use the `.v1alpha` instead.
 Beginning with [gRPCurl v1.8.8][grpcurl-v188] it uses the [v1][v1] reflection. Earlier versions use [v1alpha][v1alpha]
 reflection.
 
 ```swift
-// Constructing the absolute paths to the files containing the reflection data
-// using their relative paths to #filePath.
-let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-let helloworldPath: String
-let echoPath: String
-#if os(Linux)
-helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path
-echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path
-#else
-helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path()
-echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path()
-#endif
+// Getting the URLs of the files containing the reflection data.
+guard let helloworldURL = Bundle.module.url(forResource: "Generated/helloworld", withExtension: "grpc.reflection.txt") else {
+  print("The resource could not be loaded.")
+  throw ExitCode.failure
+}
+guard let echoURL = Bundle.module.url(forResource: "Generated/echo", withExtension: "grpc.reflection.txt") else {
+  print("The resource could not be loaded.")
+  throw ExitCode.failure
+}
 
 let reflectionService = try ReflectionService(
-  reflectionDataFilePaths: [helloworldPath, echoPath],
+  reflectionDataFileURL: [helloworldURL, echoURL],
   version: .v1
 )
 ```

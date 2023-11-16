@@ -27,21 +27,28 @@ import SwiftProtobuf
 @main
 struct ReflectionServer: AsyncParsableCommand {
   func run() async throws {
-    // Constructing the absolute paths to the files containing the reflection data
-    // using their relative paths to #filePath.
-    let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-    let helloworldPath: String
-    let echoPath: String
-    #if os(Linux)
-    helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path
-    echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path
-    #else
-    helloworldPath = url.appendingPathComponent("Generated/helloworld.grpc.reflection.txt").path()
-    echoPath = url.appendingPathComponent("Generated/echo.grpc.reflection.txt").path()
-    #endif
+    // Getting the URLs of the files containing the reflection data.
+    guard
+      let helloworldURL = Bundle.module.url(
+        forResource: "Generated/helloworld",
+        withExtension: "grpc.reflection.txt"
+      )
+    else {
+      print("The resource could not be loaded.")
+      throw ExitCode.failure
+    }
+    guard
+      let echoURL = Bundle.module.url(
+        forResource: "Generated/echo",
+        withExtension: "grpc.reflection.txt"
+      )
+    else {
+      print("The resource could not be loaded.")
+      throw ExitCode.failure
+    }
 
     let reflectionService = try ReflectionService(
-      reflectionDataFilePaths: [helloworldPath, echoPath],
+      reflectionDataFileURL: [helloworldURL, echoURL],
       version: .v1
     )
 

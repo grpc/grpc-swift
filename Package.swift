@@ -473,9 +473,8 @@ extension Target {
       .echoImplementation
     ],
     path: "Sources/Examples/ReflectionService",
-    exclude: [
-      "Generated/helloworld.grpc.reflection.txt",
-      "Generated/echo.grpc.reflection.txt",
+    resources: [
+      .copy("Generated")
     ]
   )
 }
