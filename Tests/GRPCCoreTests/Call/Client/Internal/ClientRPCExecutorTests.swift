@@ -149,13 +149,13 @@ final class ClientRPCExecutorTests: XCTestCase {
       transport: .throwsOnStreamCreation(code: .aborted),
       server: .failTest
     )
-
-    await XCTAssertThrowsRPCErrorAsync({
+      
+    await XCTAssertThrowsRPCErrorAsync {
       try await tester.unary(
         request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
       ) { _ in }
-    }) {
-      XCTAssertEqual($0.code, .aborted)
+    } errorHandler: { error in
+      XCTAssertEqual(error.code, .aborted)
     }
 
     XCTAssertEqual(tester.clientStreamsOpened, 0)
@@ -169,14 +169,14 @@ final class ClientRPCExecutorTests: XCTestCase {
       server: .failTest
     )
 
-    await XCTAssertThrowsRPCErrorAsync({
+    await XCTAssertThrowsRPCErrorAsync {
       try await tester.clientStreaming(
         request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
           try await $0.write([1, 2, 3])
         }
       ) { _ in }
-    }) {
-      XCTAssertEqual($0.code, .aborted)
+    } errorHandler: { error in
+      XCTAssertEqual(error.code, .aborted)
     }
 
     XCTAssertEqual(tester.clientStreamsOpened, 0)

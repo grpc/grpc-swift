@@ -137,7 +137,9 @@ struct ClientRPCExecutorTestHarness {
         }
       }
 
-      try await self.clientTransport.connect(lazily: false)
+      group.addTask {
+        try await self.clientTransport.connect(lazily: false)
+      }
 
       let executionConfiguration: ClientRPCExecutionConfiguration
       if let configuration = configuration {

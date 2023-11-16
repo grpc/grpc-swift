@@ -15,29 +15,32 @@
  */
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct ClientRPCExecutionConfigurationCollection: Sendable {
+public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
   private var elements: [MethodDescriptor: ClientRPCExecutionConfiguration]
   private let defaultConfiguration: ClientRPCExecutionConfiguration
 
-  public init(defaultConfiguration: ClientRPCExecutionConfiguration) {
+  public init(
+    defaultConfiguration: ClientRPCExecutionConfiguration = ClientRPCExecutionConfiguration(executionPolicy: nil, timeout: nil)
+  ) {
     self.elements = [:]
     self.defaultConfiguration = defaultConfiguration
   }
 
-  public mutating func addConfiguration(
-    _ configuration: ClientRPCExecutionConfiguration,
-    forMethod descriptor: MethodDescriptor
-  ) {
-    self.elements[descriptor] = configuration
-  }
-
-  public func getConfiguration(
-    forMethod descriptor: MethodDescriptor
-  ) -> ClientRPCExecutionConfiguration {
-    self.elements[descriptor, default: self.defaultConfiguration]
-  }
-
   public subscript(_ descriptor: MethodDescriptor) -> ClientRPCExecutionConfiguration {
-    self.getConfiguration(forMethod: descriptor)
+    get {
+      if let methodLevelOverride = self.elements[descriptor] {
+        return methodLevelOverride
+      }
+      var serviceLevelDescriptor = descriptor
+      serviceLevelDescriptor.method = ""
+      return self.elements[serviceLevelDescriptor, default: self.defaultConfiguration]
+    }
+    
+    set {
+      if descriptor.service.isEmpty {
+        preconditionFailure("Method descriptor's service cannot be empty.")
+      }
+      self.elements[descriptor] = newValue
+    }
   }
 }

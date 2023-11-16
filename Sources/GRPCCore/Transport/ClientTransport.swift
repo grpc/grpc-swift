@@ -68,7 +68,7 @@ public protocol ClientTransport: Sendable {
   /// - Returns: Whatever value was returned from `closure`.
   func withStream<T>(
     descriptor: MethodDescriptor,
-    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T
 
   /// Returns the execution configuration for a given method.
