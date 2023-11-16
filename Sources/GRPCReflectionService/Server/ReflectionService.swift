@@ -41,7 +41,7 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// - Parameter version: The version of the reflection service to create.
   ///
   /// - Throws: When a file can't be read from disk or parsed.
-  public convenience init(reflectionDataFileURL fileURLs: [URL], version: Version) throws {
+  public convenience init(reflectionDataFileURLs fileURLs: [URL], version: Version) throws {
     let filePaths: [String]
     #if os(Linux)
     filePaths = fileURLs.map { $0.path }

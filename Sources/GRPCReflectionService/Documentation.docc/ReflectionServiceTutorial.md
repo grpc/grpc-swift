@@ -26,10 +26,10 @@ gRPC Swift supports both [v1][v1] and [v1alpha][v1alpha] of the reflection servi
 
 ## Adding the Reflection service to a server
 
-You can use the Reflection service by adding it in the providers when constructing your server.
+You can use the Reflection service by adding it as a provider when constructing your server.
 
 To initialise the Reflection service we will use 
-``GRPCReflectionService/ReflectionService/init(reflectionDataFileURL:version:)``.
+``GRPCReflectionService/ReflectionService/init(reflectionDataFileURLs:version:)``.
 It receives the URLs of the files containing the reflection data of the proto files 
 describing the services of the server and the version of the reflection service.
 
@@ -55,7 +55,8 @@ Let's break the command down:
   to the `.proto` file to generate reflection data 
   for: [`Sources/Examples/HelloWorld/Model/helloworld.proto`][helloworld-proto].
 - The `proto_path` flag is the path to search for imports: `Sources/Examples/HelloWorld/Model`.
-- To generate only the reflection data set: `Client=false,Server=false,ReflectionData=true`.
+- The 'grpc-swift_opt' flag allows us to list options for the Swift generator.
+  To generate only the reflection data set: `Client=false,Server=false,ReflectionData=true`.
 - The `grpc-swift_out` flag is used to set the path of the directory
   where the generated file will be located: `Sources/Examples/ReflectionService/Generated`.
 
@@ -101,7 +102,7 @@ reflection.
 
 ```swift
 // Getting the URLs of the files containing the reflection data.
-guard let helloworldURL = Bundle.module.url(forResource: "helloworld", withExtension: "grpc.reflection.txt") else {
+guard let greeterURL = Bundle.module.url(forResource: "helloworld", withExtension: "grpc.reflection.txt") else {
   print("The resource could not be loaded.")
   throw ExitCode.failure
 }
@@ -111,7 +112,7 @@ guard let echoURL = Bundle.module.url(forResource: "echo", withExtension: "grpc.
 }
 
 let reflectionService = try ReflectionService(
-  reflectionDataFileURL: [helloworldURL, echoURL],
+  reflectionDataFileURLs: [greeterURL, echoURL],
   version: .v1
 )
 ```

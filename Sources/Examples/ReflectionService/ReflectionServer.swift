@@ -29,7 +29,7 @@ struct ReflectionServer: AsyncParsableCommand {
   func run() async throws {
     // Getting the URLs of the files containing the reflection data.
     guard
-      let helloworldURL = Bundle.module.url(
+      let greeterURL = Bundle.module.url(
         forResource: "helloworld",
         withExtension: "grpc.reflection.txt"
       )
@@ -48,7 +48,7 @@ struct ReflectionServer: AsyncParsableCommand {
     }
 
     let reflectionService = try ReflectionService(
-      reflectionDataFileURL: [helloworldURL, echoURL],
+      reflectionDataFileURLs: [greeterURL, echoURL],
       version: .v1
     )
 
