@@ -15,6 +15,15 @@
  */
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+
+/// A collection of ``ClientRPCExecutionConfiguration``s, mapped to specific methods or services.
+///
+/// When creating a new instance, you must provide a default configuration to be used when getting
+/// a configuration for a method that has not been given a specific override.
+/// Use ``setDefaultConfiguration(_:forService:)`` to set a specific override for a whole
+/// service.
+///
+/// Use the subscript to get and set configurations for methods.
 public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
   private var elements: [MethodDescriptor: ClientRPCExecutionConfiguration]
   private let defaultConfiguration: ClientRPCExecutionConfiguration
@@ -40,10 +49,28 @@ public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
     }
 
     set {
-      if descriptor.service.isEmpty {
-        preconditionFailure("Method descriptor's service cannot be empty.")
-      }
+      precondition(
+        !descriptor.service.isEmpty,
+        "Method descriptor's service cannot be empty."
+      )
+      
       self.elements[descriptor] = newValue
     }
+  }
+  
+  /// Set a default configuration for a service.
+  ///
+  /// If getting a configuration for a method that's part of a service, and the method itself doesn't have an
+  /// override, then this configuration will be used instead of the default configuration passed when creating
+  /// this instance of ``ClientRPCExecutionConfigurationCollection``.
+  ///
+  /// - Parameters:
+  ///   - configuration: The default configuration for the service.
+  ///   - service: The name of the service for which this override applies.
+  mutating public func setDefaultConfiguration(
+    _ configuration: ClientRPCExecutionConfiguration,
+    forService service: String
+  ) {
+    self[MethodDescriptor(service: service, method: "")] = configuration
   }
 }
