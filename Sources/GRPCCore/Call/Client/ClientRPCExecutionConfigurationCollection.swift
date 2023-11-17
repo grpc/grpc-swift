@@ -53,11 +53,11 @@ public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
         !descriptor.service.isEmpty,
         "Method descriptor's service cannot be empty."
       )
-      
+
       self.elements[descriptor] = newValue
     }
   }
-  
+
   /// Set a default configuration for a service.
   ///
   /// If getting a configuration for a method that's part of a service, and the method itself doesn't have an

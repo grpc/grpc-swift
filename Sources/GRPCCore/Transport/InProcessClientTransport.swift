@@ -39,43 +39,53 @@ public struct InProcessClientTransport: ClientTransport {
     struct UnconnectedState {
       var serverTransport: InProcessServerTransport
       var pendingStreams: [AsyncStream<Void>.Continuation]
-      
+
       init(serverTransport: InProcessServerTransport) {
         self.serverTransport = serverTransport
         self.pendingStreams = []
       }
     }
-    
+
     struct ConnectedState {
       var serverTransport: InProcessServerTransport
-      var openStreams: Int
+      var nextStreamID: Int
+      var openStreams:
+        [Int: (
+          RPCStream<Inbound, Outbound>,
+          RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+        )]
       var signalEndContinuation: AsyncStream<Void>.Continuation
-      
+
       init(
         fromUnconnected state: UnconnectedState,
         signalEndContinuation: AsyncStream<Void>.Continuation
       ) {
         self.serverTransport = state.serverTransport
-        self.openStreams = 0
+        self.nextStreamID = 0
+        self.openStreams = [:]
         self.signalEndContinuation = signalEndContinuation
       }
     }
-    
+
     struct ClosedState {
-      var openStreams: Int
+      var openStreams:
+        [Int: (
+          RPCStream<Inbound, Outbound>,
+          RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+        )]
       var signalEndContinuation: AsyncStream<Void>.Continuation?
-      
+
       init() {
-        self.openStreams = 0
+        self.openStreams = [:]
         self.signalEndContinuation = nil
       }
-      
+
       init(fromConnected state: ConnectedState) {
         self.openStreams = state.openStreams
         self.signalEndContinuation = state.signalEndContinuation
       }
     }
-    
+
     case unconnected(UnconnectedState)
     case connected(ConnectedState)
     case closed(ClosedState)
@@ -115,10 +125,12 @@ public struct InProcessClientTransport: ClientTransport {
     try self.state.withLockedValue { state in
       switch state {
       case .unconnected(let unconnectedState):
-        state = .connected(.init(
-          fromUnconnected: unconnectedState,
-          signalEndContinuation: continuation
-        ))
+        state = .connected(
+          .init(
+            fromUnconnected: unconnectedState,
+            signalEndContinuation: continuation
+          )
+        )
         for pendingStream in unconnectedState.pendingStreams {
           pendingStream.finish()
         }
@@ -142,6 +154,26 @@ public struct InProcessClientTransport: ClientTransport {
       // The continuation will be finished when `close()` is called and there
       // are no more open streams.
     }
+
+    // If at this point there are any open streams, it's because Cancellation
+    // occurred and all open streams must be closed at this point.
+    self.state.withLockedValue { state in
+      switch state {
+      case .unconnected:
+        ()
+      case .connected(let connectedState):
+        state = .closed(.init())
+        for (clientStream, serverStream) in connectedState.openStreams.values {
+          clientStream.outbound.finish()
+          serverStream.outbound.finish()
+        }
+      case .closed(let closedState):
+        for (clientStream, serverStream) in closedState.openStreams.values {
+          clientStream.outbound.finish()
+          serverStream.outbound.finish()
+        }
+      }
+    }
   }
 
   /// Signal to the transport that no new streams may be created.
@@ -156,7 +188,7 @@ public struct InProcessClientTransport: ClientTransport {
       case .unconnected:
         state = .closed(.init())
       case .connected(let connectedState):
-        if connectedState.openStreams == 0 {
+        if connectedState.openStreams.count == 0 {
           connectedState.signalEndContinuation.finish()
           state = .closed(.init())
         } else {
@@ -212,7 +244,8 @@ public struct InProcessClientTransport: ClientTransport {
       case .connected(var connectedState):
         do {
           try connectedState.serverTransport.acceptStream(serverStream)
-          connectedState.openStreams += 1
+          connectedState.openStreams[connectedState.nextStreamID] = (clientStream, serverStream)
+          connectedState.nextStreamID += 1
           state = .connected(connectedState)
         } catch let acceptStreamError as RPCError {
           return .failure(acceptStreamError)
@@ -263,7 +296,8 @@ public struct InProcessClientTransport: ClientTransport {
         case .connected(var connectedState):
           do {
             try connectedState.serverTransport.acceptStream(serverStream)
-            connectedState.openStreams += 1
+            connectedState.openStreams[connectedState.nextStreamID] = (clientStream, serverStream)
+            connectedState.nextStreamID += 1
             state = .connected(connectedState)
           } catch let acceptStreamError as RPCError {
             throw acceptStreamError
@@ -290,10 +324,10 @@ public struct InProcessClientTransport: ClientTransport {
         case .unconnected:
           fatalError("Invalid state")
         case .connected(var connectedState):
-          connectedState.openStreams -= 1
+          connectedState.openStreams.removeValue(forKey: connectedState.nextStreamID - 1)
           state = .connected(connectedState)
         case .closed(let closedState):
-          if closedState.openStreams == 1 {
+          if closedState.openStreams.count == 1 {
             // This was the last open stream: signal the closure of the client.
             closedState.signalEndContinuation?.finish()
           }
