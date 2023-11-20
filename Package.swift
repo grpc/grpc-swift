@@ -460,6 +460,24 @@ extension Target {
       "v1Alpha/reflection-v1alpha.proto"
     ]
   )
+  
+  static let reflectionServer: Target = .executableTarget(
+    name: "ReflectionServer",
+    dependencies: [
+      .grpc,
+      .reflectionService,
+      .helloWorldModel,
+      .nioCore,
+      .nioPosix,
+      .argumentParser,
+      .echoModel,
+      .echoImplementation
+    ],
+    path: "Sources/Examples/ReflectionService",
+    resources: [
+      .copy("Generated")
+    ]
+  )
 }
 
 // MARK: - Products
@@ -531,6 +549,7 @@ let package = Package(
     .routeGuideClient,
     .routeGuideServer,
     .packetCapture,
+    .reflectionServer,
 
     // v2
     .grpcCore,
