@@ -210,6 +210,36 @@ final class InProcessClientTransportTests: XCTestCase {
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
     XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
   }
+  
+  func testOpenMultipleStreamsThenClose() async throws {
+    let server = InProcessServerTransport()
+    let client = makeClient(server: server)
+
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try await client.connect(lazily: false)
+      }
+
+      group.addTask {
+        try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
+          try await Task.sleep(for: .milliseconds(100))
+        }
+      }
+      
+      group.addTask {
+        try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
+          try await Task.sleep(for: .milliseconds(100))
+        }
+      }
+
+      group.addTask {
+        try await Task.sleep(for: .milliseconds(50))
+        client.close()
+      }
+
+      try await group.next()
+    }
+  }
 
   func makeClient(
     configuration: ClientRPCExecutionConfiguration? = nil,

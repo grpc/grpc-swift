@@ -156,7 +156,7 @@ public struct InProcessClientTransport: ClientTransport {
     }
 
     // If at this point there are any open streams, it's because Cancellation
-    // occurred and all open streams must be closed at this point.
+    // occurred and all open streams must now be closed.
     let openStreams = self.state.withLockedValue { state in
       switch state {
       case .unconnected:
@@ -307,8 +307,10 @@ public struct InProcessClientTransport: ClientTransport {
         case .connected(var connectedState):
           connectedState.openStreams.removeValue(forKey: streamID)
           state = .connected(connectedState)
-        case .closed(let closedState):
-          if closedState.openStreams.count == 1 {
+        case .closed(var closedState):
+          closedState.openStreams.removeValue(forKey: streamID)
+          state = .closed(closedState)
+          if closedState.openStreams.isEmpty {
             // This was the last open stream: signal the closure of the client.
             return closedState.signalEndContinuation
           }
