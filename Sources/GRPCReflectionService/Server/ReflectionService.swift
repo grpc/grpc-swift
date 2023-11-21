@@ -35,6 +35,29 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
   ///
   /// You can generate serialized reflection data using the `protoc-gen-grpc-swift` plugin for `protoc` by
+  /// setting the `ReflectionData` option  to `True`.
+  ///
+  /// - Parameter fileURLs: The URLs of the files containing serialized reflection data.
+  /// - Parameter version: The version of the reflection service to create.
+  ///
+  /// - Throws: When a file can't be read from disk or parsed.
+  public convenience init(reflectionDataFileURLs fileURLs: [URL], version: Version) throws {
+    let filePaths: [String]
+    #if os(Linux)
+    filePaths = fileURLs.map { $0.path }
+    #else
+    if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+      filePaths = fileURLs.map { $0.path() }
+    } else {
+      filePaths = fileURLs.map { $0.path }
+    }
+    #endif
+    try self.init(reflectionDataFilePaths: filePaths, version: version)
+  }
+
+  /// Creates a `ReflectionService` by loading serialized reflection data created by `protoc-gen-grpc-swift`.
+  ///
+  /// You can generate serialized reflection data using the `protoc-gen-grpc-swift` plugin for `protoc` by
   /// setting the `ReflectionData` option  to `True`. The paths provided should be absolute or relative to the
   /// current working directory.
   ///
@@ -42,7 +65,7 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// - Parameter version: The version of the reflection service to create.
   ///
   /// - Throws: When a file can't be read from disk or parsed.
-  public init(serializedFileDescriptorProtoFilePaths filePaths: [String], version: Version) throws {
+  public init(reflectionDataFilePaths filePaths: [String], version: Version) throws {
     let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
       atPaths: filePaths
     )
