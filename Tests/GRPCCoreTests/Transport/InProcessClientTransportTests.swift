@@ -210,7 +210,7 @@ final class InProcessClientTransportTests: XCTestCase {
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
     XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
   }
-  
+
   func testOpenMultipleStreamsThenClose() async throws {
     let server = InProcessServerTransport()
     let client = makeClient(server: server)
@@ -225,7 +225,7 @@ final class InProcessClientTransportTests: XCTestCase {
           try await Task.sleep(for: .milliseconds(100))
         }
       }
-      
+
       group.addTask {
         try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
           try await Task.sleep(for: .milliseconds(100))
