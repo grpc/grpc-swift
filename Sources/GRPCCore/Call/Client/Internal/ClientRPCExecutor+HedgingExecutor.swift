@@ -328,17 +328,26 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
 
       group.addTask {
-        let response = await ClientRPCExecutor.unsafeExecute(
-          request: request,
-          method: method,
-          attempt: attempt,
-          serializer: self.serializer,
-          deserializer: self.deserializer,
-          interceptors: self.interceptors,
-          streamProcessor: processor
-        )
-
-        return .response(response)
+        do {
+          let response = try await self.transport.withStream(descriptor: method) { stream in
+            await ClientRPCExecutor.unsafeExecute(
+              request: request,
+              method: method,
+              attempt: attempt,
+              serializer: self.serializer,
+              deserializer: self.deserializer,
+              interceptors: self.interceptors,
+              streamProcessor: processor,
+              stream: stream
+            )
+          }
+          return .response(response)
+        } catch let error as RPCError {
+          return .response(ClientResponse.Stream(error: error))
+        } catch {
+          let error = RPCError(code: .unknown, message: "Can't open stream.", cause: error)
+          return .response(ClientResponse.Stream(error: error))
+        }
       }
 
       for await next in group {
