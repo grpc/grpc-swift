@@ -81,7 +81,7 @@ extension ClientRPCExecutor.HedgingExecutor {
     // responsible for tracking the responses from the server, potentially using one and cancelling
     // all other in flight attempts. Each attempt is started at a fixed interval unless the server
     // explicitly overrides the period using "pushback".
-    let result = await withTaskGroup(of: _HedgeTaskResult<R>.self) { group in
+    let result = await withTaskGroup(of: _HedgingTaskResult<R>.self) { group in
       if let timeout = self.timeout {
         group.addTask {
           let result = await Result {
@@ -98,7 +98,7 @@ extension ClientRPCExecutor.HedgingExecutor {
           try await request.producer(RPCWriter(wrapping: broadcast.continuation))
         }
         broadcast.continuation.finish()
-        return .processedRequest(result)
+        return .finishedRequest(result)
       }
 
       group.addTask {
@@ -106,13 +106,13 @@ extension ClientRPCExecutor.HedgingExecutor {
           try await writer.write(contentsOf: broadcast.stream)
         }
 
-        let result = await self._execute(
+        let result = await self.executeAttempt(
           request: replayableRequest,
           method: method,
           responseHandler: responseHandler
         )
 
-        return .workCompleted(result)
+        return .rpcHandled(result)
       }
 
       for await event in group {
@@ -125,7 +125,7 @@ extension ClientRPCExecutor.HedgingExecutor {
             ()  // Cancelled, ignore and keep looping.
           }
 
-        case .processedRequest(let result):
+        case .finishedRequest(let result):
           switch result {
           case .success:
             ()
@@ -133,7 +133,7 @@ extension ClientRPCExecutor.HedgingExecutor {
             group.cancelAll()
           }
 
-        case .workCompleted(let result):
+        case .rpcHandled(let result):
           group.cancelAll()
           return result
         }
@@ -146,143 +146,336 @@ extension ClientRPCExecutor.HedgingExecutor {
   }
 
   @inlinable
-  func _execute<R>(
+  func executeAttempt<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> Result<R, Error> {
-    return await withTaskGroup(of: Void.self, returning: Result<R, Error>.self) { group in
-      var state = HedgingStateMachine(policy: self.policy, throttle: self.transport.retryThrottle)
-      let event = AsyncStream.makeStream(of: _HedgingEvent<Output>.self)
-      // Queue up the first attempt.
-      event.continuation.yield(.start)
+    await withTaskGroup(
+      of: _HedgingAttemptTaskResult<R, Output>.self,
+      returning: Result<R, Error>.self
+    ) { group in
+      // The strategy here is to have two types of task running in the group:
+      // - To execute an RPC attempt.
+      // - To wait some time before starting the next attempt.
+      //
+      // As multiple attempts run concurrently, each attempt shares a broadcast sequence.
+      // When an attempt receives a usable response it will yield its attempt number into the
+      // sequence. Each attempt subgroup will also consume the sequence. If an attempt reads a
+      // value which is different to its attempt number then it will cancel itself. Each attempt
+      // returns back a handled response or the failed response (in case no attempts are
+      // successful). Failed responses may also impact when the next attempt is executed via
+      // server pushback.
+      let picker = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 2)
 
-      var lastResponse: ClientResponse.Stream<Output>?
+      // There's a potential race with attempts identifying that they are 'chosen'. Two attempts
+      // could succeed at the same time but, only one can yield first, the second wouldn't be aware
+      // of this. To avoid this each attempt goes via a state check before yielding to the sequence
+      // ensuring that only one response is used. (If this wasn't the case the response handler
+      // could be invoked more than once.)
+      let state = LockedValueBox(State(policy: self.policy))
 
-      for await hedgingEvent in event.stream {
-        switch hedgingEvent {
-        case .start:
-          switch state.startNext() {
-          case .abort(let scheduled):
-            event.continuation.finish()
-            group.cancelAll()
-            _ = await scheduled?.cancel()
-            break
+      // There's always a first attempt, safe to '!'.
+      let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() })!
 
-          case .startAttempt(let attempt, let delay):
-            if let delay = delay {
-              let scheduled = HedgingStateMachine.ScheduledAttempt(after: delay) {
-                event.continuation.yield(.start)
+      group.addTask {
+        let result = await self._startAttempt(
+          request: request,
+          method: method,
+          attempt: attempt,
+          state: state,
+          picker: picker,
+          responseHandler: responseHandler
+        )
+
+        return .attemptCompleted(result)
+      }
+
+      // Schedule the second attempt.
+      var nextScheduledAttempt = ScheduledState()
+      if scheduleNext {
+        nextScheduledAttempt.schedule(in: &group, pushback: false, delay: self.policy.hedgingDelay)
+      }
+
+      // Stop the most recent unusable response in case no response succeeds.
+      var unusableResponse: ClientResponse.Stream<Output>?
+
+      while let next = await group.next() {
+        switch next {
+        case .scheduledAttemptFired(let outcome):
+          switch outcome {
+          case .ran:
+            // Start a new attempt. We go via the state machine because it's possible that we a
+            // successful response was just received and we can a valid response.
+            if let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() }) {
+              group.addTask {
+                let result = await self._startAttempt(
+                  request: request,
+                  method: method,
+                  attempt: attempt,
+                  state: state,
+                  picker: picker,
+                  responseHandler: responseHandler
+                )
+                return .attemptCompleted(result)
               }
-              state.setNextHedgeDelayTimer(scheduled)
+
+              // Schedule the next attempt.
+              if scheduleNext {
+                nextScheduledAttempt.schedule(
+                  in: &group,
+                  pushback: false,
+                  delay: self.policy.hedgingDelay
+                )
+              }
             }
 
-            group.addTask {
-              // Add a hedging attempt to process.
-              let processor = ClientStreamExecutor(transport: self.transport)
-              let processorTask = Task { await processor.run() }
-              let response = await ClientRPCExecutor.unsafeExecute(
-                request: request,
-                method: method,
-                attempt: attempt,
-                serializer: self.serializer,
-                deserializer: self.deserializer,
-                interceptors: self.interceptors,
-                streamProcessor: processor
-              )
-
-              switch event.continuation.yield(.receivedResponse(response, processorTask)) {
-              case .enqueued:
-                ()
-              case .dropped, .terminated:
-                fallthrough
-              @unknown default:
-                processorTask.cancel()
-                _ = await processorTask.value
-              }
-            }
-
-          case .none:
-            ()
+          case .cancelled:
+            // Cancelling also resets the state.
+            nextScheduledAttempt.cancel()
           }
 
-        case .receivedResponse(let response, let processor):
-          switch state.receivedResponse(response.accepted.map { _ in }) {
-          case .scheduleNextAttempt(let delay, let existing):
-            // Stash the response in case we need it later.
-            lastResponse = response
+        case .attemptCompleted(let outcome):
+          switch outcome {
+          case .usableResponse(let response):
+            // Note: we don't need to cancel other in-flight requests; they will communicate
+            // between themselves when one of them is chosen.
+            nextScheduledAttempt.cancel()
+            return response
 
-            // Cancel and wait for the processor to finish.
-            processor.cancel()
-            _ = await processor.value
+          case .unusableResponse(let response, let pushback):
+            // Stash the unusable response.
+            unusableResponse = response
 
-            let shouldSchedule = await existing?.cancel() ?? true
-            guard shouldSchedule else {
-              continue
-            }
-
-            if let delay = delay {
-              let scheduled = HedgingStateMachine.ScheduledAttempt(after: delay) {
-                event.continuation.yield(.start)
-              }
-              state.setNextHedgeDelayTimer(scheduled)
-            } else {
-              event.continuation.yield(.start)
-            }
-
-          case .use(let scheduled):
-            event.continuation.finish()
-            // Cancel the group and the next scheduled attempt.
-            group.cancelAll()
-            // Cancel any other requests.
-            _ = await scheduled?.cancel()
-
-            // Now handle the response.
-            let result = await Result {
-              try await responseHandler(response)
-            }
-
-            // The response has completed, so cancel the processor now.
-            processor.cancel()
-            _ = await processor.value
-
-            return result
-
-          case .none:
-            ()
-          }
-
-        case .timedOut:
-          group.cancelAll()
-          switch state.cancel() {
-          case .cancel(let scheduled):
-            _ = await scheduled.cancel()
-          case .none:
-            ()
-          }
-
-        case .processedRequest(let result):
-          switch result {
-          case .success:
-            ()
-          case .failure:
-            group.cancelAll()
-            switch state.cancel() {
-            case .cancel(let scheduled):
-              _ = await scheduled.cancel()
+            switch pushback {
             case .none:
-              ()
+              // If the handle is for a pushback then don't cancel it or schedule a new timer.
+              if nextScheduledAttempt.hasPushbackHandle {
+                continue
+              }
+
+              nextScheduledAttempt.cancel()
+              if let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() }) {
+                group.addTask {
+                  let result = await self._startAttempt(
+                    request: request,
+                    method: method,
+                    attempt: attempt,
+                    state: state,
+                    picker: picker,
+                    responseHandler: responseHandler
+                  )
+                  return .attemptCompleted(result)
+                }
+
+                // Schedule the next retry.
+                if scheduleNext {
+                  nextScheduledAttempt.schedule(
+                    in: &group,
+                    pushback: true,
+                    delay: self.policy.hedgingDelay
+                  )
+                }
+              }
+
+            case .retryAfter(let delay):
+              nextScheduledAttempt.schedule(in: &group, pushback: true, delay: delay)
+
+            case .stopRetrying:
+              // Stop any new attempts from happening. Let any existing attempts play out.
+              nextScheduledAttempt.cancel()
             }
           }
         }
       }
 
-      if let lastResponse = lastResponse {
-        return await Result {
-          try await responseHandler(lastResponse)
+      // The group always has a task which returns a response. If it's an acceptable response it
+      // will be processed and returned in the preceding while loop, this path is therefore only
+      // reachable if there was an unusable response so the force unwrap is safe.
+      return await Result {
+        try await responseHandler(unusableResponse!)
+      }
+    }
+  }
+
+  @inlinable
+  func _startAttempt<R>(
+    request: ClientRequest.Stream<Input>,
+    method: MethodDescriptor,
+    attempt: Int,
+    state: LockedValueBox<State>,
+    picker: (stream: BroadcastAsyncSequence<Int>, continuation: BroadcastAsyncSequence<Int>.Source),
+    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+  ) async -> _HedgingAttemptTaskResult<R, Output>.AttemptResult {
+    return await withTaskGroup(of: _HedgingAttemptSubtaskResult<Output>.self) { group in
+      group.addTask {
+        do {
+          // The picker stream will have at most one element.
+          for try await selectedAttempt in picker.stream {
+            return .attemptPicked(selectedAttempt == attempt)
+          }
+          return .attemptPicked(false)
+        } catch {
+          return .attemptPicked(false)
         }
+      }
+
+      let processor = ClientStreamExecutor(transport: self.transport)
+
+      group.addTask {
+        await processor.run()
+        return .processorFinished
+      }
+
+      group.addTask {
+        let response = await ClientRPCExecutor.unsafeExecute(
+          request: request,
+          method: method,
+          attempt: attempt,
+          serializer: self.serializer,
+          deserializer: self.deserializer,
+          interceptors: self.interceptors,
+          streamProcessor: processor
+        )
+
+        return .response(response)
+      }
+
+      for await next in group {
+        switch next {
+        case .attemptPicked(let wasPicked):
+          if !wasPicked {
+            group.cancelAll()
+          }
+
+        case .response(let response):
+          switch response.accepted {
+          case .success:
+            self.transport.retryThrottle.recordSuccess()
+
+            if state.withLockedValue({ $0.receivedUsableResponse() }) {
+              try? await picker.continuation.write(attempt)
+              picker.continuation.finish()
+              let result = await Result { try await responseHandler(response) }
+              return .usableResponse(result)
+            } else {
+              // A different attempt succeeded before we were cancelled. Report this as unusable.
+              return .unusableResponse(response, .none)
+            }
+
+          case .failure(let error):
+            group.cancelAll()
+
+            if self.policy.nonFatalStatusCodes.contains(Status.Code(error.code)) {
+              // The response failed and the status code is non-fatal, we can make another attempt.
+              self.transport.retryThrottle.recordFailure()
+              return .unusableResponse(response, error.metadata.retryPushback)
+            } else {
+              // A fatal error code counts as a success to the throttle.
+              self.transport.retryThrottle.recordSuccess()
+
+              if state.withLockedValue({ $0.receivedUsableResponse() }) {
+                try! await picker.continuation.write(attempt)
+                picker.continuation.finish()
+                let result = await Result { try await responseHandler(response) }
+                return .usableResponse(result)
+              } else {
+                // A different attempt succeeded before we were cancelled. Report this as unusable.
+                return .unusableResponse(response, .none)
+              }
+            }
+          }
+
+        case .processorFinished:
+          // Processor finished, wait for the response outcome.
+          ()
+        }
+      }
+
+      // There's always a task to return a `.response` which we use as a signal to return from
+      // the task group in the preceding code. This is therefore unreachable.
+      fatalError("Internal inconsistency")
+    }
+  }
+
+  @usableFromInline
+  struct State {
+    @usableFromInline
+    let _maximumAttempts: Int
+    @usableFromInline
+    private(set) var attempt: Int
+    @usableFromInline
+    private(set) var hasUsableResponse: Bool
+
+    @inlinable
+    init(policy: HedgingPolicy) {
+      self._maximumAttempts = policy.maximumAttempts
+      self.attempt = 1
+      self.hasUsableResponse = false
+    }
+
+    @inlinable
+    mutating func receivedUsableResponse() -> Bool {
+      if self.hasUsableResponse {
+        return false
       } else {
-        return .failure(CancellationError())
+        self.hasUsableResponse = true
+        return true
+      }
+    }
+
+    @inlinable
+    mutating func nextAttemptNumber() -> (Int, Bool)? {
+      if self.hasUsableResponse || self.attempt > self._maximumAttempts {
+        return nil
+      } else {
+        let attempt = self.attempt
+        self.attempt += 1
+        return (attempt, self.attempt <= self._maximumAttempts)
+      }
+    }
+  }
+
+  @usableFromInline
+  struct ScheduledState {
+    @usableFromInline
+    var _handle: CancellableTaskHandle?
+    @usableFromInline
+    var _isPushback: Bool
+
+    @inlinable
+    var hasPushbackHandle: Bool {
+      self._handle != nil && self._isPushback
+    }
+
+    @inlinable
+    init() {
+      self._handle = nil
+      self._isPushback = false
+    }
+
+    @inlinable
+    mutating func cancel() {
+      self._handle?.cancel()
+      self._handle = nil
+      self._isPushback = false
+    }
+
+    @inlinable
+    mutating func schedule<R>(
+      in group: inout TaskGroup<_HedgingAttemptTaskResult<R, Output>>,
+      pushback: Bool,
+      delay: Duration
+    ) {
+      self._handle?.cancel()
+      self._isPushback = pushback
+      self._handle = group.addCancellableTask {
+        do {
+          try await Task.sleep(for: delay, clock: .continuous)
+          return .scheduledAttemptFired(.ran)
+        } catch {
+          return .scheduledAttemptFired(.cancelled)
+        }
       }
     }
   }
@@ -290,210 +483,35 @@ extension ClientRPCExecutor.HedgingExecutor {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
-struct HedgingStateMachine {
-  /// The policy used for hedging this request.
-  @usableFromInline
-  let policy: HedgingPolicy
-  /// The current attempt.
-  @usableFromInline
-  var attempt = 1
-  /// The number of inflight requests.
-  @usableFromInline
-  var outstanding = 0
-  /// Retry throttle.
-  @usableFromInline
-  let throttle: RetryThrottle
-  /// The next scheduled attempt.
-  @usableFromInline
-  var nextAttempt: ScheduledAttempt?
-
-  @usableFromInline
-  struct ScheduledAttempt {
-    @usableFromInline
-    let task: Task<Void, Error>
-
-    @inlinable
-    init(after delay: Duration, _ body: @Sendable @escaping () -> Void) {
-      self.task = Task {
-        try await Task.sleep(for: delay, clock: .continuous)
-        body()
-      }
-    }
-
-    @inlinable
-    func cancel() async -> Bool {
-      self.task.cancel()
-      switch await self.task.result {
-      case .success:
-        return false
-      case .failure:
-        return true
-      }
-    }
-  }
-
-  @inlinable
-  init(policy: HedgingPolicy, throttle: RetryThrottle) {
-    self.policy = policy
-    self.throttle = throttle
-  }
-
-  @usableFromInline
-  enum OnResponse {
-    case none
-    case use(cancel: ScheduledAttempt?)
-    case scheduleNextAttempt(Duration?, cancel: ScheduledAttempt?)
-  }
-
-  @inlinable
-  mutating func receivedResponse(_ result: Result<Void, RPCError>) -> OnResponse {
-    self.outstanding &-= 1
-    switch result {
-    case .success:
-      return self.receivedOKResponse()
-    case .failure(let error):
-      return self.receivedErrorResponse(error)
-    }
-  }
-
-  @inlinable
-  mutating func receivedOKResponse() -> OnResponse {
-    self.throttle.recordSuccess()
-    return .use(cancel: self.nextAttempt.take())
-  }
-
-  @inlinable
-  mutating func receivedErrorResponse(_ error: RPCError) -> OnResponse {
-    let code = Status.Code(error.code)
-    let isNonFatal = self.policy.nonFatalStatusCodes.contains(code)
-
-    guard isNonFatal else {
-      // Fatal error code. Use the response.
-      self.throttle.recordSuccess()
-      return .use(cancel: self.nextAttempt.take())
-    }
-
-    // The status code is non fatal, so record a failure.
-    self.throttle.recordFailure()
-
-    guard self.attempt <= self.policy.maximumAttempts else {
-      // If there are no outstanding RPCs use the response, otherwise wait.
-      return self.outstanding == 0 ? .use(cancel: self.nextAttempt.take()) : .none
-    }
-
-    let onResponse: OnResponse
-    switch error.metadata.retryPushback {
-    case .retryAfter(let delay):
-      // Pushback is valid, cancel the timer for the next attempt and use the value provided by
-      // the server.
-      onResponse = .scheduleNextAttempt(delay, cancel: self.nextAttempt.take())
-
-    case .stopRetrying:
-      // Server indicated we should stop trying. Use this response.
-      onResponse = .use(cancel: self.nextAttempt.take())
-
-    case .none:
-      // No pushback. Retry immediately if no attempt is scheduled, otherwise schedule the next
-      // attempt.
-      if let nextAttempt = self.nextAttempt.take() {
-        onResponse = .scheduleNextAttempt(nil, cancel: nextAttempt)
-      } else {
-        onResponse = .scheduleNextAttempt(self.policy.hedgingDelay, cancel: nil)
-      }
-    }
-
-    return onResponse
-  }
-
-  @inlinable
-  mutating func setNextHedgeDelayTimer(_ scheduled: ScheduledAttempt) {
-    precondition(self.nextAttempt == nil)
-    self.nextAttempt = scheduled
-  }
-
-  @usableFromInline
-  enum OnNext {
-    case none
-    case startAttempt(Int, Duration?)
-    case abort(ScheduledAttempt?)
-  }
-
-  @inlinable
-  mutating func startNext() -> OnNext {
-    self.nextAttempt = nil
-
-    guard self.attempt > 1 else {
-      // First attempt is always allowed.
-      defer {
-        self.outstanding &+= 1
-        self.attempt &+= 1
-      }
-
-      assert(self.nextAttempt == nil)
-      return .startAttempt(self.attempt, self.policy.hedgingDelay)
-    }
-
-    guard self.throttle.isRetryPermitted, self.attempt <= self.policy.maximumAttempts else {
-      if self.outstanding == 0 {
-        return .abort(self.nextAttempt.take())
-      } else {
-        return .none
-      }
-    }
-
-    defer {
-      self.outstanding &+= 1
-      self.attempt &+= 1
-    }
-
-    if self.nextAttempt == nil {
-      return .startAttempt(self.attempt, self.policy.hedgingDelay)
-    } else {
-      return .startAttempt(self.attempt, nil)
-    }
-  }
-
-  @usableFromInline
-  enum OnCancel {
-    case none
-    case cancel(ScheduledAttempt)
-  }
-
-  @inlinable
-  mutating func cancel() -> OnCancel {
-    if let scheduled = self.nextAttempt.take() {
-      return .cancel(scheduled)
-    } else {
-      return .none
-    }
-  }
-}
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-@usableFromInline
-enum _HedgingEvent<Output> {
-  case start
-  case timedOut
-  case processedRequest(Result<Void, Error>)
-  case receivedResponse(ClientResponse.Stream<Output>, Task<Void, Never>)
-}
-
-@usableFromInline
-enum _HedgeTaskResult<R> {
-  case workCompleted(Result<R, Error>)
-  case processedRequest(Result<Void, Error>)
+enum _HedgingTaskResult<R> {
+  case rpcHandled(Result<R, Error>)
+  case finishedRequest(Result<Void, Error>)
   case timedOut(Result<Void, Error>)
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension HedgingStateMachine.ScheduledAttempt? {
-  @inlinable
-  mutating func take() -> Self {
-    if let some = self {
-      self = .none
-      return some
-    } else {
-      return .none
-    }
+@usableFromInline
+enum _HedgingAttemptTaskResult<R, Output> {
+  case attemptCompleted(AttemptResult)
+  case scheduledAttemptFired(ScheduleEvent)
+
+  @usableFromInline
+  enum AttemptResult {
+    case unusableResponse(ClientResponse.Stream<Output>, Metadata.RetryPushback?)
+    case usableResponse(Result<R, Error>)
   }
+
+  @usableFromInline
+  enum ScheduleEvent {
+    case ran
+    case cancelled
+  }
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@usableFromInline
+enum _HedgingAttemptSubtaskResult<Output> {
+  case attemptPicked(Bool)
+  case processorFinished
+  case response(ClientResponse.Stream<Output>)
 }
