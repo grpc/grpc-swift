@@ -67,7 +67,7 @@ public struct ClientRPCExecutionConfigurationCollection: Sendable, Hashable {
   /// - Parameters:
   ///   - configuration: The default configuration for the service.
   ///   - service: The name of the service for which this override applies.
-  mutating public func setDefaultConfiguration(
+  public mutating func setDefaultConfiguration(
     _ configuration: ClientRPCExecutionConfiguration,
     forService service: String
   ) {

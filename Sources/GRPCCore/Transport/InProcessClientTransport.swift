@@ -157,22 +157,24 @@ public struct InProcessClientTransport: ClientTransport {
 
     // If at this point there are any open streams, it's because Cancellation
     // occurred and all open streams must be closed at this point.
-    self.state.withLockedValue { state in
+    let openStreams = self.state.withLockedValue { state in
       switch state {
       case .unconnected:
-        ()
+        return [(
+          RPCStream<Inbound, Outbound>,
+          RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+        )]()
       case .connected(let connectedState):
         state = .closed(.init())
-        for (clientStream, serverStream) in connectedState.openStreams.values {
-          clientStream.outbound.finish()
-          serverStream.outbound.finish()
-        }
+        return Array(connectedState.openStreams.values)
       case .closed(let closedState):
-        for (clientStream, serverStream) in closedState.openStreams.values {
-          clientStream.outbound.finish()
-          serverStream.outbound.finish()
-        }
+        return Array(closedState.openStreams.values)
       }
+    }
+
+    for (clientStream, serverStream) in openStreams {
+      clientStream.outbound.finish(throwing: CancellationError())
+      serverStream.outbound.finish(throwing: CancellationError())
     }
   }
 
@@ -183,21 +185,24 @@ public struct InProcessClientTransport: ClientTransport {
   ///
   /// If you want to forcefully cancel all active streams then cancel the task running ``connect(lazily:)``.
   public func close() {
-    self.state.withLockedValue { state in
+    let maybeContinuation: AsyncStream<Void>.Continuation? = self.state.withLockedValue { state in
       switch state {
       case .unconnected:
         state = .closed(.init())
+        return nil
       case .connected(let connectedState):
         if connectedState.openStreams.count == 0 {
-          connectedState.signalEndContinuation.finish()
           state = .closed(.init())
+          return connectedState.signalEndContinuation
         } else {
           state = .closed(.init(fromConnected: connectedState))
+          return nil
         }
       case .closed:
-        ()
+        return nil
       }
     }
+    maybeContinuation?.finish()
   }
 
   private enum WithStreamResult {
@@ -274,8 +279,8 @@ public struct InProcessClientTransport: ClientTransport {
     do {
       withStreamResult = try result.get()
     } catch {
-      serverStream.outbound.finish()
-      clientStream.outbound.finish()
+      serverStream.outbound.finish(throwing: error)
+      clientStream.outbound.finish(throwing: error)
       throw error
     }
 
@@ -305,12 +310,13 @@ public struct InProcessClientTransport: ClientTransport {
             throw RPCError(code: .unknown, message: "Unknown error: \(error).")
           }
         case .closed:
-          serverStream.outbound.finish()
-          clientStream.outbound.finish()
-          throw RPCError(
+          let error = RPCError(
             code: .failedPrecondition,
             message: "The client transport is closed."
           )
+          serverStream.outbound.finish(throwing: error)
+          clientStream.outbound.finish(throwing: error)
+          throw error
         }
       }
     }

@@ -19,18 +19,10 @@ import XCTest
 @testable import GRPCCore
 
 final class InProcessClientTransportTests: XCTestCase {
+  struct FailTest: Error {}
+  
   func testConnectWhenConnected() async {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient()
 
     await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -51,17 +43,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testConnectWhenClosed() async {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient()
 
     client.close()
 
@@ -73,17 +55,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testConnectWhenClosedAfterCancellation() async throws {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient()
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -105,52 +77,20 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testCloseWhenUnconnected() {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
-
+    let client = makeClient()
+    
     XCTAssertNoThrow(client.close())
   }
 
   func testCloseWhenClosed() {
-    func testCloseWhenUnconnected() {
-      let retryPolicy = RetryPolicy(
-        maximumAttempts: 10,
-        initialBackoff: .seconds(1),
-        maximumBackoff: .seconds(1),
-        backoffMultiplier: 1.0,
-        retryableStatusCodes: [.unavailable]
-      )
-      let client = InProcessClientTransport(
-        server: .init(),
-        executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-      )
-
-      client.close()
-      XCTAssertNoThrow(client.close())
-    }
+    let client = makeClient()
+    client.close()
+    
+    XCTAssertNoThrow(client.close())
   }
 
   func testConnectSuccessfullyAndThenClose() async throws {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient()
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -166,17 +106,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenStreamWhenUnconnected() async throws {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient()
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -200,17 +130,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenStreamWhenClosed() async {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
-    let client = InProcessClientTransport(
-      server: .init(),
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient()
 
     client.close()
 
@@ -222,18 +142,8 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenStreamSuccessfullyAndThenClose() async throws {
-    let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
-      backoffMultiplier: 1.0,
-      retryableStatusCodes: [.unavailable]
-    )
     let server = InProcessServerTransport()
-    let client = InProcessClientTransport(
-      server: server,
-      executionConfigurations: .init(defaultConfiguration: .init(retryPolicy: retryPolicy))
-    )
+    let client = makeClient(server: server)
 
     let receivedMessages = LockedValueBox([[UInt8]]())
 
@@ -245,56 +155,31 @@ final class InProcessClientTransportTests: XCTestCase {
       group.addTask {
         try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
           try await stream.outbound.write(.message([1]))
-          for try await response in stream.inbound {
-            guard case .message(let message) = response else {
-              XCTFail()
-              fatalError()
-            }
-            receivedMessages.withLockedValue({ $0.append(message) })
-          }
+          stream.outbound.finish()
+          let receivedMessages = try await stream.inbound.collect()
+          
+          XCTAssertEqual(receivedMessages, [.message([42])])
         }
       }
 
       group.addTask {
         for try await stream in server.listen() {
-          try await stream.outbound.write(
-            contentsOf: stream.inbound.map({ requestPart in
-              guard case .message(let message) = requestPart else {
-                XCTFail()
-                fatalError()
-              }
-              receivedMessages.withLockedValue({ $0.append(message) })
-              return RPCResponsePart.message([42])
-            })
-          )
+          let receivedMessages = try await stream.inbound.collect()
+          try await stream.outbound.write(RPCResponsePart.message([42]))
+          stream.outbound.finish()
+
+          XCTAssertEqual(receivedMessages, [.message([1])])
         }
       }
 
       group.addTask {
         try await Task.sleep(for: .milliseconds(100))
         client.close()
-        await XCTAssertThrowsRPCErrorAsync {
-          try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in }
-        } errorHandler: { error in
-          XCTAssertEqual(error.code, .failedPrecondition)
-          XCTAssertEqual(error.message, "The client transport is closed.")
-        }
-
       }
 
       try await group.next()
-      let finalReceivedMessages = receivedMessages.withLockedValue { $0 }
-      XCTAssertEqual(finalReceivedMessages, [[1], [42]])
       group.cancelAll()
     }
-
-    await XCTAssertThrowsRPCErrorAsync {
-      try await client.connect(lazily: false)
-    } errorHandler: { error in
-      XCTAssertEqual(error.code, .failedPrecondition)
-      XCTAssertEqual(error.message, "Can't connect to server, transport is closed.")
-    }
-
   }
 
   func testExecutionConfiguration() {
@@ -326,5 +211,23 @@ final class InProcessClientTransportTests: XCTestCase {
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
     XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
+  }
+  
+  func makeClient(
+    configuration: ClientRPCExecutionConfiguration? = nil,
+    server: InProcessServerTransport = InProcessServerTransport()
+  ) -> InProcessClientTransport {
+    let defaultPolicy = RetryPolicy(
+      maximumAttempts: 10,
+      initialBackoff: .seconds(1),
+      maximumBackoff: .seconds(1),
+      backoffMultiplier: 1.0,
+      retryableStatusCodes: [.unavailable]
+    )
+    
+    return InProcessClientTransport(
+      server: server,
+      executionConfigurations: .init(defaultConfiguration: configuration ?? .init(retryPolicy: defaultPolicy))
+    )
   }
 }
