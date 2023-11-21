@@ -203,11 +203,6 @@ public struct InProcessClientTransport: ClientTransport {
     maybeContinuation?.finish()
   }
 
-  private enum WithStreamResult {
-    case success(_ streamID: Int)
-    case pending(AsyncStream<Void>)
-  }
-
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.
   ///
   /// - Important: The opened stream is closed after the closure is finished.
@@ -241,14 +236,33 @@ public struct InProcessClientTransport: ClientTransport {
       inbound: request.stream,
       outbound: response.writer
     )
-
-    let result: Result<WithStreamResult, RPCError> = self.state.withLockedValue { state in
-      switch state {
-      case .unconnected(var unconnectedState):
+    
+    let waitForConnectionStream: AsyncStream<Void>? = self.state.withLockedValue { state in
+      if case .unconnected(var unconnectedState) = state {
         let (stream, continuation) = AsyncStream<Void>.makeStream()
         unconnectedState.pendingStreams.append(continuation)
         state = .unconnected(unconnectedState)
-        return .success(.pending(stream))
+        return stream
+      }
+      return nil
+    }
+    
+    if let waitForConnectionStream {
+      for await _ in waitForConnectionStream {
+        // This loop will exit either when the task is cancelled or when the
+        // client connects and this stream can be opened.
+      }
+      try Task.checkCancellation()
+    }
+
+    let streamID = try self.state.withLockedValue { state in
+      switch state {
+      case .unconnected:
+        // The state cannot be unconnected because if it was, then the above
+        // for-await loop on `pendingStream` would have not returned.
+        // The only other option is for the task to have been cancelled,
+        // and that's why we check for cancellation right after the loop.
+        fatalError("Invalid state.")
 
       case .connected(var connectedState):
         let streamID = connectedState.nextStreamID
@@ -258,78 +272,24 @@ public struct InProcessClientTransport: ClientTransport {
           connectedState.nextStreamID += 1
           state = .connected(connectedState)
         } catch let acceptStreamError as RPCError {
-          return .failure(acceptStreamError)
+          serverStream.outbound.finish(throwing: acceptStreamError)
+          clientStream.outbound.finish(throwing: acceptStreamError)
+          throw acceptStreamError
         } catch {
-          return .failure(RPCError(code: .unknown, message: "Unknown error: \(error)."))
-        }
-        return .success(.success(streamID))
-
-      case .closed:
-        return .failure(
-          RPCError(
-            code: .failedPrecondition,
-            message: "The client transport is closed."
-          )
-        )
-      }
-    }
-
-    let withStreamResult: WithStreamResult
-    do {
-      withStreamResult = try result.get()
-    } catch {
-      serverStream.outbound.finish(throwing: error)
-      clientStream.outbound.finish(throwing: error)
-      throw error
-    }
-
-    let streamID: Int
-    switch withStreamResult {
-    case .success(let id):
-      streamID = id
-    case .pending(let pendingStream):
-      for await _ in pendingStream {
-        // This loop will exit either when the task is cancelled or when the
-        // client connects and this stream can be opened.
-      }
-      try Task.checkCancellation()
-
-      streamID = try self.state.withLockedValue { state in
-        switch state {
-        case .unconnected:
-          // The state cannot be unconnected because if it was, then the above
-          // for-await loop on `pendingStream` would have not returned.
-          // The only other option is for the task to have been cancelled,
-          // and that's why we check for cancellation right after the loop.
-          fatalError("Invalid state.")
-
-        case .connected(var connectedState):
-          let streamID = connectedState.nextStreamID
-          do {
-            try connectedState.serverTransport.acceptStream(serverStream)
-            connectedState.openStreams[streamID] = (clientStream, serverStream)
-            connectedState.nextStreamID += 1
-            state = .connected(connectedState)
-          } catch let acceptStreamError as RPCError {
-            serverStream.outbound.finish(throwing: acceptStreamError)
-            clientStream.outbound.finish(throwing: acceptStreamError)
-            throw acceptStreamError
-          } catch {
-            serverStream.outbound.finish(throwing: error)
-            clientStream.outbound.finish(throwing: error)
-            throw RPCError(code: .unknown, message: "Unknown error: \(error).")
-          }
-          return streamID
-
-        case .closed:
-          let error = RPCError(
-            code: .failedPrecondition,
-            message: "The client transport is closed."
-          )
           serverStream.outbound.finish(throwing: error)
           clientStream.outbound.finish(throwing: error)
-          throw error
+          throw RPCError(code: .unknown, message: "Unknown error: \(error).")
         }
+        return streamID
+
+      case .closed:
+        let error = RPCError(
+          code: .failedPrecondition,
+          message: "The client transport is closed."
+        )
+        serverStream.outbound.finish(throwing: error)
+        clientStream.outbound.finish(throwing: error)
+        throw error
       }
     }
 
