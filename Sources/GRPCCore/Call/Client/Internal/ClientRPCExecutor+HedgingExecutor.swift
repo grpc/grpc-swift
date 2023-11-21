@@ -205,8 +205,7 @@ extension ClientRPCExecutor.HedgingExecutor {
         case .scheduledAttemptFired(let outcome):
           switch outcome {
           case .ran:
-            // Start a new attempt. We go via the state machine because it's possible that we a
-            // successful response was just received and we can a valid response.
+            // Start a new attempt and possibly schedule the next.
             if let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() }) {
               group.addTask {
                 let result = await self._startAttempt(
@@ -255,6 +254,7 @@ extension ClientRPCExecutor.HedgingExecutor {
               }
 
               nextScheduledAttempt.cancel()
+
               if let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() }) {
                 group.addTask {
                   let result = await self._startAttempt(
