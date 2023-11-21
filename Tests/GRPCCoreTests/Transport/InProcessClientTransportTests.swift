@@ -145,8 +145,6 @@ final class InProcessClientTransportTests: XCTestCase {
     let server = InProcessServerTransport()
     let client = makeClient(server: server)
 
-    let receivedMessages = LockedValueBox([[UInt8]]())
-
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await client.connect(lazily: false)

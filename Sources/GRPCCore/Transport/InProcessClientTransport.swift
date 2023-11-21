@@ -160,15 +160,13 @@ public struct InProcessClientTransport: ClientTransport {
     let openStreams = self.state.withLockedValue { state in
       switch state {
       case .unconnected:
-        return [(
-          RPCStream<Inbound, Outbound>,
-          RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
-        )]()
+        // We have transitioned to connected, and we can't transition back.
+        fatalError("Invalid state")
       case .connected(let connectedState):
         state = .closed(.init())
-        return Array(connectedState.openStreams.values)
+        return connectedState.openStreams.values
       case .closed(let closedState):
-        return Array(closedState.openStreams.values)
+        return closedState.openStreams.values
       }
     }
 
@@ -206,7 +204,7 @@ public struct InProcessClientTransport: ClientTransport {
   }
 
   private enum WithStreamResult {
-    case success
+    case success(_ streamID: Int)
     case pending(AsyncStream<Void>)
   }
 
@@ -246,10 +244,17 @@ public struct InProcessClientTransport: ClientTransport {
 
     let result: Result<WithStreamResult, RPCError> = self.state.withLockedValue { state in
       switch state {
+      case .unconnected(var unconnectedState):
+        let (stream, continuation) = AsyncStream<Void>.makeStream()
+        unconnectedState.pendingStreams.append(continuation)
+        state = .unconnected(unconnectedState)
+        return .success(.pending(stream))
+
       case .connected(var connectedState):
+        let streamID = connectedState.nextStreamID
         do {
           try connectedState.serverTransport.acceptStream(serverStream)
-          connectedState.openStreams[connectedState.nextStreamID] = (clientStream, serverStream)
+          connectedState.openStreams[streamID] = (clientStream, serverStream)
           connectedState.nextStreamID += 1
           state = .connected(connectedState)
         } catch let acceptStreamError as RPCError {
@@ -257,13 +262,7 @@ public struct InProcessClientTransport: ClientTransport {
         } catch {
           return .failure(RPCError(code: .unknown, message: "Unknown error: \(error)."))
         }
-        return .success(.success)
-
-      case .unconnected(var unconnectedState):
-        let (stream, continuation) = AsyncStream<Void>.makeStream()
-        unconnectedState.pendingStreams.append(continuation)
-        state = .unconnected(unconnectedState)
-        return .success(.pending(stream))
+        return .success(.success(streamID))
 
       case .closed:
         return .failure(
@@ -284,9 +283,10 @@ public struct InProcessClientTransport: ClientTransport {
       throw error
     }
 
+    let streamID: Int
     switch withStreamResult {
-    case .success:
-      ()
+    case .success(let id):
+      streamID = id
     case .pending(let pendingStream):
       for await _ in pendingStream {
         // This loop will exit either when the task is cancelled or when the
@@ -294,14 +294,20 @@ public struct InProcessClientTransport: ClientTransport {
       }
       try Task.checkCancellation()
 
-      try self.state.withLockedValue { state in
+      streamID = try self.state.withLockedValue { state in
         switch state {
         case .unconnected:
+          // The state cannot be unconnected because if it was, then the above
+          // for-await loop on `pendingStream` would have not returned.
+          // The only other option is for the task to have been cancelled,
+          // and that's why we check for cancellation right after the loop.
           fatalError("Invalid state.")
+
         case .connected(var connectedState):
+          let streamID = connectedState.nextStreamID
           do {
             try connectedState.serverTransport.acceptStream(serverStream)
-            connectedState.openStreams[connectedState.nextStreamID] = (clientStream, serverStream)
+            connectedState.openStreams[streamID] = (clientStream, serverStream)
             connectedState.nextStreamID += 1
             state = .connected(connectedState)
           } catch let acceptStreamError as RPCError {
@@ -313,6 +319,8 @@ public struct InProcessClientTransport: ClientTransport {
             clientStream.outbound.finish(throwing: error)
             throw RPCError(code: .unknown, message: "Unknown error: \(error).")
           }
+          return streamID
+
         case .closed:
           let error = RPCError(
             code: .failedPrecondition,
@@ -331,9 +339,13 @@ public struct InProcessClientTransport: ClientTransport {
       let maybeEndContinuation = self.state.withLockedValue { state in
         switch state {
         case .unconnected:
+          // The state cannot be unconnected at this point, because if we made
+          // it this far, it's because the transport was connected.
+          // Once connected, it's impossible to transition back to unconnected,
+          // so this is an invalid state.
           fatalError("Invalid state")
         case .connected(var connectedState):
-          connectedState.openStreams.removeValue(forKey: connectedState.nextStreamID - 1)
+          connectedState.openStreams.removeValue(forKey: streamID)
           state = .connected(connectedState)
         case .closed(let closedState):
           if closedState.openStreams.count == 1 {
