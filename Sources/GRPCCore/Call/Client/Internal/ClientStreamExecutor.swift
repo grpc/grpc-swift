@@ -80,27 +80,12 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
   @inlinable
   func execute(
     request: ClientRequest.Stream<[UInt8]>,
-    method: MethodDescriptor
+    method: MethodDescriptor,
+    stream: RPCStream<Transport.Inbound, Transport.Outbound>
   ) async -> ClientResponse.Stream<[UInt8]> {
     // Each execution method can add work to process in the 'run' method. They must not add
     // new work once they return.
     defer { self._work.continuation.finish() }
-
-    // Open a stream. Return a failed response if we can't open one.
-    let stream: RPCStream<Transport.Inbound, Transport.Outbound>
-
-    do {
-      stream = try await self._transport.openStream(descriptor: method)
-    } catch let error as RPCError {
-      return ClientResponse.Stream(error: error)
-    } catch let other {
-      let error = RPCError(
-        code: .unknown,
-        message: "Transport failed to create stream.",
-        cause: other
-      )
-      return ClientResponse.Stream(error: error)
-    }
 
     // Start processing the request.
     self._work.continuation.yield(.request(request, stream.outbound))

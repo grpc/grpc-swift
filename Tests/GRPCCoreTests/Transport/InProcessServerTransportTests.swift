@@ -18,7 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
-final class InProcessServerTransportTest: XCTestCase {
+final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessServerTransport()
     let stream = RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>(
