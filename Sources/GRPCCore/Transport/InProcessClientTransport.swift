@@ -236,7 +236,7 @@ public struct InProcessClientTransport: ClientTransport {
       inbound: request.stream,
       outbound: response.writer
     )
-    
+
     let waitForConnectionStream: AsyncStream<Void>? = self.state.withLockedValue { state in
       if case .unconnected(var unconnectedState) = state {
         let (stream, continuation) = AsyncStream<Void>.makeStream()
@@ -246,7 +246,7 @@ public struct InProcessClientTransport: ClientTransport {
       }
       return nil
     }
-    
+
     if let waitForConnectionStream {
       for await _ in waitForConnectionStream {
         // This loop will exit either when the task is cancelled or when the

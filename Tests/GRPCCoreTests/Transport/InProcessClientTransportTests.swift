@@ -20,7 +20,7 @@ import XCTest
 
 final class InProcessClientTransportTests: XCTestCase {
   struct FailTest: Error {}
-  
+
   func testConnectWhenConnected() async {
     let client = makeClient()
 
@@ -78,14 +78,14 @@ final class InProcessClientTransportTests: XCTestCase {
 
   func testCloseWhenUnconnected() {
     let client = makeClient()
-    
+
     XCTAssertNoThrow(client.close())
   }
 
   func testCloseWhenClosed() {
     let client = makeClient()
     client.close()
-    
+
     XCTAssertNoThrow(client.close())
   }
 
@@ -155,7 +155,7 @@ final class InProcessClientTransportTests: XCTestCase {
           try await stream.outbound.write(.message([1]))
           stream.outbound.finish()
           let receivedMessages = try await stream.inbound.collect()
-          
+
           XCTAssertEqual(receivedMessages, [.message([42])])
         }
       }
@@ -210,7 +210,7 @@ final class InProcessClientTransportTests: XCTestCase {
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
     XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
   }
-  
+
   func makeClient(
     configuration: ClientRPCExecutionConfiguration? = nil,
     server: InProcessServerTransport = InProcessServerTransport()
@@ -222,10 +222,12 @@ final class InProcessClientTransportTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    
+
     return InProcessClientTransport(
       server: server,
-      executionConfigurations: .init(defaultConfiguration: configuration ?? .init(retryPolicy: defaultPolicy))
+      executionConfigurations: .init(
+        defaultConfiguration: configuration ?? .init(retryPolicy: defaultPolicy)
+      )
     )
   }
 }
