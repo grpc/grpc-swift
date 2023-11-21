@@ -69,63 +69,70 @@ extension ClientRPCExecutor.OneShotExecutor {
       of: _OneShotExecutorTask<R>.self,
       returning: Result<R, Error>.self
     ) { group in
-      if let timeout = self.timeout {
-        group.addTask {
-          let result = await Result {
-            try await Task.sleep(until: .now.advanced(by: timeout), clock: .continuous)
+      do {
+        return try await self.transport.withStream(descriptor: method) { stream in
+          if let timeout = self.timeout {
+            group.addTask {
+              let result = await Result {
+                try await Task.sleep(until: .now.advanced(by: timeout), clock: .continuous)
+              }
+              return .timedOut(result)
+            }
           }
-          return .timedOut(result)
+
+          let streamExecutor = ClientStreamExecutor(transport: self.transport)
+          group.addTask {
+            await streamExecutor.run()
+            return .streamExecutorCompleted
+          }
+
+          group.addTask {
+            let response = await ClientRPCExecutor.unsafeExecute(
+              request: request,
+              method: method,
+              attempt: 1,
+              serializer: self.serializer,
+              deserializer: self.deserializer,
+              interceptors: self.interceptors,
+              streamProcessor: streamExecutor,
+              stream: stream
+            )
+
+            let result = await Result {
+              try await responseHandler(response)
+            }
+
+            return .responseHandled(result)
+          }
+
+          while let result = await group.next() {
+            switch result {
+            case .streamExecutorCompleted:
+              // Stream finished; wait for the response to be handled.
+              ()
+
+            case .timedOut(.success):
+              // The deadline passed; cancel the ongoing work group.
+              group.cancelAll()
+
+            case .timedOut(.failure):
+              // The deadline task failed (because the task was cancelled). Wait for the response
+              // to be handled.
+              ()
+
+            case .responseHandled(let result):
+              // Response handled: cancel any other remaining tasks.
+              group.cancelAll()
+              return result
+            }
+          }
+
+          // Unreachable: exactly one task returns `responseHandled` and we return when it completes.
+          fatalError("Internal inconsistency")
         }
+      } catch {
+        return .failure(error)
       }
-
-      let streamExecutor = ClientStreamExecutor(transport: self.transport)
-      group.addTask {
-        await streamExecutor.run()
-        return .streamExecutorCompleted
-      }
-
-      group.addTask {
-        let response = await ClientRPCExecutor.unsafeExecute(
-          request: request,
-          method: method,
-          attempt: 1,
-          serializer: self.serializer,
-          deserializer: self.deserializer,
-          interceptors: self.interceptors,
-          streamProcessor: streamExecutor
-        )
-
-        let result = await Result {
-          try await responseHandler(response)
-        }
-
-        return .responseHandled(result)
-      }
-
-      while let result = await group.next() {
-        switch result {
-        case .streamExecutorCompleted:
-          // Stream finished; wait for the response to be handled.
-          ()
-
-        case .timedOut(.success):
-          // The deadline passed; cancel the ongoing work group.
-          group.cancelAll()
-
-        case .timedOut(.failure):
-          // The deadline task failed (because the task was cancelled). Wait for the response
-          // to be handled.
-          ()
-
-        case .responseHandled(let result):
-          // Response handled: cancel any other remaining tasks.
-          group.cancelAll()
-          return result
-        }
-      }
-
-      // Unreachable: exactly one task returns `responseHandled` and we return when it completes.
-      fatalError("Internal inconsistency")
     }
 
     return try result.get()

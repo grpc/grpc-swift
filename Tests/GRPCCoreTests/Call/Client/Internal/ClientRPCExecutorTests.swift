@@ -150,12 +150,12 @@ final class ClientRPCExecutorTests: XCTestCase {
       server: .failTest
     )
 
-    try await tester.unary(
-      request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
-    ) { response in
-      XCTAssertThrowsRPCError(try response.message) {
-        XCTAssertEqual($0.code, .aborted)
-      }
+    await XCTAssertThrowsRPCErrorAsync {
+      try await tester.unary(
+        request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+      ) { _ in }
+    } errorHandler: { error in
+      XCTAssertEqual(error.code, .aborted)
     }
 
     XCTAssertEqual(tester.clientStreamsOpened, 0)
@@ -169,14 +169,14 @@ final class ClientRPCExecutorTests: XCTestCase {
       server: .failTest
     )
 
-    try await tester.clientStreaming(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
-        try await $0.write([1, 2, 3])
-      }
-    ) { response in
-      XCTAssertThrowsRPCError(try response.message) {
-        XCTAssertEqual($0.code, .aborted)
-      }
+    await XCTAssertThrowsRPCErrorAsync {
+      try await tester.clientStreaming(
+        request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+          try await $0.write([1, 2, 3])
+        }
+      ) { _ in }
+    } errorHandler: { error in
+      XCTAssertEqual(error.code, .aborted)
     }
 
     XCTAssertEqual(tester.clientStreamsOpened, 0)
@@ -190,14 +190,12 @@ final class ClientRPCExecutorTests: XCTestCase {
       server: .failTest
     )
 
-    try await tester.serverStreaming(
-      request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
-    ) { response in
-      await XCTAssertThrowsRPCErrorAsync {
-        try await response.messages.collect()
-      } errorHandler: {
-        XCTAssertEqual($0.code, .aborted)
-      }
+    await XCTAssertThrowsRPCErrorAsync {
+      try await tester.serverStreaming(
+        request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+      ) { _ in }
+    } errorHandler: {
+      XCTAssertEqual($0.code, .aborted)
     }
 
     XCTAssertEqual(tester.clientStreamsOpened, 0)
@@ -211,16 +209,14 @@ final class ClientRPCExecutorTests: XCTestCase {
       server: .failTest
     )
 
-    try await tester.bidirectional(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
-        try await $0.write([1, 2, 3])
-      }
-    ) { response in
-      await XCTAssertThrowsRPCErrorAsync {
-        try await response.messages.collect()
-      } errorHandler: {
-        XCTAssertEqual($0.code, .aborted)
-      }
+    await XCTAssertThrowsRPCErrorAsync {
+      try await tester.bidirectional(
+        request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+          try await $0.write([1, 2, 3])
+        }
+      ) { _ in }
+    } errorHandler: {
+      XCTAssertEqual($0.code, .aborted)
     }
 
     XCTAssertEqual(tester.clientStreamsOpened, 0)
