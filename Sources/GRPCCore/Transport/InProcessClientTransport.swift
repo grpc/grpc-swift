@@ -305,8 +305,12 @@ public struct InProcessClientTransport: ClientTransport {
             connectedState.nextStreamID += 1
             state = .connected(connectedState)
           } catch let acceptStreamError as RPCError {
+            serverStream.outbound.finish(throwing: acceptStreamError)
+            clientStream.outbound.finish(throwing: acceptStreamError)
             throw acceptStreamError
           } catch {
+            serverStream.outbound.finish(throwing: error)
+            clientStream.outbound.finish(throwing: error)
             throw RPCError(code: .unknown, message: "Unknown error: \(error).")
           }
         case .closed:
@@ -322,10 +326,9 @@ public struct InProcessClientTransport: ClientTransport {
     }
 
     defer {
-      serverStream.outbound.finish()
       clientStream.outbound.finish()
 
-      self.state.withLockedValue { state in
+      let maybeEndContinuation = self.state.withLockedValue { state in
         switch state {
         case .unconnected:
           fatalError("Invalid state")
@@ -335,10 +338,12 @@ public struct InProcessClientTransport: ClientTransport {
         case .closed(let closedState):
           if closedState.openStreams.count == 1 {
             // This was the last open stream: signal the closure of the client.
-            closedState.signalEndContinuation?.finish()
+            return closedState.signalEndContinuation
           }
         }
+        return nil
       }
+      maybeEndContinuation?.finish()
     }
 
     return try await closure(clientStream)
