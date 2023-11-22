@@ -63,3 +63,16 @@ func XCTAssertThrowsRPCErrorAsync<T>(
     XCTFail("Error had unexpected type '\(type(of: error))'")
   }
 }
+
+func XCTAssertStatus(
+  _ part: RPCResponsePart?,
+  statusHandler: (Status, Metadata) -> Void = { _, _ in }
+) {
+  switch part {
+  case .some(.status(let status, let metadata)):
+    statusHandler(status, metadata)
+  default:
+    XCTFail("Expected '.status' but found '\(String(describing: part))'")
+  }
+
+}
