@@ -16,8 +16,8 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol ServerTransport {
-  associatedtype Inbound: (AsyncSequence & Sendable) where Inbound.Element == RPCRequestPart
-  associatedtype Outbound: ClosableRPCWriterProtocol<RPCResponsePart>
+  typealias Inbound = RPCAsyncSequence<RPCRequestPart>
+  typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
   /// Starts the transport and returns a sequence of accepted streams to handle.
   ///
