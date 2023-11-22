@@ -97,7 +97,7 @@ extension ClientRPCExecutor.HedgingExecutor {
         let result = await Result {
           try await request.producer(RPCWriter(wrapping: broadcast.continuation))
         }
-        broadcast.continuation.finish()
+        broadcast.continuation.finish(with: result)
         return .finishedRequest(result)
       }
 
@@ -285,6 +285,10 @@ extension ClientRPCExecutor.HedgingExecutor {
               // Stop any new attempts from happening. Let any existing attempts play out.
               nextScheduledAttempt.cancel()
             }
+
+          case .noStreamAvailable(let error):
+            group.cancelAll()
+            return .failure(error)
           }
         }
       }
@@ -307,30 +311,32 @@ extension ClientRPCExecutor.HedgingExecutor {
     picker: (stream: BroadcastAsyncSequence<Int>, continuation: BroadcastAsyncSequence<Int>.Source),
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> _HedgingAttemptTaskResult<R, Output>.AttemptResult {
-    return await withTaskGroup(of: _HedgingAttemptSubtaskResult<Output>.self) { group in
-      group.addTask {
-        do {
-          // The picker stream will have at most one element.
-          for try await selectedAttempt in picker.stream {
-            return .attemptPicked(selectedAttempt == attempt)
+    do {
+      return try await self.transport.withStream(
+        descriptor: method
+      ) { stream -> _HedgingAttemptTaskResult<R, Output>.AttemptResult in
+        return await withTaskGroup(of: _HedgingAttemptSubtaskResult<Output>.self) { group in
+          group.addTask {
+            do {
+              // The picker stream will have at most one element.
+              for try await selectedAttempt in picker.stream {
+                return .attemptPicked(selectedAttempt == attempt)
+              }
+              return .attemptPicked(false)
+            } catch {
+              return .attemptPicked(false)
+            }
           }
-          return .attemptPicked(false)
-        } catch {
-          return .attemptPicked(false)
-        }
-      }
 
-      let processor = ClientStreamExecutor(transport: self.transport)
+          let processor = ClientStreamExecutor(transport: self.transport)
 
-      group.addTask {
-        await processor.run()
-        return .processorFinished
-      }
+          group.addTask {
+            await processor.run()
+            return .processorFinished
+          }
 
-      group.addTask {
-        do {
-          let response = try await self.transport.withStream(descriptor: method) { stream in
-            await ClientRPCExecutor.unsafeExecute(
+          group.addTask {
+            let response = await ClientRPCExecutor.unsafeExecute(
               request: request,
               method: method,
               attempt: attempt,
@@ -340,70 +346,67 @@ extension ClientRPCExecutor.HedgingExecutor {
               streamProcessor: processor,
               stream: stream
             )
-          }
-          return .response(response)
-        } catch let error as RPCError {
-          return .response(ClientResponse.Stream(error: error))
-        } catch {
-          let error = RPCError(code: .unknown, message: "Can't open stream.", cause: error)
-          return .response(ClientResponse.Stream(error: error))
-        }
-      }
-
-      for await next in group {
-        switch next {
-        case .attemptPicked(let wasPicked):
-          if !wasPicked {
-            group.cancelAll()
+            return .response(response)
           }
 
-        case .response(let response):
-          switch response.accepted {
-          case .success:
-            self.transport.retryThrottle.recordSuccess()
-
-            if state.withLockedValue({ $0.receivedUsableResponse() }) {
-              try? await picker.continuation.write(attempt)
-              picker.continuation.finish()
-              let result = await Result { try await responseHandler(response) }
-              return .usableResponse(result)
-            } else {
-              // A different attempt succeeded before we were cancelled. Report this as unusable.
-              return .unusableResponse(response, .none)
-            }
-
-          case .failure(let error):
-            group.cancelAll()
-
-            if self.policy.nonFatalStatusCodes.contains(Status.Code(error.code)) {
-              // The response failed and the status code is non-fatal, we can make another attempt.
-              self.transport.retryThrottle.recordFailure()
-              return .unusableResponse(response, error.metadata.retryPushback)
-            } else {
-              // A fatal error code counts as a success to the throttle.
-              self.transport.retryThrottle.recordSuccess()
-
-              if state.withLockedValue({ $0.receivedUsableResponse() }) {
-                try! await picker.continuation.write(attempt)
-                picker.continuation.finish()
-                let result = await Result { try await responseHandler(response) }
-                return .usableResponse(result)
-              } else {
-                // A different attempt succeeded before we were cancelled. Report this as unusable.
-                return .unusableResponse(response, .none)
+          for await next in group {
+            switch next {
+            case .attemptPicked(let wasPicked):
+              if !wasPicked {
+                group.cancelAll()
               }
+
+            case .response(let response):
+              switch response.accepted {
+              case .success:
+                self.transport.retryThrottle.recordSuccess()
+
+                if state.withLockedValue({ $0.receivedUsableResponse() }) {
+                  try? await picker.continuation.write(attempt)
+                  picker.continuation.finish()
+                  let result = await Result { try await responseHandler(response) }
+                  return .usableResponse(result)
+                } else {
+                  // A different attempt succeeded before we were cancelled. Report this as unusable.
+                  return .unusableResponse(response, .none)
+                }
+
+              case .failure(let error):
+                group.cancelAll()
+
+                if self.policy.nonFatalStatusCodes.contains(Status.Code(error.code)) {
+                  // The response failed and the status code is non-fatal, we can make another attempt.
+                  self.transport.retryThrottle.recordFailure()
+                  return .unusableResponse(response, error.metadata.retryPushback)
+                } else {
+                  // A fatal error code counts as a success to the throttle.
+                  self.transport.retryThrottle.recordSuccess()
+
+                  if state.withLockedValue({ $0.receivedUsableResponse() }) {
+                    try! await picker.continuation.write(attempt)
+                    picker.continuation.finish()
+                    let result = await Result { try await responseHandler(response) }
+                    return .usableResponse(result)
+                  } else {
+                    // A different attempt succeeded before we were cancelled. Report this as unusable.
+                    return .unusableResponse(response, .none)
+                  }
+                }
+              }
+
+            case .processorFinished:
+              // Processor finished, wait for the response outcome.
+              ()
             }
           }
 
-        case .processorFinished:
-          // Processor finished, wait for the response outcome.
-          ()
+          // There's always a task to return a `.response` which we use as a signal to return from
+          // the task group in the preceding code. This is therefore unreachable.
+          fatalError("Internal inconsistency")
         }
       }
-
-      // There's always a task to return a `.response` which we use as a signal to return from
-      // the task group in the preceding code. This is therefore unreachable.
-      fatalError("Internal inconsistency")
+    } catch {
+      return .noStreamAvailable(error)
     }
   }
 
@@ -508,6 +511,7 @@ enum _HedgingAttemptTaskResult<R, Output> {
   enum AttemptResult {
     case unusableResponse(ClientResponse.Stream<Output>, Metadata.RetryPushback?)
     case usableResponse(Result<R, Error>)
+    case noStreamAvailable(Error)
   }
 
   @usableFromInline
