@@ -479,7 +479,7 @@ extension Target {
     ]
   )
   
-  static let grpcCodeGenLib: Target = .target(
+  static let grpcCodeGen: Target = .target(
     name: "GRPCCodeGen",
     path: "Sources/GRPCCodeGen"
   )
@@ -511,11 +511,6 @@ extension Product {
   static let grpcSwiftPlugin: Product = .plugin(
     name: "GRPCSwiftPlugin",
     targets: ["GRPCSwiftPlugin"]
-  )
-  
-  static let grpcCodeGenLib: Product = .library(
-    name: "GRPCCodeGen",
-    targets: ["GRPCCodeGen"]
   )
 }
 
