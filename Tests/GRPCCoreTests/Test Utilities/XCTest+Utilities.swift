@@ -64,6 +64,18 @@ func XCTAssertThrowsRPCErrorAsync<T>(
   }
 }
 
+func XCTAssertRejected<T>(
+  _ response: ClientResponse.Stream<T>,
+  errorHandler: (RPCError) -> Void
+) {
+  switch response.accepted {
+  case .success:
+    XCTFail("Expected RPC to be rejected")
+  case .failure(let error):
+    errorHandler(error)
+  }
+}
+
 func XCTAssertStatus(
   _ part: RPCResponsePart?,
   statusHandler: (Status, Metadata) -> Void = { _, _ in }
@@ -74,5 +86,4 @@ func XCTAssertStatus(
   default:
     XCTFail("Expected '.status' but found '\(String(describing: part))'")
   }
-
 }

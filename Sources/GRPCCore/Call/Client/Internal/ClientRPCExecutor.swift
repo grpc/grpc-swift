@@ -75,8 +75,22 @@ enum ClientRPCExecutor {
         responseHandler: handler
       )
 
-    case .hedge:
-      fatalError()
+    case .hedge(let policy):
+      let hedging = HedgingExecutor(
+        transport: transport,
+        policy: policy,
+        timeout: configuration.timeout,
+        interceptors: interceptors,
+        serializer: serializer,
+        deserializer: deserializer,
+        bufferSize: 64  // TODO: the client should have some control over this.
+      )
+
+      return try await hedging.execute(
+        request: request,
+        method: method,
+        responseHandler: handler
+      )
     }
   }
 }
