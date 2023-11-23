@@ -17,63 +17,84 @@
 /// Describes the services, dependencies and trivia from an IDL file,
 /// and the IDL itself through its specific serializer and deserializer.
 public struct CodeGenerationRequest {
-  /// The name of the source file containing the IDL. It contains the file's extension.
-  var fileName: String
+  /// The name of the source file containing the IDL, including the extension if applicable.
+  public var fileName: String
 
-  /// The Swift imports that the generated file should depend on.
+  /// The Swift imports that the generated file depends on. The gRPC specific imports aren't required
+  /// as they will be added by default in the generated file.
   ///
   /// - SeeAlso: ``Dependency``.
-  var dependencies: [Dependency] = []
+  public var dependencies: [Dependency]
 
-  /// Any comments at the top of the file including documentation and copyright headers.
-  var leadingTrivia: String
+  /// Any comments at the top of the file such as documentation and copyright headers.
+  /// They will be placed at the top of the generated file.
+  public var leadingTrivia: String
 
   /// An array of service descriptors.
   ///
   /// - SeeAlso: ``ServiceDescriptor``.
-  var services: [ServiceDescriptor] = []
+  public var services: [ServiceDescriptor]
 
   /// Closure that receives the message type and returns a string representation of the
   /// serializer call for that message type. The result is inserted in the string representing
   /// the generated code, where clients or servers serialize their output.
   ///
   /// For example: `lookupSerializer: {"ProtobufSerializer<\($0)>()"}`.
-  var lookupSerializer: (String) -> String
+  public var lookupSerializer: (_ messageType: String) -> String
 
   /// Closure that receives the message type and returns a string representation of the
   /// deserializer call for that message type. The result is inserted in the string representing
   /// the generated code, where clients or servers deserialize their input.
   ///
   /// For example: `lookupDeserializer: {"ProtobufDeserializer<\($0)>()"}`.
-  var lookupDeserializer: (String) -> String
+  public var lookupDeserializer: (_ messageType: String) -> String
+
+  public init(
+    fileName: String,
+    dependencies: [Dependency] = [],
+    leadingTrivia: String,
+    services: [ServiceDescriptor] = [],
+    lookupSerializer: @escaping (String) -> String,
+    lookupDeserializer: @escaping (String) -> String
+  ) {
+    self.fileName = fileName
+    self.dependencies = dependencies
+    self.leadingTrivia = leadingTrivia
+    self.services = services
+    self.lookupSerializer = lookupSerializer
+    self.lookupDeserializer = lookupDeserializer
+  }
 
   /// Represents an import: a module or a specific item from a module.
   public struct Dependency {
     /// If the dependency is an item, the property's value is the item representation.
     /// If the dependency is a module, this property is nil.
-    var item: Item? = nil
+    public var item: Item? = nil
 
     /// The name of the imported module or of the module an item is imported from.
-    var module: String
+    public var module: String
+
+    public init(item: Item? = nil, module: String) {
+      self.item = item
+      self.module = module
+    }
 
     /// Represents an item imported from a module.
     public struct Item {
       /// The keyword that specifies the item's kind (e.g.  `func`, `struct`).
-      var kind: Kind
+      public var kind: Kind
 
       /// The imported item's symbol / name.
-      var name: String
+      public var name: String
 
+      public init(kind: Kind, name: String) {
+        self.kind = kind
+        self.name = name
+      }
       /// Represents the imported item's kind.
       public struct Kind {
-        /// One of the possible keywords associated to the imported item's kind.
-        var keyword: Keyword
-
-        public init(_ keyword: Keyword) {
-          self.keyword = keyword
-        }
-
-        internal enum Keyword {
+        /// Describes the keyword associated with the imported item.
+        internal enum Value {
           case `typealias`
           case `struct`
           case `class`
@@ -83,42 +104,121 @@ public struct CodeGenerationRequest {
           case `var`
           case `func`
         }
+
+        internal var value: Value
+
+        internal init(_ value: Value) {
+          self.value = value
+        }
+
+        /// The imported item is a typealias.
+        public static var `typealias`: Self {
+          Self(.`typealias`)
+        }
+
+        /// The imported item is a struct.
+        public static var `struct`: Self {
+          Self(.`struct`)
+        }
+
+        /// The imported item is a class.
+        public static var `class`: Self {
+          Self(.`class`)
+        }
+
+        /// The imported item is an enum.
+        public static var `enum`: Self {
+          Self(.`enum`)
+        }
+
+        /// The imported item is a protocol.
+        public static var `protocol`: Self {
+          Self(.`protocol`)
+        }
+
+        /// The imported item is a let.
+        public static var `let`: Self {
+          Self(.`let`)
+        }
+
+        /// The imported item is a var.
+        public static var `var`: Self {
+          Self(.`var`)
+        }
+
+        /// The imported item is a function.
+        public static var `func`: Self {
+          Self(.`func`)
+        }
       }
     }
   }
 
   /// Represents a service described in an IDL file.
-  struct ServiceDescriptor {
+  public struct ServiceDescriptor {
     /// Documentation from comments above the IDL service description.
-    var documentation: String
+    public var documentation: String
 
     /// Service name.
-    var name: String
+    public var name: String
+
+    /// The service namespace.
+    ///
+    /// For `.proto` files it is the package name.
+    public var namespace: String
 
     /// Array of descriptors for the methods of a service.
     ///
     /// - SeeAlso: ``MethodDescriptor``.
-    var methods: [MethodDescriptor] = []
+    public var methods: [MethodDescriptor]
+
+    public init(
+      documentation: String,
+      name: String,
+      namespace: String,
+      methods: [MethodDescriptor] = []
+    ) {
+      self.documentation = documentation
+      self.name = name
+      self.namespace = namespace
+      self.methods = methods
+    }
 
     /// Represents a method described in an IDL file.
-    struct MethodDescriptor {
+    public struct MethodDescriptor {
       /// Documentation from comments above the IDL method description.
-      var documentation: String
+      public var documentation: String
 
       /// Method name.
-      var name: String
+      public var name: String
 
       /// Identifies if the method is input streaming.
-      var isInputStreaming: Bool
+      public var isInputStreaming: Bool
 
       /// Identifies if the method is output streaming.
-      var isOutputStreaming: Bool
+      public var isOutputStreaming: Bool
 
       /// The generated input type for the described method.
-      var inputType: String
+      public var inputType: String
 
       /// The generated output type for the described method.
-      var ouputType: String
+      public var ouputType: String
+
+      public init(
+        documentation: String,
+        name: String,
+        isInputStreaming: Bool,
+        isOutputStreaming: Bool,
+        inputType: String,
+        ouputType: String
+      ) {
+        self.documentation = documentation
+        self.name = name
+        self.isInputStreaming = isInputStreaming
+        self.isOutputStreaming = isOutputStreaming
+        self.inputType = inputType
+        self.ouputType = ouputType
+      }
     }
   }
 }
