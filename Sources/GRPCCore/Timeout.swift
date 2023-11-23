@@ -32,14 +32,15 @@ public struct Timeout: CustomStringConvertible, Equatable {
   public var description: String {
     return self.wireEncoding
   }
-  
+
   public init?(stringLiteral value: String) {
-    guard 2...8 ~= value.count else {
+    guard 2 ... 8 ~= value.count else {
       return nil
     }
 
-    if let amount = Int64(value.dropLast()), 
-       let unit = TimeoutUnit(rawValue: value.last!) {
+    if let amount = Int64(value.dropLast()),
+      let unit = TimeoutUnit(rawValue: value.last!)
+    {
       self = Self.init(amount: amount, unit: unit)
     } else {
       return nil
@@ -51,8 +52,8 @@ public struct Timeout: CustomStringConvertible, Equatable {
   /// - Precondition: The amount should be greater than or equal to zero and less than or equal
   ///   to `GRPCTimeout.maxAmount`.
   internal init(amount: Int64, unit: TimeoutUnit) {
-    precondition(0...Timeout.maxAmount ~= amount)
-    
+    precondition(0 ... Timeout.maxAmount ~= amount)
+
     self.duration = Duration(amount: amount, unit: unit)
     self.wireEncoding = "\(amount)\(unit.rawValue)"
   }
@@ -115,7 +116,7 @@ extension Duration {
   internal static func minutes(_ minutes: Int64) -> Duration {
     return Self.init(secondsComponent: 60 * minutes, attosecondsComponent: 0)
   }
-  
+
   /// Construct a `Duration` given a number of hours represented as an `Int64`.
   ///
   ///       let d: Duration = .hours(3)
@@ -124,7 +125,7 @@ extension Duration {
   internal static func hours(_ hours: Int64) -> Duration {
     return Self.init(secondsComponent: 60 * 60 * hours, attosecondsComponent: 0)
   }
-  
+
   internal init(amount: Int64, unit: TimeoutUnit) {
     switch unit {
     case .hours:

@@ -1,3 +1,5 @@
+import XCTest
+
 /*
  * Copyright 2023, gRPC Authors All rights reserved.
  *
@@ -14,82 +16,81 @@
  * limitations under the License.
  */
 @testable import GRPCCore
-import XCTest
 
 final class TimeoutTests: XCTestCase {
   func testDecodeInvalidTimeout_Empty() {
     let timeoutHeader = ""
     XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
   }
-  
+
   func testDecodeInvalidTimeout_NoAmount() {
     let timeoutHeader = "H"
     XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
   }
-  
+
   func testDecodeInvalidTimeout_NoUnit() {
     let timeoutHeader = "123"
     XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
   }
-  
+
   func testDecodeInvalidTimeout_TooLongAmount() {
     let timeoutHeader = "100000000S"
     XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
   }
-  
+
   func testDecodeInvalidTimeout_InvalidUnit() {
     let timeoutHeader = "123j"
     XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
   }
-  
-  func testDecodeValidTimeout_Hours(){
+
+  func testDecodeValidTimeout_Hours() {
     let timeoutHeader = "123H"
     let timeout = Timeout(stringLiteral: timeoutHeader)
     XCTAssertNotNil(timeout)
     XCTAssertEqual(timeout!.duration, Duration.hours(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
-  func testDecodeValidTimeout_Minutes(){
+
+  func testDecodeValidTimeout_Minutes() {
     let timeoutHeader = "123M"
     let timeout = Timeout(stringLiteral: timeoutHeader)
     XCTAssertNotNil(timeout)
     XCTAssertEqual(timeout!.duration, Duration.minutes(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
-  func testDecodeValidTimeout_Seconds(){
+
+  func testDecodeValidTimeout_Seconds() {
     let timeoutHeader = "123S"
     let timeout = Timeout(stringLiteral: timeoutHeader)
     XCTAssertNotNil(timeout)
     XCTAssertEqual(timeout!.duration, Duration.seconds(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
-  func testDecodeValidTimeout_Milliseconds(){
+
+  func testDecodeValidTimeout_Milliseconds() {
     let timeoutHeader = "123m"
     let timeout = Timeout(stringLiteral: timeoutHeader)
     XCTAssertNotNil(timeout)
     XCTAssertEqual(timeout!.duration, Duration.milliseconds(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
-  func testDecodeValidTimeout_Microseconds(){
+
+  func testDecodeValidTimeout_Microseconds() {
     let timeoutHeader = "123u"
     let timeout = Timeout(stringLiteral: timeoutHeader)
     XCTAssertNotNil(timeout)
     XCTAssertEqual(timeout!.duration, Duration.microseconds(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
-  func testDecodeValidTimeout_Nanoseconds(){
+
+  func testDecodeValidTimeout_Nanoseconds() {
     let timeoutHeader = "123n"
     let timeout = Timeout(stringLiteral: timeoutHeader)
     XCTAssertNotNil(timeout)
     XCTAssertEqual(timeout!.duration, Duration.nanoseconds(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
+
   func testRoundingNegativeTimeout() {
     let timeout = Timeout(rounding: -10, unit: .seconds)
     XCTAssertEqual(String(describing: timeout), "0S")
@@ -137,7 +138,7 @@ final class TimeoutTests: XCTestCase {
     //   = 2_057_613.15
     //   = 2_057_614 (minutes, rounded up)
     XCTAssertEqual(String(describing: timeout), "2057614M")
-    XCTAssertEqual(timeout.duration, .minutes(2057614))
+    XCTAssertEqual(timeout.duration, .minutes(2_057_614))
   }
 
   func testRoundingMinutesTimeout() throws {
@@ -148,7 +149,7 @@ final class TimeoutTests: XCTestCase {
     //   = 2_057_613.15
     //   = 2_057_614 (hours, rounded up)
     XCTAssertEqual(String(describing: timeout), "2057614H")
-    XCTAssertEqual(timeout.duration, .hours(2057614))
+    XCTAssertEqual(timeout.duration, .hours(2_057_614))
   }
 
   func testRoundingHoursTimeout() throws {
