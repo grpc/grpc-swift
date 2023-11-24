@@ -309,12 +309,18 @@ final class ServerTests: XCTestCase {
       try await server.run()
     }
 
-    async let _ = inProcess.client.connect(lazily: true)
-    try await self.doEchoGet(using: inProcess.client)
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try? await inProcess.client.connect(lazily: true)
+      }
 
-    // The server must be running at this point as an RPC has completed.
-    task.cancel()
-    try await task.value
+      try await self.doEchoGet(using: inProcess.client)
+      // The server must be running at this point as an RPC has completed.
+      task.cancel()
+      try await task.value
+
+      group.cancelAll()
+    }
   }
 
   func testTestRunServerWithNoTransport() async throws {
@@ -356,23 +362,32 @@ final class ServerTests: XCTestCase {
 
     // Connect the in process client and start an RPC. When the stream is opened signal the
     // other transport to throw. This stream should be failed by the server.
-    async let _ = try inProcess.client.connect(lazily: true)
-    async let _ = try inProcess.client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
-      // The stream is open to the in-process transport. Let the other transport start.
-      signal.continuation.finish()
-      try await stream.outbound.write(.metadata([:]))
-      stream.outbound.finish()
-
-      let parts = try await stream.inbound.collect()
-      XCTAssertStatus(parts.first) { status, _ in
-        XCTAssertEqual(status.code, .unavailable)
+    await withThrowingTaskGroup(of: Void.self) { [server] group in
+      group.addTask {
+        try await inProcess.client.connect(lazily: true)
       }
-    }
 
-    await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
-      try await server.run()
-    } errorHandler: { error in
-      XCTAssertEqual(error.code, .failedToStartTransport)
+      group.addTask {
+        try await inProcess.client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+          // The stream is open to the in-process transport. Let the other transport start.
+          signal.continuation.finish()
+          try await stream.outbound.write(.metadata([:]))
+          stream.outbound.finish()
+
+          let parts = try await stream.inbound.collect()
+          XCTAssertStatus(parts.first) { status, _ in
+            XCTAssertEqual(status.code, .unavailable)
+          }
+        }
+      }
+
+      await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
+        try await server.run()
+      } errorHandler: { error in
+        XCTAssertEqual(error.code, .failedToStartTransport)
+      }
+
+      group.cancelAll()
     }
   }
 
