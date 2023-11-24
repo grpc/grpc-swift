@@ -40,7 +40,8 @@ public struct RPCAsyncSequence<Element>: AsyncSequence, Sendable {
     }
 
     public mutating func next() async throws -> Element? {
-      return try await self.iterator.next() as? Element
+      let elem = try await self.iterator.next()
+      return elem as? Element
     }
   }
 }

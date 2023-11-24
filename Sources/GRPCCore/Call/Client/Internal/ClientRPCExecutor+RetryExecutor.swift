@@ -118,169 +118,180 @@ extension ClientRPCExecutor.RetryExecutor {
       var delayIterator = delaySequence.makeIterator()
 
       for attempt in 1 ... self.policy.maximumAttempts {
-        group.addTask {
-          await withTaskGroup(
-            of: _RetryExecutorSubTask<R>.self,
-            returning: _RetryExecutorTask<R>.self
-          ) { thisAttemptGroup in
-            let streamExecutor = ClientStreamExecutor(transport: self.transport)
-            thisAttemptGroup.addTask {
-              await streamExecutor.run()
-              return .streamProcessed
-            }
+        do {
+          let attemptResult = try await self.transport.withStream(descriptor: method) { stream in
+            group.addTask {
+              await withTaskGroup(
+                of: _RetryExecutorSubTask<R>.self,
+                returning: _RetryExecutorTask<R>.self
+              ) { thisAttemptGroup in
+                let streamExecutor = ClientStreamExecutor(transport: self.transport)
+                thisAttemptGroup.addTask {
+                  await streamExecutor.run()
+                  return .streamProcessed
+                }
 
-            thisAttemptGroup.addTask {
-              let response = await ClientRPCExecutor.unsafeExecute(
-                request: ClientRequest.Stream(metadata: request.metadata) {
-                  try await $0.write(contentsOf: retry.stream)
-                },
-                method: method,
-                attempt: attempt,
-                serializer: self.serializer,
-                deserializer: self.deserializer,
-                interceptors: self.interceptors,
-                streamProcessor: streamExecutor
-              )
+                thisAttemptGroup.addTask {
+                  let response = await ClientRPCExecutor.unsafeExecute(
+                    request: ClientRequest.Stream(metadata: request.metadata) {
+                      try await $0.write(contentsOf: retry.stream)
+                    },
+                    method: method,
+                    attempt: attempt,
+                    serializer: self.serializer,
+                    deserializer: self.deserializer,
+                    interceptors: self.interceptors,
+                    streamProcessor: streamExecutor,
+                    stream: stream
+                  )
 
-              let shouldRetry: Bool
-              let retryDelayOverride: Duration?
+                  let shouldRetry: Bool
+                  let retryDelayOverride: Duration?
 
-              switch response.accepted {
-              case .success:
-                // Request was accepted. This counts as success to the throttle and there's no need
-                // to retry.
-                self.transport.retryThrottle.recordSuccess()
-                retryDelayOverride = nil
-                shouldRetry = false
-
-              case .failure(let error):
-                // The request was rejected. Determine whether a retry should be carried out. The
-                // following conditions must be checked:
-                //
-                // - Whether the status code is retryable.
-                // - Whether more attempts are permitted by the config.
-                // - Whether the throttle permits another retry to be carried out.
-                // - Whether the server pushed back to either stop further retries or to override
-                //   the delay before the next retry.
-                let code = Status.Code(error.code)
-                let isRetryableStatusCode = self.policy.retryableStatusCodes.contains(code)
-
-                if isRetryableStatusCode {
-                  // Counted as failure for throttling.
-                  let throttled = self.transport.retryThrottle.recordFailure()
-
-                  // Status code can be retried, Did the server send pushback?
-                  switch error.metadata.retryPushback {
-                  case .retryAfter(let delay):
-                    // Pushback: only retry if our config permits it.
-                    shouldRetry = (attempt < self.policy.maximumAttempts) && !throttled
-                    retryDelayOverride = delay
-                  case .stopRetrying:
-                    // Server told us to stop trying.
+                  switch response.accepted {
+                  case .success:
+                    // Request was accepted. This counts as success to the throttle and there's no need
+                    // to retry.
+                    self.transport.retryThrottle.recordSuccess()
+                    retryDelayOverride = nil
                     shouldRetry = false
-                    retryDelayOverride = nil
-                  case .none:
-                    // No pushback: only retry if our config permits it.
-                    shouldRetry = (attempt < self.policy.maximumAttempts) && !throttled
-                    retryDelayOverride = nil
-                    break
+
+                  case .failure(let error):
+                    // The request was rejected. Determine whether a retry should be carried out. The
+                    // following conditions must be checked:
+                    //
+                    // - Whether the status code is retryable.
+                    // - Whether more attempts are permitted by the config.
+                    // - Whether the throttle permits another retry to be carried out.
+                    // - Whether the server pushed back to either stop further retries or to override
+                    //   the delay before the next retry.
+                    let code = Status.Code(error.code)
+                    let isRetryableStatusCode = self.policy.retryableStatusCodes.contains(code)
+
+                    if isRetryableStatusCode {
+                      // Counted as failure for throttling.
+                      let throttled = self.transport.retryThrottle.recordFailure()
+
+                      // Status code can be retried, Did the server send pushback?
+                      switch error.metadata.retryPushback {
+                      case .retryAfter(let delay):
+                        // Pushback: only retry if our config permits it.
+                        shouldRetry = (attempt < self.policy.maximumAttempts) && !throttled
+                        retryDelayOverride = delay
+                      case .stopRetrying:
+                        // Server told us to stop trying.
+                        shouldRetry = false
+                        retryDelayOverride = nil
+                      case .none:
+                        // No pushback: only retry if our config permits it.
+                        shouldRetry = (attempt < self.policy.maximumAttempts) && !throttled
+                        retryDelayOverride = nil
+                        break
+                      }
+                    } else {
+                      // Not-retryable; this is considered a success.
+                      self.transport.retryThrottle.recordSuccess()
+                      shouldRetry = false
+                      retryDelayOverride = nil
+                    }
                   }
-                } else {
-                  // Not-retryable; this is considered a success.
-                  self.transport.retryThrottle.recordSuccess()
-                  shouldRetry = false
-                  retryDelayOverride = nil
+
+                  if shouldRetry {
+                    // Cancel subscribers of the broadcast sequence. This is safe as we are the only
+                    // subscriber and maximises the chances that 'isKnownSafeForNextSubscriber' will
+                    // return true.
+                    //
+                    // Note: this must only be called if we should retry, otherwise we may cancel a
+                    // subscriber for an accepted request.
+                    retry.stream.invalidateAllSubscriptions()
+
+                    // Only retry if we know it's safe for the next subscriber, that is, the first
+                    // element is still in the buffer. It's safe to call this because there's only
+                    // ever one attempt at a time and the existing subscribers have been invalidated.
+                    if retry.stream.isKnownSafeForNextSubscriber {
+                      return .retry(retryDelayOverride)
+                    }
+                  }
+
+                  // Not retrying or not safe to retry.
+                  let result = await Result {
+                    // Check for cancellation; the RPC may have timed out in which case we should skip
+                    // the response handler.
+                    try Task.checkCancellation()
+                    return try await responseHandler(response)
+                  }
+                  return .handledResponse(result)
                 }
-              }
 
-              if shouldRetry {
-                // Cancel subscribers of the broadcast sequence. This is safe as we are the only
-                // subscriber and maximises the chances that 'isKnownSafeForNextSubscriber' will
-                // return true.
-                //
-                // Note: this must only be called if we should retry, otherwise we may cancel a
-                // subscriber for an accepted request.
-                retry.stream.invalidateAllSubscriptions()
+                while let result = await thisAttemptGroup.next() {
+                  switch result {
+                  case .streamProcessed:
+                    ()  // Continue processing; wait for the response to be handled.
 
-                // Only retry if we know it's safe for the next subscriber, that is, the first
-                // element is still in the buffer. It's safe to call this because there's only
-                // ever one attempt at a time and the existing subscribers have been invalidated.
-                if retry.stream.isKnownSafeForNextSubscriber {
-                  return .retry(retryDelayOverride)
+                  case .retry(let delayOverride):
+                    thisAttemptGroup.cancelAll()
+                    return .retry(delayOverride)
+
+                  case .handledResponse(let result):
+                    thisAttemptGroup.cancelAll()
+                    return .handledResponse(result)
+                  }
                 }
-              }
 
-              // Not retrying or not safe to retry.
-              let result = await Result {
-                // Check for cancellation; the RPC may have timed out in which case we should skip
-                // the response handler.
-                try Task.checkCancellation()
-                return try await responseHandler(response)
+                fatalError("Internal inconsistency")
               }
-              return .handledResponse(result)
             }
 
-            while let result = await thisAttemptGroup.next() {
-              switch result {
-              case .streamProcessed:
-                ()  // Continue processing; wait for the response to be handled.
+            loop: while let next = await group.next() {
+              switch next {
+              case .handledResponse(let result):
+                // A usable response; cancel the remaining work and return the result.
+                group.cancelAll()
+                return Optional.some(result)
 
               case .retry(let delayOverride):
-                thisAttemptGroup.cancelAll()
-                return .retry(delayOverride)
+                // The attempt failed, wait a bit and then retry. The server might have overridden the
+                // delay via pushback so preferentially use that value.
+                //
+                // Any error will come from cancellation: if it happens while we're sleeping we can
+                // just loop around, the next attempt will be cancelled immediately and we will return
+                // its response to the client.
+                if let delayOverride = delayOverride {
+                  // If the delay is overridden with server pushback then reset the iterator for the
+                  // next retry.
+                  delayIterator = delaySequence.makeIterator()
+                  try? await Task.sleep(until: .now.advanced(by: delayOverride), clock: .continuous)
+                } else {
+                  // The delay iterator never terminates.
+                  try? await Task.sleep(
+                    until: .now.advanced(by: delayIterator.next()!),
+                    clock: .continuous
+                  )
+                }
 
-              case .handledResponse(let result):
-                thisAttemptGroup.cancelAll()
-                return .handledResponse(result)
+                break loop  // from the while loop so another attempt can be started.
+
+              case .timedOut(.success), .outboundFinished(.failure):
+                // Timeout task fired successfully or failed to process the outbound stream. Cancel and
+                // wait for a usable response (which is likely to be an error).
+                group.cancelAll()
+
+              case .timedOut(.failure), .outboundFinished(.success):
+                // Timeout task failed which means it was cancelled (so no need to cancel again) or the
+                // outbound stream was successfully processed (so don't need to do anything).
+                ()
               }
             }
-
-            fatalError("Internal inconsistency")
+            return nil
           }
-        }
 
-        loop: while let next = await group.next() {
-          switch next {
-          case .handledResponse(let result):
-            // A usable response; cancel the remaining work and return the result.
-            group.cancelAll()
-            return result
-
-          case .retry(let delayOverride):
-            // The attempt failed, wait a bit and then retry. The server might have overridden the
-            // delay via pushback so preferentially use that value.
-            //
-            // Any error will come from cancellation: if it happens while we're sleeping we can
-            // just loop around, the next attempt will be cancelled immediately and we will return
-            // its response to the client.
-            if let delayOverride = delayOverride {
-              // If the delay is overridden with server pushback then reset the iterator for the
-              // next retry.
-              delayIterator = delaySequence.makeIterator()
-              try? await Task.sleep(until: .now.advanced(by: delayOverride), clock: .continuous)
-            } else {
-              // The delay iterator never terminates.
-              try? await Task.sleep(
-                until: .now.advanced(by: delayIterator.next()!),
-                clock: .continuous
-              )
-            }
-
-            break loop  // from the while loop so another attempt can be started.
-
-          case .timedOut(.success), .outboundFinished(.failure):
-            // Timeout task fired successfully or failed to process the outbound stream. Cancel and
-            // wait for a usable response (which is likely to be an error).
-            group.cancelAll()
-
-          case .timedOut(.failure), .outboundFinished(.success):
-            // Timeout task failed which means it was cancelled (so no need to cancel again) or the
-            // outbound stream was successfully processed (so don't need to do anything).
-            ()
+          if let attemptResult {
+            return attemptResult
           }
+        } catch {
+          return .failure(error)
         }
       }
-
       fatalError("Internal inconsistency")
     }
 

@@ -21,20 +21,22 @@ struct AnyClientTransport: ClientTransport, Sendable {
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   private let _retryThrottle: @Sendable () -> RetryThrottle
-  private let _openStream: @Sendable (MethodDescriptor) async throws -> RPCStream<Inbound, Outbound>
+  private let _withStream:
+    @Sendable (
+      _ method: MethodDescriptor,
+      _ body: (RPCStream<Inbound, Outbound>) async throws -> Any
+    ) async throws -> Any
   private let _connect: @Sendable (Bool) async throws -> Void
   private let _close: @Sendable () -> Void
   private let _configuration: @Sendable (MethodDescriptor) -> ClientRPCExecutionConfiguration?
 
-  init<Transport: ClientTransport>(wrapping transport: Transport) {
+  init<Transport: ClientTransport>(wrapping transport: Transport)
+  where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
     self._retryThrottle = { transport.retryThrottle }
-    self._openStream = { descriptor in
-      let stream = try await transport.openStream(descriptor: descriptor)
-      return RPCStream(
-        descriptor: stream.descriptor,
-        inbound: RPCAsyncSequence(wrapping: stream.inbound),
-        outbound: RPCWriter.Closable(wrapping: stream.outbound)
-      )
+    self._withStream = { descriptor, closure in
+      try await transport.withStream(descriptor: descriptor) { stream in
+        try await closure(stream) as Any
+      }
     }
 
     self._connect = { lazily in
@@ -62,10 +64,12 @@ struct AnyClientTransport: ClientTransport, Sendable {
     self._close()
   }
 
-  func openStream(
-    descriptor: MethodDescriptor
-  ) async throws -> RPCStream<Inbound, Outbound> {
-    try await self._openStream(descriptor)
+  func withStream<T>(
+    descriptor: MethodDescriptor,
+    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+  ) async throws -> T {
+    let result = try await self._withStream(descriptor, closure)
+    return result as! T
   }
 
   func executionConfiguration(

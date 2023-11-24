@@ -16,7 +16,16 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 /// An in-process implementation of a ``ServerTransport``.
-public struct InProcessServerTransport: ServerTransport {
+///
+/// This is useful when you're interested in testing your application without any actual networking layers
+/// involved, as the client and server will communicate directly with each other via in-process streams.
+///
+/// To use this server, you call ``listen()`` and iterate over the returned `AsyncSequence` to get all
+/// RPC requests made from clients (as ``RPCStream``s).
+/// To stop listening to new requests, call ``stopListening()``.
+///
+/// - SeeAlso: ``ClientTransport``
+public struct InProcessServerTransport: ServerTransport, Sendable {
   public typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
@@ -56,6 +65,8 @@ public struct InProcessServerTransport: ServerTransport {
   ///
   /// All further calls to ``acceptStream(_:)`` will not produce any new elements on the
   /// ``RPCAsyncSequence`` returned by ``listen()``.
+  ///
+  /// - SeeAlso: ``ServerTransport``
   public func stopListening() {
     self.newStreamsContinuation.finish()
   }

@@ -13,26 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
 
-@testable import GRPCCore
-
+#if swift(<5.9)
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension InProcessServerTransport {
-  func spawnClientTransport(
-    throttle: RetryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
-  ) -> InProcessClientTransport {
-    return InProcessClientTransport(
-      server: self,
-      executionConfigurations: .init(
-        defaultConfiguration: .init(
-          hedgingPolicy: .init(
-            maximumAttempts: 2,
-            hedgingDelay: .milliseconds(100),
-            nonFatalStatusCodes: []
-          )
-        )
-      )
-    )
+extension Task where Success == Never, Failure == Never {
+  @inlinable
+  static func sleep<C: Clock>(
+    for duration: C.Instant.Duration,
+    tolerance: C.Instant.Duration? = nil,
+    clock: C = ContinuousClock()
+  ) async throws {
+    try await clock.sleep(until: clock.now.advanced(by: duration), tolerance: tolerance)
   }
 }
+#endif

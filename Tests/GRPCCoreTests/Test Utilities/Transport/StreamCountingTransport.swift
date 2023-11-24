@@ -34,7 +34,8 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     self._streamFailures.load(ordering: .sequentiallyConsistent)
   }
 
-  init<Transport: ClientTransport>(wrapping transport: Transport) {
+  init<Transport: ClientTransport>(wrapping transport: Transport)
+  where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
     self.transport = AnyClientTransport(wrapping: transport)
   }
 
@@ -50,13 +51,15 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     self.transport.close()
   }
 
-  func openStream(
-    descriptor: MethodDescriptor
-  ) async throws -> RPCStream<Inbound, Outbound> {
+  func withStream<T>(
+    descriptor: MethodDescriptor,
+    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+  ) async throws -> T {
     do {
-      let stream = try await self.transport.openStream(descriptor: descriptor)
-      self._streamsOpened.wrappingIncrement(ordering: .sequentiallyConsistent)
-      return stream
+      return try await self.transport.withStream(descriptor: descriptor) { stream in
+        self._streamsOpened.wrappingIncrement(ordering: .sequentiallyConsistent)
+        return try await closure(stream)
+      }
     } catch {
       self._streamFailures.wrappingIncrement(ordering: .sequentiallyConsistent)
       throw error
