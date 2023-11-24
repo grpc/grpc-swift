@@ -87,6 +87,7 @@ extension Target.Dependency {
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
   static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
+  static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
 
   // Target dependencies; internal
   static let grpcSampleData: Self = .target(name: "GRPCSampleData")
@@ -477,6 +478,11 @@ extension Target {
     resources: [
       .copy("Generated")
     ]
+  )
+  
+  static let grpcCodeGen: Target = .target(
+    name: "GRPCCodeGen",
+    path: "Sources/GRPCCodeGen"
   )
 }
 
