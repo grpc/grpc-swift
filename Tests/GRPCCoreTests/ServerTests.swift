@@ -356,8 +356,8 @@ final class ServerTests: XCTestCase {
 
     // Connect the in process client and start an RPC. When the stream is opened signal the
     // other transport to throw. This stream should be failed by the server.
-    async let _ = inProcess.client.connect(lazily: true)
-    async let _ = inProcess.client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+    async let _ = try inProcess.client.connect(lazily: true)
+    async let _ = try inProcess.client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
       // The stream is open to the in-process transport. Let the other transport start.
       signal.continuation.finish()
       try await stream.outbound.write(.metadata([:]))
