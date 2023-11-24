@@ -20,46 +20,60 @@ public struct CodeGenerationRequest {
   /// The name of the source file containing the IDL, including the extension if applicable.
   public var fileName: String
 
+  /// Any comments at the top of the file such as documentation and copyright headers.
+  /// They will be placed at the top of the generated file.
+  public var leadingTrivia: String
+
   /// The Swift imports that the generated file depends on. The gRPC specific imports aren't required
   /// as they will be added by default in the generated file.
   ///
   /// - SeeAlso: ``Dependency``.
   public var dependencies: [Dependency]
 
-  /// Any comments at the top of the file such as documentation and copyright headers.
-  /// They will be placed at the top of the generated file.
-  public var leadingTrivia: String
-
-  /// An array of service descriptors.
+  /// A description of each service to generate.
   ///
   /// - SeeAlso: ``ServiceDescriptor``.
   public var services: [ServiceDescriptor]
 
-  /// Closure that receives the message type and returns a string representation of the
-  /// serializer call for that message type. The result is inserted in the string representing
-  /// the generated code, where clients or servers serialize their output.
+  /// Closure that receives a message type as a `String` and returns a code snippet to
+  /// initialize a `MessageSerializer` for that type as a `String`.
   ///
-  /// For example: `lookupSerializer: {"ProtobufSerializer<\($0)>()"}`.
+  /// The result is inserted in the generated code, where clients serialize RPC inputs and
+  /// servers serialize RPC outputs.
+  ///
+  /// For example, to serialize Protobuf messages you could specify a serializer as:
+  /// ```swift
+  /// request.lookupSerializer = { messageType in
+  ///   "ProtobufSerializer<\(messageType)>()"
+  /// }
+  /// ```
   public var lookupSerializer: (_ messageType: String) -> String
 
-  /// Closure that receives the message type and returns a string representation of the
-  /// deserializer call for that message type. The result is inserted in the string representing
-  /// the generated code, where clients or servers deserialize their input.
+  /// Closure that receives a message type as a `String` and returns a code snippet to
+  /// initialize a `MessageDeserializer` for that type as a `String`.
   ///
-  /// For example: `lookupDeserializer: {"ProtobufDeserializer<\($0)>()"}`.
+  /// The result is inserted in the generated code, where clients deserialize RPC outputs and
+  /// servers deserialize RPC inputs.
+  ///
+  /// For example, to serialize Protobuf messages you could specify a serializer as:
+  /// ```swift
+  /// request.lookupDeserializer = { messageType in
+  ///   "ProtobufDeserializer<\(messageType)>()"
+  /// }
+  /// ```
   public var lookupDeserializer: (_ messageType: String) -> String
 
   public init(
     fileName: String,
-    dependencies: [Dependency] = [],
     leadingTrivia: String,
-    services: [ServiceDescriptor] = [],
+    dependencies: [Dependency],
+    services: [ServiceDescriptor],
     lookupSerializer: @escaping (String) -> String,
     lookupDeserializer: @escaping (String) -> String
   ) {
     self.fileName = fileName
-    self.dependencies = dependencies
     self.leadingTrivia = leadingTrivia
+    self.dependencies = dependencies
     self.services = services
     self.lookupSerializer = lookupSerializer
     self.lookupDeserializer = lookupDeserializer
@@ -81,16 +95,17 @@ public struct CodeGenerationRequest {
 
     /// Represents an item imported from a module.
     public struct Item {
-      /// The keyword that specifies the item's kind (e.g.  `func`, `struct`).
+      /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
       public var kind: Kind
 
-      /// The imported item's symbol / name.
+      /// The name of the imported item.
       public var name: String
 
       public init(kind: Kind, name: String) {
         self.kind = kind
         self.name = name
       }
+
       /// Represents the imported item's kind.
       public struct Kind {
         /// Describes the keyword associated with the imported item.
@@ -167,7 +182,7 @@ public struct CodeGenerationRequest {
     /// For `.proto` files it is the package name.
     public var namespace: String
 
-    /// Array of descriptors for the methods of a service.
+    /// A description of each method of a service.
     ///
     /// - SeeAlso: ``MethodDescriptor``.
     public var methods: [MethodDescriptor]
@@ -176,7 +191,7 @@ public struct CodeGenerationRequest {
       documentation: String,
       name: String,
       namespace: String,
-      methods: [MethodDescriptor] = []
+      methods: [MethodDescriptor]
     ) {
       self.documentation = documentation
       self.name = name
