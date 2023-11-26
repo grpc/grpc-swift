@@ -1,5 +1,3 @@
-import XCTest
-
 /*
  * Copyright 2023, gRPC Authors All rights reserved.
  *
@@ -15,6 +13,8 @@ import XCTest
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import XCTest
+
 @testable import GRPCCore
 
 final class TimeoutTests: XCTestCase {
