@@ -38,13 +38,13 @@ extension Metadata {
   }
 
   @inlinable
-  var timeout: Timeout? {
+  var timeout: Duration? {
     get {
-      self.firstString(forKey: .timeout).flatMap { Timeout(stringLiteral: $0) }
+      self.firstString(forKey: .timeout).flatMap { Timeout(stringLiteral: $0)?.duration }
     }
     set {
       if let newValue {
-        self.replaceOrAddString(String(describing: newValue), forKey: .timeout)
+        self.replaceOrAddString(String(describing: Timeout(duration: newValue)), forKey: .timeout)
       } else {
         self.removeAllValues(forKey: .timeout)
       }
