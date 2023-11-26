@@ -90,28 +90,28 @@ final class TimeoutTests: XCTestCase {
     XCTAssertEqual(timeout!.duration, Duration.nanoseconds(123))
     XCTAssertEqual(timeout!.wireEncoding, timeoutHeader)
   }
-  
+
   func testEncodeValidTimeout_Hours() {
     let duration = Duration.hours(123)
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_Minutes() {
     let duration = Duration.minutes(43)
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_Seconds() {
     let duration = Duration.seconds(12345)
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_Seconds_TooLong_Minutes() {
     let duration = Duration.seconds(111_111_111)
     let timeout = Timeout(duration: duration)
@@ -119,9 +119,12 @@ final class TimeoutTests: XCTestCase {
     // 111,111,111 seconds / 60 = 1,851,851.85 minutes -rounding-> 1,851,851 minutes * 60 = 111,111,060 seconds
     let expectedRoundedDuration = Duration.minutes(1_851_851)
     XCTAssertEqual(timeout.duration.components.seconds, expectedRoundedDuration.components.seconds)
-    XCTAssertEqual(timeout.duration.components.attoseconds, expectedRoundedDuration.components.attoseconds)
+    XCTAssertEqual(
+      timeout.duration.components.attoseconds,
+      expectedRoundedDuration.components.attoseconds
+    )
   }
-  
+
   func testEncodeValidTimeout_Seconds_TooLong_Hours() {
     let duration = Duration.seconds(9_999_999_999)
     let timeout = Timeout(duration: duration)
@@ -131,9 +134,12 @@ final class TimeoutTests: XCTestCase {
     // 2,777,777 hours * 60 -> 166,666,620 minutes * 60 = 9,999,997,200 seconds
     let expectedRoundedDuration = Duration.hours(2_777_777)
     XCTAssertEqual(timeout.duration.components.seconds, expectedRoundedDuration.components.seconds)
-    XCTAssertEqual(timeout.duration.components.attoseconds, expectedRoundedDuration.components.attoseconds)
+    XCTAssertEqual(
+      timeout.duration.components.attoseconds,
+      expectedRoundedDuration.components.attoseconds
+    )
   }
-  
+
   func testEncodeValidTimeout_Seconds_TooLong_MaxAmount() {
     let duration = Duration.seconds(999_999_999_999)
     let timeout = Timeout(duration: duration)
@@ -142,23 +148,26 @@ final class TimeoutTests: XCTestCase {
     // Make sure that `Timeout.maxAmount` is the amount used for the resulting timeout.
     let expectedRoundedDuration = Duration.hours(Timeout.maxAmount)
     XCTAssertEqual(timeout.duration.components.seconds, expectedRoundedDuration.components.seconds)
-    XCTAssertEqual(timeout.duration.components.attoseconds, expectedRoundedDuration.components.attoseconds)
+    XCTAssertEqual(
+      timeout.duration.components.attoseconds,
+      expectedRoundedDuration.components.attoseconds
+    )
   }
-  
+
   func testEncodeValidTimeout_SecondsAndMilliseconds() {
     let duration = Duration(secondsComponent: 100, attosecondsComponent: Int64(1e+17))
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_SecondsAndMicroseconds() {
     let duration = Duration(secondsComponent: 1, attosecondsComponent: Int64(1e+14))
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_SecondsAndNanoseconds() {
     let duration = Duration(secondsComponent: 1, attosecondsComponent: Int64(1e+11))
     let timeout = Timeout(duration: duration)
@@ -166,23 +175,26 @@ final class TimeoutTests: XCTestCase {
     // 9 digits, and the maximum allowed is 8: we expect to simply drop the nanoseconds.
     let expectedRoundedDuration = Duration.seconds(1)
     XCTAssertEqual(timeout.duration.components.seconds, expectedRoundedDuration.components.seconds)
-    XCTAssertEqual(timeout.duration.components.attoseconds, expectedRoundedDuration.components.attoseconds)
+    XCTAssertEqual(
+      timeout.duration.components.attoseconds,
+      expectedRoundedDuration.components.attoseconds
+    )
   }
-  
+
   func testEncodeValidTimeout_Milliseconds() {
     let duration = Duration.milliseconds(100)
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_Microseconds() {
     let duration = Duration.microseconds(100)
     let timeout = Timeout(duration: duration)
     XCTAssertEqual(timeout.duration.components.seconds, duration.components.seconds)
     XCTAssertEqual(timeout.duration.components.attoseconds, duration.components.attoseconds)
   }
-  
+
   func testEncodeValidTimeout_Nanoseconds() {
     let duration = Duration.nanoseconds(100)
     let timeout = Timeout(duration: duration)

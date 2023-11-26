@@ -17,17 +17,30 @@ import Dispatch
 
 /// A timeout for a gRPC call.
 ///
+/// It's a combination of an amount (expressed as an integer of at maximum 8 digits), and a unit, which is
+/// one of ``Timeout/Unit`` (hours, minutes, seconds, milliseconds, microseconds or nanoseconds).
+///
 /// Timeouts must be positive and at most 8-digits long.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
-struct Timeout: CustomStringConvertible, Equatable {
+struct Timeout: CustomStringConvertible, Hashable, Sendable {
+  /// Possible units for a ``Timeout``.
+  internal enum Unit: Character {
+    case hours = "H"
+    case minutes = "M"
+    case seconds = "S"
+    case milliseconds = "m"
+    case microseconds = "u"
+    case nanoseconds = "n"
+  }
+
   /// The largest amount of any unit of time which may be represented by a gRPC timeout.
   static let maxAmount: Int64 = 99_999_999
 
   /// The wire encoding of this timeout as described in the gRPC protocol.
   /// See "Timeout" in https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
   let wireEncoding: String
-  
+
   @usableFromInline
   let duration: Duration
 
@@ -43,14 +56,14 @@ struct Timeout: CustomStringConvertible, Equatable {
     }
 
     if let amount = Int64(value.dropLast()),
-      let unit = TimeoutUnit(rawValue: value.last!)
+      let unit = Unit(rawValue: value.last!)
     {
       self = Self.init(amount: amount, unit: unit)
     } else {
       return nil
     }
   }
-  
+
   /// Create a ``Timeout`` from a ``Duration``.
   ///
   /// - Important: It's not possible to know with what precision the duration was created: that is,
@@ -63,7 +76,7 @@ struct Timeout: CustomStringConvertible, Equatable {
   @usableFromInline
   init(duration: Duration) {
     let (seconds, attoseconds) = duration.components
-    
+
     if seconds == 0 {
       // There is no seconds component, so only pay attention to the attoseconds.
       // Try converting to nanoseconds first...
@@ -107,11 +120,11 @@ struct Timeout: CustomStringConvertible, Equatable {
         }
       } else {
         // We can't convert seconds to nanoseconds because that would take us
-        // over the 8 digit limit (1 second = 1e+9 nanoseconds). 
+        // over the 8 digit limit (1 second = 1e+9 nanoseconds).
         // We can however, try converting to microseconds or milliseconds.
         let nanoseconds = Int64(Double(attoseconds) / 1e+9)
         let microseconds = nanoseconds / 1000
-        
+
         if microseconds == 0 {
           self.init(amount: seconds, unit: .seconds)
         } else {
@@ -132,7 +145,7 @@ struct Timeout: CustomStringConvertible, Equatable {
       }
     }
   }
-  
+
   private static func exceedsDigitLimit(_ value: Int64) -> Bool {
     (value == 0 ? 1 : floor(log10(Double(value))) + 1) > 8
   }
@@ -141,7 +154,7 @@ struct Timeout: CustomStringConvertible, Equatable {
   ///
   /// - Precondition: The amount should be greater than or equal to zero and less than or equal
   ///   to `GRPCTimeout.maxAmount`.
-  internal init(amount: Int64, unit: TimeoutUnit) {
+  internal init(amount: Int64, unit: Unit) {
     precondition(0 ... Timeout.maxAmount ~= amount)
 
     self.duration = Duration(amount: amount, unit: unit)
@@ -169,7 +182,7 @@ extension Duration {
     return Self.init(secondsComponent: 60 * 60 * hours, attosecondsComponent: 0)
   }
 
-  internal init(amount: Int64, unit: TimeoutUnit) {
+  internal init(amount: Int64, unit: Timeout.Unit) {
     switch unit {
     case .hours:
       self = Self.hours(amount)
@@ -185,15 +198,4 @@ extension Duration {
       self = Self.nanoseconds(amount)
     }
   }
-  
-  
-}
-
-internal enum TimeoutUnit: Character {
-  case hours = "H"
-  case minutes = "M"
-  case seconds = "S"
-  case milliseconds = "m"
-  case microseconds = "u"
-  case nanoseconds = "n"
 }
