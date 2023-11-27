@@ -16,17 +16,17 @@
 
 /// Representation of the file to be created by the code generator, that contains the
 /// generated Swift source code.
-public struct SourceFile: Sendable {
+public struct SourceFile: Sendable, Hashable {
   /// The base name of the file.
   public var name: String
 
   /// The generated code as a String.
-  public var sourceCode: String
+  public var contents: String
 
   /// Creates a representation of a file containing Swift code with the specified name
   /// and contents.
-  public init(name: String, sourceCode: String) {
+  public init(name: String, contents: String) {
     self.name = name
-    self.sourceCode = sourceCode
+    self.contents = contents
   }
 }
