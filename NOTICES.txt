@@ -57,3 +57,12 @@ This product uses derivations of swift-extras/swift-extras-base64 'Base64.swift'
     * https://github.com/swift-extras/swift-extras-base64/blob/main/LICENSE
   * HOMEPAGE:
     * https://github.com/swift-extras/swift-extras-base64
+
+---
+
+This product uses derivations of apple/swift-openapi-generator 'StructuredSwiftRepresentation.swift'.
+    
+    * LICENSE (Apache License 2.0):
+      * https://github.com/apple/swift-openapi-generator/blob/main/LICENSE.txt
+    * HOMEPAGE:
+      * https://github.com/apple/swift-openapi-generator
