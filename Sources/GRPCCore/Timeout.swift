@@ -15,12 +15,6 @@
  */
 import Dispatch
 
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
-
 /// A timeout for a gRPC call.
 ///
 /// It's a combination of an amount (expressed as an integer of at maximum 8 digits), and a unit, which is
@@ -99,7 +93,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
       // There is no seconds component, so only pay attention to the attoseconds.
       // Try converting to nanoseconds first, and continue rounding up if the
       // max amount of digits is exceeded.
-      let nanoseconds = Int64(round(Double(attoseconds) / 1e+9))
+      let nanoseconds = Int64(Double(attoseconds) / 1e+9)
       self.init(rounding: nanoseconds, unit: .nanoseconds)
     } else if Self.exceedsDigitLimit(seconds) {
       // We don't have enough digits to represent this amount in seconds, so
