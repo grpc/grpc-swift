@@ -284,18 +284,23 @@ final class ServerTests: XCTestCase {
 
   func testInFlightRPCsCanContinueAfterServerStopListening() async throws {
     try await withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, server in
-      try await client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+      try await client.withStream(descriptor: BinaryEcho.Methods.update) { stream in
         try await stream.outbound.write(.metadata([:]))
+        var iterator = stream.inbound.makeAsyncIterator()
+        // Don't need to validate the response, just that the server is running.
+        let metadata = try await iterator.next()
+        XCTAssertMetadata(metadata)
 
         // New streams should fail immediately after this.
         server.stopListening()
 
-        // Don't need to validate the response, just that the server is running.
         try await stream.outbound.write(.message([0]))
         stream.outbound.finish()
 
-        let parts = try await stream.inbound.collect()
-        XCTAssertEqual(parts.count, 3)
+        let message = try await iterator.next()
+        XCTAssertMessage(message) { XCTAssertEqual($0, [0])}
+        let status = try await iterator.next()
+        XCTAssertStatus(status)
       }
     }
   }
