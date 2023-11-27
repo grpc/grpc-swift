@@ -34,7 +34,7 @@ import Atomics
 /// The following example demonstrates how to create and configure a server.
 ///
 /// ```swift
-/// let server = Server()
+/// let server = GRPCServer()
 ///
 /// // Create and add an in-process transport.
 /// let inProcessTransport = InProcessServerTransport()
@@ -66,7 +66,7 @@ import Atomics
 /// that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public final class Server: Sendable {
+public final class GRPCServer: Sendable {
   typealias Stream = RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
 
   /// A collection of ``ServerTransport`` implementations that the server uses to listen
@@ -406,7 +406,7 @@ public final class Server: Sendable {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Server {
+extension GRPCServer {
   /// The transports which provide a bidirectional communication channel with clients.
   ///
   /// You can add a new transport by calling ``add(_:)``.
@@ -456,14 +456,14 @@ extension Server {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Server.Transports: CustomStringConvertible {
+extension GRPCServer.Transports: CustomStringConvertible {
   public var description: String {
     return String(describing: self.values)
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Server.Services: CustomStringConvertible {
+extension GRPCServer.Services: CustomStringConvertible {
   public var description: String {
     // List the fully qualified all methods ordered by service and then method
     let rpcs = self.router.methods.map { $0.fullyQualifiedMethod }.sorted()
@@ -472,7 +472,7 @@ extension Server.Services: CustomStringConvertible {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Server.Interceptors: CustomStringConvertible {
+extension GRPCServer.Interceptors: CustomStringConvertible {
   public var description: String {
     return String(describing: self.values.map { String(describing: type(of: $0)) })
   }
