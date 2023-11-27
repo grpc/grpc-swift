@@ -133,3 +133,27 @@ public struct RPCRouter: Sendable {
     return self.handlers.removeValue(forKey: descriptor) != nil
   }
 }
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension RPCRouter {
+  internal func handle(
+    stream: RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>,
+    interceptors: [any ServerInterceptor]
+  ) async {
+    if let handler = self.handlers[stream.descriptor] {
+      await handler.handle(stream: stream, interceptors: interceptors)
+    } else {
+      // If this throws then the stream must be closed which we can't do anything about, so ignore
+      // any error.
+      try? await stream.outbound.write(.status(.rpcNotImplemented, [:]))
+      stream.outbound.finish()
+    }
+  }
+}
+
+extension Status {
+  fileprivate static let rpcNotImplemented = Status(
+    code: .unimplemented,
+    message: "Requested RPC isn't implemented by this server."
+  )
+}

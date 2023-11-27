@@ -520,13 +520,13 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
   func testDelegateCanTellWhenFirstConnectionIsBeingEstablished() {
     final class State {
-      private enum _State {
+      private enum Storage {
         case idle
         case connecting
         case connected
       }
 
-      private var state: _State = .idle
+      private var state: Storage = .idle
       private let lock = NIOLock()
 
       var isConnected: Bool {

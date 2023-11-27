@@ -49,3 +49,36 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
     throw RPCError(code: self.code, message: "")
   }
 }
+
+struct ThrowOnRunServerTransport: ServerTransport {
+  func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
+    throw RPCError(
+      code: .unavailable,
+      message: "The '\(type(of: self))' transport is never available."
+    )
+  }
+
+  func stopListening() {
+    // no-op
+  }
+}
+
+struct ThrowOnSignalServerTransport: ServerTransport {
+  let signal: AsyncStream<Void>
+
+  init(signal: AsyncStream<Void>) {
+    self.signal = signal
+  }
+
+  func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
+    for await _ in self.signal {}
+    throw RPCError(
+      code: .unavailable,
+      message: "The '\(type(of: self))' transport is never available."
+    )
+  }
+
+  func stopListening() {
+    // no-op
+  }
+}
