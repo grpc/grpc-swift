@@ -34,7 +34,7 @@ import Atomics
 /// The following example demonstrates how to create and configure a server.
 ///
 /// ```swift
-/// var server = Server()
+/// let server = Server()
 ///
 /// // Create and add an in-process transport.
 /// let inProcessTransport = InProcessServerTransport()
@@ -51,7 +51,7 @@ import Atomics
 /// ## Starting and stopping the server
 ///
 /// Once you have configured the server call ``run()`` to start it. Calling ``run()`` starts each
-/// of the servers transports. A ``ServerError`` is thrown if any of the transports can't be
+/// of the server's transports. A ``ServerError`` is thrown if any of the transports can't be
 /// started.
 ///
 /// ```swift
@@ -62,19 +62,33 @@ import Atomics
 /// The ``run()`` method won't return until the server has finished handling all requests. You can
 /// signal to the server that it should stop accepting new requests by calling ``stopListening()``.
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
-/// you can cancel the task running your server. If your services require additional resources that
-/// need their lifecycles managed you should consider using [Swift Service
+/// you can cancel the task running your server. If your application require additional resources
+/// that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct Server: Sendable {
+public final class Server: Sendable {
   typealias Stream = RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
 
   /// A collection of ``ServerTransport`` implementations that the server uses to listen
   /// for new requests.
-  public var transports: Transports
+  public var transports: Transports {
+    get {
+      self.storage.withLockedValue { $0.transports }
+    }
+    set {
+      self.storage.withLockedValue { $0.transports = newValue }
+    }
+  }
 
   /// The services registered which the server is serving.
-  public var services: Services
+  public var services: Services {
+    get {
+      self.storage.withLockedValue { $0.services }
+    }
+    set {
+      self.storage.withLockedValue { $0.services = newValue }
+    }
+  }
 
   /// A collection of ``ServerInterceptor`` implementations which are applied to all accepted
   /// RPCs.
@@ -82,7 +96,31 @@ public struct Server: Sendable {
   /// RPCs are intercepted in the order that interceptors are added. That is, a request received
   /// from the client will first be intercepted by the first added interceptor followed by the
   /// second, and so on.
-  public var interceptors: Interceptors
+  public var interceptors: Interceptors {
+    get {
+      self.storage.withLockedValue { $0.interceptors }
+    }
+    set {
+      self.storage.withLockedValue { $0.interceptors = newValue }
+    }
+  }
+
+  /// Underlying storage for the server.
+  private struct Storage {
+    var transports: Transports
+    var services: Services
+    var interceptors: Interceptors
+    var state: State
+
+    init() {
+      self.transports = Transports()
+      self.services = Services()
+      self.interceptors = Interceptors()
+      self.state = .notStarted
+    }
+  }
+
+  private let storage: LockedValueBox<Storage>
 
   /// The state of the server.
   private enum State {
@@ -101,18 +139,13 @@ public struct Server: Sendable {
     case stopped
   }
 
-  private let state: LockedValueBox<State>
-
   /// Creates a new server with no resources.
   ///
   /// You can add resources to the server via ``transports-swift.property``,
   /// ``services-swift.property``, and ``interceptors-swift.property`` and start the server by
   /// calling ``run()``. Any changes to resources after ``run()`` has been called will be ignored.
   public init() {
-    self.transports = Transports()
-    self.services = Services()
-    self.interceptors = Interceptors()
-    self.state = LockedValueBox(.notStarted)
+    self.storage = LockedValueBox(Storage())
   }
 
   /// Starts the server and runs until all registered transports have closed.
@@ -131,11 +164,14 @@ public struct Server: Sendable {
   ///
   /// - Note: You can only call this function once, repeated calls will result in a
   ///   ``ServerError`` being thrown.
+  /// - Important: You must register at least one transport by calling
+  ///   ``Transports-swift.struct/add(_:)`` before calling this method.
   public func run() async throws {
-    try self.state.withLockedValue { state in
-      switch state {
+    let (transports, router, interceptors) = try self.storage.withLockedValue { storage in
+      switch storage.state {
       case .notStarted:
-        state = .starting
+        storage.state = .starting
+        return (storage.transports, storage.services.router, storage.interceptors)
 
       case .starting, .running:
         throw ServerError(
@@ -153,21 +189,31 @@ public struct Server: Sendable {
 
     // When we exit this function we must have stopped.
     defer {
-      self.state.withLockedValue { $0 = .stopped }
+      self.storage.withLockedValue { $0.state = .stopped }
+    }
+
+    if transports.values.isEmpty {
+      throw ServerError(
+        code: .noTransportsConfigured,
+        message: """
+          Can't start server, no transports are configured. You must add at least one transport \
+          to the server using 'transports.add(_:)' before calling 'run()'.
+          """
+      )
     }
 
     var listeners: [RPCAsyncSequence<Stream>] = []
-    listeners.reserveCapacity(self.transports.values.count)
+    listeners.reserveCapacity(transports.values.count)
 
-    for transport in self.transports.values {
+    for transport in transports.values {
       do {
         let listener = try await transport.listen()
         listeners.append(listener)
       } catch let cause {
         // Failed to start, so start stopping.
-        self.state.withLockedValue { $0 = .stopping }
+        self.storage.withLockedValue { $0.state = .stopping }
         // Some listeners may have started and have streams which need closing.
-        await self.rejectRequests(listeners)
+        await Self.rejectRequests(listeners, transports: transports)
 
         throw ServerError(
           code: .failedToStartTransport,
@@ -181,13 +227,13 @@ public struct Server: Sendable {
     }
 
     // May have been told to stop listening while starting the transports.
-    let isStopping = self.state.withLockedValue { state in
-      switch state {
+    let isStopping = self.storage.withLockedValue { storage in
+      switch storage.state {
       case .notStarted, .running, .stopped:
         fatalError("Invalid state")
 
       case .starting:
-        state = .running
+        storage.state = .running
         return false
 
       case .stopping:
@@ -198,19 +244,18 @@ public struct Server: Sendable {
     // If the server is stopping then notify the transport and then consume them: there may be
     // streams opened at a lower level (e.g. HTTP/2) which are already open and need to be consumed.
     if isStopping {
-      for transport in self.transports.values {
-        transport.stopListening()
-      }
-
-      await self.rejectRequests(listeners)
+      await Self.rejectRequests(listeners, transports: transports)
     } else {
-      await self.handleRequests(listeners)
+      await Self.handleRequests(listeners, router: router, interceptors: interceptors)
     }
   }
 
-  private func rejectRequests(_ listeners: [RPCAsyncSequence<Stream>]) async {
+  private static func rejectRequests(
+    _ listeners: [RPCAsyncSequence<Stream>],
+    transports: Transports
+  ) async {
     // Tell the active listeners to stop listening.
-    for transport in self.transports.values.prefix(listeners.count) {
+    for transport in transports.values.prefix(listeners.count) {
       transport.stopListening()
     }
 
@@ -237,22 +282,32 @@ public struct Server: Sendable {
     }
   }
 
-  private func handleRequests(_ listeners: [RPCAsyncSequence<Stream>]) async {
+  private static func handleRequests(
+    _ listeners: [RPCAsyncSequence<Stream>],
+    router: RPCRouter,
+    interceptors: Interceptors
+  ) async {
     #if swift(>=5.9)
     if #available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *) {
-      await self.handleRequestsInDiscardingTaskGroup(listeners)
+      await Self.handleRequestsInDiscardingTaskGroup(
+        listeners,
+        router: router,
+        interceptors: interceptors
+      )
     } else {
-      await self.handleRequestsInTaskGroup(listeners)
+      await Self.handleRequestsInTaskGroup(listeners, router: router, interceptors: interceptors)
     }
     #else
-    await self.handleRequestsInTaskGroup(listeners)
+    await Self.handleRequestsInTaskGroup(listeners, router: router, interceptors: interceptors)
     #endif
   }
 
   #if swift(>=5.9)
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-  private func handleRequestsInDiscardingTaskGroup(
-    _ listeners: [RPCAsyncSequence<Stream>]
+  private static func handleRequestsInDiscardingTaskGroup(
+    _ listeners: [RPCAsyncSequence<Stream>],
+    router: RPCRouter,
+    interceptors: Interceptors
   ) async {
     await withDiscardingTaskGroup { group in
       for listener in listeners {
@@ -261,10 +316,7 @@ public struct Server: Sendable {
             do {
               for try await stream in listener {
                 subGroup.addTask {
-                  await self.services.router.handle(
-                    stream: stream,
-                    interceptors: self.interceptors.values
-                  )
+                  await router.handle(stream: stream, interceptors: interceptors.values)
                 }
               }
             } catch {
@@ -278,8 +330,10 @@ public struct Server: Sendable {
   }
   #endif
 
-  private func handleRequestsInTaskGroup(
-    _ listeners: [RPCAsyncSequence<Stream>]
+  private static func handleRequestsInTaskGroup(
+    _ listeners: [RPCAsyncSequence<Stream>],
+    router: RPCRouter,
+    interceptors: Interceptors
   ) async {
     // If the discarding task group isn't available then fall back to using a regular task group
     // with a limit on subtasks. Most servers will use an HTTP/2 based transport, most
@@ -301,10 +355,7 @@ public struct Server: Sendable {
                 }
 
                 subGroup.addTask {
-                  await self.services.router.handle(
-                    stream: stream,
-                    interceptors: self.interceptors.values
-                  )
+                  await router.handle(stream: stream, interceptors: interceptors.values)
                 }
               }
             } catch {
@@ -319,35 +370,35 @@ public struct Server: Sendable {
 
   /// Signal to the server that it should stop listening for new requests.
   ///
-  /// By calling this function you indicate to clients that they mustn't make start new requests
+  /// By calling this function you indicate to clients that they mustn't start new requests
   /// against this server. Once the server has processed all requests the ``run()`` method returns.
   ///
   /// Calling this on a server which is already stopping or has stopped has no effect.
   public func stopListening() {
-    let stopListening = self.state.withLockedValue { state in
-      let stopListening: Bool
+    let transports = self.storage.withLockedValue { storage in
+      let transports: Transports?
 
-      switch state {
+      switch storage.state {
       case .notStarted:
-        state = .stopped
-        stopListening = false
+        storage.state = .stopped
+        transports = nil
       case .starting:
-        state = .stopping
-        stopListening = false
+        storage.state = .stopping
+        transports = nil
       case .running:
-        state = .stopping
-        stopListening = true
+        storage.state = .stopping
+        transports = storage.transports
       case .stopping:
-        stopListening = false
+        transports = nil
       case .stopped:
-        stopListening = false
+        transports = nil
       }
 
-      return stopListening
+      return transports
     }
 
-    if stopListening {
-      for transport in self.transports.values {
+    if let transports = transports?.values {
+      for transport in transports {
         transport.stopListening()
       }
     }

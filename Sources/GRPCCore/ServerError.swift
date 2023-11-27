@@ -111,6 +111,7 @@ extension ServerError {
       case serverIsAlreadyRunning
       case serverIsStopped
       case failedToStartTransport
+      case noTransportsConfigured
     }
 
     private var value: Value
@@ -131,6 +132,11 @@ extension ServerError {
     /// The server couldn't be started because a transport failed to start.
     public static var failedToStartTransport: Self {
       Self(.failedToStartTransport)
+    }
+
+    /// The server couldn't be started because no transports were configured.
+    public static var noTransportsConfigured: Self {
+      Self(.noTransportsConfigured)
     }
   }
 }

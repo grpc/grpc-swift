@@ -35,7 +35,7 @@ final class ServerTests: XCTestCase {
     _ body: (InProcessClientTransport, Server) async throws -> Void
   ) async throws {
     let inProcess = self.makeInProcessPair()
-    var server = Server()
+    let server = Server()
     server.transports.add(inProcess.server)
 
     for service in services {
@@ -169,7 +169,7 @@ final class ServerTests: XCTestCase {
   }
 
   func testUnimplementedMethod() async throws {
-    try await self.withInProcessClientConnectedToServer(services: []) { client, _ in
+    try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
       try await client.withStream(
         descriptor: MethodDescriptor(service: "not", method: "implemented")
       ) { stream in
@@ -244,7 +244,7 @@ final class ServerTests: XCTestCase {
     let counter = ManagedAtomic(0)
 
     try await self.withInProcessClientConnectedToServer(
-      services: [],
+      services: [BinaryEcho()],
       interceptors: [.requestCounter(counter)]
     ) { client, _ in
       try await client.withStream(
@@ -303,7 +303,7 @@ final class ServerTests: XCTestCase {
   func testCancelRunningServer() async throws {
     let inProcess = self.makeInProcessPair()
     let task = Task {
-      var server = Server()
+      let server = Server()
       server.services.register(BinaryEcho())
       server.transports.add(inProcess.server)
       try await server.run()
@@ -325,12 +325,21 @@ final class ServerTests: XCTestCase {
 
   func testTestRunServerWithNoTransport() async throws {
     let server = Server()
-    try await server.run()
+    await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
+      try await server.run()
+    } errorHandler: { error in
+      XCTAssertEqual(error.code, .noTransportsConfigured)
+    }
   }
 
   func testTestRunStoppedServer() async throws {
     let server = Server()
-    try await server.run()
+    server.transports.add(InProcessServerTransport())
+    // Run the server.
+    let task = Task { try await server.run() }
+    task.cancel()
+    try await task.value
+
     // Server is stopped, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
       try await server.run()
@@ -340,7 +349,7 @@ final class ServerTests: XCTestCase {
   }
 
   func testRunServerWhenTransportThrows() async throws {
-    var server = Server()
+    let server = Server()
     server.transports.add(ThrowOnRunServerTransport())
     await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
       try await server.run()
@@ -350,7 +359,7 @@ final class ServerTests: XCTestCase {
   }
 
   func testRunServerDrainsRunningTransportsWhenOneFailsToStart() async throws {
-    var server = Server()
+    let server = Server()
 
     // Register the in process transport first and allow it to come up.
     let inProcess = self.makeInProcessPair()
@@ -392,7 +401,7 @@ final class ServerTests: XCTestCase {
   }
 
   func testInterceptorsDescription() async throws {
-    var server = Server()
+    let server = Server()
     server.interceptors.add(.rejectAll(with: .init(code: .aborted, message: "")))
     server.interceptors.add(.requestCounter(.init(0)))
     let description = String(describing: server.interceptors)
@@ -401,7 +410,7 @@ final class ServerTests: XCTestCase {
   }
 
   func testServicesDescription() async throws {
-    var server = Server()
+    let server = Server()
     let methods: [(String, String)] = [
       ("helloworld.Greeter", "SayHello"),
       ("echo.Echo", "Foo"),
