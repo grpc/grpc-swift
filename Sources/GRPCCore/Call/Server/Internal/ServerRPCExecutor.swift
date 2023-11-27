@@ -76,7 +76,7 @@ struct ServerRPCExecutor {
       if let timeout = metadata.timeout {
         group.addTask {
           let result = await Result {
-            try await Task.sleep(until: .now.advanced(by: timeout), clock: .continuous)
+            try await Task.sleep(for: timeout, clock: .continuous)
           }
           return .timedOut(result)
         }

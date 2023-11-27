@@ -39,14 +39,16 @@ extension Metadata {
 
   @inlinable
   var timeout: Duration? {
-    // Temporary hack to support tests; only supports nanoseconds.
-    guard let value = self.firstString(forKey: .timeout) else { return nil }
-    guard value.utf8.last == UTF8.CodeUnit(ascii: "n") else { return nil }
-    var index = value.utf8.endIndex
-    value.utf8.formIndex(before: &index)
-    guard let digits = String(value.utf8[..<index]) else { return nil }
-    guard let nanoseconds = Int64(digits) else { return nil }
-    return .nanoseconds(nanoseconds)
+    get {
+      self.firstString(forKey: .timeout).flatMap { Timeout(decoding: $0)?.duration }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(String(describing: Timeout(duration: newValue)), forKey: .timeout)
+      } else {
+        self.removeAllValues(forKey: .timeout)
+      }
+    }
   }
 }
 
