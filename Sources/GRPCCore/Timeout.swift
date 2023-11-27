@@ -42,13 +42,20 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
 
   /// The largest amount of any unit of time which may be represented by a gRPC timeout.
   static let maxAmount: Int64 = 99_999_999
+  
+  private let amount: Int64
+  private let unit: Unit
+  
+  @usableFromInline
+  var duration: Duration {
+    Duration(amount: amount, unit: unit)
+  }
 
   /// The wire encoding of this timeout as described in the gRPC protocol.
   /// See "Timeout" in https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
-  let wireEncoding: String
-
-  @usableFromInline
-  let duration: Duration
+  var wireEncoding: String {
+    "\(amount)\(unit.rawValue)"
+  }
 
   @usableFromInline
   var description: String {
@@ -163,8 +170,8 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   internal init(amount: Int64, unit: Unit) {
     precondition((0 ... Timeout.maxAmount).contains(amount))
 
-    self.duration = Duration(amount: amount, unit: unit)
-    self.wireEncoding = "\(amount)\(unit.rawValue)"
+    self.amount = amount
+    self.unit = unit
   }
 }
 
