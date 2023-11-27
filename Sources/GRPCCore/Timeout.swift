@@ -83,9 +83,14 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   /// it's not possible to know whether `Duration.seconds(value)` or `Duration.milliseconds(value)`
   /// was used. For this reason, the unit chosen for the ``Timeout`` (and thus the wire encoding) may be
   /// different from the one originally used to create the ``Duration``. Despite this, we guarantee that
-  /// both durations will be equivalent.
+  /// both durations will be equivalent if there was no loss in precision during the transformation.
   /// For example, `Duration.hours(123)` will yield a ``Timeout`` with `wireEncoding` equal to
   /// `"442800S"`, which is in seconds. However, 442800 seconds and 123 hours are equivalent.
+  /// However, you must note that there may be some loss of precision when dealing with transforming
+  /// between units. For example, for very low precisions, such as a duration of only a few attoseconds,
+  /// given the smallest unit we have is whole nanoseconds, we cannot represent it. Same when converting
+  /// for instance, milliseconds to seconds. In these scenarios, we'll round to the closest whole number in
+  /// the target unit.
   @usableFromInline
   init(duration: Duration) {
     let (seconds, attoseconds) = duration.components
