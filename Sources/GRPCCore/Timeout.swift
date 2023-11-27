@@ -42,10 +42,10 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
 
   /// The largest amount of any unit of time which may be represented by a gRPC timeout.
   static let maxAmount: Int64 = 99_999_999
-  
+
   private let amount: Int64
   private let unit: Unit
-  
+
   @usableFromInline
   var duration: Duration {
     Duration(amount: amount, unit: unit)
@@ -64,7 +64,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
 
   @usableFromInline
   init?(decoding value: String) {
-      guard (2 ... 8).contains(value.count) else {
+    guard (2 ... 8).contains(value.count) else {
       return nil
     }
 
@@ -94,7 +94,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   @usableFromInline
   init(duration: Duration) {
     let (seconds, attoseconds) = duration.components
-      
+
     if seconds == 0 {
       // There is no seconds component, so only pay attention to the attoseconds.
       // Try converting to nanoseconds first, and continue rounding up if the
@@ -123,7 +123,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
       }
     }
   }
-  
+
   /// Create a timeout by rounding up the timeout so that it may be represented in the gRPC
   /// wire format.
   private init(rounding amount: Int64, unit: Unit) {
