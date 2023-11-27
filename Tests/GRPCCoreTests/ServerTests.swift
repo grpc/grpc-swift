@@ -298,7 +298,7 @@ final class ServerTests: XCTestCase {
         stream.outbound.finish()
 
         let message = try await iterator.next()
-        XCTAssertMessage(message) { XCTAssertEqual($0, [0])}
+        XCTAssertMessage(message) { XCTAssertEqual($0, [0]) }
         let status = try await iterator.next()
         XCTAssertStatus(status)
       }
