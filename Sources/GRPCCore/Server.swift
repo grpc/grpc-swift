@@ -62,7 +62,7 @@ import Atomics
 /// The ``run()`` method won't return until the server has finished handling all requests. You can
 /// signal to the server that it should stop accepting new requests by calling ``stopListening()``.
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
-/// you can cancel the task running your server. If your application require additional resources
+/// you can cancel the task running your server. If your application requires additional resources
 /// that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
