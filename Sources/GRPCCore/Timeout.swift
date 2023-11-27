@@ -57,7 +57,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
 
   @usableFromInline
   init?(stringLiteral value: String) {
-    guard 2 ... 8 ~= value.count else {
+      guard (2 ... 8).contains(value.count) else {
       return nil
     }
 
@@ -161,7 +161,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   /// - Precondition: The amount should be greater than or equal to zero and less than or equal
   ///   to `GRPCTimeout.maxAmount`.
   internal init(amount: Int64, unit: Unit) {
-    precondition(0 ... Timeout.maxAmount ~= amount)
+    precondition((0 ... Timeout.maxAmount).contains(amount))
 
     self.duration = Duration(amount: amount, unit: unit)
     self.wireEncoding = "\(amount)\(unit.rawValue)"
