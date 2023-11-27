@@ -20,12 +20,12 @@ public struct SourceFile: Sendable {
   /// The base name of the file.
   public var name: String
 
-  /// The generated code encoded as UTF-8 data.
-  public var sourceCode: Data
+  /// The generated code as a String.
+  public var sourceCode: String
 
   /// Creates a representation of a file containing Swift code with the specified name
-  /// and  contents.
-  public init(name: String, sourceCode: Data) {
+  /// and contents.
+  public init(name: String, sourceCode: String) {
     self.name = name
     self.sourceCode = sourceCode
   }
