@@ -46,7 +46,7 @@ final class ServerTests: XCTestCase {
       server.interceptors.add(interceptor)
     }
 
-    try await withThrowingTaskGroup(of: Void.self) { [server] group in
+    try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await server.run()
       }
@@ -371,7 +371,7 @@ final class ServerTests: XCTestCase {
 
     // Connect the in process client and start an RPC. When the stream is opened signal the
     // other transport to throw. This stream should be failed by the server.
-    await withThrowingTaskGroup(of: Void.self) { [server] group in
+    await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await inProcess.client.connect(lazily: true)
       }
