@@ -56,7 +56,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   }
 
   @usableFromInline
-  init?(stringLiteral value: String) {
+  init?(decoding value: String) {
       guard (2 ... 8).contains(value.count) else {
       return nil
     }

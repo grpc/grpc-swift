@@ -20,32 +20,32 @@ import XCTest
 final class TimeoutTests: XCTestCase {
   func testDecodeInvalidTimeout_Empty() {
     let timeoutHeader = ""
-    XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
+    XCTAssertNil(Timeout(decoding: timeoutHeader))
   }
 
   func testDecodeInvalidTimeout_NoAmount() {
     let timeoutHeader = "H"
-    XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
+    XCTAssertNil(Timeout(decoding: timeoutHeader))
   }
 
   func testDecodeInvalidTimeout_NoUnit() {
     let timeoutHeader = "123"
-    XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
+    XCTAssertNil(Timeout(decoding: timeoutHeader))
   }
 
   func testDecodeInvalidTimeout_TooLongAmount() {
     let timeoutHeader = "100000000S"
-    XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
+    XCTAssertNil(Timeout(decoding: timeoutHeader))
   }
 
   func testDecodeInvalidTimeout_InvalidUnit() {
     let timeoutHeader = "123j"
-    XCTAssertNil(Timeout(stringLiteral: timeoutHeader))
+    XCTAssertNil(Timeout(decoding: timeoutHeader))
   }
 
   func testDecodeValidTimeout_Hours() throws {
     let timeoutHeader = "123H"
-    let timeout = Timeout(stringLiteral: timeoutHeader)
+    let timeout = Timeout(decoding: timeoutHeader)
     let unwrappedTimeout = try XCTUnwrap(timeout)
     XCTAssertEqual(unwrappedTimeout.duration, Duration.hours(123))
     XCTAssertEqual(unwrappedTimeout.wireEncoding, timeoutHeader)
@@ -53,7 +53,7 @@ final class TimeoutTests: XCTestCase {
 
   func testDecodeValidTimeout_Minutes() throws {
     let timeoutHeader = "123M"
-    let timeout = Timeout(stringLiteral: timeoutHeader)
+    let timeout = Timeout(decoding: timeoutHeader)
     let unwrappedTimeout = try XCTUnwrap(timeout)
     XCTAssertEqual(unwrappedTimeout.duration, Duration.minutes(123))
     XCTAssertEqual(unwrappedTimeout.wireEncoding, timeoutHeader)
@@ -61,7 +61,7 @@ final class TimeoutTests: XCTestCase {
 
   func testDecodeValidTimeout_Seconds() throws {
     let timeoutHeader = "123S"
-    let timeout = Timeout(stringLiteral: timeoutHeader)
+    let timeout = Timeout(decoding: timeoutHeader)
     let unwrappedTimeout = try XCTUnwrap(timeout)
     XCTAssertEqual(unwrappedTimeout.duration, Duration.seconds(123))
     XCTAssertEqual(unwrappedTimeout.wireEncoding, timeoutHeader)
@@ -69,7 +69,7 @@ final class TimeoutTests: XCTestCase {
 
   func testDecodeValidTimeout_Milliseconds() throws {
     let timeoutHeader = "123m"
-    let timeout = Timeout(stringLiteral: timeoutHeader)
+    let timeout = Timeout(decoding: timeoutHeader)
     let unwrappedTimeout = try XCTUnwrap(timeout)
     XCTAssertEqual(unwrappedTimeout.duration, Duration.milliseconds(123))
     XCTAssertEqual(unwrappedTimeout.wireEncoding, timeoutHeader)
@@ -77,7 +77,7 @@ final class TimeoutTests: XCTestCase {
 
   func testDecodeValidTimeout_Microseconds() throws {
     let timeoutHeader = "123u"
-    let timeout = Timeout(stringLiteral: timeoutHeader)
+    let timeout = Timeout(decoding: timeoutHeader)
     let unwrappedTimeout = try XCTUnwrap(timeout)
     XCTAssertEqual(unwrappedTimeout.duration, Duration.microseconds(123))
     XCTAssertEqual(unwrappedTimeout.wireEncoding, timeoutHeader)
@@ -85,7 +85,7 @@ final class TimeoutTests: XCTestCase {
 
   func testDecodeValidTimeout_Nanoseconds() throws {
     let timeoutHeader = "123n"
-    let timeout = Timeout(stringLiteral: timeoutHeader)
+    let timeout = Timeout(decoding: timeoutHeader)
     let unwrappedTimeout = try XCTUnwrap(timeout)
     XCTAssertEqual(unwrappedTimeout.duration, Duration.nanoseconds(123))
     XCTAssertEqual(unwrappedTimeout.wireEncoding, timeoutHeader)

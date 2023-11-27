@@ -40,7 +40,7 @@ extension Metadata {
   @inlinable
   var timeout: Duration? {
     get {
-      self.firstString(forKey: .timeout).flatMap { Timeout(stringLiteral: $0)?.duration }
+      self.firstString(forKey: .timeout).flatMap { Timeout(decoding: $0)?.duration }
     }
     set {
       if let newValue {
