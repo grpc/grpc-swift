@@ -116,8 +116,8 @@ final class TimeoutTests: XCTestCase {
     let duration = Duration.seconds(111_111_111)
     let timeout = Timeout(duration: duration)
     // The conversion from seconds to minutes results in a loss of precision.
-    // 111,111,111 seconds / 60 = 1,851,851.85 minutes -rounding-> 1,851,851 minutes * 60 = 111,111,060 seconds
-    let expectedRoundedDuration = Duration.minutes(1_851_851)
+    // 111,111,111 seconds / 60 = 1,851,851.85 minutes -rounding up-> 1,851,852 minutes * 60 = 111,111,120 seconds
+    let expectedRoundedDuration = Duration.minutes(1_851_852)
     XCTAssertEqual(timeout.duration.components.seconds, expectedRoundedDuration.components.seconds)
     XCTAssertEqual(
       timeout.duration.components.attoseconds,
@@ -129,10 +129,10 @@ final class TimeoutTests: XCTestCase {
     let duration = Duration.seconds(9_999_999_999)
     let timeout = Timeout(duration: duration)
     // The conversion from seconds to hours results in a loss of precision.
-    // 9,999,999,999 seconds / 60 = 166,666,666.65 minutes -rounding->
-    // 166,666,666 minutes / 60 = 2,777,777.77 hours -rounding->
-    // 2,777,777 hours * 60 -> 166,666,620 minutes * 60 = 9,999,997,200 seconds
-    let expectedRoundedDuration = Duration.hours(2_777_777)
+    // 9,999,999,999 seconds / 60 = 166,666,666.65 minutes -rounding up->
+    // 166,666,667 minutes / 60 = 2,777,777.78 hours -rounding up->
+    // 2,777,778 hours * 60 -> 166,666,680 minutes * 60 = 10,000,000,800 seconds
+    let expectedRoundedDuration = Duration.hours(2_777_778)
     XCTAssertEqual(timeout.duration.components.seconds, expectedRoundedDuration.components.seconds)
     XCTAssertEqual(
       timeout.duration.components.attoseconds,

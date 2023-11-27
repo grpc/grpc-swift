@@ -94,78 +94,74 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   @usableFromInline
   init(duration: Duration) {
     let (seconds, attoseconds) = duration.components
-
+      
     if seconds == 0 {
       // There is no seconds component, so only pay attention to the attoseconds.
-      // Try converting to nanoseconds first...
+      // Try converting to nanoseconds first, and continue rounding up if the
+      // max amount of digits is exceeded.
       let nanoseconds = Int64(round(Double(attoseconds) / 1e+9))
-      if Self.exceedsDigitLimit(nanoseconds) {
-        // If the number of digits exceeds the max (8), try microseconds.
-        let microseconds = nanoseconds / 1000
-
-        // The max value for attoseconds, as per `Duration`'s docs is 1e+18.
-        // This means that, after dividing by 1e+9 and later by 1000 (1e+3),
-        // the max number of digits will be those in 1e+18 / 1e+12 = 1e+6 = 1.000.000
-        // -> 7 digits. We don't need to check anymore and can represent this
-        // value as microseconds.
-        self.init(amount: microseconds, unit: .microseconds)
-      } else {
-        self.init(amount: nanoseconds, unit: .nanoseconds)
-      }
+      self.init(rounding: nanoseconds, unit: .nanoseconds)
+    } else if Self.exceedsDigitLimit(seconds) {
+      // We don't have enough digits to represent this amount in seconds, so
+      // we will have to use minutes or hours.
+      // We can also ignore attoseconds, since we won't have enough precision
+      // anyways to represent the (at most) one second that the attoseconds
+      // component can express.
+      self.init(rounding: seconds, unit: .seconds)
     } else {
-      if Self.exceedsDigitLimit(seconds) {
-        // We don't have enough digits to represent this amount in seconds, so
-        // we will have to use minutes or hours.
-        // We can also ignore attoseconds, since we won't have enough precision
-        // anyways to represent the (at most) one second that the attoseconds
-        // component can express.
-
-        // Try with minutes first...
-        let minutes = seconds / 60
-        if Self.exceedsDigitLimit(minutes) {
-          // We don't have enough digits to represent the amount using minutes.
-          // Try hours...
-          let hours = minutes / 60
-          if Self.exceedsDigitLimit(hours) {
-            // We don't have enough digits to represent the amount using hours.
-            // Then initialize the timeout to the maximum possible value.
-            self.init(amount: Timeout.maxAmount, unit: .hours)
-          } else {
-            self.init(amount: hours, unit: .hours)
-          }
-        } else {
-          self.init(amount: minutes, unit: .minutes)
-        }
+      // We can't convert seconds to nanoseconds because that would take us
+      // over the 8 digit limit (1 second = 1e+9 nanoseconds).
+      // We can however, try converting to microseconds or milliseconds.
+      let nanoseconds = Int64(Double(attoseconds) / 1e+9)
+      let microseconds = nanoseconds / 1000
+      if microseconds == 0 {
+        self.init(amount: seconds, unit: .seconds)
       } else {
-        // We can't convert seconds to nanoseconds because that would take us
-        // over the 8 digit limit (1 second = 1e+9 nanoseconds).
-        // We can however, try converting to microseconds or milliseconds.
-        let nanoseconds = Int64(Double(attoseconds) / 1e+9)
-        let microseconds = nanoseconds / 1000
-
-        if microseconds == 0 {
-          self.init(amount: seconds, unit: .seconds)
-        } else {
-          let secondsInMicroseconds = seconds * 1000 * 1000
-          let totalMicroseconds = microseconds + secondsInMicroseconds
-          if Self.exceedsDigitLimit(totalMicroseconds) {
-            let totalMilliseconds = totalMicroseconds / 1000
-            if Self.exceedsDigitLimit(totalMilliseconds) {
-              let totalSeconds = totalMicroseconds / 1000
-              self.init(amount: totalSeconds, unit: .seconds)
-            } else {
-              self.init(amount: totalMilliseconds, unit: .milliseconds)
-            }
-          } else {
-            self.init(amount: totalMicroseconds, unit: .microseconds)
-          }
-        }
+        let secondsInMicroseconds = seconds * 1000 * 1000
+        let totalMicroseconds = microseconds + secondsInMicroseconds
+        self.init(rounding: totalMicroseconds, unit: .microseconds)
       }
     }
   }
+  
+  /// Create a timeout by rounding up the timeout so that it may be represented in the gRPC
+  /// wire format.
+  private init(rounding amount: Int64, unit: Unit) {
+    var roundedAmount = amount
+    var roundedUnit = unit
+
+    if roundedAmount <= 0 {
+      roundedAmount = 0
+    } else {
+      while roundedAmount > Timeout.maxAmount {
+        switch roundedUnit {
+        case .nanoseconds:
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1000)
+          roundedUnit = .microseconds
+        case .microseconds:
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1000)
+          roundedUnit = .milliseconds
+        case .milliseconds:
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1000)
+          roundedUnit = .seconds
+        case .seconds:
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 60)
+          roundedUnit = .minutes
+        case .minutes:
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 60)
+          roundedUnit = .hours
+        case .hours:
+          roundedAmount = Timeout.maxAmount
+          roundedUnit = .hours
+        }
+      }
+    }
+
+    self.init(amount: roundedAmount, unit: roundedUnit)
+  }
 
   private static func exceedsDigitLimit(_ value: Int64) -> Bool {
-    (value == 0 ? 1 : floor(log10(Double(value))) + 1) > 8
+    value > Timeout.maxAmount
   }
 
   /// Creates a `GRPCTimeout`.
@@ -177,6 +173,17 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
 
     self.amount = amount
     self.unit = unit
+  }
+}
+
+extension Int64 {
+  /// Returns the quotient of this value when divided by `divisor` rounded up to the nearest
+  /// multiple of `divisor` if the remainder is non-zero.
+  ///
+  /// - Parameter divisor: The value to divide this value by.
+  fileprivate func quotientRoundedUp(dividingBy divisor: Int64) -> Int64 {
+    let (quotient, remainder) = self.quotientAndRemainder(dividingBy: divisor)
+    return quotient + (remainder != 0 ? 1 : 0)
   }
 }
 
