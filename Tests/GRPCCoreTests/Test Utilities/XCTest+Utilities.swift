@@ -37,6 +37,34 @@ func XCTAssertThrowsErrorAsync<T>(
   }
 }
 
+func XCTAssertThrowsError<T, E: Error>(
+  ofType: E.Type,
+  _ expression: @autoclosure () throws -> T,
+  _ errorHandler: (E) -> Void
+) {
+  XCTAssertThrowsError(try expression()) { error in
+    guard let error = error as? E else {
+      return XCTFail("Error had unexpected type '\(type(of: error))'")
+    }
+    errorHandler(error)
+  }
+}
+
+func XCTAssertThrowsErrorAsync<T, E: Error>(
+  ofType: E.Type = E.self,
+  _ expression: () async throws -> T,
+  errorHandler: (E) -> Void
+) async {
+  do {
+    _ = try await expression()
+    XCTFail("Expression didn't throw")
+  } catch let error as E {
+    errorHandler(error)
+  } catch {
+    XCTFail("Error had unexpected type '\(type(of: error))'")
+  }
+}
+
 func XCTAssertThrowsRPCError<T>(
   _ expression: @autoclosure () throws -> T,
   _ errorHandler: (RPCError) -> Void
@@ -73,6 +101,30 @@ func XCTAssertRejected<T>(
     XCTFail("Expected RPC to be rejected")
   case .failure(let error):
     errorHandler(error)
+  }
+}
+
+func XCTAssertMetadata(
+  _ part: RPCResponsePart?,
+  metadataHandler: (Metadata) -> Void = { _ in }
+) {
+  switch part {
+  case .some(.metadata(let metadata)):
+    metadataHandler(metadata)
+  default:
+    XCTFail("Expected '.metadata' but found '\(String(describing: part))'")
+  }
+}
+
+func XCTAssertMessage(
+  _ part: RPCResponsePart?,
+  messageHandler: ([UInt8]) -> Void = { _ in }
+) {
+  switch part {
+  case .some(.message(let message)):
+    messageHandler(message)
+  default:
+    XCTFail("Expected '.metadata' but found '\(String(describing: part))'")
   }
 }
 

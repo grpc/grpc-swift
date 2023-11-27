@@ -327,7 +327,6 @@ extension ServerResponse.Stream {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerResponse.Stream {
-  @_spi(Testing)
   public init(single response: ServerResponse.Single<Message>) {
     switch response.accepted {
     case .success(let contents):

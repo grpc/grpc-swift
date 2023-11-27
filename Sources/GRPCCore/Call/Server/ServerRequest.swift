@@ -72,8 +72,24 @@ extension ServerRequest {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerRequest.Stream {
-  @_spi(Testing)
   public init(single request: ServerRequest.Single<Message>) {
     self.init(metadata: request.metadata, messages: .one(request.message))
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension ServerRequest.Single {
+  public init(stream request: ServerRequest.Stream<Message>) async throws {
+    var iterator = request.messages.makeAsyncIterator()
+
+    guard let message = try await iterator.next() else {
+      throw RPCError(code: .internalError, message: "Empty stream.")
+    }
+
+    guard try await iterator.next() == nil else {
+      throw RPCError(code: .internalError, message: "Too many messages.")
+    }
+
+    self = ServerRequest.Single(metadata: request.metadata, message: message)
   }
 }
