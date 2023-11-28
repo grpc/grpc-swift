@@ -187,10 +187,9 @@ final class InProcessClientTransportTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
-      defaultConfiguration: defaultConfiguration
-    )
+    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    var configurations = MethodConfigurations()
+    configurations.setDefaultConfiguration(defaultConfiguration)
 
     var client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
 
@@ -204,7 +203,7 @@ final class InProcessClientTransportTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
     client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -243,7 +242,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func makeClient(
-    configuration: ClientRPCExecutionConfiguration? = nil,
+    configuration: MethodConfiguration? = nil,
     server: InProcessServerTransport = InProcessServerTransport()
   ) -> InProcessClientTransport {
     let defaultPolicy = RetryPolicy(
@@ -254,11 +253,13 @@ final class InProcessClientTransportTests: XCTestCase {
       retryableStatusCodes: [.unavailable]
     )
 
+    var methodConfiguration = MethodConfigurations()
+    methodConfiguration.setDefaultConfiguration(
+      configuration ?? .init(retryPolicy: defaultPolicy)
+    )
     return InProcessClientTransport(
       server: server,
-      executionConfigurations: .init(
-        defaultConfiguration: configuration ?? .init(retryPolicy: defaultPolicy)
-      )
+      executionConfigurations: methodConfiguration
     )
   }
 }

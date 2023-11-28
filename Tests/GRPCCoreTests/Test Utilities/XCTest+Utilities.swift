@@ -104,6 +104,18 @@ func XCTAssertRejected<T>(
   }
 }
 
+func XCTAssertRejected<T>(
+  _ response: ClientResponse.Single<T>,
+  errorHandler: (RPCError) -> Void
+) {
+  switch response.accepted {
+  case .success:
+    XCTFail("Expected RPC to be rejected")
+  case .failure(let error):
+    errorHandler(error)
+  }
+}
+
 func XCTAssertMetadata(
   _ part: RPCResponsePart?,
   metadataHandler: (Metadata) -> Void = { _ in }
@@ -111,6 +123,18 @@ func XCTAssertMetadata(
   switch part {
   case .some(.metadata(let metadata)):
     metadataHandler(metadata)
+  default:
+    XCTFail("Expected '.metadata' but found '\(String(describing: part))'")
+  }
+}
+
+func XCTAssertMetadata(
+  _ part: RPCRequestPart?,
+  metadataHandler: (Metadata) async throws -> Void = { _ in }
+) async throws {
+  switch part {
+  case .some(.metadata(let metadata)):
+    try await metadataHandler(metadata)
   default:
     XCTFail("Expected '.metadata' but found '\(String(describing: part))'")
   }
@@ -124,7 +148,19 @@ func XCTAssertMessage(
   case .some(.message(let message)):
     messageHandler(message)
   default:
-    XCTFail("Expected '.metadata' but found '\(String(describing: part))'")
+    XCTFail("Expected '.message' but found '\(String(describing: part))'")
+  }
+}
+
+func XCTAssertMessage(
+  _ part: RPCRequestPart?,
+  messageHandler: ([UInt8]) async throws -> Void = { _ in }
+) async throws {
+  switch part {
+  case .some(.message(let message)):
+    try await messageHandler(message)
+  default:
+    XCTFail("Expected '.message' but found '\(String(describing: part))'")
   }
 }
 

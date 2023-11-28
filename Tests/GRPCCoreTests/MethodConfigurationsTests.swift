@@ -17,17 +17,16 @@ import GRPCCore
 import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
-  func testGetConfigurationForKnownMethod() {
+final class MethodConfigurationsTests: XCTestCase {
+  func testGetConfigurationForKnownMethod() async throws {
     let policy = HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
-      defaultConfiguration: defaultConfiguration
-    )
+    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    var configurations = MethodConfigurations()
+    configurations.setDefaultConfiguration(defaultConfiguration)
     let descriptor = MethodDescriptor(service: "test", method: "first")
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
@@ -36,7 +35,7 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
     configurations[descriptor] = overrideConfiguration
 
     XCTAssertEqual(configurations[descriptor], overrideConfiguration)
@@ -48,10 +47,9 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
-      defaultConfiguration: defaultConfiguration
-    )
+    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    var configurations = MethodConfigurations()
+    configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
@@ -60,7 +58,7 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -73,10 +71,9 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
-      defaultConfiguration: defaultConfiguration
-    )
+    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    var configurations = MethodConfigurations()
+    configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
@@ -85,7 +82,7 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test2", method: "second")

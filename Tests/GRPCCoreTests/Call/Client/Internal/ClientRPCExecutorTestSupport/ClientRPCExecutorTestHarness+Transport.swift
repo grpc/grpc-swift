@@ -24,15 +24,7 @@ extension InProcessServerTransport {
   ) -> InProcessClientTransport {
     return InProcessClientTransport(
       server: self,
-      executionConfigurations: .init(
-        defaultConfiguration: .init(
-          hedgingPolicy: .init(
-            maximumAttempts: 2,
-            hedgingDelay: .milliseconds(100),
-            nonFatalStatusCodes: []
-          )
-        )
-      )
+      executionConfigurations: .init()
     )
   }
 }
