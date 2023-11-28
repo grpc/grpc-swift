@@ -26,10 +26,10 @@ struct RetryDelaySequence: Sequence {
   typealias Element = Duration
 
   @usableFromInline
-  let policy: RetryPolicy
+  let policy: Client.MethodConfiguration.RetryPolicy
 
   @inlinable
-  init(policy: RetryPolicy) {
+  init(policy: Client.MethodConfiguration.RetryPolicy) {
     self.policy = policy
   }
 
@@ -41,12 +41,12 @@ struct RetryDelaySequence: Sequence {
   @usableFromInline
   struct Iterator: IteratorProtocol {
     @usableFromInline
-    let policy: RetryPolicy
+    let policy: Client.MethodConfiguration.RetryPolicy
     @usableFromInline
     private(set) var n = 1
 
     @inlinable
-    init(policy: RetryPolicy) {
+    init(policy: Client.MethodConfiguration.RetryPolicy) {
       self.policy = policy
     }
 

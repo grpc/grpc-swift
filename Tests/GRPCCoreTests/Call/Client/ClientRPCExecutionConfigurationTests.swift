@@ -19,7 +19,7 @@ import XCTest
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class ClientRPCExecutionConfigurationTests: XCTestCase {
   func testRetryPolicyClampsMaxAttempts() {
-    var policy = RetryPolicy(
+    var policy = Client.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
@@ -35,7 +35,7 @@ final class ClientRPCExecutionConfigurationTests: XCTestCase {
   }
 
   func testHedgingPolicyClampsMaxAttempts() {
-    var policy = HedgingPolicy(
+    var policy = Client.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []

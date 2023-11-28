@@ -18,49 +18,54 @@ import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
-  func testGetConfigurationForKnownMethod() {
-    let policy = HedgingPolicy(
+  func testGetConfigurationForKnownMethod() async throws {
+    let first = ContinuousClock.now
+    let second = first.advanced(by: .seconds(1))
+    let result = second.duration(to: first)
+    print(result.components)
+
+    let policy = Client.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
+    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = Client.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
     let descriptor = MethodDescriptor(service: "test", method: "first")
-    let retryPolicy = RetryPolicy(
+    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[descriptor] = overrideConfiguration
 
     XCTAssertEqual(configurations[descriptor], overrideConfiguration)
   }
 
   func testGetConfigurationForUnknownMethodButServiceOverride() {
-    let policy = HedgingPolicy(
+    let policy = Client.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
+    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = Client.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
-    let retryPolicy = RetryPolicy(
+    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -68,24 +73,24 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
   }
 
   func testGetConfigurationForUnknownMethodDefaultValue() {
-    let policy = HedgingPolicy(
+    let policy = Client.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = ClientRPCExecutionConfiguration(hedgingPolicy: policy)
-    var configurations = ClientRPCExecutionConfigurationCollection(
+    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = Client.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
-    let retryPolicy = RetryPolicy(
+    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = ClientRPCExecutionConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test2", method: "second")

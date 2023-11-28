@@ -23,7 +23,7 @@ final class GRPCServerTests: XCTestCase {
     let server = InProcessServerTransport()
     let client = InProcessClientTransport(
       server: server,
-      executionConfigurations: ClientRPCExecutionConfigurationCollection()
+      executionConfigurations: Client.MethodConfigurationRegistry()
     )
 
     return (client, server)
