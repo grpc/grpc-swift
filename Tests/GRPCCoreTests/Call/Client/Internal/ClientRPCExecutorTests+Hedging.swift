@@ -187,7 +187,7 @@ extension ClientRPCExecutorTests {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Client.MethodConfiguration {
+extension GRPCClient.MethodConfiguration {
   fileprivate static func hedge(
     maximumAttempts: Int = 5,
     delay: Duration = .milliseconds(25),
@@ -200,6 +200,6 @@ extension Client.MethodConfiguration {
       nonFatalStatusCodes: nonFatalCodes
     )
 
-    return Client.MethodConfiguration(hedgingPolicy: policy, timeout: timeout)
+    return GRPCClient.MethodConfiguration(hedgingPolicy: policy, timeout: timeout)
   }
 }

@@ -96,12 +96,12 @@ public struct InProcessClientTransport: ClientTransport {
 
   public let retryThrottle: RetryThrottle
 
-  private let executionConfigurations: Client.MethodConfigurationRegistry
+  private let executionConfigurations: GRPCClient.MethodConfigurationRegistry
   private let state: LockedValueBox<State>
 
   public init(
     server: InProcessServerTransport,
-    executionConfigurations: Client.MethodConfigurationRegistry
+    executionConfigurations: GRPCClient.MethodConfigurationRegistry
   ) {
     self.retryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
     self.executionConfigurations = executionConfigurations
@@ -329,7 +329,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// - Returns: Execution configuration for the method, if it exists.
   public func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> Client.MethodConfiguration? {
+  ) -> GRPCClient.MethodConfiguration? {
     self.executionConfigurations[descriptor]
   }
 }

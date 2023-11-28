@@ -68,7 +68,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
 
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> Client.MethodConfiguration? {
+  ) -> GRPCClient.MethodConfiguration? {
     self.transport.executionConfiguration(forMethod: descriptor)
   }
 }

@@ -30,7 +30,7 @@ extension ClientRPCExecutor {
     @usableFromInline
     let transport: Transport
     @usableFromInline
-    let policy: Client.MethodConfiguration.RetryPolicy
+    let policy: GRPCClient.MethodConfiguration.RetryPolicy
     @usableFromInline
     let timeout: Duration?
     @usableFromInline
@@ -45,7 +45,7 @@ extension ClientRPCExecutor {
     @inlinable
     init(
       transport: Transport,
-      policy: Client.MethodConfiguration.RetryPolicy,
+      policy: GRPCClient.MethodConfiguration.RetryPolicy,
       timeout: Duration?,
       interceptors: [any ClientInterceptor],
       serializer: Serializer,

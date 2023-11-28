@@ -67,7 +67,7 @@ struct ClientRPCExecutorTestHarness {
 
   func unary(
     request: ClientRequest.Single<[UInt8]>,
-    configuration: Client.MethodConfiguration? = nil,
+    configuration: GRPCClient.MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
@@ -80,7 +80,7 @@ struct ClientRPCExecutorTestHarness {
 
   func clientStreaming(
     request: ClientRequest.Stream<[UInt8]>,
-    configuration: Client.MethodConfiguration? = nil,
+    configuration: GRPCClient.MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
@@ -93,7 +93,7 @@ struct ClientRPCExecutorTestHarness {
 
   func serverStreaming(
     request: ClientRequest.Single<[UInt8]>,
-    configuration: Client.MethodConfiguration? = nil,
+    configuration: GRPCClient.MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
@@ -106,7 +106,7 @@ struct ClientRPCExecutorTestHarness {
 
   func bidirectional(
     request: ClientRequest.Stream<[UInt8]>,
-    configuration: Client.MethodConfiguration? = nil,
+    configuration: GRPCClient.MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.execute(
@@ -122,7 +122,7 @@ struct ClientRPCExecutorTestHarness {
     request: ClientRequest.Stream<Input>,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
-    configuration: Client.MethodConfiguration?,
+    configuration: GRPCClient.MethodConfiguration?,
     handler: @escaping @Sendable (ClientResponse.Stream<Output>) async throws -> Void
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -141,11 +141,11 @@ struct ClientRPCExecutorTestHarness {
         try await self.clientTransport.connect(lazily: false)
       }
 
-      let executionConfiguration: Client.MethodConfiguration
+      let executionConfiguration: GRPCClient.MethodConfiguration
       if let configuration = configuration {
         executionConfiguration = configuration
       } else {
-        executionConfiguration = Client.MethodConfiguration(executionPolicy: nil, timeout: nil)
+        executionConfiguration = GRPCClient.MethodConfiguration(executionPolicy: nil, timeout: nil)
       }
 
       // Execute the request.

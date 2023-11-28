@@ -219,7 +219,7 @@ extension ClientRPCExecutorTests {
       }
     )
 
-    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
+    let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 5,
       initialBackoff: .seconds(60),
       maximumBackoff: .seconds(50),
@@ -256,7 +256,7 @@ extension ClientRPCExecutorTests {
         )
       )
 
-      let retryPolicy = Client.MethodConfiguration.RetryPolicy(
+      let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
         maximumAttempts: 5,
         initialBackoff: .seconds(60),
         maximumBackoff: .seconds(50),
@@ -286,7 +286,7 @@ extension ClientRPCExecutorTests {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Client.MethodConfiguration {
+extension GRPCClient.MethodConfiguration {
   fileprivate static func retry(
     maximumAttempts: Int = 5,
     codes: Set<Status.Code>,
@@ -300,6 +300,6 @@ extension Client.MethodConfiguration {
       retryableStatusCodes: codes
     )
 
-    return Client.MethodConfiguration(retryPolicy: policy, timeout: timeout)
+    return GRPCClient.MethodConfiguration(retryPolicy: policy, timeout: timeout)
   }
 }

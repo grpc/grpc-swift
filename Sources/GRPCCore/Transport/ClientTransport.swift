@@ -77,5 +77,5 @@ public protocol ClientTransport: Sendable {
   /// - Returns: Execution configuration for the method, if it exists.
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> Client.MethodConfiguration?
+  ) -> GRPCClient.MethodConfiguration?
 }

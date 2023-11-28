@@ -30,7 +30,7 @@ extension ClientRPCExecutor {
     @usableFromInline
     let transport: Transport
     @usableFromInline
-    let policy: Client.MethodConfiguration.HedgingPolicy
+    let policy: GRPCClient.MethodConfiguration.HedgingPolicy
     @usableFromInline
     let timeout: Duration?
     @usableFromInline
@@ -45,7 +45,7 @@ extension ClientRPCExecutor {
     @inlinable
     init(
       transport: Transport,
-      policy: Client.MethodConfiguration.HedgingPolicy,
+      policy: GRPCClient.MethodConfiguration.HedgingPolicy,
       timeout: Duration?,
       interceptors: [any ClientInterceptor],
       serializer: Serializer,
@@ -420,7 +420,7 @@ extension ClientRPCExecutor.HedgingExecutor {
     private(set) var hasUsableResponse: Bool
 
     @inlinable
-    init(policy: Client.MethodConfiguration.HedgingPolicy) {
+    init(policy: GRPCClient.MethodConfiguration.HedgingPolicy) {
       self._maximumAttempts = policy.maximumAttempts
       self.attempt = 1
       self.hasUsableResponse = false

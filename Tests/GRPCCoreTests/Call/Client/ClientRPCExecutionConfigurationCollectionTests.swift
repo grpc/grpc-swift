@@ -24,48 +24,48 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
     let result = second.duration(to: first)
     print(result.components)
 
-    let policy = Client.MethodConfiguration.HedgingPolicy(
+    let policy = GRPCClient.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = Client.MethodConfigurationRegistry(
+    let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = GRPCClient.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
     let descriptor = MethodDescriptor(service: "test", method: "first")
-    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
+    let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = GRPCClient.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[descriptor] = overrideConfiguration
 
     XCTAssertEqual(configurations[descriptor], overrideConfiguration)
   }
 
   func testGetConfigurationForUnknownMethodButServiceOverride() {
-    let policy = Client.MethodConfiguration.HedgingPolicy(
+    let policy = GRPCClient.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = Client.MethodConfigurationRegistry(
+    let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = GRPCClient.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
-    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
+    let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = GRPCClient.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -73,24 +73,24 @@ final class ClientRPCExecutionConfigurationCollectionTests: XCTestCase {
   }
 
   func testGetConfigurationForUnknownMethodDefaultValue() {
-    let policy = Client.MethodConfiguration.HedgingPolicy(
+    let policy = GRPCClient.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = Client.MethodConfigurationRegistry(
+    let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = GRPCClient.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
-    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
+    let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = GRPCClient.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test2", method: "second")

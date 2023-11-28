@@ -182,13 +182,13 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testExecutionConfiguration() {
-    let policy = Client.MethodConfiguration.HedgingPolicy(
+    let policy = GRPCClient.MethodConfiguration.HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = Client.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = Client.MethodConfigurationRegistry(
+    let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
+    var configurations = GRPCClient.MethodConfigurationRegistry(
       defaultConfiguration: defaultConfiguration
     )
 
@@ -197,14 +197,14 @@ final class InProcessClientTransportTests: XCTestCase {
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), defaultConfiguration)
 
-    let retryPolicy = Client.MethodConfiguration.RetryPolicy(
+    let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = Client.MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = GRPCClient.MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
     client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -243,10 +243,10 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func makeClient(
-    configuration: Client.MethodConfiguration? = nil,
+    configuration: GRPCClient.MethodConfiguration? = nil,
     server: InProcessServerTransport = InProcessServerTransport()
   ) -> InProcessClientTransport {
-    let defaultPolicy = Client.MethodConfiguration.RetryPolicy(
+    let defaultPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(1),

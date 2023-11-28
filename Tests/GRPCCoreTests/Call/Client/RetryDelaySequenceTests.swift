@@ -20,7 +20,7 @@ import XCTest
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class RetryDelaySequenceTests: XCTestCase {
   func testSequence() {
-    let policy = Client.MethodConfiguration.RetryPolicy(
+    let policy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 1,  // ignored here
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(8),
@@ -40,7 +40,7 @@ final class RetryDelaySequenceTests: XCTestCase {
   }
 
   func testSequenceSupportsMultipleIteration() {
-    let policy = Client.MethodConfiguration.RetryPolicy(
+    let policy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 1,  // ignored here
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(8),

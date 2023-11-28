@@ -38,7 +38,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> Client.MethodConfiguration? {
+  ) -> GRPCClient.MethodConfiguration? {
     return nil
   }
 

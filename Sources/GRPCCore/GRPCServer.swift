@@ -23,7 +23,7 @@ import Atomics
 /// streams to a service to handle the RPC or rejects them with an appropriate error if no service
 /// can handle the RPC.
 ///
-/// A ``Server`` may listen with multiple transports (for example, HTTP/2 and in-process) and route
+/// A ``GRPCServer`` may listen with multiple transports (for example, HTTP/2 and in-process) and route
 /// requests from each transport to the same service instance. You can also use "interceptors",
 /// to implement cross-cutting logic which apply to all accepted RPCs. Example uses of interceptors
 /// include request filtering, authentication, and logging. Once requests have been intercepted

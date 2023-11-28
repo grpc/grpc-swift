@@ -16,7 +16,7 @@
 
 /// A gRPC client.
 ///
-/// A ``Client`` communicates to a server via a given ``ClientTransport``.
+/// A ``GRPCClient`` communicates to a server via a given ``ClientTransport``.
 /// You can start RPCs to the server by calling the corresponding method:
 /// - ``unary(request:descriptor:serializer:deserializer:handler:)``
 /// - ``clientStreaming(request:descriptor:serializer:deserializer:handler:)``
@@ -35,7 +35,7 @@
 /// ```swift
 /// // Create and add an in-process transport.
 /// let inProcessTransport = InProcessClientTransport()
-/// let client = Client(transport: inProcessTransport)
+/// let client = GRPCClient(transport: inProcessTransport)
 ///
 /// // Create and add some interceptors.
 /// client.interceptors.add(StatsRecordingServerInterceptors())
@@ -66,7 +66,7 @@
 /// that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public final class Client: Sendable {
+public final class GRPCClient: Sendable {
   /// A collection of ``ClientInterceptor`` implementations which are applied to all accepted
   /// RPCs.
   ///
@@ -142,7 +142,7 @@ public final class Client: Sendable {
   ///
   /// - Note: Any changes to resources after ``run()`` has been called will be ignored.
   ///
-  /// - Parameter transport: The ``ClientTransport`` to be used for this ``Client``.
+  /// - Parameter transport: The ``ClientTransport`` to be used for this ``GRPCClient``.
   public init(transport: ClientTransport) {
     self.storage = LockedValueBox(Storage())
     self.transport = transport
@@ -155,11 +155,10 @@ public final class Client: Sendable {
   ///
   /// If you need to immediately stop all work, cancel the task executing this method.
   public func run() async throws {
-    let interceptors = try self.storage.withLockedValue { storage in
+    try self.storage.withLockedValue { storage in
       switch storage.state {
       case .notStarted:
         storage.state = .running
-        return storage.interceptors
       case .running:
         throw ClientError(
           code: .clientIsAlreadyRunning,
@@ -436,7 +435,7 @@ public final class Client: Sendable {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Client {
+extension GRPCClient {
   /// A collection of interceptors providing cross-cutting functionality to each accepted RPC.
   public struct Interceptors: Sendable {
     private(set) var values: [any ClientInterceptor] = []
@@ -456,7 +455,7 @@ extension Client {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Client {
+extension GRPCClient {
   /// The execution policy for an RPC.
   public enum ExecutionPolicy: Hashable, Sendable {
     /// Policy for retrying an RPC.
@@ -544,7 +543,7 @@ extension Client {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Client.MethodConfiguration {
+extension GRPCClient.MethodConfiguration {
   /// Policy for retrying an RPC.
   ///
   /// gRPC retries RPCs when the first response from the server is a status code which matches
@@ -720,7 +719,7 @@ extension Client.MethodConfiguration {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension Client {
+extension GRPCClient {
   /// A collection of ``ClientRPCExecutionConfiguration``s, mapped to specific methods or services.
   ///
   /// When creating a new instance, you must provide a default configuration to be used when getting
