@@ -25,9 +25,8 @@ final class MethodConfigurationRegistryTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = GRPCClient.MethodConfigurationRegistry(
-      defaultConfiguration: defaultConfiguration
-    )
+    var configurations = GRPCClient.MethodConfigurationRegistry()
+    configurations.setOverallDefaultConfiguration(defaultConfiguration)
     let descriptor = MethodDescriptor(service: "test", method: "first")
     let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
@@ -49,9 +48,8 @@ final class MethodConfigurationRegistryTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = GRPCClient.MethodConfigurationRegistry(
-      defaultConfiguration: defaultConfiguration
-    )
+    var configurations = GRPCClient.MethodConfigurationRegistry()
+    configurations.setOverallDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
     let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,
@@ -74,9 +72,8 @@ final class MethodConfigurationRegistryTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = GRPCClient.MethodConfigurationRegistry(
-      defaultConfiguration: defaultConfiguration
-    )
+    var configurations = GRPCClient.MethodConfigurationRegistry()
+    configurations.setOverallDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
     let retryPolicy = GRPCClient.MethodConfiguration.RetryPolicy(
       maximumAttempts: 10,

@@ -46,8 +46,16 @@
 ///     executionPolicy: ...,
 ///     timeout: ...
 /// )
-/// let registry = MethodConfigurationRegistry(defaultConfiguration: defaultConfiguration)
+/// var registry = MethodConfigurationRegistry()
+/// registry.setOverallDefaultConfiguration(defaultConfiguration)
+///
+/// // Set as configuration overrides to make the client-side configuration
+/// // take precedence over the transport-defined configurations.
 /// client.methodConfigurationOverrides = registry
+///
+/// // Or set as configuration defaults to make the transport-defined configurations
+/// // take precendece over these.
+/// client.methodConfigurationDefaults = registry
 /// ```
 ///
 /// ## Starting and stopping the client
@@ -119,6 +127,24 @@ public final class GRPCClient: Sendable {
     }
   }
 
+  /// A ``MethodConfigurationRegistry`` containing ``MethodConfiguration``s for calls
+  /// made from this ``Client``.
+  ///
+  /// - Note: These configurations will be used if there were no client overrides set in  ``methodConfigurationOverrides``
+  /// and no configuration set in the transport.
+  public var methodConfigurationDefaults: MethodConfigurationRegistry {
+    get {
+      self.storage.withLockedValue { $0.methodConfigurationDefaults }
+    }
+    set {
+      self.storage.withLockedValue { storage in
+        if case .notStarted = storage.state {
+          storage.methodConfigurationDefaults = newValue
+        }
+      }
+    }
+  }
+
   /// The state of the client.
   private enum State {
     /// The client hasn't been started yet. Can transition to `running` or `stopped`.
@@ -135,13 +161,23 @@ public final class GRPCClient: Sendable {
 
   /// Underlying storage for the client.
   private struct Storage {
-    var interceptors: Interceptors
-    var methodConfigurationOverrides: MethodConfigurationRegistry
     var state: State
+
+    /// Client interceptors.
+    var interceptors: Interceptors
+
+    /// A ``MethodConfigurationRegistry`` containing configuration overrides.
+    /// These will take precedence over the transport-defined configuration.
+    var methodConfigurationOverrides: MethodConfigurationRegistry
+
+    /// A ``MethodConfigurationRegistry`` containing configuration defaults.
+    /// These will be used if the transport didn't define any configuration.
+    var methodConfigurationDefaults: MethodConfigurationRegistry
 
     init() {
       self.interceptors = Interceptors()
       self.methodConfigurationOverrides = MethodConfigurationRegistry()
+      self.methodConfigurationDefaults = MethodConfigurationRegistry()
       self.state = .notStarted
     }
   }
@@ -154,8 +190,9 @@ public final class GRPCClient: Sendable {
   /// Creates a new client with no resources (i.e., with no ``Interceptors-swift.struct`` and no
   /// ``MethodDescriptor``s).
   ///
-  /// You can add resources to the client via ``interceptors-swift.property`` and
-  /// ``methodConfigurationOverrides-swift.property``, and start the client by calling ``run()``.
+  /// You can add resources to the client via ``interceptors-swift.property``,
+  /// ``methodConfigurationOverrides-swift.property``, and ``methodConfigurationDefaults-swift.property``,
+  /// and start the client by calling ``run()``.
   ///
   /// - Note: Any changes to resources after ``run()`` has been called will be ignored.
   ///
@@ -246,10 +283,11 @@ public final class GRPCClient: Sendable {
       request: ClientRequest.Stream(single: request),
       descriptor: descriptor,
       serializer: serializer,
-      deserializer: deserializer) { stream in
-        let singleResponse = await ClientResponse.Single(stream: stream)
-        return try await handler(singleResponse)
-      }
+      deserializer: deserializer
+    ) { stream in
+      let singleResponse = await ClientResponse.Single(stream: stream)
+      return try await handler(singleResponse)
+    }
   }
 
   /// Start a client-streaming RPC.
@@ -273,10 +311,11 @@ public final class GRPCClient: Sendable {
       request: request,
       descriptor: descriptor,
       serializer: serializer,
-      deserializer: deserializer) { stream in
-        let singleResponse = await ClientResponse.Single(stream: stream)
-        return try await handler(singleResponse)
-      }
+      deserializer: deserializer
+    ) { stream in
+      let singleResponse = await ClientResponse.Single(stream: stream)
+      return try await handler(singleResponse)
+    }
   }
 
   /// Start a server-streaming RPC.
@@ -325,26 +364,32 @@ public final class GRPCClient: Sendable {
     deserializer: some MessageDeserializer<Response>,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
-    let (configurationOverrides, interceptors) = try self.storage.withLockedValue { storage in
-      switch storage.state {
-      case .running:
-        return (storage.methodConfigurationOverrides, storage.interceptors.values)
-      case .notStarted:
-        throw ClientError(
-          code: .clientIsNotRunning,
-          message: "Client must be running to make an RPC: call run() first."
-        )
-      case .stopping, .stopped:
-        throw ClientError(
-          code: .clientIsStopped,
-          message: "Client has been stopped. Can't make any more RPCs."
-        )
+    let (configurationOverrides, configurationDefaults, interceptors) = try self.storage
+      .withLockedValue { storage in
+        switch storage.state {
+        case .running:
+          return (
+            storage.methodConfigurationOverrides,
+            storage.methodConfigurationDefaults,
+            storage.interceptors.values
+          )
+        case .notStarted:
+          throw ClientError(
+            code: .clientIsNotRunning,
+            message: "Client must be running to make an RPC: call run() first."
+          )
+        case .stopping, .stopped:
+          throw ClientError(
+            code: .clientIsStopped,
+            message: "Client has been stopped. Can't make any more RPCs."
+          )
+        }
       }
-    }
 
     let applicableConfiguration = self.resolveMethodConfiguration(
       descriptor: descriptor,
-      clientConfigurations: configurationOverrides
+      configurationOverrides: configurationOverrides,
+      configurationDefaults: configurationDefaults
     )
 
     return try await ClientRPCExecutor.execute(
@@ -361,9 +406,10 @@ public final class GRPCClient: Sendable {
 
   private func resolveMethodConfiguration(
     descriptor: MethodDescriptor,
-    clientConfigurations configurationOverrides: MethodConfigurationRegistry
+    configurationOverrides: MethodConfigurationRegistry,
+    configurationDefaults: MethodConfigurationRegistry
   ) -> MethodConfiguration {
-    if let clientOverride = configurationOverrides[descriptor, useDefault: false] {
+    if let clientOverride = configurationOverrides[descriptor] {
       return clientOverride
     }
 
@@ -373,7 +419,12 @@ public final class GRPCClient: Sendable {
 
     // If there is no configuration override for this method descriptor in this
     // client, nor in the transport, then get the default from the client.
-    return configurationOverrides[descriptor]
+    // If no default has been specified, then fall back to an empty confiuration.
+    return configurationDefaults[descriptor]
+      ?? MethodConfiguration(
+        executionPolicy: nil,
+        timeout: nil
+      )
   }
 }
 
@@ -672,51 +723,19 @@ extension GRPCClient.MethodConfiguration {
 extension GRPCClient {
   /// A collection of ``ClientRPCExecutionConfiguration``s, mapped to specific methods or services.
   ///
-  /// When creating a new instance, you must provide a default configuration to be used when getting
+  /// When creating a new instance, no overrides and no default will be set for using when getting
   /// a configuration for a method that has not been given a specific override.
   /// Use ``setDefaultConfiguration(_:forService:)`` to set a specific override for a whole
-  /// service.
+  /// service, or set a default configuration for all methods by calling ``setOverallDefaultConfiguration(_:)``.
   ///
-  /// Use the subscript to get and set configurations for methods.
+  /// Use the subscript to get and set configurations for specific methods.
   public struct MethodConfigurationRegistry: Sendable, Hashable {
     private var elements: [MethodDescriptor: MethodConfiguration]
-    private let defaultConfiguration: MethodConfiguration
+    private var defaultConfiguration: MethodConfiguration?
 
-    public init(
-      defaultConfiguration: MethodConfiguration = MethodConfiguration(
-        executionPolicy: nil,
-        timeout: nil
-      )
-    ) {
+    /// Create a new ``MethodConfigurationRegistry`` with no overrides and no default configuration.
+    public init() {
       self.elements = [:]
-      self.defaultConfiguration = defaultConfiguration
-    }
-
-    /// Get the corresponding ``MethodConfiguration`` for the given ``MethodDescriptor``.
-    ///
-    /// If `useDefault` is true, then fall back to the default configuration given in ``init(defaultConfiguration:)``
-    /// if there is no set configuration for the descriptor. Otherwise, return `nil`.
-    ///
-    /// - Parameters:
-    ///  - descriptor: The ``MethodDescriptor`` for which to get a ``MethodConfiguration``.
-    ///  - useDefault: Whether the default value should be returned if no configuration was specified
-    ///  for the given descriptor.
-    public subscript(_ descriptor: MethodDescriptor, useDefault useDefault: Bool)
-      -> MethodConfiguration?
-    {
-      get {
-        if let methodLevelOverride = self.elements[descriptor] {
-          return methodLevelOverride
-        }
-        var serviceLevelDescriptor = descriptor
-        serviceLevelDescriptor.method = ""
-
-        if useDefault {
-          return self.elements[serviceLevelDescriptor, default: self.defaultConfiguration]
-        } else {
-          return self.elements[serviceLevelDescriptor]
-        }
-      }
     }
 
     /// Get or set the corresponding ``MethodConfiguration`` for the given ``MethodDescriptor``.
@@ -726,11 +745,16 @@ extension GRPCClient {
     ///
     /// - Parameters:
     ///  - descriptor: The ``MethodDescriptor`` for which to get or set a ``MethodConfiguration``.
-    public subscript(_ descriptor: MethodDescriptor) -> MethodConfiguration {
+    public subscript(_ descriptor: MethodDescriptor) -> MethodConfiguration?
+    {
       get {
-        // This force unwrap is safe, because we'll always have a default value
-        // present, and we'll always use it if `useDefault` is true.
-        self[descriptor, useDefault: true]!
+        if let methodLevelOverride = self.elements[descriptor] {
+          return methodLevelOverride
+        }
+        var serviceLevelDescriptor = descriptor
+        serviceLevelDescriptor.method = ""
+
+        return self.elements[serviceLevelDescriptor] ?? self.defaultConfiguration
       }
 
       set {
@@ -741,6 +765,13 @@ extension GRPCClient {
 
         self.elements[descriptor] = newValue
       }
+    }
+
+    /// Set a default configuration for all methods that have no overrides.
+    ///
+    /// - Parameter configuration: The default configuration.
+    public mutating func setOverallDefaultConfiguration(_ configuration: MethodConfiguration?) {
+      self.defaultConfiguration = configuration
     }
 
     /// Set a default configuration for a service.

@@ -188,9 +188,8 @@ final class InProcessClientTransportTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = GRPCClient.MethodConfiguration(hedgingPolicy: policy)
-    var configurations = GRPCClient.MethodConfigurationRegistry(
-      defaultConfiguration: defaultConfiguration
-    )
+    var configurations = GRPCClient.MethodConfigurationRegistry()
+    configurations.setOverallDefaultConfiguration(defaultConfiguration)
 
     var client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
 
@@ -254,11 +253,13 @@ final class InProcessClientTransportTests: XCTestCase {
       retryableStatusCodes: [.unavailable]
     )
 
+    var methodConfiguration = GRPCClient.MethodConfigurationRegistry()
+    methodConfiguration.setOverallDefaultConfiguration(
+      configuration ?? .init(retryPolicy: defaultPolicy)
+    )
     return InProcessClientTransport(
       server: server,
-      executionConfigurations: .init(
-        defaultConfiguration: configuration ?? .init(retryPolicy: defaultPolicy)
-      )
+      executionConfigurations: methodConfiguration
     )
   }
 }
