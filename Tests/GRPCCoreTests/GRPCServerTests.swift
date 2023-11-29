@@ -59,7 +59,6 @@ final class GRPCServerTests: XCTestCase {
       inProcess.client.close()
       server.stopListening()
     }
-
   }
 
   func testServerHandlesUnary() async throws {

@@ -430,6 +430,8 @@ public final class GRPCClient: Sendable {
       return transportConfiguration
     }
 
+    // If there is no configuration override for this method descriptor in this
+    // client, nor in the transport, then get the default from the client.
     return configurationOverrides[descriptor]
   }
 }
@@ -451,6 +453,13 @@ extension GRPCClient {
     public mutating func add(_ interceptor: some ClientInterceptor) {
       self.values.append(interceptor)
     }
+  }
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension GRPCClient.Interceptors: CustomStringConvertible {
+  public var description: String {
+    return String(describing: self.values.map { String(describing: type(of: $0)) })
   }
 }
 
