@@ -216,8 +216,7 @@ extension Target {
       .nioEmbedded,
       .nioTransportServices,
       .logging,
-      .reflectionService,
-      .grpcCodeGen
+      .reflectionService
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
@@ -542,7 +541,6 @@ let package = Package(
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
     .reflectionService,
-    .grpcCodeGen,
 
     // Tests etc.
     .grpcTests,
@@ -568,6 +566,7 @@ let package = Package(
 
     // v2
     .grpcCore,
+    .grpcCodeGen,
 
     // v2 tests
     .grpcCoreTests,
