@@ -65,8 +65,7 @@ struct ImportDescription: Equatable, Codable {
 /// A description of an access modifier.
 ///
 /// For example: `public`.
-public enum AccessModifier: String, Sendable, Equatable, Codable {
-
+internal enum AccessModifier: String, Sendable, Equatable, Codable {
   /// A declaration accessible outside of the module.
   case `public`
 
