@@ -55,16 +55,14 @@ struct TypeName: Hashable {
   /// For example: `Int`.
   var shortName: String { components.last! }
 
-  /// Returns a type name by appending the specified components to the
+  /// Returns a type name by appending the specified component to the
   /// current type name.
   ///
   /// In other words, returns a type name for a child type.
-  /// - Precondition: At least one of the components must be non-nil.
   /// - Parameters:
   ///   - component: The name of the Swift type component.
   /// - Returns: A new type name.
-  func appending(component: String? = nil) -> Self {
-    precondition(component != nil, "The type name must be non-nil.")
+  func appending(component: String) -> Self {
     return .init(components: components + [component])
   }
 
