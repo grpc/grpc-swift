@@ -111,6 +111,7 @@ extension ClientError {
       case clientIsAlreadyRunning
       case clientIsNotRunning
       case clientIsStopped
+      case transportError
     }
 
     private var value: Value
@@ -131,6 +132,11 @@ extension ClientError {
     /// At attempt to start the client was made but it has already stopped.
     public static var clientIsStopped: Self {
       Self(.clientIsStopped)
+    }
+
+    /// The transport threw an error whilst connected.
+    public static var transportError: Self {
+      Self(.transportError)
     }
   }
 }

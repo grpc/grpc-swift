@@ -34,8 +34,9 @@
 ///
 /// ```swift
 /// // Create and add an in-process transport.
-/// let inProcessTransport = InProcessClientTransport()
-/// let client = GRPCClient(transport: inProcessTransport)
+/// let inProcessServerTransport = InProcessServerTransport()
+/// let inProcessClientTransport = InProcessClientTransport(serverTransport: inProcessServerTransport)
+/// let client = GRPCClient(transport: inProcessClientTransport)
 ///
 /// // Create and add some interceptors.
 /// client.interceptors.add(StatsRecordingServerInterceptors())
@@ -56,7 +57,22 @@
 ///
 /// ```swift
 /// // Start running the client.
-/// try await client.run()
+/// // Since it's a long-running task, we do it in a task group so it runs in
+/// // the background.
+/// try await withThrowingTaskGroup(of: Void.self) { group in
+///  group.addTask {
+///   try await client.run()
+///  }
+///
+///  try await client.unary(
+///   request: .init(message: "Hello!"),
+///   descriptor: MethodDescriptor(service: "service", method: "method"),
+///   serializer: ...,
+///   deserializer: ...
+///  ) { response in
+///   // Do something with the response
+///  }
+/// }
 /// ```
 ///
 /// The ``run()`` method won't return until the client has finished handling all requests. You can
@@ -133,9 +149,10 @@ public final class GRPCClient: Sendable {
   private let storage: LockedValueBox<Storage>
 
   /// The transport which provides a bidirectional communication channel with the server.
-  private let transport: ClientTransport
+  private let transport: any ClientTransport
 
-  /// Creates a new client with no resources.
+  /// Creates a new client with no resources (i.e., with no ``Interceptors-swift.struct`` and no
+  /// ``MethodDescriptor``s).
   ///
   /// You can add resources to the client via ``interceptors-swift.property`` and
   /// ``methodConfigurationOverrides-swift.property``, and start the client by calling ``run()``.
@@ -143,7 +160,7 @@ public final class GRPCClient: Sendable {
   /// - Note: Any changes to resources after ``run()`` has been called will be ignored.
   ///
   /// - Parameter transport: The ``ClientTransport`` to be used for this ``GRPCClient``.
-  public init(transport: ClientTransport) {
+  public init(transport: any ClientTransport) {
     self.storage = LockedValueBox(Storage())
     self.transport = transport
   }
@@ -177,11 +194,14 @@ public final class GRPCClient: Sendable {
       self.storage.withLockedValue { $0.state = .stopped }
     }
 
-    try await withThrowingTaskGroup(of: Void.self) { group in
-      group.addTask {
-        try await self.transport.connect(lazily: false)
-      }
-      try await group.next()
+    do {
+      try await self.transport.connect(lazily: false)
+    } catch {
+      throw ClientError(
+        code: .transportError,
+        message: "The transport threw an error while connected.",
+        cause: error
+      )
     }
   }
 
@@ -205,7 +225,7 @@ public final class GRPCClient: Sendable {
     self.transport.close()
   }
 
-  /// Start a unary RPC.
+  /// Executes a unary RPC.
   ///
   /// - Parameters:
   ///   - request: The unary request.
@@ -222,41 +242,14 @@ public final class GRPCClient: Sendable {
     deserializer: some MessageDeserializer<Response>,
     handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
-    let (configurationOverrides, interceptors) = try self.storage.withLockedValue { storage in
-      switch storage.state {
-      case .running:
-        return (storage.methodConfigurationOverrides, storage.interceptors.values)
-      case .notStarted:
-        throw ClientError(
-          code: .clientIsNotRunning,
-          message: "Client must be running to make an RPC: call run() first."
-        )
-      case .stopping, .stopped:
-        throw ClientError(
-          code: .clientIsStopped,
-          message: "Client has been stopped. Can't make any more RPCs."
-        )
-      }
-    }
-
-    let applicableConfiguration = self.resolveMethodConfiguration(
-      descriptor: descriptor,
-      clientConfigurations: configurationOverrides
-    )
-
-    return try await ClientRPCExecutor.execute(
+    try await bidirectionalStreaming(
       request: ClientRequest.Stream(single: request),
-      method: descriptor,
-      configuration: applicableConfiguration,
+      descriptor: descriptor,
       serializer: serializer,
-      deserializer: deserializer,
-      transport: self.transport,
-      interceptors: interceptors,
-      handler: { stream in
+      deserializer: deserializer) { stream in
         let singleResponse = await ClientResponse.Single(stream: stream)
         return try await handler(singleResponse)
       }
-    )
   }
 
   /// Start a client-streaming RPC.
@@ -276,41 +269,14 @@ public final class GRPCClient: Sendable {
     deserializer: some MessageDeserializer<Response>,
     handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
-    let (configurationOverrides, interceptors) = try self.storage.withLockedValue { storage in
-      switch storage.state {
-      case .running:
-        return (storage.methodConfigurationOverrides, storage.interceptors.values)
-      case .notStarted:
-        throw ClientError(
-          code: .clientIsNotRunning,
-          message: "Client must be running to make an RPC: call run() first."
-        )
-      case .stopping, .stopped:
-        throw ClientError(
-          code: .clientIsStopped,
-          message: "Client has been stopped. Can't make any more RPCs."
-        )
-      }
-    }
-
-    let applicableConfiguration = self.resolveMethodConfiguration(
-      descriptor: descriptor,
-      clientConfigurations: configurationOverrides
-    )
-
-    return try await ClientRPCExecutor.execute(
+    try await bidirectionalStreaming(
       request: request,
-      method: descriptor,
-      configuration: applicableConfiguration,
+      descriptor: descriptor,
       serializer: serializer,
-      deserializer: deserializer,
-      transport: transport,
-      interceptors: interceptors,
-      handler: { stream in
+      deserializer: deserializer) { stream in
         let singleResponse = await ClientResponse.Single(stream: stream)
         return try await handler(singleResponse)
       }
-    )
   }
 
   /// Start a server-streaming RPC.
@@ -330,36 +296,11 @@ public final class GRPCClient: Sendable {
     deserializer: some MessageDeserializer<Response>,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
-    let (configurationOverrides, interceptors) = try self.storage.withLockedValue { storage in
-      switch storage.state {
-      case .running:
-        return (storage.methodConfigurationOverrides, storage.interceptors.values)
-      case .notStarted:
-        throw ClientError(
-          code: .clientIsNotRunning,
-          message: "Client must be running to make an RPC: call run() first."
-        )
-      case .stopping, .stopped:
-        throw ClientError(
-          code: .clientIsStopped,
-          message: "Client has been stopped. Can't make any more RPCs."
-        )
-      }
-    }
-
-    let applicableConfiguration = self.resolveMethodConfiguration(
-      descriptor: descriptor,
-      clientConfigurations: configurationOverrides
-    )
-
-    return try await ClientRPCExecutor.execute(
+    try await bidirectionalStreaming(
       request: ClientRequest.Stream(single: request),
-      method: descriptor,
-      configuration: applicableConfiguration,
+      descriptor: descriptor,
       serializer: serializer,
       deserializer: deserializer,
-      transport: transport,
-      interceptors: interceptors,
       handler: handler
     )
   }
@@ -442,7 +383,7 @@ extension GRPCClient {
   public struct Interceptors: Sendable {
     private(set) var values: [any ClientInterceptor] = []
 
-    /// Add an interceptor to the server.
+    /// Add an interceptor to the client.
     ///
     /// The order in which interceptors are added reflects the order in which they are called. The
     /// first interceptor added will be the first interceptor to intercept each request. The last

@@ -76,7 +76,11 @@ public final class GRPCServer: Sendable {
       self.storage.withLockedValue { $0.transports }
     }
     set {
-      self.storage.withLockedValue { $0.transports = newValue }
+      self.storage.withLockedValue { storage in
+        if case .notStarted = storage.state {
+          storage.transports = newValue
+        }
+      }
     }
   }
 
@@ -86,7 +90,11 @@ public final class GRPCServer: Sendable {
       self.storage.withLockedValue { $0.services }
     }
     set {
-      self.storage.withLockedValue { $0.services = newValue }
+      self.storage.withLockedValue { storage in
+        if case .notStarted = storage.state {
+          storage.services = newValue
+        }
+      }
     }
   }
 
@@ -101,7 +109,11 @@ public final class GRPCServer: Sendable {
       self.storage.withLockedValue { $0.interceptors }
     }
     set {
-      self.storage.withLockedValue { $0.interceptors = newValue }
+      self.storage.withLockedValue { storage in
+        if case .notStarted = storage.state {
+          storage.interceptors = newValue
+        }
+      }
     }
   }
 
