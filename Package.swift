@@ -216,7 +216,7 @@ extension Target {
       .nioEmbedded,
       .nioTransportServices,
       .logging,
-      .reflectionService,
+      .reflectionService
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
@@ -235,6 +235,13 @@ extension Target {
     ]
   )
 
+  static let grpcCodeGenTests: Target = .testTarget(
+    name: "GRPCCodeGenTests",
+    dependencies: [
+      .grpcCodeGen
+    ]
+  )
+  
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -559,9 +566,11 @@ let package = Package(
 
     // v2
     .grpcCore,
+    .grpcCodeGen,
 
     // v2 tests
     .grpcCoreTests,
+    .grpcCodeGenTests
   ]
 )
 
