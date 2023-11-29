@@ -35,7 +35,7 @@ import Foundation
 /// to a type.
 struct TypeName: Hashable {
   /// A list of components that make up the type name.
-  private let components: [String]
+  internal let components: [String]
 
   /// Creates a new type name with the specified list of components.
   /// - Parameter components: A list of components for the type.
@@ -78,7 +78,7 @@ struct TypeName: Hashable {
 
 extension TypeName: CustomStringConvertible {
   var description: String {
-    return fullyQualifiedSwiftName
+    return fullyQualifiedName
   }
 }
 
