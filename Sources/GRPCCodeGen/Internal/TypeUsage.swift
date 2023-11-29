@@ -87,7 +87,7 @@ struct TypeUsage {
   fileprivate var usage: Usage
 }
 
-extension TypeUsage: CustomStringConvertible { var description: String { fullyQualifiedSwiftName } }
+extension TypeUsage: CustomStringConvertible { var description: String { fullyQualifiedName } }
 
 extension TypeUsage {
 
@@ -100,23 +100,23 @@ extension TypeUsage {
   /// A string representation of the last component of the Swift type name.
   ///
   /// For example: `Int`.
-  var shortSwiftName: String {
+  var shortName: String {
     let component: String
     switch wrapped {
-    case let .name(typeName): component = typeName.shortSwiftName
-    case let .usage(usage): component = usage.shortSwiftName
+    case let .name(typeName): component = typeName.shortName
+    case let .usage(usage): component = usage.shortName
     }
     return applied(to: component)
   }
 
-  /// A string representation of the fully qualified Swift type name.
+  /// A string representation of the fully qualified type name.
   ///
   /// For example: `Swift.Int`.
-  var fullyQualifiedSwiftName: String {
+  var fullyQualifiedName: String {
     let component: String
     switch wrapped {
-    case let .name(typeName): component = typeName.fullyQualifiedSwiftName
-    case let .usage(usage): component = usage.fullyQualifiedSwiftName
+    case let .name(typeName): component = typeName.fullyQualifiedName
+    case let .usage(usage): component = usage.fullyQualifiedName
     }
     return applied(to: component)
   }
@@ -125,7 +125,7 @@ extension TypeUsage {
   /// any optional wrapping removed.
   ///
   /// For example: `Swift.Int`.
-  var fullyQualifiedNonOptionalSwiftName: String { withOptional(false).fullyQualifiedSwiftName }
+  var fullyQualifiedNonOptionalName: String { withOptional(false).fullyQualifiedName }
 
   /// Returns a string representation of the type usage applied to the
   /// specified Swift path component.
@@ -138,7 +138,7 @@ extension TypeUsage {
     case .array: return "[" + component + "]"
     case .dictionaryValue: return "[String: " + component + "]"
     case .generic(wrapper: let wrapper):
-      return "\(wrapper.fullyQualifiedSwiftName)<" + component + ">"
+      return "\(wrapper.fullyQualifiedName)<" + component + ">"
     }
   }
 
@@ -215,7 +215,7 @@ extension ExistingTypeDescription {
 
   /// Creates a new type description from the provided type name.
   /// - Parameter typeName: A type name.
-  init(_ typeName: TypeName) { self = .member(typeName.swiftKeyPathComponents) }
+  init(_ typeName: TypeName) { self = .member(typeName.components) }
 
   /// Creates a new type description from the provided type usage.
   /// - Parameter typeUsage: A type usage.
