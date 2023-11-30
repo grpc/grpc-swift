@@ -28,4 +28,12 @@ extension RPCAsyncSequence {
 
     return (RPCAsyncSequence(wrapping: stream), RPCWriter.Closable(wrapping: continuation))
   }
+
+  @inlinable
+  public static func _makeBackpressuredStream(
+    of elementType: Element.Type = Element.self,
+    watermarks: (low: Int, high: Int)
+  ) -> (stream: Self, writer: RPCWriter<Element>.Closable) {
+    return Self.makeBackpressuredStream(of: elementType, watermarks: watermarks)
+  }
 }
