@@ -1,21 +1,21 @@
 # Reflection service
 
-This tutorial goes through the steps of adding Reflection service to a 
-server, running it and testing it using gRPCurl. 
+This tutorial goes through the steps of adding Reflection service to a
+server, running it and testing it using gRPCurl.
 
- The server used in this example is implemented at 
+ The server used in this example is implemented at
  [Sources/Examples/ReflectionService/ReflectionServer.swift][reflection-server]
- and it supports the "Greeter", "Echo", and "Reflection" services. 
+ and it supports the "Greeter", "Echo", and "Reflection" services.
 
 
 ## Overview
 
-The Reflection service provides information about the public RPCs served by a server. 
+The Reflection service provides information about the public RPCs served by a server.
 It is specific to services defined using the Protocol Buffers IDL.
 By calling the Reflection service, clients can construct and send requests to services
-without needing to generate code and types for them. 
+without needing to generate code and types for them.
 
-You can also use CLI clients such as [gRPCurl][grpcurl-setup] and the [gRPC command line tool][grpc-cli] to: 
+You can also use CLI clients such as [gRPCurl][grpcurl-setup] and the [gRPC command line tool][grpc-cli] to:
 - list services,
 - describe services and their methods,
 - describe symbols,
@@ -28,9 +28,9 @@ gRPC Swift supports both [v1][v1] and [v1alpha][v1alpha] of the reflection servi
 
 You can use the Reflection service by adding it as a provider when constructing your server.
 
-To initialise the Reflection service we will use 
+To initialise the Reflection service we will use
 ``GRPCReflectionService/ReflectionService/init(reflectionDataFileURLs:version:)``.
-It receives the URLs of the files containing the reflection data of the proto files 
+It receives the URLs of the files containing the reflection data of the proto files
 describing the services of the server and the version of the reflection service.
 
 ### Generating the reflection data
@@ -38,7 +38,7 @@ describing the services of the server and the version of the reflection service.
 The server from this example uses the `GreeterProvider` and the `EchoProvider`,
 besides the `ReflectionService`.
 
-The associated proto files are located at `Sources/Examples/HelloWorld/Model/helloworld.proto`, and 
+The associated proto files are located at `Sources/Examples/HelloWorld/Model/helloworld.proto`, and
 `Sources/Examples/Echo/Model/echo.proto` respectively.
 
 In order to generate the reflection data for the `helloworld.proto`, you can run the following command:
@@ -51,8 +51,8 @@ $ protoc Sources/Examples/HelloWorld/Model/helloworld.proto \
 ```
 
 Let's break the command down:
-- The first argument passed to `protoc` is the path 
-  to the `.proto` file to generate reflection data 
+- The first argument passed to `protoc` is the path
+  to the `.proto` file to generate reflection data
   for: [`Sources/Examples/HelloWorld/Model/helloworld.proto`][helloworld-proto].
 - The `proto_path` flag is the path to search for imports: `Sources/Examples/HelloWorld/Model`.
 - The 'grpc-swift_opt' flag allows us to list options for the Swift generator.
@@ -61,18 +61,18 @@ Let's break the command down:
   where the generated file will be located: `Sources/Examples/ReflectionService/Generated`.
 
 This command assumes that the `protoc-gen-grpc-swift` plugin is in your `$PATH` environment variable.
-You can learn how to get the plugin from this section of the `grpc-swift` README: 
+You can learn how to get the plugin from this section of the `grpc-swift` README:
 https://github.com/grpc/grpc-swift#getting-the-protoc-plugins.
 
 The command for generating the reflection data for the `Echo` service is similar.
 
-You can use Swift Package Manager [resources][swiftpm-resources] to add the generated reflection data to your target. 
-In our example the reflection data is written into the "Generated" directory within the target 
+You can use Swift Package Manager [resources][swiftpm-resources] to add the generated reflection data to your target.
+In our example the reflection data is written into the "Generated" directory within the target
 so we include the `.copy("Generated")` rule in our target's resource list.
 
-### Instantiating the Reflection service 
+### Instantiating the Reflection service
 
-To instantiate the `ReflectionService` you need to pass the URLs of the files containing 
+To instantiate the `ReflectionService` you need to pass the URLs of the files containing
 the generated reflection data and the version to use, in our case `.v1`.
 
 Depending on the version of [gRPCurl][grpcurl] you are using you might need to use the `.v1alpha` instead.
@@ -84,9 +84,14 @@ reflection.
 guard
   let greeterURL = Bundle.module.url(
     forResource: "helloworld",
-    withExtension: "grpc.reflection.txt"
+    withExtension: "grpc.reflection",
+    subdirectory: "Generated"
   ),
-  let echoURL = Bundle.module.url(forResource: "echo", withExtension: "grpc.reflection.txt")
+  let echoURL = Bundle.module.url(
+    forResource: "echo",
+    withExtension: "grpc.reflection",
+    subdirectory: "Generated"
+  )
 else {
   print("The resource could not be loaded.")
   throw ExitCode.failure
@@ -123,7 +128,7 @@ Please follow the instructions from the [gRPCurl README][grpcurl-setup] to set u
 From a different terminal than the one used for running the server, we will call gRPCurl commands,
 following the format: `grpcurl [flags] [address] [list|describe] [symbol]`.
 
-We use the `-plaintext` flag, because the server isn't configured with TLS, and 
+We use the `-plaintext` flag, because the server isn't configured with TLS, and
 the address is set to `localhost:1234`.
 
 

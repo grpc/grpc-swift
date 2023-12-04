@@ -222,7 +222,7 @@ extension Target {
     ),
     exclude: [
       "Codegen/Normalization/normalization.proto",
-      "Codegen/Serialization/echo.grpc.reflection.txt",
+      "Codegen/Serialization/echo.grpc.reflection",
     ]
   )
 
@@ -241,7 +241,7 @@ extension Target {
       .grpcCodeGen
     ]
   )
-  
+
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -468,7 +468,7 @@ extension Target {
       "v1Alpha/reflection-v1alpha.proto"
     ]
   )
-  
+
   static let reflectionServer: Target = .executableTarget(
     name: "ReflectionServer",
     dependencies: [
@@ -486,7 +486,7 @@ extension Target {
       .copy("Generated")
     ]
   )
-  
+
   static let grpcCodeGen: Target = .target(
     name: "GRPCCodeGen",
     path: "Sources/GRPCCodeGen"
@@ -500,7 +500,7 @@ extension Product {
     name: grpcProductName,
     targets: [grpcTargetName]
   )
-    
+
   static let grpcCore: Product = .library(
     name: "_GRPCCore",
     targets: ["GRPCCore"]

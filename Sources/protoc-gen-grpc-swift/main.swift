@@ -144,11 +144,11 @@ func main(args: [String]) throws {
       if options.generateReflectionData {
         var binaryFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         let binaryFileName = uniqueOutputFileName(
-          component: "grpc.reflection",
+          component: "grpc",
           fileDescriptor: fileDescriptor,
           fileNamingOption: options.fileNaming,
           generatedFiles: &generatedFiles,
-          extension: "txt"
+          extension: "reflection"
         )
         let serializedFileDescriptorProto = try fileDescriptor.proto.serializedData()
           .base64EncodedString()
