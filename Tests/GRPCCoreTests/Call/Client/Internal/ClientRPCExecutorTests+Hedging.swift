@@ -187,7 +187,7 @@ extension ClientRPCExecutorTests {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ClientRPCExecutionConfiguration {
+extension MethodConfiguration {
   fileprivate static func hedge(
     maximumAttempts: Int = 5,
     delay: Duration = .milliseconds(25),
@@ -200,6 +200,6 @@ extension ClientRPCExecutionConfiguration {
       nonFatalStatusCodes: nonFatalCodes
     )
 
-    return ClientRPCExecutionConfiguration(hedgingPolicy: policy, timeout: timeout)
+    return Self(hedgingPolicy: policy, timeout: timeout)
   }
 }

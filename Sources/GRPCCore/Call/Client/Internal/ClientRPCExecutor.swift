@@ -35,7 +35,7 @@ enum ClientRPCExecutor {
   static func execute<Input: Sendable, Output: Sendable, Result: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
-    configuration: ClientRPCExecutionConfiguration,
+    configuration: MethodConfiguration,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     transport: some ClientTransport,

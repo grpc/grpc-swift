@@ -133,6 +133,7 @@ extension Target.Dependency {
   static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
 
   static let grpcCore: Self = .target(name: "GRPCCore")
+  static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
 }
 
 // MARK: - Targets
@@ -168,6 +169,13 @@ extension Target {
       .atomics
     ],
     path: "Sources/GRPCCore"
+  )
+
+  static let grpcInProcessTransport: Target = .target(
+    name: "GRPCInProcessTransport",
+    dependencies: [
+      .grpcCore
+    ]
   )
 
   static let cgrpcZlib: Target = .target(
@@ -230,8 +238,17 @@ extension Target {
     name: "GRPCCoreTests",
     dependencies: [
       .grpcCore,
+      .grpcInProcessTransport,
       .dequeModule,
       .atomics
+    ]
+  )
+
+  static let grpcInProcessTransportTests: Target = .testTarget(
+    name: "GRPCInProcessTransportTests",
+    dependencies: [
+      .grpcCore,
+      .grpcInProcessTransport,
     ]
   )
 
@@ -566,10 +583,12 @@ let package = Package(
 
     // v2
     .grpcCore,
+    .grpcInProcessTransport,
     .grpcCodeGen,
 
     // v2 tests
     .grpcCoreTests,
+    .grpcInProcessTransportTests,
     .grpcCodeGenTests
   ]
 )

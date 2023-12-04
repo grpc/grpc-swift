@@ -28,7 +28,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     ) async throws -> Any
   private let _connect: @Sendable (Bool) async throws -> Void
   private let _close: @Sendable () -> Void
-  private let _configuration: @Sendable (MethodDescriptor) -> ClientRPCExecutionConfiguration?
+  private let _configuration: @Sendable (MethodDescriptor) -> MethodConfiguration?
 
   init<Transport: ClientTransport>(wrapping transport: Transport)
   where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
@@ -74,7 +74,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
 
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> ClientRPCExecutionConfiguration? {
+  ) -> MethodConfiguration? {
     self._configuration(descriptor)
   }
 }

@@ -17,13 +17,19 @@
 import XCTest
 
 @testable import GRPCCore
+@testable import GRPCInProcessTransport
 
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessServerTransport()
     let stream = RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>(
       descriptor: .init(service: "testService", method: "testMethod"),
-      inbound: .elements([.message([42])]),
+      inbound: RPCAsyncSequence(
+        wrapping: AsyncStream {
+          $0.yield(.message([42]))
+          $0.finish()
+        }
+      ),
       outbound: .init(
         wrapping: BufferedStream.Source(
           storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
@@ -37,7 +43,7 @@ final class InProcessServerTransportTests: XCTestCase {
     try transport.acceptStream(stream)
 
     let testStream = try await streamSequenceInterator.next()
-    let messages = try await testStream?.inbound.collect()
+    let messages = try await testStream?.inbound.reduce(into: []) { $0.append($1) }
     XCTAssertEqual(messages, [.message([42])])
   }
 
@@ -47,7 +53,12 @@ final class InProcessServerTransportTests: XCTestCase {
       RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
     >(
       descriptor: .init(service: "testService1", method: "testMethod1"),
-      inbound: .elements([.message([42])]),
+      inbound: RPCAsyncSequence(
+        wrapping: AsyncStream {
+          $0.yield(.message([42]))
+          $0.finish()
+        }
+      ),
       outbound: .init(
         wrapping: BufferedStream.Source(
           storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
@@ -61,7 +72,7 @@ final class InProcessServerTransportTests: XCTestCase {
     try transport.acceptStream(firstStream)
 
     let firstTestStream = try await streamSequenceInterator.next()
-    let firstStreamMessages = try await firstTestStream?.inbound.collect()
+    let firstStreamMessages = try await firstTestStream?.inbound.reduce(into: []) { $0.append($1) }
     XCTAssertEqual(firstStreamMessages, [.message([42])])
 
     transport.stopListening()
@@ -70,7 +81,12 @@ final class InProcessServerTransportTests: XCTestCase {
       RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
     >(
       descriptor: .init(service: "testService1", method: "testMethod1"),
-      inbound: .elements([.message([42])]),
+      inbound: RPCAsyncSequence(
+        wrapping: AsyncStream {
+          $0.yield(.message([42]))
+          $0.finish()
+        }
+      ),
       outbound: .init(
         wrapping: BufferedStream.Source(
           storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
@@ -78,7 +94,9 @@ final class InProcessServerTransportTests: XCTestCase {
       )
     )
 
-    XCTAssertThrowsRPCError(try transport.acceptStream(secondStream)) { error in
+    XCTAssertThrowsError(ofType: RPCError.self) {
+      try transport.acceptStream(secondStream)
+    } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
     }
 

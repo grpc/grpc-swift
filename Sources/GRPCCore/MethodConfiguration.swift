@@ -16,7 +16,7 @@
 
 /// Configuration values for executing an RPC.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
+public struct MethodConfiguration: Hashable, Sendable {
   /// The default timeout for the RPC.
   ///
   /// If no reply is received in the specified amount of time the request is aborted
@@ -88,7 +88,7 @@ public struct ClientRPCExecutionConfiguration: Hashable, Sendable {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ClientRPCExecutionConfiguration {
+extension MethodConfiguration {
   /// The execution policy for an RPC.
   public enum ExecutionPolicy: Hashable, Sendable {
     /// Policy for retrying an RPC.
