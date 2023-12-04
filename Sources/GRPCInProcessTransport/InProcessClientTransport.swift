@@ -98,15 +98,15 @@ public struct InProcessClientTransport: ClientTransport {
 
   public let retryThrottle: RetryThrottle
 
-  private let methodConfigurations: MethodConfigurations
+  private let methodConfiguration: MethodConfigurations
   private let state: _LockedValueBox<State>
 
   public init(
     server: InProcessServerTransport,
-    executionConfigurations: MethodConfigurations = MethodConfigurations()
+    methodConfiguration: MethodConfigurations = MethodConfigurations()
   ) {
     self.retryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
-    self.methodConfigurations = executionConfigurations
+    self.methodConfiguration = methodConfiguration
     self.state = _LockedValueBox(.unconnected(.init(serverTransport: server)))
   }
 
@@ -332,6 +332,6 @@ public struct InProcessClientTransport: ClientTransport {
   public func executionConfiguration(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfiguration? {
-    self.methodConfigurations[descriptor]
+    self.methodConfiguration[descriptor]
   }
 }
