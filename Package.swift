@@ -87,6 +87,7 @@ extension Target.Dependency {
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
   static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
+  static let reflectionService: Self = .target(name: "GRPCReflectionService")
   static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
 
   // Target dependencies; internal
@@ -98,7 +99,6 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
-  static let reflectionService: Self = .target(name: "GRPCReflectionService")
 
   // Product dependencies
   static let argumentParser: Self = .product(
@@ -528,6 +528,11 @@ extension Product {
     targets: [cgrpcZlibTargetName]
   )
 
+  static let grpcReflectionService: Product = .library(
+    name: "GRPCReflectionService",
+    targets: ["GRPCReflectionService"]
+  )
+
   static let protocGenGRPCSwift: Product = .executable(
     name: "protoc-gen-grpc-swift",
     targets: ["protoc-gen-grpc-swift"]
@@ -547,6 +552,7 @@ let package = Package(
     .grpc,
     .grpcCore,
     .cgrpcZlib,
+    .grpcReflectionService,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
   ],
