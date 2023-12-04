@@ -16,24 +16,25 @@
 import Atomics
 import GRPCCore
 
-extension ServerInterceptor where Self == RejectAllServerInterceptor {
+extension ClientInterceptor where Self == RejectAllClientInterceptor {
   static func rejectAll(with error: RPCError) -> Self {
-    return RejectAllServerInterceptor(error: error, throw: false)
+    return RejectAllClientInterceptor(error: error, throw: false)
   }
 
   static func throwError(_ error: RPCError) -> Self {
-    return RejectAllServerInterceptor(error: error, throw: true)
+    return RejectAllClientInterceptor(error: error, throw: true)
   }
+
 }
 
-extension ServerInterceptor where Self == RequestCountingServerInterceptor {
+extension ClientInterceptor where Self == RequestCountingClientInterceptor {
   static func requestCounter(_ counter: ManagedAtomic<Int>) -> Self {
-    return RequestCountingServerInterceptor(counter: counter)
+    return RequestCountingClientInterceptor(counter: counter)
   }
 }
 
 /// Rejects all RPCs with the provided error.
-struct RejectAllServerInterceptor: ServerInterceptor {
+struct RejectAllClientInterceptor: ClientInterceptor {
   /// The error to reject all RPCs with.
   let error: RPCError
   /// Whether the error should be thrown. If `false` then the request is rejected with the error
@@ -46,22 +47,22 @@ struct RejectAllServerInterceptor: ServerInterceptor {
   }
 
   func intercept<Input: Sendable, Output: Sendable>(
-    request: ServerRequest.Stream<Input>,
-    context: ServerInterceptorContext,
+    request: ClientRequest.Stream<Input>,
+    context: ClientInterceptorContext,
     next: @Sendable (
-      ServerRequest.Stream<Input>,
-      ServerInterceptorContext
-    ) async throws -> ServerResponse.Stream<Output>
-  ) async throws -> ServerResponse.Stream<Output> {
+      ClientRequest.Stream<Input>,
+      ClientInterceptorContext
+    ) async throws -> ClientResponse.Stream<Output>
+  ) async throws -> ClientResponse.Stream<Output> {
     if self.throw {
       throw self.error
     } else {
-      return ServerResponse.Stream(error: self.error)
+      return ClientResponse.Stream(error: self.error)
     }
   }
 }
 
-struct RequestCountingServerInterceptor: ServerInterceptor {
+struct RequestCountingClientInterceptor: ClientInterceptor {
   /// The number of requests made.
   let counter: ManagedAtomic<Int>
 
@@ -70,13 +71,13 @@ struct RequestCountingServerInterceptor: ServerInterceptor {
   }
 
   func intercept<Input: Sendable, Output: Sendable>(
-    request: ServerRequest.Stream<Input>,
-    context: ServerInterceptorContext,
+    request: ClientRequest.Stream<Input>,
+    context: ClientInterceptorContext,
     next: @Sendable (
-      ServerRequest.Stream<Input>,
-      ServerInterceptorContext
-    ) async throws -> ServerResponse.Stream<Output>
-  ) async throws -> ServerResponse.Stream<Output> {
+      ClientRequest.Stream<Input>,
+      ClientInterceptorContext
+    ) async throws -> ClientResponse.Stream<Output>
+  ) async throws -> ClientResponse.Stream<Output> {
     self.counter.wrappingIncrement(ordering: .sequentiallyConsistent)
     return try await next(request, context)
   }
