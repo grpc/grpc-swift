@@ -23,7 +23,7 @@ final class GRPCServerTests: XCTestCase {
     let server = InProcessServerTransport()
     let client = InProcessClientTransport(
       server: server,
-      executionConfigurations: ClientRPCExecutionConfigurationCollection()
+      executionConfigurations: MethodConfigurations()
     )
 
     return (client, server)
@@ -59,7 +59,6 @@ final class GRPCServerTests: XCTestCase {
       inProcess.client.close()
       server.stopListening()
     }
-
   }
 
   func testServerHandlesUnary() async throws {

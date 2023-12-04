@@ -286,7 +286,7 @@ extension ClientRPCExecutorTests {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ClientRPCExecutionConfiguration {
+extension MethodConfiguration {
   fileprivate static func retry(
     maximumAttempts: Int = 5,
     codes: Set<Status.Code>,
@@ -300,6 +300,6 @@ extension ClientRPCExecutionConfiguration {
       retryableStatusCodes: codes
     )
 
-    return ClientRPCExecutionConfiguration(retryPolicy: policy, timeout: timeout)
+    return Self(retryPolicy: policy, timeout: timeout)
   }
 }
