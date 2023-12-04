@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Atomics
+import GRPCInProcessTransport
 import XCTest
 
 @testable import GRPCCore

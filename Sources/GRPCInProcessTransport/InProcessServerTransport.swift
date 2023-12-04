@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+import GRPCCore
+
 /// An in-process implementation of a ``ServerTransport``.
 ///
 /// This is useful when you're interested in testing your application without any actual networking layers
@@ -25,6 +26,7 @@
 /// To stop listening to new requests, call ``stopListening()``.
 ///
 /// - SeeAlso: ``ClientTransport``
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct InProcessServerTransport: ServerTransport, Sendable {
   public typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   public typealias Outbound = RPCWriter<RPCResponsePart>.Closable

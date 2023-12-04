@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import GRPCCore
+import GRPCInProcessTransport
 import XCTest
-
-@testable import GRPCCore
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class InProcessClientTransportTests: XCTestCase {
@@ -34,7 +34,7 @@ final class InProcessClientTransportTests: XCTestCase {
         try await client.connect(lazily: false)
       }
 
-      await XCTAssertThrowsRPCErrorAsync {
+      await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
         try await group.next()
       } errorHandler: { error in
         XCTAssertEqual(error.code, .failedPrecondition)
@@ -48,7 +48,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     client.close()
 
-    await XCTAssertThrowsRPCErrorAsync {
+    await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
       try await client.connect(lazily: false)
     } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
@@ -69,7 +69,7 @@ final class InProcessClientTransportTests: XCTestCase {
       try await group.next()
       group.cancelAll()
 
-      await XCTAssertThrowsRPCErrorAsync {
+      await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
         try await client.connect(lazily: false)
       } errorHandler: { error in
         XCTAssertEqual(error.code, .failedPrecondition)
@@ -135,7 +135,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     client.close()
 
-    await XCTAssertThrowsRPCErrorAsync {
+    await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
       try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in }
     } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
@@ -155,7 +155,7 @@ final class InProcessClientTransportTests: XCTestCase {
         try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
           try await stream.outbound.write(.message([1]))
           stream.outbound.finish()
-          let receivedMessages = try await stream.inbound.collect()
+          let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
 
           XCTAssertEqual(receivedMessages, [.message([42])])
         }
@@ -163,7 +163,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
       group.addTask {
         for try await stream in server.listen() {
-          let receivedMessages = try await stream.inbound.collect()
+          let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
           try await stream.outbound.write(RPCResponsePart.message([42]))
           stream.outbound.finish()
 
@@ -191,7 +191,7 @@ final class InProcessClientTransportTests: XCTestCase {
     var configurations = MethodConfigurations()
     configurations.setDefaultConfiguration(defaultConfiguration)
 
-    var client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
+    var client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
 
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), defaultConfiguration)
@@ -205,7 +205,7 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
-    client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
+    client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
     XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
@@ -259,7 +259,7 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     return InProcessClientTransport(
       server: server,
-      executionConfigurations: methodConfiguration
+      methodConfiguration: methodConfiguration
     )
   }
 }
