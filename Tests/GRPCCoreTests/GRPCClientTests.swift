@@ -15,6 +15,7 @@
  */
 import Atomics
 import GRPCCore
+import GRPCInProcessTransport
 import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -23,7 +24,7 @@ final class GRPCClientTests: XCTestCase {
     let server = InProcessServerTransport()
     let client = InProcessClientTransport(
       server: server,
-      executionConfigurations: MethodConfigurations()
+      methodConfiguration: MethodConfigurations()
     )
 
     return (client, server)

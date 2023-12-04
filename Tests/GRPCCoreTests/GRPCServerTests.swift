@@ -22,10 +22,7 @@ import XCTest
 final class GRPCServerTests: XCTestCase {
   func makeInProcessPair() -> (client: InProcessClientTransport, server: InProcessServerTransport) {
     let server = InProcessServerTransport()
-    let client = InProcessClientTransport(
-      server: server,
-      executionConfigurations: MethodConfigurations()
-    )
+    let client = InProcessClientTransport(server: server)
 
     return (client, server)
   }

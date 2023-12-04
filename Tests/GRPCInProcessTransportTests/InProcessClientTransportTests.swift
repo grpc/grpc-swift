@@ -191,7 +191,7 @@ final class InProcessClientTransportTests: XCTestCase {
     var configurations = MethodConfigurations()
     configurations.setDefaultConfiguration(defaultConfiguration)
 
-    var client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
+    var client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
 
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), defaultConfiguration)
@@ -205,7 +205,7 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
     configurations[firstDescriptor] = overrideConfiguration
-    client = InProcessClientTransport(server: .init(), executionConfigurations: configurations)
+    client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
     XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
@@ -259,7 +259,7 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     return InProcessClientTransport(
       server: server,
-      executionConfigurations: methodConfiguration
+      methodConfiguration: methodConfiguration
     )
   }
 }

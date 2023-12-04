@@ -22,9 +22,6 @@ extension InProcessServerTransport {
   func spawnClientTransport(
     throttle: RetryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
   ) -> InProcessClientTransport {
-    return InProcessClientTransport(
-      server: self,
-      executionConfigurations: .init()
-    )
+    return InProcessClientTransport(server: self)
   }
 }
