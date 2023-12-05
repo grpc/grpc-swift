@@ -36,16 +36,8 @@ final class GRPCClientTests: XCTestCase {
     _ body: (GRPCClient, GRPCServer) async throws -> Void
   ) async throws {
     let inProcess = self.makeInProcessPair()
-    var configuration = GRPCClient.Configuration()
-    configuration.interceptors.add(contentsOf: interceptors)
-    let client = GRPCClient(transport: inProcess.client, configuration: configuration)
-
-    let server = GRPCServer()
-    server.transports.add(inProcess.server)
-
-    for service in services {
-      server.services.register(service)
-    }
+    let client = GRPCClient(transport: inProcess.client, interceptors: interceptors)
+    let server = GRPCServer(transports: [inProcess.server], services: services)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -338,9 +330,7 @@ final class GRPCClientTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        let server = GRPCServer()
-        server.services.register(BinaryEcho())
-        server.transports.add(inProcess.server)
+        let server = GRPCServer(transports: [inProcess.server], services: [BinaryEcho()])
         try await server.run()
       }
 
@@ -415,35 +405,5 @@ final class GRPCClientTests: XCTestCase {
     }
 
     task.cancel()
-  }
-
-  func testRunClientNotRunning() async throws {
-    let (clientTransport, _) = self.makeInProcessPair()
-    let client = GRPCClient(transport: clientTransport)
-
-    // Client is not running, should throw an error.
-    await XCTAssertThrowsErrorAsync(ofType: ClientError.self) {
-      try await client.unary(
-        request: .init(message: [3, 1, 4, 1, 5]),
-        descriptor: BinaryEcho.Methods.collect,
-        serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
-      ) { response in
-        let message = try response.message
-        XCTAssertEqual(message, [3, 1, 4, 1, 5])
-      }
-    } errorHandler: { error in
-      XCTAssertEqual(error.code, .clientIsNotRunning)
-    }
-  }
-
-  func testInterceptorsDescription() async throws {
-    var config = GRPCClient.Configuration()
-    config.interceptors.add(.rejectAll(with: .init(code: .aborted, message: "")))
-    config.interceptors.add(.requestCounter(.init(0)))
-
-    let description = String(describing: config.interceptors)
-    let expected = #"["RejectAllClientInterceptor", "RequestCountingClientInterceptor"]"#
-    XCTAssertEqual(description, expected)
   }
 }

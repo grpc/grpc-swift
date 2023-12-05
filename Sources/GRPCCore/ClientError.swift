@@ -109,7 +109,6 @@ extension ClientError {
   public struct Code: Hashable, Sendable {
     private enum Value {
       case clientIsAlreadyRunning
-      case clientIsNotRunning
       case clientIsStopped
       case transportError
     }
@@ -122,11 +121,6 @@ extension ClientError {
     /// At attempt to start the client was made but it is already running.
     public static var clientIsAlreadyRunning: Self {
       Self(.clientIsAlreadyRunning)
-    }
-
-    /// An attempt to start an RPC was made but the client is not running.
-    public static var clientIsNotRunning: Self {
-      Self(.clientIsNotRunning)
     }
 
     /// At attempt to start the client was made but it has already stopped.
