@@ -16,19 +16,17 @@
 
 /// Transforms ``CodeGenerationRequest`` objects into ``StructuredSwiftRepresentation`` objects.
 ///
-/// It represents the first step of the code generation process from the CodeGenLibrary for IDL described RPCs.
-internal protocol Translator {
+/// It represents the first step of the code generation process for IDL described RPCs.
+protocol Translator {
   /// Translates the provided ``CodeGenerationRequest`` object, into Swift code representation.
   /// - Parameters:
   ///   - codeGenerationRequest: The IDL described RPCs representation.
-  ///   - visibility: The access control level for the generated code.
   ///   - client: Whether or not client code should be generated from the IDL described RPCs representation.
   ///   - server: Whether or not server code should be generated from the IDL described RPCs representation.
   /// - Returns: A structured Swift representation of the generated code.
   /// - Throws: An error if there are issues translating the codeGenerationRequest.
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    //    visibility: Visibility,
     client: Bool,
     server: Bool
   ) -> StructuredSwiftRepresentation

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/// Represents one responsibility of the ``Translator``: either the type aliases translation,
+/// the server code translation or the client code translation.
 protocol SpecializedTranslator {
   /// Generates an array of ``CodeBlock`` elements that will be part of the ``StructuredSwiftRepresentation`` object
   /// created by the ``Translator``.

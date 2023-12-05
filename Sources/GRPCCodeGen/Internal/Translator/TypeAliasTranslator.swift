@@ -110,19 +110,19 @@ extension TypeAliasTranslator {
 
     let streamingServiceProtocolName =
       "\(service.namespace)_\(service.name)ServiceStreamingProtocol"
-    let streamingServiceProtocolTypeAlias = Declaration.typealias(
+    let streamingServiceProtocolTypeAliasDeclaration = Declaration.typealias(
       name: "StreamingServiceProtocol",
       existingType: .member([streamingServiceProtocolName])
     )
 
     let serviceProtocolName = "\(service.namespace)_\(service.name)ServiceProtocol"
-    let serviceProtocolTypeAlias = Declaration.typealias(
+    let serviceProtocolTypeAliasDeclaration = Declaration.typealias(
       name: "ServiceProtocol",
       existingType: .member([serviceProtocolName])
     )
 
     serviceEnumDescription.members.append(contentsOf: [
-      streamingServiceProtocolTypeAlias, serviceProtocolTypeAlias,
+      streamingServiceProtocolTypeAliasDeclaration, serviceProtocolTypeAliasDeclaration,
     ])
 
     return .enum(serviceEnumDescription)
@@ -158,25 +158,27 @@ extension TypeAliasTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
-    let descriptorDeclarationRight = FunctionCallDescription(
-      calledExpression: .identifierType(.member(["GRPCCore", "MethodDescriptor"])),
-      arguments: [
-        FunctionArgumentDescription(
-          label: "service",
-          expression: .identifierType(.member([service.namespace, service.name]))
-        ),
-        FunctionArgumentDescription(
-          label: "method",
-          expression: .identifierType(.member([method.name]))
-        ),
-      ]
+    let descriptorDeclarationRight = Expression.functionCall(
+      FunctionCallDescription(
+        calledExpression: .identifierType(.member(["GRPCCore", "MethodDescriptor"])),
+        arguments: [
+          FunctionArgumentDescription(
+            label: "service",
+            expression: .identifierType(.member([service.namespace, service.name]))
+          ),
+          FunctionArgumentDescription(
+            label: "method",
+            expression: .identifierType(.member([method.name]))
+          ),
+        ]
+      )
     )
 
     return .variable(
       isStatic: true,
       kind: .let,
       left: descriptorDeclarationLeft,
-      right: .functionCall(descriptorDeclarationRight)
+      right: descriptorDeclarationRight
     )
   }
 
