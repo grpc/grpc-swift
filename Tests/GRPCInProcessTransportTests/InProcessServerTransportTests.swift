@@ -37,7 +37,7 @@ final class InProcessServerTransportTests: XCTestCase {
       )
     )
 
-    let streamSequence = transport.listen()
+    let streamSequence = try await transport.listen()
     var streamSequenceInterator = streamSequence.makeAsyncIterator()
 
     try transport.acceptStream(stream)
@@ -66,7 +66,7 @@ final class InProcessServerTransportTests: XCTestCase {
       )
     )
 
-    let streamSequence = transport.listen()
+    let streamSequence = try await transport.listen()
     var streamSequenceInterator = streamSequence.makeAsyncIterator()
 
     try transport.acceptStream(firstStream)

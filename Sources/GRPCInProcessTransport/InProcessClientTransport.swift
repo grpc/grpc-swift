@@ -96,16 +96,23 @@ public struct InProcessClientTransport: ClientTransport {
   public typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   public typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
-  public let retryThrottle: RetryThrottle
+  public let retryThrottle: RetryThrottle?
 
   private let methodConfiguration: MethodConfigurations
   private let state: _LockedValueBox<State>
 
+  /// Creates a new in-process client transport.
+  ///
+  /// - Parameters:
+  ///   - server: The in-process server transport to connect to.
+  ///   - methodConfiguration: Method specific configuration.
+  ///   - retryThrottle: A throttle to apply to RPCs which are hedged or retried.
   public init(
     server: InProcessServerTransport,
-    methodConfiguration: MethodConfigurations = MethodConfigurations()
+    methodConfiguration: MethodConfigurations = MethodConfigurations(),
+    retryThrottle: RetryThrottle? = nil
   ) {
-    self.retryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+    self.retryThrottle = retryThrottle
     self.methodConfiguration = methodConfiguration
     self.state = _LockedValueBox(.unconnected(.init(serverTransport: server)))
   }

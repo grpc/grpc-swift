@@ -359,7 +359,7 @@ extension ClientRPCExecutor.HedgingExecutor {
             case .response(let response):
               switch response.accepted {
               case .success:
-                self.transport.retryThrottle.recordSuccess()
+                self.transport.retryThrottle?.recordSuccess()
 
                 if state.withLockedValue({ $0.receivedUsableResponse() }) {
                   try? await picker.continuation.write(attempt)
@@ -376,11 +376,11 @@ extension ClientRPCExecutor.HedgingExecutor {
 
                 if self.policy.nonFatalStatusCodes.contains(Status.Code(error.code)) {
                   // The response failed and the status code is non-fatal, we can make another attempt.
-                  self.transport.retryThrottle.recordFailure()
+                  self.transport.retryThrottle?.recordFailure()
                   return .unusableResponse(response, error.metadata.retryPushback)
                 } else {
                   // A fatal error code counts as a success to the throttle.
-                  self.transport.retryThrottle.recordSuccess()
+                  self.transport.retryThrottle?.recordSuccess()
 
                   if state.withLockedValue({ $0.receivedUsableResponse() }) {
                     try! await picker.continuation.write(attempt)

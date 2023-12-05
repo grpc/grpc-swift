@@ -162,7 +162,7 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        for try await stream in server.listen() {
+        for try await stream in try await server.listen() {
           let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
           try await stream.outbound.write(RPCResponsePart.message([42]))
           stream.outbound.finish()
