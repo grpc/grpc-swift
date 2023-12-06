@@ -20,19 +20,12 @@ import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCServerTests: XCTestCase {
-  func makeInProcessPair() -> (client: InProcessClientTransport, server: InProcessServerTransport) {
-    let server = InProcessServerTransport()
-    let client = InProcessClientTransport(server: server)
-
-    return (client, server)
-  }
-
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
     interceptors: [any ServerInterceptor] = [],
     _ body: (InProcessClientTransport, GRPCServer) async throws -> Void
   ) async throws {
-    let inProcess = self.makeInProcessPair()
+    let inProcess = InProcessTransport.makePair()
     let server = GRPCServer(
       transports: [inProcess.server],
       services: services,
@@ -298,7 +291,7 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testCancelRunningServer() async throws {
-    let inProcess = self.makeInProcessPair()
+    let inProcess = InProcessTransport.makePair()
     let task = Task {
       let server = GRPCServer(transports: [inProcess.server], services: [BinaryEcho()])
       try await server.run()
@@ -353,7 +346,8 @@ final class GRPCServerTests: XCTestCase {
 
   func testRunServerDrainsRunningTransportsWhenOneFailsToStart() async throws {
     // Register the in process transport first and allow it to come up.
-    let inProcess = self.makeInProcessPair()
+    let inProcess = InProcessTransport.makePair()
+
     // Register a transport waits for a signal before throwing.
     let signal = AsyncStream.makeStream(of: Void.self)
     let server = GRPCServer(
