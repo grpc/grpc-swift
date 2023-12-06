@@ -122,10 +122,8 @@ extension TypealiasTranslator {
       existingType: .member([serviceProtocolName])
     )
 
-    serviceEnumDescription.members.append(contentsOf: [
-      streamingServiceProtocolTypealiasDeclaration, serviceProtocolTypealiasDeclaration,
-    ])
-
+    serviceEnumDescription.members.append(streamingServiceProtocolTypealiasDeclaration)
+    serviceEnumDescription.members.append(serviceProtocolTypealiasDeclaration)
     return .enum(serviceEnumDescription)
   }
 
@@ -147,9 +145,9 @@ extension TypealiasTranslator {
       from: method,
       in: service
     )
-    methodEnumDescription.members.append(contentsOf: [
-      inputTypealiasDeclaration, outputTypealiasDeclaration, descriptorVariableDeclaration,
-    ])
+    methodEnumDescription.members.append(inputTypealiasDeclaration)
+    methodEnumDescription.members.append(outputTypealiasDeclaration)
+    methodEnumDescription.members.append(descriptorVariableDeclaration)
 
     return .enum(methodEnumDescription)
   }
