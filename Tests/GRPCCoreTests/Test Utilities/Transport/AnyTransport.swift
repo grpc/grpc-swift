@@ -20,7 +20,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
-  private let _retryThrottle: @Sendable () -> RetryThrottle
+  private let _retryThrottle: @Sendable () -> RetryThrottle?
   private let _withStream:
     @Sendable (
       _ method: MethodDescriptor,
@@ -52,7 +52,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     }
   }
 
-  var retryThrottle: RetryThrottle {
+  var retryThrottle: RetryThrottle? {
     self._retryThrottle()
   }
 

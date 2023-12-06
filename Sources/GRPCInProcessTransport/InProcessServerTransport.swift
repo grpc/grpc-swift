@@ -59,7 +59,7 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   /// to this transport using the ``acceptStream(_:)`` method.
   ///
   /// - Returns: An ``RPCAsyncSequence`` of all published ``RPCStream``s.
-  public func listen() -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
+  public func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
     RPCAsyncSequence(wrapping: self.newStreams)
   }
 

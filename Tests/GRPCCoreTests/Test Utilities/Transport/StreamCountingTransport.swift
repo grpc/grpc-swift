@@ -39,7 +39,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     self.transport = AnyClientTransport(wrapping: transport)
   }
 
-  var retryThrottle: RetryThrottle {
+  var retryThrottle: RetryThrottle? {
     self.transport.retryThrottle
   }
 

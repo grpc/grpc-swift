@@ -24,7 +24,7 @@ public protocol ClientTransport: Sendable {
   /// Client transports don't need to implement the throttle or interact with it beyond its
   /// creation. gRPC will record the results of requests to determine whether retries can be
   /// performed.
-  var retryThrottle: RetryThrottle { get }
+  var retryThrottle: RetryThrottle? { get }
 
   /// Establish and maintain a connection to the remote destination.
   ///
