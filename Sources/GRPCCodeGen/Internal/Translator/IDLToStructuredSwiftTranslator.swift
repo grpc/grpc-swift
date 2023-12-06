@@ -15,21 +15,20 @@
  */
 
 struct IDLToStructuredSwiftTranslator: Translator {
-  let typeAliasTranslator = TypeAliasTranslator()
+  let typealiasTranslator = TypealiasTranslator()
 
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
     client: Bool,
     server: Bool
   ) -> StructuredSwiftRepresentation {
-    var topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
-    var imports: [ImportDescription] = [
-      ImportDescription(moduleName: "SwiftProtobuf"),
-      ImportDescription(moduleName: "GRPCCore"),
+    let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
+    let imports: [ImportDescription] = [
+      ImportDescription(moduleName: "GRPCCore")
     ]
     var codeBlocks: [CodeBlock] = []
     codeBlocks.append(
-      contentsOf: self.typeAliasTranslator.translate(from: codeGenerationRequest)
+      contentsOf: self.typealiasTranslator.translate(from: codeGenerationRequest)
     )
 
     let fileDescription = FileDescription(
@@ -37,7 +36,8 @@ struct IDLToStructuredSwiftTranslator: Translator {
       imports: imports,
       codeBlocks: codeBlocks
     )
-    let file = NamedFileDescription(name: codeGenerationRequest.fileName, contents: fileDescription)
+    let fileName = String(codeGenerationRequest.fileName.split(separator: ".")[0])
+    let file = NamedFileDescription(name: fileName, contents: fileDescription)
     return StructuredSwiftRepresentation(file: file)
   }
 }

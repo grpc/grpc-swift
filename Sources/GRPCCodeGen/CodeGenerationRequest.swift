@@ -36,7 +36,7 @@ public struct CodeGenerationRequest {
   public var services: [ServiceDescriptor]
 
   /// Closure that receives a message type as a `String` and returns a code snippet to
-  /// initialize a `MessageSerializer` for that type as a `String`.
+  /// initialise a `MessageSerializer` for that type as a `String`.
   ///
   /// The result is inserted in the generated code, where clients serialize RPC inputs and
   /// servers serialize RPC outputs.
