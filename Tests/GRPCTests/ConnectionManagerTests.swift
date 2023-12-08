@@ -1272,7 +1272,7 @@ extension ConnectionManagerTests {
     }
 
     self.waitForStateChange(from: .connecting, to: .shutdown) {
-      manager.channelError(EventLoopError.shutdown)
+      channelPromise.fail(EventLoopError.shutdown)
     }
 
     XCTAssertThrowsError(try multiplexer.wait())
