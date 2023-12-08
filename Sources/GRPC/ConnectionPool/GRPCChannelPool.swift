@@ -17,6 +17,8 @@ import Logging
 import NIOCore
 import NIOPosix
 
+import struct Foundation.UUID
+
 public enum GRPCChannelPool {
   /// Make a new ``GRPCChannel`` on which calls may be made to gRPC services.
   ///
@@ -290,14 +292,32 @@ extension GRPCChannelPool.Configuration {
 
 /// The ID of a connection in the connection pool.
 public struct GRPCConnectionID: Hashable, Sendable, CustomStringConvertible {
-  private let id: ConnectionManagerID
+  private enum Value: Sendable, Hashable {
+    case managerID(ConnectionManagerID)
+    case uuid(UUID)
+  }
+
+  private let id: Value
 
   public var description: String {
-    return String(describing: self.id)
+    switch self.id {
+    case .managerID(let id):
+      return String(describing: id)
+    case .uuid(let uuid):
+      return String(describing: uuid)
+    }
   }
 
   internal init(_ id: ConnectionManagerID) {
-    self.id = id
+    self.id = .managerID(id)
+  }
+
+  /// Create a new unique connection ID.
+  ///
+  /// Normally you don't have to create connection IDs, gRPC will create them on your behalf.
+  /// However creating them manually is useful when testing the ``GRPCConnectionPoolDelegate``.
+  public init() {
+    self.id = .uuid(UUID())
   }
 }
 
