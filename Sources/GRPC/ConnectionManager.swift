@@ -657,7 +657,9 @@ internal final class ConnectionManager: @unchecked Sendable {
       )
 
     case .connecting:
-      self.connectionFailed(withError: error)
+      // Ignore the error, the channel promise will notify the manager of any error which occurs
+      // while connecting.
+      ()
 
     case var .active(state):
       state.error = error

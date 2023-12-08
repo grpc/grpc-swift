@@ -1278,6 +1278,52 @@ extension ConnectionManagerTests {
     XCTAssertThrowsError(try multiplexer.wait())
   }
 
+  func testChannelErrorAndConnectFailWhenConnecting() throws {
+    // This test checks a path through the connection manager which previously led to an invalid
+    // state (a connect failure in a state other than connecting). To trigger these we need to
+    // fire an error down the pipeline containing the idle handler and fail the connect promise.
+    let escapedChannelPromise = self.loop.makePromise(of: Channel.self)
+    let channelPromise = self.loop.makePromise(of: Channel.self)
+
+    var configuration = self.defaultConfiguration
+    configuration.connectionBackoff = ConnectionBackoff()
+    let manager = self.makeConnectionManager(
+      configuration: configuration
+    ) { connectionManager, loop in
+      let channel = EmbeddedChannel(loop: loop as! EmbeddedEventLoop)
+      let multiplexer = HTTP2StreamMultiplexer(mode: .client, channel: channel) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+
+      let idleHandler = GRPCIdleHandler(
+        connectionManager: connectionManager,
+        multiplexer: multiplexer,
+        idleTimeout: .minutes(60),
+        keepalive: .init(),
+        logger: self.clientLogger
+      )
+
+      channel.pipeline.addHandler(idleHandler).whenSuccess {
+        escapedChannelPromise.succeed(channel)
+      }
+
+      return channelPromise.futureResult
+    }
+
+    // Ask for the multiplexer to trigger channel creation.
+    self.waitForStateChange(from: .idle, to: .connecting) {
+      _ = manager.getHTTP2Multiplexer()
+      self.loop.run()
+    }
+
+    // Fire an error down the pipeline.
+    let channel = try escapedChannelPromise.futureResult.wait()
+    channel.pipeline.fireErrorCaught(GRPCStatus(code: .unavailable))
+
+    // Fail the channel promise.
+    channelPromise.fail(GRPCStatus(code: .unavailable))
+  }
+
   func testClientKeepaliveJitterWithoutClamping() {
     let original = ClientConnectionKeepalive(interval: .seconds(2), timeout: .seconds(1))
     let keepalive = original.jitteringInterval(byAtMost: .milliseconds(500))
