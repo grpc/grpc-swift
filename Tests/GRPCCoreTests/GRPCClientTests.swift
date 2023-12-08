@@ -20,22 +20,12 @@ import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCClientTests: XCTestCase {
-  func makeInProcessPair() -> (client: InProcessClientTransport, server: InProcessServerTransport) {
-    let server = InProcessServerTransport()
-    let client = InProcessClientTransport(
-      server: server,
-      methodConfiguration: MethodConfigurations()
-    )
-
-    return (client, server)
-  }
-
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
     interceptors: [any ClientInterceptor] = [],
     _ body: (GRPCClient, GRPCServer) async throws -> Void
   ) async throws {
-    let inProcess = self.makeInProcessPair()
+    let inProcess = InProcessTransport.makePair()
     let client = GRPCClient(transport: inProcess.client, interceptors: interceptors)
     let server = GRPCServer(transports: [inProcess.server], services: services)
 
@@ -325,7 +315,7 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testCancelRunningClient() async throws {
-    let inProcess = self.makeInProcessPair()
+    let inProcess = InProcessTransport.makePair()
     let client = GRPCClient(transport: inProcess.client)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -374,7 +364,7 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testRunStoppedClient() async throws {
-    let (clientTransport, _) = self.makeInProcessPair()
+    let (_, clientTransport) = InProcessTransport.makePair()
     let client = GRPCClient(transport: clientTransport)
     // Run the client.
     let task = Task { try await client.run() }
@@ -390,7 +380,7 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testRunAlreadyRunningClient() async throws {
-    let (clientTransport, _) = self.makeInProcessPair()
+    let (_, clientTransport) = InProcessTransport.makePair()
     let client = GRPCClient(transport: clientTransport)
     // Run the client.
     let task = Task { try await client.run() }
