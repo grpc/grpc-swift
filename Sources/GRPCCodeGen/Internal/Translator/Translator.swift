@@ -29,5 +29,5 @@ protocol Translator {
     codeGenerationRequest: CodeGenerationRequest,
     client: Bool,
     server: Bool
-  ) -> StructuredSwiftRepresentation
+  ) throws -> StructuredSwiftRepresentation
 }

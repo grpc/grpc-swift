@@ -15,20 +15,20 @@
  */
 
 struct IDLToStructuredSwiftTranslator: Translator {
-  let typealiasTranslator = TypealiasTranslator()
+  private let typealiasTranslator = TypealiasTranslator()
 
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
     client: Bool,
     server: Bool
-  ) -> StructuredSwiftRepresentation {
+  ) throws -> StructuredSwiftRepresentation {
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
     let imports: [ImportDescription] = [
       ImportDescription(moduleName: "GRPCCore")
     ]
     var codeBlocks: [CodeBlock] = []
     codeBlocks.append(
-      contentsOf: self.typealiasTranslator.translate(from: codeGenerationRequest)
+      contentsOf: try self.typealiasTranslator.translate(from: codeGenerationRequest)
     )
 
     let fileDescription = FileDescription(

@@ -22,67 +22,460 @@ final class SnippetBasedTranslatorTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
 
-  let echoMethods: [MethodDescriptor] = {
-    var methods: [MethodDescriptor] = []
-    methods.append(
-      MethodDescriptor(
-        documentation: "Immediately returns an echo of a request.",
-        name: "Get",
-        isInputStreaming: false,
-        isOutputStreaming: false,
-        inputType: "Echo_EchoRequest",
-        outputType: "Echo_EchoResponse"
-      )
+  func testTypealiasTranslator() throws {
+    let method = MethodDescriptor(
+      documentation: "Mock documentation",
+      name: "MethodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
     )
-    methods.append(
-      MethodDescriptor(
-        documentation: "Splits a request into words and returns each word in a stream of messages.",
-        name: "Expand",
-        isInputStreaming: false,
-        isOutputStreaming: true,
-        inputType: "Echo_EchoRequest",
-        outputType: "Echo_EchoResponse"
-      )
+    let service = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "ServiceA",
+      namespace: "namespaceA",
+      methods: [method]
     )
-    methods.append(
-      MethodDescriptor(
-        documentation:
-          "Collects a stream of messages and returns them concatenated when the caller closes.",
-        name: "Collect",
-        isInputStreaming: true,
-        isOutputStreaming: false,
-        inputType: "Echo_EchoRequest",
-        outputType: "Echo_EchoResponse"
-      )
-    )
-    methods.append(
-      MethodDescriptor(
-        documentation: "Streams back messages as they are received in an input stream.",
-        name: "Update",
-        isInputStreaming: true,
-        isOutputStreaming: true,
-        inputType: "Echo_EchoRequest",
-        outputType: "Echo_EchoResponse"
-      )
-    )
-    return methods
-  }()
+    let expectedSwift =
+      """
+      enum namespaceA {
+          enum ServiceA {
+              enum Methods {
+                  enum MethodA {
+                      typealias Input = NamespaceA_ServiceARequest
+                      typealias Output = NamespaceA_ServiceAResponse
+                      static let descriptor = MethodDescriptor(
+                          service: "namespaceA.ServiceA",
+                          method: "MethodA"
+                      )
+                  }
+              }
+              static let methods: [MethodDescriptor] = [
+                  namespaceA.ServiceA.Methods.MethodA.descriptor
+              ]
+              typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
+              typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
+          }
+      }
+      """
 
-  var echoService: CodeGenerationRequest.ServiceDescriptor {
-    CodeGenerationRequest.ServiceDescriptor(
-      documentation: "An echo service.",
-      name: "Echo",
-      namespace: "echo",
-      methods: echoMethods
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      expectedSwift: expectedSwift
     )
   }
 
-  var codeGenerationRequest: CodeGenerationRequest {
-    CodeGenerationRequest(
-      fileName: "echo.grpc",
+  func testTypealiasTranslatorEmptyNamespace() throws {
+    let method = MethodDescriptor(
+      documentation: "Mock documentation",
+      name: "MethodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "ServiceARequest",
+      outputType: "ServiceAResponse"
+    )
+    let service = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "ServiceA",
+      namespace: "",
+      methods: [method]
+    )
+    let expectedSwift =
+      """
+      enum ServiceA {
+          enum Methods {
+              enum MethodA {
+                  typealias Input = ServiceARequest
+                  typealias Output = ServiceAResponse
+                  static let descriptor = MethodDescriptor(
+                      service: "ServiceA",
+                      method: "MethodA"
+                  )
+              }
+          }
+          static let methods: [MethodDescriptor] = [
+              ServiceA.Methods.MethodA.descriptor
+          ]
+          typealias StreamingServiceProtocol = ServiceAServiceStreamingProtocol
+          typealias ServiceProtocol = ServiceAServiceProtocol
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorCheckMethodsOrder() throws {
+    let methodA = MethodDescriptor(
+      documentation: "Mock documentation",
+      name: "MethodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let methodB = MethodDescriptor(
+      documentation: "Mock documentation",
+      name: "MethodB",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let service = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "ServiceA",
+      namespace: "namespaceA",
+      methods: [methodA, methodB]
+    )
+    let expectedSwift =
+      """
+      enum namespaceA {
+          enum ServiceA {
+              enum Methods {
+                  enum MethodA {
+                      typealias Input = NamespaceA_ServiceARequest
+                      typealias Output = NamespaceA_ServiceAResponse
+                      static let descriptor = MethodDescriptor(
+                          service: "namespaceA.ServiceA",
+                          method: "MethodA"
+                      )
+                  }
+                  enum MethodB {
+                      typealias Input = NamespaceA_ServiceARequest
+                      typealias Output = NamespaceA_ServiceAResponse
+                      static let descriptor = MethodDescriptor(
+                          service: "namespaceA.ServiceA",
+                          method: "MethodB"
+                      )
+                  }
+              }
+              static let methods: [MethodDescriptor] = [
+                  namespaceA.ServiceA.Methods.MethodA.descriptor,
+                  namespaceA.ServiceA.Methods.MethodB.descriptor
+              ]
+              typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
+              typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
+          }
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorNoMethodsService() throws {
+    let service = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "ServiceA",
+      namespace: "namespaceA",
+      methods: []
+    )
+    let expectedSwift =
+      """
+      enum namespaceA {
+          enum ServiceA {
+              static let methods: [MethodDescriptor] = []
+              typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
+              typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
+          }
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorServiceAlphabeticalOrder() throws {
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "BService",
+      namespace: "namespaceA",
+      methods: []
+    )
+
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "AService",
+      namespace: "namespaceA",
+      methods: []
+    )
+
+    let expectedSwift =
+      """
+      enum namespaceA {
+          enum AService {
+              static let methods: [MethodDescriptor] = []
+              typealias StreamingServiceProtocol = namespaceA_AServiceServiceStreamingProtocol
+              typealias ServiceProtocol = namespaceA_AServiceServiceProtocol
+          }
+          enum BService {
+              static let methods: [MethodDescriptor] = []
+              typealias StreamingServiceProtocol = namespaceA_BServiceServiceStreamingProtocol
+              typealias ServiceProtocol = namespaceA_BServiceServiceProtocol
+          }
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceB, serviceA]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorServiceAlphabeticalOrderNoNamespace() throws {
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "BService",
+      namespace: "",
+      methods: []
+    )
+
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "AService",
+      namespace: "",
+      methods: []
+    )
+
+    let expectedSwift =
+      """
+      enum AService {
+          static let methods: [MethodDescriptor] = []
+          typealias StreamingServiceProtocol = AServiceServiceStreamingProtocol
+          typealias ServiceProtocol = AServiceServiceProtocol
+      }
+      enum BService {
+          static let methods: [MethodDescriptor] = []
+          typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
+          typealias ServiceProtocol = BServiceServiceProtocol
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceB, serviceA]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorNamespaceAlphabeticalOrder() throws {
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "BService",
+      namespace: "bnamespace",
+      methods: []
+    )
+
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      namespace: "anamespace",
+      methods: []
+    )
+
+    let expectedSwift =
+      """
+      enum anamespace {
+          enum AService {
+              static let methods: [MethodDescriptor] = []
+              typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
+              typealias ServiceProtocol = anamespace_AServiceServiceProtocol
+          }
+      }
+      enum bnamespace {
+          enum BService {
+              static let methods: [MethodDescriptor] = []
+              typealias StreamingServiceProtocol = bnamespace_BServiceServiceStreamingProtocol
+              typealias ServiceProtocol = bnamespace_BServiceServiceProtocol
+          }
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceB, serviceA]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorNamespaceNoNamespaceOrder() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      namespace: "anamespace",
+      methods: []
+    )
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "BService",
+      namespace: "",
+      methods: []
+    )
+    let expectedSwift =
+      """
+      enum BService {
+          static let methods: [MethodDescriptor] = []
+          typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
+          typealias ServiceProtocol = BServiceServiceProtocol
+      }
+      enum anamespace {
+          enum AService {
+              static let methods: [MethodDescriptor] = []
+              typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
+              typealias ServiceProtocol = anamespace_AServiceServiceProtocol
+          }
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceA, serviceB]),
+      expectedSwift: expectedSwift
+    )
+  }
+
+  func testTypealiasTranslatorSameNameServicesNoNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      namespace: "",
+      methods: []
+    )
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "AService",
+      namespace: "",
+      methods: []
+    )
+
+    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let translator = TypealiasTranslator()
+    self.assertThrowsError(try translator.translate(from: codeGenerationRequest)) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .sameNameServices,
+          message: """
+            Services with no namespace must have unique names. \
+            AService is used as a name for multiple services without namespaces.
+            """
+        )
+      )
+    }
+  }
+
+  func testTypealiasTranslatorSameNameServicesSameNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      namespace: "foo",
+      methods: []
+    )
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "AService",
+      namespace: "foo",
+      methods: []
+    )
+
+    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let translator = TypealiasTranslator()
+    self.assertThrowsError(try translator.translate(from: codeGenerationRequest)) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .sameNameServices,
+          message: """
+            Services within the same namespace must have unique names. \
+            AService is used as a name for multiple services in the foo namespace.
+            """
+        )
+      )
+    }
+  }
+
+  func testTypealiasTranslatorSameNameMethodsSameServiceError() throws {
+    let methodA = MethodDescriptor(
+      documentation: "Mock documentation",
+      name: "MethodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let methodB = MethodDescriptor(
+      documentation: "Mock documentation",
+      name: "MethodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let service = ServiceDescriptor(
+      documentation: "Documentation for Service",
+      name: "AService",
+      namespace: "namespace",
+      methods: [methodA, methodB]
+    )
+
+    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [service])
+    let translator = TypealiasTranslator()
+    self.assertThrowsError(try translator.translate(from: codeGenerationRequest)) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .sameNameMethods,
+          message: """
+            Methods of a service must have unique names. \
+            MethodA is used as a name for multiple methods of the AService service.
+            """
+        )
+      )
+    }
+  }
+}
+
+extension SnippetBasedTranslatorTests {
+  private func assertTypealiasTranslation(
+    codeGenerationRequest: CodeGenerationRequest,
+    expectedSwift: String
+  ) throws {
+    let translator = TypealiasTranslator()
+    let codeBlocks = try translator.translate(from: codeGenerationRequest)
+    let renderer = TextBasedRenderer.default
+    renderer.renderCodeBlocks(codeBlocks)
+    let contents = renderer.renderedContents()
+    try TestFunctions.XCTAssertEqualWithDiff(contents, expectedSwift)
+  }
+
+  private func assertThrowsError<T>(
+    _ expression: @autoclosure () throws -> T,
+    _ errorHandler: (CodeGenError) -> Void
+  ) {
+    XCTAssertThrowsError(try expression()) { error in
+      guard let error = error as? CodeGenError else {
+        return XCTFail("Error had unexpected type '\(type(of: error))'")
+      }
+      errorHandler(error)
+    }
+  }
+}
+
+extension SnippetBasedTranslatorTests {
+  private func makeCodeGenerationRequest(services: [ServiceDescriptor]) -> CodeGenerationRequest {
+    return CodeGenerationRequest(
+      fileName: "test.grpc",
       leadingTrivia: "Some really exciting license header 2023.",
       dependencies: [],
-      services: [self.echoService],
+      services: services,
       lookupSerializer: {
         "ProtobufSerializer<\($0)>()"
       },
@@ -90,111 +483,5 @@ final class SnippetBasedTranslatorTests: XCTestCase {
         "ProtobufDeserializer<\($0)>()"
       }
     )
-  }
-
-  func testTypealiasTranslate() throws {
-    let expectedSwift =
-      """
-      enum echo {
-          enum Echo {
-              enum Collect {
-                  typealias Input = Echo_EchoRequest
-                  typealias Output = Echo_EchoResponse
-                  static let descriptor = MethodDescriptor(
-                      service: echo.Echo,
-                      method: Collect
-                  )
-              }
-              enum Expand {
-                  typealias Input = Echo_EchoRequest
-                  typealias Output = Echo_EchoResponse
-                  static let descriptor = MethodDescriptor(
-                      service: echo.Echo,
-                      method: Expand
-                  )
-              }
-              enum Get {
-                  typealias Input = Echo_EchoRequest
-                  typealias Output = Echo_EchoResponse
-                  static let descriptor = MethodDescriptor(
-                      service: echo.Echo,
-                      method: Get
-                  )
-              }
-              enum Update {
-                  typealias Input = Echo_EchoRequest
-                  typealias Output = Echo_EchoResponse
-                  static let descriptor = MethodDescriptor(
-                      service: echo.Echo,
-                      method: Update
-                  )
-              }
-              static let methods: [MethodDescriptor] = [
-                  echo.Echo.Collect.descriptor,
-                  echo.Echo.Expand.descriptor,
-                  echo.Echo.Get.descriptor,
-                  echo.Echo.Update.descriptor
-              ]
-              typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
-              typealias ServiceProtocol = echo_EchoServiceProtocol
-          }
-      }
-      """
-    try self._assertTypealiasTranslation(
-      codeGenerationRequest: self.codeGenerationRequest,
-      expectedSwift: expectedSwift
-    )
-  }
-}
-
-extension SnippetBasedTranslatorTests {
-  private func diff(expected: String, actual: String) throws -> String {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    process.arguments = [
-      "bash", "-c",
-      "diff -U5 --label=expected <(echo '\(expected)') --label=actual <(echo '\(actual)')",
-    ]
-    let pipe = Pipe()
-    process.standardOutput = pipe
-    try process.run()
-    process.waitUntilExit()
-    let pipeData = try XCTUnwrap(
-      pipe.fileHandleForReading.readToEnd(),
-      """
-      No output from command:
-      \(process.executableURL!.path) \(process.arguments!.joined(separator: " "))
-      """
-    )
-    return String(decoding: pipeData, as: UTF8.self)
-  }
-
-  private func XCTAssertEqualWithDiff(
-    _ actual: String,
-    _ expected: String,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) throws {
-    if actual == expected { return }
-    XCTFail(
-      """
-      XCTAssertEqualWithDiff failed (click for diff)
-      \(try diff(expected: expected, actual: actual))
-      """,
-      file: file,
-      line: line
-    )
-  }
-
-  func _assertTypealiasTranslation(
-    codeGenerationRequest: CodeGenerationRequest,
-    expectedSwift: String
-  ) throws {
-    let translator = TypealiasTranslator()
-    let codeBlocks = translator.translate(from: codeGenerationRequest)
-    let renderer = TextBasedRenderer.default
-    renderer.renderCodeBlocks(codeBlocks)
-    let contents = renderer.renderedContents()
-    try XCTAssertEqualWithDiff(contents, expectedSwift)
   }
 }

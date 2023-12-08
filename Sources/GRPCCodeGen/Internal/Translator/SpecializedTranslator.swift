@@ -25,5 +25,5 @@ protocol SpecializedTranslator {
   /// - Returns: An array of ``CodeBlock`` elements.
   ///
   /// - SeeAlso: ``CodeGenerationRequest``, ``Translator``,  ``CodeBlock``.
-  func translate(from codeGenerationRequest: CodeGenerationRequest) -> [CodeBlock]
+  func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock]
 }

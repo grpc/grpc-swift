@@ -23,27 +23,28 @@
 /// ```swift
 /// public enum echo {
 ///   public enum Echo {
-///     public enum Get {
-///       public typealias Input = Echo_EchoRequest
-///       public typealias Output = Echo_EchoResponse
-///       public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Get")
+///     public enum Methods {
+///       public enum Get {
+///         public typealias Input = Echo_EchoRequest
+///         public typealias Output = Echo_EchoResponse
+///         public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Get")
+///       }
+///
+///       public enum Collect {
+///         public typealias Input = Echo_EchoRequest
+///         public typealias Output = Echo_EchoResponse
+///         public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Collect")
+///       }
+///       // ...
 ///     }
+///     public static let methods: [MethodDescriptor] = [
+///       echo.Echo.Get.descriptor,
+///       echo.Echo.Collect.descriptor,
+///       // ...
+///     ]
 ///
-///     public enum Collect {
-///       public typealias Input = Echo_EchoRequest
-///       public typealias Output = Echo_EchoResponse
-///       public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Collect")
-///     }
-///     // ...
-///
-///   public static let methods: [MethodDescriptor] = [
-///     echo.Echo.Get.descriptor,
-///     echo.Echo.Collect.descriptor,
-///     // ...
-///   ]
-///
-///   public typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
-///   public typealias ServiceProtocol = echo_EchoServiceProtocol
+///     public typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
+///     public typealias ServiceProtocol = echo_EchoServiceProtocol
 ///
 ///   }
 /// }
@@ -52,127 +53,192 @@
 /// A ``CodeGenerationRequest`` can contain multiple namespaces, so the TypealiasTranslator will create a ``CodeBlock``
 /// for each namespace.
 struct TypealiasTranslator: SpecializedTranslator {
-  func translate(from codeGenerationRequest: CodeGenerationRequest) -> [CodeBlock] {
+  func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks: [CodeBlock] = []
     let services = codeGenerationRequest.services
-    let arrayOfServicesByNamespace = Dictionary(grouping: services, by: { $0.namespace }).sorted(
-      by: { $0.key < $1.key })
-    for (namespace, listOfServices) in arrayOfServicesByNamespace {
-      let namespaceEnumDeclaration = self.makeNamespaceTypealiasesEnum(
+    let servicesByNamespace = Dictionary(grouping: services, by: { $0.namespace })
+    /// Sorting the keys and the services in each list of the dictionary is necessary
+    /// so that the generated enums are deterministically ordered.
+    for (namespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
+      let namespaceCodeBlocks = try self.makeNamespaceEnum(
         for: namespace,
-        containing: listOfServices.sorted(by: { $0.name < $1.name })
+        containing: services.sorted(by: { $0.name < $1.name })
       )
-      let codeBlockItem = CodeBlockItem.declaration(namespaceEnumDeclaration)
-      codeBlocks.append(CodeBlock(item: codeBlockItem))
+      codeBlocks.append(contentsOf: namespaceCodeBlocks)
     }
-
     return codeBlocks
   }
 }
 
 extension TypealiasTranslator {
-  func makeNamespaceTypealiasesEnum(
+  private func makeNamespaceEnum(
     for namespace: String,
     containing services: [CodeGenerationRequest.ServiceDescriptor]
-  ) -> Declaration {
-    var namespaceEnumDescription = EnumDescription(name: namespace)
+  ) throws -> [CodeBlock] {
+    var namespaceEnum = EnumDescription(name: namespace)
+    var serviceNames: Set<String> = []
 
     for service in services {
-      let serviceEnumDeclaration = self.makeServiceTypealiasesEnum(from: service)
-      namespaceEnumDescription.members.append(serviceEnumDeclaration)
+      /// Checking if service names are unique within the namespace.
+      if serviceNames.contains(service.name) {
+        let errorMessage: String
+        if namespace.isEmpty {
+          errorMessage = """
+            Services with no namespace must have unique names. \
+            \(service.name) is used as a name for multiple services without namespaces.
+            """
+        } else {
+          errorMessage = """
+            Services within the same namespace must have unique names. \
+            \(service.name) is used as a name for multiple services in the \(service.namespace) namespace.
+            """
+        }
+        throw CodeGenError(
+          code: .sameNameServices,
+          message: errorMessage
+        )
+      }
+      let serviceEnum = try self.makeServiceEnum(from: service)
+      namespaceEnum.members.append(serviceEnum)
+      serviceNames.insert(service.name)
     }
 
-    return .enum(namespaceEnumDescription)
+    /// If the namespace is empty, the service enums are independent CodeBlocks.
+    if namespace.isEmpty {
+      return namespaceEnum.members.map {
+        CodeBlock(item: .declaration($0))
+      }
+    }
+    return [CodeBlock(item: .declaration(.enum(namespaceEnum)))]
   }
 
-  func makeServiceTypealiasesEnum(
+  private func makeServiceEnum(
     from service: CodeGenerationRequest.ServiceDescriptor
-  ) -> Declaration {
-    var serviceEnumDescription = EnumDescription(name: service.name)
-    var methodDescriptorFullyQualifiedPathArray: [Expression] = []
-    let methods = service.methods.sorted(by: { $0.name < $1.name })
-    for method in methods {
-      let methodEnumDeclaration = self.makeMethodTypealiasesEnum(from: method, in: service)
-      serviceEnumDescription.members.append(methodEnumDeclaration)
+  ) throws -> Declaration {
+    var serviceEnum = EnumDescription(name: service.name)
+    var methodsEnum = EnumDescription(name: "Methods")
+    var methodDescriptors: [Expression] = []
+    var methodNames: Set<String> = []
 
-      let methodDescriptorFullyQualifiedPath = Expression.memberAccess(
+    let methods = service.methods
+    for method in methods {
+      /// Checking if method names are unique within the service.
+      if methodNames.contains(method.name) {
+        throw CodeGenError(
+          code: .sameNameMethods,
+          message: """
+            Methods of a service must have unique names. \
+            \(method.name) is used as a name for multiple methods of the \(service.name) service.
+            """
+        )
+      }
+      let methodEnum = self.makeMethodEnum(from: method, in: service)
+      methodsEnum.members.append(methodEnum)
+      methodNames.insert(method.name)
+
+      let typeMembers: [String]
+      if service.namespace.isEmpty {
+        typeMembers = [service.name, "Methods", method.name]
+      } else {
+        typeMembers = [service.namespace, service.name, "Methods", method.name]
+      }
+
+      let methodDescriptorPath = Expression.memberAccess(
         MemberAccessDescription(
-          left: Expression.identifierType(.member([service.namespace, service.name, method.name])),
+          left: Expression.identifierType(.member(typeMembers)),
           right: "descriptor"
         )
       )
-      methodDescriptorFullyQualifiedPathArray.append(methodDescriptorFullyQualifiedPath)
+      methodDescriptors.append(methodDescriptorPath)
+    }
+    if !methodsEnum.members.isEmpty {
+      serviceEnum.members.append(.enum(methodsEnum))
+    }
+    let methodDescriptorsDeclaration = self.makeMethodDescriptors(
+      from: methodDescriptors
+    )
+    serviceEnum.members.append(methodDescriptorsDeclaration)
+
+    let streamingServiceProtocolName: String
+    let serviceProtocolName: String
+
+    if service.namespace.isEmpty {
+      streamingServiceProtocolName =
+        "\(service.name)ServiceStreamingProtocol"
+      serviceProtocolName = "\(service.name)ServiceProtocol"
+    } else {
+      streamingServiceProtocolName =
+        "\(service.namespace)_\(service.name)ServiceStreamingProtocol"
+      serviceProtocolName = "\(service.namespace)_\(service.name)ServiceProtocol"
     }
 
-    let methodDescriptorArrayDeclaration = self.makeMethodDescriptorArray(
-      from: methodDescriptorFullyQualifiedPathArray
-    )
-    serviceEnumDescription.members.append(methodDescriptorArrayDeclaration)
-
-    let streamingServiceProtocolName =
-      "\(service.namespace)_\(service.name)ServiceStreamingProtocol"
-    let streamingServiceProtocolTypealiasDeclaration = Declaration.typealias(
+    let streamingServiceProtocolTypealias = Declaration.typealias(
       name: "StreamingServiceProtocol",
       existingType: .member([streamingServiceProtocolName])
     )
-
-    let serviceProtocolName = "\(service.namespace)_\(service.name)ServiceProtocol"
-    let serviceProtocolTypealiasDeclaration = Declaration.typealias(
+    let serviceProtocolTypealias = Declaration.typealias(
       name: "ServiceProtocol",
       existingType: .member([serviceProtocolName])
     )
 
-    serviceEnumDescription.members.append(streamingServiceProtocolTypealiasDeclaration)
-    serviceEnumDescription.members.append(serviceProtocolTypealiasDeclaration)
-    return .enum(serviceEnumDescription)
+    serviceEnum.members.append(streamingServiceProtocolTypealias)
+    serviceEnum.members.append(serviceProtocolTypealias)
+    return .enum(serviceEnum)
   }
 
-  func makeMethodTypealiasesEnum(
+  private func makeMethodEnum(
     from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methodEnumDescription = EnumDescription(name: method.name)
+    var methodEnum = EnumDescription(name: method.name)
 
-    let inputTypealiasDeclaration = Declaration.typealias(
+    let inputTypealias = Declaration.typealias(
       name: "Input",
       existingType: .member([method.inputType])
     )
-    let outputTypealiasDeclaration = Declaration.typealias(
+    let outputTypealias = Declaration.typealias(
       name: "Output",
       existingType: .member([method.outputType])
     )
-    let descriptorVariableDeclaration = self.makeMethodDescriptor(
+    let descriptorVariable = self.makeMethodDescriptor(
       from: method,
       in: service
     )
-    methodEnumDescription.members.append(inputTypealiasDeclaration)
-    methodEnumDescription.members.append(outputTypealiasDeclaration)
-    methodEnumDescription.members.append(descriptorVariableDeclaration)
+    methodEnum.members.append(inputTypealias)
+    methodEnum.members.append(outputTypealias)
+    methodEnum.members.append(descriptorVariable)
 
-    return .enum(methodEnumDescription)
+    return .enum(methodEnum)
   }
 
-  func makeMethodDescriptor(
+  private func makeMethodDescriptor(
     from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
+    let serviceArgumentName: String
+
+    if service.namespace.isEmpty {
+      serviceArgumentName = service.name
+    } else {
+      serviceArgumentName = "\(service.namespace).\(service.name)"
+    }
+
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
         calledExpression: .identifierType(.member(["MethodDescriptor"])),
         arguments: [
           FunctionArgumentDescription(
             label: "service",
-            expression: .identifierType(.member([service.namespace, service.name]))
+            expression: .literal(serviceArgumentName)
           ),
           FunctionArgumentDescription(
             label: "method",
-            expression: .identifierType(.member([method.name]))
+            expression: .literal(.string(method.name))
           ),
         ]
       )
     )
-
     return .variable(
       isStatic: true,
       kind: .let,
@@ -181,20 +247,20 @@ extension TypealiasTranslator {
     )
   }
 
-  func makeMethodDescriptorArray(
-    from methodDescriptorArray: [Expression]
+  private func makeMethodDescriptors(
+    from methodDescriptors: [Expression]
   ) -> Declaration {
-    let methodDescriptorArrayDeclarationLeft = Expression.identifier(.pattern("methods"))
-    let methodDescriptorArrayDeclarationRight = Expression.literal(
-      LiteralDescription.array(methodDescriptorArray)
+    let methodDescriptorsDeclarationLeft = Expression.identifier(.pattern("methods"))
+    let methodDescriptorsDeclarationRight = Expression.literal(
+      LiteralDescription.array(methodDescriptors)
     )
 
     return .variable(
       isStatic: true,
       kind: .let,
-      left: methodDescriptorArrayDeclarationLeft,
+      left: methodDescriptorsDeclarationLeft,
       type: .array(.member(["MethodDescriptor"])),
-      right: methodDescriptorArrayDeclarationRight
+      right: methodDescriptorsDeclarationRight
     )
   }
 }
