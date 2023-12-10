@@ -52,7 +52,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
                   }
               }
               static let methods: [MethodDescriptor] = [
-                  namespaceA.ServiceA.Methods.MethodA.descriptor
+                  Methods.MethodA.descriptor
               ]
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
@@ -95,7 +95,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               }
           }
           static let methods: [MethodDescriptor] = [
-              ServiceA.Methods.MethodA.descriptor
+              Methods.MethodA.descriptor
           ]
           typealias StreamingServiceProtocol = ServiceAServiceStreamingProtocol
           typealias ServiceProtocol = ServiceAServiceProtocol
@@ -154,8 +154,8 @@ final class SnippetBasedTranslatorTests: XCTestCase {
                   }
               }
               static let methods: [MethodDescriptor] = [
-                  namespaceA.ServiceA.Methods.MethodA.descriptor,
-                  namespaceA.ServiceA.Methods.MethodB.descriptor
+                  Methods.MethodA.descriptor,
+                  Methods.MethodB.descriptor
               ]
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
@@ -180,6 +180,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       """
       enum namespaceA {
           enum ServiceA {
+              enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
@@ -212,11 +213,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       """
       enum namespaceA {
           enum AService {
+              enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias StreamingServiceProtocol = namespaceA_AServiceServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_AServiceServiceProtocol
           }
           enum BService {
+              enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias StreamingServiceProtocol = namespaceA_BServiceServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_BServiceServiceProtocol
@@ -248,11 +251,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
     let expectedSwift =
       """
       enum AService {
+          enum Methods {}
           static let methods: [MethodDescriptor] = []
           typealias StreamingServiceProtocol = AServiceServiceStreamingProtocol
           typealias ServiceProtocol = AServiceServiceProtocol
       }
       enum BService {
+          enum Methods {}
           static let methods: [MethodDescriptor] = []
           typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
           typealias ServiceProtocol = BServiceServiceProtocol
@@ -284,6 +289,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       """
       enum anamespace {
           enum AService {
+              enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
               typealias ServiceProtocol = anamespace_AServiceServiceProtocol
@@ -291,6 +297,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       }
       enum bnamespace {
           enum BService {
+              enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias StreamingServiceProtocol = bnamespace_BServiceServiceStreamingProtocol
               typealias ServiceProtocol = bnamespace_BServiceServiceProtocol
@@ -320,12 +327,14 @@ final class SnippetBasedTranslatorTests: XCTestCase {
     let expectedSwift =
       """
       enum BService {
+          enum Methods {}
           static let methods: [MethodDescriptor] = []
           typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
           typealias ServiceProtocol = BServiceServiceProtocol
       }
       enum anamespace {
           enum AService {
+              enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
               typealias ServiceProtocol = anamespace_AServiceServiceProtocol
@@ -346,16 +355,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       namespace: "",
       methods: []
     )
-    let serviceB = ServiceDescriptor(
-      documentation: "Documentation for BService",
-      name: "AService",
-      namespace: "",
-      methods: []
-    )
 
-    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceA])
     let translator = TypealiasTranslator()
-    self.assertThrowsError(try translator.translate(from: codeGenerationRequest)) {
+    self.assertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(from: codeGenerationRequest)
+    ) {
       error in
       XCTAssertEqual(
         error as CodeGenError,
@@ -377,16 +383,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       namespace: "foo",
       methods: []
     )
-    let serviceB = ServiceDescriptor(
-      documentation: "Documentation for BService",
-      name: "AService",
-      namespace: "foo",
-      methods: []
-    )
 
-    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceA])
     let translator = TypealiasTranslator()
-    self.assertThrowsError(try translator.translate(from: codeGenerationRequest)) {
+    self.assertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(from: codeGenerationRequest)
+    ) {
       error in
       XCTAssertEqual(
         error as CodeGenError,
@@ -410,24 +413,19 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       inputType: "NamespaceA_ServiceARequest",
       outputType: "NamespaceA_ServiceAResponse"
     )
-    let methodB = MethodDescriptor(
-      documentation: "Mock documentation",
-      name: "MethodA",
-      isInputStreaming: false,
-      isOutputStreaming: false,
-      inputType: "NamespaceA_ServiceARequest",
-      outputType: "NamespaceA_ServiceAResponse"
-    )
     let service = ServiceDescriptor(
       documentation: "Documentation for Service",
       name: "AService",
       namespace: "namespace",
-      methods: [methodA, methodB]
+      methods: [methodA, methodA]
     )
 
     let codeGenerationRequest = self.makeCodeGenerationRequest(services: [service])
     let translator = TypealiasTranslator()
-    self.assertThrowsError(try translator.translate(from: codeGenerationRequest)) {
+    self.assertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(from: codeGenerationRequest)
+    ) {
       error in
       XCTAssertEqual(
         error as CodeGenError,
@@ -436,6 +434,39 @@ final class SnippetBasedTranslatorTests: XCTestCase {
           message: """
             Methods of a service must have unique names. \
             MethodA is used as a name for multiple methods of the AService service.
+            """
+        )
+      )
+    }
+  }
+
+  func testTypealiasTranslatorSameNameNoNamespaceServiceAndNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for SameName service with no namespace",
+      name: "SameName",
+      namespace: "",
+      methods: []
+    )
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "BService",
+      namespace: "SameName",
+      methods: []
+    )
+    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let translator = TypealiasTranslator()
+    self.assertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(from: codeGenerationRequest)
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .sameNameServiceAndNamespace,
+          message: """
+            Services with no namespace must not have the same names as the namespaces. \
+            SameName is used as a name for a service with no namespace and a namespace.
             """
         )
       )
@@ -453,15 +484,16 @@ extension SnippetBasedTranslatorTests {
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
     let contents = renderer.renderedContents()
-    try TestFunctions.XCTAssertEqualWithDiff(contents, expectedSwift)
+    try XCTAssertEqualWithDiff(contents, expectedSwift)
   }
 
-  private func assertThrowsError<T>(
+  private func assertThrowsError<T, E: Error>(
+    ofType: E.Type,
     _ expression: @autoclosure () throws -> T,
-    _ errorHandler: (CodeGenError) -> Void
+    _ errorHandler: (E) -> Void
   ) {
     XCTAssertThrowsError(try expression()) { error in
-      guard let error = error as? CodeGenError else {
+      guard let error = error as? E else {
         return XCTFail("Error had unexpected type '\(type(of: error))'")
       }
       errorHandler(error)

@@ -57,59 +57,100 @@ struct TypealiasTranslator: SpecializedTranslator {
     var codeBlocks: [CodeBlock] = []
     let services = codeGenerationRequest.services
     let servicesByNamespace = Dictionary(grouping: services, by: { $0.namespace })
-    /// Sorting the keys and the services in each list of the dictionary is necessary
-    /// so that the generated enums are deterministically ordered.
-    for (namespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
+    let orderedServicesByNamespace = servicesByNamespace.sorted(by: { $0.key < $1.key })
+    // Verify service names are unique within each namespace and that services with no namespace
+    // don't have the same names as the namespaces.
+    try self.checkServiceNamesAreUnique(for: orderedServicesByNamespace)
+
+    // Sorting the keys and the services in each list of the dictionary is necessary
+    // so that the generated enums are deterministically ordered.
+    for (namespace, services) in orderedServicesByNamespace {
       let namespaceCodeBlocks = try self.makeNamespaceEnum(
         for: namespace,
         containing: services.sorted(by: { $0.name < $1.name })
       )
       codeBlocks.append(contentsOf: namespaceCodeBlocks)
     }
+
     return codeBlocks
   }
 }
 
 extension TypealiasTranslator {
+  private func checkServiceNamesAreUnique(
+    for orderedServicesByNamespace:
+      [Dictionary<String, [CodeGenerationRequest.ServiceDescriptor]>.Element]
+  ) throws {
+    var noNamespaceServiceNames = Set<String>()
+
+    for (namespace, services) in orderedServicesByNamespace {
+      // Check that no service without a namespace has the same name as the current namespace.
+      if noNamespaceServiceNames.contains(namespace) {
+        throw CodeGenError(
+          code: .sameNameServiceAndNamespace,
+          message: """
+            Services with no namespace must not have the same names as the namespaces. \
+            \(namespace) is used as a name for a service with no namespace and a namespace.
+            """
+        )
+      }
+
+      // Check if service names are unique within the namespace.
+      var serviceNames: Set<String> = []
+      for service in services {
+        if serviceNames.contains(service.name) {
+          let errorMessage: String
+          if namespace.isEmpty {
+            errorMessage = """
+              Services with no namespace must have unique names. \
+              \(service.name) is used as a name for multiple services without namespaces.
+              """
+          } else {
+            errorMessage = """
+              Services within the same namespace must have unique names. \
+              \(service.name) is used as a name for multiple services in the \(service.namespace) namespace.
+              """
+          }
+          throw CodeGenError(
+            code: .sameNameServices,
+            message: errorMessage
+          )
+        }
+        serviceNames.insert(service.name)
+      }
+
+      if namespace.isEmpty {
+        noNamespaceServiceNames = serviceNames
+      }
+    }
+  }
+
   private func makeNamespaceEnum(
     for namespace: String,
     containing services: [CodeGenerationRequest.ServiceDescriptor]
   ) throws -> [CodeBlock] {
-    var namespaceEnum = EnumDescription(name: namespace)
+    var serviceDeclarations = [Declaration]()
     var serviceNames: Set<String> = []
 
+    // Create the service specific enums.
     for service in services {
-      /// Checking if service names are unique within the namespace.
-      if serviceNames.contains(service.name) {
-        let errorMessage: String
-        if namespace.isEmpty {
-          errorMessage = """
-            Services with no namespace must have unique names. \
-            \(service.name) is used as a name for multiple services without namespaces.
-            """
-        } else {
-          errorMessage = """
-            Services within the same namespace must have unique names. \
-            \(service.name) is used as a name for multiple services in the \(service.namespace) namespace.
-            """
-        }
-        throw CodeGenError(
-          code: .sameNameServices,
-          message: errorMessage
-        )
-      }
       let serviceEnum = try self.makeServiceEnum(from: service)
-      namespaceEnum.members.append(serviceEnum)
+      serviceDeclarations.append(serviceEnum)
       serviceNames.insert(service.name)
     }
 
-    /// If the namespace is empty, the service enums are independent CodeBlocks.
+    // If there is no namespace, the service enums are independent CodeBlocks.
+    // If there is a namespace, the associated enum will contain the service enums and will
+    // be represented as a single CodeBlock element.
     if namespace.isEmpty {
-      return namespaceEnum.members.map {
+      return serviceDeclarations.map {
         CodeBlock(item: .declaration($0))
       }
+    } else {
+      var namespaceEnum = EnumDescription(name: namespace)
+      namespaceEnum.members = serviceDeclarations
+      return [CodeBlock(item: .declaration(.enum(namespaceEnum)))]
     }
-    return [CodeBlock(item: .declaration(.enum(namespaceEnum)))]
   }
 
   private func makeServiceEnum(
@@ -117,73 +158,47 @@ extension TypealiasTranslator {
   ) throws -> Declaration {
     var serviceEnum = EnumDescription(name: service.name)
     var methodsEnum = EnumDescription(name: "Methods")
-    var methodDescriptors: [Expression] = []
-    var methodNames: Set<String> = []
-
     let methods = service.methods
+
+    // Verify method names are unique for the service.
+    try self.checkMethodNamesAreUnique(in: service)
+
+    // Create the method specific enums.
     for method in methods {
-      /// Checking if method names are unique within the service.
-      if methodNames.contains(method.name) {
+      let methodEnum = self.makeMethodEnum(from: method, in: service)
+      methodsEnum.members.append(methodEnum)
+    }
+    serviceEnum.members.append(.enum(methodsEnum))
+
+    // Create the method descriptor array.
+    let methodDescriptorsDeclaration = self.makeMethodDescriptors(for: service)
+    serviceEnum.members.append(methodDescriptorsDeclaration)
+
+    // Create the streaming and non-streaming service protocol type aliases.
+    let serviceProtocols = self.makeServiceProtocolsTypealiases(for: service)
+    serviceEnum.members.append(contentsOf: serviceProtocols)
+
+    return .enum(serviceEnum)
+  }
+
+  private func checkMethodNamesAreUnique(
+    in service: CodeGenerationRequest.ServiceDescriptor
+  ) throws {
+    let methodNames = service.methods.map { $0.name }
+    var seenNames = Set<String>()
+
+    for methodName in methodNames {
+      if seenNames.contains(methodName) {
         throw CodeGenError(
           code: .sameNameMethods,
           message: """
             Methods of a service must have unique names. \
-            \(method.name) is used as a name for multiple methods of the \(service.name) service.
+            \(methodName) is used as a name for multiple methods of the \(service.name) service.
             """
         )
       }
-      let methodEnum = self.makeMethodEnum(from: method, in: service)
-      methodsEnum.members.append(methodEnum)
-      methodNames.insert(method.name)
-
-      let typeMembers: [String]
-      if service.namespace.isEmpty {
-        typeMembers = [service.name, "Methods", method.name]
-      } else {
-        typeMembers = [service.namespace, service.name, "Methods", method.name]
-      }
-
-      let methodDescriptorPath = Expression.memberAccess(
-        MemberAccessDescription(
-          left: Expression.identifierType(.member(typeMembers)),
-          right: "descriptor"
-        )
-      )
-      methodDescriptors.append(methodDescriptorPath)
+      seenNames.insert(methodName)
     }
-    if !methodsEnum.members.isEmpty {
-      serviceEnum.members.append(.enum(methodsEnum))
-    }
-    let methodDescriptorsDeclaration = self.makeMethodDescriptors(
-      from: methodDescriptors
-    )
-    serviceEnum.members.append(methodDescriptorsDeclaration)
-
-    let streamingServiceProtocolName: String
-    let serviceProtocolName: String
-
-    if service.namespace.isEmpty {
-      streamingServiceProtocolName =
-        "\(service.name)ServiceStreamingProtocol"
-      serviceProtocolName = "\(service.name)ServiceProtocol"
-    } else {
-      streamingServiceProtocolName =
-        "\(service.namespace)_\(service.name)ServiceStreamingProtocol"
-      serviceProtocolName = "\(service.namespace)_\(service.name)ServiceProtocol"
-    }
-
-    let streamingServiceProtocolTypealias = Declaration.typealias(
-      name: "StreamingServiceProtocol",
-      existingType: .member([streamingServiceProtocolName])
-    )
-    let serviceProtocolTypealias = Declaration.typealias(
-      name: "ServiceProtocol",
-      existingType: .member([serviceProtocolName])
-    )
-
-    serviceEnum.members.append(streamingServiceProtocolTypealias)
-    serviceEnum.members.append(serviceProtocolTypealias)
-    return .enum(serviceEnum)
   }
 
   private func makeMethodEnum(
@@ -216,12 +231,12 @@ extension TypealiasTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
-    let serviceArgumentName: String
 
+    let fullyQualifiedServiceName: String
     if service.namespace.isEmpty {
-      serviceArgumentName = service.name
+      fullyQualifiedServiceName = service.name
     } else {
-      serviceArgumentName = "\(service.namespace).\(service.name)"
+      fullyQualifiedServiceName = "\(service.namespace).\(service.name)"
     }
 
     let descriptorDeclarationRight = Expression.functionCall(
@@ -230,11 +245,11 @@ extension TypealiasTranslator {
         arguments: [
           FunctionArgumentDescription(
             label: "service",
-            expression: .literal(serviceArgumentName)
+            expression: .literal(fullyQualifiedServiceName)
           ),
           FunctionArgumentDescription(
             label: "method",
-            expression: .literal(.string(method.name))
+            expression: .literal(method.name)
           ),
         ]
       )
@@ -248,19 +263,53 @@ extension TypealiasTranslator {
   }
 
   private func makeMethodDescriptors(
-    from methodDescriptors: [Expression]
+    for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    let methodDescriptorsDeclarationLeft = Expression.identifier(.pattern("methods"))
-    let methodDescriptorsDeclarationRight = Expression.literal(
-      LiteralDescription.array(methodDescriptors)
-    )
+    var methodDescriptors = [Expression]()
+    let methodNames = service.methods.map { $0.name }
+
+    for methodName in methodNames {
+      let methodDescriptorPath = Expression.memberAccess(
+        MemberAccessDescription(
+          left: .identifierType(.member(["Methods", methodName])),
+          right: "descriptor"
+        )
+      )
+      methodDescriptors.append(methodDescriptorPath)
+    }
 
     return .variable(
       isStatic: true,
       kind: .let,
-      left: methodDescriptorsDeclarationLeft,
+      left: .identifier(.pattern("methods")),
       type: .array(.member(["MethodDescriptor"])),
-      right: methodDescriptorsDeclarationRight
+      right: .literal(.array(methodDescriptors))
     )
+  }
+
+  private func makeServiceProtocolsTypealiases(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> [Declaration] {
+    let namespacedPrefix: String
+
+    if service.namespace.isEmpty {
+      namespacedPrefix = service.name
+    } else {
+      namespacedPrefix = "\(service.namespace)_\(service.name)"
+    }
+
+    let streamingServiceProtocolName = "\(namespacedPrefix)ServiceStreamingProtocol"
+    let streamingServiceProtocolTypealias = Declaration.typealias(
+      name: "StreamingServiceProtocol",
+      existingType: .member([streamingServiceProtocolName])
+    )
+
+    let serviceProtocolName = "\(namespacedPrefix)ServiceProtocol"
+    let serviceProtocolTypealias = Declaration.typealias(
+      name: "ServiceProtocol",
+      existingType: .member([serviceProtocolName])
+    )
+
+    return [streamingServiceProtocolTypealias, serviceProtocolTypealias]
   }
 }

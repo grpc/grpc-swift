@@ -28,42 +28,40 @@
 //===----------------------------------------------------------------------===//
 import XCTest
 
-enum TestFunctions {
-  static func diff(expected: String, actual: String) throws -> String {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    process.arguments = [
-      "bash", "-c",
-      "diff -U5 --label=expected <(echo '\(expected)') --label=actual <(echo '\(actual)')",
-    ]
-    let pipe = Pipe()
-    process.standardOutput = pipe
-    try process.run()
-    process.waitUntilExit()
-    let pipeData = try XCTUnwrap(
-      pipe.fileHandleForReading.readToEnd(),
-      """
-      No output from command:
-      \(process.executableURL!.path) \(process.arguments!.joined(separator: " "))
-      """
-    )
-    return String(decoding: pipeData, as: UTF8.self)
-  }
+private func diff(expected: String, actual: String) throws -> String {
+  let process = Process()
+  process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+  process.arguments = [
+    "bash", "-c",
+    "diff -U5 --label=expected <(echo '\(expected)') --label=actual <(echo '\(actual)')",
+  ]
+  let pipe = Pipe()
+  process.standardOutput = pipe
+  try process.run()
+  process.waitUntilExit()
+  let pipeData = try XCTUnwrap(
+    pipe.fileHandleForReading.readToEnd(),
+    """
+    No output from command:
+    \(process.executableURL!.path) \(process.arguments!.joined(separator: " "))
+    """
+  )
+  return String(decoding: pipeData, as: UTF8.self)
+}
 
-  static func XCTAssertEqualWithDiff(
-    _ actual: String,
-    _ expected: String,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) throws {
-    if actual == expected { return }
-    XCTFail(
-      """
-      XCTAssertEqualWithDiff failed (click for diff)
-      \(try diff(expected: expected, actual: actual))
-      """,
-      file: file,
-      line: line
-    )
-  }
+internal func XCTAssertEqualWithDiff(
+  _ actual: String,
+  _ expected: String,
+  file: StaticString = #filePath,
+  line: UInt = #line
+) throws {
+  if actual == expected { return }
+  XCTFail(
+    """
+    XCTAssertEqualWithDiff failed (click for diff)
+    \(try diff(expected: expected, actual: actual))
+    """,
+    file: file,
+    line: line
+  )
 }

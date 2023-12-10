@@ -15,7 +15,7 @@
  */
 
 /// A error thrown by the ``SourceGenerator`` to signal errors in the ``CodeGenerationRequest`` object.
-public struct CodeGenError: Error, Hashable, @unchecked Sendable {
+public struct CodeGenError: Error, Hashable, Sendable {
   /// The code indicating the domain of the error.
   public var code: Code
   /// A message providing more details about the error which may include details specific to this
@@ -27,7 +27,6 @@ public struct CodeGenError: Error, Hashable, @unchecked Sendable {
   /// - Parameters:
   ///   - code: The error code.
   ///   - message: A description of the error.
-  ///   - cause: The original error which led to this error being thrown.
   public init(code: Code, message: String) {
     self.code = code
     self.message = message
@@ -36,11 +35,6 @@ public struct CodeGenError: Error, Hashable, @unchecked Sendable {
   public static func == (lhs: CodeGenError, rhs: CodeGenError) -> Bool {
     return lhs.code == rhs.code && lhs.message == rhs.message
   }
-
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(self.code)
-    hasher.combine(self.message)
-  }
 }
 
 extension CodeGenError {
@@ -48,6 +42,7 @@ extension CodeGenError {
     private enum Value {
       case sameNameServices
       case sameNameMethods
+      case sameNameServiceAndNamespace
     }
 
     private var value: Value
@@ -55,12 +50,19 @@ extension CodeGenError {
       self.value = value
     }
 
+    /// The same name is used for two services that are either in the same namespace or don't have a namespace.
     public static var sameNameServices: Self {
       Self(.sameNameServices)
     }
 
+    /// The same name is used for two methods of the same service.
     public static var sameNameMethods: Self {
       Self(.sameNameMethods)
+    }
+
+    /// The same name is used for a service with no namespace and a namespace.
+    public static var sameNameServiceAndNamespace: Self {
+      Self(.sameNameServiceAndNamespace)
     }
   }
 }
