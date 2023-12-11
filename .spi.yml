@@ -1,4 +1,4 @@
 version: 1
 builder:
   configs:
-    - documentation_targets: [GRPC, protoc-gen-grpc-swift]
+    - documentation_targets: [GRPC, GRPCReflectionService, protoc-gen-grpc-swift]
