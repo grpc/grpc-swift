@@ -36,7 +36,7 @@ public struct CodeGenerationRequest {
   public var services: [ServiceDescriptor]
 
   /// Closure that receives a message type as a `String` and returns a code snippet to
-  /// initialize a `MessageSerializer` for that type as a `String`.
+  /// initialise a `MessageSerializer` for that type as a `String`.
   ///
   /// The result is inserted in the generated code, where clients serialize RPC inputs and
   /// servers serialize RPC outputs.
@@ -217,7 +217,7 @@ public struct CodeGenerationRequest {
       public var inputType: String
 
       /// The generated output type for the described method.
-      public var ouputType: String
+      public var outputType: String
 
       public init(
         documentation: String,
@@ -225,14 +225,14 @@ public struct CodeGenerationRequest {
         isInputStreaming: Bool,
         isOutputStreaming: Bool,
         inputType: String,
-        ouputType: String
+        outputType: String
       ) {
         self.documentation = documentation
         self.name = name
         self.isInputStreaming = isInputStreaming
         self.isOutputStreaming = isOutputStreaming
         self.inputType = inputType
-        self.ouputType = ouputType
+        self.outputType = outputType
       }
     }
   }
