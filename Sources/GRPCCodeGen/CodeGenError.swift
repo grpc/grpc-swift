@@ -31,18 +31,13 @@ public struct CodeGenError: Error, Hashable, Sendable {
     self.code = code
     self.message = message
   }
-
-  public static func == (lhs: CodeGenError, rhs: CodeGenError) -> Bool {
-    return lhs.code == rhs.code && lhs.message == rhs.message
-  }
 }
 
 extension CodeGenError {
   public struct Code: Hashable, Sendable {
     private enum Value {
-      case sameNameServices
-      case sameNameMethods
-      case sameNameServiceAndNamespace
+      case nonUniqueServiceName
+      case nonUniqueMethodName
     }
 
     private var value: Value
@@ -51,18 +46,13 @@ extension CodeGenError {
     }
 
     /// The same name is used for two services that are either in the same namespace or don't have a namespace.
-    public static var sameNameServices: Self {
-      Self(.sameNameServices)
+    public static var nonUniqueServiceName: Self {
+      Self(.nonUniqueServiceName)
     }
 
     /// The same name is used for two methods of the same service.
-    public static var sameNameMethods: Self {
-      Self(.sameNameMethods)
-    }
-
-    /// The same name is used for a service with no namespace and a namespace.
-    public static var sameNameServiceAndNamespace: Self {
-      Self(.sameNameServiceAndNamespace)
+    public static var nonUniqueMethodName: Self {
+      Self(.nonUniqueMethodName)
     }
   }
 }

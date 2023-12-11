@@ -57,14 +57,14 @@ struct TypealiasTranslator: SpecializedTranslator {
     var codeBlocks: [CodeBlock] = []
     let services = codeGenerationRequest.services
     let servicesByNamespace = Dictionary(grouping: services, by: { $0.namespace })
-    let orderedServicesByNamespace = servicesByNamespace.sorted(by: { $0.key < $1.key })
+
     // Verify service names are unique within each namespace and that services with no namespace
-    // don't have the same names as the namespaces.
-    try self.checkServiceNamesAreUnique(for: orderedServicesByNamespace)
+    // don't have the same names as any of the namespaces.
+    try self.checkServiceNamesAreUnique(for: servicesByNamespace)
 
     // Sorting the keys and the services in each list of the dictionary is necessary
     // so that the generated enums are deterministically ordered.
-    for (namespace, services) in orderedServicesByNamespace {
+    for (namespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
       let namespaceCodeBlocks = try self.makeNamespaceEnum(
         for: namespace,
         containing: services.sorted(by: { $0.name < $1.name })
@@ -78,31 +78,32 @@ struct TypealiasTranslator: SpecializedTranslator {
 
 extension TypealiasTranslator {
   private func checkServiceNamesAreUnique(
-    for orderedServicesByNamespace:
-      [Dictionary<String, [CodeGenerationRequest.ServiceDescriptor]>.Element]
+    for servicesByNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
   ) throws {
-    var noNamespaceServiceNames = Set<String>()
-
-    for (namespace, services) in orderedServicesByNamespace {
-      // Check that no service without a namespace has the same name as the current namespace.
-      if noNamespaceServiceNames.contains(namespace) {
+    // Check that if there are services in an empty namespace, none have names which match other namespaces
+    let noNamespaceServices = servicesByNamespace["", default: []]
+    let namespaces = servicesByNamespace.keys
+    for service in noNamespaceServices {
+      if namespaces.contains(service.name) {
         throw CodeGenError(
-          code: .sameNameServiceAndNamespace,
+          code: .nonUniqueServiceName,
           message: """
             Services with no namespace must not have the same names as the namespaces. \
-            \(namespace) is used as a name for a service with no namespace and a namespace.
+            \(service.name) is used as a name for a service with no namespace and a namespace.
             """
         )
       }
+    }
 
-      // Check if service names are unique within the namespace.
+    // Check that service names are unique within each namespace.
+    for (namespace, services) in servicesByNamespace {
       var serviceNames: Set<String> = []
       for service in services {
         if serviceNames.contains(service.name) {
           let errorMessage: String
           if namespace.isEmpty {
             errorMessage = """
-              Services with no namespace must have unique names. \
+              Services in an empty namespace must have unique names. \
               \(service.name) is used as a name for multiple services without namespaces.
               """
           } else {
@@ -112,15 +113,11 @@ extension TypealiasTranslator {
               """
           }
           throw CodeGenError(
-            code: .sameNameServices,
+            code: .nonUniqueServiceName,
             message: errorMessage
           )
         }
         serviceNames.insert(service.name)
-      }
-
-      if namespace.isEmpty {
-        noNamespaceServiceNames = serviceNames
       }
     }
   }
@@ -130,13 +127,11 @@ extension TypealiasTranslator {
     containing services: [CodeGenerationRequest.ServiceDescriptor]
   ) throws -> [CodeBlock] {
     var serviceDeclarations = [Declaration]()
-    var serviceNames: Set<String> = []
 
     // Create the service specific enums.
     for service in services {
       let serviceEnum = try self.makeServiceEnum(from: service)
       serviceDeclarations.append(serviceEnum)
-      serviceNames.insert(service.name)
     }
 
     // If there is no namespace, the service enums are independent CodeBlocks.
@@ -190,7 +185,7 @@ extension TypealiasTranslator {
     for methodName in methodNames {
       if seenNames.contains(methodName) {
         throw CodeGenError(
-          code: .sameNameMethods,
+          code: .nonUniqueMethodName,
           message: """
             Methods of a service must have unique names. \
             \(methodName) is used as a name for multiple methods of the \(service.name) service.

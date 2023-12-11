@@ -24,7 +24,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
 
   func testTypealiasTranslator() throws {
     let method = MethodDescriptor(
-      documentation: "Mock documentation",
+      documentation: "Documentation for MethodA",
       name: "MethodA",
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -68,7 +68,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
 
   func testTypealiasTranslatorEmptyNamespace() throws {
     let method = MethodDescriptor(
-      documentation: "Mock documentation",
+      documentation: "Documentation for MethodA",
       name: "MethodA",
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -110,7 +110,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
 
   func testTypealiasTranslatorCheckMethodsOrder() throws {
     let methodA = MethodDescriptor(
-      documentation: "Mock documentation",
+      documentation: "Documentation for MethodA",
       name: "MethodA",
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -118,7 +118,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let methodB = MethodDescriptor(
-      documentation: "Mock documentation",
+      documentation: "Documentation for MethodB",
       name: "MethodB",
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -196,33 +196,33 @@ final class SnippetBasedTranslatorTests: XCTestCase {
 
   func testTypealiasTranslatorServiceAlphabeticalOrder() throws {
     let serviceB = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "Documentation for BService",
       name: "BService",
-      namespace: "namespaceA",
+      namespace: "namespacea",
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "Documentation for AService",
       name: "AService",
-      namespace: "namespaceA",
+      namespace: "namespacea",
       methods: []
     )
 
     let expectedSwift =
       """
-      enum namespaceA {
+      enum namespacea {
           enum AService {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = namespaceA_AServiceServiceStreamingProtocol
-              typealias ServiceProtocol = namespaceA_AServiceServiceProtocol
+              typealias StreamingServiceProtocol = namespacea_AServiceServiceStreamingProtocol
+              typealias ServiceProtocol = namespacea_AServiceServiceProtocol
           }
           enum BService {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = namespaceA_BServiceServiceStreamingProtocol
-              typealias ServiceProtocol = namespaceA_BServiceServiceProtocol
+              typealias StreamingServiceProtocol = namespacea_BServiceServiceStreamingProtocol
+              typealias ServiceProtocol = namespacea_BServiceServiceProtocol
           }
       }
       """
@@ -235,14 +235,14 @@ final class SnippetBasedTranslatorTests: XCTestCase {
 
   func testTypealiasTranslatorServiceAlphabeticalOrderNoNamespace() throws {
     let serviceB = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "Documentation for BService",
       name: "BService",
       namespace: "",
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "Documentation for AService",
       name: "AService",
       namespace: "",
       methods: []
@@ -366,9 +366,9 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       XCTAssertEqual(
         error as CodeGenError,
         CodeGenError(
-          code: .sameNameServices,
+          code: .nonUniqueServiceName,
           message: """
-            Services with no namespace must have unique names. \
+            Services in an empty namespace must have unique names. \
             AService is used as a name for multiple services without namespaces.
             """
         )
@@ -380,7 +380,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
       name: "AService",
-      namespace: "foo",
+      namespace: "namespacea",
       methods: []
     )
 
@@ -394,10 +394,10 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       XCTAssertEqual(
         error as CodeGenError,
         CodeGenError(
-          code: .sameNameServices,
+          code: .nonUniqueServiceName,
           message: """
             Services within the same namespace must have unique names. \
-            AService is used as a name for multiple services in the foo namespace.
+            AService is used as a name for multiple services in the namespacea namespace.
             """
         )
       )
@@ -406,7 +406,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
 
   func testTypealiasTranslatorSameNameMethodsSameServiceError() throws {
     let methodA = MethodDescriptor(
-      documentation: "Mock documentation",
+      documentation: "Documentation for MethodA",
       name: "MethodA",
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -414,9 +414,9 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for Service",
+      documentation: "Documentation for AService",
       name: "AService",
-      namespace: "namespace",
+      namespace: "namespacea",
       methods: [methodA, methodA]
     )
 
@@ -430,7 +430,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       XCTAssertEqual(
         error as CodeGenError,
         CodeGenError(
-          code: .sameNameMethods,
+          code: .nonUniqueMethodName,
           message: """
             Methods of a service must have unique names. \
             MethodA is used as a name for multiple methods of the AService service.
@@ -463,7 +463,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       XCTAssertEqual(
         error as CodeGenError,
         CodeGenError(
-          code: .sameNameServiceAndNamespace,
+          code: .nonUniqueServiceName,
           message: """
             Services with no namespace must not have the same names as the namespaces. \
             SameName is used as a name for a service with no namespace and a namespace.
