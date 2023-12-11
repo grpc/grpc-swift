@@ -25,7 +25,7 @@ final class SerializationTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
     let binaryFileURL = URL(fileURLWithPath: #filePath)
-      .deletingLastPathComponent().appendingPathComponent("echo.grpc.reflection.txt")
+      .deletingLastPathComponent().appendingPathComponent("echo.grpc.reflection")
     let base64EncodedData = try! Data(contentsOf: binaryFileURL)
     let binaryData = Data(base64Encoded: base64EncodedData)!
     self

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Atomics
+import GRPCInProcessTransport
 import XCTest
 
 @testable import GRPCCore
@@ -67,7 +68,7 @@ struct ClientRPCExecutorTestHarness {
 
   func unary(
     request: ClientRequest.Single<[UInt8]>,
-    configuration: ClientRPCExecutionConfiguration? = nil,
+    configuration: MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
@@ -80,7 +81,7 @@ struct ClientRPCExecutorTestHarness {
 
   func clientStreaming(
     request: ClientRequest.Stream<[UInt8]>,
-    configuration: ClientRPCExecutionConfiguration? = nil,
+    configuration: MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
@@ -93,7 +94,7 @@ struct ClientRPCExecutorTestHarness {
 
   func serverStreaming(
     request: ClientRequest.Single<[UInt8]>,
-    configuration: ClientRPCExecutionConfiguration? = nil,
+    configuration: MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
@@ -106,7 +107,7 @@ struct ClientRPCExecutorTestHarness {
 
   func bidirectional(
     request: ClientRequest.Stream<[UInt8]>,
-    configuration: ClientRPCExecutionConfiguration? = nil,
+    configuration: MethodConfiguration? = nil,
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.execute(
@@ -122,7 +123,7 @@ struct ClientRPCExecutorTestHarness {
     request: ClientRequest.Stream<Input>,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
-    configuration: ClientRPCExecutionConfiguration?,
+    configuration: MethodConfiguration?,
     handler: @escaping @Sendable (ClientResponse.Stream<Output>) async throws -> Void
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -141,11 +142,14 @@ struct ClientRPCExecutorTestHarness {
         try await self.clientTransport.connect(lazily: false)
       }
 
-      let executionConfiguration: ClientRPCExecutionConfiguration
+      let executionConfiguration: MethodConfiguration
       if let configuration = configuration {
         executionConfiguration = configuration
       } else {
-        executionConfiguration = ClientRPCExecutionConfiguration(executionPolicy: nil, timeout: nil)
+        executionConfiguration = MethodConfiguration(
+          executionPolicy: nil,
+          timeout: nil
+        )
       }
 
       // Execute the request.

@@ -20,7 +20,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
-  private let _retryThrottle: @Sendable () -> RetryThrottle
+  private let _retryThrottle: @Sendable () -> RetryThrottle?
   private let _withStream:
     @Sendable (
       _ method: MethodDescriptor,
@@ -28,7 +28,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     ) async throws -> Any
   private let _connect: @Sendable (Bool) async throws -> Void
   private let _close: @Sendable () -> Void
-  private let _configuration: @Sendable (MethodDescriptor) -> ClientRPCExecutionConfiguration?
+  private let _configuration: @Sendable (MethodDescriptor) -> MethodConfiguration?
 
   init<Transport: ClientTransport>(wrapping transport: Transport)
   where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
@@ -52,7 +52,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     }
   }
 
-  var retryThrottle: RetryThrottle {
+  var retryThrottle: RetryThrottle? {
     self._retryThrottle()
   }
 
@@ -74,7 +74,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
 
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> ClientRPCExecutionConfiguration? {
+  ) -> MethodConfiguration? {
     self._configuration(descriptor)
   }
 }

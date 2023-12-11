@@ -15,36 +15,22 @@
  */
 import Atomics
 import GRPCCore
+import GRPCInProcessTransport
 import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCServerTests: XCTestCase {
-  func makeInProcessPair() -> (client: InProcessClientTransport, server: InProcessServerTransport) {
-    let server = InProcessServerTransport()
-    let client = InProcessClientTransport(
-      server: server,
-      executionConfigurations: ClientRPCExecutionConfigurationCollection()
-    )
-
-    return (client, server)
-  }
-
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
     interceptors: [any ServerInterceptor] = [],
     _ body: (InProcessClientTransport, GRPCServer) async throws -> Void
   ) async throws {
-    let inProcess = self.makeInProcessPair()
-    let server = GRPCServer()
-    server.transports.add(inProcess.server)
-
-    for service in services {
-      server.services.register(service)
-    }
-
-    for interceptor in interceptors {
-      server.interceptors.add(interceptor)
-    }
+    let inProcess = InProcessTransport.makePair()
+    let server = GRPCServer(
+      transports: [inProcess.server],
+      services: services,
+      interceptors: interceptors
+    )
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -59,7 +45,6 @@ final class GRPCServerTests: XCTestCase {
       inProcess.client.close()
       server.stopListening()
     }
-
   }
 
   func testServerHandlesUnary() async throws {
@@ -306,11 +291,9 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testCancelRunningServer() async throws {
-    let inProcess = self.makeInProcessPair()
+    let inProcess = InProcessTransport.makePair()
     let task = Task {
-      let server = GRPCServer()
-      server.services.register(BinaryEcho())
-      server.transports.add(inProcess.server)
+      let server = GRPCServer(transports: [inProcess.server], services: [BinaryEcho()])
       try await server.run()
     }
 
@@ -329,7 +312,7 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testTestRunServerWithNoTransport() async throws {
-    let server = GRPCServer()
+    let server = GRPCServer(transports: [], services: [])
     await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
       try await server.run()
     } errorHandler: { error in
@@ -338,8 +321,7 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testTestRunStoppedServer() async throws {
-    let server = GRPCServer()
-    server.transports.add(InProcessServerTransport())
+    let server = GRPCServer(transports: [InProcessServerTransport()], services: [])
     // Run the server.
     let task = Task { try await server.run() }
     task.cancel()
@@ -354,8 +336,7 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testRunServerWhenTransportThrows() async throws {
-    let server = GRPCServer()
-    server.transports.add(ThrowOnRunServerTransport())
+    let server = GRPCServer(transports: [ThrowOnRunServerTransport()], services: [])
     await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
       try await server.run()
     } errorHandler: { error in
@@ -364,15 +345,18 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testRunServerDrainsRunningTransportsWhenOneFailsToStart() async throws {
-    let server = GRPCServer()
-
     // Register the in process transport first and allow it to come up.
-    let inProcess = self.makeInProcessPair()
-    server.transports.add(inProcess.server)
+    let inProcess = InProcessTransport.makePair()
 
     // Register a transport waits for a signal before throwing.
     let signal = AsyncStream.makeStream(of: Void.self)
-    server.transports.add(ThrowOnSignalServerTransport(signal: signal.stream))
+    let server = GRPCServer(
+      transports: [
+        inProcess.server,
+        ThrowOnSignalServerTransport(signal: signal.stream),
+      ],
+      services: []
+    )
 
     // Connect the in process client and start an RPC. When the stream is opened signal the
     // other transport to throw. This stream should be failed by the server.
@@ -403,43 +387,6 @@ final class GRPCServerTests: XCTestCase {
 
       group.cancelAll()
     }
-  }
-
-  func testInterceptorsDescription() async throws {
-    let server = GRPCServer()
-    server.interceptors.add(.rejectAll(with: .init(code: .aborted, message: "")))
-    server.interceptors.add(.requestCounter(.init(0)))
-    let description = String(describing: server.interceptors)
-    let expected = #"["RejectAllServerInterceptor", "RequestCountingServerInterceptor"]"#
-    XCTAssertEqual(description, expected)
-  }
-
-  func testServicesDescription() async throws {
-    let server = GRPCServer()
-    let methods: [(String, String)] = [
-      ("helloworld.Greeter", "SayHello"),
-      ("echo.Echo", "Foo"),
-      ("echo.Echo", "Bar"),
-      ("echo.Echo", "Baz"),
-    ]
-
-    for (service, method) in methods {
-      let descriptor = MethodDescriptor(service: service, method: method)
-      server.services.router.registerHandler(
-        forMethod: descriptor,
-        deserializer: IdentityDeserializer(),
-        serializer: IdentitySerializer()
-      ) { _ in
-        fatalError("Unreachable")
-      }
-    }
-
-    let description = String(describing: server.services)
-    let expected = """
-      ["echo.Echo/Bar", "echo.Echo/Baz", "echo.Echo/Foo", "helloworld.Greeter/SayHello"]
-      """
-
-    XCTAssertEqual(description, expected)
   }
 
   private func doEchoGet(using transport: some ClientTransport) async throws {

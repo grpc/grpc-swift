@@ -152,7 +152,7 @@ extension ClientRPCExecutor.RetryExecutor {
                   case .success:
                     // Request was accepted. This counts as success to the throttle and there's no need
                     // to retry.
-                    self.transport.retryThrottle.recordSuccess()
+                    self.transport.retryThrottle?.recordSuccess()
                     retryDelayOverride = nil
                     shouldRetry = false
 
@@ -170,7 +170,7 @@ extension ClientRPCExecutor.RetryExecutor {
 
                     if isRetryableStatusCode {
                       // Counted as failure for throttling.
-                      let throttled = self.transport.retryThrottle.recordFailure()
+                      let throttled = self.transport.retryThrottle?.recordFailure() ?? false
 
                       // Status code can be retried, Did the server send pushback?
                       switch error.metadata.retryPushback {
@@ -190,7 +190,7 @@ extension ClientRPCExecutor.RetryExecutor {
                       }
                     } else {
                       // Not-retryable; this is considered a success.
-                      self.transport.retryThrottle.recordSuccess()
+                      self.transport.retryThrottle?.recordSuccess()
                       shouldRetry = false
                       retryDelayOverride = nil
                     }

@@ -26,7 +26,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
     self.code = code
   }
 
-  let retryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+  let retryThrottle: RetryThrottle? = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
 
   func connect(lazily: Bool) async throws {
     // no-op
@@ -38,7 +38,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> ClientRPCExecutionConfiguration? {
+  ) -> MethodConfiguration? {
     return nil
   }
 

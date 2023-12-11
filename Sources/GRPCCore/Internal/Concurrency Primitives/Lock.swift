@@ -237,19 +237,22 @@ extension UnsafeMutablePointer {
 }
 
 @usableFromInline
-struct LockedValueBox<Value> {
+internal typealias LockedValueBox<Value> = _LockedValueBox<Value>
+
+// TODO: Use 'package' ACL when 5.9 is the minimum Swift version.
+public struct _LockedValueBox<Value> {
   @usableFromInline
   let storage: LockStorage<Value>
 
   @inlinable
-  init(_ value: Value) {
+  public init(_ value: Value) {
     self.storage = .create(value: value)
   }
 
   @inlinable
-  func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
+  public func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
     return try self.storage.withLockedValue(mutate)
   }
 }
 
-extension LockedValueBox: Sendable where Value: Sendable {}
+extension _LockedValueBox: Sendable where Value: Sendable {}

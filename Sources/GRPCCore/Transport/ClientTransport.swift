@@ -16,15 +16,15 @@
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public protocol ClientTransport: Sendable {
-  associatedtype Inbound: (AsyncSequence & Sendable) where Inbound.Element == RPCResponsePart
-  associatedtype Outbound: ClosableRPCWriterProtocol<RPCRequestPart>
+  typealias Inbound = RPCAsyncSequence<RPCResponsePart>
+  typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   /// Returns a throttle which gRPC uses to determine whether retries can be executed.
   ///
   /// Client transports don't need to implement the throttle or interact with it beyond its
   /// creation. gRPC will record the results of requests to determine whether retries can be
   /// performed.
-  var retryThrottle: RetryThrottle { get }
+  var retryThrottle: RetryThrottle? { get }
 
   /// Establish and maintain a connection to the remote destination.
   ///
@@ -77,5 +77,5 @@ public protocol ClientTransport: Sendable {
   /// - Returns: Execution configuration for the method, if it exists.
   func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> ClientRPCExecutionConfiguration?
+  ) -> MethodConfiguration?
 }

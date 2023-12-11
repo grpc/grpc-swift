@@ -15,7 +15,7 @@
  */
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol ServerTransport {
+public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 

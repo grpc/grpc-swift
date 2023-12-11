@@ -87,6 +87,7 @@ extension Target.Dependency {
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
   static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
+  static let reflectionService: Self = .target(name: "GRPCReflectionService")
   static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
 
   // Target dependencies; internal
@@ -98,7 +99,6 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
-  static let reflectionService: Self = .target(name: "GRPCReflectionService")
 
   // Product dependencies
   static let argumentParser: Self = .product(
@@ -133,6 +133,7 @@ extension Target.Dependency {
   static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
 
   static let grpcCore: Self = .target(name: "GRPCCore")
+  static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
 }
 
 // MARK: - Targets
@@ -168,6 +169,13 @@ extension Target {
       .atomics
     ],
     path: "Sources/GRPCCore"
+  )
+
+  static let grpcInProcessTransport: Target = .target(
+    name: "GRPCInProcessTransport",
+    dependencies: [
+      .grpcCore
+    ]
   )
 
   static let cgrpcZlib: Target = .target(
@@ -222,7 +230,7 @@ extension Target {
     ),
     exclude: [
       "Codegen/Normalization/normalization.proto",
-      "Codegen/Serialization/echo.grpc.reflection.txt",
+      "Codegen/Serialization/echo.grpc.reflection",
     ]
   )
 
@@ -230,8 +238,17 @@ extension Target {
     name: "GRPCCoreTests",
     dependencies: [
       .grpcCore,
+      .grpcInProcessTransport,
       .dequeModule,
       .atomics
+    ]
+  )
+
+  static let grpcInProcessTransportTests: Target = .testTarget(
+    name: "GRPCInProcessTransportTests",
+    dependencies: [
+      .grpcCore,
+      .grpcInProcessTransport,
     ]
   )
 
@@ -241,7 +258,7 @@ extension Target {
       .grpcCodeGen
     ]
   )
-  
+
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -468,7 +485,7 @@ extension Target {
       "v1Alpha/reflection-v1alpha.proto"
     ]
   )
-  
+
   static let reflectionServer: Target = .executableTarget(
     name: "ReflectionServer",
     dependencies: [
@@ -486,7 +503,7 @@ extension Target {
       .copy("Generated")
     ]
   )
-  
+
   static let grpcCodeGen: Target = .target(
     name: "GRPCCodeGen",
     path: "Sources/GRPCCodeGen"
@@ -500,7 +517,7 @@ extension Product {
     name: grpcProductName,
     targets: [grpcTargetName]
   )
-    
+
   static let grpcCore: Product = .library(
     name: "_GRPCCore",
     targets: ["GRPCCore"]
@@ -509,6 +526,11 @@ extension Product {
   static let cgrpcZlib: Product = .library(
     name: cgrpcZlibProductName,
     targets: [cgrpcZlibTargetName]
+  )
+
+  static let grpcReflectionService: Product = .library(
+    name: "GRPCReflectionService",
+    targets: ["GRPCReflectionService"]
   )
 
   static let protocGenGRPCSwift: Product = .executable(
@@ -530,6 +552,7 @@ let package = Package(
     .grpc,
     .grpcCore,
     .cgrpcZlib,
+    .grpcReflectionService,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
   ],
@@ -566,10 +589,12 @@ let package = Package(
 
     // v2
     .grpcCore,
+    .grpcInProcessTransport,
     .grpcCodeGen,
 
     // v2 tests
     .grpcCoreTests,
+    .grpcInProcessTransportTests,
     .grpcCodeGenTests
   ]
 )

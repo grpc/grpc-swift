@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+import GRPCCore
+
 /// An in-process implementation of a ``ClientTransport``.
 ///
 /// This is useful when you're interested in testing your application without any actual networking layers
@@ -34,6 +35,7 @@
 /// block until ``connect(lazily:)`` is called or the task is cancelled.
 ///
 /// - SeeAlso: ``ClientTransport``
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct InProcessClientTransport: ClientTransport {
   private enum State: Sendable {
     struct UnconnectedState {
@@ -94,18 +96,25 @@ public struct InProcessClientTransport: ClientTransport {
   public typealias Inbound = RPCAsyncSequence<RPCResponsePart>
   public typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
-  public let retryThrottle: RetryThrottle
+  public let retryThrottle: RetryThrottle?
 
-  private let executionConfigurations: ClientRPCExecutionConfigurationCollection
-  private let state: LockedValueBox<State>
+  private let methodConfiguration: MethodConfigurations
+  private let state: _LockedValueBox<State>
 
+  /// Creates a new in-process client transport.
+  ///
+  /// - Parameters:
+  ///   - server: The in-process server transport to connect to.
+  ///   - methodConfiguration: Method specific configuration.
+  ///   - retryThrottle: A throttle to apply to RPCs which are hedged or retried.
   public init(
     server: InProcessServerTransport,
-    executionConfigurations: ClientRPCExecutionConfigurationCollection
+    methodConfiguration: MethodConfigurations = MethodConfigurations(),
+    retryThrottle: RetryThrottle? = nil
   ) {
-    self.retryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
-    self.executionConfigurations = executionConfigurations
-    self.state = LockedValueBox(.unconnected(.init(serverTransport: server)))
+    self.retryThrottle = retryThrottle
+    self.methodConfiguration = methodConfiguration
+    self.state = _LockedValueBox(.unconnected(.init(serverTransport: server)))
   }
 
   /// Establish and maintain a connection to the remote destination.
@@ -222,8 +231,8 @@ public struct InProcessClientTransport: ClientTransport {
     descriptor: MethodDescriptor,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
-    let request = RPCAsyncSequence<RPCRequestPart>.makeBackpressuredStream(watermarks: (16, 32))
-    let response = RPCAsyncSequence<RPCResponsePart>.makeBackpressuredStream(watermarks: (16, 32))
+    let request = RPCAsyncSequence<RPCRequestPart>._makeBackpressuredStream(watermarks: (16, 32))
+    let response = RPCAsyncSequence<RPCResponsePart>._makeBackpressuredStream(watermarks: (16, 32))
 
     let clientStream = RPCStream(
       descriptor: descriptor,
@@ -329,7 +338,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// - Returns: Execution configuration for the method, if it exists.
   public func executionConfiguration(
     forMethod descriptor: MethodDescriptor
-  ) -> ClientRPCExecutionConfiguration? {
-    self.executionConfigurations[descriptor]
+  ) -> MethodConfiguration? {
+    self.methodConfiguration[descriptor]
   }
 }
