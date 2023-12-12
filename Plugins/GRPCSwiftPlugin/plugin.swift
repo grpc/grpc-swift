@@ -80,6 +80,11 @@ struct GRPCSwiftPlugin {
     ///
     /// If this is not set, SPM will try to find the tool itself.
     var protocPath: String?
+    
+    /// The path to the `protoc-gen-grpc-swift` binary.
+    ///
+    /// If this is not set, SPM will try to find the tool itself.
+    var protocGenGRPCSwiftPath: String?
 
     /// A list of invocations of `protoc` with the `GRPCSwiftPlugin`.
     var invocations: [Invocation]
@@ -129,7 +134,17 @@ struct GRPCSwiftPlugin {
       // The user didn't set anything so let's try see if SPM can find a binary for us
       protocPath = try tool("protoc").path
     }
-    let protocGenGRPCSwiftPath = try tool("protoc-gen-grpc-swift").path
+      
+      let protocGenGRPCSwiftPath: Path
+      if let configuredProtocGenGRPCSwiftPath = configuration.protocGenGRPCSwiftPath {
+        protocGenGRPCSwiftPath = Path(configuredProtocGenGRPCSwiftPath)
+      } else if let environmentPath = ProcessInfo.processInfo.environment["PROTOC_GEN_GRPC_SWIFT_PATH"] {
+        // The user set the env variable, so let's take that
+          protocGenGRPCSwiftPath = Path(environmentPath)
+      } else {
+        // The user didn't set anything so let's try see if SPM can find a binary for us
+          protocGenGRPCSwiftPath = try tool("protoc-gen-grpc-swift").path
+      }
 
     return configuration.invocations.map { invocation in
       self.invokeProtoc(
