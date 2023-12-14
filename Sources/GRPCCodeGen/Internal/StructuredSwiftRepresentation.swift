@@ -420,6 +420,11 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
   ///
   /// For example, `[String: Foo]`.
   case dictionaryValue(ExistingTypeDescription)
+
+  /// An inout parameter type.
+  ///
+  /// For example, `inout Int`.
+  case `inout`(ExistingTypeDescription)
 }
 
 /// A description of a typealias declaration.

@@ -548,6 +548,8 @@ struct TextBasedRenderer: RendererProtocol {
       return "[\(renderedExistingTypeDescription(existingTypeDescription))]"
     case .dictionaryValue(let existingTypeDescription):
       return "[String: \(renderedExistingTypeDescription(existingTypeDescription))]"
+    case .inout(let existingTypeDescription):
+      return "inout \(renderedExistingTypeDescription(existingTypeDescription))"
     }
   }
 

@@ -487,7 +487,7 @@ extension SnippetBasedTranslatorTests {
     try XCTAssertEqualWithDiff(contents, expectedSwift)
   }
 
-  private func assertThrowsError<T, E: Error>(
+  internal func assertThrowsError<T, E: Error>(
     ofType: E.Type,
     _ expression: @autoclosure () throws -> T,
     _ errorHandler: (E) -> Void
@@ -502,7 +502,7 @@ extension SnippetBasedTranslatorTests {
 }
 
 extension SnippetBasedTranslatorTests {
-  private func makeCodeGenerationRequest(services: [ServiceDescriptor]) -> CodeGenerationRequest {
+  internal func makeCodeGenerationRequest(services: [ServiceDescriptor]) -> CodeGenerationRequest {
     return CodeGenerationRequest(
       fileName: "test.grpc",
       leadingTrivia: "Some really exciting license header 2023.",

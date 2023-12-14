@@ -16,6 +16,7 @@
 
 struct IDLToStructuredSwiftTranslator: Translator {
   private let typealiasTranslator = TypealiasTranslator()
+  private let serverCodeTranslator = ServerCodeTranslator()
 
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
@@ -30,6 +31,12 @@ struct IDLToStructuredSwiftTranslator: Translator {
     codeBlocks.append(
       contentsOf: try self.typealiasTranslator.translate(from: codeGenerationRequest)
     )
+
+    if server {
+      codeBlocks.append(
+        contentsOf: try self.serverCodeTranslator.translate(from: codeGenerationRequest)
+      )
+    }
 
     let fileDescription = FileDescription(
       topComment: topComment,
