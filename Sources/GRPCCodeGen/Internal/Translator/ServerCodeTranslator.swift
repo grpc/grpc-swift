@@ -461,8 +461,6 @@ extension ServerCodeTranslator {
     return "\(namespacedPrefix).ServiceProtocol"
   }
 
-  private func fullyQualifiedMethodDescriptor() {}
-
   fileprivate enum InputOutputType {
     case input
     case output
