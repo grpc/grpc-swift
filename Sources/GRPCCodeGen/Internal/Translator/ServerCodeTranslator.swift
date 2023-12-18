@@ -271,8 +271,11 @@ extension ServerCodeTranslator {
     let protocolName = self.protocolName(service: service, streaming: false)
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
 
-    return .protocol(
-      ProtocolDescription(name: protocolName, conformances: [streamingProtocol], members: methods)
+    return .commentable(
+      .inline(service.documentation),
+      .protocol(
+        ProtocolDescription(name: protocolName, conformances: [streamingProtocol], members: methods)
+      )
     )
   }
 
@@ -315,7 +318,10 @@ extension ServerCodeTranslator {
       )
     )
 
-    return .function(FunctionDescription(signature: functionSignature))
+    return .commentable(
+      .inline(method.documentation),
+      .function(FunctionDescription(signature: functionSignature))
+    )
   }
 
   private func makeExtensionServiceProtocol(

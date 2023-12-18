@@ -55,7 +55,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+          // Documentation for unaryMethod
           func unaryMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.unaryMethod.Output>
       }
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
@@ -106,7 +108,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+          // Documentation for inputStreamingMethod
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
       }
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
@@ -157,7 +161,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+          // Documentation for outputStreamingMethod
           func outputStreamingMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
@@ -208,7 +214,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+          // Documentation for bidirectionalStreamingMethod
           func bidirectionalStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>
       }
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
@@ -272,8 +280,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+          // Documentation for inputStreamingMethod
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
+          // Documentation for outputStreamingMethod
           func outputStreamingMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
@@ -328,7 +339,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      // Documentation for ServiceA
       protocol ServiceAServiceProtocol: ServiceA.StreamingServiceProtocol {
+          // Documentation for MethodA
           func methodA(request: ServerRequest.Single<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Single<ServiceA.Methods.methodA.Output>
       }
       // Generated partial conformance to `ServiceAStreamingServiceProtocol`.
@@ -366,6 +379,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {}
       }
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {}
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
@@ -375,6 +389,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       public extension namespaceA.ServiceB.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {}
       }
+      // Documentation for ServiceB
       protocol namespaceA_ServiceBServiceProtocol: namespaceA.ServiceB.StreamingServiceProtocol {}
       // Generated partial conformance to `namespaceA_ServiceBStreamingServiceProtocol`.
       public extension namespaceA.ServiceB.ServiceProtocol {
