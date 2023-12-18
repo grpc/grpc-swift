@@ -18,7 +18,10 @@ import XCTest
 
 @testable import GRPCCodeGen
 
-extension SnippetBasedTranslatorTests {
+final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
+  typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+  typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
+
   func testServerCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for unaryMethod",
@@ -36,10 +39,10 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol namespaceA.ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {
+      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           func unaryMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.unaryMethod.Output>
       }
-      // Generated conformance to `RegistrableRPCService`.
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {
               router.registerHandler(
@@ -52,12 +55,12 @@ extension SnippetBasedTranslatorTests {
               )
           }
       }
-      protocol namespaceA.ServiceA.ServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
           func unaryMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.unaryMethod.Output>
       }
-      // Generated partial conformance to `namespaceA.ServiceA.StreamingServiceProtocol`.
+      // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
-          func unaryMethod() {
+          func unaryMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.unaryMethod.Output> {
               let response = try await self.unaryMethod(request: ServerRequest.Single(stream: request))
               return ServerResponse.Stream(single: response)
           }
@@ -65,7 +68,7 @@ extension SnippetBasedTranslatorTests {
       """
 
     try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -87,10 +90,10 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol namespaceA.ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {
+      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
       }
-      // Generated conformance to `RegistrableRPCService`.
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {
               router.registerHandler(
@@ -103,12 +106,12 @@ extension SnippetBasedTranslatorTests {
               )
           }
       }
-      protocol namespaceA.ServiceA.ServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
       }
-      // Generated partial conformance to `namespaceA.ServiceA.StreamingServiceProtocol`.
+      // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
-          func inputStreamingMethod() {
+          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output> {
               let response = try await self.inputStreamingMethod(request: request)
               return ServerResponse.Stream(single: response)
           }
@@ -116,7 +119,7 @@ extension SnippetBasedTranslatorTests {
       """
 
     try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -138,10 +141,10 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol namespaceA.ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {
+      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
-      // Generated conformance to `RegistrableRPCService`.
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {
               router.registerHandler(
@@ -154,12 +157,12 @@ extension SnippetBasedTranslatorTests {
               )
           }
       }
-      protocol namespaceA.ServiceA.ServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
           func outputStreamingMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
-      // Generated partial conformance to `namespaceA.ServiceA.StreamingServiceProtocol`.
+      // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
-          func outputStreamingMethod() {
+          func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output> {
               let response = try await self.outputStreamingMethod(request: ServerRequest.Single(stream: request))
               return response
           }
@@ -167,7 +170,7 @@ extension SnippetBasedTranslatorTests {
       """
 
     try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -189,10 +192,10 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol namespaceA.ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {
+      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           func bidirectionalStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>
       }
-      // Generated conformance to `RegistrableRPCService`.
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {
               router.registerHandler(
@@ -205,16 +208,16 @@ extension SnippetBasedTranslatorTests {
               )
           }
       }
-      protocol namespaceA.ServiceA.ServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
           func bidirectionalStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>
       }
-      // Generated partial conformance to `namespaceA.ServiceA.StreamingServiceProtocol`.
+      // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
       }
       """
 
     try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -244,11 +247,11 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol namespaceA.ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {
+      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
           func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
-      // Generated conformance to `RegistrableRPCService`.
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {
               router.registerHandler(
@@ -269,25 +272,25 @@ extension SnippetBasedTranslatorTests {
               )
           }
       }
-      protocol namespaceA.ServiceA.ServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
           func outputStreamingMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
-      // Generated partial conformance to `namespaceA.ServiceA.StreamingServiceProtocol`.
+      // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
-          func inputStreamingMethod() {
+          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output> {
               let response = try await self.inputStreamingMethod(request: request)
               return ServerResponse.Stream(single: response)
           }
-          func outputStreamingMethod() {
+          func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output> {
               let response = try await self.outputStreamingMethod(request: ServerRequest.Single(stream: request))
               return response
           }
       }
       """
 
-    try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+    try assertServerCodeTranslation(
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -309,10 +312,10 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {
+      protocol ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           func methodA(request: ServerRequest.Stream<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.methodA.Output>
       }
-      // Generated conformance to `RegistrableRPCService`.
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {
               router.registerHandler(
@@ -325,12 +328,12 @@ extension SnippetBasedTranslatorTests {
               )
           }
       }
-      protocol ServiceA.ServiceProtocol: ServiceA.StreamingServiceProtocol {
+      protocol ServiceAServiceProtocol: ServiceA.StreamingServiceProtocol {
           func methodA(request: ServerRequest.Single<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Single<ServiceA.Methods.methodA.Output>
       }
-      // Generated partial conformance to `ServiceA.StreamingServiceProtocol`.
+      // Generated partial conformance to `ServiceAStreamingServiceProtocol`.
       public extension ServiceA.ServiceProtocol {
-          func methodA() {
+          func methodA(request: ServerRequest.Stream<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.methodA.Output> {
               let response = try await self.methodA(request: ServerRequest.Single(stream: request))
               return ServerResponse.Stream(single: response)
           }
@@ -338,7 +341,7 @@ extension SnippetBasedTranslatorTests {
       """
 
     try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -358,28 +361,28 @@ extension SnippetBasedTranslatorTests {
     )
     let expectedSwift =
       """
-      protocol namespaceA.ServiceA.StreamingServiceProtocol: RegistrableRPCService, Sendable {}
-      // Generated conformance to `RegistrableRPCService`.
+      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {}
       }
-      protocol namespaceA.ServiceA.ServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {}
-      // Generated partial conformance to `namespaceA.ServiceA.StreamingServiceProtocol`.
+      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {}
+      // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
       }
-      protocol namespaceA.ServiceB.StreamingServiceProtocol: RegistrableRPCService, Sendable {}
-      // Generated conformance to `RegistrableRPCService`.
+      protocol namespaceA_ServiceBStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+      // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceB.StreamingServiceProtocol {
           func registerRPCs(with router: inout RPCRouter) {}
       }
-      protocol namespaceA.ServiceB.ServiceProtocol: namespaceA.ServiceB.StreamingServiceProtocol {}
-      // Generated partial conformance to `namespaceA.ServiceB.StreamingServiceProtocol`.
+      protocol namespaceA_ServiceBServiceProtocol: namespaceA.ServiceB.StreamingServiceProtocol {}
+      // Generated partial conformance to `namespaceA_ServiceBStreamingServiceProtocol`.
       public extension namespaceA.ServiceB.ServiceProtocol {
       }
       """
 
     try self.assertServerCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceA, serviceB]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [serviceA, serviceB]),
       expectedSwift: expectedSwift
     )
   }

@@ -548,8 +548,6 @@ struct TextBasedRenderer: RendererProtocol {
       return "[\(renderedExistingTypeDescription(existingTypeDescription))]"
     case .dictionaryValue(let existingTypeDescription):
       return "[String: \(renderedExistingTypeDescription(existingTypeDescription))]"
-    case .inout(let existingTypeDescription):
-      return "inout \(renderedExistingTypeDescription(existingTypeDescription))"
     }
   }
 
@@ -841,6 +839,10 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(": ")
     writer.nextLineAppendsToLastLine()
+    if parameterDescription.inout {
+      writer.writeLine("inout ")
+      writer.nextLineAppendsToLastLine()
+    }
     writer.writeLine(renderedExistingTypeDescription(parameterDescription.type))
     if let defaultValue = parameterDescription.defaultValue {
       writer.nextLineAppendsToLastLine()

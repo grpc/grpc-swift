@@ -17,81 +17,43 @@
 /// Creates a representation for the server code that will be generated based on the``CodeGenerationRequest`` object
 /// specifications, using types from``StructuredSwiftRepresentation``.
 ///
-/// For example, in the case of the ``Echo`` service, the ``ServerCodeTranslator`` will create
+/// For example, in the case of a service called "Bar", in the "foo" namespace which has
+/// one method "baz", the ``ServerCodeTranslator`` will create
 /// a representation for the following generated code:
 ///
 /// ```swift
-/// public protocol echo.Echo.ServiceStreamingProtocol: RPCService, Sendable {
-///  func get(
-///   request: ServerRequest.Stream<echo.Method.Get.Input>
-///  ) async throws -> ServerResponse.Stream<echo.Method.Get.Output>
-///
-///  func collect(
-///   request: ServerRequest.Stream<echo.Method.Collect.Input>
-///  ) async throws -> ServerResponse.Stream<echo.Method.Collect.Output>
-///
-///  func expand(
-///    request: ServerRequest.Stream<echo.Method.Expand.Input>
-///  ) async throws -> ServerResponse.Stream<echo.Method.Expand.Output>
-///
-///  func update(
-///    request: ServerRequest.Stream<echo.Method.Update.Input>
-///  ) async throws -> ServerResponse.Stream<echo.Method.Update.Output>
+/// public protocol foo_BarServiceStreamingProtocol: GRPCCore.RegistrableRPCService {
+///  func baz(
+///   request: ServerRequest.Stream<foo.Method.baz.Input>
+///  ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
 /// }
 ///
 ///
 /// // Generated conformance to `RegistrableRPCService`.
-/// extension echo.Echo.StreamingServiceProtocol {
+/// extension foo.Bar.StreamingServiceProtocol {
 ///  public func registerRPCs(with router: inout RPCRouter) {
 ///    router.registerHandler(
-///      for: echo.Method.Get.descriptor,
-///      deserializer: ProtobufDeserializer<echo.Method.Get.Input>(),
-///      serializer: ProtobufSerializer<echo.Method.Get.Output>(),
-///      handler: { request in try await self.get(request) }
+///      for: foo.Method.Baz.descriptor,
+///      deserializer: ProtobufDeserializer<foo.Methods.Get.Input>(),
+///      serializer: ProtobufSerializer<foo.Methods.Get.Output>(),
+///      handler: { request in try await self.baz(request) }
 ///    )
-///    router.registerHandler(...)
 /// }
 ///
-/// public protocol echo.Echo.ServiceProtocol: echo.Echo.StreamingServiceProtocol {
-///   func get(
-///     request: ServerRequest.Single<EchoRequest>
-///   ) async throws -> ServerResponse.Single<EchoResponse>
-///
-///   func collect(
-///     request: ServerRequest.Stream<EchoResponse>
-///   ) async throws -> ServerResponse.Single<EchoResponse>
-///
-///   func expand(
-///     request: ServerRequest.Single<EchoRequest>
-///   ) async throws -> ServerResponse.Stream<EchoResponse>
-///
-///   func update(
-///     request: ServerRequest.Stream<EchoResponse>
-///   ) async throws -> ServerResponse.Stream<EchoResponse>
+/// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
+///   func baz(
+///     request: ServerRequest.Single<foo.Bar.Methods.baz.Input>
+///   ) async throws -> ServerResponse.Single<foo.Bar.Methods.baz.Output>
 /// }
 ///
 ///
-/// // Generated partial conformance to `echo.Echo.StreamingServiceProtocol`.
-/// extension echo.Echo.ServiceProtocol {
-///  public func get(
-///    request: ServerRequest.Stream<EchoRequest>
-///  ) async throws -> ServerResponse.Stream<EchoResponse> {
-///    let response = try await self.get(request: ServerRequest.Single(stream: request)
+/// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
+/// extension foo.Bar.ServiceProtocol {
+///  public func baz(
+///    request: ServerRequest.Stream<foo.Bar.Methods.baz.Input>
+///  ) async throws -> ServerResponse.Stream<foo.Bar.Methods.baz.Output> {
+///    let response = try await self.baz(request: ServerRequest.Single(stream: request)
 ///    return ServerResponse.Stream(single: response)
-///  }
-///
-///  public func collect(
-///    request: ServerRequest.Stream<EchoResponse>
-///  ) async throws -> ServerResponse.Stream<EchoResponse> {
-///    let response = try await self.collect(request: request))
-///    return ServerResponse.Stream(single: response)
-///  }
-///
-///  public func expand(
-///  request: ServerRequest.Stream<EchoRequest>
-///  ) async throws -> ServerResponse.Stream<EchoResponse> {
-///    let response = try await self.expand(request: ServerRequest.Single(stream: request))
-///    return response
 ///  }
 ///}
 ///```
@@ -109,7 +71,7 @@ struct ServerCodeTranslator: SpecializedTranslator {
       )
       codeBlocks.append(
         CodeBlock(
-          comment: .inline("Generated conformance to `RegistrableRPCService`."),
+          comment: .inline("Generated conformance to `GRPCCore.RegistrableRPCService`."),
           item: conformanceToRPCServiceExtension
         )
       )
@@ -126,7 +88,7 @@ struct ServerCodeTranslator: SpecializedTranslator {
       codeBlocks.append(
         CodeBlock(
           comment: .inline(
-            "Generated partial conformance to `\(self.serviceProtocolName(for: service, streaming: true))`."
+            "Generated partial conformance to `\(self.protocolName(service: service, streaming: true))`."
           ),
           item: extensionServiceProtocol
         )
@@ -141,41 +103,16 @@ extension ServerCodeTranslator {
   private func makeStreamingProtocol(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methods = [Declaration]()
-    for method in service.methods {
-      methods.append(
-        .function(
-          signature: FunctionSignatureDescription(
-            kind: .function(name: method.name),
-            parameters: [
-              .init(
-                label: "request",
-                type: .generic(
-                  wrapper: .member(["ServerRequest", "Stream"]),
-                  wrapped: .member(
-                    self.methodInputOutputTypealias(for: method, service: service, type: .input)
-                  )
-                )
-              )
-            ],
-            keywords: [.async, .throws],
-            returnType: .identifierType(
-              .generic(
-                wrapper: .member(["ServerResponse", "Stream"]),
-                wrapped: .member(
-                  self.methodInputOutputTypealias(for: method, service: service, type: .output)
-                )
-              )
-            )
-          )
-        )
+    let methods = service.methods.compactMap {
+      Declaration.function(
+        signature: self.makeStreamingMethodSignature(for: $0, in: service)
       )
     }
 
     let streamingProtocol = Declaration.protocol(
       .init(
-        name: self.serviceProtocolName(for: service, streaming: true),
-        conformances: ["RegistrableRPCService", "Sendable"],
+        name: self.protocolName(service: service, streaming: true),
+        conformances: ["GRPCCore.RegistrableRPCService"],
         members: methods
       )
     )
@@ -183,11 +120,41 @@ extension ServerCodeTranslator {
     return streamingProtocol
   }
 
+  private func makeStreamingMethodSignature(
+    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
+    in service: CodeGenerationRequest.ServiceDescriptor
+  ) -> FunctionSignatureDescription {
+
+    return FunctionSignatureDescription(
+      kind: .function(name: method.name),
+      parameters: [
+        .init(
+          label: "request",
+          type: .generic(
+            wrapper: .member(["ServerRequest", "Stream"]),
+            wrapped: .member(
+              self.methodInputOutputTypealias(for: method, service: service, type: .input)
+            )
+          )
+        )
+      ],
+      keywords: [.async, .throws],
+      returnType: .identifierType(
+        .generic(
+          wrapper: .member(["ServerResponse", "Stream"]),
+          wrapped: .member(
+            self.methodInputOutputTypealias(for: method, service: service, type: .output)
+          )
+        )
+      )
+    )
+  }
+
   private func makeConformanceToRPCServiceExtension(
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
-    let streamingProtocol = self.serviceProtocolName(for: service, streaming: true)
+    let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
     let registerRPCMethod = self.makeRegisterRPCsMethod(for: service, in: codeGenerationRequest)
     return .extension(
       accessModifier: .public,
@@ -203,7 +170,9 @@ extension ServerCodeTranslator {
   ) -> Declaration {
     let registerRPCsSignature = FunctionSignatureDescription(
       kind: .function(name: "registerRPCs"),
-      parameters: [.init(label: "with", name: "router", type: .inout(.member(["RPCRouter"])))]
+      parameters: [
+        .init(label: "with", name: "router", type: .member(["RPCRouter"]), `inout`: true)
+      ]
     )
     let registerRPCsBody = self.makeRegisterRPCsMethodBody(for: service, in: codeGenerationRequest)
     return .function(signature: registerRPCsSignature, body: registerRPCsBody)
@@ -213,21 +182,19 @@ extension ServerCodeTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> [CodeBlock]? {
-    var registerHandlerCalls = [CodeBlock]()
-    for method in service.methods {
-      let arguments = self.makeArgumentsForRegisterHandler(
-        for: method,
-        in: service,
-        from: codeGenerationRequest
+    var registerHandlerCalls = service.methods.compactMap {
+      CodeBlock.expression(
+        Expression.functionCall(
+          calledExpression: .memberAccess(
+            MemberAccessDescription(left: .identifierPattern("router"), right: "registerHandler")
+          ),
+          arguments: self.makeArgumentsForRegisterHandler(
+            for: $0,
+            in: service,
+            from: codeGenerationRequest
+          )
+        )
       )
-      let registerHandlerCall = Expression.functionCall(
-        calledExpression: .memberAccess(
-          MemberAccessDescription(left: .identifierPattern("router"), right: "registerHandler")
-        ),
-        arguments: arguments
-      )
-
-      registerHandlerCalls.append(.expression(registerHandlerCall))
     }
 
     return registerHandlerCalls
@@ -298,13 +265,11 @@ extension ServerCodeTranslator {
   private func makeServiceProtocol(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methods = [Declaration]()
-    for method in service.methods {
-      let methodDeclaration = self.makeServiceProtocolMethod(for: method, in: service)
-      methods.append(methodDeclaration)
+    let methods = service.methods.compactMap {
+      self.makeServiceProtocolMethod(for: $0, in: service)
     }
-    let protocolName = self.serviceProtocolName(for: service, streaming: false)
-    let streamingProtocol = self.serviceProtocolName(for: service, streaming: true)
+    let protocolName = self.protocolName(service: service, streaming: false)
+    let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
 
     return .protocol(
       ProtocolDescription(name: protocolName, conformances: [streamingProtocol], members: methods)
@@ -356,19 +321,17 @@ extension ServerCodeTranslator {
   private func makeExtensionServiceProtocol(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methods = [Declaration]()
-    for method in service.methods {
-      if let methodDeclaration = self.makeServiceProtocolExtensionMethod(for: method, in: service) {
-        methods.append(methodDeclaration)
-      }
+    let methods = service.methods.compactMap {
+      self.makeServiceProtocolExtensionMethod(for: $0, in: service)
     }
-    let protocolName = self.serviceProtocolName(for: service, streaming: false)
+
+    let protocolName = self.protocolNameTypealias(service: service, streaming: false)
     return .extension(accessModifier: .public, onType: protocolName, declarations: methods)
   }
 
   private func makeServiceProtocolExtensionMethod(
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in: CodeGenerationRequest.ServiceDescriptor
+    in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration? {
     // The method has the same definition in StreamingServiceProtocol and ServiceProtocol.
     if method.isInputStreaming && method.isOutputStreaming {
@@ -379,7 +342,7 @@ extension ServerCodeTranslator {
     let returnStatement = CodeBlock(item: .expression(self.makeReturnStatement(for: method)))
 
     return .function(
-      signature: FunctionSignatureDescription(kind: .function(name: method.name)),
+      signature: self.makeStreamingMethodSignature(for: method, in: service),
       body: [response, returnStatement]
     )
   }
@@ -444,23 +407,6 @@ extension ServerCodeTranslator {
     return .unaryKeyword(kind: .return, expression: returnValue)
   }
 
-  /// Generates the fully qualified name of the type alias for a service descriptor.
-  private func serviceProtocolName(
-    for service: CodeGenerationRequest.ServiceDescriptor,
-    streaming: Bool
-  ) -> String {
-    let namespacedPrefix: String
-    if service.namespace.isEmpty {
-      namespacedPrefix = service.name
-    } else {
-      namespacedPrefix = "\(service.namespace).\(service.name)"
-    }
-    if streaming {
-      return "\(namespacedPrefix).StreamingServiceProtocol"
-    }
-    return "\(namespacedPrefix).ServiceProtocol"
-  }
-
   fileprivate enum InputOutputType {
     case input
     case output
@@ -472,12 +418,7 @@ extension ServerCodeTranslator {
     service: CodeGenerationRequest.ServiceDescriptor,
     type: InputOutputType
   ) -> String {
-    var components: String = ""
-    if service.namespace.isEmpty {
-      components = "\(service.name).Methods.\(method.name)"
-    } else {
-      components = "\(service.namespace).\(service.name).Methods.\(method.name)"
-    }
+    var components: String = "\(service.namespacedTypealiasPrefix).Methods.\(method.name)"
 
     switch type {
     case .input:
@@ -494,13 +435,28 @@ extension ServerCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     service: CodeGenerationRequest.ServiceDescriptor
   ) -> String {
-    var components: String = ""
-    if service.namespace.isEmpty {
-      components = "\(service.name).Methods.\(method.name)"
-    } else {
-      components = "\(service.namespace).\(service.name).Methods.\(method.name)"
-    }
+    return "\(service.namespacedTypealiasPrefix).Methods.\(method.name).descriptor"
+  }
 
-    return components.appending(".descriptor")
+  /// Generates the fully qualified name of the type alias for a service protocol.
+  internal func protocolNameTypealias(
+    service: CodeGenerationRequest.ServiceDescriptor,
+    streaming: Bool
+  ) -> String {
+    if streaming {
+      return "\(service.namespacedTypealiasPrefix).StreamingServiceProtocol"
+    }
+    return "\(service.namespacedTypealiasPrefix).ServiceProtocol"
+  }
+
+  /// Generates the name of a service protocol.
+  internal func protocolName(
+    service: CodeGenerationRequest.ServiceDescriptor,
+    streaming: Bool
+  ) -> String {
+    if streaming {
+      return "\(service.namespacedPrefix)StreamingServiceProtocol"
+    }
+    return "\(service.namespacedPrefix)ServiceProtocol"
   }
 }

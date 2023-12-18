@@ -420,11 +420,6 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
   ///
   /// For example, `[String: Foo]`.
   case dictionaryValue(ExistingTypeDescription)
-
-  /// An inout parameter type.
-  ///
-  /// For example, `inout Int`.
-  case `inout`(ExistingTypeDescription)
 }
 
 /// A description of a typealias declaration.
@@ -495,6 +490,11 @@ struct ParameterDescription: Equatable, Codable {
   /// For example, in `bar baz: String = "hi"`, `defaultValue`
   /// represents `"hi"`.
   var defaultValue: Expression? = nil
+
+  /// An inout parameter type.
+  ///
+  /// For example, `bar baz: inout String`.
+  var `inout`: Bool = false
 }
 
 /// A function kind: `func` or `init`.
