@@ -420,6 +420,11 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
   ///
   /// For example, `[String: Foo]`.
   case dictionaryValue(ExistingTypeDescription)
+  
+  /// A type with the `some` keyword in front of it.
+  ///
+  /// For example, `some Foo`.
+  case some(ExistingTypeDescription)
 }
 
 /// A description of a typealias declaration.
@@ -503,7 +508,8 @@ enum FunctionKind: Equatable, Codable {
   /// A function or a method. Can be static.
   ///
   /// For example `foo()`, where `name` is `foo`.
-  case function(name: String, isStatic: Bool)
+  case function(name: String, isStatic: Bool, genericType: String? = nil, conformances: [String] = [])
+  
 }
 
 /// A function keyword, such as `async` and `throws`.
@@ -1322,7 +1328,7 @@ extension FunctionKind {
   static var initializer: Self { .initializer(failable: false) }
 
   /// Returns a non-static function kind.
-  static func function(name: String) -> Self { .function(name: name, isStatic: false) }
+  static func function(name: String) -> Self { .function(name: name, isStatic: false, genericType: nil, conformances: []) }
 }
 
 extension CodeBlock {

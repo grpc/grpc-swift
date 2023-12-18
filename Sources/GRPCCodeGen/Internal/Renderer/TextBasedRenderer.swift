@@ -548,6 +548,8 @@ struct TextBasedRenderer: RendererProtocol {
       return "[\(renderedExistingTypeDescription(existingTypeDescription))]"
     case .dictionaryValue(let existingTypeDescription):
       return "[String: \(renderedExistingTypeDescription(existingTypeDescription))]"
+    case .some(let existingTypeDescription):
+      return "some \(renderedExistingTypeDescription(existingTypeDescription))"
     }
   }
 
@@ -750,7 +752,12 @@ struct TextBasedRenderer: RendererProtocol {
   func renderedFunctionKind(_ functionKind: FunctionKind) -> String {
     switch functionKind {
     case .initializer(let isFailable): return "init\(isFailable ? "?" : "")"
-    case .function(let name, let isStatic): return (isStatic ? "static " : "") + "func \(name)"
+    case .function(let name, let isStatic, let genericType, let conformances):
+      var conformancesString = ""
+      if (genericType != nil && conformances.isEmpty) {
+        conformancesString = ": \(conformances.joined(separator: ", "))"
+      }
+      return (isStatic ? "static " : "") + "func \(name)" + ((genericType != nil) ? "<\(String(describing: genericType))\(conformancesString)" : "")
     }
   }
 
