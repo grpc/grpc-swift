@@ -169,7 +169,7 @@ extension ServerCodeTranslator {
     let registerRPCsSignature = FunctionSignatureDescription(
       kind: .function(name: "registerRPCs"),
       parameters: [
-        .init(label: "with", name: "router", type: .member(["RPCRouter"]), `inout`: true)
+        .init(label: "with", name: "router", type: .member(["GRPCCore", "RPCRouter"]), `inout`: true)
       ]
     )
     let registerRPCsBody = self.makeRegisterRPCsMethodBody(for: service, in: codeGenerationRequest)
