@@ -26,6 +26,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 //===----------------------------------------------------------------------===//
+
+#if os(macOS) || os(Linux)  // swift-format doesn't like canImport(Foundation.Process)
+
 import XCTest
 
 @testable import GRPCCodeGen
@@ -97,3 +100,5 @@ internal func XCTAssertThrowsError<T, E: Error>(
     errorHandler(error)
   }
 }
+
+#endif  // os(macOS) || os(Linux)
