@@ -589,5 +589,43 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     }
     XCTAssertNoThrow(try EventLoopFuture.andAllSucceed(rpcs, on: self.group.any()).wait())
   }
+
+  func testCloseGracefullyDelegate() throws {
+    let delegate = MyDelegate()
+    self.setUpClientAndServer(withTLS: false) { config in
+      config.delegate = delegate
+    }
+
+    let request = Echo_EchoRequest()
+    try self.echo.get(request).response.wait()
+
+    try self.server?.initiateGracefulShutdown().wait()
+    XCTAssert(delegate.quiesceCalled)
+  }
+  final class MyDelegate: GRPCConnectionPoolDelegate {
+    var quiesceCalled = false
+
+    func connectionAdded(id: GRPCConnectionID) {}
+
+    func connectionRemoved(id: GRPCConnectionID) {}
+
+    func startedConnecting(id: GRPCConnectionID) {}
+
+    func connectFailed(id: GRPCConnectionID, error: Error) {}
+
+    func connectSucceeded(id: GRPCConnectionID, streamCapacity: Int) {}
+
+    func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int) {}
+
+    func connectionQuiescing(id: GRPCConnectionID) {
+      print("Quiesce called on channel \(id)")
+      self.quiesceCalled = true
+    }
+
+    func connectionClosed(id: GRPCConnectionID, error: Error?) {
+      print("Close called on channel \(id)")
+    }
+  }
 }
+
 #endif  // canImport(NIOSSL)
