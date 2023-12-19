@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#if os(macOS) || os(Linux)  // swift-format doesn't like canImport(Foundation.Process)
+
 import XCTest
 
 @testable import GRPCCodeGen
@@ -517,3 +519,5 @@ extension SnippetBasedTranslatorTests {
     )
   }
 }
+
+#endif  // os(macOS) || os(Linux)

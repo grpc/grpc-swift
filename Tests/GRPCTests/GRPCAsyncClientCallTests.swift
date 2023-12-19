@@ -334,6 +334,7 @@ private actor RequestResponseCounter {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 private final class AsyncEchoProvider: Echo_EchoAsyncProvider {
   let headers: HPACKHeaders
   let sendTwice: Bool

@@ -26,6 +26,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 //===----------------------------------------------------------------------===//
+
+#if os(macOS) || os(Linux)  // swift-format doesn't like canImport(Foundation.Process)
+
 import XCTest
 
 private func diff(expected: String, actual: String) throws -> String {
@@ -65,3 +68,5 @@ internal func XCTAssertEqualWithDiff(
     line: line
   )
 }
+
+#endif  // os(macOS) || os(Linux)

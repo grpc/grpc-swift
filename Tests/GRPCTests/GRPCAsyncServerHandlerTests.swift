@@ -522,6 +522,7 @@ class AsyncServerHandlerTests: GRPCTestCase {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class AsyncResponseStream: GRPCServerResponseWriter {
   private let source:
     NIOAsyncSequenceProducer<
