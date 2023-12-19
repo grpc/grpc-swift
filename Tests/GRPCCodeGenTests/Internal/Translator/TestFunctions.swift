@@ -1,4 +1,3 @@
-import GRPCCodeGen
 /*
  * Copyright 2023, gRPC Authors All rights reserved.
  *
@@ -28,6 +27,8 @@ import GRPCCodeGen
 //
 //===----------------------------------------------------------------------===//
 import XCTest
+
+@testable import GRPCCodeGen
 
 private func diff(expected: String, actual: String) throws -> String {
   let process = Process()
