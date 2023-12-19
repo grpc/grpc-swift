@@ -15,6 +15,7 @@
  */
 import GRPCCore
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCAsyncSequence {
   static func elements(_ elements: Element...) -> Self {
     return .elements(elements)

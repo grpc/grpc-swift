@@ -16,6 +16,7 @@
 @_spi(Testing) import GRPCCore
 import XCTest
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ServerResponseTests: XCTestCase {
   func testSingleConvenienceInit() {
     var response = ServerResponse.Single(

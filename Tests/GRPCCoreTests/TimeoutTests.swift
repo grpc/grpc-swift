@@ -17,6 +17,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
 final class TimeoutTests: XCTestCase {
   func testDecodeInvalidTimeout_Empty() {
     let timeoutHeader = ""

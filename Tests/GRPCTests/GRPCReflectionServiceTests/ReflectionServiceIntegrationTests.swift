@@ -23,6 +23,7 @@ import XCTest
 
 @testable import GRPCReflectionService
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ReflectionServiceIntegrationTests: GRPCTestCase {
   private var server: Server?
   private var channel: GRPCChannel?

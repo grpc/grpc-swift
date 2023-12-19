@@ -50,6 +50,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
   func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
     throw RPCError(
@@ -63,6 +64,7 @@ struct ThrowOnRunServerTransport: ServerTransport {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   let signal: AsyncStream<Void>
 

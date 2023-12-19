@@ -21,7 +21,7 @@ import NIOExtras
 import NIOPosix
 
 @main
-@available(macOS 10.15, *)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct PCAP: AsyncParsableCommand {
   @Option(help: "The port to connect to")
   var port = 1234
