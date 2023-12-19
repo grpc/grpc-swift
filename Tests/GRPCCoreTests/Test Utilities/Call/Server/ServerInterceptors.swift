@@ -16,6 +16,7 @@
 import Atomics
 import GRPCCore
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerInterceptor where Self == RejectAllServerInterceptor {
   static func rejectAll(with error: RPCError) -> Self {
     return RejectAllServerInterceptor(error: error, throw: false)
@@ -26,6 +27,7 @@ extension ServerInterceptor where Self == RejectAllServerInterceptor {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension ServerInterceptor where Self == RequestCountingServerInterceptor {
   static func requestCounter(_ counter: ManagedAtomic<Int>) -> Self {
     return RequestCountingServerInterceptor(counter: counter)
@@ -33,6 +35,7 @@ extension ServerInterceptor where Self == RequestCountingServerInterceptor {
 }
 
 /// Rejects all RPCs with the provided error.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct RejectAllServerInterceptor: ServerInterceptor {
   /// The error to reject all RPCs with.
   let error: RPCError
@@ -61,6 +64,7 @@ struct RejectAllServerInterceptor: ServerInterceptor {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct RequestCountingServerInterceptor: ServerInterceptor {
   /// The number of requests made.
   let counter: ManagedAtomic<Int>

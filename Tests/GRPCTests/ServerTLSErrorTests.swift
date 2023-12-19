@@ -129,6 +129,7 @@ class ServerTLSErrorTests: GRPCTestCase {
     }
   }
 
+  @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
   func testServerCustomVerificationCallback() async throws {
     let verificationCallbackInvoked = self.serverEventLoopGroup.next().makePromise(of: Void.self)
     let configuration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(

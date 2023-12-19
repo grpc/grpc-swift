@@ -28,6 +28,7 @@ func XCTAssertThrowsError<T, E: Error>(
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertThrowsErrorAsync<T, E: Error>(
   ofType: E.Type = E.self,
   _ expression: () async throws -> T,

@@ -19,6 +19,7 @@ import XCTest
 @testable import GRPCCore
 @testable import GRPCInProcessTransport
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessServerTransport()
