@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-/// Creates a representation for the server code that will be generated based on the``CodeGenerationRequest`` object
-/// specifications, using types from``StructuredSwiftRepresentation``.
+/// Creates a representation for the server code that will be generated based on the ``CodeGenerationRequest`` object
+/// specifications, using types from ``StructuredSwiftRepresentation``.
 ///
 /// For example, in the case of a service called "Bar", in the "foo" namespace which has
 /// one method "baz", the ``ServerCodeTranslator`` will create
@@ -23,19 +23,19 @@
 ///
 /// ```swift
 /// public protocol foo_BarServiceStreamingProtocol: GRPCCore.RegistrableRPCService {
-///  func baz(
-///   request: ServerRequest.Stream<foo.Method.baz.Input>
-///  ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
+///   func baz(
+///     request: ServerRequest.Stream<foo.Method.baz.Input>
+///   ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
 /// }
 /// // Generated conformance to `RegistrableRPCService`.
 /// extension foo.Bar.StreamingServiceProtocol {
-///  public func registerRPCs(with router: inout RPCRouter) {
-///    router.registerHandler(
-///      for: foo.Method.Baz.descriptor,
-///      deserializer: ProtobufDeserializer<foo.Methods.Get.Input>(),
-///      serializer: ProtobufSerializer<foo.Methods.Get.Output>(),
-///      handler: { request in try await self.baz(request) }
-///    )
+///   public func registerRPCs(with router: inout RPCRouter) {
+///     router.registerHandler(
+///       for: foo.Method.baz.descriptor,
+///       deserializer: ProtobufDeserializer<foo.Methods.baz.Input>(),
+///       serializer: ProtobufSerializer<foo.Methods.baz.Output>(),
+///       handler: { request in try await self.baz(request: request) }
+///     )
 /// }
 /// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
 ///   func baz(
@@ -44,12 +44,12 @@
 /// }
 /// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
 /// extension foo.Bar.ServiceProtocol {
-///  public func baz(
-///    request: ServerRequest.Stream<foo.Bar.Methods.baz.Input>
-///  ) async throws -> ServerResponse.Stream<foo.Bar.Methods.baz.Output> {
-///    let response = try await self.baz(request: ServerRequest.Single(stream: request)
-///    return ServerResponse.Stream(single: response)
-///  }
+///   public func baz(
+///     request: ServerRequest.Stream<foo.Bar.Methods.baz.Input>
+///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.baz.Output> {
+///     let response = try await self.baz(request: ServerRequest.Single(stream: request)
+///     return ServerResponse.Stream(single: response)
+/// }
 ///}
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
@@ -99,8 +99,13 @@ extension ServerCodeTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     let methods = service.methods.compactMap {
-      Declaration.function(
-        signature: self.makeStreamingMethodSignature(for: $0, in: service)
+      Declaration.commentable(
+        .inline($0.documentation),
+        .function(
+          FunctionDescription(
+            signature: self.makeStreamingMethodSignature(for: $0, in: service)
+          )
+        )
       )
     }
 
@@ -112,14 +117,13 @@ extension ServerCodeTranslator {
       )
     )
 
-    return streamingProtocol
+    return .commentable(.inline(service.documentation), streamingProtocol)
   }
 
   private func makeStreamingMethodSignature(
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> FunctionSignatureDescription {
-
     return FunctionSignatureDescription(
       kind: .function(name: method.name),
       parameters: [
@@ -156,7 +160,6 @@ extension ServerCodeTranslator {
       onType: streamingProtocol,
       declarations: [registerRPCMethod]
     )
-
   }
 
   private func makeRegisterRPCsMethod(
@@ -176,8 +179,8 @@ extension ServerCodeTranslator {
   private func makeRegisterRPCsMethodBody(
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
-  ) -> [CodeBlock]? {
-    var registerHandlerCalls = service.methods.compactMap {
+  ) -> [CodeBlock] {
+    let registerHandlerCalls = service.methods.compactMap {
       CodeBlock.expression(
         Expression.functionCall(
           calledExpression: .memberAccess(
@@ -237,7 +240,9 @@ extension ServerCodeTranslator {
       calledExpression: .memberAccess(
         MemberAccessDescription(left: .identifierPattern("self"), right: method.name)
       ),
-      arguments: [FunctionArgumentDescription(expression: .identifierPattern("request"))]
+      arguments: [
+        FunctionArgumentDescription(label: "request", expression: .identifierPattern("request"))
+      ]
     )
 
     let handlerClosureBody = Expression.unaryKeyword(

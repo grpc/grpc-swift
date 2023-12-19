@@ -39,18 +39,20 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+          // Documentation for unaryMethod
           func unaryMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.unaryMethod.Output>
       }
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   for: namespaceA.ServiceA.Methods.unaryMethod.descriptor,
                   deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.unaryMethod.Input>(),
                   serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.unaryMethod.Output>(),
                   handler: { request in
-                      try await self.unaryMethod(request)
+                      try await self.unaryMethod(request: request)
                   }
               )
           }
@@ -92,18 +94,20 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+          // Documentation for inputStreamingMethod
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
       }
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   for: namespaceA.ServiceA.Methods.inputStreamingMethod.descriptor,
                   deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>(),
                   serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>(),
                   handler: { request in
-                      try await self.inputStreamingMethod(request)
+                      try await self.inputStreamingMethod(request: request)
                   }
               )
           }
@@ -145,18 +149,20 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+          // Documentation for outputStreamingMethod
           func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   for: namespaceA.ServiceA.Methods.outputStreamingMethod.descriptor,
                   deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>(),
                   serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>(),
                   handler: { request in
-                      try await self.outputStreamingMethod(request)
+                      try await self.outputStreamingMethod(request: request)
                   }
               )
           }
@@ -198,18 +204,20 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+          // Documentation for bidirectionalStreamingMethod
           func bidirectionalStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>
       }
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   for: namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.descriptor,
                   deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>(),
                   serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>(),
                   handler: { request in
-                      try await self.bidirectionalStreamingMethod(request)
+                      try await self.bidirectionalStreamingMethod(request: request)
                   }
               )
           }
@@ -255,19 +263,22 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+          // Documentation for inputStreamingMethod
           func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
+          // Documentation for outputStreamingMethod
           func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
       }
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   for: namespaceA.ServiceA.Methods.inputStreamingMethod.descriptor,
                   deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>(),
                   serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>(),
                   handler: { request in
-                      try await self.inputStreamingMethod(request)
+                      try await self.inputStreamingMethod(request: request)
                   }
               )
               router.registerHandler(
@@ -275,7 +286,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
                   deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>(),
                   serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>(),
                   handler: { request in
-                      try await self.outputStreamingMethod(request)
+                      try await self.outputStreamingMethod(request: request)
                   }
               )
           }
@@ -323,18 +334,20 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+          // Documentation for MethodA
           func methodA(request: ServerRequest.Stream<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.methodA.Output>
       }
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   for: ServiceA.Methods.methodA.descriptor,
                   deserializer: ProtobufDeserializer<ServiceA.Methods.methodA.Input>(),
                   serializer: ProtobufSerializer<ServiceA.Methods.methodA.Output>(),
                   handler: { request in
-                      try await self.methodA(request)
+                      try await self.methodA(request: request)
                   }
               )
           }
@@ -374,20 +387,22 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
+      // Documentation for ServiceA
       protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceA.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {}
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {}
       }
       // Documentation for ServiceA
       protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {}
       // Generated partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
       public extension namespaceA.ServiceA.ServiceProtocol {
       }
+      // Documentation for ServiceB
       protocol namespaceA_ServiceBStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
       // Generated conformance to `GRPCCore.RegistrableRPCService`.
       public extension namespaceA.ServiceB.StreamingServiceProtocol {
-          func registerRPCs(with router: inout RPCRouter) {}
+          func registerRPCs(with router: inout GRPCCore.RPCRouter) {}
       }
       // Documentation for ServiceB
       protocol namespaceA_ServiceBServiceProtocol: namespaceA.ServiceB.StreamingServiceProtocol {}
