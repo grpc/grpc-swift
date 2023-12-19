@@ -27,8 +27,6 @@
 ///   request: ServerRequest.Stream<foo.Method.baz.Input>
 ///  ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
 /// }
-///
-///
 /// // Generated conformance to `RegistrableRPCService`.
 /// extension foo.Bar.StreamingServiceProtocol {
 ///  public func registerRPCs(with router: inout RPCRouter) {
@@ -39,14 +37,11 @@
 ///      handler: { request in try await self.baz(request) }
 ///    )
 /// }
-///
 /// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
 ///   func baz(
 ///     request: ServerRequest.Single<foo.Bar.Methods.baz.Input>
 ///   ) async throws -> ServerResponse.Single<foo.Bar.Methods.baz.Output>
 /// }
-///
-///
 /// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
 /// extension foo.Bar.ServiceProtocol {
 ///  public func baz(
