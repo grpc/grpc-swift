@@ -41,3 +41,21 @@ struct IDLToStructuredSwiftTranslator: Translator {
     return StructuredSwiftRepresentation(file: file)
   }
 }
+
+extension CodeGenerationRequest.ServiceDescriptor {
+  var namespacedTypealiasPrefix: String {
+    if self.namespace.isEmpty {
+      return self.name
+    } else {
+      return "\(self.namespace).\(self.name)"
+    }
+  }
+
+  var namespacedPrefix: String {
+    if self.namespace.isEmpty {
+      return self.name
+    } else {
+      return "\(self.namespace)_\(self.name)"
+    }
+  }
+}

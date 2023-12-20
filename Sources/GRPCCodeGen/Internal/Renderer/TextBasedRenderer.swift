@@ -550,6 +550,8 @@ struct TextBasedRenderer: RendererProtocol {
       return "[String: \(renderedExistingTypeDescription(existingTypeDescription))]"
     case .some(let existingTypeDescription):
       return "some \(renderedExistingTypeDescription(existingTypeDescription))"
+    case .closure(let closureSignatureDescription):
+      return "\(renderClosureSignature(closureSignatureDescription))"
     }
   }
 
@@ -754,10 +756,13 @@ struct TextBasedRenderer: RendererProtocol {
     case .initializer(let isFailable): return "init\(isFailable ? "?" : "")"
     case .function(let name, let isStatic, let genericType, let conformances):
       var conformancesString = ""
-      if (genericType != nil && conformances.isEmpty) {
-        conformancesString = ": \(conformances.joined(separator: ", "))"
+      if let genericType = genericType {
+        if !conformances.isEmpty {
+          conformancesString = ": \(conformances.joined(separator: ", "))"
+        }
+        return "\(isStatic ? "static " : "")func \(name)<\( genericType)\(conformancesString)>"
       }
-      return (isStatic ? "static " : "") + "func \(name)" + ((genericType != nil) ? "<\(String(describing: genericType))\(conformancesString)" : "")
+      return (isStatic ? "static " : "") + "func \(name)"
     }
   }
 
@@ -766,6 +771,58 @@ struct TextBasedRenderer: RendererProtocol {
     switch keyword {
     case .throws: return "throws"
     case .async: return "async"
+    case .rethrows: return "rethrows"
+    }
+  }
+
+  /// Renders the specified function signature.
+  func renderClosureSignature(_ signature: ClosureSignatureDescription) {
+    if signature.sendable {
+      writer.writeLine("@Sendable ")
+      writer.nextLineAppendsToLastLine()
+    }
+    if signature.escaping {
+      writer.writeLine("@escaping ")
+      writer.nextLineAppendsToLastLine()
+    }
+
+    writer.writeLine("(")
+    let parameters = signature.parameters
+    let separateLines = parameters.count > 1
+    if separateLines {
+      writer.withNestedLevel {
+        for (parameter, isLast) in signature.parameters.enumeratedWithLastMarker() {
+          renderClosureParameter(parameter)
+          if !isLast {
+            writer.nextLineAppendsToLastLine()
+            writer.writeLine(",")
+          }
+        }
+      }
+    } else {
+      writer.nextLineAppendsToLastLine()
+      if let parameter = parameters.first {
+        renderClosureParameter(parameter)
+        writer.nextLineAppendsToLastLine()
+      }
+    }
+    writer.writeLine(")")
+
+    do {
+      let keywords = signature.keywords
+      if !keywords.isEmpty {
+        for keyword in keywords {
+          writer.nextLineAppendsToLastLine()
+          writer.writeLine(" " + renderedFunctionKeyword(keyword))
+        }
+      }
+    }
+
+    if let returnType = signature.returnType {
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(" -> ")
+      writer.nextLineAppendsToLastLine()
+      renderExpression(returnType)
     }
   }
 
@@ -846,6 +903,36 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(": ")
     writer.nextLineAppendsToLastLine()
+    writer.writeLine(renderedExistingTypeDescription(parameterDescription.type))
+    if let defaultValue = parameterDescription.defaultValue {
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(" = ")
+      writer.nextLineAppendsToLastLine()
+      renderExpression(defaultValue)
+    }
+  }
+
+  /// Renders the specified parameter declaration for a closure.
+  func renderClosureParameter(_ parameterDescription: ParameterDescription) {
+    let label = parameterDescription.label
+    let name = parameterDescription.name
+
+    if let label = label {
+      writer.writeLine(label)
+    } else if let name = name {
+      writer.writeLine("_")
+      writer.nextLineAppendsToLastLine()
+      if name != parameterDescription.label {
+        // If the label and name are the same value, don't repeat it.
+        writer.writeLine(" ")
+        writer.nextLineAppendsToLastLine()
+        writer.writeLine(name)
+        writer.nextLineAppendsToLastLine()
+      }
+      writer.writeLine(": ")
+      writer.nextLineAppendsToLastLine()
+    }
+
     writer.writeLine(renderedExistingTypeDescription(parameterDescription.type))
     if let defaultValue = parameterDescription.defaultValue {
       writer.nextLineAppendsToLastLine()

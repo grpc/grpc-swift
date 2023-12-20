@@ -420,11 +420,16 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
   ///
   /// For example, `[String: Foo]`.
   case dictionaryValue(ExistingTypeDescription)
-  
+
   /// A type with the `some` keyword in front of it.
   ///
   /// For example, `some Foo`.
   case some(ExistingTypeDescription)
+
+  /// A closure type.
+  ///
+  /// For example, `(Foo) -> Bar`.
+  case closure(ClosureSignatureDescription)
 }
 
 /// A description of a typealias declaration.
@@ -508,8 +513,12 @@ enum FunctionKind: Equatable, Codable {
   /// A function or a method. Can be static.
   ///
   /// For example `foo()`, where `name` is `foo`.
-  case function(name: String, isStatic: Bool, genericType: String? = nil, conformances: [String] = [])
-  
+  case function(
+    name: String,
+    isStatic: Bool,
+    genericType: String? = nil,
+    conformances: [String] = []
+  )
 }
 
 /// A function keyword, such as `async` and `throws`.
@@ -520,6 +529,9 @@ enum FunctionKeyword: Equatable, Codable {
 
   /// A function that can throw an error.
   case `throws`
+
+  /// A function that can rethrow an error.
+  case `rethrows`
 }
 
 /// A description of a function signature.
@@ -618,6 +630,25 @@ struct FunctionDescription: Equatable, Codable {
   }
 }
 
+/// A description of a closure signature.
+///
+/// For example: `(String) async throws -> Int`.
+struct ClosureSignatureDescription: Equatable, Codable {
+  /// The parameters of the function.
+  var parameters: [ParameterDescription] = []
+
+  /// The keywords of the function, such as `async` and `throws.`
+  var keywords: [FunctionKeyword] = []
+
+  /// The return type name of the function, such as `Int`.
+  var returnType: Expression? = nil
+
+  /// The ``@Sendable`` attribute.
+  var sendable: Bool = false
+
+  /// The ``@escaping`` attribute.
+  var escaping: Bool = false
+}
 /// A description of the associated value of an enum case.
 ///
 /// For example, in `case foo(bar: String)`, the associated value
@@ -1328,7 +1359,9 @@ extension FunctionKind {
   static var initializer: Self { .initializer(failable: false) }
 
   /// Returns a non-static function kind.
-  static func function(name: String) -> Self { .function(name: name, isStatic: false, genericType: nil, conformances: []) }
+  static func function(name: String) -> Self {
+    .function(name: name, isStatic: false, genericType: nil, conformances: [])
+  }
 }
 
 extension CodeBlock {
