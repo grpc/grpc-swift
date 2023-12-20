@@ -13,7 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/// Creates a representation for the client code that will be generated based on the ``CodeGenerationRequest`` object
+/// specifications, using types from ``StructuredSwiftRepresentation``.
+///
+/// For example, in the case of a service called "Bar", in the "foo" namespace which has
+/// one method "baz", the ``ClientCodeTranslator`` will create
+/// a representation for the following generated code:
+///
+/// ```swift
+/// public protocol foo_BarClientProtocol: Sendable {
+///   func baz<R: Sendable>(
+///     request: ClientRequest.Single<foo.Bar.Methods.baz.Input>,
+///     serializer: some MessageSerializer<foo.Bar.Methods.baz.Input>,
+///     deserializer: some MessageDeserializer<foo.Bar.Methods.baz.Output>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Methods.baz.Output>) async throws -> R
+///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.bazOutput>
+/// }
+/// extension foo.Bar.ClientProtocol {
+///   public func get<R: Sendable>(
+///     request: ClientRequest.Single<foo.Bar.Methods.baz.Input>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Methods.baz.Output>) async throws -> R
+///   ) async rethrows -> R {
+///     try await self.baz(
+///       request: request,
+///       serializer: ProtobufSerializer<foo.Bar.Methods.baz.Input>(),
+///       deserializer: ProtobufDeserializer<foo.Bar.Methods.baz.Output>(),
+///       body
+///     )
+/// }
+/// struct foo_BarClient: foo.Bar.ClientProtocol {
+///   let client: GRPCCore.GRPCClient
+///   init(client: GRPCCore.GRPCClient) {
+///     self.client = client
+///   }
+///   func methodA<R: Sendable>(
+///     request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
+///     serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
+///     deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
+///   ) async rethrows -> R {
+///    try await self.client.clientStreaming(
+///        request,
+///        namespaceA.ServiceA.Methods.methodA.descriptor,
+///        serializer,
+///        deserializer,
+///        body
+///       )
+///    }
+/// }
+///```
 struct ClientCodeTranslator: SpecializedTranslator {
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks = [CodeBlock]()
@@ -38,15 +86,12 @@ extension ClientCodeTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
-    var methods = [Declaration]()
-    for method in service.methods {
-      methods.append(
-        self.makeClientProtocolMethod(
-          for: method,
-          in: service,
-          from: codeGenerationRequest,
-          serializerDeserializer: true
-        )
+    let methods = service.methods.compactMap {
+      self.makeClientProtocolMethod(
+        for: $0,
+        in: service,
+        from: codeGenerationRequest,
+        serializerDeserializer: true
       )
     }
 
@@ -193,7 +238,7 @@ extension ClientCodeTranslator {
   ) -> ParameterDescription {
     return ParameterDescription(
       label: "serializer",
-      type: .some(
+      type: ExistingTypeDescription.some(
         .generic(
           wrapper: .member("MessageSerializer"),
           wrapped: .member(
@@ -210,7 +255,7 @@ extension ClientCodeTranslator {
   ) -> ParameterDescription {
     return ParameterDescription(
       label: "deserializer",
-      type: .some(
+      type: ExistingTypeDescription.some(
         .generic(
           wrapper: .member("MessageDeserializer"),
           wrapped: .member(
@@ -240,24 +285,18 @@ extension ClientCodeTranslator {
       sendable: true,
       escaping: true
     )
-    return ParameterDescription(name: "body", type: .closure(bodyClosure))
-  }
-
-  private func clientResponseType(
-    isOutputStreaming: Bool,
-    serviceName: String
-  ) -> ExistingTypeDescription {
-    let clientRequestType =
-      isOutputStreaming
-      ? ExistingTypeDescription.member(["ClientResponse", "Stream"])
-      : ExistingTypeDescription.member(["ClientRequest", "Single"])
-    return .generic(wrapper: clientRequestType, wrapped: .member([serviceName, "Request"]))
+    return ParameterDescription(name: "body", closureDescription: bodyClosure)
   }
 
   private func makeClientStruct(
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
+    let clientProperty = Declaration.variable(
+      kind: .let,
+      left: "client",
+      type: .member(["GRPCCore", "GRPCClient"])
+    )
     let initializer = self.makeClientVariable()
     let methods = service.methods.compactMap {
       self.makeClientMethod(for: $0, in: service, from: codeGenerationRequest)
@@ -267,17 +306,12 @@ extension ClientCodeTranslator {
       StructDescription(
         name: "\(service.namespacedPrefix)Client",
         conformances: ["\(service.namespacedTypealiasPrefix).ClientProtocol"],
-        members: [initializer] + methods
+        members: [clientProperty, initializer] + methods
       )
     )
   }
 
   private func makeClientVariable() -> Declaration {
-    let clientParameter = Declaration.variable(
-      kind: .let,
-      left: "client",
-      type: .member(["GRPCCore", "GRPCClient"])
-    )
     let initializerBody = Expression.assignment(
       left: .memberAccess(
         MemberAccessDescription(left: .identifierPattern("self"), right: "client")
@@ -349,6 +383,8 @@ extension ClientCodeTranslator {
         conformances: ["Sendable"]
       ),
       parameters: parameters,
+      keywords: [.async, .rethrows],
+      returnType: .identifierType(.member("R")),
       body: [.expression(.unaryKeyword(body))]
     )
   }

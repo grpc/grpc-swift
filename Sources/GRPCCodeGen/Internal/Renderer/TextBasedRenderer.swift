@@ -550,8 +550,6 @@ struct TextBasedRenderer: RendererProtocol {
       return "[String: \(renderedExistingTypeDescription(existingTypeDescription))]"
     case .some(let existingTypeDescription):
       return "some \(renderedExistingTypeDescription(existingTypeDescription))"
-    case .closure(let closureSignatureDescription):
-      return "\(renderClosureSignature(closureSignatureDescription))"
     }
   }
 
@@ -817,7 +815,6 @@ struct TextBasedRenderer: RendererProtocol {
         }
       }
     }
-
     if let returnType = signature.returnType {
       writer.nextLineAppendsToLastLine()
       writer.writeLine(" -> ")
@@ -903,7 +900,11 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(": ")
     writer.nextLineAppendsToLastLine()
-    writer.writeLine(renderedExistingTypeDescription(parameterDescription.type))
+    if let type = parameterDescription.type {
+      writer.writeLine(renderedExistingTypeDescription(type))
+    } else if let closureDescription = parameterDescription.closureDescription {
+      renderClosureSignature(closureDescription)
+    }
     if let defaultValue = parameterDescription.defaultValue {
       writer.nextLineAppendsToLastLine()
       writer.writeLine(" = ")
@@ -932,8 +933,12 @@ struct TextBasedRenderer: RendererProtocol {
       writer.writeLine(": ")
       writer.nextLineAppendsToLastLine()
     }
+    if let type = parameterDescription.type {
+      writer.writeLine(renderedExistingTypeDescription(type))
+    } else if let closureDescription = parameterDescription.closureDescription {
+      renderClosureSignature(closureDescription)
+    }
 
-    writer.writeLine(renderedExistingTypeDescription(parameterDescription.type))
     if let defaultValue = parameterDescription.defaultValue {
       writer.nextLineAppendsToLastLine()
       writer.writeLine(" = ")
