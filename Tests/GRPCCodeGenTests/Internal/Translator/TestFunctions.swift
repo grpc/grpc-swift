@@ -31,7 +31,7 @@
 
 import XCTest
 
-@testable import GRPCCodeGen
+import GRPCCodeGen
 
 private func diff(expected: String, actual: String) throws -> String {
   let process = Process()

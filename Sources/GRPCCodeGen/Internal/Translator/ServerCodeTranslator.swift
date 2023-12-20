@@ -36,6 +36,7 @@
 ///       serializer: ProtobufSerializer<foo.Methods.baz.Output>(),
 ///       handler: { request in try await self.baz(request: request) }
 ///     )
+///   }
 /// }
 /// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
 ///   func baz(
@@ -49,8 +50,8 @@
 ///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.baz.Output> {
 ///     let response = try await self.baz(request: ServerRequest.Single(stream: request)
 ///     return ServerResponse.Stream(single: response)
+///   }
 /// }
-///}
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
@@ -66,7 +67,7 @@ struct ServerCodeTranslator: SpecializedTranslator {
       )
       codeBlocks.append(
         CodeBlock(
-          comment: .inline("Generated conformance to `GRPCCore.RegistrableRPCService`."),
+          comment: .doc("Conformance to `GRPCCore.RegistrableRPCService`."),
           item: conformanceToRPCServiceExtension
         )
       )
@@ -82,8 +83,8 @@ struct ServerCodeTranslator: SpecializedTranslator {
       )
       codeBlocks.append(
         CodeBlock(
-          comment: .inline(
-            "Generated partial conformance to `\(self.protocolName(service: service, streaming: true))`."
+          comment: .doc(
+            "Partial conformance to `\(self.protocolName(service: service, streaming: true))`."
           ),
           item: extensionServiceProtocol
         )
@@ -100,7 +101,7 @@ extension ServerCodeTranslator {
   ) -> Declaration {
     let methods = service.methods.compactMap {
       Declaration.commentable(
-        .inline($0.documentation),
+        .doc($0.documentation),
         .function(
           FunctionDescription(
             signature: self.makeStreamingMethodSignature(for: $0, in: service)
@@ -117,7 +118,7 @@ extension ServerCodeTranslator {
       )
     )
 
-    return .commentable(.inline(service.documentation), streamingProtocol)
+    return .commentable(.doc(service.documentation), streamingProtocol)
   }
 
   private func makeStreamingMethodSignature(
@@ -277,7 +278,7 @@ extension ServerCodeTranslator {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
 
     return .commentable(
-      .inline(service.documentation),
+      .doc(service.documentation),
       .protocol(
         ProtocolDescription(name: protocolName, conformances: [streamingProtocol], members: methods)
       )
@@ -324,7 +325,7 @@ extension ServerCodeTranslator {
     )
 
     return .commentable(
-      .inline(method.documentation),
+      .doc(method.documentation),
       .function(FunctionDescription(signature: functionSignature))
     )
   }
