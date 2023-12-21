@@ -53,6 +53,14 @@
 /// A ``CodeGenerationRequest`` can contain multiple namespaces, so the TypealiasTranslator will create a ``CodeBlock``
 /// for each namespace.
 struct TypealiasTranslator: SpecializedTranslator {
+  let client: Bool
+  let server: Bool
+
+  init(client: Bool, server: Bool) {
+    self.client = client
+    self.server = server
+  }
+
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks: [CodeBlock] = []
     let services = codeGenerationRequest.services
@@ -169,9 +177,16 @@ extension TypealiasTranslator {
     let methodDescriptorsDeclaration = self.makeMethodDescriptors(for: service)
     serviceEnum.members.append(methodDescriptorsDeclaration)
 
-    // Create the streaming and non-streaming service protocol type aliases.
-    let serviceProtocols = self.makeServiceProtocolsTypealiases(for: service)
-    serviceEnum.members.append(contentsOf: serviceProtocols)
+    if self.server {
+      // Create the streaming and non-streaming service protocol type aliases.
+      let serviceProtocols = self.makeServiceProtocolsTypealiases(for: service)
+      serviceEnum.members.append(contentsOf: serviceProtocols)
+    }
+
+    if self.client {
+      let clientProtocol = self.makeClientProtocolTypealias(for: service)
+      serviceEnum.members.append(clientProtocol)
+    }
 
     return .enum(serviceEnum)
   }
@@ -306,5 +321,20 @@ extension TypealiasTranslator {
     )
 
     return [streamingServiceProtocolTypealias, serviceProtocolTypealias]
+  }
+
+  private func makeClientProtocolTypealias(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> Declaration {
+    let namespacedPrefix: String
+    if service.namespace.isEmpty {
+      namespacedPrefix = service.name
+    } else {
+      namespacedPrefix = "\(service.namespace)_\(service.name)"
+    }
+    return .typealias(
+      name: "ClientProtocol",
+      existingType: .member(["\(namespacedPrefix)ClientProtocol"])
+    )
   }
 }
