@@ -187,6 +187,10 @@ extension TypealiasTranslator {
       // Create the client protocol type alias.
       let clientProtocol = self.makeClientProtocolTypealias(for: service)
       serviceEnum.members.append(clientProtocol)
+
+      // Create type alias for Client struct.
+      let clientStruct = self.makeClientStructTypealias(for: service)
+      serviceEnum.members.append(clientStruct)
     }
 
     return .enum(serviceEnum)
@@ -252,7 +256,7 @@ extension TypealiasTranslator {
 
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
-        calledExpression: .identifierType(.member(["MethodDescriptor"])),
+        calledExpression: .identifierType(.member("MethodDescriptor")),
         arguments: [
           FunctionArgumentDescription(
             label: "service",
@@ -293,7 +297,7 @@ extension TypealiasTranslator {
       isStatic: true,
       kind: .let,
       left: .identifier(.pattern("methods")),
-      type: .array(.member(["MethodDescriptor"])),
+      type: .array(.member("MethodDescriptor")),
       right: .literal(.array(methodDescriptors))
     )
   }
@@ -301,24 +305,13 @@ extension TypealiasTranslator {
   private func makeServiceProtocolsTypealiases(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> [Declaration] {
-    let namespacedPrefix: String
-
-    if service.namespace.isEmpty {
-      namespacedPrefix = service.name
-    } else {
-      namespacedPrefix = "\(service.namespace)_\(service.name)"
-    }
-
-    let streamingServiceProtocolName = "\(namespacedPrefix)ServiceStreamingProtocol"
     let streamingServiceProtocolTypealias = Declaration.typealias(
       name: "StreamingServiceProtocol",
-      existingType: .member([streamingServiceProtocolName])
+      existingType: .member("\(service.namespacedPrefix)ServiceStreamingProtocol")
     )
-
-    let serviceProtocolName = "\(namespacedPrefix)ServiceProtocol"
     let serviceProtocolTypealias = Declaration.typealias(
       name: "ServiceProtocol",
-      existingType: .member([serviceProtocolName])
+      existingType: .member("\(service.namespacedPrefix)ServiceProtocol")
     )
 
     return [streamingServiceProtocolTypealias, serviceProtocolTypealias]
@@ -327,15 +320,18 @@ extension TypealiasTranslator {
   private func makeClientProtocolTypealias(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    let namespacedPrefix: String
-    if service.namespace.isEmpty {
-      namespacedPrefix = service.name
-    } else {
-      namespacedPrefix = "\(service.namespace)_\(service.name)"
-    }
     return .typealias(
       name: "ClientProtocol",
-      existingType: .member(["\(namespacedPrefix)ClientProtocol"])
+      existingType: .member("\(service.namespacedPrefix)ClientProtocol")
+    )
+  }
+
+  private func makeClientStructTypealias(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> Declaration {
+    return .typealias(
+      name: "Client",
+      existingType: .member("\(service.namespacedPrefix)Client")
     )
   }
 }

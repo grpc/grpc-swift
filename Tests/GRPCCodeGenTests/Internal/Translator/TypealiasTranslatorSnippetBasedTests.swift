@@ -20,7 +20,7 @@ import XCTest
 
 @testable import GRPCCodeGen
 
-final class SnippetBasedTranslatorTests: XCTestCase {
+final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
 
@@ -59,12 +59,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
               typealias ClientProtocol = namespaceA_ServiceAClientProtocol
+              typealias Client = namespaceA_ServiceAClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -87,12 +88,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
               typealias ClientProtocol = namespaceA_ServiceAClientProtocol
+              typealias Client = namespaceA_ServiceAClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -119,7 +121,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: false,
       server: true
@@ -140,12 +142,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
               typealias ClientProtocol = namespaceA_ServiceAClientProtocol
+              typealias Client = namespaceA_ServiceAClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: true,
       server: false
@@ -170,7 +173,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: false,
       server: false
@@ -211,11 +214,12 @@ final class SnippetBasedTranslatorTests: XCTestCase {
           typealias StreamingServiceProtocol = ServiceAServiceStreamingProtocol
           typealias ServiceProtocol = ServiceAServiceProtocol
           typealias ClientProtocol = ServiceAClientProtocol
+          typealias Client = ServiceAClient
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -274,12 +278,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
               typealias ClientProtocol = namespaceA_ServiceAClientProtocol
+              typealias Client = namespaceA_ServiceAClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -302,12 +307,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
               typealias ClientProtocol = namespaceA_ServiceAClientProtocol
+              typealias Client = namespaceA_ServiceAClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -338,6 +344,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = namespacea_AServiceServiceStreamingProtocol
               typealias ServiceProtocol = namespacea_AServiceServiceProtocol
               typealias ClientProtocol = namespacea_AServiceClientProtocol
+              typealias Client = namespacea_AServiceClient
           }
           enum BService {
               enum Methods {}
@@ -345,12 +352,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = namespacea_BServiceServiceStreamingProtocol
               typealias ServiceProtocol = namespacea_BServiceServiceProtocol
               typealias ClientProtocol = namespacea_BServiceClientProtocol
+              typealias Client = namespacea_BServiceClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceB, serviceA]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [serviceB, serviceA]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -380,6 +388,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
           typealias StreamingServiceProtocol = AServiceServiceStreamingProtocol
           typealias ServiceProtocol = AServiceServiceProtocol
           typealias ClientProtocol = AServiceClientProtocol
+          typealias Client = AServiceClient
       }
       enum BService {
           enum Methods {}
@@ -387,11 +396,12 @@ final class SnippetBasedTranslatorTests: XCTestCase {
           typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
           typealias ServiceProtocol = BServiceServiceProtocol
           typealias ClientProtocol = BServiceClientProtocol
+          typealias Client = BServiceClient
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceB, serviceA]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [serviceB, serviceA]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -422,6 +432,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
               typealias ServiceProtocol = anamespace_AServiceServiceProtocol
               typealias ClientProtocol = anamespace_AServiceClientProtocol
+              typealias Client = anamespace_AServiceClient
           }
       }
       enum bnamespace {
@@ -431,12 +442,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = bnamespace_BServiceServiceStreamingProtocol
               typealias ServiceProtocol = bnamespace_BServiceServiceProtocol
               typealias ClientProtocol = bnamespace_BServiceClientProtocol
+              typealias Client = bnamespace_BServiceClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceB, serviceA]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [serviceB, serviceA]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -464,6 +476,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
           typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
           typealias ServiceProtocol = BServiceServiceProtocol
           typealias ClientProtocol = BServiceClientProtocol
+          typealias Client = BServiceClient
       }
       enum anamespace {
           enum AService {
@@ -472,12 +485,13 @@ final class SnippetBasedTranslatorTests: XCTestCase {
               typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
               typealias ServiceProtocol = anamespace_AServiceServiceProtocol
               typealias ClientProtocol = anamespace_AServiceClientProtocol
+              typealias Client = anamespace_AServiceClient
           }
       }
       """
 
     try self.assertTypealiasTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceA, serviceB]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [serviceA, serviceB]),
       expectedSwift: expectedSwift,
       client: true,
       server: true
@@ -492,9 +506,9 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       methods: []
     )
 
-    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceA])
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceA])
     let translator = TypealiasTranslator(client: true, server: true)
-    self.assertThrowsError(
+    XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
     ) {
@@ -520,9 +534,9 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       methods: []
     )
 
-    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceA])
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceA])
     let translator = TypealiasTranslator(client: true, server: true)
-    self.assertThrowsError(
+    XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
     ) {
@@ -556,9 +570,9 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       methods: [methodA, methodA]
     )
 
-    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [service])
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [service])
     let translator = TypealiasTranslator(client: true, server: true)
-    self.assertThrowsError(
+    XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
     ) {
@@ -589,9 +603,9 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       namespace: "SameName",
       methods: []
     )
-    let codeGenerationRequest = self.makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
     let translator = TypealiasTranslator(client: true, server: true)
-    self.assertThrowsError(
+    XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
     ) {
@@ -610,7 +624,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
   }
 }
 
-extension SnippetBasedTranslatorTests {
+extension TypealiasTranslatorSnippetBasedTests {
   private func assertTypealiasTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
@@ -623,36 +637,6 @@ extension SnippetBasedTranslatorTests {
     renderer.renderCodeBlocks(codeBlocks)
     let contents = renderer.renderedContents()
     try XCTAssertEqualWithDiff(contents, expectedSwift)
-  }
-
-  private func assertThrowsError<T, E: Error>(
-    ofType: E.Type,
-    _ expression: @autoclosure () throws -> T,
-    _ errorHandler: (E) -> Void
-  ) {
-    XCTAssertThrowsError(try expression()) { error in
-      guard let error = error as? E else {
-        return XCTFail("Error had unexpected type '\(type(of: error))'")
-      }
-      errorHandler(error)
-    }
-  }
-}
-
-extension SnippetBasedTranslatorTests {
-  private func makeCodeGenerationRequest(services: [ServiceDescriptor]) -> CodeGenerationRequest {
-    return CodeGenerationRequest(
-      fileName: "test.grpc",
-      leadingTrivia: "Some really exciting license header 2023.",
-      dependencies: [],
-      services: services,
-      lookupSerializer: {
-        "ProtobufSerializer<\($0)>()"
-      },
-      lookupDeserializer: {
-        "ProtobufDeserializer<\($0)>()"
-      }
-    )
   }
 }
 

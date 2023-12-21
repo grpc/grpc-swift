@@ -490,6 +490,11 @@ struct ParameterDescription: Equatable, Codable {
   /// For example, in `bar baz: String = "hi"`, `defaultValue`
   /// represents `"hi"`.
   var defaultValue: Expression? = nil
+
+  /// An inout parameter type.
+  ///
+  /// For example, `bar baz: inout String`.
+  var `inout`: Bool = false
 }
 
 /// A function kind: `func` or `init`.
