@@ -16,6 +16,7 @@
 
 struct IDLToStructuredSwiftTranslator: Translator {
   private let typealiasTranslator = TypealiasTranslator()
+  private let serverCodeTranslator = ServerCodeTranslator()
 
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
@@ -31,6 +32,12 @@ struct IDLToStructuredSwiftTranslator: Translator {
       contentsOf: try self.typealiasTranslator.translate(from: codeGenerationRequest)
     )
 
+    if server {
+      codeBlocks.append(
+        contentsOf: try self.serverCodeTranslator.translate(from: codeGenerationRequest)
+      )
+    }
+
     let fileDescription = FileDescription(
       topComment: topComment,
       imports: imports,
@@ -39,5 +46,23 @@ struct IDLToStructuredSwiftTranslator: Translator {
     let fileName = String(codeGenerationRequest.fileName.split(separator: ".")[0])
     let file = NamedFileDescription(name: fileName, contents: fileDescription)
     return StructuredSwiftRepresentation(file: file)
+  }
+}
+
+extension CodeGenerationRequest.ServiceDescriptor {
+  var namespacedTypealiasPrefix: String {
+    if self.namespace.isEmpty {
+      return self.name
+    } else {
+      return "\(self.namespace).\(self.name)"
+    }
+  }
+
+  var namespacedPrefix: String {
+    if self.namespace.isEmpty {
+      return self.name
+    } else {
+      return "\(self.namespace)_\(self.name)"
+    }
   }
 }

@@ -31,6 +31,8 @@
 
 import XCTest
 
+import GRPCCodeGen
+
 private func diff(expected: String, actual: String) throws -> String {
   let process = Process()
   process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -67,6 +69,36 @@ internal func XCTAssertEqualWithDiff(
     file: file,
     line: line
   )
+}
+
+internal func makeCodeGenerationRequest(
+  services: [CodeGenerationRequest.ServiceDescriptor]
+) -> CodeGenerationRequest {
+  return CodeGenerationRequest(
+    fileName: "test.grpc",
+    leadingTrivia: "Some really exciting license header 2023.",
+    dependencies: [],
+    services: services,
+    lookupSerializer: {
+      "ProtobufSerializer<\($0)>()"
+    },
+    lookupDeserializer: {
+      "ProtobufDeserializer<\($0)>()"
+    }
+  )
+}
+
+internal func XCTAssertThrowsError<T, E: Error>(
+  ofType: E.Type,
+  _ expression: @autoclosure () throws -> T,
+  _ errorHandler: (E) -> Void
+) {
+  XCTAssertThrowsError(try expression()) { error in
+    guard let error = error as? E else {
+      return XCTFail("Error had unexpected type '\(type(of: error))'")
+    }
+    errorHandler(error)
+  }
 }
 
 #endif  // os(macOS) || os(Linux)

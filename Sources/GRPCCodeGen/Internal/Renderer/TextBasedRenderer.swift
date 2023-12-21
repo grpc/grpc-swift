@@ -839,6 +839,10 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(": ")
     writer.nextLineAppendsToLastLine()
+    if parameterDescription.inout {
+      writer.writeLine("inout ")
+      writer.nextLineAppendsToLastLine()
+    }
     writer.writeLine(renderedExistingTypeDescription(parameterDescription.type))
     if let defaultValue = parameterDescription.defaultValue {
       writer.nextLineAppendsToLastLine()
