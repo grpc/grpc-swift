@@ -152,6 +152,31 @@ final class SnippetBasedTranslatorTests: XCTestCase {
     )
   }
 
+  func testTypealiasTranslatorNoClientNoServer() throws {
+    let service = ServiceDescriptor(
+      documentation: "Documentation for ServiceA",
+      name: "ServiceA",
+      namespace: "namespaceA",
+      methods: []
+    )
+    let expectedSwift =
+      """
+      enum namespaceA {
+          enum ServiceA {
+              enum Methods {}
+              static let methods: [MethodDescriptor] = []
+          }
+      }
+      """
+
+    try self.assertTypealiasTranslation(
+      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      expectedSwift: expectedSwift,
+      client: false,
+      server: false
+    )
+  }
+  
   func testTypealiasTranslatorEmptyNamespace() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",

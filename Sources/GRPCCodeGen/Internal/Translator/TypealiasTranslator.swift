@@ -184,6 +184,7 @@ extension TypealiasTranslator {
     }
 
     if self.client {
+      // Create the client protocol type alias.
       let clientProtocol = self.makeClientProtocolTypealias(for: service)
       serviceEnum.members.append(clientProtocol)
     }
