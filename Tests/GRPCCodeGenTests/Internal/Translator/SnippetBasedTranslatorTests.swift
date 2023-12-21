@@ -176,7 +176,7 @@ final class SnippetBasedTranslatorTests: XCTestCase {
       server: false
     )
   }
-  
+
   func testTypealiasTranslatorEmptyNamespace() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
