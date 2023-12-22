@@ -752,15 +752,9 @@ struct TextBasedRenderer: RendererProtocol {
   func renderedFunctionKind(_ functionKind: FunctionKind) -> String {
     switch functionKind {
     case .initializer(let isFailable): return "init\(isFailable ? "?" : "")"
-    case .function(let name, let isStatic, let genericType, let conformances):
-      var conformancesString = ""
-      if let genericType = genericType {
-        if !conformances.isEmpty {
-          conformancesString = ": \(conformances.joined(separator: ", "))"
-        }
-        return "\(isStatic ? "static " : "")func \(name)<\( genericType)\(conformancesString)>"
-      }
+    case .function(let name, let isStatic):
       return (isStatic ? "static " : "") + "func \(name)"
+
     }
   }
 
@@ -830,7 +824,13 @@ struct TextBasedRenderer: RendererProtocol {
         writer.writeLine(renderedAccessModifier(accessModifier) + " ")
         writer.nextLineAppendsToLastLine()
       }
-      writer.writeLine(renderedFunctionKind(signature.kind) + "(")
+      let generics = signature.generics
+      let genericsString =
+        "\(generics.map{renderedExistingTypeDescription($0)}.joined(separator: ", "))"
+      writer.writeLine(
+        renderedFunctionKind(signature.kind) + (!generics.isEmpty ? "<\(genericsString)>" : "")
+          + "("
+      )
       let parameters = signature.parameters
       let separateLines = parameters.count > 1
       if separateLines {
@@ -866,6 +866,11 @@ struct TextBasedRenderer: RendererProtocol {
       writer.writeLine(" -> ")
       writer.nextLineAppendsToLastLine()
       renderExpression(returnType)
+    }
+
+    if let whereClause = signature.whereClause {
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(" " + renderedWhereClause(whereClause))
     }
   }
 

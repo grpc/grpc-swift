@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /// Creates a representation for the client code that will be generated based on the ``CodeGenerationRequest`` object
 /// specifications, using types from ``StructuredSwiftRepresentation``.
 ///
@@ -53,13 +54,13 @@
 ///     _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
 ///   ) async rethrows -> R {
 ///    try await self.client.clientStreaming(
-///        request,
-///        namespaceA.ServiceA.Methods.methodA.descriptor,
-///        serializer,
-///        deserializer,
-///        body
-///       )
-///    }
+///      request: request,
+///      descriptor: namespaceA.ServiceA.Methods.methodA.descriptor,
+///      serializer: serializer,
+///      deserializer: deserializer,
+///      handler: body
+///      )
+///   }
 /// }
 ///```
 struct ClientCodeTranslator: SpecializedTranslator {
@@ -68,13 +69,23 @@ struct ClientCodeTranslator: SpecializedTranslator {
 
     for service in codeGenerationRequest.services {
       codeBlocks.append(
-        .declaration(self.makeClientProtocol(for: service, in: codeGenerationRequest))
+        .declaration(
+          .commentable(
+            .doc(service.documentation),
+            self.makeClientProtocol(for: service, in: codeGenerationRequest)
+          )
+        )
       )
       codeBlocks.append(
         .declaration(self.makeExtensionProtocol(for: service, in: codeGenerationRequest))
       )
       codeBlocks.append(
-        .declaration(self.makeClientStruct(for: service, in: codeGenerationRequest))
+        .declaration(
+          .commentable(
+            .doc(service.documentation),
+            self.makeClientStruct(for: service, in: codeGenerationRequest)
+          )
+        )
       )
     }
     return codeBlocks
@@ -86,12 +97,12 @@ extension ClientCodeTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
-    let methods = service.methods.compactMap {
+    let methods = service.methods.map {
       self.makeClientProtocolMethod(
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        serializerDeserializer: true
+        generateSerializerDeserializer: false
       )
     }
 
@@ -109,12 +120,12 @@ extension ClientCodeTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
-    let methods = service.methods.compactMap {
+    let methods = service.methods.map {
       self.makeClientProtocolMethod(
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        serializerDeserializer: false
+        generateSerializerDeserializer: true
       )
     }
     let clientProtocolExtension = Declaration.extension(
@@ -130,35 +141,36 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    serializerDeserializer: Bool
+    generateSerializerDeserializer: Bool
   ) -> Declaration {
     let methodParameters = self.makeParameters(
       for: method,
       in: service,
       from: codeGenerationRequest,
-      serializerDeserializer: serializerDeserializer
+      generateSerializerDeserializer: generateSerializerDeserializer
     )
     let functionSignature = FunctionSignatureDescription(
       kind: .function(
         name: method.name,
-        isStatic: false,
-        genericType: "R",
-        conformances: ["Sendable"]
+        isStatic: false
       ),
+      generics: [.member("R")],
       parameters: methodParameters,
-      keywords: [.async, .rethrows],
-      returnType: .identifierType(.member("R"))
+      keywords: [.async, .throws],
+      returnType: .identifierType(.member("R")),
+      whereClause: WhereClause(requirements: [.conformance("R", "Sendable")])
     )
 
-    if !serializerDeserializer {
+    if generateSerializerDeserializer {
       let body = self.makeSerializerDeserializerCall(
         for: method,
         in: service,
         from: codeGenerationRequest
       )
       return .function(signature: functionSignature, body: body)
+    } else {
+      return .commentable(.doc(method.documentation), .function(signature: functionSignature))
     }
-    return .function(signature: functionSignature)
   }
 
   private func makeSerializerDeserializerCall(
@@ -201,12 +213,12 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    serializerDeserializer: Bool
+    generateSerializerDeserializer: Bool
   ) -> [ParameterDescription] {
     var parameters = [ParameterDescription]()
 
     parameters.append(self.clientRequestParameter(for: method, in: service))
-    if serializerDeserializer {
+    if !generateSerializerDeserializer {
       parameters.append(self.serializerParameter(for: method, in: service))
       parameters.append(self.deserializerParameter(for: method, in: service))
     }
@@ -217,10 +229,8 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> ParameterDescription {
-    let clientRequestType =
-      method.isInputStreaming
-      ? ExistingTypeDescription.member(["ClientRequest", "Stream"])
-      : ExistingTypeDescription.member(["ClientRequest", "Single"])
+    let requestType = method.isInputStreaming ? "Stream" : "Single"
+    let clientRequestType = ExistingTypeDescription.member(["ClientRequest", requestType])
     return ParameterDescription(
       label: "request",
       type: .generic(
@@ -298,8 +308,11 @@ extension ClientCodeTranslator {
       type: .member(["GRPCCore", "GRPCClient"])
     )
     let initializer = self.makeClientVariable()
-    let methods = service.methods.compactMap {
-      self.makeClientMethod(for: $0, in: service, from: codeGenerationRequest)
+    let methods = service.methods.map {
+      Declaration.commentable(
+        .doc($0.documentation),
+        self.makeClientMethod(for: $0, in: service, from: codeGenerationRequest)
+      )
     }
 
     return .struct(
@@ -327,19 +340,20 @@ extension ClientCodeTranslator {
     )
   }
 
-  private func getGRPCMethodName(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+  private func clientMethod(
+    isInputStreaming: Bool,
+    isOutputStreaming: Bool
   ) -> String {
-    if method.isInputStreaming && method.isOutputStreaming {
+    switch (isInputStreaming, isOutputStreaming) {
+    case (true, true):
       return "bidirectionalStreaming"
-    }
-    if method.isInputStreaming && !method.isOutputStreaming {
+    case (true, false):
       return "clientStreaming"
-    }
-    if !method.isInputStreaming && method.isOutputStreaming {
+    case (false, true):
       return "serverStreaming"
+    case (false, false):
+      return "unary"
     }
-    return "unary"
   }
 
   private func makeClientMethod(
@@ -351,23 +365,27 @@ extension ClientCodeTranslator {
       for: method,
       in: service,
       from: codeGenerationRequest,
-      serializerDeserializer: true
+      generateSerializerDeserializer: false
     )
-    let grpcMethodName = self.getGRPCMethodName(for: method)
+    let grpcMethodName = self.clientMethod(
+      isInputStreaming: method.isInputStreaming,
+      isOutputStreaming: method.isOutputStreaming
+    )
     let functionCall = Expression.functionCall(
       calledExpression: .memberAccess(
         MemberAccessDescription(left: .identifierPattern("self.client"), right: "\(grpcMethodName)")
       ),
       arguments: [
-        .init(expression: .identifierPattern("request")),
+        .init(label: "request", expression: .identifierPattern("request")),
         .init(
+          label: "descriptor",
           expression: .identifierPattern(
             "\(service.namespacedTypealiasPrefix).Methods.\(method.name).descriptor"
           )
         ),
-        .init(expression: .identifierPattern("serializer")),
-        .init(expression: .identifierPattern("deserializer")),
-        .init(expression: .identifierPattern("body")),
+        .init(label: "serializer", expression: .identifierPattern("serializer")),
+        .init(label: "deserializer", expression: .identifierPattern("deserializer")),
+        .init(label: "handler", expression: .identifierPattern("body")),
       ]
     )
     let body = UnaryKeywordDescription(
@@ -378,13 +396,13 @@ extension ClientCodeTranslator {
     return .function(
       kind: .function(
         name: "\(method.name)",
-        isStatic: false,
-        genericType: "R",
-        conformances: ["Sendable"]
+        isStatic: false
       ),
+      generics: [.member("R")],
       parameters: parameters,
-      keywords: [.async, .rethrows],
+      keywords: [.async, .throws],
       returnType: .identifierType(.member("R")),
+      whereClause: WhereClause(requirements: [.conformance("R", "Sendable")]),
       body: [.expression(.unaryKeyword(body))]
     )
   }

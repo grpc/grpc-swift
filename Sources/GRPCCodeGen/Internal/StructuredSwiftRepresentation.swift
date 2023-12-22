@@ -516,9 +516,7 @@ enum FunctionKind: Equatable, Codable {
   /// For example `foo()`, where `name` is `foo`.
   case function(
     name: String,
-    isStatic: Bool,
-    genericType: String? = nil,
-    conformances: [String] = []
+    isStatic: Bool
   )
 }
 
@@ -546,6 +544,9 @@ struct FunctionSignatureDescription: Equatable, Codable {
   /// The kind of the function.
   var kind: FunctionKind
 
+  /// The generic types of the function.
+  var generics: [ExistingTypeDescription] = []
+
   /// The parameters of the function.
   var parameters: [ParameterDescription] = []
 
@@ -554,6 +555,9 @@ struct FunctionSignatureDescription: Equatable, Codable {
 
   /// The return type name of the function, such as `Int`.
   var returnType: Expression? = nil
+
+  /// The where clause for a generic function.
+  var whereClause: WhereClause?
 }
 
 /// A description of a function definition.
@@ -589,17 +593,21 @@ struct FunctionDescription: Equatable, Codable {
   init(
     accessModifier: AccessModifier? = nil,
     kind: FunctionKind,
+    generics: [ExistingTypeDescription] = [],
     parameters: [ParameterDescription] = [],
     keywords: [FunctionKeyword] = [],
     returnType: Expression? = nil,
+    whereClause: WhereClause? = nil,
     body: [CodeBlock]? = nil
   ) {
     self.signature = .init(
       accessModifier: accessModifier,
       kind: kind,
+      generics: generics,
       parameters: parameters,
       keywords: keywords,
-      returnType: returnType
+      returnType: returnType,
+      whereClause: whereClause
     )
     self.body = body
   }
@@ -615,17 +623,21 @@ struct FunctionDescription: Equatable, Codable {
   init(
     accessModifier: AccessModifier? = nil,
     kind: FunctionKind,
+    generics: [ExistingTypeDescription] = [],
     parameters: [ParameterDescription] = [],
     keywords: [FunctionKeyword] = [],
     returnType: Expression? = nil,
+    whereClause: WhereClause? = nil,
     body: [Expression]
   ) {
     self.init(
       accessModifier: accessModifier,
       kind: kind,
+      generics: generics,
       parameters: parameters,
       keywords: keywords,
       returnType: returnType,
+      whereClause: whereClause,
       body: body.map { .expression($0) }
     )
   }
@@ -1268,18 +1280,22 @@ extension Declaration {
   static func function(
     accessModifier: AccessModifier? = nil,
     kind: FunctionKind,
+    generics: [ExistingTypeDescription] = [],
     parameters: [ParameterDescription],
     keywords: [FunctionKeyword] = [],
     returnType: Expression? = nil,
+    whereClause: WhereClause?,
     body: [CodeBlock]? = nil
   ) -> Self {
     .function(
       .init(
         accessModifier: accessModifier,
         kind: kind,
+        generics: generics,
         parameters: parameters,
         keywords: keywords,
         returnType: returnType,
+        whereClause: whereClause,
         body: body
       )
     )
@@ -1361,7 +1377,7 @@ extension FunctionKind {
 
   /// Returns a non-static function kind.
   static func function(name: String) -> Self {
-    .function(name: name, isStatic: false, genericType: nil, conformances: [])
+    .function(name: name, isStatic: false)
   }
 }
 
