@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncSequence {
   func collect() async throws -> [Element] {
     return try await self.reduce(into: []) { $0.append($1) }
@@ -21,6 +22,7 @@ extension AsyncSequence {
 }
 
 #if swift(<5.9)
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncStream {
   static func makeStream(
     of elementType: Element.Type = Element.self,
@@ -34,6 +36,7 @@ extension AsyncStream {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncThrowingStream {
   static func makeStream(
     of elementType: Element.Type = Element.self,

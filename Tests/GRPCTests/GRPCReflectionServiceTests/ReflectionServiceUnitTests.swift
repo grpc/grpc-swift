@@ -22,6 +22,7 @@ import XCTest
 
 @testable import GRPCReflectionService
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ReflectionServiceUnitTests: GRPCTestCase {
   /// Testing the fileDescriptorDataByFilename dictionary of the ReflectionServiceData object.
   func testFileDescriptorDataByFilename() throws {

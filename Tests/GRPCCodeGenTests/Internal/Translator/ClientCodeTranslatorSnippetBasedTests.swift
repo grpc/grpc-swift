@@ -87,7 +87,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -157,7 +157,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -227,7 +227,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -297,7 +297,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -408,7 +408,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -478,7 +478,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [service]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
       expectedSwift: expectedSwift
     )
   }
@@ -523,23 +523,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
 
     try self.assertClientCodeTranslation(
-      codeGenerationRequest: self.makeCodeGenerationRequest(services: [serviceA, serviceB]),
+      codeGenerationRequest: makeCodeGenerationRequest(services: [serviceA, serviceB]),
       expectedSwift: expectedSwift
-    )
-  }
-
-  private func makeCodeGenerationRequest(services: [ServiceDescriptor]) -> CodeGenerationRequest {
-    return CodeGenerationRequest(
-      fileName: "test.grpc",
-      leadingTrivia: "Some really exciting license header 2023.",
-      dependencies: [],
-      services: services,
-      lookupSerializer: {
-        "ProtobufSerializer<\($0)>()"
-      },
-      lookupDeserializer: {
-        "ProtobufDeserializer<\($0)>()"
-      }
     )
   }
 

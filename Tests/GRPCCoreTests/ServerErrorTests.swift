@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ServerErrorTests: XCTestCase {
   func testCopyOnWrite() {
     // ServerError has a heap based storage, so check CoW semantics are correctly implemented.

@@ -16,6 +16,7 @@
 @_spi(Testing) import GRPCCore
 import XCTest
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ServerRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
     let single = ServerRequest.Single(metadata: ["bar": "baz"], message: "foo")

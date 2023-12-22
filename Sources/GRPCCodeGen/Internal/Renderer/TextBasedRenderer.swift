@@ -905,11 +905,18 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(": ")
     writer.nextLineAppendsToLastLine()
+
+    if parameterDescription.inout {
+      writer.writeLine("inout ")
+      writer.nextLineAppendsToLastLine()
+    }
+
     if let type = parameterDescription.type {
       writer.writeLine(renderedExistingTypeDescription(type))
     } else if let closureDescription = parameterDescription.closureDescription {
       renderClosureSignature(closureDescription)
     }
+
     if let defaultValue = parameterDescription.defaultValue {
       writer.nextLineAppendsToLastLine()
       writer.writeLine(" = ")
@@ -938,6 +945,12 @@ struct TextBasedRenderer: RendererProtocol {
       writer.writeLine(": ")
       writer.nextLineAppendsToLastLine()
     }
+
+    if parameterDescription.inout {
+      writer.writeLine("inout ")
+      writer.nextLineAppendsToLastLine()
+    }
+
     if let type = parameterDescription.type {
       writer.writeLine(renderedExistingTypeDescription(type))
     } else if let closureDescription = parameterDescription.closureDescription {

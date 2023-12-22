@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class AsyncSequenceOfOneTests: XCTestCase {
   func testSuccessPath() async throws {
     let sequence = RPCAsyncSequence.one("foo")
