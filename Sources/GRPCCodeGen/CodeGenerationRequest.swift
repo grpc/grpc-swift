@@ -88,9 +88,25 @@ public struct CodeGenerationRequest {
     /// The name of the imported module or of the module an item is imported from.
     public var module: String
 
-    public init(item: Item? = nil, module: String) {
+    /// The name of the private interface for an `@_spi` import.
+    ///
+    /// For example, if `spi` was "Secret" and the module name was "Foo" then the import
+    /// would be `@_spi(Secret) import Foo`.
+    var spi: String? = nil
+
+    /// Requirements for the `@preconcurrency` attribute.
+    var preconcurrency: PreconcurrencyRequirement = .never
+
+    public init(
+      item: Item? = nil,
+      module: String,
+      spi: String? = nil,
+      preconcurrency: PreconcurrencyRequirement = .never
+    ) {
       self.item = item
       self.module = module
+      self.spi = spi
+      self.preconcurrency = preconcurrency
     }
 
     /// Represents an item imported from a module.
@@ -109,7 +125,7 @@ public struct CodeGenerationRequest {
       /// Represents the imported item's kind.
       public struct Kind {
         /// Describes the keyword associated with the imported item.
-        internal enum Value {
+        internal enum Value: CustomStringConvertible {
           case `typealias`
           case `struct`
           case `class`
@@ -118,6 +134,19 @@ public struct CodeGenerationRequest {
           case `let`
           case `var`
           case `func`
+
+          var description: String {
+            switch self {
+            case .typealias: return "typealias"
+            case .struct: return "struct"
+            case .class: return "class"
+            case .enum: return "enum"
+            case .protocol: return "protocol"
+            case .let: return "let"
+            case .var: return "var"
+            case .func: return "func"
+            }
+          }
         }
 
         internal var value: Value
@@ -165,6 +194,36 @@ public struct CodeGenerationRequest {
         public static var `func`: Self {
           Self(.`func`)
         }
+      }
+    }
+
+    /// Describes any requirement for the `@preconcurrency` attribute.
+    public struct PreconcurrencyRequirement {
+      internal enum Value {
+        case always
+        case never
+        case onOS([String])
+      }
+
+      internal var value: Value
+
+      internal init(_ value: Value) {
+        self.value = value
+      }
+
+      /// The attribute is always required.
+      public static var always: Self {
+        Self(.always)
+      }
+
+      /// The attribute is not required.
+      public static var never: Self {
+        Self(.never)
+      }
+
+      /// The attribute is required only on the named operating systems.
+      public static func onOS(_ OSs: [String]) -> PreconcurrencyRequirement {
+        return Self(.onOS(OSs))
       }
     }
   }

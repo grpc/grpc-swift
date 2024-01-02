@@ -24,9 +24,9 @@ struct IDLToStructuredSwiftTranslator: Translator {
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
-    let imports: [ImportDescription] = [
-      ImportDescription(moduleName: "GRPCCore")
-    ]
+    let imports =
+      try [ImportDescription(moduleName: "GRPCCore")]
+      + codeGenerationRequest.dependencies.map { try self.translateImport(dependency: $0) }
     var codeBlocks: [CodeBlock] = []
     codeBlocks.append(
       contentsOf: try self.typealiasTranslator.translate(from: codeGenerationRequest)
@@ -46,6 +46,40 @@ struct IDLToStructuredSwiftTranslator: Translator {
     let fileName = String(codeGenerationRequest.fileName.split(separator: ".")[0])
     let file = NamedFileDescription(name: fileName, contents: fileDescription)
     return StructuredSwiftRepresentation(file: file)
+  }
+}
+
+extension IDLToStructuredSwiftTranslator {
+  private func translateImport(
+    dependency: CodeGenerationRequest.Dependency
+  ) throws -> ImportDescription {
+    var importDescription = ImportDescription(moduleName: dependency.module)
+    if let item = dependency.item {
+      if let matchedKind = ImportDescription.Kind.allCases.first(where: {
+        "\($0)" == item.kind.value.description
+      }) {
+        importDescription.item = ImportDescription.Item(kind: matchedKind, name: item.name)
+      } else {
+        throw CodeGenError(
+          code: .invalidKind,
+          message: "Invalid kind name for import: \(item.kind.value.description)"
+        )
+      }
+    }
+    if let spi = dependency.spi {
+      importDescription.spi = spi
+    }
+
+    let preconcurrency = dependency.preconcurrency.value
+    switch preconcurrency {
+    case .always:
+      importDescription.preconcurrency = .always
+    case .never:
+      importDescription.preconcurrency = .never
+    case .onOS(let OSs):
+      importDescription.preconcurrency = .onOS(OSs)
+    }
+    return importDescription
   }
 }
 
