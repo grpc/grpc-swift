@@ -24,9 +24,12 @@ struct IDLToStructuredSwiftTranslator: Translator {
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
-    let imports =
-      try [ImportDescription(moduleName: "GRPCCore")]
-      + codeGenerationRequest.dependencies.map { try self.translateImport(dependency: $0) }
+    let imports = try codeGenerationRequest.dependencies.reduce(
+      into: [ImportDescription(moduleName: "GRPCCore")]
+    ) { partialResult, newDependency in
+      try partialResult.append(translateImport(dependency: newDependency))
+    }
+
     var codeBlocks: [CodeBlock] = []
     codeBlocks.append(
       contentsOf: try self.typealiasTranslator.translate(from: codeGenerationRequest)
@@ -55,14 +58,12 @@ extension IDLToStructuredSwiftTranslator {
   ) throws -> ImportDescription {
     var importDescription = ImportDescription(moduleName: dependency.module)
     if let item = dependency.item {
-      if let matchedKind = ImportDescription.Kind.allCases.first(where: {
-        "\($0)" == item.kind.value.description
-      }) {
+      if let matchedKind = ImportDescription.Kind(rawValue: item.kind.value.rawValue) {
         importDescription.item = ImportDescription.Item(kind: matchedKind, name: item.name)
       } else {
         throw CodeGenError(
           code: .invalidKind,
-          message: "Invalid kind name for import: \(item.kind.value.description)"
+          message: "Invalid kind name for import: \(item.kind.value.rawValue)"
         )
       }
     }
@@ -70,13 +71,12 @@ extension IDLToStructuredSwiftTranslator {
       importDescription.spi = spi
     }
 
-    let preconcurrency = dependency.preconcurrency.value
-    switch preconcurrency {
-    case .always:
+    switch dependency.preconcurrency.value {
+    case .required:
       importDescription.preconcurrency = .always
-    case .never:
+    case .notRequired:
       importDescription.preconcurrency = .never
-    case .onOS(let OSs):
+    case .requiredOnOS(let OSs):
       importDescription.preconcurrency = .onOS(OSs)
     }
     return importDescription

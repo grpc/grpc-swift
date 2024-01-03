@@ -69,16 +69,19 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
   func testPreconcurrencyImports() throws {
     var dependencies = [CodeGenerationRequest.Dependency]()
-    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", preconcurrency: .always))
+    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", preconcurrency: .required))
     dependencies.append(
       CodeGenerationRequest.Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
-        preconcurrency: .always
+        preconcurrency: .required
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(module: "Baz", preconcurrency: .onOS(["Deq", "Der"]))
+      CodeGenerationRequest.Dependency(
+        module: "Baz",
+        preconcurrency: .requiredOnOS(["Deq", "Der"])
+      )
     )
     let expectedSwift =
       """

@@ -95,13 +95,13 @@ public struct CodeGenerationRequest {
     var spi: String? = nil
 
     /// Requirements for the `@preconcurrency` attribute.
-    var preconcurrency: PreconcurrencyRequirement = .never
+    var preconcurrency: PreconcurrencyRequirement = .notRequired
 
     public init(
       item: Item? = nil,
       module: String,
       spi: String? = nil,
-      preconcurrency: PreconcurrencyRequirement = .never
+      preconcurrency: PreconcurrencyRequirement = .notRequired
     ) {
       self.item = item
       self.module = module
@@ -125,7 +125,7 @@ public struct CodeGenerationRequest {
       /// Represents the imported item's kind.
       public struct Kind {
         /// Describes the keyword associated with the imported item.
-        internal enum Value: CustomStringConvertible {
+        internal enum Value: String {
           case `typealias`
           case `struct`
           case `class`
@@ -134,19 +134,6 @@ public struct CodeGenerationRequest {
           case `let`
           case `var`
           case `func`
-
-          var description: String {
-            switch self {
-            case .typealias: return "typealias"
-            case .struct: return "struct"
-            case .class: return "class"
-            case .enum: return "enum"
-            case .protocol: return "protocol"
-            case .let: return "let"
-            case .var: return "var"
-            case .func: return "func"
-            }
-          }
         }
 
         internal var value: Value
@@ -200,9 +187,9 @@ public struct CodeGenerationRequest {
     /// Describes any requirement for the `@preconcurrency` attribute.
     public struct PreconcurrencyRequirement {
       internal enum Value {
-        case always
-        case never
-        case onOS([String])
+        case required
+        case notRequired
+        case requiredOnOS([String])
       }
 
       internal var value: Value
@@ -212,18 +199,18 @@ public struct CodeGenerationRequest {
       }
 
       /// The attribute is always required.
-      public static var always: Self {
-        Self(.always)
+      public static var required: Self {
+        Self(.required)
       }
 
       /// The attribute is not required.
-      public static var never: Self {
-        Self(.never)
+      public static var notRequired: Self {
+        Self(.notRequired)
       }
 
       /// The attribute is required only on the named operating systems.
-      public static func onOS(_ OSs: [String]) -> PreconcurrencyRequirement {
-        return Self(.onOS(OSs))
+      public static func requiredOnOS(_ OSs: [String]) -> PreconcurrencyRequirement {
+        return Self(.requiredOnOS(OSs))
       }
     }
   }

@@ -78,7 +78,7 @@ struct ImportDescription: Equatable, Codable {
     }
   }
 
-  enum Kind: String, CaseIterable, Equatable, Codable {
+  enum Kind: String, Equatable, Codable {
     case `typealias`
     case `struct`
     case `class`
