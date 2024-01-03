@@ -15,7 +15,6 @@
  */
 
 struct IDLToStructuredSwiftTranslator: Translator {
-  private let typealiasTranslator = TypealiasTranslator()
   private let serverCodeTranslator = ServerCodeTranslator()
 
   func translate(
@@ -23,6 +22,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
+    let typealiasTranslator = TypealiasTranslator(client: client, server: server)
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
     let imports = try codeGenerationRequest.dependencies.reduce(
       into: [ImportDescription(moduleName: "GRPCCore")]
@@ -32,7 +32,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 
     var codeBlocks: [CodeBlock] = []
     codeBlocks.append(
-      contentsOf: try self.typealiasTranslator.translate(from: codeGenerationRequest)
+      contentsOf: try typealiasTranslator.translate(from: codeGenerationRequest)
     )
 
     if server {
