@@ -66,10 +66,6 @@ struct TypealiasTranslator: SpecializedTranslator {
     let services = codeGenerationRequest.services
     let servicesByNamespace = Dictionary(grouping: services, by: { $0.namespace })
 
-    // Verify service names are unique within each namespace and that services with no namespace
-    // don't have the same names as any of the namespaces.
-    try self.checkServiceNamesAreUnique(for: servicesByNamespace)
-
     // Sorting the keys and the services in each list of the dictionary is necessary
     // so that the generated enums are deterministically ordered.
     for (namespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
@@ -85,51 +81,6 @@ struct TypealiasTranslator: SpecializedTranslator {
 }
 
 extension TypealiasTranslator {
-  private func checkServiceNamesAreUnique(
-    for servicesByNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
-  ) throws {
-    // Check that if there are services in an empty namespace, none have names which match other namespaces
-    let noNamespaceServices = servicesByNamespace["", default: []]
-    let namespaces = servicesByNamespace.keys
-    for service in noNamespaceServices {
-      if namespaces.contains(service.name) {
-        throw CodeGenError(
-          code: .nonUniqueServiceName,
-          message: """
-            Services with no namespace must not have the same names as the namespaces. \
-            \(service.name) is used as a name for a service with no namespace and a namespace.
-            """
-        )
-      }
-    }
-
-    // Check that service names are unique within each namespace.
-    for (namespace, services) in servicesByNamespace {
-      var serviceNames: Set<String> = []
-      for service in services {
-        if serviceNames.contains(service.name) {
-          let errorMessage: String
-          if namespace.isEmpty {
-            errorMessage = """
-              Services in an empty namespace must have unique names. \
-              \(service.name) is used as a name for multiple services without namespaces.
-              """
-          } else {
-            errorMessage = """
-              Services within the same namespace must have unique names. \
-              \(service.name) is used as a name for multiple services in the \(service.namespace) namespace.
-              """
-          }
-          throw CodeGenError(
-            code: .nonUniqueServiceName,
-            message: errorMessage
-          )
-        }
-        serviceNames.insert(service.name)
-      }
-    }
-  }
-
   private func makeNamespaceEnum(
     for namespace: String,
     containing services: [CodeGenerationRequest.ServiceDescriptor]
@@ -163,9 +114,6 @@ extension TypealiasTranslator {
     var methodsEnum = EnumDescription(name: "Methods")
     let methods = service.methods
 
-    // Verify method names are unique for the service.
-    try self.checkMethodNamesAreUnique(in: service)
-
     // Create the method specific enums.
     for method in methods {
       let methodEnum = self.makeMethodEnum(from: method, in: service)
@@ -194,26 +142,6 @@ extension TypealiasTranslator {
     }
 
     return .enum(serviceEnum)
-  }
-
-  private func checkMethodNamesAreUnique(
-    in service: CodeGenerationRequest.ServiceDescriptor
-  ) throws {
-    let methodNames = service.methods.map { $0.name }
-    var seenNames = Set<String>()
-
-    for methodName in methodNames {
-      if seenNames.contains(methodName) {
-        throw CodeGenError(
-          code: .nonUniqueMethodName,
-          message: """
-            Methods of a service must have unique names. \
-            \(methodName) is used as a name for multiple methods of the \(service.name) service.
-            """
-        )
-      }
-      seenNames.insert(methodName)
-    }
   }
 
   private func makeMethodEnum(
