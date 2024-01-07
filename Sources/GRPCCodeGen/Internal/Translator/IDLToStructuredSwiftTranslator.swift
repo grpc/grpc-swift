@@ -68,17 +68,18 @@ extension IDLToStructuredSwiftTranslator {
     for servicesByNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
   ) throws {
     // Check that if there are services in an empty namespace, none have names which match other namespaces
-    let noNamespaceServices = servicesByNamespace["", default: []]
-    let namespaces = servicesByNamespace.keys
-    for service in noNamespaceServices {
-      if namespaces.contains(service.name) {
-        throw CodeGenError(
-          code: .nonUniqueServiceName,
-          message: """
-            Services with no namespace must not have the same names as the namespaces. \
-            \(service.name) is used as a name for a service with no namespace and a namespace.
-            """
-        )
+    if let noNamespaceServices = servicesByNamespace[""] {
+      let namespaces = servicesByNamespace.keys
+      for service in noNamespaceServices {
+        if namespaces.contains(service.name) {
+          throw CodeGenError(
+            code: .nonUniqueServiceName,
+            message: """
+              Services with no namespace must not have the same names as the namespaces. \
+              \(service.name) is used as a name for a service with no namespace and a namespace.
+              """
+          )
+        }
       }
     }
 
