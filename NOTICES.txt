@@ -69,3 +69,12 @@ This product uses derivations of apple/swift-openapi-generator 'StructuredSwiftR
     * HOMEPAGE:
       * https://github.com/apple/swift-openapi-generator
 
+---
+
+This product uses derivations of apple/swift-protobuf 'NamingUtils.swift', 'SwiftLanguage.swift',
+and Tests/SwiftProtobufPluginLibraryTests/Test_NamingUtils.swift.
+    
+    * LICENSE (Apache License 2.0):
+      * https://github.com/apple/swift-protobuf/blob/main/LICENSE.txt
+    * HOMEPAGE:
+      * https://github.com/apple/swift-protobuf

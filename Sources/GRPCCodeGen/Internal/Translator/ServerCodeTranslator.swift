@@ -126,7 +126,7 @@ extension ServerCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> FunctionSignatureDescription {
     return FunctionSignatureDescription(
-      kind: .function(name: method.name),
+      kind: .function(name: method.syntacticName),
       parameters: [
         .init(
           label: "request",
@@ -244,7 +244,7 @@ extension ServerCodeTranslator {
 
     let getFunctionCall = Expression.functionCall(
       calledExpression: .memberAccess(
-        MemberAccessDescription(left: .identifierPattern("self"), right: method.name)
+        MemberAccessDescription(left: .identifierPattern("self"), right: method.syntacticName)
       ),
       arguments: [
         FunctionArgumentDescription(label: "request", expression: .identifierPattern("request"))
@@ -304,7 +304,7 @@ extension ServerCodeTranslator {
     )
 
     let functionSignature = FunctionSignatureDescription(
-      kind: .function(name: method.name),
+      kind: .function(name: method.syntacticName),
       parameters: [
         .init(
           label: "request",
@@ -382,7 +382,7 @@ extension ServerCodeTranslator {
     // Call to the corresponding ServiceProtocol method.
     let serviceProtocolMethod = Expression.functionCall(
       calledExpression: .memberAccess(
-        MemberAccessDescription(left: .identifierPattern("self"), right: method.name)
+        MemberAccessDescription(left: .identifierPattern("self"), right: method.syntacticName)
       ),
       arguments: [FunctionArgumentDescription(label: "request", expression: serverRequest)]
     )
@@ -430,7 +430,7 @@ extension ServerCodeTranslator {
     service: CodeGenerationRequest.ServiceDescriptor,
     type: InputOutputType
   ) -> String {
-    var components: String = "\(service.namespacedTypealiasPrefix).Methods.\(method.name)"
+    var components: String = "\(service.namespacedTypealiasPrefix).Methods.\(method.syntacticName)"
 
     switch type {
     case .input:
@@ -447,7 +447,7 @@ extension ServerCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     service: CodeGenerationRequest.ServiceDescriptor
   ) -> String {
-    return "\(service.namespacedTypealiasPrefix).Methods.\(method.name).descriptor"
+    return "\(service.namespacedTypealiasPrefix).Methods.\(method.syntacticName).descriptor"
   }
 
   /// Generates the fully qualified name of the type alias for a service protocol.

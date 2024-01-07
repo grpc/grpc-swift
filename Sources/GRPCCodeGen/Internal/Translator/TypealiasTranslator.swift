@@ -159,7 +159,7 @@ extension TypealiasTranslator {
   private func makeServiceEnum(
     from service: CodeGenerationRequest.ServiceDescriptor
   ) throws -> Declaration {
-    var serviceEnum = EnumDescription(name: service.name)
+    var serviceEnum = EnumDescription(name: service.syntacticName)
     var methodsEnum = EnumDescription(name: "Methods")
     let methods = service.methods
 
@@ -220,7 +220,7 @@ extension TypealiasTranslator {
     from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methodEnum = EnumDescription(name: method.name)
+    var methodEnum = EnumDescription(name: method.syntacticName)
 
     let inputTypealias = Declaration.typealias(
       name: "Input",
@@ -247,20 +247,13 @@ extension TypealiasTranslator {
   ) -> Declaration {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
 
-    let fullyQualifiedServiceName: String
-    if service.namespace.isEmpty {
-      fullyQualifiedServiceName = service.name
-    } else {
-      fullyQualifiedServiceName = "\(service.namespace).\(service.name)"
-    }
-
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
         calledExpression: .identifierType(.member("MethodDescriptor")),
         arguments: [
           FunctionArgumentDescription(
             label: "service",
-            expression: .literal(fullyQualifiedServiceName)
+            expression: .literal(service.namespacedTypealiasPrefix)
           ),
           FunctionArgumentDescription(
             label: "method",
@@ -281,7 +274,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     var methodDescriptors = [Expression]()
-    let methodNames = service.methods.map { $0.name }
+    let methodNames = service.methods.map { $0.syntacticName }
 
     for methodName in methodNames {
       let methodDescriptorPath = Expression.memberAccess(

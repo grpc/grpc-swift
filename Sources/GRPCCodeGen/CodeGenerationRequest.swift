@@ -237,3 +237,17 @@ public struct CodeGenerationRequest {
     }
   }
 }
+
+extension CodeGenerationRequest.ServiceDescriptor {
+  /// The camelcase service name used in the generated code, starting with a capital letter.
+  var syntacticName: String {
+    return CasingNamer.toUpperCamelCase(self.name)
+  }
+}
+
+extension CodeGenerationRequest.ServiceDescriptor.MethodDescriptor {
+  /// The camelcase method name used in the generated code, starting with a lowercase letter.
+  var syntacticName: String {
+    return CasingNamer.toLowerCamelCase(self.name)
+  }
+}

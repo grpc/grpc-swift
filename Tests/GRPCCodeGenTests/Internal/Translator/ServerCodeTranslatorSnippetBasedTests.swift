@@ -249,7 +249,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let outputStreamingMethod = MethodDescriptor(
       documentation: "Documentation for outputStreamingMethod",
-      name: "outputStreamingMethod",
+      name: "OutputStreamingMethod",
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",

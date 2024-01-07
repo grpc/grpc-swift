@@ -52,17 +52,17 @@ struct IDLToStructuredSwiftTranslator: Translator {
 extension CodeGenerationRequest.ServiceDescriptor {
   var namespacedTypealiasPrefix: String {
     if self.namespace.isEmpty {
-      return self.name
+      return self.syntacticName
     } else {
-      return "\(self.namespace).\(self.name)"
+      return "\(self.namespace).\(self.syntacticName)"
     }
   }
 
   var namespacedPrefix: String {
     if self.namespace.isEmpty {
-      return self.name
+      return self.syntacticName
     } else {
-      return "\(self.namespace)_\(self.name)"
+      return "\(self.namespace)_\(self.syntacticName)"
     }
   }
 }

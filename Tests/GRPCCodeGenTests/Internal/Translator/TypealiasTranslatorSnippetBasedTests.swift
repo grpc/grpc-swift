@@ -44,7 +44,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       enum namespaceA {
           enum ServiceA {
               enum Methods {
-                  enum MethodA {
+                  enum methodA {
                       typealias Input = NamespaceA_ServiceARequest
                       typealias Output = NamespaceA_ServiceAResponse
                       static let descriptor = MethodDescriptor(
@@ -54,7 +54,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   }
               }
               static let methods: [MethodDescriptor] = [
-                  Methods.MethodA.descriptor
+                  Methods.methodA.descriptor
               ]
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
@@ -199,7 +199,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       """
       enum ServiceA {
           enum Methods {
-              enum MethodA {
+              enum methodA {
                   typealias Input = ServiceARequest
                   typealias Output = ServiceAResponse
                   static let descriptor = MethodDescriptor(
@@ -209,7 +209,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               }
           }
           static let methods: [MethodDescriptor] = [
-              Methods.MethodA.descriptor
+              Methods.methodA.descriptor
           ]
           typealias StreamingServiceProtocol = ServiceAServiceStreamingProtocol
           typealias ServiceProtocol = ServiceAServiceProtocol
@@ -254,7 +254,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       enum namespaceA {
           enum ServiceA {
               enum Methods {
-                  enum MethodA {
+                  enum methodA {
                       typealias Input = NamespaceA_ServiceARequest
                       typealias Output = NamespaceA_ServiceAResponse
                       static let descriptor = MethodDescriptor(
@@ -262,7 +262,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                           method: "MethodA"
                       )
                   }
-                  enum MethodB {
+                  enum methodB {
                       typealias Input = NamespaceA_ServiceARequest
                       typealias Output = NamespaceA_ServiceAResponse
                       static let descriptor = MethodDescriptor(
@@ -272,8 +272,8 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   }
               }
               static let methods: [MethodDescriptor] = [
-                  Methods.MethodA.descriptor,
-                  Methods.MethodB.descriptor
+                  Methods.methodA.descriptor,
+                  Methods.methodB.descriptor
               ]
               typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
               typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
@@ -338,21 +338,21 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       enum namespacea {
-          enum AService {
+          enum Aservice {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = namespacea_AServiceServiceStreamingProtocol
-              typealias ServiceProtocol = namespacea_AServiceServiceProtocol
-              typealias ClientProtocol = namespacea_AServiceClientProtocol
-              typealias Client = namespacea_AServiceClient
+              typealias StreamingServiceProtocol = namespacea_AserviceServiceStreamingProtocol
+              typealias ServiceProtocol = namespacea_AserviceServiceProtocol
+              typealias ClientProtocol = namespacea_AserviceClientProtocol
+              typealias Client = namespacea_AserviceClient
           }
-          enum BService {
+          enum Bservice {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = namespacea_BServiceServiceStreamingProtocol
-              typealias ServiceProtocol = namespacea_BServiceServiceProtocol
-              typealias ClientProtocol = namespacea_BServiceClientProtocol
-              typealias Client = namespacea_BServiceClient
+              typealias StreamingServiceProtocol = namespacea_BserviceServiceStreamingProtocol
+              typealias ServiceProtocol = namespacea_BserviceServiceProtocol
+              typealias ClientProtocol = namespacea_BserviceClientProtocol
+              typealias Client = namespacea_BserviceClient
           }
       }
       """
@@ -382,21 +382,21 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
 
     let expectedSwift =
       """
-      enum AService {
+      enum Aservice {
           enum Methods {}
           static let methods: [MethodDescriptor] = []
-          typealias StreamingServiceProtocol = AServiceServiceStreamingProtocol
-          typealias ServiceProtocol = AServiceServiceProtocol
-          typealias ClientProtocol = AServiceClientProtocol
-          typealias Client = AServiceClient
+          typealias StreamingServiceProtocol = AserviceServiceStreamingProtocol
+          typealias ServiceProtocol = AserviceServiceProtocol
+          typealias ClientProtocol = AserviceClientProtocol
+          typealias Client = AserviceClient
       }
-      enum BService {
+      enum Bservice {
           enum Methods {}
           static let methods: [MethodDescriptor] = []
-          typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
-          typealias ServiceProtocol = BServiceServiceProtocol
-          typealias ClientProtocol = BServiceClientProtocol
-          typealias Client = BServiceClient
+          typealias StreamingServiceProtocol = BserviceServiceStreamingProtocol
+          typealias ServiceProtocol = BserviceServiceProtocol
+          typealias ClientProtocol = BserviceClientProtocol
+          typealias Client = BserviceClient
       }
       """
 
@@ -426,23 +426,23 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       enum anamespace {
-          enum AService {
+          enum Aservice {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
-              typealias ServiceProtocol = anamespace_AServiceServiceProtocol
-              typealias ClientProtocol = anamespace_AServiceClientProtocol
-              typealias Client = anamespace_AServiceClient
+              typealias StreamingServiceProtocol = anamespace_AserviceServiceStreamingProtocol
+              typealias ServiceProtocol = anamespace_AserviceServiceProtocol
+              typealias ClientProtocol = anamespace_AserviceClientProtocol
+              typealias Client = anamespace_AserviceClient
           }
       }
       enum bnamespace {
-          enum BService {
+          enum Bservice {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = bnamespace_BServiceServiceStreamingProtocol
-              typealias ServiceProtocol = bnamespace_BServiceServiceProtocol
-              typealias ClientProtocol = bnamespace_BServiceClientProtocol
-              typealias Client = bnamespace_BServiceClient
+              typealias StreamingServiceProtocol = bnamespace_BserviceServiceStreamingProtocol
+              typealias ServiceProtocol = bnamespace_BserviceServiceProtocol
+              typealias ClientProtocol = bnamespace_BserviceClientProtocol
+              typealias Client = bnamespace_BserviceClient
           }
       }
       """
@@ -470,22 +470,22 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
-      enum BService {
+      enum Bservice {
           enum Methods {}
           static let methods: [MethodDescriptor] = []
-          typealias StreamingServiceProtocol = BServiceServiceStreamingProtocol
-          typealias ServiceProtocol = BServiceServiceProtocol
-          typealias ClientProtocol = BServiceClientProtocol
-          typealias Client = BServiceClient
+          typealias StreamingServiceProtocol = BserviceServiceStreamingProtocol
+          typealias ServiceProtocol = BserviceServiceProtocol
+          typealias ClientProtocol = BserviceClientProtocol
+          typealias Client = BserviceClient
       }
       enum anamespace {
-          enum AService {
+          enum Aservice {
               enum Methods {}
               static let methods: [MethodDescriptor] = []
-              typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
-              typealias ServiceProtocol = anamespace_AServiceServiceProtocol
-              typealias ClientProtocol = anamespace_AServiceClientProtocol
-              typealias Client = anamespace_AServiceClient
+              typealias StreamingServiceProtocol = anamespace_AserviceServiceStreamingProtocol
+              typealias ServiceProtocol = anamespace_AserviceServiceProtocol
+              typealias ClientProtocol = anamespace_AserviceClientProtocol
+              typealias Client = anamespace_AserviceClient
           }
       }
       """
