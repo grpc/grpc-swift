@@ -54,6 +54,11 @@
 /// }
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
+  var visibility: SourceGenerator.Configuration.Visibility
+  init(visibility: SourceGenerator.Configuration.Visibility) {
+    self.visibility = visibility
+  }
+
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks = [CodeBlock]()
     for service in codeGenerationRequest.services {
@@ -112,6 +117,7 @@ extension ServerCodeTranslator {
 
     let streamingProtocol = Declaration.protocol(
       .init(
+        accessModifier: self.accessModifier,
         name: self.protocolName(service: service, streaming: true),
         conformances: ["GRPCCore.RegistrableRPCService"],
         members: methods
@@ -126,6 +132,7 @@ extension ServerCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> FunctionSignatureDescription {
     return FunctionSignatureDescription(
+      accessModifier: self.accessModifier,
       kind: .function(name: method.name),
       parameters: [
         .init(
@@ -157,7 +164,7 @@ extension ServerCodeTranslator {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
     let registerRPCMethod = self.makeRegisterRPCsMethod(for: service, in: codeGenerationRequest)
     return .extension(
-      accessModifier: .public,
+      accessModifier: self.accessModifier,
       onType: streamingProtocol,
       declarations: [registerRPCMethod]
     )
@@ -168,7 +175,8 @@ extension ServerCodeTranslator {
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let registerRPCsSignature = FunctionSignatureDescription(
-      kind: .function(name: "registerRPCs"),
+      accessModifier: .public,
+      kind: .function(name: "registerMethods"),
       parameters: [
         .init(
           label: "with",
@@ -280,7 +288,12 @@ extension ServerCodeTranslator {
     return .commentable(
       .doc(service.documentation),
       .protocol(
-        ProtocolDescription(name: protocolName, conformances: [streamingProtocol], members: methods)
+        ProtocolDescription(
+          accessModifier: self.accessModifier,
+          name: protocolName,
+          conformances: [streamingProtocol],
+          members: methods
+        )
       )
     )
   }
@@ -338,7 +351,11 @@ extension ServerCodeTranslator {
     }
 
     let protocolName = self.protocolNameTypealias(service: service, streaming: false)
-    return .extension(accessModifier: .public, onType: protocolName, declarations: methods)
+    return .extension(
+      accessModifier: self.accessModifier,
+      onType: protocolName,
+      declarations: methods
+    )
   }
 
   private func makeServiceProtocolExtensionMethod(

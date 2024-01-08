@@ -15,14 +15,19 @@
  */
 
 struct IDLToStructuredSwiftTranslator: Translator {
-  private let serverCodeTranslator = ServerCodeTranslator()
-
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
+    visibility: SourceGenerator.Configuration.Visibility,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
-    let typealiasTranslator = TypealiasTranslator(client: client, server: server)
+    let typealiasTranslator = TypealiasTranslator(
+      client: client,
+      server: server,
+      visibility: visibility
+    )
+    let serverCodeTranslator = ServerCodeTranslator(visibility: visibility)
+
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
     let imports: [ImportDescription] = [
       ImportDescription(moduleName: "GRPCCore")
@@ -34,7 +39,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 
     if server {
       codeBlocks.append(
-        contentsOf: try self.serverCodeTranslator.translate(from: codeGenerationRequest)
+        contentsOf: try serverCodeTranslator.translate(from: codeGenerationRequest)
       )
     }
 

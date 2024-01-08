@@ -17,6 +17,10 @@
 /// Represents one responsibility of the ``Translator``: either the type aliases translation,
 /// the server code translation or the client code translation.
 protocol SpecializedTranslator {
+
+  /// The ``SourceGenerator.Configuration.Visibility`` object used to represent the visibility level for the generated code.
+  var visibility: SourceGenerator.Configuration.Visibility { get }
+
   /// Generates an array of ``CodeBlock`` elements that will be part of the ``StructuredSwiftRepresentation`` object
   /// created by the ``Translator``.
   ///
@@ -26,4 +30,24 @@ protocol SpecializedTranslator {
   ///
   /// - SeeAlso: ``CodeGenerationRequest``, ``Translator``,  ``CodeBlock``.
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock]
+}
+
+extension SpecializedTranslator {
+  /// The ``StructuredSwiftRepresentation.AccessModifier`` object that corresponds with the visibility.
+  internal var accessModifier: AccessModifier {
+    get {
+      switch visibility.level {
+      case .internal:
+        return AccessModifier.internal
+      case .package:
+        return AccessModifier.package
+      case .private:
+        return AccessModifier.private
+      case .public:
+        return AccessModifier.public
+      case .fileprivate:
+        return AccessModifier.fileprivate
+      }
+    }
+  }
 }

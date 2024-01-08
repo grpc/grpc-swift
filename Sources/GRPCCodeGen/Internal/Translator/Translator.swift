@@ -21,12 +21,14 @@ protocol Translator {
   /// Translates the provided ``CodeGenerationRequest`` object, into Swift code representation.
   /// - Parameters:
   ///   - codeGenerationRequest: The IDL described RPCs representation.
+  ///   - visibility: The visibility that should be used in the generated code.
   ///   - client: Whether or not client code should be generated from the IDL described RPCs representation.
   ///   - server: Whether or not server code should be generated from the IDL described RPCs representation.
   /// - Returns: A structured Swift representation of the generated code.
   /// - Throws: An error if there are issues translating the codeGenerationRequest.
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
+    visibility: SourceGenerator.Configuration.Visibility,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation
