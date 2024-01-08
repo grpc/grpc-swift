@@ -92,10 +92,10 @@ public struct CodeGenerationRequest {
     ///
     /// For example, if `spi` was "Secret" and the module name was "Foo" then the import
     /// would be `@_spi(Secret) import Foo`.
-    var spi: String? = nil
+    public var spi: String?
 
     /// Requirements for the `@preconcurrency` attribute.
-    var preconcurrency: PreconcurrencyRequirement = .notRequired
+    public var preconcurrency: PreconcurrencyRequirement
 
     public init(
       item: Item? = nil,
