@@ -56,9 +56,9 @@ extension IDLToStructuredSwiftTranslator {
       grouping: codeGenerationRequest.services,
       by: { $0.namespace }
     )
-    try checkServiceNamesAreUnique(for: servicesByNamespace)
+    try self.checkServiceNamesAreUnique(for: servicesByNamespace)
     for service in codeGenerationRequest.services {
-      try checkMethodNamesAreUnique(in: service)
+      try self.checkMethodNamesAreUnique(in: service)
     }
   }
 
