@@ -21,7 +21,7 @@ public struct SourceGenerator {
   }
 
   public func generate(
-    serviceRepresentation: CodeGenerationRequest
+    _ serviceRepresentation: CodeGenerationRequest
   ) throws -> SourceFile {
     let translator = IDLToStructuredSwiftTranslator()
     let textRenderer = TextBasedRenderer(indentation: self.configuration.indentation)

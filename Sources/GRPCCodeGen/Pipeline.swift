@@ -36,7 +36,7 @@ func makeCodeGeneratorPipeline(
   return .init(
     parseInputStage: .init(transition: { input in try parser.parse(input) }),
     generateCodeStage: .init(transition: { input in
-      try generator.generate(serviceRepresentation: input)
+      try generator.generate(input)
     })
   )
 }

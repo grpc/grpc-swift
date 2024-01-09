@@ -16,7 +16,7 @@
 
 struct PipelineStage<Input, Output> {
   private(set) var transition: (Input) throws -> Output
-  
+
   func run(_ input: Input) throws -> Output {
     return try transition(input)
   }
