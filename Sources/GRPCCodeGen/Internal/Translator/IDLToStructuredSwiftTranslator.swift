@@ -17,7 +17,7 @@
 struct IDLToStructuredSwiftTranslator: Translator {
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    visibility: SourceGenerator.Configuration.Visibility,
+    visibility: Configuration.Visibility,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {

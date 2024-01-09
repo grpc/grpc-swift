@@ -28,7 +28,7 @@ protocol Translator {
   /// - Throws: An error if there are issues translating the codeGenerationRequest.
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    visibility: SourceGenerator.Configuration.Visibility,
+    visibility: Configuration.Visibility,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation

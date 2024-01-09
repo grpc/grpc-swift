@@ -642,7 +642,7 @@ extension TypealiasTranslatorSnippetBasedTests {
     expectedSwift: String,
     client: Bool,
     server: Bool,
-    visibility: SourceGenerator.Configuration.Visibility
+    visibility: Configuration.Visibility
   ) throws {
     let translator = TypealiasTranslator(client: client, server: server, visibility: visibility)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)

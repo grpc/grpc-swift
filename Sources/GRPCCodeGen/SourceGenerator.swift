@@ -16,36 +16,12 @@
 
 public struct SourceGenerator {
   public var configuration: Configuration
-
-  public struct Configuration {
-    public var visibility: Visibility
-    public var indentation: Int
-
-    public struct Visibility {
-      internal var level: Level
-      internal enum Level {
-        case `internal`
-        case `public`
-        case `private`
-        case `package`
-        case `fileprivate`
-      }
-      public static var `internal`: Self { Self(level: .`internal`) }
-      public static var `public`: Self { Self(level: .`public`) }
-      public static var `private`: Self { Self(level: .`private`) }
-      public static var `package`: Self { Self(level: .`package`) }
-      public static var `fileprivate`: Self { Self(level: .`fileprivate`) }
-    }
-  }
-
   public init(configuration: Configuration) {
     self.configuration = configuration
   }
 
   public func generate(
-    serviceRepresentation: CodeGenerationRequest,
-    client: Bool,
-    server: Bool
+    serviceRepresentation: CodeGenerationRequest
   ) throws -> SourceFile {
     let translator = IDLToStructuredSwiftTranslator()
     let textRenderer = TextBasedRenderer(indentation: self.configuration.indentation)
@@ -53,8 +29,8 @@ public struct SourceGenerator {
     let structuredSwiftRepresentation = try translator.translate(
       codeGenerationRequest: serviceRepresentation,
       visibility: self.configuration.visibility,
-      client: client,
-      server: server
+      client: configuration.client,
+      server: configuration.server
     )
     let sourceFile = try textRenderer.render(structured: structuredSwiftRepresentation)
 

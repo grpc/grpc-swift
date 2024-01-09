@@ -19,7 +19,7 @@
 protocol SpecializedTranslator {
 
   /// The ``SourceGenerator.Configuration.Visibility`` object used to represent the visibility level for the generated code.
-  var visibility: SourceGenerator.Configuration.Visibility { get }
+  var visibility: Configuration.Visibility { get }
 
   /// Generates an array of ``CodeBlock`` elements that will be part of the ``StructuredSwiftRepresentation`` object
   /// created by the ``Translator``.

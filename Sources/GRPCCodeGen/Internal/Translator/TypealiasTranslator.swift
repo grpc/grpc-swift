@@ -55,9 +55,9 @@
 struct TypealiasTranslator: SpecializedTranslator {
   let client: Bool
   let server: Bool
-  let visibility: SourceGenerator.Configuration.Visibility
+  let visibility: Configuration.Visibility
 
-  init(client: Bool, server: Bool, visibility: SourceGenerator.Configuration.Visibility) {
+  init(client: Bool, server: Bool, visibility: Configuration.Visibility) {
     self.client = client
     self.server = server
     self.visibility = visibility

@@ -54,8 +54,8 @@
 /// }
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
-  var visibility: SourceGenerator.Configuration.Visibility
-  init(visibility: SourceGenerator.Configuration.Visibility) {
+  var visibility: Configuration.Visibility
+  init(visibility: Configuration.Visibility) {
     self.visibility = visibility
   }
 

@@ -429,7 +429,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   private func assertServerCodeTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
-    visibility: SourceGenerator.Configuration.Visibility
+    visibility: Configuration.Visibility
   ) throws {
     let translator = ServerCodeTranslator(visibility: visibility)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)
