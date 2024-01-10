@@ -24,7 +24,7 @@
 
 import Foundation
 
-private enum CamelCaser {
+internal enum CamelCaser {
   // Abbreviations for which all characters should be either uppercase or lowercase
   // when camel casing.
   static let abbreviations: Set<String> = ["url", "http", "https", "id"]
@@ -78,7 +78,7 @@ private enum CamelCaser {
       } else if abbreviations.contains(currentAsString) {
         currentAsString = currentAsString.uppercased()
       } else {
-        currentAsString = CasingNamer.uppercaseFirstCharacter(currentAsString)
+        currentAsString = self.uppercaseFirstCharacter(currentAsString)
       }
       result += String(currentAsString)
       current = String.UnicodeScalarView()
@@ -137,17 +137,7 @@ private enum CamelCaser {
 
     return result
   }
-}
-
-private func makeUnicodeScalarView(
-  from unicodeScalar: UnicodeScalar
-) -> String.UnicodeScalarView {
-  var view = String.UnicodeScalarView()
-  view.append(unicodeScalar)
-  return view
-}
-
-public enum CasingNamer {
+  
   /// Forces the first character to be uppercase (if possible) and leaves
   /// the rest of the characters in their existing case.
   ///
@@ -164,18 +154,14 @@ public enum CasingNamer {
       return s
     }
   }
+}
 
-  /// Accepts any inputs and transforms form it into a leading
-  /// UpperCaseCamelCased Swift identifier.
-  public static func toUpperCamelCase(_ s: String) -> String {
-    return CamelCaser.transform(s, leadingCharacterUpperCase: true)
-  }
-
-  /// Accepts any inputs and transforms form it into a leading
-  /// lowerCaseCamelCased Swift identifier.
-  public static func toLowerCamelCase(_ s: String) -> String {
-    return CamelCaser.transform(s, leadingCharacterUpperCase: false)
-  }
+private func makeUnicodeScalarView(
+  from unicodeScalar: UnicodeScalar
+) -> String.UnicodeScalarView {
+  var view = String.UnicodeScalarView()
+  view.append(unicodeScalar)
+  return view
 }
 
 extension UnicodeScalar {

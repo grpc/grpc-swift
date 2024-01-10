@@ -89,8 +89,8 @@ final class CasingNamerTests: XCTestCase {
     ]
 
     for (input, expectedLower, expectedUppper) in tests {
-      XCTAssertEqual(CasingNamer.toLowerCamelCase(input), expectedLower)
-      XCTAssertEqual(CasingNamer.toUpperCamelCase(input), expectedUppper)
+      XCTAssertEqual(CodeGenNamer.toLowerCamelCase(input), expectedLower)
+      XCTAssertEqual(CodeGenNamer.toUpperCamelCase(input), expectedUppper)
     }
   }
 }
