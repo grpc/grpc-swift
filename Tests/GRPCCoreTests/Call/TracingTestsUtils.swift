@@ -32,7 +32,7 @@ public struct TestTracer: Instrumentation.Instrument {
     let traceID = extractor.extract(key: TraceID.keyName, from: carrier)
     context[TraceID.self] = traceID
   }
-  
+
   public func inject<Carrier, Inject>(
     _ context: ServiceContextModule.ServiceContext,
     into carrier: inout Carrier,
@@ -44,10 +44,9 @@ public struct TestTracer: Instrumentation.Instrument {
   }
 }
 
-
 internal enum TraceID: ServiceContextModule.ServiceContextKey {
   typealias Value = String
-    
+
   static let keyName = "trace-id"
 }
 
@@ -61,4 +60,3 @@ extension ServiceContext {
     }
   }
 }
-

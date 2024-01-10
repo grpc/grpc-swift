@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import GRPCCore
 import GRPCInterceptors
 import Tracing
-import GRPCCore
 import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -35,7 +35,7 @@ final class ClientTracingInterceptorTests: TracingTestCase {
           response.metadata,
           [
             "foo": "bar",
-            "trace-id": "\(traceIDString)"
+            "trace-id": "\(traceIDString)",
           ]
         )
         XCTAssertEqual(try response.message, [1, 2, 3])
@@ -45,7 +45,7 @@ final class ClientTracingInterceptorTests: TracingTestCase {
       XCTAssertEqual(tester.serverStreamsAccepted, 1)
     }
   }
-  
+
   func testServerInterceptor() async throws {
     let harness = ServerRPCExecutorTestHarness(interceptors: [ServerTracingInterceptor()])
     try await harness.execute(
@@ -54,16 +54,24 @@ final class ClientTracingInterceptorTests: TracingTestCase {
     ) { request in
       guard let serviceContext = ServiceContext.current else {
         XCTFail("There should be a service context present.")
-        return .init(error: .init(status: .init(code: .failedPrecondition, message: "There should be a service context present."))!)
+        return .init(
+          error: .init(
+            status: .init(
+              code: .failedPrecondition,
+              message: "There should be a service context present."
+            )
+          )!
+        )
       }
-      
+
       let traceID = serviceContext.traceID
       XCTAssertEqual("some-trace-id", traceID)
-      
+
       return .init(accepted: .success(.init(metadata: [], producer: { _ in [] })))
     } producer: { inbound in
       try await inbound.write(.metadata(["trace-id": "some-trace-id"]))
       inbound.finish()
-    } consumer: { _ in }
+    } consumer: { _ in
+    }
   }
 }

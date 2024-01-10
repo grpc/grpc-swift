@@ -24,11 +24,11 @@ import Tracing
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ClientTracingInterceptor: ClientInterceptor {
-  
+
   /// Create a new instance of a ``ClientTracingInterceptor``.
   public init() {}
-  
-  /// This interceptor will inject as the request's metadata whatever `ServiceContext` key/value pairs 
+
+  /// This interceptor will inject as the request's metadata whatever `ServiceContext` key/value pairs
   /// have been made available by the tracing implementation bootstrapped in your application.
   ///
   /// Which key/value pairs are injected will depend on the specific tracing implementation
@@ -36,7 +36,8 @@ public struct ClientTracingInterceptor: ClientInterceptor {
   public func intercept<Input, Output>(
     request: ClientRequest.Stream<Input>,
     context: ClientInterceptorContext,
-    next: @Sendable (ClientRequest.Stream<Input>, ClientInterceptorContext) async throws -> ClientResponse.Stream<Output>
+    next: @Sendable (ClientRequest.Stream<Input>, ClientInterceptorContext) async throws ->
+      ClientResponse.Stream<Output>
   ) async throws -> ClientResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var request = request
     if let serviceContext = ServiceContext.current {
@@ -55,7 +56,7 @@ public struct ClientTracingInterceptor: ClientInterceptor {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ClientRequestInjector<Input: Sendable>: Instrumentation.Injector {
   typealias Carrier = ClientRequest.Stream<Input>
-  
+
   func inject(_ value: String, forKey key: String, into carrier: inout Carrier) {
     carrier.metadata.addString(value, forKey: key)
   }
