@@ -15,5 +15,6 @@
  */
 
 protocol InputParser {
-  func parse(_ input: InMemoryInputFile) throws -> CodeGenerationRequest
+  associatedtype Input
+  func parse(_ input: Input) throws -> CodeGenerationRequest
 }

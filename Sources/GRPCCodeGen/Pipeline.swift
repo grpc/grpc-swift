@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-struct Pipeline {
-  typealias Input = InMemoryInputFile
+struct Pipeline<Input> {
   typealias ParsedInput = CodeGenerationRequest
   typealias Output = SourceFile
 
-  var parseInputStage: PipelineStage<InMemoryInputFile, CodeGenerationRequest>
-
+  var parseInputStage: PipelineStage<Input, CodeGenerationRequest>
   var generateCodeStage: PipelineStage<CodeGenerationRequest, Output>
 
   func run(_ input: Input) throws -> Output {
@@ -28,10 +26,10 @@ struct Pipeline {
   }
 }
 
-func makeCodeGeneratorPipeline(
-  parser: any InputParser,
+func makeCodeGeneratorPipeline<SomeInputParser: InputParser>(
+  parser: SomeInputParser,
   config: Configuration
-) -> Pipeline {
+) -> Pipeline<SomeInputParser.Input> {
   let generator = SourceGenerator(configuration: config)
   return .init(
     parseInputStage: .init(transition: { input in try parser.parse(input) }),
