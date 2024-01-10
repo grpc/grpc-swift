@@ -21,25 +21,25 @@ struct IDLToStructuredSwiftTranslator: Translator {
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     let typealiasTranslator = TypealiasTranslator(client: client, server: server)
-    let serverCodeTranslator = ServerCodeTranslator()
-    let clientCodeTranslator = ClientCodeTranslator()
-
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
     let imports: [ImportDescription] = [
       ImportDescription(moduleName: "GRPCCore")
     ]
+
     var codeBlocks: [CodeBlock] = []
     codeBlocks.append(
       contentsOf: try typealiasTranslator.translate(from: codeGenerationRequest)
     )
 
     if server {
+      let serverCodeTranslator = ServerCodeTranslator()
       codeBlocks.append(
         contentsOf: try serverCodeTranslator.translate(from: codeGenerationRequest)
       )
     }
 
     if client {
+      let clientCodeTranslator = ClientCodeTranslator()
       codeBlocks.append(
         contentsOf: try clientCodeTranslator.translate(from: codeGenerationRequest)
       )

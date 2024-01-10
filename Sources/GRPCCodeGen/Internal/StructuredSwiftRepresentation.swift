@@ -425,6 +425,11 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
   ///
   /// For example, `some Foo`.
   case some(ExistingTypeDescription)
+
+  /// A closure signature as a type.
+  ///
+  /// For example: `(String) async throws -> Int`.
+  case closure(ClosureSignatureDescription)
 }
 
 /// A description of a typealias declaration.
@@ -489,12 +494,6 @@ struct ParameterDescription: Equatable, Codable {
   ///
   /// For example, in `bar baz: String = "hi"`, `type` is `String`.
   var type: ExistingTypeDescription? = nil
-
-  /// The description of the closure parameter.
-  ///
-  /// The parameter doesn't have a type, but is a closure.
-  /// For example: `(String) async throws -> Int`.
-  var closureDescription: ClosureSignatureDescription? = nil
 
   /// A default value of the parameter.
   ///

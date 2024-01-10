@@ -202,11 +202,11 @@ struct TextBasedRenderer: RendererProtocol {
   }
 
   /// Renders the specified identifier.
-  func renderedIdentifier(_ identifier: IdentifierDescription) -> String {
+  func renderIdentifier(_ identifier: IdentifierDescription) {
     switch identifier {
-    case .pattern(let string): return string
+    case .pattern(let string): writer.writeLine(string)
     case .type(let existingTypeDescription):
-      return renderedExistingTypeDescription(existingTypeDescription)
+      renderExistingTypeDescription(existingTypeDescription)
     }
   }
 
@@ -446,7 +446,7 @@ struct TextBasedRenderer: RendererProtocol {
     switch expression {
     case .literal(let literalDescription): renderLiteral(literalDescription)
     case .identifier(let identifierDescription):
-      writer.writeLine(renderedIdentifier(identifierDescription))
+      renderIdentifier(identifierDescription)
     case .memberAccess(let memberAccessDescription): renderMemberAccess(memberAccessDescription)
     case .functionCall(let functionCallDescription): renderFunctionCall(functionCallDescription)
     case .assignment(let assignment): renderAssignment(assignment)
@@ -534,22 +534,44 @@ struct TextBasedRenderer: RendererProtocol {
   }
 
   /// Renders the specified type reference to an existing type.
-  func renderedExistingTypeDescription(_ type: ExistingTypeDescription) -> String {
+  func renderExistingTypeDescription(_ type: ExistingTypeDescription) {
     switch type {
     case .any(let existingTypeDescription):
-      return "any \(renderedExistingTypeDescription(existingTypeDescription))"
+      writer.writeLine("any ")
+      writer.nextLineAppendsToLastLine()
+      renderExistingTypeDescription(existingTypeDescription)
     case .generic(let wrapper, let wrapped):
-      return
-        "\(renderedExistingTypeDescription(wrapper))<\(renderedExistingTypeDescription(wrapped))>"
+      renderExistingTypeDescription(wrapper)
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine("<")
+      writer.nextLineAppendsToLastLine()
+      renderExistingTypeDescription(wrapped)
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(">")
     case .optional(let existingTypeDescription):
-      return "\(renderedExistingTypeDescription(existingTypeDescription))?"
-    case .member(let components): return components.joined(separator: ".")
+      renderExistingTypeDescription(existingTypeDescription)
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine("?")
+    case .member(let components):
+      writer.writeLine(components.joined(separator: "."))
     case .array(let existingTypeDescription):
-      return "[\(renderedExistingTypeDescription(existingTypeDescription))]"
+      writer.writeLine("[")
+      writer.nextLineAppendsToLastLine()
+      renderExistingTypeDescription(existingTypeDescription)
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine("]")
     case .dictionaryValue(let existingTypeDescription):
-      return "[String: \(renderedExistingTypeDescription(existingTypeDescription))]"
+      writer.writeLine("[String: ")
+      writer.nextLineAppendsToLastLine()
+      renderExistingTypeDescription(existingTypeDescription)
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine("]")
     case .some(let existingTypeDescription):
-      return "some \(renderedExistingTypeDescription(existingTypeDescription))"
+      writer.writeLine("some ")
+      writer.nextLineAppendsToLastLine()
+      renderExistingTypeDescription(existingTypeDescription)
+    case .closure(let closureSignatureDescription):
+      renderClosureSignature(closureSignatureDescription)
     }
   }
 
@@ -560,9 +582,11 @@ struct TextBasedRenderer: RendererProtocol {
       words.append(renderedAccessModifier(accessModifier))
     }
     words.append(contentsOf: [
-      "typealias", alias.name, "=", renderedExistingTypeDescription(alias.existingType),
+      "typealias", alias.name, "=",
     ])
-    writer.writeLine(words.joinedWords())
+    writer.writeLine(words.joinedWords() + " ")
+    writer.nextLineAppendsToLastLine()
+    renderExistingTypeDescription(alias.existingType)
   }
 
   /// Renders the specified binding kind.
@@ -589,7 +613,9 @@ struct TextBasedRenderer: RendererProtocol {
       renderExpression(variable.left)
       if let type = variable.type {
         writer.nextLineAppendsToLastLine()
-        writer.writeLine(": \(renderedExistingTypeDescription(type))")
+        writer.writeLine(": ")
+        writer.nextLineAppendsToLastLine()
+        renderExistingTypeDescription(type)
       }
     }
 
@@ -705,11 +731,12 @@ struct TextBasedRenderer: RendererProtocol {
   }
 
   /// Renders the specified enum case associated value.
-  func renderedEnumCaseAssociatedValue(_ value: EnumCaseAssociatedValueDescription) -> String {
+  func renderEnumCaseAssociatedValue(_ value: EnumCaseAssociatedValueDescription) {
     var words: [String] = []
     if let label = value.label { words.append(label + ":") }
-    words.append(renderedExistingTypeDescription(value.type))
-    return words.joinedWords()
+    writer.writeLine(words.joinedWords())
+    writer.nextLineAppendsToLastLine()
+    renderExistingTypeDescription(value.type)
   }
 
   /// Renders the specified enum case declaration.
@@ -724,9 +751,13 @@ struct TextBasedRenderer: RendererProtocol {
       renderLiteral(rawValue)
     case .nameWithAssociatedValues(let values):
       if values.isEmpty { break }
-      let associatedValues = values.map(renderedEnumCaseAssociatedValue).joined(separator: ", ")
-      writer.nextLineAppendsToLastLine()
-      writer.writeLine("(\(associatedValues))")
+      for (value, isLast) in values.enumeratedWithLastMarker() {
+        renderEnumCaseAssociatedValue(value)
+        if !isLast {
+          writer.nextLineAppendsToLastLine()
+          writer.writeLine(", ")
+        }
+      }
     }
   }
 
@@ -800,15 +831,12 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(")")
 
-    do {
-      let keywords = signature.keywords
-      if !keywords.isEmpty {
-        for keyword in keywords {
-          writer.nextLineAppendsToLastLine()
-          writer.writeLine(" " + renderedFunctionKeyword(keyword))
-        }
-      }
+    let keywords = signature.keywords
+    for keyword in keywords {
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(" " + renderedFunctionKeyword(keyword))
     }
+
     if let returnType = signature.returnType {
       writer.nextLineAppendsToLastLine()
       writer.writeLine(" -> ")
@@ -825,12 +853,25 @@ struct TextBasedRenderer: RendererProtocol {
         writer.nextLineAppendsToLastLine()
       }
       let generics = signature.generics
-      let genericsString =
-        "\(generics.map{renderedExistingTypeDescription($0)}.joined(separator: ", "))"
       writer.writeLine(
-        renderedFunctionKind(signature.kind) + (!generics.isEmpty ? "<\(genericsString)>" : "")
-          + "("
+        renderedFunctionKind(signature.kind)
       )
+      if !generics.isEmpty {
+        writer.nextLineAppendsToLastLine()
+        writer.writeLine("<")
+        for (genericType, isLast) in generics.enumeratedWithLastMarker() {
+          writer.nextLineAppendsToLastLine()
+          renderExistingTypeDescription(genericType)
+          if !isLast {
+            writer.nextLineAppendsToLastLine()
+            writer.writeLine(", ")
+          }
+        }
+        writer.nextLineAppendsToLastLine()
+        writer.writeLine(">")
+      }
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine("(")
       let parameters = signature.parameters
       let separateLines = parameters.count > 1
       if separateLines {
@@ -912,9 +953,7 @@ struct TextBasedRenderer: RendererProtocol {
     }
 
     if let type = parameterDescription.type {
-      writer.writeLine(renderedExistingTypeDescription(type))
-    } else if let closureDescription = parameterDescription.closureDescription {
-      renderClosureSignature(closureDescription)
+      renderExistingTypeDescription(type)
     }
 
     if let defaultValue = parameterDescription.defaultValue {
@@ -927,14 +966,16 @@ struct TextBasedRenderer: RendererProtocol {
 
   /// Renders the specified parameter declaration for a closure.
   func renderClosureParameter(_ parameterDescription: ParameterDescription) {
-    let label = parameterDescription.label
     let name = parameterDescription.name
+    let label: String
+    if let declaredLabel = parameterDescription.label {
+      label = declaredLabel
+    } else {
+      label = "_"
+    }
 
-    if let label = label {
+    if let name = name {
       writer.writeLine(label)
-    } else if let name = name {
-      writer.writeLine("_")
-      writer.nextLineAppendsToLastLine()
       if name != parameterDescription.label {
         // If the label and name are the same value, don't repeat it.
         writer.writeLine(" ")
@@ -942,8 +983,6 @@ struct TextBasedRenderer: RendererProtocol {
         writer.writeLine(name)
         writer.nextLineAppendsToLastLine()
       }
-      writer.writeLine(": ")
-      writer.nextLineAppendsToLastLine()
     }
 
     if parameterDescription.inout {
@@ -952,9 +991,7 @@ struct TextBasedRenderer: RendererProtocol {
     }
 
     if let type = parameterDescription.type {
-      writer.writeLine(renderedExistingTypeDescription(type))
-    } else if let closureDescription = parameterDescription.closureDescription {
-      renderClosureSignature(closureDescription)
+      renderExistingTypeDescription(type)
     }
 
     if let defaultValue = parameterDescription.defaultValue {

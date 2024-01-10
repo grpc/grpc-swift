@@ -295,7 +295,7 @@ extension ClientCodeTranslator {
       sendable: true,
       escaping: true
     )
-    return ParameterDescription(name: "body", closureDescription: bodyClosure)
+    return ParameterDescription(name: "body", type: .closure(bodyClosure))
   }
 
   private func makeClientStruct(
