@@ -136,6 +136,7 @@ extension Target.Dependency {
   static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
   static let grpcHTTP2Core: Self = .target(name: "GRPCHTTP2Core")
   static let grpcHTTP2TransportNIOPosix: Self = .target(name: "GRPCHTTP2TransportNIOPosix")
+  static let grpcHTTP2TransportNIOTransportServices: Self = .target(name: "GRPCHTTP2TransportNIOTransportServices")
 }
 
 // MARK: - Targets
@@ -191,6 +192,13 @@ extension Target {
   
   static let grpcHTTP2TransportNIOPosix: Target = .target(
     name: "GRPCHTTP2TransportNIOPosix",
+    dependencies: [
+      .grpcHTTP2Core
+    ]
+  )
+  
+  static let grpcHTTP2TransportNIOTransportServices: Target = .target(
+    name: "GRPCHTTP2TransportNIOTransportServices",
     dependencies: [
       .grpcHTTP2Core
     ]
@@ -281,6 +289,13 @@ extension Target {
     name: "GRPCHTTP2TransportNIOPosixTests",
     dependencies: [
       .grpcHTTP2TransportNIOPosix
+    ]
+  )
+  
+  static let grpcHTTP2TransportNIOTransportServicesTests: Target = .testTarget(
+    name: "GRPCHTTP2TransportNIOTransportServicesTests",
+    dependencies: [
+      .grpcHTTP2TransportNIOTransportServices
     ]
   )
 
@@ -625,13 +640,15 @@ let package = Package(
     .grpcCodeGen,
     .grpcHTTP2Core,
     .grpcHTTP2TransportNIOPosix,
+    .grpcHTTP2TransportNIOTransportServices,
 
     // v2 tests
     .grpcCoreTests,
     .grpcInProcessTransportTests,
     .grpcCodeGenTests,
     .grpcHTTP2CoreTests,
-    .grpcHTTP2TransportNIOPosixTests
+    .grpcHTTP2TransportNIOPosixTests,
+    .grpcHTTP2TransportNIOTransportServicesTests
   ]
 )
 
