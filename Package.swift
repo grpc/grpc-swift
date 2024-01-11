@@ -134,6 +134,7 @@ extension Target.Dependency {
 
   static let grpcCore: Self = .target(name: "GRPCCore")
   static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
+  static let grpcHTTP2Core: Self = .target(name: "GRPCHTTP2Core")
 }
 
 // MARK: - Targets
@@ -175,6 +176,15 @@ extension Target {
     name: "GRPCInProcessTransport",
     dependencies: [
       .grpcCore
+    ]
+  )
+  
+  static let grpcHTTP2Core: Target = .target(
+    name: "GRPCHTTP2Core",
+    dependencies: [
+      .grpcCore,
+      .nioCore,
+      .nioHTTP2
     ]
   )
 
@@ -249,6 +259,13 @@ extension Target {
     dependencies: [
       .grpcCore,
       .grpcInProcessTransport,
+    ]
+  )
+  
+  static let grpcHTTP2CoreTests: Target = .testTarget(
+    name: "GRPCHTTP2CoreTests",
+    dependencies: [
+      .grpcHTTP2Core
     ]
   )
 
@@ -591,11 +608,13 @@ let package = Package(
     .grpcCore,
     .grpcInProcessTransport,
     .grpcCodeGen,
+    .grpcHTTP2Core,
 
     // v2 tests
     .grpcCoreTests,
     .grpcInProcessTransportTests,
-    .grpcCodeGenTests
+    .grpcCodeGenTests,
+    .grpcHTTP2CoreTests
   ]
 )
 
