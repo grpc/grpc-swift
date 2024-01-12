@@ -19,7 +19,7 @@ import Tracing
 
 /// A server interceptor that extracts tracing information from the request.
 ///
-/// The extracted tracing information will be made available to user code via the current `ServiceContext`.
+/// The extracted tracing information is made available to user code via the current `ServiceContext`.
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ServerTracingInterceptor: ServerInterceptor {
@@ -27,11 +27,11 @@ public struct ServerTracingInterceptor: ServerInterceptor {
   /// Create a new instance of a ``ServerTracingInterceptor``.
   public init() {}
 
-  /// This interceptor will extract whatever `ServiceContext` key/value pairs have been inserted into the
+  /// This interceptor will extract whatever `ServiceContext` key-value pairs have been inserted into the
   /// request's metadata, and will make them available to user code via the `ServiceContext/current`
   /// context.
   ///
-  /// Which key/value pairs are extracted and made available will depend on the specific tracing implementation
+  /// Which key-value pairs are extracted and made available will depend on the specific tracing implementation
   /// that has been configured when bootstrapping `swift-distributed-tracing` in your application.
   public func intercept<Input, Output>(
     request: ServerRequest.Stream<Input>,

@@ -288,7 +288,8 @@ extension Target {
   static let grpcInProcessTransportTests: Target = .testTarget(
     name: "GRPCInProcessTransportTests",
     dependencies: [
-      .grpcInProcessTransport,
+      .grpcCore,
+      .grpcInProcessTransport
     ]
   )
   

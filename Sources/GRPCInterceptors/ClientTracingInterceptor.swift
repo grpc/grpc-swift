@@ -19,8 +19,9 @@ import Tracing
 
 /// A client interceptor that injects tracing information into the request.
 ///
-/// The tracing information will be taken from the current `ServiceContext`, and injected into the request's
+/// The tracing information is taken from the current `ServiceContext`, and injected into the request's
 /// metadata, to be picked up by the server-side ``ServerTracingInterceptor``.
+/// 
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ClientTracingInterceptor: ClientInterceptor {
@@ -28,10 +29,10 @@ public struct ClientTracingInterceptor: ClientInterceptor {
   /// Create a new instance of a ``ClientTracingInterceptor``.
   public init() {}
 
-  /// This interceptor will inject as the request's metadata whatever `ServiceContext` key/value pairs
+  /// This interceptor will inject as the request's metadata whatever `ServiceContext` key-value pairs
   /// have been made available by the tracing implementation bootstrapped in your application.
   ///
-  /// Which key/value pairs are injected will depend on the specific tracing implementation
+  /// Which key-value pairs are injected will depend on the specific tracing implementation
   /// that has been configured when bootstrapping `swift-distributed-tracing` in your application.
   public func intercept<Input, Output>(
     request: ClientRequest.Stream<Input>,
