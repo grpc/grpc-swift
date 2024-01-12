@@ -134,6 +134,9 @@ extension Target.Dependency {
 
   static let grpcCore: Self = .target(name: "GRPCCore")
   static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
+  static let grpcHTTP2Core: Self = .target(name: "GRPCHTTP2Core")
+  static let grpcHTTP2TransportNIOPosix: Self = .target(name: "GRPCHTTP2TransportNIOPosix")
+  static let grpcHTTP2TransportNIOTransportServices: Self = .target(name: "GRPCHTTP2TransportNIOTransportServices")
 }
 
 // MARK: - Targets
@@ -175,6 +178,29 @@ extension Target {
     name: "GRPCInProcessTransport",
     dependencies: [
       .grpcCore
+    ]
+  )
+  
+  static let grpcHTTP2Core: Target = .target(
+    name: "GRPCHTTP2Core",
+    dependencies: [
+      .grpcCore,
+      .nioCore,
+      .nioHTTP2
+    ]
+  )
+  
+  static let grpcHTTP2TransportNIOPosix: Target = .target(
+    name: "GRPCHTTP2TransportNIOPosix",
+    dependencies: [
+      .grpcHTTP2Core
+    ]
+  )
+  
+  static let grpcHTTP2TransportNIOTransportServices: Target = .target(
+    name: "GRPCHTTP2TransportNIOTransportServices",
+    dependencies: [
+      .grpcHTTP2Core
     ]
   )
 
@@ -249,6 +275,27 @@ extension Target {
     dependencies: [
       .grpcCore,
       .grpcInProcessTransport,
+    ]
+  )
+  
+  static let grpcHTTP2CoreTests: Target = .testTarget(
+    name: "GRPCHTTP2CoreTests",
+    dependencies: [
+      .grpcHTTP2Core
+    ]
+  )
+  
+  static let grpcHTTP2TransportNIOPosixTests: Target = .testTarget(
+    name: "GRPCHTTP2TransportNIOPosixTests",
+    dependencies: [
+      .grpcHTTP2TransportNIOPosix
+    ]
+  )
+  
+  static let grpcHTTP2TransportNIOTransportServicesTests: Target = .testTarget(
+    name: "GRPCHTTP2TransportNIOTransportServicesTests",
+    dependencies: [
+      .grpcHTTP2TransportNIOTransportServices
     ]
   )
 
@@ -591,11 +638,17 @@ let package = Package(
     .grpcCore,
     .grpcInProcessTransport,
     .grpcCodeGen,
+    .grpcHTTP2Core,
+    .grpcHTTP2TransportNIOPosix,
+    .grpcHTTP2TransportNIOTransportServices,
 
     // v2 tests
     .grpcCoreTests,
     .grpcInProcessTransportTests,
-    .grpcCodeGenTests
+    .grpcCodeGenTests,
+    .grpcHTTP2CoreTests,
+    .grpcHTTP2TransportNIOPosixTests,
+    .grpcHTTP2TransportNIOTransportServicesTests
   ]
 )
 
