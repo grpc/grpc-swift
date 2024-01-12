@@ -169,7 +169,12 @@ struct TextBasedRenderer: RendererProtocol {
     func render(preconcurrency: Bool) {
       let spiPrefix = description.spi.map { "@_spi(\($0)) " } ?? ""
       let preconcurrencyPrefix = preconcurrency ? "@preconcurrency " : ""
-      if let moduleTypes = description.moduleTypes {
+
+      if let item = description.item {
+        writer.writeLine(
+          "\(preconcurrencyPrefix)\(spiPrefix)import \(item.kind) \(description.moduleName).\(item.name)"
+        )
+      } else if let moduleTypes = description.moduleTypes {
         for type in moduleTypes {
           writer.writeLine("\(preconcurrencyPrefix)\(spiPrefix)import \(type)")
         }

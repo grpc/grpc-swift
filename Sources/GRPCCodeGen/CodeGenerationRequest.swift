@@ -88,9 +88,25 @@ public struct CodeGenerationRequest {
     /// The name of the imported module or of the module an item is imported from.
     public var module: String
 
-    public init(item: Item? = nil, module: String) {
+    /// The name of the private interface for an `@_spi` import.
+    ///
+    /// For example, if `spi` was "Secret" and the module name was "Foo" then the import
+    /// would be `@_spi(Secret) import Foo`.
+    public var spi: String?
+
+    /// Requirements for the `@preconcurrency` attribute.
+    public var preconcurrency: PreconcurrencyRequirement
+
+    public init(
+      item: Item? = nil,
+      module: String,
+      spi: String? = nil,
+      preconcurrency: PreconcurrencyRequirement = .notRequired
+    ) {
       self.item = item
       self.module = module
+      self.spi = spi
+      self.preconcurrency = preconcurrency
     }
 
     /// Represents an item imported from a module.
@@ -109,7 +125,7 @@ public struct CodeGenerationRequest {
       /// Represents the imported item's kind.
       public struct Kind {
         /// Describes the keyword associated with the imported item.
-        internal enum Value {
+        internal enum Value: String {
           case `typealias`
           case `struct`
           case `class`
@@ -165,6 +181,36 @@ public struct CodeGenerationRequest {
         public static var `func`: Self {
           Self(.`func`)
         }
+      }
+    }
+
+    /// Describes any requirement for the `@preconcurrency` attribute.
+    public struct PreconcurrencyRequirement {
+      internal enum Value {
+        case required
+        case notRequired
+        case requiredOnOS([String])
+      }
+
+      internal var value: Value
+
+      internal init(_ value: Value) {
+        self.value = value
+      }
+
+      /// The attribute is always required.
+      public static var required: Self {
+        Self(.required)
+      }
+
+      /// The attribute is not required.
+      public static var notRequired: Self {
+        Self(.notRequired)
+      }
+
+      /// The attribute is required only on the named operating systems.
+      public static func requiredOnOS(_ OSs: [String]) -> PreconcurrencyRequirement {
+        return Self(.requiredOnOS(OSs))
       }
     }
   }

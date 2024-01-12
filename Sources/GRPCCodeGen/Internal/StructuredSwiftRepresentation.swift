@@ -31,7 +31,6 @@
 ///
 /// For example: `import Foo`.
 struct ImportDescription: Equatable, Codable {
-
   /// The name of the imported module.
   ///
   /// For example, the `Foo` in `import Foo`.
@@ -51,6 +50,10 @@ struct ImportDescription: Equatable, Codable {
   /// Requirements for the `@preconcurrency` attribute.
   var preconcurrency: PreconcurrencyRequirement = .never
 
+  /// If the dependency is an item, the property's value is the item representation.
+  /// If the dependency is a module, this property is nil.
+  var item: Item? = nil
+
   /// Describes any requirement for the `@preconcurrency` attribute.
   enum PreconcurrencyRequirement: Equatable, Codable {
     /// The attribute is always required.
@@ -59,6 +62,31 @@ struct ImportDescription: Equatable, Codable {
     case never
     /// The attribute is required only on the named operating systems.
     case onOS([String])
+  }
+
+  /// Represents an item imported from a module.
+  struct Item: Equatable, Codable {
+    /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
+    var kind: Kind
+
+    /// The name of the imported item.
+    var name: String
+
+    init(kind: Kind, name: String) {
+      self.kind = kind
+      self.name = name
+    }
+  }
+
+  enum Kind: String, Equatable, Codable {
+    case `typealias`
+    case `struct`
+    case `class`
+    case `enum`
+    case `protocol`
+    case `let`
+    case `var`
+    case `func`
   }
 }
 

@@ -88,6 +88,23 @@ internal func makeCodeGenerationRequest(
   )
 }
 
+internal func makeCodeGenerationRequest(
+  dependencies: [CodeGenerationRequest.Dependency]
+) -> CodeGenerationRequest {
+  return CodeGenerationRequest(
+    fileName: "test.grpc",
+    leadingTrivia: "Some really exciting license header 2023.",
+    dependencies: dependencies,
+    services: [],
+    lookupSerializer: {
+      "ProtobufSerializer<\($0)>()"
+    },
+    lookupDeserializer: {
+      "ProtobufDeserializer<\($0)>()"
+    }
+  )
+}
+
 internal func XCTAssertThrowsError<T, E: Error>(
   ofType: E.Type,
   _ expression: @autoclosure () throws -> T,
