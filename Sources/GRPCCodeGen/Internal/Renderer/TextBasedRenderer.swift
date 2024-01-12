@@ -40,7 +40,7 @@ final class StringCodeWriter {
   /// The current nesting level.
   private var level: Int
 
-  /// The indentation for each level in number of spaces.
+  /// The indentation for each level as the number of spaces.
   internal var indentation: Int
 
   /// Whether the next call to `writeLine` will continue writing to the last

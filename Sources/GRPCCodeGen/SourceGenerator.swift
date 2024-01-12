@@ -30,7 +30,7 @@ public struct SourceGenerator {
     ///
     /// - SeeAlso: ``AccessLevel-swift.struct``.
     public var accessLevel: AccessLevel
-    /// The indentation of the generated code in number of spaces.
+    /// The indentation of the generated code as the number of spaces.
     public var indentation: Int
     /// Whether or not client code should be generated.
     public var client: Bool
