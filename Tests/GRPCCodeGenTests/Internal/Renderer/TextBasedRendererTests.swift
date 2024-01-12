@@ -381,6 +381,39 @@ final class Test_TextBasedRenderer: XCTestCase {
     )
   }
 
+  func testGenericFunction() throws {
+    try _test(
+      .init(
+        accessModifier: .public,
+        kind: .function(name: "f"),
+        generics: [.member("R")],
+        parameters: [],
+        whereClause: WhereClause(requirements: [.conformance("R", "Sendable")]),
+        body: []
+      ),
+      renderedBy: TextBasedRenderer.renderFunction,
+      rendersAs: #"""
+        public func f<R>() where R: Sendable {}
+        """#
+    )
+    try _test(
+      .init(
+        accessModifier: .public,
+        kind: .function(name: "f"),
+        generics: [.member("R"), .member("T")],
+        parameters: [],
+        whereClause: WhereClause(requirements: [
+          .conformance("R", "Sendable"), .conformance("T", "Encodable"),
+        ]),
+        body: []
+      ),
+      renderedBy: TextBasedRenderer.renderFunction,
+      rendersAs: #"""
+        public func f<R, T>() where R: Sendable, T: Encodable {}
+        """#
+    )
+  }
+
   func testFunction() throws {
     try _test(
       .init(accessModifier: .public, kind: .function(name: "f"), parameters: [], body: []),
@@ -436,7 +469,7 @@ final class Test_TextBasedRenderer: XCTestCase {
   func testIdentifiers() throws {
     try _test(
       .pattern("foo"),
-      renderedBy: TextBasedRenderer.renderedIdentifier,
+      renderedBy: TextBasedRenderer.renderIdentifier,
       rendersAs: #"""
         foo
         """#
