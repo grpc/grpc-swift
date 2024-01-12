@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
+/// Creates a representation for the server and client code, as well as for the enums containing useful type aliases and properties.
+/// The representation is generated based on the ``CodeGenerationRequest`` object and user specifications,
+/// using types from ``StructuredSwiftRepresentation``.
 struct IDLToStructuredSwiftTranslator: Translator {
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    visibility: Configuration.Visibility,
+    accessLevel: SourceGenerator.Configuration.AccessLevel,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     let typealiasTranslator = TypealiasTranslator(
       client: client,
       server: server,
-      visibility: visibility
+      accessLevel: accessLevel
     )
-    let serverCodeTranslator = ServerCodeTranslator(visibility: visibility)
+    let serverCodeTranslator = ServerCodeTranslator(accessLevel: accessLevel)
 
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
     let imports: [ImportDescription] = [

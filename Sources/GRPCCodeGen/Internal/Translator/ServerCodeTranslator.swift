@@ -54,9 +54,9 @@
 /// }
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
-  var visibility: Configuration.Visibility
-  init(visibility: Configuration.Visibility) {
-    self.visibility = visibility
+  var accessLevel: SourceGenerator.Configuration.AccessLevel
+  init(accessLevel: SourceGenerator.Configuration.AccessLevel) {
+    self.accessLevel = accessLevel
   }
 
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
@@ -175,7 +175,7 @@ extension ServerCodeTranslator {
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let registerRPCsSignature = FunctionSignatureDescription(
-      accessModifier: .public,
+      accessModifier: self.accessModifier,
       kind: .function(name: "registerMethods"),
       parameters: [
         .init(

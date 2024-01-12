@@ -55,12 +55,12 @@
 struct TypealiasTranslator: SpecializedTranslator {
   let client: Bool
   let server: Bool
-  let visibility: Configuration.Visibility
+  let accessLevel: SourceGenerator.Configuration.AccessLevel
 
-  init(client: Bool, server: Bool, visibility: Configuration.Visibility) {
+  init(client: Bool, server: Bool, accessLevel: SourceGenerator.Configuration.AccessLevel) {
     self.client = client
     self.server = server
-    self.visibility = visibility
+    self.accessLevel = accessLevel
   }
 
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {

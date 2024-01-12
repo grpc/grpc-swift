@@ -41,17 +41,17 @@ final class StringCodeWriter {
   private var level: Int
 
   /// The indentation for each level in number of spaces.
-  internal var tabSize: Int
+  internal var indentation: Int
 
   /// Whether the next call to `writeLine` will continue writing to the last
   /// stored line. Otherwise a new line is appended.
   private var nextWriteAppendsToLastLine: Bool = false
 
   /// Creates a new empty writer.
-  init(tabSize: Int) {
+  init(indentation: Int) {
     self.level = 0
     self.lines = []
-    self.tabSize = tabSize
+    self.indentation = indentation
   }
 
   /// Concatenates the stored lines of code into a single string.
@@ -71,7 +71,7 @@ final class StringCodeWriter {
       let existingLine = lines.removeLast()
       newLine = existingLine + line
     } else {
-      let indentation = Array(repeating: " ", count: tabSize * level).joined()
+      let indentation = Array(repeating: " ", count: self.indentation * level).joined()
       newLine = indentation + line
     }
     lines.append(newLine)
@@ -126,7 +126,7 @@ struct TextBasedRenderer: RendererProtocol {
   static var `default`: TextBasedRenderer { .init(indentation: 4) }
 
   init(indentation: Int) {
-    self.writer = StringCodeWriter(tabSize: indentation)
+    self.writer = StringCodeWriter(indentation: indentation)
   }
 
   // MARK: - Internals

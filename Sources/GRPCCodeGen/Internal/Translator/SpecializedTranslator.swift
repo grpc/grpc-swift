@@ -18,8 +18,8 @@
 /// the server code translation or the client code translation.
 protocol SpecializedTranslator {
 
-  /// The ``SourceGenerator.Configuration.Visibility`` object used to represent the visibility level for the generated code.
-  var visibility: Configuration.Visibility { get }
+  /// The ``SourceGenerator.Configuration.AccessLevel`` object used to represent the visibility level used in the generated code.
+  var accessLevel: SourceGenerator.Configuration.AccessLevel { get }
 
   /// Generates an array of ``CodeBlock`` elements that will be part of the ``StructuredSwiftRepresentation`` object
   /// created by the ``Translator``.
@@ -33,20 +33,16 @@ protocol SpecializedTranslator {
 }
 
 extension SpecializedTranslator {
-  /// The ``StructuredSwiftRepresentation.AccessModifier`` object that corresponds with the visibility.
+  /// The access modifier that corresponds with the access level from ``SourceGenerator.Configuration``.
   internal var accessModifier: AccessModifier {
     get {
-      switch visibility.level {
+      switch accessLevel.level {
       case .internal:
         return AccessModifier.internal
       case .package:
         return AccessModifier.package
-      case .private:
-        return AccessModifier.private
       case .public:
         return AccessModifier.public
-      case .fileprivate:
-        return AccessModifier.fileprivate
       }
     }
   }

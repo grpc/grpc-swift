@@ -69,7 +69,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -99,7 +99,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -127,7 +127,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: false,
       server: true,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -155,7 +155,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: false,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -181,7 +181,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: false,
       server: false,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -228,7 +228,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -294,7 +294,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -307,14 +307,14 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let expectedSwift =
       """
-      fileprivate enum namespaceA {
-          fileprivate enum ServiceA {
-              fileprivate enum Methods {}
-              fileprivate static let methods: [MethodDescriptor] = []
-              fileprivate typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
-              fileprivate typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
-              fileprivate typealias ClientProtocol = namespaceA_ServiceAClientProtocol
-              fileprivate typealias Client = namespaceA_ServiceAClient
+      package enum namespaceA {
+          package enum ServiceA {
+              package enum Methods {}
+              package static let methods: [MethodDescriptor] = []
+              package typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
+              package typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
+              package typealias ClientProtocol = namespaceA_ServiceAClientProtocol
+              package typealias Client = namespaceA_ServiceAClient
           }
       }
       """
@@ -324,7 +324,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .fileprivate
+      accessLevel: .package
     )
   }
 
@@ -345,22 +345,22 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
 
     let expectedSwift =
       """
-      private enum namespacea {
-          private enum AService {
-              private enum Methods {}
-              private static let methods: [MethodDescriptor] = []
-              private typealias StreamingServiceProtocol = namespacea_AServiceServiceStreamingProtocol
-              private typealias ServiceProtocol = namespacea_AServiceServiceProtocol
-              private typealias ClientProtocol = namespacea_AServiceClientProtocol
-              private typealias Client = namespacea_AServiceClient
+      public enum namespacea {
+          public enum AService {
+              public enum Methods {}
+              public static let methods: [MethodDescriptor] = []
+              public typealias StreamingServiceProtocol = namespacea_AServiceServiceStreamingProtocol
+              public typealias ServiceProtocol = namespacea_AServiceServiceProtocol
+              public typealias ClientProtocol = namespacea_AServiceClientProtocol
+              public typealias Client = namespacea_AServiceClient
           }
-          private enum BService {
-              private enum Methods {}
-              private static let methods: [MethodDescriptor] = []
-              private typealias StreamingServiceProtocol = namespacea_BServiceServiceStreamingProtocol
-              private typealias ServiceProtocol = namespacea_BServiceServiceProtocol
-              private typealias ClientProtocol = namespacea_BServiceClientProtocol
-              private typealias Client = namespacea_BServiceClient
+          public enum BService {
+              public enum Methods {}
+              public static let methods: [MethodDescriptor] = []
+              public typealias StreamingServiceProtocol = namespacea_BServiceServiceStreamingProtocol
+              public typealias ServiceProtocol = namespacea_BServiceServiceProtocol
+              public typealias ClientProtocol = namespacea_BServiceClientProtocol
+              public typealias Client = namespacea_BServiceClient
           }
       }
       """
@@ -370,7 +370,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .private
+      accessLevel: .public
     )
   }
 
@@ -414,7 +414,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .package
+      accessLevel: .package
     )
   }
 
@@ -462,7 +462,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .internal
+      accessLevel: .internal
     )
   }
 
@@ -506,7 +506,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       expectedSwift: expectedSwift,
       client: true,
       server: true,
-      visibility: .public
+      accessLevel: .public
     )
   }
 
@@ -519,7 +519,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
 
     let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceA])
-    let translator = TypealiasTranslator(client: true, server: true, visibility: .public)
+    let translator = TypealiasTranslator(client: true, server: true, accessLevel: .public)
     XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
@@ -547,7 +547,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
 
     let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceA])
-    let translator = TypealiasTranslator(client: true, server: true, visibility: .public)
+    let translator = TypealiasTranslator(client: true, server: true, accessLevel: .public)
     XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
@@ -583,7 +583,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
 
     let codeGenerationRequest = makeCodeGenerationRequest(services: [service])
-    let translator = TypealiasTranslator(client: true, server: true, visibility: .public)
+    let translator = TypealiasTranslator(client: true, server: true, accessLevel: .public)
     XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
@@ -616,7 +616,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       methods: []
     )
     let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
-    let translator = TypealiasTranslator(client: true, server: true, visibility: .public)
+    let translator = TypealiasTranslator(client: true, server: true, accessLevel: .public)
     XCTAssertThrowsError(
       ofType: CodeGenError.self,
       try translator.translate(from: codeGenerationRequest)
@@ -642,9 +642,9 @@ extension TypealiasTranslatorSnippetBasedTests {
     expectedSwift: String,
     client: Bool,
     server: Bool,
-    visibility: Configuration.Visibility
+    accessLevel: SourceGenerator.Configuration.AccessLevel
   ) throws {
-    let translator = TypealiasTranslator(client: client, server: server, visibility: visibility)
+    let translator = TypealiasTranslator(client: client, server: server, accessLevel: accessLevel)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
