@@ -40,14 +40,19 @@ public struct ServerTracingInterceptor: ServerInterceptor {
       ServerResponse.Stream<Output>
   ) async throws -> ServerResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var serviceContext = ServiceContext.topLevel
-    InstrumentationSystem.instrument.extract(
+    let tracer = InstrumentationSystem.tracer
+      
+    tracer.extract(
       request,
       into: &serviceContext,
       using: ServerRequestExtractor()
     )
-
-    return try await ServiceContext.withValue(serviceContext) {
-      try await next(request, context)
+    
+    return try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .server) { span in
+      span.addEvent("Received request")
+      let response = try await next(request, context)
+      span.addEvent("Sending response")
+      return response
     }
   }
 }

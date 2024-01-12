@@ -23,7 +23,9 @@ class TracingTestCase: XCTestCase {
   }
 }
 
-public struct TestTracer: Instrumentation.Instrument {
+public struct TestTracer: Tracer {
+  public typealias Span = TestSpan
+  
   public func extract<Carrier, Extract>(
     _ carrier: Carrier,
     into context: inout ServiceContextModule.ServiceContext,
@@ -42,12 +44,82 @@ public struct TestTracer: Instrumentation.Instrument {
       injector.inject(traceID, forKey: TraceID.keyName, into: &carrier)
     }
   }
+  
+  public func forceFlush() {
+    // no-op
+  }
+  
+  public func startSpan<Instant>(
+    _ operationName: String,
+    context: @autoclosure () -> ServiceContext,
+    ofKind kind: SpanKind,
+    at instant: @autoclosure () -> Instant,
+    function: String,
+    file fileID: String,
+    line: UInt
+  ) -> TestSpan where Instant: TracerInstant {
+    TestSpan(context: context(), operationName: operationName)
+  }
+}
+
+public class TestSpan: Span {
+  public var context: ServiceContextModule.ServiceContext
+  public var operationName: String
+  public var attributes: Tracing.SpanAttributes
+  public var isRecording: Bool
+  public private(set) var status: Tracing.SpanStatus?
+  public private(set) var events: [Tracing.SpanEvent] = []
+  
+  public init(
+      context: ServiceContextModule.ServiceContext,
+      operationName: String,
+      attributes: Tracing.SpanAttributes = [:],
+      isRecording: Bool = true
+  ) {
+      self.context = context
+      self.operationName = operationName
+      self.attributes = attributes
+      self.isRecording = isRecording
+  }
+  
+  public func setStatus(_ status: Tracing.SpanStatus) {
+      self.status = status
+  }
+  
+  public func addEvent(_ event: Tracing.SpanEvent) {
+      self.events.append(event)
+  }
+  
+  public func recordError<Instant>(
+      _ error: any Error,
+      attributes: Tracing.SpanAttributes,
+      at instant: @autoclosure () -> Instant
+  ) where Instant: Tracing.TracerInstant {
+      self.setStatus(.init(
+          code: .error,
+          message: "Error: \(error), attributes: \(attributes), at instant: \(instant())"
+      ))
+  }
+  
+  public func addLink(_ link: Tracing.SpanLink) {
+    self.context.spanLinks?.append(link)
+  }
+  
+  public func end<Instant>(at instant: @autoclosure () -> Instant) where Instant: Tracing.TracerInstant {
+    self.setStatus(.init(code: .ok, message: "Ended at instant: \(instant())"))
+  }
 }
 
 internal enum TraceID: ServiceContextModule.ServiceContextKey {
   typealias Value = String
 
   static let keyName = "trace-id"
+}
+
+internal enum ServiceContextSpanLinksKey: ServiceContextModule.ServiceContextKey {
+  typealias Value = [SpanLink]
+
+  static let keyName = "span-links"
 }
 
 extension ServiceContext {
@@ -57,6 +129,15 @@ extension ServiceContext {
     }
     set {
       self[TraceID.self] = newValue
+    }
+  }
+    
+  var spanLinks: [SpanLink]? {
+    get {
+      self[ServiceContextSpanLinksKey.self]
+    }
+    set {
+      self[ServiceContextSpanLinksKey.self] = newValue
     }
   }
 }

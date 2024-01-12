@@ -40,14 +40,21 @@ public struct ClientTracingInterceptor: ClientInterceptor {
       ClientResponse.Stream<Output>
   ) async throws -> ClientResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var request = request
-    if let serviceContext = ServiceContext.current {
-      InstrumentationSystem.instrument.inject(
-        serviceContext,
-        into: &request,
-        using: ClientRequestInjector()
-      )
+    let tracer = InstrumentationSystem.tracer
+    let serviceContext = ServiceContext.current ?? .topLevel
+    
+    tracer.inject(
+      serviceContext,
+      into: &request,
+      using: ClientRequestInjector()
+    )
+    
+    return try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .client) { span in
+      span.addEvent("Sending request")
+      let response = try await next(request, context)
+      span.addEvent("Received response")
+      return response
     }
-    return try await next(request, context)
   }
 }
 
