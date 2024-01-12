@@ -55,6 +55,7 @@
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
   var accessLevel: SourceGenerator.Configuration.AccessLevel
+
   init(accessLevel: SourceGenerator.Configuration.AccessLevel) {
     self.accessLevel = accessLevel
   }
@@ -317,6 +318,7 @@ extension ServerCodeTranslator {
     )
 
     let functionSignature = FunctionSignatureDescription(
+      accessModifier: self.accessModifier,
       kind: .function(name: method.name),
       parameters: [
         .init(

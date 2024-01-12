@@ -38,6 +38,7 @@ extension CodeGenError {
     private enum Value {
       case nonUniqueServiceName
       case nonUniqueMethodName
+      case invalidKind
     }
 
     private var value: Value
@@ -53,6 +54,11 @@ extension CodeGenError {
     /// The same name is used for two methods of the same service.
     public static var nonUniqueMethodName: Self {
       Self(.nonUniqueMethodName)
+    }
+
+    /// An invalid kind name is used for an import.
+    public static var invalidKind: Self {
+      Self(.invalidKind)
     }
   }
 }

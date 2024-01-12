@@ -130,6 +130,60 @@ final class Test_TextBasedRenderer: XCTestCase {
         @preconcurrency @_spi(Secret) import Bar
         """#
     )
+
+    try _test(
+      [
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .typealias, name: "Bar")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .struct, name: "Baz")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .class, name: "Bac")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .enum, name: "Bap")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .protocol, name: "Bat")
+        ),
+        ImportDescription(moduleName: "Foo", item: ImportDescription.Item(kind: .let, name: "Bam")),
+        ImportDescription(moduleName: "Foo", item: ImportDescription.Item(kind: .var, name: "Bag")),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .func, name: "Bak")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          spi: "Secret",
+          item: ImportDescription.Item(kind: .func, name: "SecretBar")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          preconcurrency: .always,
+          item: ImportDescription.Item(kind: .func, name: "PreconcurrencyBar")
+        ),
+      ],
+      renderedBy: TextBasedRenderer.renderImports,
+      rendersAs: #"""
+        import typealias Foo.Bar
+        import struct Foo.Baz
+        import class Foo.Bac
+        import enum Foo.Bap
+        import protocol Foo.Bat
+        import let Foo.Bam
+        import var Foo.Bag
+        import func Foo.Bak
+        @_spi(Secret) import func Foo.SecretBar
+        @preconcurrency import func Foo.PreconcurrencyBar
+        """#
+    )
   }
 
   func testAccessModifiers() throws {
@@ -381,6 +435,39 @@ final class Test_TextBasedRenderer: XCTestCase {
     )
   }
 
+  func testGenericFunction() throws {
+    try _test(
+      .init(
+        accessModifier: .public,
+        kind: .function(name: "f"),
+        generics: [.member("R")],
+        parameters: [],
+        whereClause: WhereClause(requirements: [.conformance("R", "Sendable")]),
+        body: []
+      ),
+      renderedBy: TextBasedRenderer.renderFunction,
+      rendersAs: #"""
+        public func f<R>() where R: Sendable {}
+        """#
+    )
+    try _test(
+      .init(
+        accessModifier: .public,
+        kind: .function(name: "f"),
+        generics: [.member("R"), .member("T")],
+        parameters: [],
+        whereClause: WhereClause(requirements: [
+          .conformance("R", "Sendable"), .conformance("T", "Encodable"),
+        ]),
+        body: []
+      ),
+      renderedBy: TextBasedRenderer.renderFunction,
+      rendersAs: #"""
+        public func f<R, T>() where R: Sendable, T: Encodable {}
+        """#
+    )
+  }
+
   func testFunction() throws {
     try _test(
       .init(accessModifier: .public, kind: .function(name: "f"), parameters: [], body: []),
@@ -436,7 +523,7 @@ final class Test_TextBasedRenderer: XCTestCase {
   func testIdentifiers() throws {
     try _test(
       .pattern("foo"),
-      renderedBy: TextBasedRenderer.renderedIdentifier,
+      renderedBy: TextBasedRenderer.renderIdentifier,
       rendersAs: #"""
         foo
         """#

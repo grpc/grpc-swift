@@ -31,7 +31,6 @@
 ///
 /// For example: `import Foo`.
 struct ImportDescription: Equatable, Codable {
-
   /// The name of the imported module.
   ///
   /// For example, the `Foo` in `import Foo`.
@@ -51,6 +50,10 @@ struct ImportDescription: Equatable, Codable {
   /// Requirements for the `@preconcurrency` attribute.
   var preconcurrency: PreconcurrencyRequirement = .never
 
+  /// If the dependency is an item, the property's value is the item representation.
+  /// If the dependency is a module, this property is nil.
+  var item: Item? = nil
+
   /// Describes any requirement for the `@preconcurrency` attribute.
   enum PreconcurrencyRequirement: Equatable, Codable {
     /// The attribute is always required.
@@ -59,6 +62,31 @@ struct ImportDescription: Equatable, Codable {
     case never
     /// The attribute is required only on the named operating systems.
     case onOS([String])
+  }
+
+  /// Represents an item imported from a module.
+  struct Item: Equatable, Codable {
+    /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
+    var kind: Kind
+
+    /// The name of the imported item.
+    var name: String
+
+    init(kind: Kind, name: String) {
+      self.kind = kind
+      self.name = name
+    }
+  }
+
+  enum Kind: String, Equatable, Codable {
+    case `typealias`
+    case `struct`
+    case `class`
+    case `enum`
+    case `protocol`
+    case `let`
+    case `var`
+    case `func`
   }
 }
 
@@ -420,6 +448,16 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
   ///
   /// For example, `[String: Foo]`.
   case dictionaryValue(ExistingTypeDescription)
+
+  /// A type with the `some` keyword in front of it.
+  ///
+  /// For example, `some Foo`.
+  case some(ExistingTypeDescription)
+
+  /// A closure signature as a type.
+  ///
+  /// For example: `(String) async throws -> Int`.
+  case closure(ClosureSignatureDescription)
 }
 
 /// A description of a typealias declaration.
@@ -483,7 +521,7 @@ struct ParameterDescription: Equatable, Codable {
   /// The type name of the parameter.
   ///
   /// For example, in `bar baz: String = "hi"`, `type` is `String`.
-  var type: ExistingTypeDescription
+  var type: ExistingTypeDescription? = nil
 
   /// A default value of the parameter.
   ///
@@ -508,7 +546,10 @@ enum FunctionKind: Equatable, Codable {
   /// A function or a method. Can be static.
   ///
   /// For example `foo()`, where `name` is `foo`.
-  case function(name: String, isStatic: Bool)
+  case function(
+    name: String,
+    isStatic: Bool
+  )
 }
 
 /// A function keyword, such as `async` and `throws`.
@@ -519,6 +560,9 @@ enum FunctionKeyword: Equatable, Codable {
 
   /// A function that can throw an error.
   case `throws`
+
+  /// A function that can rethrow an error.
+  case `rethrows`
 }
 
 /// A description of a function signature.
@@ -532,6 +576,9 @@ struct FunctionSignatureDescription: Equatable, Codable {
   /// The kind of the function.
   var kind: FunctionKind
 
+  /// The generic types of the function.
+  var generics: [ExistingTypeDescription] = []
+
   /// The parameters of the function.
   var parameters: [ParameterDescription] = []
 
@@ -540,6 +587,9 @@ struct FunctionSignatureDescription: Equatable, Codable {
 
   /// The return type name of the function, such as `Int`.
   var returnType: Expression? = nil
+
+  /// The where clause for a generic function.
+  var whereClause: WhereClause?
 }
 
 /// A description of a function definition.
@@ -575,17 +625,21 @@ struct FunctionDescription: Equatable, Codable {
   init(
     accessModifier: AccessModifier? = nil,
     kind: FunctionKind,
+    generics: [ExistingTypeDescription] = [],
     parameters: [ParameterDescription] = [],
     keywords: [FunctionKeyword] = [],
     returnType: Expression? = nil,
+    whereClause: WhereClause? = nil,
     body: [CodeBlock]? = nil
   ) {
     self.signature = .init(
       accessModifier: accessModifier,
       kind: kind,
+      generics: generics,
       parameters: parameters,
       keywords: keywords,
-      returnType: returnType
+      returnType: returnType,
+      whereClause: whereClause
     )
     self.body = body
   }
@@ -601,22 +655,45 @@ struct FunctionDescription: Equatable, Codable {
   init(
     accessModifier: AccessModifier? = nil,
     kind: FunctionKind,
+    generics: [ExistingTypeDescription] = [],
     parameters: [ParameterDescription] = [],
     keywords: [FunctionKeyword] = [],
     returnType: Expression? = nil,
+    whereClause: WhereClause? = nil,
     body: [Expression]
   ) {
     self.init(
       accessModifier: accessModifier,
       kind: kind,
+      generics: generics,
       parameters: parameters,
       keywords: keywords,
       returnType: returnType,
+      whereClause: whereClause,
       body: body.map { .expression($0) }
     )
   }
 }
 
+/// A description of a closure signature.
+///
+/// For example: `(String) async throws -> Int`.
+struct ClosureSignatureDescription: Equatable, Codable {
+  /// The parameters of the function.
+  var parameters: [ParameterDescription] = []
+
+  /// The keywords of the function, such as `async` and `throws.`
+  var keywords: [FunctionKeyword] = []
+
+  /// The return type name of the function, such as `Int`.
+  var returnType: Expression? = nil
+
+  /// The ``@Sendable`` attribute.
+  var sendable: Bool = false
+
+  /// The ``@escaping`` attribute.
+  var escaping: Bool = false
+}
 /// A description of the associated value of an enum case.
 ///
 /// For example, in `case foo(bar: String)`, the associated value
@@ -1235,18 +1312,22 @@ extension Declaration {
   static func function(
     accessModifier: AccessModifier? = nil,
     kind: FunctionKind,
+    generics: [ExistingTypeDescription] = [],
     parameters: [ParameterDescription],
     keywords: [FunctionKeyword] = [],
     returnType: Expression? = nil,
+    whereClause: WhereClause?,
     body: [CodeBlock]? = nil
   ) -> Self {
     .function(
       .init(
         accessModifier: accessModifier,
         kind: kind,
+        generics: generics,
         parameters: parameters,
         keywords: keywords,
         returnType: returnType,
+        whereClause: whereClause,
         body: body
       )
     )
@@ -1327,7 +1408,9 @@ extension FunctionKind {
   static var initializer: Self { .initializer(failable: false) }
 
   /// Returns a non-static function kind.
-  static func function(name: String) -> Self { .function(name: name, isStatic: false) }
+  static func function(name: String) -> Self {
+    .function(name: name, isStatic: false)
+  }
 }
 
 extension CodeBlock {
