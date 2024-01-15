@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if os(macOS) || os(Linux) // swift-format doesn't like canImport(Foundation.Process)
+#if os(macOS) || os(Linux)  // swift-format doesn't like canImport(Foundation.Process)
 
 import XCTest
 
