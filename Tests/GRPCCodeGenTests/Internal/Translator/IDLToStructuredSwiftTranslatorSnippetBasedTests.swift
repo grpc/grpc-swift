@@ -150,7 +150,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
       name: "AService",
+      generatedName: "AService",
       namespace: "",
+      generatedNamespace: "",
       methods: []
     )
 
@@ -178,11 +180,55 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     }
   }
 
+  func testSameGeneratedNameServicesNoNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      generatedName: "AService",
+      namespace: "",
+      generatedNamespace: "",
+      methods: []
+    )
+
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "BService",
+      generatedName: "AService",
+      namespace: "",
+      generatedNamespace: "",
+      methods: []
+    )
+
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .nonUniqueServiceName,
+          message: """
+            Services in an empty namespace must have unique generated names. \
+            AService is used as a name for multiple services without namespaces.
+            """
+        )
+      )
+    }
+  }
   func testSameNameServicesSameNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
       name: "AService",
+      generatedName: "AService",
       namespace: "namespacea",
+      generatedNamespace: "NamespaceA",
       methods: []
     )
 
@@ -210,10 +256,54 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     }
   }
 
+  func testSameGeneratedNameServicesSameNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      generatedName: "AService",
+      namespace: "namespacea",
+      generatedNamespace: "NamespaceA",
+      methods: []
+    )
+    let serviceB = ServiceDescriptor(
+      documentation: "Documentation for BService",
+      name: "BService",
+      generatedName: "AService",
+      namespace: "namespacea",
+      generatedNamespace: "NamespaceA",
+      methods: []
+    )
+
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .nonUniqueServiceName,
+          message: """
+            Services within the same namespace must have unique generated names. \
+            AService is used as a generated name for multiple services in the namespacea namespace.
+            """
+        )
+      )
+    }
+  }
+
   func testSameNameMethodsSameServiceError() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
       name: "MethodA",
+      generatedName: "MethodA",
+      signatureName: "methodA",
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -222,7 +312,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     let service = ServiceDescriptor(
       documentation: "Documentation for AService",
       name: "AService",
+      generatedName: "AService",
       namespace: "namespacea",
+      generatedNamespace: "NamespaceA",
       methods: [methodA, methodA]
     )
 
@@ -250,17 +342,129 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     }
   }
 
-  func testSameNameNoNamespaceServiceAndNamespaceError() throws {
+  func testSameGeneratedNameMethodsSameServiceError() throws {
+    let methodA = MethodDescriptor(
+      documentation: "Documentation for MethodA",
+      name: "MethodA",
+      generatedName: "MethodA",
+      signatureName: "methodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let methodB = MethodDescriptor(
+      documentation: "Documentation for MethodA",
+      name: "MethodB",
+      generatedName: "MethodA",
+      signatureName: "methodB",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let service = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      generatedName: "AService",
+      namespace: "namespacea",
+      generatedNamespace: "NamespaceA",
+      methods: [methodA, methodB]
+    )
+
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [service])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .nonUniqueMethodName,
+          message: """
+            Methods of a service must have unique generated names. \
+            MethodA is used as a generated name for multiple methods of the AService service.
+            """
+        )
+      )
+    }
+  }
+
+  func testSameSignatureNameMethodsSameServiceError() throws {
+    let methodA = MethodDescriptor(
+      documentation: "Documentation for MethodA",
+      name: "MethodA",
+      generatedName: "MethodA",
+      signatureName: "methodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let methodB = MethodDescriptor(
+      documentation: "Documentation for MethodA",
+      name: "MethodB",
+      generatedName: "MethodB",
+      signatureName: "methodA",
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "NamespaceA_ServiceARequest",
+      outputType: "NamespaceA_ServiceAResponse"
+    )
+    let service = ServiceDescriptor(
+      documentation: "Documentation for AService",
+      name: "AService",
+      generatedName: "AService",
+      namespace: "namespacea",
+      generatedNamespace: "NamespaceA",
+      methods: [methodA, methodB]
+    )
+
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [service])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .nonUniqueMethodName,
+          message: """
+            Methods of a service must have unique signature names. \
+            methodA is used as a signature name for multiple methods of the AService service.
+            """
+        )
+      )
+    }
+  }
+
+  func testSameGeneratedNameNoNamespaceServiceAndNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for SameName service with no namespace",
       name: "SameName",
+      generatedName: "SameName",
       namespace: "",
+      generatedNamespace: "",
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
       name: "BService",
+      generatedName: "BService",
       namespace: "SameName",
+      generatedNamespace: "SameName",
       methods: []
     )
     let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
@@ -279,8 +483,118 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services with no namespace must not have the same names as the namespaces. \
-            SameName is used as a name for a service with no namespace and a namespace.
+            Services with no namespace must not have the same generated names as the namespaces. \
+            SameName is used as a generated name for a service with no namespace and a namespace.
+            """
+        )
+      )
+    }
+  }
+
+  func testEmptyNamespaceAndNonEmptyGeneratedNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for SameName service with no namespace",
+      name: "SameName",
+      generatedName: "SameName",
+      namespace: "",
+      generatedNamespace: "NonEmpty",
+      methods: []
+    )
+
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .invalidGeneratedNamespace,
+          message: """
+            Services with an empty namespace must have an empty generated namespace. \
+            SameName has an empty namespace, but a non-empty generated namespace.
+            """
+        )
+      )
+    }
+  }
+
+  func testNonEmptyNamespaceAndEmptyGeneratedNamespaceError() throws {
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for SameName service with no namespace",
+      name: "SameName",
+      generatedName: "SameName",
+      namespace: "NonEmpty",
+      generatedNamespace: "",
+      methods: []
+    )
+
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .invalidGeneratedNamespace,
+          message: """
+            Services with a non-empty namespace must have a non-empty generated namespace. \
+            SameName has a non-empty namespace, but an empty generated namespace.
+            """
+        )
+      )
+    }
+  }
+
+  func testNamespaceAndGeneratedNamespaceServicesCoincide() throws {
+    // Same namespaces, different generated namespaces.
+    let serviceA = ServiceDescriptor(
+      documentation: "Documentation for SameName service with no namespace",
+      name: "ServiceA",
+      generatedName: "ServiceA",
+      namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
+      methods: []
+    )
+    var serviceB = ServiceDescriptor(
+      documentation: "Documentation for SameName service with no namespace",
+      name: "ServiceB",
+      generatedName: "ServiceB",
+      namespace: "namespaceA",
+      generatedNamespace: "NamespaceB",
+      methods: []
+    )
+    var codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let translator = IDLToStructuredSwiftTranslator()
+    XCTAssertThrowsError(
+      ofType: CodeGenError.self,
+      try translator.translate(
+        codeGenerationRequest: codeGenerationRequest,
+        client: true,
+        server: true
+      )
+    ) {
+      error in
+      XCTAssertEqual(
+        error as CodeGenError,
+        CodeGenError(
+          code: .invalidGeneratedNamespace,
+          message: """
+            Services within a namespace must have the same generated namespace. \
+            Not all services within namespaceA have the NamespaceA generated namespace.
             """
         )
       )

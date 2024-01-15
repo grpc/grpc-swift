@@ -216,17 +216,23 @@ public struct CodeGenerationRequest {
   }
 
   /// Represents a service described in an IDL file.
-  public struct ServiceDescriptor {
+  public struct ServiceDescriptor: Hashable {
     /// Documentation from comments above the IDL service description.
     public var documentation: String
 
     /// Service name.
     public var name: String
 
+    /// The service name used in the generated type names.
+    public var generatedName: String
+
     /// The service namespace.
     ///
     /// For `.proto` files it is the package name.
     public var namespace: String
+
+    /// The namespace identifier used in the generated type names.
+    public var generatedNamespace: String
 
     /// A description of each method of a service.
     ///
@@ -236,22 +242,32 @@ public struct CodeGenerationRequest {
     public init(
       documentation: String,
       name: String,
+      generatedName: String,
       namespace: String,
+      generatedNamespace: String,
       methods: [MethodDescriptor]
     ) {
       self.documentation = documentation
       self.name = name
+      self.generatedName = generatedName
       self.namespace = namespace
+      self.generatedNamespace = generatedNamespace
       self.methods = methods
     }
 
     /// Represents a method described in an IDL file.
-    public struct MethodDescriptor {
+    public struct MethodDescriptor: Hashable {
       /// Documentation from comments above the IDL method description.
       public var documentation: String
 
       /// Method name.
       public var name: String
+
+      /// The name used in the generated type names.
+      public var generatedName: String
+
+      /// The function name used in the generated code in declarations of the method.
+      public var signatureName: String
 
       /// Identifies if the method is input streaming.
       public var isInputStreaming: Bool
@@ -268,6 +284,8 @@ public struct CodeGenerationRequest {
       public init(
         documentation: String,
         name: String,
+        generatedName: String,
+        signatureName: String,
         isInputStreaming: Bool,
         isOutputStreaming: Bool,
         inputType: String,
@@ -275,6 +293,8 @@ public struct CodeGenerationRequest {
       ) {
         self.documentation = documentation
         self.name = name
+        self.generatedName = generatedName
+        self.signatureName = signatureName
         self.isInputStreaming = isInputStreaming
         self.isOutputStreaming = isOutputStreaming
         self.inputType = inputType

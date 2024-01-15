@@ -90,11 +90,19 @@ extension IDLToStructuredSwiftTranslator {
   }
 
   private func validateInput(_ codeGenerationRequest: CodeGenerationRequest) throws {
+    let servicesByGeneratedNamespace = Dictionary(
+      grouping: codeGenerationRequest.services,
+      by: { $0.generatedNamespace }
+    )
     let servicesByNamespace = Dictionary(
       grouping: codeGenerationRequest.services,
       by: { $0.namespace }
     )
-    try self.checkServiceNamesAreUnique(for: servicesByNamespace)
+    try self.checkServiceNamesAreUnique(for: servicesByGeneratedNamespace)
+    try self.checkServicesNamespacesAndGeneratedNamespacesCoincide(
+      servicesByNamespace: servicesByNamespace
+    )
+    try checkEmptyNamespaceAndGeneratedNamespace(for: codeGenerationRequest.services)
     for service in codeGenerationRequest.services {
       try self.checkMethodNamesAreUnique(in: service)
     }
@@ -109,21 +117,23 @@ extension IDLToStructuredSwiftTranslator {
     if let noNamespaceServices = servicesByNamespace[""] {
       let namespaces = servicesByNamespace.keys
       for service in noNamespaceServices {
-        if namespaces.contains(service.name) {
+        if namespaces.contains(service.generatedName) {
           throw CodeGenError(
             code: .nonUniqueServiceName,
             message: """
-              Services with no namespace must not have the same names as the namespaces. \
-              \(service.name) is used as a name for a service with no namespace and a namespace.
+              Services with no namespace must not have the same generated names as the namespaces. \
+              \(service.generatedName) is used as a generated name for a service with no namespace and a namespace.
               """
           )
         }
       }
     }
 
-    // Check that service names are unique within each namespace.
+    // Check that service names and service generated names are unique within each namespace.
     for (namespace, services) in servicesByNamespace {
       var serviceNames: Set<String> = []
+      var generatedNames: Set<String> = []
+
       for service in services {
         if serviceNames.contains(service.name) {
           let errorMessage: String
@@ -144,6 +154,26 @@ extension IDLToStructuredSwiftTranslator {
           )
         }
         serviceNames.insert(service.name)
+
+        if generatedNames.contains(service.generatedName) {
+          let errorMessage: String
+          if namespace.isEmpty {
+            errorMessage = """
+              Services in an empty namespace must have unique generated names. \
+              \(service.generatedName) is used as a name for multiple services without namespaces.
+              """
+          } else {
+            errorMessage = """
+              Services within the same namespace must have unique generated names. \
+              \(service.generatedName) is used as a generated name for multiple services in the \(service.namespace) namespace.
+              """
+          }
+          throw CodeGenError(
+            code: .nonUniqueServiceName,
+            message: errorMessage
+          )
+        }
+        generatedNames.insert(service.generatedName)
       }
     }
   }
@@ -152,6 +182,7 @@ extension IDLToStructuredSwiftTranslator {
   private func checkMethodNamesAreUnique(
     in service: CodeGenerationRequest.ServiceDescriptor
   ) throws {
+    // Check the method names.
     let methodNames = service.methods.map { $0.name }
     var seenNames = Set<String>()
 
@@ -167,23 +198,113 @@ extension IDLToStructuredSwiftTranslator {
       }
       seenNames.insert(methodName)
     }
+
+    // Check the method generated names.
+    let generatedNames = service.methods.map { $0.generatedName }
+    var seenGeneratedNames = Set<String>()
+
+    for generatedName in generatedNames {
+      if seenGeneratedNames.contains(generatedName) {
+        throw CodeGenError(
+          code: .nonUniqueMethodName,
+          message: """
+            Methods of a service must have unique generated names. \
+            \(generatedName) is used as a generated name for multiple methods of the \(service.name) service.
+            """
+        )
+      }
+      seenGeneratedNames.insert(generatedName)
+    }
+
+    // Check the function signature names.
+    let signatureNames = service.methods.map { $0.signatureName }
+    var seenSignatureNames = Set<String>()
+
+    for signatureName in signatureNames {
+      if seenSignatureNames.contains(signatureName) {
+        throw CodeGenError(
+          code: .nonUniqueMethodName,
+          message: """
+            Methods of a service must have unique signature names. \
+            \(signatureName) is used as a signature name for multiple methods of the \(service.name) service.
+            """
+        )
+      }
+      seenSignatureNames.insert(signatureName)
+    }
+  }
+
+  private func checkEmptyNamespaceAndGeneratedNamespace(
+    for services: [CodeGenerationRequest.ServiceDescriptor]
+  ) throws {
+    for service in services {
+      if service.namespace.isEmpty {
+        if !service.generatedNamespace.isEmpty {
+          throw CodeGenError(
+            code: .invalidGeneratedNamespace,
+            message: """
+              Services with an empty namespace must have an empty generated namespace. \
+              \(service.name) has an empty namespace, but a non-empty generated namespace.
+              """
+          )
+        }
+      } else {
+        if service.generatedNamespace.isEmpty {
+          throw CodeGenError(
+            code: .invalidGeneratedNamespace,
+            message: """
+              Services with a non-empty namespace must have a non-empty generated namespace. \
+              \(service.name) has a non-empty namespace, but an empty generated namespace.
+              """
+          )
+        }
+      }
+    }
+  }
+
+  private func checkServicesNamespacesAndGeneratedNamespacesCoincide(
+    servicesByNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
+  ) throws {
+    for (_, services) in servicesByNamespace {
+      let generatedNamespace = services[0].generatedNamespace
+      for service in services {
+        if service.generatedNamespace != generatedNamespace {
+          throw CodeGenError(
+            code: .invalidGeneratedNamespace,
+            message: """
+              All services within a namespace must have the same generated namespace. \
+              \(service.name) has not the same generated namespace as other services \
+              within the \(service.namespace) namespace.
+              """
+          )
+        }
+      }
+    }
   }
 }
 
 extension CodeGenerationRequest.ServiceDescriptor {
-  var namespacedTypealiasPrefix: String {
+  var namespacedTypealiasGeneratedName: String {
+    if self.generatedNamespace.isEmpty {
+      return self.generatedName
+    } else {
+      return "\(self.generatedNamespace).\(self.generatedName)"
+    }
+  }
+
+  var namespacedGeneratedName: String {
+    if self.generatedNamespace.isEmpty {
+      return self.generatedName
+    } else {
+      return "\(self.generatedNamespace)_\(self.generatedName)"
+    }
+  }
+
+  var fullyQualifiedName: String {
     if self.namespace.isEmpty {
       return self.name
     } else {
       return "\(self.namespace).\(self.name)"
-    }
-  }
-
-  var namespacedPrefix: String {
-    if self.namespace.isEmpty {
-      return self.name
-    } else {
-      return "\(self.namespace)_\(self.name)"
     }
   }
 }

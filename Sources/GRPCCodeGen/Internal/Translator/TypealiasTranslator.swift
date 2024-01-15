@@ -21,7 +21,7 @@
 /// For example, in the case of the ``Echo`` service, the ``TypealiasTranslator`` will create
 /// a representation for the following generated code:
 /// ```swift
-/// public enum echo {
+/// public enum Echo {
 ///   public enum Echo {
 ///     public enum Methods {
 ///       public enum Get {
@@ -64,14 +64,14 @@ struct TypealiasTranslator: SpecializedTranslator {
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks: [CodeBlock] = []
     let services = codeGenerationRequest.services
-    let servicesByNamespace = Dictionary(grouping: services, by: { $0.namespace })
+    let servicesByNamespace = Dictionary(grouping: services, by: { $0.generatedNamespace })
 
     // Sorting the keys and the services in each list of the dictionary is necessary
     // so that the generated enums are deterministically ordered.
-    for (namespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
+    for (generatedNamespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
       let namespaceCodeBlocks = try self.makeNamespaceEnum(
-        for: namespace,
-        containing: services.sorted(by: { $0.name < $1.name })
+        for: generatedNamespace,
+        containing: services.sorted(by: { $0.generatedName < $1.generatedName })
       )
       codeBlocks.append(contentsOf: namespaceCodeBlocks)
     }
@@ -110,7 +110,7 @@ extension TypealiasTranslator {
   private func makeServiceEnum(
     from service: CodeGenerationRequest.ServiceDescriptor
   ) throws -> Declaration {
-    var serviceEnum = EnumDescription(name: service.name)
+    var serviceEnum = EnumDescription(name: service.generatedName)
     var methodsEnum = EnumDescription(name: "Methods")
     let methods = service.methods
 
@@ -148,7 +148,7 @@ extension TypealiasTranslator {
     from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methodEnum = EnumDescription(name: method.name)
+    var methodEnum = EnumDescription(name: method.generatedName)
 
     let inputTypealias = Declaration.typealias(
       name: "Input",
@@ -174,21 +174,13 @@ extension TypealiasTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
-
-    let fullyQualifiedServiceName: String
-    if service.namespace.isEmpty {
-      fullyQualifiedServiceName = service.name
-    } else {
-      fullyQualifiedServiceName = "\(service.namespace).\(service.name)"
-    }
-
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
         calledExpression: .identifierType(.member("MethodDescriptor")),
         arguments: [
           FunctionArgumentDescription(
             label: "service",
-            expression: .literal(fullyQualifiedServiceName)
+            expression: .literal(service.fullyQualifiedName)
           ),
           FunctionArgumentDescription(
             label: "method",
@@ -197,6 +189,7 @@ extension TypealiasTranslator {
         ]
       )
     )
+
     return .variable(
       isStatic: true,
       kind: .let,
@@ -209,7 +202,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     var methodDescriptors = [Expression]()
-    let methodNames = service.methods.map { $0.name }
+    let methodNames = service.methods.map { $0.generatedName }
 
     for methodName in methodNames {
       let methodDescriptorPath = Expression.memberAccess(
@@ -235,11 +228,11 @@ extension TypealiasTranslator {
   ) -> [Declaration] {
     let streamingServiceProtocolTypealias = Declaration.typealias(
       name: "StreamingServiceProtocol",
-      existingType: .member("\(service.namespacedPrefix)ServiceStreamingProtocol")
+      existingType: .member("\(service.namespacedGeneratedName)ServiceStreamingProtocol")
     )
     let serviceProtocolTypealias = Declaration.typealias(
       name: "ServiceProtocol",
-      existingType: .member("\(service.namespacedPrefix)ServiceProtocol")
+      existingType: .member("\(service.namespacedGeneratedName)ServiceProtocol")
     )
 
     return [streamingServiceProtocolTypealias, serviceProtocolTypealias]
@@ -250,7 +243,7 @@ extension TypealiasTranslator {
   ) -> Declaration {
     return .typealias(
       name: "ClientProtocol",
-      existingType: .member("\(service.namespacedPrefix)ClientProtocol")
+      existingType: .member("\(service.namespacedGeneratedName)ClientProtocol")
     )
   }
 
@@ -259,7 +252,7 @@ extension TypealiasTranslator {
   ) -> Declaration {
     return .typealias(
       name: "Client",
-      existingType: .member("\(service.namespacedPrefix)Client")
+      existingType: .member("\(service.namespacedGeneratedName)Client")
     )
   }
 }

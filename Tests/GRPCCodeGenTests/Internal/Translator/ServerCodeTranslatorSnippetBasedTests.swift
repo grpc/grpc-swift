@@ -27,7 +27,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for unaryMethod",
-      name: "unaryMethod",
+      name: "UnaryMethod",
+      generatedName: "Unary",
+      signatureName: "unary",
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -35,39 +37,41 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
+      name: "AlongNameForServiceA",
+      generatedName: "ServiceA",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: [method]
     )
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+      protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for unaryMethod
-          func unaryMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.unaryMethod.Output>
+          func unary(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.Unary.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.Unary.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceA.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
-                  for: namespaceA.ServiceA.Methods.unaryMethod.descriptor,
-                  deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.unaryMethod.Input>(),
-                  serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.unaryMethod.Output>(),
+                  for: NamespaceA.ServiceA.Methods.Unary.descriptor,
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.Unary.Input>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.Unary.Output>(),
                   handler: { request in
-                      try await self.unaryMethod(request: request)
+                      try await self.unary(request: request)
                   }
               )
           }
       }
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for unaryMethod
-          func unaryMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.unaryMethod.Output>
+          func unary(request: ServerRequest.Single<NamespaceA.ServiceA.Methods.Unary.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Methods.Unary.Output>
       }
-      /// Partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
-      public extension namespaceA.ServiceA.ServiceProtocol {
-          func unaryMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.unaryMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.unaryMethod.Output> {
-              let response = try await self.unaryMethod(request: ServerRequest.Single(stream: request))
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceA.ServiceProtocol {
+          func unary(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.Unary.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.Unary.Output> {
+              let response = try await self.unary(request: ServerRequest.Single(stream: request))
               return ServerResponse.Stream(single: response)
           }
       }
@@ -82,7 +86,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorInputStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for inputStreamingMethod",
-      name: "inputStreamingMethod",
+      name: "InputStreamingMethod",
+      generatedName: "InputStreaming",
+      signatureName: "inputStreaming",
       isInputStreaming: true,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -91,38 +97,40 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
       name: "ServiceA",
+      generatedName: "ServiceA",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: [method]
     )
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+      protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for inputStreamingMethod
-          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
+          func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceA.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
-                  for: namespaceA.ServiceA.Methods.inputStreamingMethod.descriptor,
-                  deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>(),
-                  serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>(),
+                  for: NamespaceA.ServiceA.Methods.InputStreaming.descriptor,
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.InputStreaming.Input>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.InputStreaming.Output>(),
                   handler: { request in
-                      try await self.inputStreamingMethod(request: request)
+                      try await self.inputStreaming(request: request)
                   }
               )
           }
       }
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for inputStreamingMethod
-          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
+          func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Methods.InputStreaming.Output>
       }
-      /// Partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
-      public extension namespaceA.ServiceA.ServiceProtocol {
-          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output> {
-              let response = try await self.inputStreamingMethod(request: request)
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceA.ServiceProtocol {
+          func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Output> {
+              let response = try await self.inputStreaming(request: request)
               return ServerResponse.Stream(single: response)
           }
       }
@@ -137,7 +145,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorOutputStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for outputStreamingMethod",
-      name: "outputStreamingMethod",
+      name: "OutputStreamingMethod",
+      generatedName: "OutputStreaming",
+      signatureName: "outputStreaming",
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -145,39 +155,41 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
+      name: "ServiceATest",
+      generatedName: "ServiceA",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: [method]
     )
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+      protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for outputStreamingMethod
-          func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
+          func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceA.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
-                  for: namespaceA.ServiceA.Methods.outputStreamingMethod.descriptor,
-                  deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>(),
-                  serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>(),
+                  for: NamespaceA.ServiceA.Methods.OutputStreaming.descriptor,
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.OutputStreaming.Input>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.OutputStreaming.Output>(),
                   handler: { request in
-                      try await self.outputStreamingMethod(request: request)
+                      try await self.outputStreaming(request: request)
                   }
               )
           }
       }
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for outputStreamingMethod
-          func outputStreamingMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
+          func outputStreaming(request: ServerRequest.Single<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output>
       }
-      /// Partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
-      public extension namespaceA.ServiceA.ServiceProtocol {
-          func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output> {
-              let response = try await self.outputStreamingMethod(request: ServerRequest.Single(stream: request))
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceA.ServiceProtocol {
+          func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output> {
+              let response = try await self.outputStreaming(request: ServerRequest.Single(stream: request))
               return response
           }
       }
@@ -192,7 +204,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorBidirectionalStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for bidirectionalStreamingMethod",
-      name: "bidirectionalStreamingMethod",
+      name: "BidirectionalStreamingMethod",
+      generatedName: "BidirectionalStreaming",
+      signatureName: "bidirectionalStreaming",
       isInputStreaming: true,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -200,37 +214,39 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
+      name: "ServiceATest",
+      generatedName: "ServiceA",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: [method]
     )
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+      protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for bidirectionalStreamingMethod
-          func bidirectionalStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>
+          func bidirectionalStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.BidirectionalStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.BidirectionalStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceA.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
-                  for: namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.descriptor,
-                  deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>(),
-                  serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>(),
+                  for: NamespaceA.ServiceA.Methods.BidirectionalStreaming.descriptor,
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.BidirectionalStreaming.Input>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.BidirectionalStreaming.Output>(),
                   handler: { request in
-                      try await self.bidirectionalStreamingMethod(request: request)
+                      try await self.bidirectionalStreaming(request: request)
                   }
               )
           }
       }
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for bidirectionalStreamingMethod
-          func bidirectionalStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.bidirectionalStreamingMethod.Output>
+          func bidirectionalStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.BidirectionalStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.BidirectionalStreaming.Output>
       }
-      /// Partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
-      public extension namespaceA.ServiceA.ServiceProtocol {
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceA.ServiceProtocol {
       }
       """
 
@@ -243,7 +259,9 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorMultipleMethods() throws {
     let inputStreamingMethod = MethodDescriptor(
       documentation: "Documentation for inputStreamingMethod",
-      name: "inputStreamingMethod",
+      name: "InputStreamingMethod",
+      generatedName: "InputStreaming",
+      signatureName: "inputStreaming",
       isInputStreaming: true,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -252,6 +270,8 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     let outputStreamingMethod = MethodDescriptor(
       documentation: "Documentation for outputStreamingMethod",
       name: "outputStreamingMethod",
+      generatedName: "OutputStreaming",
+      signatureName: "outputStreaming",
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -259,55 +279,57 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
+      name: "ServiceATest",
+      generatedName: "ServiceA",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: [inputStreamingMethod, outputStreamingMethod]
     )
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+      protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for inputStreamingMethod
-          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
+          func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Output>
           /// Documentation for outputStreamingMethod
-          func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
+          func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceA.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
-                  for: namespaceA.ServiceA.Methods.inputStreamingMethod.descriptor,
-                  deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>(),
-                  serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>(),
+                  for: NamespaceA.ServiceA.Methods.InputStreaming.descriptor,
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.InputStreaming.Input>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.InputStreaming.Output>(),
                   handler: { request in
-                      try await self.inputStreamingMethod(request: request)
+                      try await self.inputStreaming(request: request)
                   }
               )
               router.registerHandler(
-                  for: namespaceA.ServiceA.Methods.outputStreamingMethod.descriptor,
-                  deserializer: ProtobufDeserializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>(),
-                  serializer: ProtobufSerializer<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>(),
+                  for: NamespaceA.ServiceA.Methods.OutputStreaming.descriptor,
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.OutputStreaming.Input>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.OutputStreaming.Output>(),
                   handler: { request in
-                      try await self.outputStreamingMethod(request: request)
+                      try await self.outputStreaming(request: request)
                   }
               )
           }
       }
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {
+      protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for inputStreamingMethod
-          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Single<namespaceA.ServiceA.Methods.inputStreamingMethod.Output>
+          func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Methods.InputStreaming.Output>
           /// Documentation for outputStreamingMethod
-          func outputStreamingMethod(request: ServerRequest.Single<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output>
+          func outputStreaming(request: ServerRequest.Single<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output>
       }
-      /// Partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
-      public extension namespaceA.ServiceA.ServiceProtocol {
-          func inputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.inputStreamingMethod.Output> {
-              let response = try await self.inputStreamingMethod(request: request)
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceA.ServiceProtocol {
+          func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Output> {
+              let response = try await self.inputStreaming(request: request)
               return ServerResponse.Stream(single: response)
           }
-          func outputStreamingMethod(request: ServerRequest.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Input>) async throws -> ServerResponse.Stream<namespaceA.ServiceA.Methods.outputStreamingMethod.Output> {
-              let response = try await self.outputStreamingMethod(request: ServerRequest.Single(stream: request))
+          func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output> {
+              let response = try await self.outputStreaming(request: ServerRequest.Single(stream: request))
               return response
           }
       }
@@ -323,6 +345,8 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
       name: "methodA",
+      generatedName: "MethodA",
+      signatureName: "methodA",
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -330,8 +354,10 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
+      name: "ServiceATest",
+      generatedName: "ServiceA",
       namespace: "",
+      generatedNamespace: "",
       methods: [method]
     )
     let expectedSwift =
@@ -339,15 +365,15 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       protocol ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for MethodA
-          func methodA(request: ServerRequest.Stream<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.methodA.Output>
+          func methodA(request: ServerRequest.Stream<ServiceA.Methods.MethodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.MethodA.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       public extension ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
-                  for: ServiceA.Methods.methodA.descriptor,
-                  deserializer: ProtobufDeserializer<ServiceA.Methods.methodA.Input>(),
-                  serializer: ProtobufSerializer<ServiceA.Methods.methodA.Output>(),
+                  for: ServiceA.Methods.MethodA.descriptor,
+                  deserializer: ProtobufDeserializer<ServiceA.Methods.MethodA.Input>(),
+                  serializer: ProtobufSerializer<ServiceA.Methods.MethodA.Output>(),
                   handler: { request in
                       try await self.methodA(request: request)
                   }
@@ -357,11 +383,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       protocol ServiceAServiceProtocol: ServiceA.StreamingServiceProtocol {
           /// Documentation for MethodA
-          func methodA(request: ServerRequest.Single<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Single<ServiceA.Methods.methodA.Output>
+          func methodA(request: ServerRequest.Single<ServiceA.Methods.MethodA.Input>) async throws -> ServerResponse.Single<ServiceA.Methods.MethodA.Output>
       }
       /// Partial conformance to `ServiceAStreamingServiceProtocol`.
       public extension ServiceA.ServiceProtocol {
-          func methodA(request: ServerRequest.Stream<ServiceA.Methods.methodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.methodA.Output> {
+          func methodA(request: ServerRequest.Stream<ServiceA.Methods.MethodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Methods.MethodA.Output> {
               let response = try await self.methodA(request: ServerRequest.Single(stream: request))
               return ServerResponse.Stream(single: response)
           }
@@ -378,38 +404,42 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
       name: "ServiceA",
+      generatedName: "ServiceA",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for ServiceB",
       name: "ServiceB",
+      generatedName: "ServiceB",
       namespace: "namespaceA",
+      generatedNamespace: "NamespaceA",
       methods: []
     )
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+      protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceA.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceA.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {}
       }
       /// Documentation for ServiceA
-      protocol namespaceA_ServiceAServiceProtocol: namespaceA.ServiceA.StreamingServiceProtocol {}
-      /// Partial conformance to `namespaceA_ServiceAStreamingServiceProtocol`.
-      public extension namespaceA.ServiceA.ServiceProtocol {
+      protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {}
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceA.ServiceProtocol {
       }
       /// Documentation for ServiceB
-      protocol namespaceA_ServiceBStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+      protocol NamespaceA_ServiceBStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      public extension namespaceA.ServiceB.StreamingServiceProtocol {
+      public extension NamespaceA.ServiceB.StreamingServiceProtocol {
           func registerRPCs(with router: inout GRPCCore.RPCRouter) {}
       }
       /// Documentation for ServiceB
-      protocol namespaceA_ServiceBServiceProtocol: namespaceA.ServiceB.StreamingServiceProtocol {}
-      /// Partial conformance to `namespaceA_ServiceBStreamingServiceProtocol`.
-      public extension namespaceA.ServiceB.ServiceProtocol {
+      protocol NamespaceA_ServiceBServiceProtocol: NamespaceA.ServiceB.StreamingServiceProtocol {}
+      /// Partial conformance to `NamespaceA_ServiceBStreamingServiceProtocol`.
+      public extension NamespaceA.ServiceB.ServiceProtocol {
       }
       """
 
