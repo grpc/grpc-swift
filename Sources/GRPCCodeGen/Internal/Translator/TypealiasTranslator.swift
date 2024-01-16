@@ -55,10 +55,12 @@
 struct TypealiasTranslator: SpecializedTranslator {
   let client: Bool
   let server: Bool
+  let accessLevel: SourceGenerator.Configuration.AccessLevel
 
-  init(client: Bool, server: Bool) {
+  init(client: Bool, server: Bool, accessLevel: SourceGenerator.Configuration.AccessLevel) {
     self.client = client
     self.server = server
+    self.accessLevel = accessLevel
   }
 
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
@@ -101,7 +103,7 @@ extension TypealiasTranslator {
         CodeBlock(item: .declaration($0))
       }
     } else {
-      var namespaceEnum = EnumDescription(name: namespace)
+      var namespaceEnum = EnumDescription(accessModifier: self.accessModifier, name: namespace)
       namespaceEnum.members = serviceDeclarations
       return [CodeBlock(item: .declaration(.enum(namespaceEnum)))]
     }
@@ -110,8 +112,8 @@ extension TypealiasTranslator {
   private func makeServiceEnum(
     from service: CodeGenerationRequest.ServiceDescriptor
   ) throws -> Declaration {
-    var serviceEnum = EnumDescription(name: service.name)
-    var methodsEnum = EnumDescription(name: "Methods")
+    var serviceEnum = EnumDescription(accessModifier: self.accessModifier, name: service.name)
+    var methodsEnum = EnumDescription(accessModifier: self.accessModifier, name: "Methods")
     let methods = service.methods
 
     // Create the method specific enums.
@@ -151,10 +153,12 @@ extension TypealiasTranslator {
     var methodEnum = EnumDescription(name: method.name)
 
     let inputTypealias = Declaration.typealias(
+      accessModifier: self.accessModifier,
       name: "Input",
       existingType: .member([method.inputType])
     )
     let outputTypealias = Declaration.typealias(
+      accessModifier: self.accessModifier,
       name: "Output",
       existingType: .member([method.outputType])
     )
@@ -165,6 +169,8 @@ extension TypealiasTranslator {
     methodEnum.members.append(inputTypealias)
     methodEnum.members.append(outputTypealias)
     methodEnum.members.append(descriptorVariable)
+
+    methodEnum.accessModifier = self.accessModifier
 
     return .enum(methodEnum)
   }
@@ -198,6 +204,7 @@ extension TypealiasTranslator {
       )
     )
     return .variable(
+      accessModifier: self.accessModifier,
       isStatic: true,
       kind: .let,
       left: descriptorDeclarationLeft,
@@ -222,6 +229,7 @@ extension TypealiasTranslator {
     }
 
     return .variable(
+      accessModifier: self.accessModifier,
       isStatic: true,
       kind: .let,
       left: .identifier(.pattern("methods")),
@@ -234,10 +242,12 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> [Declaration] {
     let streamingServiceProtocolTypealias = Declaration.typealias(
+      accessModifier: self.accessModifier,
       name: "StreamingServiceProtocol",
       existingType: .member("\(service.namespacedPrefix)ServiceStreamingProtocol")
     )
     let serviceProtocolTypealias = Declaration.typealias(
+      accessModifier: self.accessModifier,
       name: "ServiceProtocol",
       existingType: .member("\(service.namespacedPrefix)ServiceProtocol")
     )
@@ -249,6 +259,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     return .typealias(
+      accessModifier: self.accessModifier,
       name: "ClientProtocol",
       existingType: .member("\(service.namespacedPrefix)ClientProtocol")
     )
@@ -258,6 +269,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     return .typealias(
+      accessModifier: self.accessModifier,
       name: "Client",
       existingType: .member("\(service.namespacedPrefix)Client")
     )
