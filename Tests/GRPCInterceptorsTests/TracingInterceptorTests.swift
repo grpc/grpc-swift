@@ -20,7 +20,44 @@ import XCTest
 @testable import GRPCInterceptors
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class TracingInterceptorTests: XCTestCase {
-  // TODO: move interceptor tests from GRPCCoreTests to here once we've
-  // split out test utils/harness into their own target.
+final class TracingInterceptorTests: TracingTestCase {
+  func testClientInterceptor() async throws {
+    var serviceContext = ServiceContext.topLevel
+    let traceIDString = UUID().uuidString
+    let interceptor = ClientTracingInterceptor()
+    
+    serviceContext.traceID = traceIDString
+    try await ServiceContext.withValue(serviceContext) {
+      let response = try await interceptor.intercept(
+        request: .init(producer: { writer in try await writer.write(["request"])}),
+        context: .init(descriptor: .init(service: "foo", method: "bar"))) { stream, _ in
+          XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
+          return .init(metadata: [], bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) })))
+        }
+      
+      var messages = response.messages.makeAsyncIterator()
+      let message = try await messages.next()
+      XCTAssertEqual(message, ["response"])
+    }
+  }
+
+  func testServerInterceptor() async throws {
+    let interceptor = ServerTracingInterceptor()
+    let response = try await interceptor.intercept(
+      request: .init(single: .init(metadata: [], message: [])),
+      context: .init(descriptor: .init(service: "foo", method: "bar"))) { _, _ in
+        return .init(accepted: .success(.init(metadata: [], producer: { writer in
+          guard let serviceContext = ServiceContext.current else {
+            XCTFail("There should be a service context present.")
+            return []
+          }
+
+          let traceID = serviceContext.traceID
+          XCTAssertEqual("some-trace-id", traceID)
+
+          try await writer.write("response")
+          return []
+        })))
+      }
+  }
 }

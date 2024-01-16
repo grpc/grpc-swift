@@ -279,7 +279,6 @@ extension Target {
     dependencies: [
       .grpcCore,
       .grpcInProcessTransport,
-      .grpcInterceptors,
       .dequeModule,
       .atomics
     ]
@@ -296,6 +295,7 @@ extension Target {
   static let grpcInterceptorsTests: Target = .testTarget(
     name: "GRPCInterceptorsTests",
     dependencies: [
+      .grpcCore,
       .grpcInterceptors
     ]
   )
