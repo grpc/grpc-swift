@@ -23,13 +23,12 @@ import XCTest
 final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
+  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
 
   func testTypealiasTranslator() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -37,10 +36,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [method]
     )
     let expectedSwift =
@@ -79,10 +80,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNoMethodsServiceClientAndServer() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
@@ -110,10 +113,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorServer() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
@@ -139,10 +144,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorClient() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
@@ -168,10 +175,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNoClientNoServer() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
@@ -195,9 +204,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorEmptyNamespace() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "ServiceARequest",
@@ -205,10 +212,8 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -245,9 +250,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorCheckMethodsOrder() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -255,9 +258,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let methodB = MethodDescriptor(
       documentation: "Documentation for MethodB",
-      name: "MethodB",
-      generatedName: "MethodB",
-      signatureName: "methodB",
+      name: Name(base: "MethodB", generatedUpperCase: "MethodB", generatedLowerCase: "methodB"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -265,10 +266,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [methodA, methodB]
     )
     let expectedSwift =
@@ -316,10 +319,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNoMethodsService() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
@@ -347,19 +352,23 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorServiceAlphabeticalOrder() throws {
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "Bservice",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "BService", generatedUpperCase: "Bservice", generatedLowerCase: "bservice"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "Aservice",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "AService", generatedUpperCase: "Aservice", generatedLowerCase: "aservice"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
 
@@ -396,19 +405,15 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorServiceAlphabeticalOrderNoNamespace() throws {
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "BService",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bservice"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aservice"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
@@ -443,19 +448,23 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNamespaceAlphabeticalOrder() throws {
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "BService",
-      namespace: "bnamespace",
-      generatedNamespace: "Bnamespace",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bservice"),
+      namespace: Name(
+        base: "bnamespace",
+        generatedUpperCase: "Bnamespace",
+        generatedLowerCase: "bnamespace"
+      ),
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "anamespace",
-      generatedNamespace: "Anamespace",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aservice"),
+      namespace: Name(
+        base: "anamespace",
+        generatedUpperCase: "Anamespace",
+        generatedLowerCase: "anamespace"
+      ),
       methods: []
     )
 
@@ -494,18 +503,18 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNamespaceNoNamespaceOrder() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "anamespace",
-      generatedNamespace: "Anamespace",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "anamespace",
+        generatedUpperCase: "Anamespace",
+        generatedLowerCase: "anamespace"
+      ),
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "BService",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bService"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
     let expectedSwift =

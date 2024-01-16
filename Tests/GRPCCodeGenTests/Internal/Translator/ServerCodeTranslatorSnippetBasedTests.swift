@@ -23,13 +23,12 @@ import XCTest
 final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
+  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
 
   func testServerCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for unaryMethod",
-      name: "UnaryMethod",
-      generatedName: "Unary",
-      signatureName: "unary",
+      name: Name(base: "UnaryMethod", generatedUpperCase: "Unary", generatedLowerCase: "unary"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -37,10 +36,16 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "AlongNameForServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(
+        base: "AlongNameForServiceA",
+        generatedUpperCase: "ServiceA",
+        generatedLowerCase: "serviceA"
+      ),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [method]
     )
     let expectedSwift =
@@ -86,9 +91,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorInputStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for inputStreamingMethod",
-      name: "InputStreamingMethod",
-      generatedName: "InputStreaming",
-      signatureName: "inputStreaming",
+      name: Name(
+        base: "InputStreamingMethod",
+        generatedUpperCase: "InputStreaming",
+        generatedLowerCase: "inputStreaming"
+      ),
       isInputStreaming: true,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -96,10 +103,12 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [method]
     )
     let expectedSwift =
@@ -145,9 +154,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorOutputStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for outputStreamingMethod",
-      name: "OutputStreamingMethod",
-      generatedName: "OutputStreaming",
-      signatureName: "outputStreaming",
+      name: Name(
+        base: "OutputStreamingMethod",
+        generatedUpperCase: "OutputStreaming",
+        generatedLowerCase: "outputStreaming"
+      ),
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -155,10 +166,16 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceATest",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(
+        base: "ServiceATest",
+        generatedUpperCase: "ServiceA",
+        generatedLowerCase: "serviceA"
+      ),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [method]
     )
     let expectedSwift =
@@ -204,9 +221,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorBidirectionalStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for bidirectionalStreamingMethod",
-      name: "BidirectionalStreamingMethod",
-      generatedName: "BidirectionalStreaming",
-      signatureName: "bidirectionalStreaming",
+      name: Name(
+        base: "BidirectionalStreamingMethod",
+        generatedUpperCase: "BidirectionalStreaming",
+        generatedLowerCase: "bidirectionalStreaming"
+      ),
       isInputStreaming: true,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -214,10 +233,16 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceATest",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(
+        base: "ServiceATest",
+        generatedUpperCase: "ServiceA",
+        generatedLowerCase: "serviceA"
+      ),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [method]
     )
     let expectedSwift =
@@ -259,9 +284,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorMultipleMethods() throws {
     let inputStreamingMethod = MethodDescriptor(
       documentation: "Documentation for inputStreamingMethod",
-      name: "InputStreamingMethod",
-      generatedName: "InputStreaming",
-      signatureName: "inputStreaming",
+      name: Name(
+        base: "InputStreamingMethod",
+        generatedUpperCase: "InputStreaming",
+        generatedLowerCase: "inputStreaming"
+      ),
       isInputStreaming: true,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -269,9 +296,11 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let outputStreamingMethod = MethodDescriptor(
       documentation: "Documentation for outputStreamingMethod",
-      name: "outputStreamingMethod",
-      generatedName: "OutputStreaming",
-      signatureName: "outputStreaming",
+      name: Name(
+        base: "outputStreamingMethod",
+        generatedUpperCase: "OutputStreaming",
+        generatedLowerCase: "outputStreaming"
+      ),
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -279,10 +308,16 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceATest",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(
+        base: "ServiceATest",
+        generatedUpperCase: "ServiceA",
+        generatedLowerCase: "serviceA"
+      ),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [inputStreamingMethod, outputStreamingMethod]
     )
     let expectedSwift =
@@ -344,9 +379,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorNoNamespaceService() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "methodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "methodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -354,10 +387,12 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceATest",
-      generatedName: "ServiceA",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(
+        base: "ServiceATest",
+        generatedUpperCase: "ServiceA",
+        generatedLowerCase: "serviceA"
+      ),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -403,18 +438,22 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   func testServerCodeTranslatorMoreServicesOrder() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for ServiceB",
-      name: "ServiceB",
-      generatedName: "ServiceB",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceB", generatedUpperCase: "ServiceB", generatedLowerCase: "serviceB"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =

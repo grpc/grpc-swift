@@ -151,7 +151,7 @@ extension ClientCodeTranslator {
     )
     let functionSignature = FunctionSignatureDescription(
       kind: .function(
-        name: method.signatureName,
+        name: method.name.generatedLowerCase,
         isStatic: false
       ),
       generics: [.member("R")],
@@ -180,7 +180,10 @@ extension ClientCodeTranslator {
   ) -> [CodeBlock] {
     let functionCall = Expression.functionCall(
       calledExpression: .memberAccess(
-        MemberAccessDescription(left: .identifierPattern("self"), right: method.signatureName)
+        MemberAccessDescription(
+          left: .identifierPattern("self"),
+          right: method.name.generatedLowerCase
+        )
       ),
       arguments: [
         FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
@@ -380,7 +383,7 @@ extension ClientCodeTranslator {
         .init(
           label: "descriptor",
           expression: .identifierPattern(
-            "\(service.namespacedTypealiasGeneratedName).Methods.\(method.generatedName).descriptor"
+            "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase).descriptor"
           )
         ),
         .init(label: "serializer", expression: .identifierPattern("serializer")),
@@ -395,7 +398,7 @@ extension ClientCodeTranslator {
 
     return .function(
       kind: .function(
-        name: "\(method.signatureName)",
+        name: "\(method.name.generatedLowerCase)",
         isStatic: false
       ),
       generics: [.member("R")],
@@ -419,7 +422,7 @@ extension ClientCodeTranslator {
     type: InputOutputType
   ) -> String {
     var components: String =
-      "\(service.namespacedTypealiasGeneratedName).Methods.\(method.generatedName)"
+      "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase)"
 
     switch type {
     case .input:

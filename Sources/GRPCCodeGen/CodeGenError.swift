@@ -39,7 +39,6 @@ extension CodeGenError {
       case nonUniqueServiceName
       case nonUniqueMethodName
       case invalidKind
-      case invalidGeneratedNamespace
     }
 
     private var value: Value
@@ -60,11 +59,6 @@ extension CodeGenError {
     /// An invalid kind name is used for an import.
     public static var invalidKind: Self {
       Self(.invalidKind)
-    }
-
-    /// An invalid generated namespace is used for an import.
-    public static var invalidGeneratedNamespace: Self {
-      Self(.invalidGeneratedNamespace)
     }
   }
 }

@@ -23,13 +23,12 @@ import XCTest
 final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
+  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
 
   func testClientCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -37,10 +36,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -101,9 +98,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   func testClientCodeTranslatorClientStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: true,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -111,10 +106,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -175,9 +168,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   func testClientCodeTranslatorServerStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "methodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -185,10 +176,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -249,9 +238,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   func testClientCodeTranslatorBidirectionalStreamingMethod() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "methodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: true,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -259,10 +246,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -323,9 +308,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   func testClientCodeTranslatorMultipleMethods() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "methodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: true,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -333,9 +316,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let methodB = MethodDescriptor(
       documentation: "Documentation for MethodB",
-      name: "methodB",
-      generatedName: "MethodB",
-      signatureName: "methodB",
+      name: Name(base: "MethodB", generatedUpperCase: "MethodB", generatedLowerCase: "methodB"),
       isInputStreaming: false,
       isOutputStreaming: true,
       inputType: "NamespaceA_ServiceARequest",
@@ -343,10 +324,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [methodA, methodB]
     )
     let expectedSwift =
@@ -440,9 +419,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   func testClientCodeTranslatorNoNamespaceService() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "methodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "ServiceARequest",
@@ -450,10 +427,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -514,18 +489,18 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   func testClientCodeTranslatorMultipleServices() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
+      namespace: Name(
+        base: "nammespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: ""
+      ),
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for ServiceB",
-      name: "ServiceB",
-      generatedName: "ServiceB",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "ServiceB", generatedUpperCase: "ServiceB", generatedLowerCase: ""),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
     let expectedSwift =

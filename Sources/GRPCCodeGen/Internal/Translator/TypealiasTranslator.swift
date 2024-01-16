@@ -64,14 +64,17 @@ struct TypealiasTranslator: SpecializedTranslator {
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks: [CodeBlock] = []
     let services = codeGenerationRequest.services
-    let servicesByNamespace = Dictionary(grouping: services, by: { $0.generatedNamespace })
+    let servicesByNamespace = Dictionary(
+      grouping: services,
+      by: { $0.namespace.generatedUpperCase }
+    )
 
     // Sorting the keys and the services in each list of the dictionary is necessary
     // so that the generated enums are deterministically ordered.
     for (generatedNamespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
       let namespaceCodeBlocks = try self.makeNamespaceEnum(
         for: generatedNamespace,
-        containing: services.sorted(by: { $0.generatedName < $1.generatedName })
+        containing: services.sorted(by: { $0.name.generatedUpperCase < $1.name.generatedUpperCase })
       )
       codeBlocks.append(contentsOf: namespaceCodeBlocks)
     }
@@ -110,7 +113,7 @@ extension TypealiasTranslator {
   private func makeServiceEnum(
     from service: CodeGenerationRequest.ServiceDescriptor
   ) throws -> Declaration {
-    var serviceEnum = EnumDescription(name: service.generatedName)
+    var serviceEnum = EnumDescription(name: service.name.generatedUpperCase)
     var methodsEnum = EnumDescription(name: "Methods")
     let methods = service.methods
 
@@ -148,7 +151,7 @@ extension TypealiasTranslator {
     from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    var methodEnum = EnumDescription(name: method.generatedName)
+    var methodEnum = EnumDescription(name: method.name.generatedUpperCase)
 
     let inputTypealias = Declaration.typealias(
       name: "Input",
@@ -184,7 +187,7 @@ extension TypealiasTranslator {
           ),
           FunctionArgumentDescription(
             label: "method",
-            expression: .literal(method.name)
+            expression: .literal(method.name.base)
           ),
         ]
       )
@@ -202,7 +205,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     var methodDescriptors = [Expression]()
-    let methodNames = service.methods.map { $0.generatedName }
+    let methodNames = service.methods.map { $0.name.generatedUpperCase }
 
     for methodName in methodNames {
       let methodDescriptorPath = Expression.memberAccess(

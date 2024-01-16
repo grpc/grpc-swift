@@ -90,19 +90,14 @@ extension IDLToStructuredSwiftTranslator {
   }
 
   private func validateInput(_ codeGenerationRequest: CodeGenerationRequest) throws {
-    let servicesByGeneratedNamespace = Dictionary(
+    try self.checkServiceDescriptorsAreUnique(codeGenerationRequest.services)
+
+    let servicesByUpperCaseNamespace = Dictionary(
       grouping: codeGenerationRequest.services,
-      by: { $0.generatedNamespace }
+      by: { $0.namespace.generatedUpperCase }
     )
-    let servicesByNamespace = Dictionary(
-      grouping: codeGenerationRequest.services,
-      by: { $0.namespace }
-    )
-    try self.checkServiceNamesAreUnique(for: servicesByGeneratedNamespace)
-    try self.checkServicesNamespacesAndGeneratedNamespacesCoincide(
-      servicesByNamespace: servicesByNamespace
-    )
-    try checkEmptyNamespaceAndGeneratedNamespace(for: codeGenerationRequest.services)
+    try self.checkServiceNamesAreUnique(for: servicesByUpperCaseNamespace)
+
     for service in codeGenerationRequest.services {
       try self.checkMethodNamesAreUnique(in: service)
     }
@@ -111,41 +106,42 @@ extension IDLToStructuredSwiftTranslator {
   // Verify service names are unique within each namespace and that services with no namespace
   // don't have the same names as any of the namespaces.
   private func checkServiceNamesAreUnique(
-    for servicesByNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
+    for servicesByUpperCaseNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
   ) throws {
-    // Check that if there are services in an empty namespace, none have names which match other namespaces
-    if let noNamespaceServices = servicesByNamespace[""] {
-      let namespaces = servicesByNamespace.keys
+    // Check that if there are services in an empty namespace, none have names which match other namespaces,
+    // to ensure that there are no enums with the same name in the type aliases part of the generated code.
+    if let noNamespaceServices = servicesByUpperCaseNamespace[""] {
+      let upperCaseNamespaces = servicesByUpperCaseNamespace.keys
       for service in noNamespaceServices {
-        if namespaces.contains(service.generatedName) {
+        if upperCaseNamespaces.contains(service.name.generatedUpperCase) {
           throw CodeGenError(
             code: .nonUniqueServiceName,
             message: """
-              Services with no namespace must not have the same generated names as the namespaces. \
-              \(service.generatedName) is used as a generated name for a service with no namespace and a namespace.
+              Services with no namespace must not have the same generated upper case names as the namespaces. \
+              \(service.name.generatedUpperCase) is used as a generated upper case name for a service with no namespace and a namespace.
               """
           )
         }
       }
     }
 
-    // Check that service names and service generated names are unique within each namespace.
-    for (namespace, services) in servicesByNamespace {
-      var serviceNames: Set<String> = []
-      var generatedNames: Set<String> = []
+    // Check that the generated upper case names for services are unique within each namespace, to ensure that
+    // the service enums from each namespace enum have unique names.
+    for (namespace, services) in servicesByUpperCaseNamespace {
+      var upperCaseNames: Set<String> = []
 
       for service in services {
-        if serviceNames.contains(service.name) {
+        if upperCaseNames.contains(service.name.generatedUpperCase) {
           let errorMessage: String
           if namespace.isEmpty {
             errorMessage = """
-              Services in an empty namespace must have unique names. \
-              \(service.name) is used as a name for multiple services without namespaces.
+              Services in an empty namespace must have unique generated upper case names. \
+              \(service.name.generatedUpperCase) is used as a generated upper case name for multiple services without namespaces.
               """
           } else {
             errorMessage = """
-              Services within the same namespace must have unique names. \
-              \(service.name) is used as a name for multiple services in the \(service.namespace) namespace.
+              Services within the same namespace must have unique generated upper case names. \
+              \(service.name.generatedUpperCase) is used as a generated upper case name for multiple services in the \(service.namespace.base) namespace.
               """
           }
           throw CodeGenError(
@@ -153,158 +149,122 @@ extension IDLToStructuredSwiftTranslator {
             message: errorMessage
           )
         }
-        serviceNames.insert(service.name)
-
-        if generatedNames.contains(service.generatedName) {
-          let errorMessage: String
-          if namespace.isEmpty {
-            errorMessage = """
-              Services in an empty namespace must have unique generated names. \
-              \(service.generatedName) is used as a name for multiple services without namespaces.
-              """
-          } else {
-            errorMessage = """
-              Services within the same namespace must have unique generated names. \
-              \(service.generatedName) is used as a generated name for multiple services in the \(service.namespace) namespace.
-              """
-          }
-          throw CodeGenError(
-            code: .nonUniqueServiceName,
-            message: errorMessage
-          )
-        }
-        generatedNames.insert(service.generatedName)
+        upperCaseNames.insert(service.name.generatedUpperCase)
       }
     }
   }
 
-  // Verify method names are unique for the service.
+  // Verify method names are unique within a service.
   private func checkMethodNamesAreUnique(
     in service: CodeGenerationRequest.ServiceDescriptor
   ) throws {
-    // Check the method names.
-    let methodNames = service.methods.map { $0.name }
-    var seenNames = Set<String>()
+    // Check that the method descriptors are unique, by checking that the base names
+    // of the methods of a specific service are unique.
+    let baseNames = service.methods.map { $0.name.base }
+    var seenBaseNames = Set<String>()
 
-    for methodName in methodNames {
-      if seenNames.contains(methodName) {
+    for baseName in baseNames {
+      if seenBaseNames.contains(baseName) {
         throw CodeGenError(
           code: .nonUniqueMethodName,
           message: """
-            Methods of a service must have unique names. \
-            \(methodName) is used as a name for multiple methods of the \(service.name) service.
+            Methods of a service must have unique base names. \
+            \(baseName) is used as a base name for multiple methods of the \(service.name.base) service.
             """
         )
       }
-      seenNames.insert(methodName)
+      seenBaseNames.insert(baseName)
     }
 
-    // Check the method generated names.
-    let generatedNames = service.methods.map { $0.generatedName }
-    var seenGeneratedNames = Set<String>()
+    // Check that generated upper case names for methods are unique within a service, to ensure that
+    // the enums containing type aliases for each method of a service.
+    let upperCaseNames = service.methods.map { $0.name.generatedUpperCase }
+    var seenUpperCaseNames = Set<String>()
 
-    for generatedName in generatedNames {
-      if seenGeneratedNames.contains(generatedName) {
+    for upperCaseName in upperCaseNames {
+      if seenUpperCaseNames.contains(upperCaseName) {
         throw CodeGenError(
           code: .nonUniqueMethodName,
           message: """
-            Methods of a service must have unique generated names. \
-            \(generatedName) is used as a generated name for multiple methods of the \(service.name) service.
+            Methods of a service must have unique generated upper case names. \
+            \(upperCaseName) is used as a generated upper case name for multiple methods of the \(service.name.base) service.
             """
         )
       }
-      seenGeneratedNames.insert(generatedName)
+      seenUpperCaseNames.insert(upperCaseName)
     }
 
-    // Check the function signature names.
-    let signatureNames = service.methods.map { $0.signatureName }
-    var seenSignatureNames = Set<String>()
+    // Check that generated lower case names for methods are unique within a service, to ensure that
+    // the function declarations and definitions from the same protocols and extensions have unique names.
+    let lowerCaseNames = service.methods.map { $0.name.generatedLowerCase }
+    var seenLowerCaseNames = Set<String>()
 
-    for signatureName in signatureNames {
-      if seenSignatureNames.contains(signatureName) {
+    for lowerCaseName in lowerCaseNames {
+      if seenLowerCaseNames.contains(lowerCaseName) {
         throw CodeGenError(
           code: .nonUniqueMethodName,
           message: """
-            Methods of a service must have unique signature names. \
-            \(signatureName) is used as a signature name for multiple methods of the \(service.name) service.
+            Methods of a service must have unique lower case names. \
+            \(lowerCaseName) is used as a signature name for multiple methods of the \(service.name.base) service.
             """
         )
       }
-      seenSignatureNames.insert(signatureName)
+      seenLowerCaseNames.insert(lowerCaseName)
     }
   }
 
-  private func checkEmptyNamespaceAndGeneratedNamespace(
-    for services: [CodeGenerationRequest.ServiceDescriptor]
+  private func checkServiceDescriptorsAreUnique(
+    _ services: [CodeGenerationRequest.ServiceDescriptor]
   ) throws {
-    for service in services {
-      if service.namespace.isEmpty {
-        if !service.generatedNamespace.isEmpty {
-          throw CodeGenError(
-            code: .invalidGeneratedNamespace,
-            message: """
-              Services with an empty namespace must have an empty generated namespace. \
-              \(service.name) has an empty namespace, but a non-empty generated namespace.
-              """
-          )
-        }
-      } else {
-        if service.generatedNamespace.isEmpty {
-          throw CodeGenError(
-            code: .invalidGeneratedNamespace,
-            message: """
-              Services with a non-empty namespace must have a non-empty generated namespace. \
-              \(service.name) has a non-empty namespace, but an empty generated namespace.
-              """
-          )
-        }
-      }
+    let descriptors = services.map {
+      ($0.namespace.base.isEmpty ? "" : "\($0.namespace.base).") + $0.name.base
     }
-  }
-
-  private func checkServicesNamespacesAndGeneratedNamespacesCoincide(
-    servicesByNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
-  ) throws {
-    for (_, services) in servicesByNamespace {
-      let generatedNamespace = services[0].generatedNamespace
-      for service in services {
-        if service.generatedNamespace != generatedNamespace {
-          throw CodeGenError(
-            code: .invalidGeneratedNamespace,
-            message: """
-              All services within a namespace must have the same generated namespace. \
-              \(service.name) doesn't have the same generated namespace as other services \
-              within the \(service.namespace) namespace.
-              """
-          )
-        }
-      }
+    if let duplicate = descriptors.hasDuplicates() {
+      throw CodeGenError(
+        code: .nonUniqueServiceName,
+        message: """
+          Services must have unique descriptors. \
+          \(duplicate) is the descriptor of at least two different services.
+          """
+      )
     }
   }
 }
 
 extension CodeGenerationRequest.ServiceDescriptor {
   var namespacedTypealiasGeneratedName: String {
-    if self.generatedNamespace.isEmpty {
-      return self.generatedName
+    if self.namespace.generatedUpperCase.isEmpty {
+      return self.name.generatedUpperCase
     } else {
-      return "\(self.generatedNamespace).\(self.generatedName)"
+      return "\(self.namespace.generatedUpperCase).\(self.name.generatedUpperCase)"
     }
   }
 
   var namespacedGeneratedName: String {
-    if self.generatedNamespace.isEmpty {
-      return self.generatedName
+    if self.namespace.generatedUpperCase.isEmpty {
+      return self.name.generatedUpperCase
     } else {
-      return "\(self.generatedNamespace)_\(self.generatedName)"
+      return "\(self.namespace.generatedUpperCase)_\(self.name.generatedUpperCase)"
     }
   }
 
   var fullyQualifiedName: String {
-    if self.namespace.isEmpty {
-      return self.name
+    if self.namespace.base.isEmpty {
+      return self.name.base
     } else {
-      return "\(self.namespace).\(self.name)"
+      return "\(self.namespace.base).\(self.name.base)"
     }
+  }
+}
+
+extension [String] {
+  func hasDuplicates() -> String? {
+    var elements = Set<String>()
+    for element in self {
+      if elements.insert(element).inserted == false {
+        return element
+      }
+    }
+    return nil
   }
 }

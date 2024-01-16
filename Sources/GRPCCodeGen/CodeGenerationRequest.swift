@@ -220,19 +220,13 @@ public struct CodeGenerationRequest {
     /// Documentation from comments above the IDL service description.
     public var documentation: String
 
-    /// Service name.
-    public var name: String
+    /// Service name in different formats.
+    public var name: Name
 
-    /// The service name used in the generated type names.
-    public var generatedName: String
-
-    /// The service namespace.
+    /// The service namespace in different formats.
     ///
     /// For `.proto` files it is the package name.
-    public var namespace: String
-
-    /// The namespace identifier used in the generated type names.
-    public var generatedNamespace: String
+    public var namespace: Name
 
     /// A description of each method of a service.
     ///
@@ -241,17 +235,13 @@ public struct CodeGenerationRequest {
 
     public init(
       documentation: String,
-      name: String,
-      generatedName: String,
-      namespace: String,
-      generatedNamespace: String,
+      name: Name,
+      namespace: Name,
       methods: [MethodDescriptor]
     ) {
       self.documentation = documentation
       self.name = name
-      self.generatedName = generatedName
       self.namespace = namespace
-      self.generatedNamespace = generatedNamespace
       self.methods = methods
     }
 
@@ -260,14 +250,8 @@ public struct CodeGenerationRequest {
       /// Documentation from comments above the IDL method description.
       public var documentation: String
 
-      /// Method name.
-      public var name: String
-
-      /// The name used in the generated type names.
-      public var generatedName: String
-
-      /// The function name used in the generated code in declarations of the method.
-      public var signatureName: String
+      /// Method name in different formats.
+      public var name: Name
 
       /// Identifies if the method is input streaming.
       public var isInputStreaming: Bool
@@ -283,9 +267,7 @@ public struct CodeGenerationRequest {
 
       public init(
         documentation: String,
-        name: String,
-        generatedName: String,
-        signatureName: String,
+        name: Name,
         isInputStreaming: Bool,
         isOutputStreaming: Bool,
         inputType: String,
@@ -293,13 +275,46 @@ public struct CodeGenerationRequest {
       ) {
         self.documentation = documentation
         self.name = name
-        self.generatedName = generatedName
-        self.signatureName = signatureName
         self.isInputStreaming = isInputStreaming
         self.isOutputStreaming = isOutputStreaming
         self.inputType = inputType
         self.outputType = outputType
       }
     }
+  }
+
+  /// Represents the name associated with a namespace, service or a method, in three different formats,
+  /// which are used in specific parts of the generated code. There must be only one ``Name`` object
+  /// for each namespace, service or method.
+  ///
+  /// The base name, the generatedUpperCase (and the generatedLowerCase) must be unique for methods
+  /// from within the same service and for services within the same namespace.
+  public struct Name: Hashable {
+    /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
+    /// the specific casing of the IDL.
+    ///
+    /// The base name is also used in the descriptors that identify a specific method or service :
+    /// `<service_namespace_baseName>.<service_baseName>.<method_baseName>`.
+    public let base: String
+
+    /// The `generatedUpperCase` name is used as part of generated type names, which begin with a capital letter
+    /// and are (partially) using CamelCase. It is using UpperCamelCase in order to follow the Swift naming conventions.
+    ///
+    /// It is used in the generated code as an enum name and as part of protocol names.
+    /// For example, in the generated server code the name of the service protocol
+    /// follows this pattern:
+    /// `<service_namespace_generatedUpperCaseName>_<service_generatedUpperCaseName>ServiceProtocol`.
+    public let generatedUpperCase: String
+
+    /// The `generatedLowerCase` name is used as the function name in the method declarations or definitions.
+    /// It is using lowerCamelCase in order to follow the Swift naming conventions.
+    ///
+    /// It is used only for the methods, so in the case of a namespace or service, it can be an empty String.
+    /// For example, for a method with the base name "FooBar", the generatedLowerCase is "fooBar" and it is
+    /// used in:
+    /// ```swift
+    /// public func fooBar(){}
+    /// ```
+    public let generatedLowerCase: String
   }
 }

@@ -23,6 +23,7 @@ import XCTest
 final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
+  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
 
   func testImports() throws {
     var dependencies = [CodeGenerationRequest.Dependency]()
@@ -149,10 +150,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   func testSameNameServicesNoNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
@@ -172,30 +171,26 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services in an empty namespace must have unique names. \
-            AService is used as a name for multiple services without namespaces.
+            Services must have unique descriptors. \
+            AService is the descriptor of at least two different services.
             """
         )
       )
     }
   }
 
-  func testSameGeneratedNameServicesNoNamespaceError() throws {
+  func testSameDescriptorsServicesNoNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "AService",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
@@ -215,20 +210,21 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services in an empty namespace must have unique generated names. \
-            AService is used as a name for multiple services without namespaces.
+            Services must have unique descriptors. AService is the descriptor of at least two different services.
             """
         )
       )
     }
   }
-  func testSameNameServicesSameNamespaceError() throws {
+  func testSameDescriptorsSameNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "namespacea",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "namespacea",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespacea"
+      ),
       methods: []
     )
 
@@ -248,8 +244,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services within the same namespace must have unique names. \
-            AService is used as a name for multiple services in the namespacea namespace.
+            Services must have unique descriptors. \
+            namespacea.AService is the descriptor of at least two different services.
             """
         )
       )
@@ -259,18 +255,22 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   func testSameGeneratedNameServicesSameNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "namespacea",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "namespacea",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespacea"
+      ),
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "AService",
-      namespace: "namespacea",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "BService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "namespacea",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespacea"
+      ),
       methods: []
     )
 
@@ -290,20 +290,18 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services within the same namespace must have unique generated names. \
-            AService is used as a generated name for multiple services in the namespacea namespace.
+            Services within the same namespace must have unique generated upper case names. \
+            AService is used as a generated upper case name for multiple services in the namespacea namespace.
             """
         )
       )
     }
   }
 
-  func testSameNameMethodsSameServiceError() throws {
+  func testSameBaseNameMethodsSameServiceError() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -311,10 +309,12 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "namespacea",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "namespacea",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespacea"
+      ),
       methods: [methodA, methodA]
     )
 
@@ -334,20 +334,18 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueMethodName,
           message: """
-            Methods of a service must have unique names. \
-            MethodA is used as a name for multiple methods of the AService service.
+            Methods of a service must have unique base names. \
+            MethodA is used as a base name for multiple methods of the AService service.
             """
         )
       )
     }
   }
 
-  func testSameGeneratedNameMethodsSameServiceError() throws {
+  func testSameGeneratedUpperCaseNameMethodsSameServiceError() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -355,9 +353,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
     let methodB = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodB",
-      generatedName: "MethodA",
-      signatureName: "methodB",
+      name: Name(base: "MethodB", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -365,10 +361,12 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "namespacea",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "namespacea",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespacea"
+      ),
       methods: [methodA, methodB]
     )
 
@@ -388,20 +386,18 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueMethodName,
           message: """
-            Methods of a service must have unique generated names. \
-            MethodA is used as a generated name for multiple methods of the AService service.
+            Methods of a service must have unique generated upper case names. \
+            MethodA is used as a generated upper case name for multiple methods of the AService service.
             """
         )
       )
     }
   }
 
-  func testSameSignatureNameMethodsSameServiceError() throws {
+  func testSameLowerCaseNameMethodsSameServiceError() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
-      generatedName: "MethodA",
-      signatureName: "methodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -409,9 +405,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
     let methodB = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodB",
-      generatedName: "MethodB",
-      signatureName: "methodA",
+      name: Name(base: "MethodB", generatedUpperCase: "MethodB", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -419,10 +413,12 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      generatedName: "AService",
-      namespace: "namespacea",
-      generatedNamespace: "NamespaceA",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "namespacea",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespacea"
+      ),
       methods: [methodA, methodB]
     )
 
@@ -442,7 +438,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueMethodName,
           message: """
-            Methods of a service must have unique signature names. \
+            Methods of a service must have unique lower case names. \
             methodA is used as a signature name for multiple methods of the AService service.
             """
         )
@@ -453,18 +449,18 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   func testSameGeneratedNameNoNamespaceServiceAndNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for SameName service with no namespace",
-      name: "SameName",
-      generatedName: "SameName",
-      namespace: "",
-      generatedNamespace: "",
+      name: Name(base: "SameName", generatedUpperCase: "SameName", generatedLowerCase: "sameName"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      generatedName: "BService",
-      namespace: "SameName",
-      generatedNamespace: "SameName",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bService"),
+      namespace: Name(
+        base: "sameName",
+        generatedUpperCase: "SameName",
+        generatedLowerCase: "sameName"
+      ),
       methods: []
     )
     let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
@@ -483,119 +479,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services with no namespace must not have the same generated names as the namespaces. \
-            SameName is used as a generated name for a service with no namespace and a namespace.
-            """
-        )
-      )
-    }
-  }
-
-  func testEmptyNamespaceAndNonEmptyGeneratedNamespaceError() throws {
-    let serviceA = ServiceDescriptor(
-      documentation: "Documentation for SameName service with no namespace",
-      name: "SameName",
-      generatedName: "SameName",
-      namespace: "",
-      generatedNamespace: "NonEmpty",
-      methods: []
-    )
-
-    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA])
-    let translator = IDLToStructuredSwiftTranslator()
-    XCTAssertThrowsError(
-      ofType: CodeGenError.self,
-      try translator.translate(
-        codeGenerationRequest: codeGenerationRequest,
-        client: true,
-        server: true
-      )
-    ) {
-      error in
-      XCTAssertEqual(
-        error as CodeGenError,
-        CodeGenError(
-          code: .invalidGeneratedNamespace,
-          message: """
-            Services with an empty namespace must have an empty generated namespace. \
-            SameName has an empty namespace, but a non-empty generated namespace.
-            """
-        )
-      )
-    }
-  }
-
-  func testNonEmptyNamespaceAndEmptyGeneratedNamespaceError() throws {
-    let serviceA = ServiceDescriptor(
-      documentation: "Documentation for SameName service with no namespace",
-      name: "SameName",
-      generatedName: "SameName",
-      namespace: "NonEmpty",
-      generatedNamespace: "",
-      methods: []
-    )
-
-    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA])
-    let translator = IDLToStructuredSwiftTranslator()
-    XCTAssertThrowsError(
-      ofType: CodeGenError.self,
-      try translator.translate(
-        codeGenerationRequest: codeGenerationRequest,
-        client: true,
-        server: true
-      )
-    ) {
-      error in
-      XCTAssertEqual(
-        error as CodeGenError,
-        CodeGenError(
-          code: .invalidGeneratedNamespace,
-          message: """
-            Services with a non-empty namespace must have a non-empty generated namespace. \
-            SameName has a non-empty namespace, but an empty generated namespace.
-            """
-        )
-      )
-    }
-  }
-
-  func testNamespaceAndGeneratedNamespaceServicesCoincide() throws {
-    // Same namespaces, different generated namespaces.
-    let serviceA = ServiceDescriptor(
-      documentation: "Documentation for SameName service with no namespace",
-      name: "ServiceA",
-      generatedName: "ServiceA",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceA",
-      methods: []
-    )
-    let serviceB = ServiceDescriptor(
-      documentation: "Documentation for SameName service with no namespace",
-      name: "ServiceB",
-      generatedName: "ServiceB",
-      namespace: "namespaceA",
-      generatedNamespace: "NamespaceB",
-      methods: []
-    )
-    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
-    let translator = IDLToStructuredSwiftTranslator()
-    XCTAssertThrowsError(
-      ofType: CodeGenError.self,
-      try translator.translate(
-        codeGenerationRequest: codeGenerationRequest,
-        client: true,
-        server: true
-      )
-    ) {
-      error in
-      XCTAssertEqual(
-        error as CodeGenError,
-        CodeGenError(
-          code: .invalidGeneratedNamespace,
-          message: """
-            All services within a namespace must have the same generated namespace. \
-            ServiceB doesn't have the same generated namespace as other services \
-            within the namespaceA namespace.
+            Services with no namespace must not have the same generated upper case names as the namespaces. \
+            SameName is used as a generated upper case name for a service with no namespace and a namespace.
             """
         )
       )
