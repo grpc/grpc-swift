@@ -23,9 +23,12 @@ import Tracing
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ServerTracingInterceptor: ServerInterceptor {
+  private let extractor: ServerRequestExtractor
 
   /// Create a new instance of a ``ServerTracingInterceptor``.
-  public init() {}
+  public init() {
+    self.extractor = ServerRequestExtractor()
+  }
 
   /// This interceptor will extract whatever `ServiceContext` key-value pairs have been inserted into the
   /// request's metadata, and will make them available to user code via the `ServiceContext/current`
@@ -43,7 +46,7 @@ public struct ServerTracingInterceptor: ServerInterceptor {
     let tracer = InstrumentationSystem.tracer
       
     tracer.extract(
-      request,
+      request.metadata,
       into: &serviceContext,
       using: ServerRequestExtractor()
     )
@@ -59,11 +62,11 @@ public struct ServerTracingInterceptor: ServerInterceptor {
 
 /// An extractor responsible for extracting the required instrumentation keys from request metadata.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct ServerRequestExtractor<Input: Sendable>: Instrumentation.Extractor {
-  typealias Carrier = ServerRequest.Stream<Input>
+struct ServerRequestExtractor: Instrumentation.Extractor {
+  typealias Carrier = Metadata
 
   func extract(key: String, from carrier: Carrier) -> String? {
-    var values = carrier.metadata[stringValues: key].makeIterator()
+    var values = carrier[stringValues: key].makeIterator()
     // There should only be one value for each key. If more, pick just one.
     return values.next()
   }
