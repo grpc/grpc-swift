@@ -253,19 +253,23 @@ extension ServerConnectionHandler.StateMachine {
 
     /// The last time a valid ping happened. This may be in the distant past if there is no such
     /// time (for example the connection is new and there are no active calls).
-    private var lastValidPingTime: NIODeadline
+    ///
+    /// Note: `distantPast` isn't used to indicate no previous valid ping as `NIODeadline` uses
+    /// the monotonic clock on Linux which uses an undefined starting point and in some cases isn't
+    /// always that distant.
+    private var lastValidPingTime: NIODeadline?
 
     init(allowWithoutCalls: Bool, minPingReceiveIntervalWithoutCalls: TimeAmount) {
       self.allowWithoutCalls = allowWithoutCalls
       self.minPingReceiveIntervalWithoutCalls = minPingReceiveIntervalWithoutCalls
       self.maxPingStrikes = 2
       self.pingStrikes = 0
-      self.lastValidPingTime = .distantPast
+      self.lastValidPingTime = nil
     }
 
     /// Reset ping strikes and the time of the last valid ping.
     mutating func reset() {
-      self.lastValidPingTime = .distantPast
+      self.lastValidPingTime = nil
       self.pingStrikes = 0
     }
 
@@ -283,7 +287,8 @@ extension ServerConnectionHandler.StateMachine {
         interval = .hours(2)
       }
 
-      let isAcceptablePing = self.lastValidPingTime + interval <= time
+      // If there's no last ping time then the first is acceptable.
+      let isAcceptablePing = self.lastValidPingTime.map { $0 + interval <= time } ?? true
       let tooManyPings: Bool
 
       if isAcceptablePing {
