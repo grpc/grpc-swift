@@ -569,7 +569,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       generatedNamespace: "NamespaceA",
       methods: []
     )
-    var serviceB = ServiceDescriptor(
+    let serviceB = ServiceDescriptor(
       documentation: "Documentation for SameName service with no namespace",
       name: "ServiceB",
       generatedName: "ServiceB",
@@ -577,7 +577,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       generatedNamespace: "NamespaceB",
       methods: []
     )
-    var codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
+    let codeGenerationRequest = makeCodeGenerationRequest(services: [serviceA, serviceB])
     let translator = IDLToStructuredSwiftTranslator()
     XCTAssertThrowsError(
       ofType: CodeGenError.self,
@@ -593,8 +593,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .invalidGeneratedNamespace,
           message: """
-            Services within a namespace must have the same generated namespace. \
-            Not all services within namespaceA have the NamespaceA generated namespace.
+            All services within a namespace must have the same generated namespace. \
+            ServiceB doesn't have the same generated namespace as other services \
+            within the namespaceA namespace.
             """
         )
       )

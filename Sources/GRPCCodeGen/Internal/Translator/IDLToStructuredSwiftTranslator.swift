@@ -273,7 +273,7 @@ extension IDLToStructuredSwiftTranslator {
             code: .invalidGeneratedNamespace,
             message: """
               All services within a namespace must have the same generated namespace. \
-              \(service.name) has not the same generated namespace as other services \
+              \(service.name) doesn't have the same generated namespace as other services \
               within the \(service.namespace) namespace.
               """
           )
