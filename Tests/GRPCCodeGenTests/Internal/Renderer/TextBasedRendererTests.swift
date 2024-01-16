@@ -897,14 +897,9 @@ extension Test_TextBasedRenderer {
     rendersAs output: String,
     file: StaticString = #file,
     line: UInt = #line,
-    indentation: Int? = nil
+    indentation: Int = 4
   ) throws {
-    let renderer: TextBasedRenderer
-    if let indentation = indentation {
-      renderer = TextBasedRenderer(indentation: indentation)
-    } else {
-      renderer = TextBasedRenderer.default
-    }
+    let renderer = TextBasedRenderer(indentation: indentation)
     XCTAssertEqual(renderClosure(renderer)(input), output, file: file, line: line)
   }
 
@@ -914,7 +909,7 @@ extension Test_TextBasedRenderer {
     rendersAs output: String,
     file: StaticString = #file,
     line: UInt = #line,
-    indentation: Int? = nil
+    indentation: Int = 4
   ) throws {
     try _test(
       input,

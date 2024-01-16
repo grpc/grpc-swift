@@ -344,7 +344,7 @@ struct WhereClause: Equatable, Codable {
 struct ExtensionDescription: Equatable, Codable {
 
   /// An access modifier.
-  var accessModifier: AccessModifier?
+  var accessModifier: AccessModifier? = nil
 
   /// The name of the extended type.
   ///
@@ -694,6 +694,7 @@ struct ClosureSignatureDescription: Equatable, Codable {
   /// The ``@escaping`` attribute.
   var escaping: Bool = false
 }
+
 /// A description of the associated value of an enum case.
 ///
 /// For example, in `case foo(bar: String)`, the associated value
@@ -1385,7 +1386,7 @@ extension Declaration {
   ///   extended type.
   /// - Returns: An extension declaration.
   static func `extension`(
-    accessModifier: AccessModifier?,
+    accessModifier: AccessModifier? = nil,
     onType: String,
     conformances: [String] = [],
     whereClause: WhereClause? = nil,

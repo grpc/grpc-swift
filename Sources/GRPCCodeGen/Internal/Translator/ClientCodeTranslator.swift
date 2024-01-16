@@ -42,12 +42,12 @@
 ///       body
 ///     )
 /// }
-/// struct foo_BarClient: foo.Bar.ClientProtocol {
-///   let client: GRPCCore.GRPCClient
-///   init(client: GRPCCore.GRPCClient) {
+/// public struct foo_BarClient: foo.Bar.ClientProtocol {
+///   private let client: GRPCCore.GRPCClient
+///   public init(client: GRPCCore.GRPCClient) {
 ///     self.client = client
 ///   }
-///   func methodA<R: Sendable>(
+///   public func methodA<R: Sendable>(
 ///     request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
 ///     serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
 ///     deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
@@ -69,6 +69,7 @@ struct ClientCodeTranslator: SpecializedTranslator {
   init(accessLevel: SourceGenerator.Configuration.AccessLevel) {
     self.accessLevel = accessLevel
   }
+
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks = [CodeBlock]()
 
@@ -131,12 +132,12 @@ extension ClientCodeTranslator {
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        generateSerializerDeserializer: true
+        generateSerializerDeserializer: true,
+        accessModifier: self.accessModifier
       )
     }
     let clientProtocolExtension = Declaration.extension(
       ExtensionDescription(
-        accessModifier: self.accessModifier,
         onType: "\(service.namespacedTypealiasPrefix).ClientProtocol",
         declarations: methods
       )
@@ -148,7 +149,8 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    generateSerializerDeserializer: Bool
+    generateSerializerDeserializer: Bool,
+    accessModifier: AccessModifier? = nil
   ) -> Declaration {
     let methodParameters = self.makeParameters(
       for: method,
@@ -157,7 +159,7 @@ extension ClientCodeTranslator {
       generateSerializerDeserializer: generateSerializerDeserializer
     )
     let functionSignature = FunctionSignatureDescription(
-      accessModifier: self.accessModifier,
+      accessModifier: accessModifier,
       kind: .function(
         name: method.name,
         isStatic: false
@@ -311,7 +313,7 @@ extension ClientCodeTranslator {
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let clientProperty = Declaration.variable(
-      accessModifier: self.accessModifier,
+      accessModifier: .private,
       kind: .let,
       left: "client",
       type: .member(["GRPCCore", "GRPCClient"])

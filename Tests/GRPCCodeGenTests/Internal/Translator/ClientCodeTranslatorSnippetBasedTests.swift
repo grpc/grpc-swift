@@ -42,14 +42,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public protocol namespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
-          public func methodA<R>(
+          func methodA<R>(
               request: ClientRequest.Single<namespaceA.ServiceA.Methods.methodA.Input>,
               serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
               deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      public extension namespaceA.ServiceA.ClientProtocol {
+      extension namespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Single<namespaceA.ServiceA.Methods.methodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
@@ -64,7 +64,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       }
       /// Documentation for ServiceA
       public struct namespaceA_ServiceAClient: namespaceA.ServiceA.ClientProtocol {
-          public let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -113,14 +113,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public protocol namespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
-          public func methodA<R>(
+          func methodA<R>(
               request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
               serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
               deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      public extension namespaceA.ServiceA.ClientProtocol {
+      extension namespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
@@ -135,7 +135,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       }
       /// Documentation for ServiceA
       public struct namespaceA_ServiceAClient: namespaceA.ServiceA.ClientProtocol {
-          public let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -184,14 +184,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public protocol namespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
-          public func methodA<R>(
+          func methodA<R>(
               request: ClientRequest.Single<namespaceA.ServiceA.Methods.methodA.Input>,
               serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
               deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Stream<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      public extension namespaceA.ServiceA.ClientProtocol {
+      extension namespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Single<namespaceA.ServiceA.Methods.methodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Stream<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
@@ -206,7 +206,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       }
       /// Documentation for ServiceA
       public struct namespaceA_ServiceAClient: namespaceA.ServiceA.ClientProtocol {
-          public let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -255,14 +255,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public protocol namespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
-          public func methodA<R>(
+          func methodA<R>(
               request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
               serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
               deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Stream<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      public extension namespaceA.ServiceA.ClientProtocol {
+      extension namespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Stream<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
@@ -277,7 +277,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       }
       /// Documentation for ServiceA
       public struct namespaceA_ServiceAClient: namespaceA.ServiceA.ClientProtocol {
-          public let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -334,21 +334,21 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       package protocol namespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
-          package func methodA<R>(
+          func methodA<R>(
               request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
               serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
               deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
           /// Documentation for MethodB
-          package func methodB<R>(
+          func methodB<R>(
               request: ClientRequest.Single<namespaceA.ServiceA.Methods.methodB.Input>,
               serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodB.Input>,
               deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodB.Output>,
               _ body: @Sendable @escaping (ClientResponse.Stream<namespaceA.ServiceA.Methods.methodB.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      package extension namespaceA.ServiceA.ClientProtocol {
+      extension namespaceA.ServiceA.ClientProtocol {
           package func methodA<R>(
               request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
@@ -374,7 +374,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       }
       /// Documentation for ServiceA
       package struct namespaceA_ServiceAClient: namespaceA.ServiceA.ClientProtocol {
-          package let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           package init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -438,14 +438,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       internal protocol ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
-          internal func methodA<R>(
+          func methodA<R>(
               request: ClientRequest.Single<ServiceA.Methods.methodA.Input>,
               serializer: some MessageSerializer<ServiceA.Methods.methodA.Input>,
               deserializer: some MessageDeserializer<ServiceA.Methods.methodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Methods.methodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      internal extension ServiceA.ClientProtocol {
+      extension ServiceA.ClientProtocol {
           internal func methodA<R>(
               request: ClientRequest.Single<ServiceA.Methods.methodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Methods.methodA.Output>) async throws -> R
@@ -460,7 +460,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       }
       /// Documentation for ServiceA
       internal struct ServiceAClient: ServiceA.ClientProtocol {
-          internal let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           internal init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -506,22 +506,22 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Documentation for ServiceA
       public protocol namespaceA_ServiceAClientProtocol: Sendable {}
-      public extension namespaceA.ServiceA.ClientProtocol {
+      extension namespaceA.ServiceA.ClientProtocol {
       }
       /// Documentation for ServiceA
       public struct namespaceA_ServiceAClient: namespaceA.ServiceA.ClientProtocol {
-          public let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
       }
       /// Documentation for ServiceB
       public protocol ServiceBClientProtocol: Sendable {}
-      public extension ServiceB.ClientProtocol {
+      extension ServiceB.ClientProtocol {
       }
       /// Documentation for ServiceB
       public struct ServiceBClient: ServiceB.ClientProtocol {
-          public let client: GRPCCore.GRPCClient
+          private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }

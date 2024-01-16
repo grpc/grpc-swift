@@ -130,10 +130,11 @@ extension ServerCodeTranslator {
 
   private func makeStreamingMethodSignature(
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    in service: CodeGenerationRequest.ServiceDescriptor,
+    accessModifier: AccessModifier? = nil
   ) -> FunctionSignatureDescription {
     return FunctionSignatureDescription(
-      accessModifier: self.accessModifier,
+      accessModifier: accessModifier,
       kind: .function(name: method.name),
       parameters: [
         .init(
@@ -165,7 +166,6 @@ extension ServerCodeTranslator {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
     let registerRPCMethod = self.makeRegisterRPCsMethod(for: service, in: codeGenerationRequest)
     return .extension(
-      accessModifier: self.accessModifier,
       onType: streamingProtocol,
       declarations: [registerRPCMethod]
     )
@@ -301,7 +301,8 @@ extension ServerCodeTranslator {
 
   private func makeServiceProtocolMethod(
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    in service: CodeGenerationRequest.ServiceDescriptor,
+    accessModifier: AccessModifier? = nil
   ) -> Declaration {
     let inputStreaming = method.isInputStreaming ? "Stream" : "Single"
     let outputStreaming = method.isOutputStreaming ? "Stream" : "Single"
@@ -318,7 +319,7 @@ extension ServerCodeTranslator {
     )
 
     let functionSignature = FunctionSignatureDescription(
-      accessModifier: self.accessModifier,
+      accessModifier: accessModifier,
       kind: .function(name: method.name),
       parameters: [
         .init(
@@ -354,7 +355,6 @@ extension ServerCodeTranslator {
 
     let protocolName = self.protocolNameTypealias(service: service, streaming: false)
     return .extension(
-      accessModifier: self.accessModifier,
       onType: protocolName,
       declarations: methods
     )
@@ -373,7 +373,11 @@ extension ServerCodeTranslator {
     let returnStatement = CodeBlock(item: .expression(self.makeReturnStatement(for: method)))
 
     return .function(
-      signature: self.makeStreamingMethodSignature(for: method, in: service),
+      signature: self.makeStreamingMethodSignature(
+        for: method,
+        in: service,
+        accessModifier: self.accessModifier
+      ),
       body: [response, returnStatement]
     )
   }

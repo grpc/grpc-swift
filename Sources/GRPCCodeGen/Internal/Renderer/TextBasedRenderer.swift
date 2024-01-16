@@ -41,7 +41,7 @@ final class StringCodeWriter {
   private var level: Int
 
   /// The indentation for each level as the number of spaces.
-  internal var indentation: Int
+  internal let indentation: Int
 
   /// Whether the next call to `writeLine` will continue writing to the last
   /// stored line. Otherwise a new line is appended.

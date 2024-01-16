@@ -15,7 +15,7 @@
  */
 
 /// Creates a ``SourceFile`` containing the generated code for the RPCs represented in a ``CodeGenerationRequest`` object.
-public struct SourceGenerator {
+public struct SourceGenerator: Sendable {
   /// The options regarding the access level, indentation for the generated code
   /// and whether to generate server and client code.
   public var configuration: Configuration
@@ -27,8 +27,6 @@ public struct SourceGenerator {
   /// User options for the CodeGeneration.
   public struct Configuration: Sendable {
     /// The access level the generated code will have.
-    ///
-    /// - SeeAlso: ``AccessLevel-swift.struct``.
     public var accessLevel: AccessLevel
     /// The indentation of the generated code as the number of spaces.
     public var indentation: Int
