@@ -170,72 +170,61 @@ extension IDLToStructuredSwiftTranslator {
     // Check that the method descriptors are unique, by checking that the base names
     // of the methods of a specific service are unique.
     let baseNames = service.methods.map { $0.name.base }
-    var seenBaseNames = Set<String>()
-
-    for baseName in baseNames {
-      if seenBaseNames.contains(baseName) {
-        throw CodeGenError(
-          code: .nonUniqueMethodName,
-          message: """
-            Methods of a service must have unique base names. \
-            \(baseName) is used as a base name for multiple methods of the \(service.name.base) service.
-            """
-        )
-      }
-      seenBaseNames.insert(baseName)
+    if let duplicatedBase = baseNames.getFirstDuplicate() {
+      throw CodeGenError(
+        code: .nonUniqueMethodName,
+        message: """
+          Methods of a service must have unique base names. \
+          \(duplicatedBase) is used as a base name for multiple methods of the \(service.name.base) service.
+          """
+      )
     }
 
     // Check that generated upper case names for methods are unique within a service, to ensure that
     // the enums containing type aliases for each method of a service.
     let upperCaseNames = service.methods.map { $0.name.generatedUpperCase }
-    var seenUpperCaseNames = Set<String>()
-
-    for upperCaseName in upperCaseNames {
-      if seenUpperCaseNames.contains(upperCaseName) {
-        throw CodeGenError(
-          code: .nonUniqueMethodName,
-          message: """
-            Methods of a service must have unique generated upper case names. \
-            \(upperCaseName) is used as a generated upper case name for multiple methods of the \(service.name.base) service.
-            """
-        )
-      }
-      seenUpperCaseNames.insert(upperCaseName)
+    if let duplicatedGeneratedUpperCase = upperCaseNames.getFirstDuplicate() {
+      throw CodeGenError(
+        code: .nonUniqueMethodName,
+        message: """
+          Methods of a service must have unique generated upper case names. \
+          \(duplicatedGeneratedUpperCase) is used as a generated upper case name for multiple methods of the \(service.name.base) service.
+          """
+      )
     }
 
     // Check that generated lower case names for methods are unique within a service, to ensure that
     // the function declarations and definitions from the same protocols and extensions have unique names.
     let lowerCaseNames = service.methods.map { $0.name.generatedLowerCase }
-    var seenLowerCaseNames = Set<String>()
-
-    for lowerCaseName in lowerCaseNames {
-      if seenLowerCaseNames.contains(lowerCaseName) {
-        throw CodeGenError(
-          code: .nonUniqueMethodName,
-          message: """
-            Methods of a service must have unique lower case names. \
-            \(lowerCaseName) is used as a signature name for multiple methods of the \(service.name.base) service.
-            """
-        )
-      }
-      seenLowerCaseNames.insert(lowerCaseName)
+    if let duplicatedLowerCase = lowerCaseNames.getFirstDuplicate() {
+      throw CodeGenError(
+        code: .nonUniqueMethodName,
+        message: """
+          Methods of a service must have unique lower case names. \
+          \(duplicatedLowerCase) is used as a signature name for multiple methods of the \(service.name.base) service.
+          """
+      )
     }
   }
 
   private func checkServiceDescriptorsAreUnique(
     _ services: [CodeGenerationRequest.ServiceDescriptor]
   ) throws {
-    let descriptors = services.map {
-      ($0.namespace.base.isEmpty ? "" : "\($0.namespace.base).") + $0.name.base
-    }
-    if let duplicate = descriptors.hasDuplicates() {
-      throw CodeGenError(
-        code: .nonUniqueServiceName,
-        message: """
-          Services must have unique descriptors. \
-          \(duplicate) is the descriptor of at least two different services.
-          """
-      )
+    var descriptors: Set<String> = []
+    for service in services {
+      let name =
+        service.namespace.base.isEmpty
+        ? service.name.base : "\(service.namespace.base).\(service.name.base)"
+      let (inserted, _) = descriptors.insert(name)
+      if !inserted {
+        throw CodeGenError(
+          code: .nonUniqueServiceName,
+          message: """
+            Services must have unique descriptors. \
+            \(name) is the descriptor of at least two different services.
+            """
+        )
+      }
     }
   }
 }
@@ -267,12 +256,13 @@ extension CodeGenerationRequest.ServiceDescriptor {
 }
 
 extension [String] {
-  func hasDuplicates() -> String? {
-    var elements = Set<String>()
+  internal func getFirstDuplicate() -> String? {
+    var seen = Set<String>()
     for element in self {
-      if elements.insert(element).inserted == false {
+      if seen.contains(element) {
         return element
       }
+      seen.insert(element)
     }
     return nil
   }

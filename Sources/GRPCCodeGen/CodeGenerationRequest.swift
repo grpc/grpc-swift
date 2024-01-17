@@ -220,12 +220,16 @@ public struct CodeGenerationRequest {
     /// Documentation from comments above the IDL service description.
     public var documentation: String
 
-    /// Service name in different formats.
+    /// The service name in different formats.
+    ///
+    /// All properties of this object must be unique for each service from within a namespace.
     public var name: Name
 
     /// The service namespace in different formats.
     ///
-    /// For `.proto` files it is the package name.
+    /// All different services from within the same namespace must have
+    /// the same ``Name`` object as this property.
+    /// For `.proto` files the base name of this object is the package name.
     public var namespace: Name
 
     /// A description of each method of a service.
@@ -251,6 +255,9 @@ public struct CodeGenerationRequest {
       public var documentation: String
 
       /// Method name in different formats.
+      ///
+      /// All properties of this object must be unique for each method
+      /// from within a service.
       public var name: Name
 
       /// Identifies if the method is input streaming.
@@ -283,38 +290,31 @@ public struct CodeGenerationRequest {
     }
   }
 
-  /// Represents the name associated with a namespace, service or a method, in three different formats,
-  /// which are used in specific parts of the generated code. There must be only one ``Name`` object
-  /// for each namespace, service or method.
-  ///
-  /// The base name, the generatedUpperCase (and the generatedLowerCase) must be unique for methods
-  /// from within the same service and for services within the same namespace.
+  /// Represents the name associated with a namespace, service or a method, in three different formats.
   public struct Name: Hashable {
     /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
     /// the specific casing of the IDL.
     ///
     /// The base name is also used in the descriptors that identify a specific method or service :
     /// `<service_namespace_baseName>.<service_baseName>.<method_baseName>`.
-    public let base: String
+    public var base: String
 
-    /// The `generatedUpperCase` name is used as part of generated type names, which begin with a capital letter
-    /// and are (partially) using CamelCase. It is using UpperCamelCase in order to follow the Swift naming conventions.
+    /// The `generatedUpperCase` name is used in the generated code. It is expected
+    /// to be the UpperCamelCase version of the base name
     ///
-    /// It is used in the generated code as an enum name and as part of protocol names.
-    /// For example, in the generated server code the name of the service protocol
-    /// follows this pattern:
-    /// `<service_namespace_generatedUpperCaseName>_<service_generatedUpperCaseName>ServiceProtocol`.
-    public let generatedUpperCase: String
+    /// For example, if `base` is "fooBar", then `generatedUpperCase` is "FooBar".
+    public var generatedUpperCase: String
 
-    /// The `generatedLowerCase` name is used as the function name in the method declarations or definitions.
-    /// It is using lowerCamelCase in order to follow the Swift naming conventions.
+    /// The `generatedLowerCase` name is used in the generated code. It is expected
+    /// to be the lowerCamelCase version of the base name
     ///
-    /// It is used only for the methods, so in the case of a namespace or service, it can be an empty String.
-    /// For example, for a method with the base name "FooBar", the generatedLowerCase is "fooBar" and it is
-    /// used in:
-    /// ```swift
-    /// public func fooBar(){}
-    /// ```
-    public let generatedLowerCase: String
+    /// For example, if `base` is "FooBar", then `generatedLowerCase` is "fooBar".
+    public var generatedLowerCase: String
+
+    public init(base: String, generatedUpperCase: String, generatedLowerCase: String) {
+      self.base = base
+      self.generatedUpperCase = generatedUpperCase
+      self.generatedLowerCase = generatedLowerCase
+    }
   }
 }
