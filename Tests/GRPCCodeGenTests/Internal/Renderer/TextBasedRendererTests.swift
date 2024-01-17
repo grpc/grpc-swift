@@ -831,6 +831,62 @@ final class Test_TextBasedRenderer: XCTestCase {
         """#
     )
   }
+
+  func testIndentation() throws {
+    try _test(
+      .init(
+        topComment: .inline("hi"),
+        imports: [.init(moduleName: "Foo")],
+        codeBlocks: [
+          .init(
+            comment: nil,
+            item: .declaration(.struct(.init(name: "Bar", members: [.struct(.init(name: "Baz"))])))
+          )
+        ]
+      ),
+      renderedBy: TextBasedRenderer.renderFile,
+      rendersAs: #"""
+        // hi
+        import Foo
+        struct Bar {
+          struct Baz {}
+        }
+
+        """#,
+      indentation: 2
+    )
+
+    try _test(
+      .array([.literal(.nil), .literal(.nil)]),
+      renderedBy: TextBasedRenderer.renderLiteral,
+      rendersAs: #"""
+        [
+           nil,
+           nil
+        ]
+        """#,
+      indentation: 3
+    )
+
+    try _test(
+      .init(
+        kind: .var,
+        left: .identifierPattern("foo"),
+        type: .init(TypeName.int),
+        getter: [CodeBlock.expression(.literal(.int(42)))],
+        getterEffects: [.throws]
+      ),
+      renderedBy: TextBasedRenderer.renderVariable,
+      rendersAs: #"""
+        var foo: Swift.Int {
+             get throws {
+                  42
+             }
+        }
+        """#,
+      indentation: 5
+    )
+  }
 }
 
 extension Test_TextBasedRenderer {
@@ -840,9 +896,10 @@ extension Test_TextBasedRenderer {
     renderedBy renderClosure: (TextBasedRenderer) -> ((Input) -> String),
     rendersAs output: String,
     file: StaticString = #file,
-    line: UInt = #line
+    line: UInt = #line,
+    indentation: Int = 4
   ) throws {
-    let renderer = TextBasedRenderer.default
+    let renderer = TextBasedRenderer(indentation: indentation)
     XCTAssertEqual(renderClosure(renderer)(input), output, file: file, line: line)
   }
 
@@ -851,7 +908,8 @@ extension Test_TextBasedRenderer {
     renderedBy renderClosure: (TextBasedRenderer) -> ((Input) -> Void),
     rendersAs output: String,
     file: StaticString = #file,
-    line: UInt = #line
+    line: UInt = #line,
+    indentation: Int = 4
   ) throws {
     try _test(
       input,
@@ -862,7 +920,8 @@ extension Test_TextBasedRenderer {
           return renderer.renderedContents()
         }
       },
-      rendersAs: output
+      rendersAs: output,
+      indentation: indentation
     )
   }
 }
