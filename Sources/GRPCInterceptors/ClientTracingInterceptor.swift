@@ -20,7 +20,7 @@ import Tracing
 /// A client interceptor that injects tracing information into the request.
 ///
 /// The tracing information is taken from the current `ServiceContext`, and injected into the request's
-/// metadata, to be picked up by the server-side ``ServerTracingInterceptor``.
+/// metadata. I twill then be picked up by the server-side ``ServerTracingInterceptor``.
 /// 
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
