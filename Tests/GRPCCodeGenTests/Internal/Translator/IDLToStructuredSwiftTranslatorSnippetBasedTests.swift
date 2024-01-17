@@ -69,7 +69,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
@@ -103,7 +104,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
@@ -127,17 +129,20 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
   private func assertIDLToStructuredSwiftTranslation(
     codeGenerationRequest: CodeGenerationRequest,
-    expectedSwift: String
+    expectedSwift: String,
+    accessLevel: SourceGenerator.Configuration.AccessLevel
   ) throws {
     let translator = IDLToStructuredSwiftTranslator()
     let structuredSwift = try translator.translate(
       codeGenerationRequest: codeGenerationRequest,
+      accessLevel: accessLevel,
       client: false,
       server: false
     )
@@ -161,6 +166,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )
@@ -200,6 +206,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )
@@ -234,6 +241,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )
@@ -280,6 +288,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .internal,
         client: true,
         server: true
       )
@@ -324,6 +333,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )
@@ -376,6 +386,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )
@@ -428,6 +439,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )
@@ -469,6 +481,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       ofType: CodeGenError.self,
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
+        accessLevel: .public,
         client: true,
         server: true
       )

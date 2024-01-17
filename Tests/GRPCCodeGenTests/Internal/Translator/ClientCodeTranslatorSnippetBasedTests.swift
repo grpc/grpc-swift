@@ -43,7 +43,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol NamespaceA_ServiceAClientProtocol: Sendable {
+      public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -53,7 +53,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -66,13 +66,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
           /// Documentation for MethodA
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
               serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
@@ -91,7 +91,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
@@ -113,7 +114,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol NamespaceA_ServiceAClientProtocol: Sendable {
+      public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -123,7 +124,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -136,13 +137,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
           /// Documentation for MethodA
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
               serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
@@ -161,7 +162,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
@@ -183,7 +185,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol NamespaceA_ServiceAClientProtocol: Sendable {
+      public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -193,7 +195,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -206,13 +208,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
           /// Documentation for MethodA
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
               serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
@@ -231,7 +233,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
@@ -253,7 +256,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol NamespaceA_ServiceAClientProtocol: Sendable {
+      public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -263,7 +266,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -276,13 +279,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
           /// Documentation for MethodA
-          func methodA<R>(
+          public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
               serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
@@ -301,7 +304,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
@@ -331,7 +335,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol NamespaceA_ServiceAClientProtocol: Sendable {
+      package protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -348,7 +352,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
-          func methodA<R>(
+          package func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -359,7 +363,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
                   body
               )
           }
-          func methodB<R>(
+          package func methodB<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodB.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -372,13 +376,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      package struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          package init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
           /// Documentation for MethodA
-          func methodA<R>(
+          package func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
               serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
@@ -393,7 +397,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
           /// Documentation for MethodB
-          func methodB<R>(
+          package func methodB<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
               serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodB.Input>,
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodB.Output>,
@@ -412,7 +416,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .package
     )
   }
 
@@ -434,7 +439,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol ServiceAClientProtocol: Sendable {
+      internal protocol ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
               request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
@@ -444,7 +449,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           ) async throws -> R where R: Sendable
       }
       extension ServiceA.ClientProtocol {
-          func methodA<R>(
+          internal func methodA<R>(
               request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
               _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
@@ -457,13 +462,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      struct ServiceAClient: ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      internal struct ServiceAClient: ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          internal init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
           /// Documentation for MethodA
-          func methodA<R>(
+          internal func methodA<R>(
               request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
               serializer: some MessageSerializer<ServiceA.Methods.MethodA.Input>,
               deserializer: some MessageDeserializer<ServiceA.Methods.MethodA.Output>,
@@ -482,7 +487,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .internal
     )
   }
 
@@ -506,24 +512,24 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      protocol NamespaceA_ServiceAClientProtocol: Sendable {}
+      public protocol NamespaceA_ServiceAClientProtocol: Sendable {}
       extension NamespaceA.ServiceA.ClientProtocol {
       }
       /// Documentation for ServiceA
-      struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
       }
       /// Documentation for ServiceB
-      protocol ServiceBClientProtocol: Sendable {}
+      public protocol ServiceBClientProtocol: Sendable {}
       extension ServiceB.ClientProtocol {
       }
       /// Documentation for ServiceB
-      struct ServiceBClient: ServiceB.ClientProtocol {
-          let client: GRPCCore.GRPCClient
-          init(client: GRPCCore.GRPCClient) {
+      public struct ServiceBClient: ServiceB.ClientProtocol {
+          private let client: GRPCCore.GRPCClient
+          public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
       }
@@ -531,15 +537,17 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
     try self.assertClientCodeTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(services: [serviceA, serviceB]),
-      expectedSwift: expectedSwift
+      expectedSwift: expectedSwift,
+      accessLevel: .public
     )
   }
 
   private func assertClientCodeTranslation(
     codeGenerationRequest: CodeGenerationRequest,
-    expectedSwift: String
+    expectedSwift: String,
+    accessLevel: SourceGenerator.Configuration.AccessLevel
   ) throws {
-    let translator = ClientCodeTranslator()
+    let translator = ClientCodeTranslator(accessLevel: accessLevel)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)

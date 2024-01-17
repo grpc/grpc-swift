@@ -21,12 +21,14 @@ protocol Translator {
   /// Translates the provided ``CodeGenerationRequest`` object, into Swift code representation.
   /// - Parameters:
   ///   - codeGenerationRequest: The IDL described RPCs representation.
+  ///   - accessLevel: The access level that will restrict the protocols, extensions and methods in the generated code.
   ///   - client: Whether or not client code should be generated from the IDL described RPCs representation.
   ///   - server: Whether or not server code should be generated from the IDL described RPCs representation.
   /// - Returns: A structured Swift representation of the generated code.
   /// - Throws: An error if there are issues translating the codeGenerationRequest.
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
+    accessLevel: SourceGenerator.Configuration.AccessLevel,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation

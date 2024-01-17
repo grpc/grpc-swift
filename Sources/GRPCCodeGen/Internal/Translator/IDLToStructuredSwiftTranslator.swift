@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
+/// Creates a representation for the server and client code, as well as for the enums containing useful type aliases and properties.
+/// The representation is generated based on the ``CodeGenerationRequest`` object and user specifications,
+/// using types from ``StructuredSwiftRepresentation``.
 struct IDLToStructuredSwiftTranslator: Translator {
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
+    accessLevel: SourceGenerator.Configuration.AccessLevel,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     try self.validateInput(codeGenerationRequest)
-    let typealiasTranslator = TypealiasTranslator(client: client, server: server)
+    let typealiasTranslator = TypealiasTranslator(
+      client: client,
+      server: server,
+      accessLevel: accessLevel
+    )
+
     let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
     let imports = try codeGenerationRequest.dependencies.reduce(
       into: [ImportDescription(moduleName: "GRPCCore")]
@@ -35,14 +44,14 @@ struct IDLToStructuredSwiftTranslator: Translator {
     )
 
     if server {
-      let serverCodeTranslator = ServerCodeTranslator()
+      let serverCodeTranslator = ServerCodeTranslator(accessLevel: accessLevel)
       codeBlocks.append(
         contentsOf: try serverCodeTranslator.translate(from: codeGenerationRequest)
       )
     }
 
     if client {
-      let clientCodeTranslator = ClientCodeTranslator()
+      let clientCodeTranslator = ClientCodeTranslator(accessLevel: accessLevel)
       codeBlocks.append(
         contentsOf: try clientCodeTranslator.translate(from: codeGenerationRequest)
       )
