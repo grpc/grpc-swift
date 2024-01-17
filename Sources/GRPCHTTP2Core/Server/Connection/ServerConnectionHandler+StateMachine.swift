@@ -165,7 +165,7 @@ extension ServerConnectionHandler {
     enum OnPingAck: Equatable {
       /// Send a GOAWAY frame with no error and the given last stream ID, optionally closing the
       /// connection immediately afterwards.
-      case sendGoAway(HTTP2StreamID, Bool)
+      case sendGoAway(lastStreamID: HTTP2StreamID, close: Bool)
       /// Ignore the ack.
       case none
     }
@@ -185,10 +185,10 @@ extension ServerConnectionHandler {
 
           if state.openStreams.isEmpty {
             self.state = .closed
-            onPingAck = .sendGoAway(state.lastStreamID, true)
+            onPingAck = .sendGoAway(lastStreamID: state.lastStreamID, close: true)
           } else {
             self.state = .closing(state)
-            onPingAck = .sendGoAway(state.lastStreamID, false)
+            onPingAck = .sendGoAway(lastStreamID: state.lastStreamID, close: false)
           }
         } else {
           onPingAck = .none
@@ -248,7 +248,7 @@ extension ServerConnectionHandler.StateMachine {
     /// DATA or HEADERS frames.
     ///
     /// Ping strikes account for pings being occasionally being used for purposes other than keep
-    /// alive (a low number of strikes is therefore expected an okay).
+    /// alive (a low number of strikes is therefore expected and okay).
     private var pingStrikes: Int
 
     /// The last time a valid ping happened. This may be in the distant past if there is no such

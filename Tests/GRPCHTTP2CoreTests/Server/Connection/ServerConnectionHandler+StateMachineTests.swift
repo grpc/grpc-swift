@@ -49,6 +49,7 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
   func testOpenAndCloseStreamWhenClosed() {
     var state = self.makeStateMachine()
     state.markClosed()
+    state.streamOpened(1)
     XCTAssertEqual(state.streamClosed(1), .none)
   }
 
@@ -77,7 +78,10 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
     var state = self.makeStateMachine(goAwayPingData: pingData)
     state.streamOpened(1)
     XCTAssertEqual(state.startGracefulShutdown(), .sendGoAwayAndPing(pingData))
-    XCTAssertEqual(state.receivedPingAck(data: pingData), .sendGoAway(1, false))
+    XCTAssertEqual(
+      state.receivedPingAck(data: pingData),
+      .sendGoAway(lastStreamID: 1, close: false)
+    )
   }
 
   func testReceiveAckForGoAwayPingWhenStreamsOpenedBeforeAck() {
@@ -85,14 +89,20 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
     var state = self.makeStateMachine(goAwayPingData: pingData)
     XCTAssertEqual(state.startGracefulShutdown(), .sendGoAwayAndPing(pingData))
     state.streamOpened(1)
-    XCTAssertEqual(state.receivedPingAck(data: pingData), .sendGoAway(1, false))
+    XCTAssertEqual(
+      state.receivedPingAck(data: pingData),
+      .sendGoAway(lastStreamID: 1, close: false)
+    )
   }
 
   func testReceiveAckForGoAwayPingWhenNoOpenStreams() {
     let pingData = HTTP2PingData(withInteger: 42)
     var state = self.makeStateMachine(goAwayPingData: pingData)
     XCTAssertEqual(state.startGracefulShutdown(), .sendGoAwayAndPing(pingData))
-    XCTAssertEqual(state.receivedPingAck(data: pingData), .sendGoAway(.rootStream, true))
+    XCTAssertEqual(
+      state.receivedPingAck(data: pingData),
+      .sendGoAway(lastStreamID: .rootStream, close: true)
+    )
   }
 
   func testReceiveAckNotForGoAwayPing() {
@@ -125,7 +135,10 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
     case .sendGoAwayAndPing(let pingData):
       // Open another stream and then receive the ping ack.
       state.streamOpened(3)
-      XCTAssertEqual(state.receivedPingAck(data: pingData), .sendGoAway(3, false))
+      XCTAssertEqual(
+        state.receivedPingAck(data: pingData),
+        .sendGoAway(lastStreamID: 3, close: false)
+      )
     case .none:
       XCTFail("Expected '.sendGoAwayAndPing'")
     }
@@ -146,7 +159,10 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
       // Close the stream. This shouldn't lead to a close.
       XCTAssertEqual(state.streamClosed(1), .none)
       // Only on receiving the ack do we send a GOAWAY and close.
-      XCTAssertEqual(state.receivedPingAck(data: pingData), .sendGoAway(1, true))
+      XCTAssertEqual(
+        state.receivedPingAck(data: pingData),
+        .sendGoAway(lastStreamID: 1, close: true)
+      )
     case .none:
       XCTFail("Expected '.sendGoAwayAndPing'")
     }
