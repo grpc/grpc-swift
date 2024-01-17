@@ -21,7 +21,7 @@ import Tracing
 ///
 /// The tracing information is taken from the current `ServiceContext`, and injected into the request's
 /// metadata. I twill then be picked up by the server-side ``ServerTracingInterceptor``.
-/// 
+///
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ClientTracingInterceptor: ClientInterceptor {
@@ -48,16 +48,20 @@ public struct ClientTracingInterceptor: ClientInterceptor {
     var request = request
     let tracer = InstrumentationSystem.tracer
     let serviceContext = ServiceContext.current ?? .topLevel
-    
+
     tracer.inject(
       serviceContext,
       into: &request.metadata,
       using: self.injector
     )
-    
-    return try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .client) { span in
+
+    return try await tracer.withSpan(
+      context.descriptor.fullyQualifiedMethod,
+      context: serviceContext,
+      ofKind: .client
+    ) { span in
       span.addEvent("Request started")
-      
+
       if self.emitEventOnEachWrite {
         let wrappedProducer = request.producer
         request.producer = { writer in
@@ -68,8 +72,9 @@ public struct ClientTracingInterceptor: ClientInterceptor {
             },
             afterEachWrite: {
               span.addEvent("Sent request part")
-            })
-          
+            }
+          )
+
           try await wrappedProducer(RPCWriter(wrapping: eventEmittingWriter))
         }
       }

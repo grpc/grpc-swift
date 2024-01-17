@@ -21,7 +21,7 @@ struct HookedWriter<Element>: RPCWriterProtocol {
   private let writer: any RPCWriterProtocol<Element>
   private let beforeEachWrite: @Sendable () -> Void
   private let afterEachWrite: @Sendable () -> Void
-  
+
   public init(
     wrapping other: some RPCWriterProtocol<Element>,
     beforeEachWrite: @Sendable @escaping () -> Void,
@@ -31,7 +31,7 @@ struct HookedWriter<Element>: RPCWriterProtocol {
     self.beforeEachWrite = beforeEachWrite
     self.afterEachWrite = afterEachWrite
   }
-  
+
   public func write(contentsOf elements: some Sequence<Element>) async throws {
     self.beforeEachWrite()
     try await self.writer.write(contentsOf: elements)

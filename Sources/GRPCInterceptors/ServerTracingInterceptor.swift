@@ -46,23 +46,27 @@ public struct ServerTracingInterceptor: ServerInterceptor {
   ) async throws -> ServerResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var serviceContext = ServiceContext.topLevel
     let tracer = InstrumentationSystem.tracer
-      
+
     tracer.extract(
       request.metadata,
       into: &serviceContext,
       using: self.extractor
     )
-    
+
     return try await ServiceContext.withValue(serviceContext) {
-      try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .server) { span in
+      try await tracer.withSpan(
+        context.descriptor.fullyQualifiedMethod,
+        context: serviceContext,
+        ofKind: .server
+      ) { span in
         span.addEvent("Received request")
 
         var response = try await next(request, context)
-        
+
         switch response.accepted {
         case .success(var success):
           let wrappedProducer = success.producer
-          
+
           if self.emitEventOnEachWrite {
             success.producer = { writer in
               let eventEmittingWriter = HookedWriter(
@@ -72,9 +76,12 @@ public struct ServerTracingInterceptor: ServerInterceptor {
                 },
                 afterEachWrite: {
                   span.addEvent("Sent response part")
-                })
-              
-              let wrappedResult = try await wrappedProducer(RPCWriter(wrapping: eventEmittingWriter))
+                }
+              )
+
+              let wrappedResult = try await wrappedProducer(
+                RPCWriter(wrapping: eventEmittingWriter)
+              )
               span.addEvent("Sent response end")
               return wrappedResult
             }

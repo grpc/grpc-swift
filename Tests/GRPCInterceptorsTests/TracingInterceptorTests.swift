@@ -39,18 +39,22 @@ final class TracingInterceptorTests: XCTestCase {
           try await writer.write(contentsOf: ["request1"])
           try await writer.write(contentsOf: ["request2"])
         }),
-        context: .init(descriptor: .init(service: "foo", method: "bar"))) { stream, _ in
-          // Assert the metadata contains the injected context key-value.
-          XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
-          
-          // Write into the response stream to make sure the `producer` closure's called.
-          let writer = RPCWriter(wrapping: TestWriter(streamContinuation: continuation))
-          try await stream.producer(writer)
-          continuation.finish()
-          
-          return .init(metadata: [], bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) })))
-        }
-      
+        context: .init(descriptor: .init(service: "foo", method: "bar"))
+      ) { stream, _ in
+        // Assert the metadata contains the injected context key-value.
+        XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
+
+        // Write into the response stream to make sure the `producer` closure's called.
+        let writer = RPCWriter(wrapping: TestWriter(streamContinuation: continuation))
+        try await stream.producer(writer)
+        continuation.finish()
+
+        return .init(
+          metadata: [],
+          bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) }))
+        )
+      }
+
       var streamIterator = stream.makeAsyncIterator()
       var element = await streamIterator.next()
       XCTAssertEqual(element, "request1")
@@ -58,19 +62,22 @@ final class TracingInterceptorTests: XCTestCase {
       XCTAssertEqual(element, "request2")
       element = await streamIterator.next()
       XCTAssertNil(element)
-      
+
       var messages = response.messages.makeAsyncIterator()
       let message = try await messages.next()
       XCTAssertEqual(message, ["response"])
-      
+
       let tracer = InstrumentationSystem.tracer as! TestTracer
-      XCTAssertEqual(tracer.latestSpanEvents.map { $0.name }, [
-        "Request started",
-        "Received response end"
-      ])
+      XCTAssertEqual(
+        tracer.latestSpanEvents.map { $0.name },
+        [
+          "Request started",
+          "Received response end",
+        ]
+      )
     }
   }
-  
+
   func testClientInterceptorAllEventsRecorded() async throws {
     var serviceContext = ServiceContext.topLevel
     let traceIDString = UUID().uuidString
@@ -84,18 +91,22 @@ final class TracingInterceptorTests: XCTestCase {
           try await writer.write(contentsOf: ["request1"])
           try await writer.write(contentsOf: ["request2"])
         }),
-        context: .init(descriptor: .init(service: "foo", method: "bar"))) { stream, _ in
-          // Assert the metadata contains the injected context key-value.
-          XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
-          
-          // Write into the response stream to make sure the `producer` closure's called.
-          let writer = RPCWriter(wrapping: TestWriter(streamContinuation: continuation))
-          try await stream.producer(writer)
-          continuation.finish()
-          
-          return .init(metadata: [], bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) })))
-        }
-      
+        context: .init(descriptor: .init(service: "foo", method: "bar"))
+      ) { stream, _ in
+        // Assert the metadata contains the injected context key-value.
+        XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
+
+        // Write into the response stream to make sure the `producer` closure's called.
+        let writer = RPCWriter(wrapping: TestWriter(streamContinuation: continuation))
+        try await stream.producer(writer)
+        continuation.finish()
+
+        return .init(
+          metadata: [],
+          bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) }))
+        )
+      }
+
       var streamIterator = stream.makeAsyncIterator()
       var element = await streamIterator.next()
       XCTAssertEqual(element, "request1")
@@ -103,23 +114,26 @@ final class TracingInterceptorTests: XCTestCase {
       XCTAssertEqual(element, "request2")
       element = await streamIterator.next()
       XCTAssertNil(element)
-      
+
       var messages = response.messages.makeAsyncIterator()
       let message = try await messages.next()
       XCTAssertEqual(message, ["response"])
-      
+
       let tracer = InstrumentationSystem.tracer as! TestTracer
-      XCTAssertEqual(tracer.latestSpanEvents.map { $0.name }, [
-        "Request started",
-        // Recorded when `request1` is sent
-        "Sending request part",
-        "Sent request part",
-        // Recorded when `request2` is sent
-        "Sending request part",
-        "Sent request part",
-        // Recorded at end of `producer`
-        "Received response end"
-      ])
+      XCTAssertEqual(
+        tracer.latestSpanEvents.map { $0.name },
+        [
+          "Request started",
+          // Recorded when `request1` is sent
+          "Sending request part",
+          "Sent request part",
+          // Recorded when `request2` is sent
+          "Sending request part",
+          "Sent request part",
+          // Recorded at end of `producer`
+          "Received response end",
+        ]
+      )
     }
   }
 
@@ -127,47 +141,61 @@ final class TracingInterceptorTests: XCTestCase {
     let interceptor = ServerTracingInterceptor(emitEventOnEachWrite: false)
     let response = try await interceptor.intercept(
       request: .init(single: .init(metadata: ["trace-id": "some-trace-id"], message: [])),
-      context: .init(descriptor: .init(service: "foo", method: "bar"))) { _, _ in
-        ServerResponse.Stream<String>(error: .init(code: .unknown, message: "Test error"))
-      }    
+      context: .init(descriptor: .init(service: "foo", method: "bar"))
+    ) { _, _ in
+      ServerResponse.Stream<String>(error: .init(code: .unknown, message: "Test error"))
+    }
     XCTAssertThrowsError(try response.accepted.get())
 
     let tracer = InstrumentationSystem.tracer as! TestTracer
-    XCTAssertEqual(tracer.latestSpanEvents.map { $0.name }, [
-      "Received request",
-      "Sent error response"
-    ])
+    XCTAssertEqual(
+      tracer.latestSpanEvents.map { $0.name },
+      [
+        "Received request",
+        "Sent error response",
+      ]
+    )
   }
-  
+
   func testServerInterceptor() async throws {
     let (stream, continuation) = AsyncStream<String>.makeStream()
     let interceptor = ServerTracingInterceptor(emitEventOnEachWrite: false)
     let response = try await interceptor.intercept(
       request: .init(single: .init(metadata: ["trace-id": "some-trace-id"], message: [])),
-      context: .init(descriptor: .init(service: "foo", method: "bar"))) { _, _ in
-        { [serviceContext = ServiceContext.current] in
-          return ServerResponse.Stream<String>(accepted: .success(.init(metadata: [], producer: { writer in
-            guard let serviceContext else {
-              XCTFail("There should be a service context present.")
-              return ["Result": "Test failed"]
-            }
-            
-            let traceID = serviceContext.traceID
-            XCTAssertEqual("some-trace-id", traceID)
-            
-            try await writer.write("response1")
-            try await writer.write("response2")
-            
-            return ["Result": "Trailing metadata"]
-          })))
-        }()
-      }
-    
+      context: .init(descriptor: .init(service: "foo", method: "bar"))
+    ) { _, _ in
+      { [serviceContext = ServiceContext.current] in
+        return ServerResponse.Stream<String>(
+          accepted: .success(
+            .init(
+              metadata: [],
+              producer: { writer in
+                guard let serviceContext else {
+                  XCTFail("There should be a service context present.")
+                  return ["Result": "Test failed"]
+                }
+
+                let traceID = serviceContext.traceID
+                XCTAssertEqual("some-trace-id", traceID)
+
+                try await writer.write("response1")
+                try await writer.write("response2")
+
+                return ["Result": "Trailing metadata"]
+              }
+            )
+          )
+        )
+      }()
+    }
+
     let responseContents = try response.accepted.get()
-    let trailingMetadata = try await responseContents.producer(RPCWriter(wrapping: TestWriter(streamContinuation: continuation)))
+    let trailingMetadata = try await responseContents.producer(
+      RPCWriter(wrapping: TestWriter(streamContinuation: continuation))
+    )
     continuation.finish()
     XCTAssertEqual(trailingMetadata, ["Result": "Trailing metadata"])
-    
+
     var streamIterator = stream.makeAsyncIterator()
     var element = await streamIterator.next()
     XCTAssertEqual(element, "response1")
@@ -177,41 +205,54 @@ final class TracingInterceptorTests: XCTestCase {
     XCTAssertNil(element)
 
     let tracer = InstrumentationSystem.tracer as! TestTracer
-    XCTAssertEqual(tracer.latestSpanEvents.map { $0.name }, [
-      "Received request",
-      "Sent response end"
-    ])
+    XCTAssertEqual(
+      tracer.latestSpanEvents.map { $0.name },
+      [
+        "Received request",
+        "Sent response end",
+      ]
+    )
   }
-  
+
   func testServerInterceptorAllEventsRecorded() async throws {
     let (stream, continuation) = AsyncStream<String>.makeStream()
     let interceptor = ServerTracingInterceptor(emitEventOnEachWrite: true)
     let response = try await interceptor.intercept(
       request: .init(single: .init(metadata: ["trace-id": "some-trace-id"], message: [])),
-      context: .init(descriptor: .init(service: "foo", method: "bar"))) { _, _ in
-        { [serviceContext = ServiceContext.current] in
-          return ServerResponse.Stream<String>(accepted: .success(.init(metadata: [], producer: { writer in
-            guard let serviceContext else {
-              XCTFail("There should be a service context present.")
-              return ["Result": "Test failed"]
-            }
-            
-            let traceID = serviceContext.traceID
-            XCTAssertEqual("some-trace-id", traceID)
-            
-            try await writer.write("response1")
-            try await writer.write("response2")
-            
-            return ["Result": "Trailing metadata"]
-          })))
-        }()
-      }
-    
+      context: .init(descriptor: .init(service: "foo", method: "bar"))
+    ) { _, _ in
+      { [serviceContext = ServiceContext.current] in
+        return ServerResponse.Stream<String>(
+          accepted: .success(
+            .init(
+              metadata: [],
+              producer: { writer in
+                guard let serviceContext else {
+                  XCTFail("There should be a service context present.")
+                  return ["Result": "Test failed"]
+                }
+
+                let traceID = serviceContext.traceID
+                XCTAssertEqual("some-trace-id", traceID)
+
+                try await writer.write("response1")
+                try await writer.write("response2")
+
+                return ["Result": "Trailing metadata"]
+              }
+            )
+          )
+        )
+      }()
+    }
+
     let responseContents = try response.accepted.get()
-    let trailingMetadata = try await responseContents.producer(RPCWriter(wrapping: TestWriter(streamContinuation: continuation)))
+    let trailingMetadata = try await responseContents.producer(
+      RPCWriter(wrapping: TestWriter(streamContinuation: continuation))
+    )
     continuation.finish()
     XCTAssertEqual(trailingMetadata, ["Result": "Trailing metadata"])
-    
+
     var streamIterator = stream.makeAsyncIterator()
     var element = await streamIterator.next()
     XCTAssertEqual(element, "response1")
@@ -221,16 +262,19 @@ final class TracingInterceptorTests: XCTestCase {
     XCTAssertNil(element)
 
     let tracer = InstrumentationSystem.tracer as! TestTracer
-    XCTAssertEqual(tracer.latestSpanEvents.map { $0.name }, [
-      "Received request",
-      // Recorded when `response1` is sent
-      "Sending response part",
-      "Sent response part",
-      // Recorded when `response2` is sent
-      "Sending response part",
-      "Sent response part",
-      // Recorded when we're done sending response
-      "Sent response end"
-    ])
+    XCTAssertEqual(
+      tracer.latestSpanEvents.map { $0.name },
+      [
+        "Received request",
+        // Recorded when `response1` is sent
+        "Sending response part",
+        "Sent response part",
+        // Recorded when `response2` is sent
+        "Sending response part",
+        "Sent response part",
+        // Recorded when we're done sending response
+        "Sent response end",
+      ]
+    )
   }
 }

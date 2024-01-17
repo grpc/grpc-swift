@@ -19,12 +19,12 @@ import Tracing
 
 class TestTracer: Tracer {
   typealias Span = TestSpan
-  
+
   private var latestTestSpan: TestSpan?
   var latestSpanEvents: [SpanEvent] {
     self.latestTestSpan?.events ?? []
   }
-  
+
   func extract<Carrier, Extract>(
     _ carrier: Carrier,
     into context: inout ServiceContextModule.ServiceContext,
@@ -43,11 +43,11 @@ class TestTracer: Tracer {
       injector.inject(traceID, forKey: TraceID.keyName, into: &carrier)
     }
   }
-  
+
   func forceFlush() {
     // no-op
   }
-  
+
   func startSpan<Instant>(
     _ operationName: String,
     context: @autoclosure () -> ServiceContext,
@@ -69,42 +69,44 @@ class TestSpan: Span {
   var isRecording: Bool
   private(set) var status: Tracing.SpanStatus?
   private(set) var events: [Tracing.SpanEvent] = []
-  
+
   init(
-      context: ServiceContextModule.ServiceContext,
-      operationName: String,
-      attributes: Tracing.SpanAttributes = [:],
-      isRecording: Bool = true
+    context: ServiceContextModule.ServiceContext,
+    operationName: String,
+    attributes: Tracing.SpanAttributes = [:],
+    isRecording: Bool = true
   ) {
     self.context = context
     self.operationName = operationName
     self.attributes = attributes
     self.isRecording = isRecording
   }
-  
+
   func setStatus(_ status: Tracing.SpanStatus) {
     self.status = status
   }
-  
+
   func addEvent(_ event: Tracing.SpanEvent) {
     self.events.append(event)
   }
-  
+
   func recordError<Instant>(
     _ error: any Error,
     attributes: Tracing.SpanAttributes,
     at instant: @autoclosure () -> Instant
   ) where Instant: Tracing.TracerInstant {
-    self.setStatus(.init(
-      code: .error,
-      message: "Error: \(error), attributes: \(attributes), at instant: \(instant())"
-    ))
+    self.setStatus(
+      .init(
+        code: .error,
+        message: "Error: \(error), attributes: \(attributes), at instant: \(instant())"
+      )
+    )
   }
-  
+
   func addLink(_ link: Tracing.SpanLink) {
     self.context.spanLinks?.append(link)
   }
-  
+
   func end<Instant>(at instant: @autoclosure () -> Instant) where Instant: Tracing.TracerInstant {
     self.setStatus(.init(code: .ok, message: "Ended at instant: \(instant())"))
   }
@@ -131,7 +133,7 @@ extension ServiceContext {
       self[TraceID.self] = newValue
     }
   }
-    
+
   var spanLinks: [SpanLink]? {
     get {
       self[ServiceContextSpanLinksKey.self]
@@ -144,13 +146,13 @@ extension ServiceContext {
 
 struct TestWriter<WriterElement>: RPCWriterProtocol {
   typealias Element = WriterElement
-  
+
   private let streamContinuation: AsyncStream<Element>.Continuation
-  
+
   init(streamContinuation: AsyncStream<Element>.Continuation) {
     self.streamContinuation = streamContinuation
   }
-  
+
   func write(contentsOf elements: some Sequence<Self.Element>) async throws {
     elements.forEach { element in
       self.streamContinuation.yield(element)
