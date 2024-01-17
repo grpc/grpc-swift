@@ -669,7 +669,7 @@ let package = Package(
     .grpcCoreTests,
     .grpcInProcessTransportTests,
     .grpcCodeGenTests,
-    .grpcInterceptorsTests
+    .grpcInterceptorsTests,
     .grpcHTTP2CoreTests,
     .grpcHTTP2TransportNIOPosixTests,
     .grpcHTTP2TransportNIOTransportServicesTests
