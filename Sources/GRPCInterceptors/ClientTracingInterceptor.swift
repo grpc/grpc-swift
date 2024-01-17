@@ -26,10 +26,12 @@ import Tracing
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ClientTracingInterceptor: ClientInterceptor {
   private let injector: ClientRequestInjector
+  private let emitEventOnEachWrite: Bool
 
   /// Create a new instance of a ``ClientTracingInterceptor``.
-  public init() {
+  public init(emitEventOnEachWrite: Bool = false) {
     self.injector = ClientRequestInjector()
+    self.emitEventOnEachWrite = emitEventOnEachWrite
   }
 
   /// This interceptor will inject as the request's metadata whatever `ServiceContext` key-value pairs
@@ -54,9 +56,26 @@ public struct ClientTracingInterceptor: ClientInterceptor {
     )
     
     return try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .client) { span in
-      span.addEvent("Sending request")
+      span.addEvent("Request started")
+      
+      if self.emitEventOnEachWrite {
+        let wrappedProducer = request.producer
+        request.producer = { writer in
+          let eventEmittingWriter = HookedWriter(
+            wrapping: writer,
+            beforeEachWrite: {
+              span.addEvent("Sending request part")
+            },
+            afterEachWrite: {
+              span.addEvent("Sent request part")
+            })
+          
+          try await wrappedProducer(RPCWriter(wrapping: eventEmittingWriter))
+        }
+      }
+
       let response = try await next(request, context)
-      span.addEvent("Received response")
+      span.addEvent("Received response end")
       return response
     }
   }

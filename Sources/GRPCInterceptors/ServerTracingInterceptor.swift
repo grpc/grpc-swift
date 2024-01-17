@@ -24,10 +24,12 @@ import Tracing
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct ServerTracingInterceptor: ServerInterceptor {
   private let extractor: ServerRequestExtractor
+  private let emitEventOnEachWrite: Bool
 
   /// Create a new instance of a ``ServerTracingInterceptor``.
-  public init() {
+  public init(emitEventOnEachWrite: Bool = false) {
     self.extractor = ServerRequestExtractor()
+    self.emitEventOnEachWrite = emitEventOnEachWrite
   }
 
   /// This interceptor will extract whatever `ServiceContext` key-value pairs have been inserted into the
@@ -48,14 +50,49 @@ public struct ServerTracingInterceptor: ServerInterceptor {
     tracer.extract(
       request.metadata,
       into: &serviceContext,
-      using: ServerRequestExtractor()
+      using: self.extractor
     )
     
-    return try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .server) { span in
-      span.addEvent("Received request")
-      let response = try await next(request, context)
-      span.addEvent("Sending response")
-      return response
+    return try await ServiceContext.withValue(serviceContext) {
+      try await tracer.withSpan(context.descriptor.fullyQualifiedMethod, context: serviceContext, ofKind: .server) { span in
+        span.addEvent("Received request")
+
+        var response = try await next(request, context)
+        
+        switch response.accepted {
+        case .success(var success):
+          let wrappedProducer = success.producer
+          
+          if self.emitEventOnEachWrite {
+            success.producer = { writer in
+              let eventEmittingWriter = HookedWriter(
+                wrapping: writer,
+                beforeEachWrite: {
+                  span.addEvent("Sending response part")
+                },
+                afterEachWrite: {
+                  span.addEvent("Sent response part")
+                })
+              
+              let wrappedResult = try await wrappedProducer(RPCWriter(wrapping: eventEmittingWriter))
+              span.addEvent("Sent response end")
+              return wrappedResult
+            }
+          } else {
+            success.producer = { writer in
+              let wrappedResult = try await wrappedProducer(writer)
+              span.addEvent("Sent response end")
+              return wrappedResult
+            }
+          }
+
+          response = .init(accepted: .success(success))
+        case .failure:
+          span.addEvent("Sent error response")
+        }
+
+        return response
+      }
     }
   }
 }

@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
+import GRPCCore
 import Tracing
-import XCTest
 
-class TracingTestCase: XCTestCase {
-  override class func setUp() {
-    InstrumentationSystem.bootstrap(TestTracer())
-  }
-}
-
-public struct TestTracer: Tracer {
-  public typealias Span = TestSpan
+class TestTracer: Tracer {
+  typealias Span = TestSpan
   
-  public func extract<Carrier, Extract>(
+  private var latestTestSpan: TestSpan?
+  var latestSpanEvents: [SpanEvent] {
+    self.latestTestSpan?.events ?? []
+  }
+  
+  func extract<Carrier, Extract>(
     _ carrier: Carrier,
     into context: inout ServiceContextModule.ServiceContext,
     using extractor: Extract
@@ -35,7 +34,7 @@ public struct TestTracer: Tracer {
     context[TraceID.self] = traceID
   }
 
-  public func inject<Carrier, Inject>(
+  func inject<Carrier, Inject>(
     _ context: ServiceContextModule.ServiceContext,
     into carrier: inout Carrier,
     using injector: Inject
@@ -45,11 +44,11 @@ public struct TestTracer: Tracer {
     }
   }
   
-  public func forceFlush() {
+  func forceFlush() {
     // no-op
   }
   
-  public func startSpan<Instant>(
+  func startSpan<Instant>(
     _ operationName: String,
     context: @autoclosure () -> ServiceContext,
     ofKind kind: SpanKind,
@@ -58,65 +57,66 @@ public struct TestTracer: Tracer {
     file fileID: String,
     line: UInt
   ) -> TestSpan where Instant: TracerInstant {
-    TestSpan(context: context(), operationName: operationName)
+    self.latestTestSpan = TestSpan(context: context(), operationName: operationName)
+    return latestTestSpan!
   }
 }
 
-public class TestSpan: Span {
-  public var context: ServiceContextModule.ServiceContext
-  public var operationName: String
-  public var attributes: Tracing.SpanAttributes
-  public var isRecording: Bool
-  public private(set) var status: Tracing.SpanStatus?
-  public private(set) var events: [Tracing.SpanEvent] = []
+class TestSpan: Span {
+  var context: ServiceContextModule.ServiceContext
+  var operationName: String
+  var attributes: Tracing.SpanAttributes
+  var isRecording: Bool
+  private(set) var status: Tracing.SpanStatus?
+  private(set) var events: [Tracing.SpanEvent] = []
   
-  public init(
+  init(
       context: ServiceContextModule.ServiceContext,
       operationName: String,
       attributes: Tracing.SpanAttributes = [:],
       isRecording: Bool = true
   ) {
-      self.context = context
-      self.operationName = operationName
-      self.attributes = attributes
-      self.isRecording = isRecording
+    self.context = context
+    self.operationName = operationName
+    self.attributes = attributes
+    self.isRecording = isRecording
   }
   
-  public func setStatus(_ status: Tracing.SpanStatus) {
-      self.status = status
+  func setStatus(_ status: Tracing.SpanStatus) {
+    self.status = status
   }
   
-  public func addEvent(_ event: Tracing.SpanEvent) {
-      self.events.append(event)
+  func addEvent(_ event: Tracing.SpanEvent) {
+    self.events.append(event)
   }
   
-  public func recordError<Instant>(
-      _ error: any Error,
-      attributes: Tracing.SpanAttributes,
-      at instant: @autoclosure () -> Instant
+  func recordError<Instant>(
+    _ error: any Error,
+    attributes: Tracing.SpanAttributes,
+    at instant: @autoclosure () -> Instant
   ) where Instant: Tracing.TracerInstant {
-      self.setStatus(.init(
-          code: .error,
-          message: "Error: \(error), attributes: \(attributes), at instant: \(instant())"
-      ))
+    self.setStatus(.init(
+      code: .error,
+      message: "Error: \(error), attributes: \(attributes), at instant: \(instant())"
+    ))
   }
   
-  public func addLink(_ link: Tracing.SpanLink) {
+  func addLink(_ link: Tracing.SpanLink) {
     self.context.spanLinks?.append(link)
   }
   
-  public func end<Instant>(at instant: @autoclosure () -> Instant) where Instant: Tracing.TracerInstant {
+  func end<Instant>(at instant: @autoclosure () -> Instant) where Instant: Tracing.TracerInstant {
     self.setStatus(.init(code: .ok, message: "Ended at instant: \(instant())"))
   }
 }
 
-internal enum TraceID: ServiceContextModule.ServiceContextKey {
+enum TraceID: ServiceContextModule.ServiceContextKey {
   typealias Value = String
 
   static let keyName = "trace-id"
 }
 
-internal enum ServiceContextSpanLinksKey: ServiceContextModule.ServiceContextKey {
+enum ServiceContextSpanLinksKey: ServiceContextModule.ServiceContextKey {
   typealias Value = [SpanLink]
 
   static let keyName = "span-links"
@@ -138,6 +138,22 @@ extension ServiceContext {
     }
     set {
       self[ServiceContextSpanLinksKey.self] = newValue
+    }
+  }
+}
+
+struct TestWriter<WriterElement>: RPCWriterProtocol {
+  typealias Element = WriterElement
+  
+  private let streamContinuation: AsyncStream<Element>.Continuation
+  
+  init(streamContinuation: AsyncStream<Element>.Continuation) {
+    self.streamContinuation = streamContinuation
+  }
+  
+  func write(contentsOf elements: some Sequence<Self.Element>) async throws {
+    elements.forEach { element in
+      self.streamContinuation.yield(element)
     }
   }
 }
