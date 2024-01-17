@@ -225,6 +225,22 @@ extension ServerConnectionHandler {
       return onStartGracefulShutdown
     }
 
+    /// Reset the state of keep-alive policing.
+    mutating func resetKeepAliveState() {
+      switch self.state {
+      case .active(var state):
+        state.keepAlive.reset()
+        self.state = .active(state)
+
+      case .closing(var state):
+        state.keepAlive.reset()
+        self.state = .closing(state)
+
+      case .closed:
+        ()
+      }
+    }
+
     /// Marks the state as closed.
     mutating func markClosed() {
       self.state = .closed

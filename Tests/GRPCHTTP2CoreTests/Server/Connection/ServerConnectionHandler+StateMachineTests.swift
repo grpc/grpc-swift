@@ -215,4 +215,26 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
 
     self.testPingStrikeUsingMinReceiveInterval(state: &state, interval: .minutes(5), expectedID: 0)
   }
+
+  func testResetPingStrikeState() {
+    var state = self.makeStateMachine(
+      allowKeepAliveWithoutCalls: true,
+      minPingReceiveIntervalWithoutCalls: .minutes(5)
+    )
+
+    var time = NIODeadline.now()
+    let data = HTTP2PingData()
+
+    // The first ping is never a strike.
+    XCTAssertEqual(state.receivedPing(atTime: time, data: data), .sendAck)
+
+    // Advance time by less than the interval and get two strikes.
+    time = time + .minutes(1)
+    XCTAssertEqual(state.receivedPing(atTime: time, data: data), .sendAck)
+    XCTAssertEqual(state.receivedPing(atTime: time, data: data), .sendAck)
+
+    // Reset the ping strike state and test ping strikes as normal.
+    state.resetKeepAliveState()
+    self.testPingStrikeUsingMinReceiveInterval(state: &state, interval: .minutes(5), expectedID: 0)
+  }
 }
