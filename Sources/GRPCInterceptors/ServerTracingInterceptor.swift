@@ -27,6 +27,10 @@ public struct ServerTracingInterceptor: ServerInterceptor {
   private let emitEventOnEachWrite: Bool
 
   /// Create a new instance of a ``ServerTracingInterceptor``.
+  ///
+  /// - Parameter emitEventOnEachWrite: If `true`, each response part sent and request part
+  /// received will be recorded as a separate event in a tracing span. Otherwise, only the request/response
+  /// start and end will be recorded as events.
   public init(emitEventOnEachWrite: Bool = false) {
     self.extractor = ServerRequestExtractor()
     self.emitEventOnEachWrite = emitEventOnEachWrite
@@ -59,9 +63,22 @@ public struct ServerTracingInterceptor: ServerInterceptor {
         context: serviceContext,
         ofKind: .server
       ) { span in
-        span.addEvent("Received request")
+        span.addEvent("Received request start")
+
+        var request = request
+
+        if self.emitEventOnEachWrite {
+          request.messages = RPCAsyncSequence(
+            wrapping: request.messages.map { element in
+              span.addEvent("Received request part")
+              return element
+            }
+          )
+        }
 
         var response = try await next(request, context)
+
+        span.addEvent("Received request end")
 
         switch response.accepted {
         case .success(var success):
@@ -79,15 +96,29 @@ public struct ServerTracingInterceptor: ServerInterceptor {
                 }
               )
 
-              let wrappedResult = try await wrappedProducer(
-                RPCWriter(wrapping: eventEmittingWriter)
-              )
+              let wrappedResult: Metadata
+              do {
+                wrappedResult = try await wrappedProducer(
+                  RPCWriter(wrapping: eventEmittingWriter)
+                )
+              } catch {
+                span.addEvent("Error encountered")
+                throw error
+              }
+
               span.addEvent("Sent response end")
               return wrappedResult
             }
           } else {
             success.producer = { writer in
-              let wrappedResult = try await wrappedProducer(writer)
+              let wrappedResult: Metadata
+              do {
+                wrappedResult = try await wrappedProducer(writer)
+              } catch {
+                span.addEvent("Error encountered")
+                throw error
+              }
+
               span.addEvent("Sent response end")
               return wrappedResult
             }

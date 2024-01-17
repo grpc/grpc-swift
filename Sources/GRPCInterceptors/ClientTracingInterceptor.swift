@@ -20,7 +20,7 @@ import Tracing
 /// A client interceptor that injects tracing information into the request.
 ///
 /// The tracing information is taken from the current `ServiceContext`, and injected into the request's
-/// metadata. I twill then be picked up by the server-side ``ServerTracingInterceptor``.
+/// metadata. It will then be picked up by the server-side ``ServerTracingInterceptor``.
 ///
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -29,6 +29,10 @@ public struct ClientTracingInterceptor: ClientInterceptor {
   private let emitEventOnEachWrite: Bool
 
   /// Create a new instance of a ``ClientTracingInterceptor``.
+  ///
+  /// - Parameter emitEventOnEachWrite: If `true`, each request part sent and response part
+  /// received will be recorded as a separate event in a tracing span. Otherwise, only the request/response
+  /// start and end will be recorded as events.
   public init(emitEventOnEachWrite: Bool = false) {
     self.injector = ClientRequestInjector()
     self.emitEventOnEachWrite = emitEventOnEachWrite
@@ -75,12 +79,50 @@ public struct ClientTracingInterceptor: ClientInterceptor {
             }
           )
 
-          try await wrappedProducer(RPCWriter(wrapping: eventEmittingWriter))
+          do {
+            try await wrappedProducer(RPCWriter(wrapping: eventEmittingWriter))
+          } catch {
+            span.addEvent("Error encountered")
+            throw error
+          }
+
+          span.addEvent("Request end")
         }
       }
 
-      let response = try await next(request, context)
-      span.addEvent("Received response end")
+      var response: ClientResponse.Stream<Output>
+      do {
+        response = try await next(request, context)
+      } catch {
+        span.addEvent("Error encountered")
+        throw error
+      }
+
+      switch response.accepted {
+      case .success(var success):
+        if self.emitEventOnEachWrite {
+          let onEachPartRecordingSequence = success.bodyParts.map { element in
+            span.addEvent("Received response part")
+            return element
+          }
+          let onFinishRecordingSequence = OnFinishAsyncSequence(
+            wrapping: onEachPartRecordingSequence
+          ) {
+            span.addEvent("Received response end")
+          }
+          success.bodyParts = RPCAsyncSequence(wrapping: onFinishRecordingSequence)
+          response.accepted = .success(success)
+        } else {
+          let onFinishRecordingSequence = OnFinishAsyncSequence(wrapping: success.bodyParts) {
+            span.addEvent("Received response end")
+          }
+          success.bodyParts = RPCAsyncSequence(wrapping: onFinishRecordingSequence)
+          response.accepted = .success(success)
+        }
+      case .failure:
+        span.addEvent("Received error response")
+      }
+
       return response
     }
   }

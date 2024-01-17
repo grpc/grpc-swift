@@ -69,13 +69,11 @@ struct ClientRPCExecutorTestHarness {
   func unary(
     request: ClientRequest.Single<[UInt8]>,
     configuration: MethodConfiguration? = nil,
-    interceptors: [any ClientInterceptor] = [],
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
       request: ClientRequest.Stream(single: request),
-      configuration: configuration,
-      interceptors: interceptors
+      configuration: configuration
     ) { response in
       try await handler(ClientResponse.Single(stream: response))
     }
@@ -84,13 +82,11 @@ struct ClientRPCExecutorTestHarness {
   func clientStreaming(
     request: ClientRequest.Stream<[UInt8]>,
     configuration: MethodConfiguration? = nil,
-    interceptors: [any ClientInterceptor] = [],
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
       request: request,
-      configuration: configuration,
-      interceptors: interceptors
+      configuration: configuration
     ) { response in
       try await handler(ClientResponse.Single(stream: response))
     }
@@ -99,13 +95,11 @@ struct ClientRPCExecutorTestHarness {
   func serverStreaming(
     request: ClientRequest.Single<[UInt8]>,
     configuration: MethodConfiguration? = nil,
-    interceptors: [any ClientInterceptor] = [],
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(
       request: ClientRequest.Stream(single: request),
-      configuration: configuration,
-      interceptors: interceptors
+      configuration: configuration
     ) { response in
       try await handler(response)
     }
@@ -114,7 +108,6 @@ struct ClientRPCExecutorTestHarness {
   func bidirectional(
     request: ClientRequest.Stream<[UInt8]>,
     configuration: MethodConfiguration? = nil,
-    interceptors: [any ClientInterceptor] = [],
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.execute(
@@ -122,7 +115,6 @@ struct ClientRPCExecutorTestHarness {
       serializer: IdentitySerializer(),
       deserializer: IdentityDeserializer(),
       configuration: configuration,
-      interceptors: interceptors,
       handler: handler
     )
   }
@@ -132,7 +124,6 @@ struct ClientRPCExecutorTestHarness {
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     configuration: MethodConfiguration?,
-    interceptors: [any ClientInterceptor],
     handler: @escaping @Sendable (ClientResponse.Stream<Output>) async throws -> Void
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -169,7 +160,7 @@ struct ClientRPCExecutorTestHarness {
         serializer: serializer,
         deserializer: deserializer,
         transport: self.clientTransport,
-        interceptors: interceptors,
+        interceptors: [],
         handler: handler
       )
 

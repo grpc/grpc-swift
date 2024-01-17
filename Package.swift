@@ -296,6 +296,7 @@ extension Target {
     name: "GRPCInterceptorsTests",
     dependencies: [
       .grpcCore,
+      .tracing,
       .grpcInterceptors
     ]
   )

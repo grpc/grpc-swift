@@ -51,7 +51,12 @@ final class TracingInterceptorTests: XCTestCase {
 
         return .init(
           metadata: [],
-          bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) }))
+          bodyParts: .init(
+            wrapping: AsyncStream<ClientResponse.Stream.Contents.BodyPart> { cont in
+              cont.yield(.message(["response"]))
+              cont.finish()
+            }
+          )
         )
       }
 
@@ -64,8 +69,10 @@ final class TracingInterceptorTests: XCTestCase {
       XCTAssertNil(element)
 
       var messages = response.messages.makeAsyncIterator()
-      let message = try await messages.next()
+      var message = try await messages.next()
       XCTAssertEqual(message, ["response"])
+      message = try await messages.next()
+      XCTAssertNil(message)
 
       let tracer = InstrumentationSystem.tracer as! TestTracer
       XCTAssertEqual(
@@ -103,7 +110,12 @@ final class TracingInterceptorTests: XCTestCase {
 
         return .init(
           metadata: [],
-          bodyParts: .init(wrapping: AsyncStream(unfolding: { .message(["response"]) }))
+          bodyParts: .init(
+            wrapping: AsyncStream<ClientResponse.Stream.Contents.BodyPart> { cont in
+              cont.yield(.message(["response"]))
+              cont.finish()
+            }
+          )
         )
       }
 
@@ -116,8 +128,10 @@ final class TracingInterceptorTests: XCTestCase {
       XCTAssertNil(element)
 
       var messages = response.messages.makeAsyncIterator()
-      let message = try await messages.next()
+      var message = try await messages.next()
       XCTAssertEqual(message, ["response"])
+      message = try await messages.next()
+      XCTAssertNil(message)
 
       let tracer = InstrumentationSystem.tracer as! TestTracer
       XCTAssertEqual(
@@ -130,7 +144,11 @@ final class TracingInterceptorTests: XCTestCase {
           // Recorded when `request2` is sent
           "Sending request part",
           "Sent request part",
-          // Recorded at end of `producer`
+          // Recorded after all request parts have been sent
+          "Request end",
+          // Recorded when receiving response part
+          "Received response part",
+          // Recorded at end of response
           "Received response end",
         ]
       )
@@ -151,7 +169,8 @@ final class TracingInterceptorTests: XCTestCase {
     XCTAssertEqual(
       tracer.latestSpanEvents.map { $0.name },
       [
-        "Received request",
+        "Received request start",
+        "Received request end",
         "Sent error response",
       ]
     )
@@ -208,7 +227,8 @@ final class TracingInterceptorTests: XCTestCase {
     XCTAssertEqual(
       tracer.latestSpanEvents.map { $0.name },
       [
-        "Received request",
+        "Received request start",
+        "Received request end",
         "Sent response end",
       ]
     )
@@ -265,7 +285,8 @@ final class TracingInterceptorTests: XCTestCase {
     XCTAssertEqual(
       tracer.latestSpanEvents.map { $0.name },
       [
-        "Received request",
+        "Received request start",
+        "Received request end",
         // Recorded when `response1` is sent
         "Sending response part",
         "Sent response part",

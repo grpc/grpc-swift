@@ -17,7 +17,7 @@
 import GRPCCore
 import Tracing
 
-class TestTracer: Tracer {
+final class TestTracer: Tracer {
   typealias Span = TestSpan
 
   private var latestTestSpan: TestSpan?
