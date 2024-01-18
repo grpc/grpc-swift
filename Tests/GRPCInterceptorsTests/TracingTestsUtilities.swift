@@ -149,6 +149,7 @@ extension ServiceContext {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct TestWriter<WriterElement>: RPCWriterProtocol {
   typealias Element = WriterElement
 
