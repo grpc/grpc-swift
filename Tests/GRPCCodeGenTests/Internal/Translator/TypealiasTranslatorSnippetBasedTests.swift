@@ -23,11 +23,12 @@ import XCTest
 final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
   typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
+  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
 
   func testTypealiasTranslator() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -35,13 +36,17 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [method]
     )
     let expectedSwift =
       """
-      public enum namespaceA {
+      public enum NamespaceA {
           public enum ServiceA {
               public enum Methods {
                   public enum MethodA {
@@ -56,10 +61,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let methods: [MethodDescriptor] = [
                   Methods.MethodA.descriptor
               ]
-              public typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
-              public typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
-              public typealias ClientProtocol = namespaceA_ServiceAClientProtocol
-              public typealias Client = namespaceA_ServiceAClient
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+              public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+              public typealias Client = NamespaceA_ServiceAClient
           }
       }
       """
@@ -76,20 +81,24 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNoMethodsServiceClientAndServer() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
       """
-      public enum namespaceA {
+      public enum NamespaceA {
           public enum ServiceA {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
-              public typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
-              public typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
-              public typealias ClientProtocol = namespaceA_ServiceAClientProtocol
-              public typealias Client = namespaceA_ServiceAClient
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+              public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+              public typealias Client = NamespaceA_ServiceAClient
           }
       }
       """
@@ -106,18 +115,22 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorServer() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
       """
-      public enum namespaceA {
+      public enum NamespaceA {
           public enum ServiceA {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
-              public typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
-              public typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
           }
       }
       """
@@ -134,18 +147,22 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorClient() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
       """
-      public enum namespaceA {
+      public enum NamespaceA {
           public enum ServiceA {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
-              public typealias ClientProtocol = namespaceA_ServiceAClientProtocol
-              public typealias Client = namespaceA_ServiceAClient
+              public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+              public typealias Client = NamespaceA_ServiceAClient
           }
       }
       """
@@ -162,13 +179,17 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNoClientNoServer() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
       """
-      public enum namespaceA {
+      public enum NamespaceA {
           public enum ServiceA {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
@@ -188,7 +209,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorEmptyNamespace() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "ServiceARequest",
@@ -196,8 +217,8 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: [method]
     )
     let expectedSwift =
@@ -235,7 +256,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorCheckMethodsOrder() throws {
     let methodA = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: "MethodA",
+      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -243,7 +264,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let methodB = MethodDescriptor(
       documentation: "Documentation for MethodB",
-      name: "MethodB",
+      name: Name(base: "MethodB", generatedUpperCase: "MethodB", generatedLowerCase: "methodB"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -251,13 +272,17 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: [methodA, methodB]
     )
     let expectedSwift =
       """
-      public enum namespaceA {
+      public enum NamespaceA {
           public enum ServiceA {
               public enum Methods {
                   public enum MethodA {
@@ -281,10 +306,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   Methods.MethodA.descriptor,
                   Methods.MethodB.descriptor
               ]
-              public typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
-              public typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
-              public typealias ClientProtocol = namespaceA_ServiceAClientProtocol
-              public typealias Client = namespaceA_ServiceAClient
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+              public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+              public typealias Client = NamespaceA_ServiceAClient
           }
       }
       """
@@ -301,20 +326,24 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNoMethodsService() throws {
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: "ServiceA",
-      namespace: "namespaceA",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
     let expectedSwift =
       """
-      package enum namespaceA {
+      package enum NamespaceA {
           package enum ServiceA {
               package enum Methods {}
               package static let methods: [MethodDescriptor] = []
-              package typealias StreamingServiceProtocol = namespaceA_ServiceAServiceStreamingProtocol
-              package typealias ServiceProtocol = namespaceA_ServiceAServiceProtocol
-              package typealias ClientProtocol = namespaceA_ServiceAClientProtocol
-              package typealias Client = namespaceA_ServiceAClient
+              package typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              package typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+              package typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+              package typealias Client = NamespaceA_ServiceAClient
           }
       }
       """
@@ -331,36 +360,44 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorServiceAlphabeticalOrder() throws {
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      namespace: "namespacea",
+      name: Name(base: "BService", generatedUpperCase: "Bservice", generatedLowerCase: "bservice"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      namespace: "namespacea",
+      name: Name(base: "AService", generatedUpperCase: "Aservice", generatedLowerCase: "aservice"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
       methods: []
     )
 
     let expectedSwift =
       """
-      public enum namespacea {
-          public enum AService {
+      public enum NamespaceA {
+          public enum Aservice {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
-              public typealias StreamingServiceProtocol = namespacea_AServiceServiceStreamingProtocol
-              public typealias ServiceProtocol = namespacea_AServiceServiceProtocol
-              public typealias ClientProtocol = namespacea_AServiceClientProtocol
-              public typealias Client = namespacea_AServiceClient
+              public typealias StreamingServiceProtocol = NamespaceA_AserviceServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_AserviceServiceProtocol
+              public typealias ClientProtocol = NamespaceA_AserviceClientProtocol
+              public typealias Client = NamespaceA_AserviceClient
           }
-          public enum BService {
+          public enum Bservice {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
-              public typealias StreamingServiceProtocol = namespacea_BServiceServiceStreamingProtocol
-              public typealias ServiceProtocol = namespacea_BServiceServiceProtocol
-              public typealias ClientProtocol = namespacea_BServiceClientProtocol
-              public typealias Client = namespacea_BServiceClient
+              public typealias StreamingServiceProtocol = NamespaceA_BserviceServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_BserviceServiceProtocol
+              public typealias ClientProtocol = NamespaceA_BserviceClientProtocol
+              public typealias Client = NamespaceA_BserviceClient
           }
       }
       """
@@ -377,15 +414,15 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorServiceAlphabeticalOrderNoNamespace() throws {
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      namespace: "",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bservice"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      namespace: "",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aservice"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
 
@@ -421,38 +458,46 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNamespaceAlphabeticalOrder() throws {
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      namespace: "bnamespace",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bservice"),
+      namespace: Name(
+        base: "bnamespace",
+        generatedUpperCase: "Bnamespace",
+        generatedLowerCase: "bnamespace"
+      ),
       methods: []
     )
 
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      namespace: "anamespace",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aservice"),
+      namespace: Name(
+        base: "anamespace",
+        generatedUpperCase: "Anamespace",
+        generatedLowerCase: "anamespace"
+      ),
       methods: []
     )
 
     let expectedSwift =
       """
-      internal enum anamespace {
+      internal enum Anamespace {
           internal enum AService {
               internal enum Methods {}
               internal static let methods: [MethodDescriptor] = []
-              internal typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
-              internal typealias ServiceProtocol = anamespace_AServiceServiceProtocol
-              internal typealias ClientProtocol = anamespace_AServiceClientProtocol
-              internal typealias Client = anamespace_AServiceClient
+              internal typealias StreamingServiceProtocol = Anamespace_AServiceServiceStreamingProtocol
+              internal typealias ServiceProtocol = Anamespace_AServiceServiceProtocol
+              internal typealias ClientProtocol = Anamespace_AServiceClientProtocol
+              internal typealias Client = Anamespace_AServiceClient
           }
       }
-      internal enum bnamespace {
+      internal enum Bnamespace {
           internal enum BService {
               internal enum Methods {}
               internal static let methods: [MethodDescriptor] = []
-              internal typealias StreamingServiceProtocol = bnamespace_BServiceServiceStreamingProtocol
-              internal typealias ServiceProtocol = bnamespace_BServiceServiceProtocol
-              internal typealias ClientProtocol = bnamespace_BServiceClientProtocol
-              internal typealias Client = bnamespace_BServiceClient
+              internal typealias StreamingServiceProtocol = Bnamespace_BServiceServiceStreamingProtocol
+              internal typealias ServiceProtocol = Bnamespace_BServiceServiceProtocol
+              internal typealias ClientProtocol = Bnamespace_BServiceClientProtocol
+              internal typealias Client = Bnamespace_BServiceClient
           }
       }
       """
@@ -469,14 +514,18 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
   func testTypealiasTranslatorNamespaceNoNamespaceOrder() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for AService",
-      name: "AService",
-      namespace: "anamespace",
+      name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
+      namespace: Name(
+        base: "anamespace",
+        generatedUpperCase: "Anamespace",
+        generatedLowerCase: "anamespace"
+      ),
       methods: []
     )
     let serviceB = ServiceDescriptor(
       documentation: "Documentation for BService",
-      name: "BService",
-      namespace: "",
+      name: Name(base: "BService", generatedUpperCase: "BService", generatedLowerCase: "bService"),
+      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
     let expectedSwift =
@@ -489,14 +538,14 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = BServiceClientProtocol
           public typealias Client = BServiceClient
       }
-      public enum anamespace {
+      public enum Anamespace {
           public enum AService {
               public enum Methods {}
               public static let methods: [MethodDescriptor] = []
-              public typealias StreamingServiceProtocol = anamespace_AServiceServiceStreamingProtocol
-              public typealias ServiceProtocol = anamespace_AServiceServiceProtocol
-              public typealias ClientProtocol = anamespace_AServiceClientProtocol
-              public typealias Client = anamespace_AServiceClient
+              public typealias StreamingServiceProtocol = Anamespace_AServiceServiceStreamingProtocol
+              public typealias ServiceProtocol = Anamespace_AServiceServiceProtocol
+              public typealias ClientProtocol = Anamespace_AServiceClientProtocol
+              public typealias Client = Anamespace_AServiceClient
           }
       }
       """
