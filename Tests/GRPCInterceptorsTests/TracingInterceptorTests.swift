@@ -26,6 +26,7 @@ final class TracingInterceptorTests: XCTestCase {
     InstrumentationSystem.bootstrap(TestTracer())
   }
 
+  #if swift(>=5.8)  // Compiling these tests fails in 5.7
   func testClientInterceptor() async throws {
     var serviceContext = ServiceContext.topLevel
     let traceIDString = UUID().uuidString
@@ -166,6 +167,7 @@ final class TracingInterceptorTests: XCTestCase {
       )
     }
   }
+  #endif  // swift >= 5.7
 
   func testServerInterceptorErrorResponse() async throws {
     let methodDescriptor = MethodDescriptor(
