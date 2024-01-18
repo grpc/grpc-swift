@@ -297,6 +297,7 @@ extension Target {
     dependencies: [
       .grpcCore,
       .tracing,
+      .nioCore,
       .grpcInterceptors
     ]
   )

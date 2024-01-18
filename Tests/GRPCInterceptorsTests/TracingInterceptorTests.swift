@@ -34,12 +34,16 @@ final class TracingInterceptorTests: XCTestCase {
     serviceContext.traceID = traceIDString
 
     try await ServiceContext.withValue(serviceContext) {
+      let methodDescriptor = MethodDescriptor(
+        service: "TracingInterceptorTests",
+        method: "testClientInterceptor"
+      )
       let response = try await interceptor.intercept(
         request: .init(producer: { writer in
           try await writer.write(contentsOf: ["request1"])
           try await writer.write(contentsOf: ["request2"])
         }),
-        context: .init(descriptor: .init(service: "foo", method: "bar"))
+        context: .init(descriptor: methodDescriptor)
       ) { stream, _ in
         // Assert the metadata contains the injected context key-value.
         XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
@@ -76,7 +80,9 @@ final class TracingInterceptorTests: XCTestCase {
 
       let tracer = InstrumentationSystem.tracer as! TestTracer
       XCTAssertEqual(
-        tracer.latestSpanEvents.map { $0.name },
+        tracer.getEventsForTestSpan(ofOperationName: methodDescriptor.fullyQualifiedMethod).map {
+          $0.name
+        },
         [
           "Request started",
           "Received response end",
@@ -86,6 +92,10 @@ final class TracingInterceptorTests: XCTestCase {
   }
 
   func testClientInterceptorAllEventsRecorded() async throws {
+    let methodDescriptor = MethodDescriptor(
+      service: "TracingInterceptorTests",
+      method: "testClientInterceptorAllEventsRecorded"
+    )
     var serviceContext = ServiceContext.topLevel
     let traceIDString = UUID().uuidString
     let interceptor = ClientTracingInterceptor(emitEventOnEachWrite: true)
@@ -98,7 +108,7 @@ final class TracingInterceptorTests: XCTestCase {
           try await writer.write(contentsOf: ["request1"])
           try await writer.write(contentsOf: ["request2"])
         }),
-        context: .init(descriptor: .init(service: "foo", method: "bar"))
+        context: .init(descriptor: methodDescriptor)
       ) { stream, _ in
         // Assert the metadata contains the injected context key-value.
         XCTAssertEqual(stream.metadata, ["trace-id": "\(traceIDString)"])
@@ -135,7 +145,9 @@ final class TracingInterceptorTests: XCTestCase {
 
       let tracer = InstrumentationSystem.tracer as! TestTracer
       XCTAssertEqual(
-        tracer.latestSpanEvents.map { $0.name },
+        tracer.getEventsForTestSpan(ofOperationName: methodDescriptor.fullyQualifiedMethod).map {
+          $0.name
+        },
         [
           "Request started",
           // Recorded when `request1` is sent
@@ -156,10 +168,14 @@ final class TracingInterceptorTests: XCTestCase {
   }
 
   func testServerInterceptorErrorResponse() async throws {
+    let methodDescriptor = MethodDescriptor(
+      service: "TracingInterceptorTests",
+      method: "testServerInterceptorErrorResponse"
+    )
     let interceptor = ServerTracingInterceptor(emitEventOnEachWrite: false)
     let response = try await interceptor.intercept(
       request: .init(single: .init(metadata: ["trace-id": "some-trace-id"], message: [])),
-      context: .init(descriptor: .init(service: "foo", method: "bar"))
+      context: .init(descriptor: methodDescriptor)
     ) { _, _ in
       ServerResponse.Stream<String>(error: .init(code: .unknown, message: "Test error"))
     }
@@ -167,7 +183,9 @@ final class TracingInterceptorTests: XCTestCase {
 
     let tracer = InstrumentationSystem.tracer as! TestTracer
     XCTAssertEqual(
-      tracer.latestSpanEvents.map { $0.name },
+      tracer.getEventsForTestSpan(ofOperationName: methodDescriptor.fullyQualifiedMethod).map {
+        $0.name
+      },
       [
         "Received request start",
         "Received request end",
@@ -177,11 +195,15 @@ final class TracingInterceptorTests: XCTestCase {
   }
 
   func testServerInterceptor() async throws {
+    let methodDescriptor = MethodDescriptor(
+      service: "TracingInterceptorTests",
+      method: "testServerInterceptor"
+    )
     let (stream, continuation) = AsyncStream<String>.makeStream()
     let interceptor = ServerTracingInterceptor(emitEventOnEachWrite: false)
     let response = try await interceptor.intercept(
       request: .init(single: .init(metadata: ["trace-id": "some-trace-id"], message: [])),
-      context: .init(descriptor: .init(service: "foo", method: "bar"))
+      context: .init(descriptor: methodDescriptor)
     ) { _, _ in
       { [serviceContext = ServiceContext.current] in
         return ServerResponse.Stream<String>(
@@ -225,7 +247,9 @@ final class TracingInterceptorTests: XCTestCase {
 
     let tracer = InstrumentationSystem.tracer as! TestTracer
     XCTAssertEqual(
-      tracer.latestSpanEvents.map { $0.name },
+      tracer.getEventsForTestSpan(ofOperationName: methodDescriptor.fullyQualifiedMethod).map {
+        $0.name
+      },
       [
         "Received request start",
         "Received request end",
@@ -235,11 +259,15 @@ final class TracingInterceptorTests: XCTestCase {
   }
 
   func testServerInterceptorAllEventsRecorded() async throws {
+    let methodDescriptor = MethodDescriptor(
+      service: "TracingInterceptorTests",
+      method: "testServerInterceptorAllEventsRecorded"
+    )
     let (stream, continuation) = AsyncStream<String>.makeStream()
     let interceptor = ServerTracingInterceptor(emitEventOnEachWrite: true)
     let response = try await interceptor.intercept(
       request: .init(single: .init(metadata: ["trace-id": "some-trace-id"], message: [])),
-      context: .init(descriptor: .init(service: "foo", method: "bar"))
+      context: .init(descriptor: methodDescriptor)
     ) { _, _ in
       { [serviceContext = ServiceContext.current] in
         return ServerResponse.Stream<String>(
@@ -283,7 +311,9 @@ final class TracingInterceptorTests: XCTestCase {
 
     let tracer = InstrumentationSystem.tracer as! TestTracer
     XCTAssertEqual(
-      tracer.latestSpanEvents.map { $0.name },
+      tracer.getEventsForTestSpan(ofOperationName: methodDescriptor.fullyQualifiedMethod).map {
+        $0.name
+      },
       [
         "Received request start",
         "Received request end",

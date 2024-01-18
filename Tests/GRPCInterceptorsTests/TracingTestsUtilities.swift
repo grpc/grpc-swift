@@ -15,14 +15,16 @@
  */
 
 import GRPCCore
+import NIOConcurrencyHelpers
 import Tracing
 
 final class TestTracer: Tracer {
   typealias Span = TestSpan
 
-  private var latestTestSpan: TestSpan?
-  var latestSpanEvents: [SpanEvent] {
-    self.latestTestSpan?.events ?? []
+  private var testSpans: NIOLockedValueBox<[String: TestSpan]> = .init([:])
+
+  func getEventsForTestSpan(ofOperationName operationName: String) -> [SpanEvent] {
+    self.testSpans.withLockedValue({ $0[operationName] })?.events ?? []
   }
 
   func extract<Carrier, Extract>(
@@ -57,8 +59,11 @@ final class TestTracer: Tracer {
     file fileID: String,
     line: UInt
   ) -> TestSpan where Instant: TracerInstant {
-    self.latestTestSpan = TestSpan(context: context(), operationName: operationName)
-    return latestTestSpan!
+    return self.testSpans.withLockedValue { testSpans in
+      let span = TestSpan(context: context(), operationName: operationName)
+      testSpans[operationName] = span
+      return span
+    }
   }
 }
 
