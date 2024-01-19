@@ -201,7 +201,8 @@ extension Target {
     dependencies: [
       .grpcCore,
       .nioCore,
-      .nioHTTP2
+      .nioHTTP2,
+      .cgrpcZlib,
     ]
   )
   
