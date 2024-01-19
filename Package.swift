@@ -72,6 +72,10 @@ let packageDependencies: [Package.Dependency] = [
     url: "https://github.com/apple/swift-docc-plugin",
     from: "1.0.0"
   ),
+  .package(
+    url: "https://github.com/apple/swift-distributed-tracing.git",
+    from: "1.0.0"
+  ),
 ].appending(
   .package(
     url: "https://github.com/apple/swift-nio-ssl.git",
@@ -132,9 +136,11 @@ extension Target.Dependency {
   )
   static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
   static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
+  static let tracing: Self = .product(name: "Tracing", package: "swift-distributed-tracing")
 
   static let grpcCore: Self = .target(name: "GRPCCore")
   static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
+  static let grpcInterceptors: Self = .target(name: "GRPCInterceptors")
   static let grpcHTTP2Core: Self = .target(name: "GRPCHTTP2Core")
   static let grpcHTTP2TransportNIOPosix: Self = .target(name: "GRPCHTTP2TransportNIOPosix")
   static let grpcHTTP2TransportNIOTransportServices: Self = .target(name: "GRPCHTTP2TransportNIOTransportServices")
@@ -182,6 +188,14 @@ extension Target {
     ]
   )
   
+  static let grpcInterceptors: Target = .target(
+    name: "GRPCInterceptors",
+    dependencies: [
+      .grpcCore,
+      .tracing
+    ]
+  )
+
   static let grpcHTTP2Core: Target = .target(
     name: "GRPCHTTP2Core",
     dependencies: [
@@ -275,10 +289,20 @@ extension Target {
     name: "GRPCInProcessTransportTests",
     dependencies: [
       .grpcCore,
-      .grpcInProcessTransport,
+      .grpcInProcessTransport
     ]
   )
   
+  static let grpcInterceptorsTests: Target = .testTarget(
+    name: "GRPCInterceptorsTests",
+    dependencies: [
+      .grpcCore,
+      .tracing,
+      .nioCore,
+      .grpcInterceptors
+    ]
+  )
+
   static let grpcHTTP2CoreTests: Target = .testTarget(
     name: "GRPCHTTP2CoreTests",
     dependencies: [
@@ -657,6 +681,7 @@ let package = Package(
     .grpcCore,
     .grpcInProcessTransport,
     .grpcCodeGen,
+    .grpcInterceptors,
     .grpcHTTP2Core,
     .grpcHTTP2TransportNIOPosix,
     .grpcHTTP2TransportNIOTransportServices,
@@ -666,6 +691,7 @@ let package = Package(
     .grpcCoreTests,
     .grpcInProcessTransportTests,
     .grpcCodeGenTests,
+    .grpcInterceptorsTests,
     .grpcHTTP2CoreTests,
     .grpcHTTP2TransportNIOPosixTests,
     .grpcHTTP2TransportNIOTransportServicesTests,

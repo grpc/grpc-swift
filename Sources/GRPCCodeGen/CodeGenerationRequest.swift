@@ -216,17 +216,21 @@ public struct CodeGenerationRequest {
   }
 
   /// Represents a service described in an IDL file.
-  public struct ServiceDescriptor {
+  public struct ServiceDescriptor: Hashable {
     /// Documentation from comments above the IDL service description.
     public var documentation: String
 
-    /// Service name.
-    public var name: String
-
-    /// The service namespace.
+    /// The service name in different formats.
     ///
-    /// For `.proto` files it is the package name.
-    public var namespace: String
+    /// All properties of this object must be unique for each service from within a namespace.
+    public var name: Name
+
+    /// The service namespace in different formats.
+    ///
+    /// All different services from within the same namespace must have
+    /// the same ``Name`` object as this property.
+    /// For `.proto` files the base name of this object is the package name.
+    public var namespace: Name
 
     /// A description of each method of a service.
     ///
@@ -235,8 +239,8 @@ public struct CodeGenerationRequest {
 
     public init(
       documentation: String,
-      name: String,
-      namespace: String,
+      name: Name,
+      namespace: Name,
       methods: [MethodDescriptor]
     ) {
       self.documentation = documentation
@@ -246,12 +250,15 @@ public struct CodeGenerationRequest {
     }
 
     /// Represents a method described in an IDL file.
-    public struct MethodDescriptor {
+    public struct MethodDescriptor: Hashable {
       /// Documentation from comments above the IDL method description.
       public var documentation: String
 
-      /// Method name.
-      public var name: String
+      /// Method name in different formats.
+      ///
+      /// All properties of this object must be unique for each method
+      /// from within a service.
+      public var name: Name
 
       /// Identifies if the method is input streaming.
       public var isInputStreaming: Bool
@@ -267,7 +274,7 @@ public struct CodeGenerationRequest {
 
       public init(
         documentation: String,
-        name: String,
+        name: Name,
         isInputStreaming: Bool,
         isOutputStreaming: Bool,
         inputType: String,
@@ -280,6 +287,34 @@ public struct CodeGenerationRequest {
         self.inputType = inputType
         self.outputType = outputType
       }
+    }
+  }
+
+  /// Represents the name associated with a namespace, service or a method, in three different formats.
+  public struct Name: Hashable {
+    /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
+    /// the specific casing of the IDL.
+    ///
+    /// The base name is also used in the descriptors that identify a specific method or service :
+    /// `<service_namespace_baseName>.<service_baseName>.<method_baseName>`.
+    public var base: String
+
+    /// The `generatedUpperCase` name is used in the generated code. It is expected
+    /// to be the UpperCamelCase version of the base name
+    ///
+    /// For example, if `base` is "fooBar", then `generatedUpperCase` is "FooBar".
+    public var generatedUpperCase: String
+
+    /// The `generatedLowerCase` name is used in the generated code. It is expected
+    /// to be the lowerCamelCase version of the base name
+    ///
+    /// For example, if `base` is "FooBar", then `generatedLowerCase` is "fooBar".
+    public var generatedLowerCase: String
+
+    public init(base: String, generatedUpperCase: String, generatedLowerCase: String) {
+      self.base = base
+      self.generatedUpperCase = generatedUpperCase
+      self.generatedLowerCase = generatedLowerCase
     }
   }
 }

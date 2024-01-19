@@ -22,23 +22,23 @@
 /// a representation for the following generated code:
 ///
 /// ```swift
-/// public protocol foo_BarClientProtocol: Sendable {
+/// public protocol Foo_BarClientProtocol: Sendable {
 ///   func baz<R: Sendable>(
 ///     request: ClientRequest.Single<foo.Bar.Methods.baz.Input>,
 ///     serializer: some MessageSerializer<foo.Bar.Methods.baz.Input>,
 ///     deserializer: some MessageDeserializer<foo.Bar.Methods.baz.Output>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Methods.baz.Output>) async throws -> R
-///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.bazOutput>
+///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Methods.Baz.Output>) async throws -> R
+///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.Baz.Output>
 /// }
-/// extension foo.Bar.ClientProtocol {
+/// extension Foo.Bar.ClientProtocol {
 ///   public func get<R: Sendable>(
-///     request: ClientRequest.Single<foo.Bar.Methods.baz.Input>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Methods.baz.Output>) async throws -> R
+///     request: ClientRequest.Single<Foo.Bar.Methods.Baz.Input>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo.Bar.Methods.Baz.Output>) async throws -> R
 ///   ) async rethrows -> R {
 ///     try await self.baz(
 ///       request: request,
-///       serializer: ProtobufSerializer<foo.Bar.Methods.baz.Input>(),
-///       deserializer: ProtobufDeserializer<foo.Bar.Methods.baz.Output>(),
+///       serializer: ProtobufSerializer<Foo.Bar.Methods.Baz.Input>(),
+///       deserializer: ProtobufDeserializer<Foo.Bar.Methods.Baz.Output>(),
 ///       body
 ///     )
 /// }
@@ -55,7 +55,7 @@
 ///   ) async rethrows -> R {
 ///    try await self.client.clientStreaming(
 ///      request: request,
-///      descriptor: namespaceA.ServiceA.Methods.methodA.descriptor,
+///      descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
 ///      serializer: serializer,
 ///      deserializer: deserializer,
 ///      handler: body
@@ -115,7 +115,7 @@ extension ClientCodeTranslator {
     let clientProtocol = Declaration.protocol(
       ProtocolDescription(
         accessModifier: self.accessModifier,
-        name: "\(service.namespacedPrefix)ClientProtocol",
+        name: "\(service.namespacedGeneratedName)ClientProtocol",
         conformances: ["Sendable"],
         members: methods
       )
@@ -138,7 +138,7 @@ extension ClientCodeTranslator {
     }
     let clientProtocolExtension = Declaration.extension(
       ExtensionDescription(
-        onType: "\(service.namespacedTypealiasPrefix).ClientProtocol",
+        onType: "\(service.namespacedTypealiasGeneratedName).ClientProtocol",
         declarations: methods
       )
     )
@@ -161,7 +161,7 @@ extension ClientCodeTranslator {
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
       kind: .function(
-        name: method.name,
+        name: method.name.generatedLowerCase,
         isStatic: false
       ),
       generics: [.member("R")],
@@ -190,7 +190,10 @@ extension ClientCodeTranslator {
   ) -> [CodeBlock] {
     let functionCall = Expression.functionCall(
       calledExpression: .memberAccess(
-        MemberAccessDescription(left: .identifierPattern("self"), right: method.name)
+        MemberAccessDescription(
+          left: .identifierPattern("self"),
+          right: method.name.generatedLowerCase
+        )
       ),
       arguments: [
         FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
@@ -329,8 +332,8 @@ extension ClientCodeTranslator {
     return .struct(
       StructDescription(
         accessModifier: self.accessModifier,
-        name: "\(service.namespacedPrefix)Client",
-        conformances: ["\(service.namespacedTypealiasPrefix).ClientProtocol"],
+        name: "\(service.namespacedGeneratedName)Client",
+        conformances: ["\(service.namespacedTypealiasGeneratedName).ClientProtocol"],
         members: [clientProperty, initializer] + methods
       )
     )
@@ -393,7 +396,7 @@ extension ClientCodeTranslator {
         .init(
           label: "descriptor",
           expression: .identifierPattern(
-            "\(service.namespacedTypealiasPrefix).Methods.\(method.name).descriptor"
+            "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase).descriptor"
           )
         ),
         .init(label: "serializer", expression: .identifierPattern("serializer")),
@@ -409,7 +412,7 @@ extension ClientCodeTranslator {
     return .function(
       accessModifier: self.accessModifier,
       kind: .function(
-        name: "\(method.name)",
+        name: "\(method.name.generatedLowerCase)",
         isStatic: false
       ),
       generics: [.member("R")],
@@ -432,7 +435,8 @@ extension ClientCodeTranslator {
     service: CodeGenerationRequest.ServiceDescriptor,
     type: InputOutputType
   ) -> String {
-    var components: String = "\(service.namespacedTypealiasPrefix).Methods.\(method.name)"
+    var components: String =
+      "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase)"
 
     switch type {
     case .input:
