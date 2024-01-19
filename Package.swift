@@ -312,7 +312,7 @@ extension Target {
     dependencies: [
       .grpcCore,
       .grpcProtobuf,
-      .echoModel
+      .protobuf
     ]
   )
   

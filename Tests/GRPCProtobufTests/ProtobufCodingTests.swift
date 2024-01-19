@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-import EchoModel
 import GRPCCore
 import GRPCProtobuf
 import SwiftProtobuf
 import XCTest
 
-final class CodingTests: XCTestCase {
+final class ProtobufCodingTests: XCTestCase {
   func testSerializeDeserializeRoundtrip() throws {
-    let message = TestMessage.with {
-      $0.text = "TestText"
+    let message = Google_Protobuf_Timestamp.with {
+      $0.seconds = 4
     }
 
-    let serializer = ProtobufSerializer<TestMessage>()
-    let deserializer = ProtobufDeserializer<TestMessage>()
+    let serializer = ProtobufSerializer<Google_Protobuf_Timestamp>()
+    let deserializer = ProtobufDeserializer<Google_Protobuf_Timestamp>()
 
     let bytes = try serializer.serialize(message)
     let roundTrip = try deserializer.deserialize(bytes)
@@ -47,7 +46,7 @@ final class CodingTests: XCTestCase {
           code: .invalidArgument,
           message:
             """
-            The message could not be serialized.
+            Can't serialize message of type TestMessage.
             """
         )
       )
@@ -55,8 +54,7 @@ final class CodingTests: XCTestCase {
   }
 
   func testDeserializerError() throws {
-    let invalidData = "%%%%%££££".data(using: .utf8)
-    let bytes = [UInt8](invalidData!)
+    let bytes = Array("%%%%%££££".utf8)
     let deserializer = ProtobufDeserializer<TestMessage>()
     XCTAssertThrowsError(
       try deserializer.deserialize(bytes)
@@ -67,7 +65,7 @@ final class CodingTests: XCTestCase {
           code: .invalidArgument,
           message:
             """
-            The data could not be deserialized into a Message.
+            Can't deserialize to message of type TestMessage
             """
         )
       )
@@ -75,37 +73,26 @@ final class CodingTests: XCTestCase {
   }
 }
 
-struct TestMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase {
-
+struct TestMessage: SwiftProtobuf.Message {
   var text: String = ""
   var unknownFields = SwiftProtobuf.UnknownStorage()
   static var protoMessageName: String = "Test" + ".ServiceRequest"
   init() {}
 
   mutating func decodeMessage<D>(decoder: inout D) throws where D: SwiftProtobuf.Decoder {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.text) }()
-      default: break
-      }
-    }
+    throw RPCError(code: .internalError, message: "Decoding error")
   }
 
   func traverse<V>(visitor: inout V) throws where V: SwiftProtobuf.Visitor {
-    if !self.text.isEmpty {
-      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func == (lhs: TestMessage, rhs: TestMessage) -> Bool {
-    if lhs.text != rhs.text { return false }
-    if lhs.unknownFields != rhs.unknownFields { return false }
-    return true
+    throw RPCError(code: .internalError, message: "Traversing error")
   }
 
   public var isInitialized: Bool {
     if self.text.isEmpty { return false }
     return true
+  }
+
+  func isEqualTo(message: SwiftProtobuf.Message) -> Bool {
+    return false
   }
 }

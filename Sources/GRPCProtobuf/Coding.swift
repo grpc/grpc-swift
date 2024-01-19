@@ -20,6 +20,8 @@ import SwiftProtobuf
 
 /// Serializes a Protobuf message into a sequence of bytes.
 public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: GRPCCore.MessageSerializer {
+  public init() {}
+
   /// Serializes a ``SwiftProtobuf.Message`` into a sequence of bytes.
   ///
   /// - Parameter message: The message to serialize.
@@ -31,34 +33,31 @@ public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: GRPCCore.Messa
     } catch let error {
       throw RPCError(
         code: .invalidArgument,
-        message: "The message could not be serialized.",
+        message: "Can't serialize message of type \(type(of: message)).",
         cause: error
       )
     }
   }
-
-  public init() {}
 }
 
 /// Deserializes a sequence of bytes into a Protobuf message.
 public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: GRPCCore.MessageDeserializer {
+  public init() {}
+
   /// Deserializes a sequence of bytes into a ``SwiftProtobuf.Message``.
   ///
   /// - Parameter serializedMessageBytes: The array of bytes to deserialize.
   /// - Returns: The deserialized message.
   public func deserialize(_ serializedMessageBytes: [UInt8]) throws -> Message {
     do {
-      let data = Data(serializedMessageBytes)
-      let message = try Message(serializedData: data)
+      let message = try Message(contiguousBytes: serializedMessageBytes)
       return message
     } catch let error {
       throw RPCError(
         code: .invalidArgument,
-        message: "The data could not be deserialized into a Message.",
+        message: "Can't deserialize to message of type \(Message.self)",
         cause: error
       )
     }
   }
-
-  public init() {}
 }
