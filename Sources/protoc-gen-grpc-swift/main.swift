@@ -156,7 +156,7 @@ func main(args: [String]) throws {
         binaryFile.content = serializedFileDescriptorProto
         response.file.append(binaryFile)
       }
-      if !fileDescriptor.services.isEmpty && (options.generateClient || options.generateServer) {
+      if !fileDescriptor.services.isEmpty && (options.generateClient || options.generateServer || options.generateTestClient) {
         var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         let grpcFileName = uniqueOutputFileName(
           component: "grpc",
