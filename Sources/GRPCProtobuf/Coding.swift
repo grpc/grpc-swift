@@ -22,7 +22,7 @@ import SwiftProtobuf
 public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: GRPCCore.MessageSerializer {
   public init() {}
 
-  /// Serializes a ``SwiftProtobuf.Message`` into a sequence of bytes.
+  /// Serializes a ``Message`` into a sequence of bytes.
   ///
   /// - Parameter message: The message to serialize.
   /// - Returns: An array of serialized bytes representing the message.
@@ -44,7 +44,7 @@ public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: GRPCCore.Messa
 public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: GRPCCore.MessageDeserializer {
   public init() {}
 
-  /// Deserializes a sequence of bytes into a ``SwiftProtobuf.Message``.
+  /// Deserializes a sequence of bytes into a ``Message``.
   ///
   /// - Parameter serializedMessageBytes: The array of bytes to deserialize.
   /// - Returns: The deserialized message.
