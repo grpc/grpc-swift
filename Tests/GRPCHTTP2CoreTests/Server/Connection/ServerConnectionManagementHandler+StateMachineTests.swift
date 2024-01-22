@@ -20,12 +20,12 @@ import XCTest
 
 @testable import GRPCHTTP2Core
 
-final class ServerConnectionHandlerStateMachineTests: XCTestCase {
+final class ServerConnectionManagementHandlerStateMachineTests: XCTestCase {
   private func makeStateMachine(
     allowKeepAliveWithoutCalls: Bool = false,
     minPingReceiveIntervalWithoutCalls: TimeAmount = .minutes(5),
     goAwayPingData: HTTP2PingData = HTTP2PingData(withInteger: 42)
-  ) -> ServerConnectionHandler.StateMachine {
+  ) -> ServerConnectionManagementHandler.StateMachine {
     return .init(
       allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls,
       minPingReceiveIntervalWithoutCalls: minPingReceiveIntervalWithoutCalls,
@@ -169,7 +169,7 @@ final class ServerConnectionHandlerStateMachineTests: XCTestCase {
   }
 
   func testPingStrikeUsingMinReceiveInterval(
-    state: inout ServerConnectionHandler.StateMachine,
+    state: inout ServerConnectionManagementHandler.StateMachine,
     interval: TimeAmount,
     expectedID id: HTTP2StreamID
   ) {
