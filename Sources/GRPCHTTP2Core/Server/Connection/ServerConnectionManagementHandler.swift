@@ -43,7 +43,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   typealias OutboundIn = HTTP2Frame
   typealias OutboundOut = HTTP2Frame
 
-  /// The `EventLoop` of the `Channel` this handler exists it.
+  /// The `EventLoop` of the `Channel` this handler exists in.
   private let eventLoop: EventLoop
 
   /// The maximum amount of time a connection may be idle for. If the connection remains idle
@@ -239,7 +239,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.maxGraceTimer = maxGraceTime.map { Timer(delay: $0) }
 
     self.keepAliveTimer = keepAliveTime.map { Timer(delay: $0) }
-    // Always create a keep alive timeout timer, it's only use if there is a keep alive timer.
+    // Always create a keep alive timeout timer, it's only used if there is a keep alive timer.
     self.keepAliveTimeoutTimer = Timer(delay: keepAliveTimeout ?? .seconds(20))
 
     // Generate a random value to be used as keep alive ping data.
