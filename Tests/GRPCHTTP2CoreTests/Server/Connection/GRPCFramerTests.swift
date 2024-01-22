@@ -21,41 +21,41 @@ import XCTest
 
 final class GRPCFramerTests: XCTestCase {
   func testSingleWrite() throws {
-      var framer = GRPCFramer()
+    var framer = GRPCFramer()
 
+    try framer.append(Array(repeating: 42, count: 128), compress: false)
+
+    var buffer = try XCTUnwrap(framer.next())
+    let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
+    XCTAssertFalse(compressed)
+    XCTAssertEqual(length, 128)
+    XCTAssertEqual(buffer.readSlice(length: Int(length)), ByteBuffer(repeating: 42, count: 128))
+    XCTAssertEqual(buffer.readableBytes, 0)
+
+    // No more bufers.
+    XCTAssertNil(framer.next())
+  }
+
+  func testMultipleWrites() throws {
+    var framer = GRPCFramer()
+
+    let messages = 100
+    for _ in 0 ..< messages {
       try framer.append(Array(repeating: 42, count: 128), compress: false)
+    }
 
-      var buffer = try XCTUnwrap(framer.next())
+    var buffer = try XCTUnwrap(framer.next())
+    for _ in 0 ..< messages {
       let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
       XCTAssertFalse(compressed)
       XCTAssertEqual(length, 128)
       XCTAssertEqual(buffer.readSlice(length: Int(length)), ByteBuffer(repeating: 42, count: 128))
-      XCTAssertEqual(buffer.readableBytes, 0)
+    }
 
-      // No more bufers.
-      XCTAssertNil(framer.next())
-  }
-    
-  func testMultipleWrites() throws {
-      var framer = GRPCFramer()
-      
-      let messages = 100
-      for _ in 0 ..< messages {
-          try framer.append(Array(repeating: 42, count: 128), compress: false)
-      }
+    XCTAssertEqual(buffer.readableBytes, 0)
 
-      var buffer = try XCTUnwrap(framer.next())
-      for _ in 0 ..< messages {
-        let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
-        XCTAssertFalse(compressed)
-        XCTAssertEqual(length, 128)
-        XCTAssertEqual(buffer.readSlice(length: Int(length)), ByteBuffer(repeating: 42, count: 128))
-      }
-
-      XCTAssertEqual(buffer.readableBytes, 0)
-
-      // No more bufers.
-      XCTAssertNil(framer.next())
+    // No more bufers.
+    XCTAssertNil(framer.next())
   }
 }
 
