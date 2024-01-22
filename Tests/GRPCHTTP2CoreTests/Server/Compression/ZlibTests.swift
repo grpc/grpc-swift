@@ -67,7 +67,7 @@ final class ZlibTests: XCTestCase {
     XCTAssertEqual(original, decompressed)
   }
 
-  func testRepeatedCompressesWithReset() throws {
+  func testRepeatedCompresses() throws {
     let original = Array(self.text.utf8)
     var compressor = Zlib.Compressor(method: .deflate)
     compressor.initialize()
@@ -79,13 +79,12 @@ final class ZlibTests: XCTestCase {
 
     for _ in 0 ..< 10 {
       var buffer = ByteBuffer()
-      compressor.reset()
       try compressor.compress(original, into: &buffer)
       XCTAssertEqual(compressed, buffer)
     }
   }
 
-  func testRepeatedDecompressesWithReset() throws {
+  func testRepeatedDecompresses() throws {
     let original = Array(self.text.utf8)
     var decompressor = Zlib.Decompressor(method: .deflate)
     decompressor.initialize()
@@ -96,7 +95,6 @@ final class ZlibTests: XCTestCase {
     let decompressed = try decompressor.decompress(&input, limit: .max)
 
     for _ in 0 ..< 10 {
-      decompressor.reset()
       var input = compressed
       let buffer = try decompressor.decompress(&input, limit: .max)
       XCTAssertEqual(buffer, decompressed)
@@ -131,7 +129,6 @@ final class ZlibTests: XCTestCase {
 
     var buffer = ByteBuffer()
     try compressor.compress(Array(repeating: 0, count: 1024), into: &buffer)
-    compressor.reset()
 
     // Should be some readable bytes.
     let byteCount1 = buffer.readableBytes
@@ -143,7 +140,7 @@ final class ZlibTests: XCTestCase {
     let byteCount2 = buffer.readableBytes
     XCTAssertGreaterThan(byteCount2, byteCount1)
 
-    var slice1 = buffer.readSlice(length: byteCount1)!
+    let slice1 = buffer.readSlice(length: byteCount1)!
     let decompressed1 = try self.decompress(slice1, method: .deflate)
     XCTAssertEqual(decompressed1, Array(repeating: 0, count: 1024))
 
