@@ -25,18 +25,20 @@ function usage() {
   echo >&2 "  $0 -[f|l]"
   echo >&2 ""
   echo >&2 "Options:"
-  echo >&2 "  -f   Format source code in place"
+  echo >&2 "  -f   Format source code in place (default)"
   echo >&2 "  -l   Lint check without formatting the source code"
 }
 
-format=false
+format=true
 lint=false
 while getopts ":flh" opt; do
   case "$opt" in
     f)
       format=true
+      lint=false
       ;;
     l)
+      format=false
       lint=true
       ;;
     h)
@@ -49,11 +51,6 @@ while getopts ":flh" opt; do
       ;;
   esac
 done
-
-if [ "$format" = "$lint" ]; then
-  usage
-  exit 1
-fi
 
 THIS_SCRIPT=$0
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
