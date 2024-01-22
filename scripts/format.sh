@@ -29,9 +29,13 @@ function usage() {
   echo >&2 "  -l   Lint check without formatting the source code"
 }
 
+format=false
 lint=false
-while getopts ":lh" opt; do
+while getopts ":flh" opt; do
   case "$opt" in
+    f)
+      format=true
+      ;;
     l)
       lint=true
       ;;
@@ -45,6 +49,11 @@ while getopts ":lh" opt; do
       ;;
   esac
 done
+
+if [ "$format" = "$lint" ]; then
+  usage
+  exit 1
+fi
 
 THIS_SCRIPT=$0
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -99,7 +108,7 @@ if "$lint"; then
   fi
 
   log "Ran swift-format lint with no errors."
-else
+elif "$format"; then
   "${SWIFTFORMAT_BIN}" format \
     --parallel --recursive --in-place \
     "${REPO}/Sources" "${REPO}/Tests" \
@@ -110,4 +119,6 @@ else
   fi
 
   log "Ran swift-format with no errors."
+else
+  fatal "No actions taken."
 fi
