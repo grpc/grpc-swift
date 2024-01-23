@@ -130,6 +130,14 @@ enum Comment: Equatable, Codable {
   /// For example: `// MARK: - Public methods`, with the optional
   /// section break (`-`).
   case mark(String, sectionBreak: Bool)
+
+  /// A comment that is already formatted,
+  /// meaning that it already has the `///` and
+  /// can contain multiple lines
+  ///
+  /// For example both the string and the comment
+  /// can look like `/// Important type`.
+  case preFormatted(String)
 }
 
 /// A description of a literal.

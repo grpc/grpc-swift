@@ -107,7 +107,7 @@ extension ServerCodeTranslator {
   ) -> Declaration {
     let methods = service.methods.compactMap {
       Declaration.commentable(
-        .doc($0.documentation),
+        .preFormatted($0.documentation),
         .function(
           FunctionDescription(
             signature: self.makeStreamingMethodSignature(for: $0, in: service)
@@ -125,7 +125,7 @@ extension ServerCodeTranslator {
       )
     )
 
-    return .commentable(.doc(service.documentation), streamingProtocol)
+    return .commentable(.preFormatted(service.documentation), streamingProtocol)
   }
 
   private func makeStreamingMethodSignature(
@@ -290,7 +290,7 @@ extension ServerCodeTranslator {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
 
     return .commentable(
-      .doc(service.documentation),
+      .preFormatted(service.documentation),
       .protocol(
         ProtocolDescription(
           accessModifier: self.accessModifier,
@@ -344,7 +344,7 @@ extension ServerCodeTranslator {
     )
 
     return .commentable(
-      .doc(method.documentation),
+      .preFormatted(method.documentation),
       .function(FunctionDescription(signature: functionSignature))
     )
   }
