@@ -23,14 +23,14 @@ import NIOCore
 /// into a single `ByteBuffer`.
 struct GRPCFramer {
   /// Length of the gRPC message header (1 compression byte, 4 bytes for the length).
-  private static let metadataLength = 5
+  static let metadataLength = 5
   
   /// Maximum size the `writeBuffer` can be when concatenating multiple frames.
   /// This limit will not be considered if only a single message/frame is written into the buffer, meaning
   /// frames with messages over 6MB can still be written.
   /// - Note: This is expressed as the power of 2 closer to 6MB (i.e., 6MiB) because `ByteBuffer`
   /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
-  private static let maximumWriteBufferLength = 6_291_456
+  static let maximumWriteBufferLength = 6_291_456
 
   private var pendingMessages: OneOrManyQueue<PendingMessage>
 
@@ -63,6 +63,7 @@ struct GRPCFramer {
       return nil
     }
 
+    var messagesToCoalesce = 0
     var requiredCapacity = 0
     for message in self.pendingMessages {
       let newMessageFrameSize = message.bytes.count + Self.metadataLength
@@ -70,16 +71,22 @@ struct GRPCFramer {
       // If we've already appended at least a single frame, and appending a new
       // frame would make us go over the size limit for the write buffer, then
       // stop concatenating frames.
-      if requiredCapacity > 0,
-         requiredCapacity + newMessageFrameSize >= Self.maximumWriteBufferLength {
+      if messagesToCoalesce > 0,
+         requiredCapacity + newMessageFrameSize > Self.maximumWriteBufferLength {
         break
       }
       
+      messagesToCoalesce += 1
       requiredCapacity += newMessageFrameSize
     }
     self.writeBuffer.clear(minimumCapacity: requiredCapacity)
 
-    while let message = self.pendingMessages.pop() {
+    while messagesToCoalesce > 0 {
+      messagesToCoalesce -= 1
+      // This force-unwrap is safe because we've iterated over the messages in
+      // the previous loop, and we know there are at least `messagesToCoalesce`
+      // messages in the queue.
+      let message = self.pendingMessages.pop()!
       try self.encode(message)
     }
 
