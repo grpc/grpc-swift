@@ -24,7 +24,7 @@ import NIOCore
 struct GRPCMessageFramer {
   /// Length of the gRPC message header (1 compression byte, 4 bytes for the length).
   static let metadataLength = 5
-  
+
   /// Maximum size the `writeBuffer` can be when concatenating multiple frames.
   /// This limit will not be considered if only a single message/frame is written into the buffer, meaning
   /// frames with messages over 6MB can still be written.
@@ -67,15 +67,16 @@ struct GRPCMessageFramer {
     var requiredCapacity = 0
     for message in self.pendingMessages {
       let newMessageFrameSize = message.bytes.count + Self.metadataLength
-      
+
       // If we've already appended at least a single frame, and appending a new
       // frame would make us go over the size limit for the write buffer, then
       // stop concatenating frames.
       if messagesToCoalesce > 0,
-         requiredCapacity + newMessageFrameSize > Self.maximumWriteBufferLength {
+        requiredCapacity + newMessageFrameSize > Self.maximumWriteBufferLength
+      {
         break
       }
-      
+
       messagesToCoalesce += 1
       requiredCapacity += newMessageFrameSize
     }
@@ -95,12 +96,12 @@ struct GRPCMessageFramer {
 
   private mutating func encode(_ message: PendingMessage) throws {
     if message.compress {
-      self.writeBuffer.writeInteger(UInt8(1)) // Set compression flag
+      self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
       // TODO: compress message and write the compressed message length + bytes
     } else {
       self.writeBuffer.writeMultipleIntegers(
-        UInt8(0), // Clear compression flag
-        UInt32(message.bytes.count) // Set message length
+        UInt8(0),  // Clear compression flag
+        UInt32(message.bytes.count)  // Set message length
       )
       self.writeBuffer.writeBytes(message.bytes)
     }
