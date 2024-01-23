@@ -23,13 +23,20 @@ import NIOCore
 /// into a single `ByteBuffer`.
 struct GRPCFramer {
   /// Length of the gRPC message header (1 compression byte, 4 bytes for the length).
-  static let metadataLength = 5
+  private static let metadataLength = 5
+  
+  /// Maximum size the `writeBuffer` can be when concatenating multiple frames.
+  /// This limit will not be considered if only a single message/frame is written into the buffer, meaning
+  /// frames with messages over 6MB can still be written.
+  /// - Note: This is expressed as the power of 2 closer to 6MB (i.e., 6MiB) because `ByteBuffer`
+  /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
+  private static let maximumWriteBufferLength = 6_291_456
 
   private var pendingMessages: OneOrManyQueue<PendingMessage>
 
   private struct PendingMessage {
     let bytes: [UInt8]
-    let isCompressed: Bool
+    let compress: Bool
   }
 
   private var writeBuffer: ByteBuffer
@@ -43,18 +50,14 @@ struct GRPCFramer {
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
   /// The resulting data will be returned when calling ``GRPCFramer/next()``.
   /// If `compress` is true, then the given bytes will be compressed using the configured compression algorithm.
-  /// - Throws: If compression fails, an error will be thrown.
-  mutating func append(_ bytes: [UInt8], compress: Bool) throws {
-    if compress {
-      // TODO: compress bytes before creating the PendingMessage once we've got a Compressor.
-    } else {
-      self.pendingMessages.append(PendingMessage(bytes: bytes, isCompressed: compress))
-    }
+  mutating func append(_ bytes: [UInt8], compress: Bool) {
+    self.pendingMessages.append(PendingMessage(bytes: bytes, compress: compress))
   }
 
   /// If there are pending messages to be framed, a `ByteBuffer` will be returned with the framed data.
   /// Data may also be compressed (if configured) and multiple frames may be coalesced into the same `ByteBuffer`.
-  mutating func next() -> ByteBuffer? {
+  /// - Throws: If an error is encountered, such as a compression failure, an error will be thrown.
+  mutating func next() throws -> ByteBuffer? {
     if self.pendingMessages.isEmpty {
       // Nothing pending: exit early.
       return nil
@@ -62,25 +65,37 @@ struct GRPCFramer {
 
     var requiredCapacity = 0
     for message in self.pendingMessages {
-      // TODO: Maybe we should add some break condition here, e.g. a max buffer size
-      // or max number of messages to include in the same buffer, but I'm unsure what
-      // this number should be.
-      requiredCapacity += message.bytes.count + Self.metadataLength
+      let newMessageFrameSize = message.bytes.count + Self.metadataLength
+      
+      // If we've already appended at least a single frame, and appending a new
+      // frame would make us go over the size limit for the write buffer, then
+      // stop concatenating frames.
+      if requiredCapacity > 0,
+         requiredCapacity + newMessageFrameSize >= Self.maximumWriteBufferLength {
+        break
+      }
+      
+      requiredCapacity += newMessageFrameSize
     }
     self.writeBuffer.clear(minimumCapacity: requiredCapacity)
 
     while let message = self.pendingMessages.pop() {
-      self.encode(message)
+      try self.encode(message)
     }
 
     return self.writeBuffer
   }
 
-  mutating private func encode(_ message: PendingMessage) {
-    self.writeBuffer.writeMultipleIntegers(
-      UInt8(message.isCompressed ? 1 : 0),
-      UInt32(message.bytes.count)
-    )
-    self.writeBuffer.writeBytes(message.bytes)
+  private mutating func encode(_ message: PendingMessage) throws {
+    if message.compress {
+      self.writeBuffer.writeInteger(UInt8(1)) // Set compression flag
+      // TODO: compress message and write the compressed message length + bytes
+    } else {
+      self.writeBuffer.writeMultipleIntegers(
+        UInt8(0), // Clear compression flag
+        UInt32(message.bytes.count) // Set message length
+      )
+      self.writeBuffer.writeBytes(message.bytes)
+    }
   }
 }
