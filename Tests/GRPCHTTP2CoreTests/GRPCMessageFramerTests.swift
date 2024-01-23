@@ -19,9 +19,9 @@ import XCTest
 
 @testable import GRPCHTTP2Core
 
-final class GRPCFramerTests: XCTestCase {
+final class GRPCMessageFramerTests: XCTestCase {
   func testSingleWrite() throws {
-    var framer = GRPCFramer()
+    var framer = GRPCMessageFramer()
     framer.append(Array(repeating: 42, count: 128), compress: false)
 
     var buffer = try XCTUnwrap(framer.next())
@@ -38,13 +38,13 @@ final class GRPCFramerTests: XCTestCase {
   func testSingleLargeWrite() throws {
     // A message of the maximum size it can be (accounting for the gRPC frame metadata)
     // to fit in a single GRPCFrame write buffer.
-    let largeMessageSize = GRPCFramer.maximumWriteBufferLength - GRPCFramer.metadataLength
+    let largeMessageSize = GRPCMessageFramer.maximumWriteBufferLength - GRPCMessageFramer.metadataLength
     // The size of a single-byte message, when framed in a gRPC frame (i.e. prepended with metadata).
-    let singleByteGRPCFrameSize = 1 + GRPCFramer.metadataLength
+    let singleByteGRPCFrameSize = 1 + GRPCMessageFramer.metadataLength
     // The largest-sized message that can be coalesced in the write buffer, alongside a single-byte message.
     let smallEnoughToCoalesceSingleByteMessageSize = largeMessageSize - singleByteGRPCFrameSize
     
-    var framer = GRPCFramer()
+    var framer = GRPCMessageFramer()
     // Apend a message that only fits in the write buffer by itself
     framer.append(Array(repeating: 42, count: largeMessageSize), compress: false)
     // Append a message that has just enough size to be coalesced with another, single-byte message (accounting for metadata).
@@ -77,7 +77,7 @@ final class GRPCFramerTests: XCTestCase {
   }
 
   func testMultipleWrites() throws {
-    var framer = GRPCFramer()
+    var framer = GRPCMessageFramer()
 
     let messages = 100
     for _ in 0 ..< messages {

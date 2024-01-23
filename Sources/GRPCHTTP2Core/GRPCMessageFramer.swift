@@ -16,12 +16,12 @@
 
 import NIOCore
 
-/// A ``GRPCFramer`` helps with the framing of gRPC data frames:
+/// A ``GRPCMessageFramer`` helps with the framing of gRPC data frames:
 /// - It prepends data with the required metadata (compression flag and message length).
 /// - It compresses messages using the specified compression algorithm (if configured).
 /// - It coalesces multiple messages (appended into the `Framer` by calling ``append(_:compress:)``)
 /// into a single `ByteBuffer`.
-struct GRPCFramer {
+struct GRPCMessageFramer {
   /// Length of the gRPC message header (1 compression byte, 4 bytes for the length).
   static let metadataLength = 5
   
@@ -48,7 +48,7 @@ struct GRPCFramer {
   }
 
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
-  /// The resulting data will be returned when calling ``GRPCFramer/next()``.
+  /// The resulting data will be returned when calling ``GRPCMessageFramer/next()``.
   /// If `compress` is true, then the given bytes will be compressed using the configured compression algorithm.
   mutating func append(_ bytes: [UInt8], compress: Bool) {
     self.pendingMessages.append(PendingMessage(bytes: bytes, compress: compress))
