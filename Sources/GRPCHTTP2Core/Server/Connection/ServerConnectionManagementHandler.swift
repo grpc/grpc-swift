@@ -66,30 +66,6 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   /// `keepAliveTimer` is set.
   private var keepAliveTimeoutTimer: Timer
 
-  private struct Timer {
-    /// The delay to wait before running the task.
-    private let delay: TimeAmount
-    /// The task to run, if scheduled.
-    private var task: Scheduled<Void>?
-
-    init(delay: TimeAmount) {
-      self.delay = delay
-      self.task = nil
-    }
-
-    /// Schedule a task on the given `EventLoop`.
-    mutating func schedule(on eventLoop: EventLoop, task: @escaping () throws -> Void) {
-      self.task?.cancel()
-      self.task = eventLoop.scheduleTask(in: self.delay, task)
-    }
-
-    /// Cancels the task, if one was scheduled.
-    mutating func cancel() {
-      self.task?.cancel()
-      self.task = nil
-    }
-  }
-
   /// Opaque data sent in keep alive pings.
   private let keepAlivePingData: HTTP2PingData
 
