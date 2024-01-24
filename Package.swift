@@ -339,7 +339,6 @@ extension Target {
       .grpcCodeGen,
       .protobuf,
       .protobufPluginLibrary,
-
     ]
   )
   
@@ -597,7 +596,8 @@ extension Target {
     name: "GRPCProtobuf",
     dependencies: [
       .grpcCore,
-      .protobuf
+      .protobuf,
+      .protobufPluginLibrary
     ],
     path: "Sources/GRPCProtobuf"
   )
