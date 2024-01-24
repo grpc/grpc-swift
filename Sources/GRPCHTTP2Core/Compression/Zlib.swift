@@ -56,12 +56,6 @@ extension Zlib {
       self.isInitialized = true
     }
 
-    static func initialized(_ method: Method) -> Self {
-      var compressor = Compressor(method: method)
-      compressor.initialize()
-      return compressor
-    }
-
     /// Compresses the data in `input` into the `output` buffer.
     ///
     /// - Parameter input: The complete data to be compressed.
