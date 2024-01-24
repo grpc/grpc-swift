@@ -37,24 +37,29 @@ enum Zlib {
 extension Zlib {
   /// Creates a new compressor for the given compression format.
   ///
-  /// This compressor is only suitable for compressing whole messages at a time.
-  final class Compressor {
-    // Note: the compressor and decompressor are classes. This is intentional as a z_stream stores
-    // a pointer back to itself within its internal state. Calls to deflate and inflate do a state
-    // check ensuring that the stream pointer and its pointer-to-self held by its internal state
-    // are the same. However, within a struct held on the stack this location can change and results
-    // in errors in deflate/inflate.
+  /// This compressor is only suitable for compressing whole messages at a time. Callers
+  /// must ``initialize()`` the compressor before using it.
+  struct Compressor {
     private var stream: z_stream
     private let method: Method
+    private var isInitialized = false
 
     init(method: Method) {
       self.method = method
       self.stream = z_stream()
-      self.stream.deflateInit(windowBits: self.method.windowBits)
     }
 
-    deinit {
-      self.end()
+    /// Initialize the compressor.
+    mutating func initialize() {
+      precondition(!self.isInitialized)
+      self.stream.deflateInit(windowBits: self.method.windowBits)
+      self.isInitialized = true
+    }
+
+    static func initialized(_ method: Method) -> Self {
+      var compressor = Compressor(method: method)
+      compressor.initialize()
+      return compressor
     }
 
     /// Compresses the data in `input` into the `output` buffer.
@@ -63,14 +68,15 @@ extension Zlib {
     /// - Parameter output: The `ByteBuffer` into which the compressed message should be written.
     /// - Returns: The number of bytes written into the `output` buffer.
     @discardableResult
-    func compress(_ input: [UInt8], into output: inout ByteBuffer) throws -> Int {
+    mutating func compress(_ input: [UInt8], into output: inout ByteBuffer) throws -> Int {
+      precondition(self.isInitialized)
       defer { self.reset() }
       let upperBound = self.stream.deflateBound(inputBytes: input.count)
       return try self.stream.deflate(input, into: &output, upperBound: upperBound)
     }
 
     /// Resets compression state.
-    private func reset() {
+    private mutating func reset() {
       do {
         try self.stream.deflateReset()
       } catch {
@@ -81,7 +87,7 @@ extension Zlib {
     }
 
     /// Deallocates any resources allocated by Zlib.
-    private func end() {
+    mutating func end() {
       self.stream.deflateEnd()
     }
   }
@@ -90,20 +96,22 @@ extension Zlib {
 extension Zlib {
   /// Creates a new decompressor for the given compression format.
   ///
-  /// This decompressor is only suitable for compressing whole messages at a time.
-  final class Decompressor {
-    // Note: this is intentionally a class, see the note in Zlib.Compressor.
+  /// This decompressor is only suitable for compressing whole messages at a time. Callers
+  /// must ``initialize()`` the decompressor before using it.
+  struct Decompressor {
     private var stream: z_stream
     private let method: Method
+    private var isInitialized = false
 
     init(method: Method) {
       self.method = method
       self.stream = z_stream()
-      self.stream.inflateInit(windowBits: self.method.windowBits)
     }
 
-    deinit {
-      self.end()
+    mutating func initialize() {
+      precondition(!self.isInitialized)
+      self.stream.inflateInit(windowBits: self.method.windowBits)
+      self.isInitialized = true
     }
 
     /// Returns the decompressed bytes from ``input``.
@@ -111,13 +119,14 @@ extension Zlib {
     /// - Parameters:
     ///   - input: The buffer read compressed bytes from.
     ///   - limit: The largest size a decompressed payload may be.
-    func decompress(_ input: inout ByteBuffer, limit: Int) throws -> [UInt8] {
+    mutating func decompress(_ input: inout ByteBuffer, limit: Int) throws -> [UInt8] {
+      precondition(self.isInitialized)
       defer { self.reset() }
       return try self.stream.inflate(input: &input, limit: limit)
     }
 
     /// Resets decompression state.
-    private func reset() {
+    private mutating func reset() {
       do {
         try self.stream.inflateReset()
       } catch {
@@ -128,7 +137,7 @@ extension Zlib {
     }
 
     /// Deallocates any resources allocated by Zlib.
-    private func end() {
+    mutating func end() {
       self.stream.inflateEnd()
     }
   }

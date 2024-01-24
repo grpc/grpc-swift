@@ -31,7 +31,10 @@ final class ZlibTests: XCTestCase {
     """
 
   private func compress(_ input: [UInt8], method: Zlib.Method) throws -> ByteBuffer {
-    let compressor = Zlib.Compressor(method: method)
+    var compressor = Zlib.Compressor(method: method)
+    compressor.initialize()
+    defer { compressor.end() }
+
     var buffer = ByteBuffer()
     try compressor.compress(input, into: &buffer)
     return buffer
@@ -42,7 +45,10 @@ final class ZlibTests: XCTestCase {
     method: Zlib.Method,
     limit: Int = .max
   ) throws -> [UInt8] {
-    let decompressor = Zlib.Decompressor(method: method)
+    var decompressor = Zlib.Decompressor(method: method)
+    decompressor.initialize()
+    defer { decompressor.end() }
+
     var input = input
     return try decompressor.decompress(&input, limit: limit)
   }
@@ -63,7 +69,9 @@ final class ZlibTests: XCTestCase {
 
   func testRepeatedCompresses() throws {
     let original = Array(self.text.utf8)
-    let compressor = Zlib.Compressor(method: .deflate)
+    var compressor = Zlib.Compressor(method: .deflate)
+    compressor.initialize()
+    defer { compressor.end() }
 
     var compressed = ByteBuffer()
     let bytesWritten = try compressor.compress(original, into: &compressed)
@@ -78,7 +86,9 @@ final class ZlibTests: XCTestCase {
 
   func testRepeatedDecompresses() throws {
     let original = Array(self.text.utf8)
-    let decompressor = Zlib.Decompressor(method: .deflate)
+    var decompressor = Zlib.Decompressor(method: .deflate)
+    decompressor.initialize()
+    defer { decompressor.end() }
 
     let compressed = try self.compress(original, method: .deflate)
     var input = compressed
@@ -113,7 +123,9 @@ final class ZlibTests: XCTestCase {
   }
 
   func testCompressAppendsToBuffer() throws {
-    let compressor = Zlib.Compressor(method: .deflate)
+    var compressor = Zlib.Compressor(method: .deflate)
+    compressor.initialize()
+    defer { compressor.end() }
 
     var buffer = ByteBuffer()
     try compressor.compress(Array(repeating: 0, count: 1024), into: &buffer)
