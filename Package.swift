@@ -201,7 +201,9 @@ extension Target {
     dependencies: [
       .grpcCore,
       .nioCore,
-      .nioHTTP2
+      .nioHTTP2,
+      .cgrpcZlib,
+      .dequeModule
     ]
   )
   
@@ -307,7 +309,10 @@ extension Target {
   static let grpcHTTP2CoreTests: Target = .testTarget(
     name: "GRPCHTTP2CoreTests",
     dependencies: [
-      .grpcHTTP2Core
+      .grpcHTTP2Core,
+      .nioCore,
+      .nioHTTP2,
+      .nioEmbedded,
     ]
   )
   

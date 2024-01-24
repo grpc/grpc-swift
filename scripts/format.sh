@@ -25,14 +25,20 @@ function usage() {
   echo >&2 "  $0 -[f|l]"
   echo >&2 ""
   echo >&2 "Options:"
-  echo >&2 "  -f   Format source code in place"
+  echo >&2 "  -f   Format source code in place (default)"
   echo >&2 "  -l   Lint check without formatting the source code"
 }
 
+format=true
 lint=false
-while getopts ":lh" opt; do
+while getopts ":flh" opt; do
   case "$opt" in
+    f)
+      format=true
+      lint=false
+      ;;
     l)
+      format=false
       lint=true
       ;;
     h)
@@ -99,7 +105,7 @@ if "$lint"; then
   fi
 
   log "Ran swift-format lint with no errors."
-else
+elif "$format"; then
   "${SWIFTFORMAT_BIN}" format \
     --parallel --recursive --in-place \
     "${REPO}/Sources" "${REPO}/Tests" \
@@ -110,4 +116,6 @@ else
   fi
 
   log "Ran swift-format with no errors."
+else
+  fatal "No actions taken."
 fi

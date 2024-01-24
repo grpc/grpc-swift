@@ -77,7 +77,7 @@ struct ClientCodeTranslator: SpecializedTranslator {
       codeBlocks.append(
         .declaration(
           .commentable(
-            .doc(service.documentation),
+            .preFormatted(service.documentation),
             self.makeClientProtocol(for: service, in: codeGenerationRequest)
           )
         )
@@ -88,7 +88,7 @@ struct ClientCodeTranslator: SpecializedTranslator {
       codeBlocks.append(
         .declaration(
           .commentable(
-            .doc(service.documentation),
+            .preFormatted(service.documentation),
             self.makeClientStruct(for: service, in: codeGenerationRequest)
           )
         )
@@ -179,7 +179,10 @@ extension ClientCodeTranslator {
       )
       return .function(signature: functionSignature, body: body)
     } else {
-      return .commentable(.doc(method.documentation), .function(signature: functionSignature))
+      return .commentable(
+        .preFormatted(method.documentation),
+        .function(signature: functionSignature)
+      )
     }
   }
 
@@ -324,7 +327,7 @@ extension ClientCodeTranslator {
     let initializer = self.makeClientVariable()
     let methods = service.methods.map {
       Declaration.commentable(
-        .doc($0.documentation),
+        .preFormatted($0.documentation),
         self.makeClientMethod(for: $0, in: service, from: codeGenerationRequest)
       )
     }

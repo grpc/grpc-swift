@@ -17,7 +17,7 @@
 import NIOCore
 import NIOHTTP2
 
-extension ServerConnectionHandler {
+extension ServerConnectionManagementHandler {
   /// Tracks the state of TCP connections at the server.
   ///
   /// The state machine manages the state for the graceful shutdown procedure as well as policing
@@ -248,7 +248,7 @@ extension ServerConnectionHandler {
   }
 }
 
-extension ServerConnectionHandler.StateMachine {
+extension ServerConnectionManagementHandler.StateMachine {
   fileprivate struct KeepAlive {
     /// Allow the client to send keep alive pings when there are no active calls.
     private let allowWithoutCalls: Bool
@@ -267,8 +267,7 @@ extension ServerConnectionHandler.StateMachine {
     /// alive (a low number of strikes is therefore expected and okay).
     private var pingStrikes: Int
 
-    /// The last time a valid ping happened. This may be in the distant past if there is no such
-    /// time (for example the connection is new and there are no active calls).
+    /// The last time a valid ping happened.
     ///
     /// Note: `distantPast` isn't used to indicate no previous valid ping as `NIODeadline` uses
     /// the monotonic clock on Linux which uses an undefined starting point and in some cases isn't
@@ -320,7 +319,7 @@ extension ServerConnectionHandler.StateMachine {
   }
 }
 
-extension ServerConnectionHandler.StateMachine {
+extension ServerConnectionManagementHandler.StateMachine {
   fileprivate enum State {
     /// The connection is active.
     struct Active {
