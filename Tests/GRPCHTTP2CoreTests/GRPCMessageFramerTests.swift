@@ -20,7 +20,7 @@ import XCTest
 @testable import GRPCHTTP2Core
 
 final class GRPCMessageFramerTests: XCTestCase {
-  
+
   func testSingleWrite() throws {
     var framer = GRPCMessageFramer()
     framer.append(Array(repeating: 42, count: 128))
@@ -35,14 +35,14 @@ final class GRPCMessageFramerTests: XCTestCase {
     // No more bufers.
     XCTAssertNil(try framer.next())
   }
-    
+
   private func testSingleWrite(compressionMethod: Zlib.Method) throws {
     var framer = GRPCMessageFramer(compressor: Zlib.Compressor(method: compressionMethod))
     framer.initialize()
 
     let message = [UInt8](repeating: 42, count: 128)
     framer.append(message)
-    
+
     var buffer = ByteBuffer()
     var testCompressor = Zlib.Compressor(method: compressionMethod)
     testCompressor.initialize()
@@ -59,11 +59,11 @@ final class GRPCMessageFramerTests: XCTestCase {
     // No more bufers.
     XCTAssertNil(try framer.next())
   }
-  
+
   func testSingleWriteDeflateCompressed() throws {
     try self.testSingleWrite(compressionMethod: .deflate)
   }
-  
+
   func testSingleWriteGZIPCompressed() throws {
     try self.testSingleWrite(compressionMethod: .gzip)
   }
@@ -89,8 +89,7 @@ final class GRPCMessageFramerTests: XCTestCase {
     // No more bufers.
     XCTAssertNil(try framer.next())
   }
-    
-    
+
 }
 
 extension ByteBuffer {

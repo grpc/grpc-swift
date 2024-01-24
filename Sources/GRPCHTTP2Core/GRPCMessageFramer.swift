@@ -35,7 +35,7 @@ struct GRPCMessageFramer {
   private var pendingMessages: OneOrManyQueue<[UInt8]>
 
   private var writeBuffer: ByteBuffer
-  
+
   private var compressor: Zlib.Compressor?
 
   /// Create a new ``GRPCMessageFramer``.
@@ -46,14 +46,14 @@ struct GRPCMessageFramer {
     self.writeBuffer = ByteBuffer()
     self.compressor = compressor
   }
-  
+
   /// Set a compressor on this ``GRPCMessageFramer``.
   /// - Parameter compressor: An optional compressor to use when compressing messages.
   /// - Important: The `compressor` must have been `initialized()`.
   mutating func setCompressor(_ compressor: Zlib.Compressor?) {
     self.compressor = compressor
   }
-  
+
   mutating func initialize() {
     self.compressor?.initialize()
   }
@@ -97,14 +97,14 @@ struct GRPCMessageFramer {
   private mutating func encode(_ message: [UInt8]) throws {
     if self.compressor != nil {
       self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
-      
+
       // Write zeroes as length - we'll write the actual compressed size after compression.
       let lengthIndex = self.writeBuffer.writerIndex
       self.writeBuffer.writeInteger(UInt32(0))
-      
+
       // This force-unwrap is safe, because we know `self.compressor` is not `nil`.
       let writtenBytes = try self.compressor!.compress(message, into: &self.writeBuffer)
-      
+
       self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
     } else {
       self.writeBuffer.writeMultipleIntegers(
