@@ -81,16 +81,15 @@ struct GRPCMessageFramer {
   }
 
   private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws {
-    if compressor != nil {
+    if let compressor {
       self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
 
       // Write zeroes as length - we'll write the actual compressed size after compression.
       let lengthIndex = self.writeBuffer.writerIndex
       self.writeBuffer.writeInteger(UInt32(0))
 
-      // This force-unwrap is safe, because we know `compressor` is not `nil`.
-      let writtenBytes = try compressor!.compress(message, into: &self.writeBuffer)
-
+      // Compress and overwrite the payload length field with the right length.
+      let writtenBytes = try compressor.compress(message, into: &self.writeBuffer)
       self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
     } else {
       self.writeBuffer.writeMultipleIntegers(
