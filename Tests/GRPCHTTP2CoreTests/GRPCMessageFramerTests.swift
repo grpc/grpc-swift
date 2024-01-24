@@ -20,7 +20,6 @@ import XCTest
 @testable import GRPCHTTP2Core
 
 final class GRPCMessageFramerTests: XCTestCase {
-
   func testSingleWrite() throws {
     var framer = GRPCMessageFramer()
     framer.append(Array(repeating: 42, count: 128))
@@ -41,7 +40,7 @@ final class GRPCMessageFramerTests: XCTestCase {
     defer {
       compressor.end()
     }
-    var framer = GRPCMessageFramer(compressor: compressor)
+    var framer = GRPCMessageFramer()
 
     let message = [UInt8](repeating: 42, count: 128)
     framer.append(message)
@@ -54,7 +53,7 @@ final class GRPCMessageFramerTests: XCTestCase {
       testCompressor.end()
     }
 
-    buffer = try XCTUnwrap(framer.next())
+    buffer = try XCTUnwrap(framer.next(compressor: compressor))
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
     XCTAssertTrue(compressed)
     XCTAssertEqual(length, UInt32(compressedSize))

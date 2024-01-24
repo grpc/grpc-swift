@@ -36,22 +36,10 @@ struct GRPCMessageFramer {
 
   private var writeBuffer: ByteBuffer
 
-  private var compressor: Zlib.Compressor?
-
   /// Create a new ``GRPCMessageFramer``.
-  /// - Parameter compressor: An optional compressor to use when compressing messages.
-  /// - Important: The `compressor` must have been `initialized()`.
-  init(compressor: Zlib.Compressor? = nil) {
+  init() {
     self.pendingMessages = OneOrManyQueue()
     self.writeBuffer = ByteBuffer()
-    self.compressor = compressor
-  }
-
-  /// Set a compressor on this ``GRPCMessageFramer``.
-  /// - Parameter compressor: An optional compressor to use when compressing messages.
-  /// - Important: The `compressor` must have been `initialized()`.
-  mutating func setCompressor(_ compressor: Zlib.Compressor?) {
-    self.compressor = compressor
   }
 
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
@@ -62,8 +50,10 @@ struct GRPCMessageFramer {
 
   /// If there are pending messages to be framed, a `ByteBuffer` will be returned with the framed data.
   /// Data may also be compressed (if configured) and multiple frames may be coalesced into the same `ByteBuffer`.
+  /// - Parameter compressor: An optional compressor: if present, payloads will be compressed; otherwise
+  /// they'll be framed as-is.
   /// - Throws: If an error is encountered, such as a compression failure, an error will be thrown.
-  mutating func next() throws -> ByteBuffer? {
+  mutating func next(compressor: Zlib.Compressor? = nil) throws -> ByteBuffer? {
     if self.pendingMessages.isEmpty {
       // Nothing pending: exit early.
       return nil
@@ -79,27 +69,27 @@ struct GRPCMessageFramer {
 
     var requiredCapacity = 0
     for message in self.pendingMessages {
-      requiredCapacity += message.bytes.count + Self.metadataLength
+      requiredCapacity += message.count + Self.metadataLength
     }
     self.writeBuffer.clear(minimumCapacity: requiredCapacity)
 
     while let message = self.pendingMessages.pop() {
-      try self.encode(message)
+      try self.encode(message, compressor: compressor)
     }
 
     return self.writeBuffer
   }
 
-  private mutating func encode(_ message: [UInt8]) throws {
-    if self.compressor != nil {
+  private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws {
+    if compressor != nil {
       self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
 
       // Write zeroes as length - we'll write the actual compressed size after compression.
       let lengthIndex = self.writeBuffer.writerIndex
       self.writeBuffer.writeInteger(UInt32(0))
 
-      // This force-unwrap is safe, because we know `self.compressor` is not `nil`.
-      let writtenBytes = try self.compressor!.compress(message, into: &self.writeBuffer)
+      // This force-unwrap is safe, because we know `compressor` is not `nil`.
+      let writtenBytes = try compressor!.compress(message, into: &self.writeBuffer)
 
       self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
     } else {
