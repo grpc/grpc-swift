@@ -31,8 +31,7 @@ final class ZlibTests: XCTestCase {
     """
 
   private func compress(_ input: [UInt8], method: Zlib.Method) throws -> ByteBuffer {
-    var compressor = Zlib.Compressor(method: method)
-    compressor.initialize()
+    let compressor = Zlib.Compressor(method: method)
     defer { compressor.end() }
 
     var buffer = ByteBuffer()
@@ -45,8 +44,7 @@ final class ZlibTests: XCTestCase {
     method: Zlib.Method,
     limit: Int = .max
   ) throws -> [UInt8] {
-    var decompressor = Zlib.Decompressor(method: method)
-    decompressor.initialize()
+    let decompressor = Zlib.Decompressor(method: method)
     defer { decompressor.end() }
 
     var input = input
@@ -69,8 +67,7 @@ final class ZlibTests: XCTestCase {
 
   func testRepeatedCompresses() throws {
     let original = Array(self.text.utf8)
-    var compressor = Zlib.Compressor(method: .deflate)
-    compressor.initialize()
+    let compressor = Zlib.Compressor(method: .deflate)
     defer { compressor.end() }
 
     var compressed = ByteBuffer()
@@ -86,8 +83,7 @@ final class ZlibTests: XCTestCase {
 
   func testRepeatedDecompresses() throws {
     let original = Array(self.text.utf8)
-    var decompressor = Zlib.Decompressor(method: .deflate)
-    decompressor.initialize()
+    let decompressor = Zlib.Decompressor(method: .deflate)
     defer { decompressor.end() }
 
     let compressed = try self.compress(original, method: .deflate)
@@ -123,8 +119,7 @@ final class ZlibTests: XCTestCase {
   }
 
   func testCompressAppendsToBuffer() throws {
-    var compressor = Zlib.Compressor(method: .deflate)
-    compressor.initialize()
+    let compressor = Zlib.Compressor(method: .deflate)
     defer { compressor.end() }
 
     var buffer = ByteBuffer()
