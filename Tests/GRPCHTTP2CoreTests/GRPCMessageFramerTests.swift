@@ -35,57 +35,6 @@ final class GRPCMessageFramerTests: XCTestCase {
     XCTAssertNil(try framer.next())
   }
 
-  func testSingleLargeWrite() throws {
-    // A message of the maximum size it can be (accounting for the gRPC frame metadata)
-    // to fit in a single GRPCFrame write buffer.
-    let largeMessageSize =
-      GRPCMessageFramer.maximumWriteBufferLength - GRPCMessageFramer.metadataLength
-    // The size of a single-byte message, when framed in a gRPC frame (i.e. prepended with metadata).
-    let singleByteGRPCFrameSize = 1 + GRPCMessageFramer.metadataLength
-    // The largest-sized message that can be coalesced in the write buffer, alongside a single-byte message.
-    let smallEnoughToCoalesceSingleByteMessageSize = largeMessageSize - singleByteGRPCFrameSize
-
-    var framer = GRPCMessageFramer()
-    // Apend a message that only fits in the write buffer by itself
-    framer.append(Array(repeating: 42, count: largeMessageSize), compress: false)
-    // Append a message that has just enough size to be coalesced with another, single-byte message (accounting for metadata).
-    framer.append(
-      Array(repeating: 43, count: smallEnoughToCoalesceSingleByteMessageSize),
-      compress: false
-    )
-    // Append the single-byte message.
-    framer.append([44], compress: false)
-
-    var buffer = try XCTUnwrap(framer.next())
-    var (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
-    XCTAssertFalse(compressed)
-    XCTAssertEqual(length, UInt32(largeMessageSize))
-    XCTAssertEqual(
-      buffer.readSlice(length: Int(length)),
-      ByteBuffer(repeating: 42, count: largeMessageSize)
-    )
-    XCTAssertEqual(buffer.readableBytes, 0)
-
-    buffer = try XCTUnwrap(framer.next())
-    (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
-    XCTAssertFalse(compressed)
-    XCTAssertEqual(length, UInt32(smallEnoughToCoalesceSingleByteMessageSize))
-    XCTAssertEqual(
-      buffer.readSlice(length: Int(length)),
-      ByteBuffer(repeating: 43, count: smallEnoughToCoalesceSingleByteMessageSize)
-    )
-    XCTAssertEqual(buffer.readableBytes, singleByteGRPCFrameSize)
-
-    (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
-    XCTAssertFalse(compressed)
-    XCTAssertEqual(length, UInt32(1))
-    XCTAssertEqual(buffer.readSlice(length: Int(length)), ByteBuffer(bytes: [44]))
-    XCTAssertEqual(buffer.readableBytes, 0)
-
-    // No more bufers.
-    XCTAssertNil(try framer.next())
-  }
-
   func testMultipleWrites() throws {
     var framer = GRPCMessageFramer()
 

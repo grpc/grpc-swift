@@ -27,10 +27,10 @@ struct GRPCMessageFramer {
 
   /// Maximum size the `writeBuffer` can be when concatenating multiple frames.
   /// This limit will not be considered if only a single message/frame is written into the buffer, meaning
-  /// frames with messages over 6MB can still be written.
-  /// - Note: This is expressed as the power of 2 closer to 6MB (i.e., 6MiB) because `ByteBuffer`
+  /// frames with messages over 64KB can still be written.
+  /// - Note: This is expressed as the power of 2 closer to 64KB (i.e., 64KiB) because `ByteBuffer`
   /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
-  static let maximumWriteBufferLength = 6_291_456
+  static let maximumWriteBufferLength = 65_536
 
   private var pendingMessages: OneOrManyQueue<PendingMessage>
 
@@ -44,7 +44,6 @@ struct GRPCMessageFramer {
   init() {
     self.pendingMessages = OneOrManyQueue()
     self.writeBuffer = ByteBuffer()
-    self.writeBuffer.reserveCapacity(minimumWritableBytes: Self.metadataLength)
   }
 
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
@@ -63,31 +62,21 @@ struct GRPCMessageFramer {
       return nil
     }
 
-    var messagesToCoalesce = 0
+    defer {
+      // To avoid holding an excessively large buffer, if its size is larger than
+      // our threshold (`maximumWriteBufferLength`), then reset it to a new `ByteBuffer`.
+      if self.writeBuffer.capacity > Self.maximumWriteBufferLength {
+        self.writeBuffer = ByteBuffer()
+      }
+    }
+
     var requiredCapacity = 0
     for message in self.pendingMessages {
-      let newMessageFrameSize = message.bytes.count + Self.metadataLength
-
-      // If we've already appended at least a single frame, and appending a new
-      // frame would make us go over the size limit for the write buffer, then
-      // stop concatenating frames.
-      if messagesToCoalesce > 0,
-        requiredCapacity + newMessageFrameSize > Self.maximumWriteBufferLength
-      {
-        break
-      }
-
-      messagesToCoalesce += 1
-      requiredCapacity += newMessageFrameSize
+      requiredCapacity += message.bytes.count + Self.metadataLength
     }
     self.writeBuffer.clear(minimumCapacity: requiredCapacity)
 
-    while messagesToCoalesce > 0 {
-      messagesToCoalesce -= 1
-      // This force-unwrap is safe because we've iterated over the messages in
-      // the previous loop, and we know there are at least `messagesToCoalesce`
-      // messages in the queue.
-      let message = self.pendingMessages.pop()!
+    while let message = self.pendingMessages.pop() {
       try self.encode(message)
     }
 
