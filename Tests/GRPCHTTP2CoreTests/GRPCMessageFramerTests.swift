@@ -22,7 +22,7 @@ import XCTest
 final class GRPCMessageFramerTests: XCTestCase {
   func testSingleWrite() throws {
     var framer = GRPCMessageFramer()
-    framer.append(Array(repeating: 42, count: 128), compress: false)
+    framer.append(Array(repeating: 42, count: 128))
 
     var buffer = try XCTUnwrap(framer.next())
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
@@ -35,12 +35,49 @@ final class GRPCMessageFramerTests: XCTestCase {
     XCTAssertNil(try framer.next())
   }
 
+  private func testSingleWrite(compressionMethod: Zlib.Method) throws {
+    let compressor = Zlib.Compressor(method: compressionMethod)
+    defer {
+      compressor.end()
+    }
+    var framer = GRPCMessageFramer()
+
+    let message = [UInt8](repeating: 42, count: 128)
+    framer.append(message)
+
+    var buffer = ByteBuffer()
+    let testCompressor = Zlib.Compressor(method: compressionMethod)
+    let compressedSize = try testCompressor.compress(message, into: &buffer)
+    let compressedMessage = buffer.readSlice(length: compressedSize)
+    defer {
+      testCompressor.end()
+    }
+
+    buffer = try XCTUnwrap(framer.next(compressor: compressor))
+    let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
+    XCTAssertTrue(compressed)
+    XCTAssertEqual(length, UInt32(compressedSize))
+    XCTAssertEqual(buffer.readSlice(length: Int(length)), compressedMessage)
+    XCTAssertEqual(buffer.readableBytes, 0)
+
+    // No more bufers.
+    XCTAssertNil(try framer.next())
+  }
+
+  func testSingleWriteDeflateCompressed() throws {
+    try self.testSingleWrite(compressionMethod: .deflate)
+  }
+
+  func testSingleWriteGZIPCompressed() throws {
+    try self.testSingleWrite(compressionMethod: .gzip)
+  }
+
   func testMultipleWrites() throws {
     var framer = GRPCMessageFramer()
 
     let messages = 100
     for _ in 0 ..< messages {
-      framer.append(Array(repeating: 42, count: 128), compress: false)
+      framer.append(Array(repeating: 42, count: 128))
     }
 
     var buffer = try XCTUnwrap(framer.next())
@@ -56,6 +93,7 @@ final class GRPCMessageFramerTests: XCTestCase {
     // No more bufers.
     XCTAssertNil(try framer.next())
   }
+
 }
 
 extension ByteBuffer {
