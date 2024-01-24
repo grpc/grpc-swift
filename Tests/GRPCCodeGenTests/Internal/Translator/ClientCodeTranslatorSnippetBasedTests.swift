@@ -27,7 +27,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -35,7 +35,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
@@ -98,7 +98,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorClientStreamingMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: true,
       isOutputStreaming: false,
@@ -106,7 +106,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
@@ -169,7 +169,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorServerStreamingMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: true,
@@ -177,7 +177,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
@@ -240,7 +240,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorBidirectionalStreamingMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: true,
       isOutputStreaming: true,
@@ -248,7 +248,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [method]
@@ -311,7 +311,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorMultipleMethods() throws {
     let methodA = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: true,
       isOutputStreaming: false,
@@ -319,7 +319,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let methodB = MethodDescriptor(
-      documentation: "Documentation for MethodB",
+      documentation: "/// Documentation for MethodB",
       name: Name(base: "MethodB", generatedUpperCase: "MethodB", generatedLowerCase: "methodB"),
       isInputStreaming: false,
       isOutputStreaming: true,
@@ -327,7 +327,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
       methods: [methodA, methodB]
@@ -423,7 +423,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorNoNamespaceService() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -431,7 +431,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: [method]
@@ -494,7 +494,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testClientCodeTranslatorMultipleServices() throws {
     let serviceA = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
       namespace: Name(
         base: "nammespaceA",
@@ -504,7 +504,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       methods: []
     )
     let serviceB = ServiceDescriptor(
-      documentation: "Documentation for ServiceB",
+      documentation: """
+        /// Documentation for ServiceB
+        ///
+        /// Line 2
+        """,
       name: Name(base: "ServiceB", generatedUpperCase: "ServiceB", generatedLowerCase: ""),
       namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
@@ -523,10 +527,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceB
+      ///
+      /// Line 2
       public protocol ServiceBClientProtocol: Sendable {}
       extension ServiceB.ClientProtocol {
       }
       /// Documentation for ServiceB
+      ///
+      /// Line 2
       public struct ServiceBClient: ServiceB.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           public init(client: GRPCCore.GRPCClient) {

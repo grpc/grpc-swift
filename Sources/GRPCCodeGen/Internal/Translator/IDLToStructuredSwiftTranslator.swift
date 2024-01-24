@@ -31,7 +31,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
       accessLevel: accessLevel
     )
 
-    let topComment = Comment.doc(codeGenerationRequest.leadingTrivia)
+    let topComment = Comment.preFormatted(codeGenerationRequest.leadingTrivia)
     let imports = try codeGenerationRequest.dependencies.reduce(
       into: [ImportDescription(moduleName: "GRPCCore")]
     ) { partialResult, newDependency in

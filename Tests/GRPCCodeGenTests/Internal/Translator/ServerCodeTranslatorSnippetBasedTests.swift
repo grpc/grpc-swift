@@ -27,7 +27,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for unaryMethod",
+      documentation: "/// Documentation for unaryMethod",
       name: Name(base: "UnaryMethod", generatedUpperCase: "Unary", generatedLowerCase: "unary"),
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -35,7 +35,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(
         base: "AlongNameForServiceA",
         generatedUpperCase: "ServiceA",
@@ -91,7 +91,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorInputStreamingMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for inputStreamingMethod",
+      documentation: "/// Documentation for inputStreamingMethod",
       name: Name(
         base: "InputStreamingMethod",
         generatedUpperCase: "InputStreaming",
@@ -103,7 +103,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
       namespace: Name(
         base: "namespaceA",
@@ -155,7 +155,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorOutputStreamingMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for outputStreamingMethod",
+      documentation: "/// Documentation for outputStreamingMethod",
       name: Name(
         base: "OutputStreamingMethod",
         generatedUpperCase: "OutputStreaming",
@@ -167,7 +167,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(
         base: "ServiceATest",
         generatedUpperCase: "ServiceA",
@@ -223,7 +223,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorBidirectionalStreamingMethod() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for bidirectionalStreamingMethod",
+      documentation: "/// Documentation for bidirectionalStreamingMethod",
       name: Name(
         base: "BidirectionalStreamingMethod",
         generatedUpperCase: "BidirectionalStreaming",
@@ -235,7 +235,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(
         base: "ServiceATest",
         generatedUpperCase: "ServiceA",
@@ -287,7 +287,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorMultipleMethods() throws {
     let inputStreamingMethod = MethodDescriptor(
-      documentation: "Documentation for inputStreamingMethod",
+      documentation: "/// Documentation for inputStreamingMethod",
       name: Name(
         base: "InputStreamingMethod",
         generatedUpperCase: "InputStreaming",
@@ -299,7 +299,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let outputStreamingMethod = MethodDescriptor(
-      documentation: "Documentation for outputStreamingMethod",
+      documentation: "/// Documentation for outputStreamingMethod",
       name: Name(
         base: "outputStreamingMethod",
         generatedUpperCase: "OutputStreaming",
@@ -311,7 +311,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(
         base: "ServiceATest",
         generatedUpperCase: "ServiceA",
@@ -383,7 +383,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorNoNamespaceService() throws {
     let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
+      documentation: "/// Documentation for MethodA",
       name: Name(base: "methodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
@@ -391,7 +391,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       outputType: "NamespaceA_ServiceAResponse"
     )
     let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(
         base: "ServiceATest",
         generatedUpperCase: "ServiceA",
@@ -443,7 +443,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
 
   func testServerCodeTranslatorMoreServicesOrder() throws {
     let serviceA = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
+      documentation: "/// Documentation for ServiceA",
       name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
       namespace: Name(
         base: "namespaceA",
@@ -453,7 +453,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       methods: []
     )
     let serviceB = ServiceDescriptor(
-      documentation: "Documentation for ServiceB",
+      documentation: "/// Documentation for ServiceB",
       name: Name(base: "ServiceB", generatedUpperCase: "ServiceB", generatedLowerCase: "serviceB"),
       namespace: Name(
         base: "namespaceA",

@@ -161,12 +161,19 @@ struct TextBasedRenderer: RendererProtocol {
     case .mark(let string, sectionBreak: false):
       prefix = "// MARK:"
       commentString = string
+    case .preFormatted(let string):
+      prefix = ""
+      commentString = string
     }
-    let lines = commentString.transformingLines { line in
-      if line.isEmpty { return prefix }
-      return "\(prefix) \(line)"
+    if prefix.isEmpty {
+      writer.writeLine(commentString)
+    } else {
+      let lines = commentString.transformingLines { line in
+        if line.isEmpty { return prefix }
+        return "\(prefix) \(line)"
+      }
+      lines.forEach(writer.writeLine)
     }
-    lines.forEach(writer.writeLine)
   }
 
   /// Renders the specified import statements.

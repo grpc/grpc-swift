@@ -76,7 +76,7 @@ internal func makeCodeGenerationRequest(
 ) -> CodeGenerationRequest {
   return CodeGenerationRequest(
     fileName: "test.grpc",
-    leadingTrivia: "Some really exciting license header 2023.",
+    leadingTrivia: "/// Some really exciting license header 2023.",
     dependencies: [],
     services: services,
     lookupSerializer: {
@@ -93,7 +93,7 @@ internal func makeCodeGenerationRequest(
 ) -> CodeGenerationRequest {
   return CodeGenerationRequest(
     fileName: "test.grpc",
-    leadingTrivia: "Some really exciting license header 2023.",
+    leadingTrivia: "/// Some really exciting license header 2023.",
     dependencies: dependencies,
     services: [],
     lookupSerializer: {
