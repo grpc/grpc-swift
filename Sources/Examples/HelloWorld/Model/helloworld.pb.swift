@@ -34,7 +34,6 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-/// The request message containing the user's name.
 public struct Helloworld_HelloRequest {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -47,7 +46,6 @@ public struct Helloworld_HelloRequest {
   public init() {}
 }
 
-/// The response message containing the greetings.
 public struct Helloworld_HelloReply {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for

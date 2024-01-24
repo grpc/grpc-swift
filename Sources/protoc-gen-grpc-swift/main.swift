@@ -141,6 +141,8 @@ func main(args: [String]) throws {
   // Only generate output for services.
   for name in request.fileToGenerate {
     if let fileDescriptor = descriptorSet.fileDescriptor(named: name) {
+      let protoDesc = fileDescriptor.proto
+      fatalError(String(describing: protoDesc))
       if options.generateReflectionData {
         var binaryFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         let binaryFileName = uniqueOutputFileName(
@@ -165,8 +167,8 @@ func main(args: [String]) throws {
           generatedFiles: &generatedFiles
         )
         let grpcGenerator = Generator(fileDescriptor, options: options)
-        grpcFile.name = grpcFileName
         grpcFile.content = grpcGenerator.code
+        grpcFile.name = grpcFileName
         response.file.append(grpcFile)
       }
     }

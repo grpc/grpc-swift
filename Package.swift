@@ -232,6 +232,7 @@ extension Target {
     dependencies: [
       .protobuf,
       .protobufPluginLibrary,
+      .grpcCodeGen
     ],
     exclude: [
       "README.md",
@@ -334,9 +335,11 @@ extension Target {
   static let grpcProtobufTests: Target = .testTarget(
     name: "GRPCProtobufTests",
     dependencies: [
-      .grpcCore,
       .grpcProtobuf,
-      .protobuf
+      .grpcCodeGen,
+      .protobuf,
+      .protobufPluginLibrary,
+
     ]
   )
   
