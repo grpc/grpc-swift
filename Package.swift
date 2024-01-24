@@ -203,6 +203,7 @@ extension Target {
       .nioCore,
       .nioHTTP2,
       .cgrpcZlib,
+      .dequeModule
     ]
   )
   
