@@ -78,7 +78,14 @@ final class InputParserTests: XCTestCase {
       methods: [expectedMethod]
     )
     XCTAssertEqual(parsedCodeGenRequest.services[0], expectedService)
-
+    XCTAssertEqual(
+      parsedCodeGenRequest.lookupSerializer("HelloRequest"),
+      "ProtobufSerializer<HelloRequest>()"
+    )
+    XCTAssertEqual(
+      parsedCodeGenRequest.lookupDeserializer("HelloRequest"),
+      "ProtobufDeserializer<HelloRequest>()"
+    )
   }
 
   var dummyFileDescriptor: FileDescriptor {
@@ -127,9 +134,6 @@ final class InputParserTests: XCTestCase {
       $0.sourceCodeInfo = Google_Protobuf_SourceCodeInfo.with {
         $0.location = [
           Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.span = [14, 0, 30, 1]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
             $0.path = [12]
             $0.span = [14, 0, 18]
             $0.leadingDetachedComments = [
@@ -146,78 +150,14 @@ final class InputParserTests: XCTestCase {
             ]
           },
           Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [2]
-            $0.span = [16, 0, 19]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
             $0.path = [6, 0]
             $0.span = [19, 0, 22, 1]
             $0.leadingComments = " The greeting service definition.\n"
           },
           Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [6, 0, 1]
-            $0.span = [19, 8, 15]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
             $0.path = [6, 0, 2, 0]
             $0.span = [21, 2, 53]
             $0.leadingComments = " Sends a greeting.\n"
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [6, 0, 2, 0, 1]
-            $0.span = [21, 6, 14]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [6, 0, 2, 0, 2]
-            $0.span = [21, 6, 28]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 0]
-            $0.span = [24, 0, 26, 1]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 0, 1]
-            $0.span = [24, 8, 20]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 0, 2, 0]
-            $0.span = [25, 2, 18]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 0, 2, 0, 5]
-            $0.span = [25, 2, 8]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 0, 2, 0, 1]
-            $0.span = [25, 9, 13]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 0, 2, 0, 3]
-            $0.span = [25, 16, 17]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 1]
-            $0.span = [28, 0, 30, 1]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 1, 1]
-            $0.span = [28, 8, 18]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 1, 2, 0]
-            $0.span = [29, 2, 21]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 1, 2, 0, 5]
-            $0.span = [29, 2, 8]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 1, 2, 0, 1]
-            $0.span = [29, 9, 16]
-          },
-          Google_Protobuf_SourceCodeInfo.Location.with {
-            $0.path = [4, 1, 2, 0, 3]
-            $0.span = [29, 19, 20]
           },
         ]
       }

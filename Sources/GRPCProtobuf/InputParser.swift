@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import Foundation.NSIndexPath
+import Foundation
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
@@ -24,6 +24,7 @@ import struct GRPCCodeGen.CodeGenerationRequest
 public struct InputParser {
   public init() {}
   public func parse(input: FileDescriptor) throws -> CodeGenerationRequest {
+    let fileName = input.name
     let package = input.package
     var documentation = String()
     // Field number used to collect .proto file comments.
@@ -39,7 +40,6 @@ public struct InputParser {
         documentation.append("\n")
       }
     }
-    let fileName = input.name
     let leadingTrivia = """
       // DO NOT EDIT.
       // swift-format-ignore-file
