@@ -26,18 +26,18 @@ public struct InputParser {
   public func parse(input: FileDescriptor) throws -> CodeGenerationRequest {
     let fileName = input.name
     let package = input.package
-    var documentation = String()
-    // Field number used to collect .proto file comments.
-    let documentationPath = IndexPath(index: 12)
-    if let syntaxLocation = input.sourceCodeInfoLocation(path: documentationPath) {
-      documentation = syntaxLocation.asSourceComment(
+    var header = String()
+    // Field number used to collect the .proto file header.
+    let headerPath = IndexPath(index: 12)
+    if let headerLocation = input.sourceCodeInfoLocation(path: headerPath) {
+      header = headerLocation.asSourceComment(
         commentPrefix: "///",
         leadingDetachedPrefix: "//"
       )
       // If the was a leading or tailing comment it won't have a blank
       // line, after it, so ensure there is one.
-      if !documentation.isEmpty && !documentation.hasSuffix("\n\n") {
-        documentation.append("\n")
+      if !header.isEmpty && !header.hasSuffix("\n\n") {
+        header.append("\n")
       }
     }
     let leadingTrivia = """
@@ -63,7 +63,7 @@ public struct InputParser {
 
     return CodeGenerationRequest(
       fileName: fileName,
-      leadingTrivia: leadingTrivia + documentation,
+      leadingTrivia: leadingTrivia + header,
       dependencies: dependencies,
       services: services,
       lookupSerializer: lookupSerializer,
