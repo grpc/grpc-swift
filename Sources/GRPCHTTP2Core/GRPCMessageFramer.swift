@@ -32,25 +32,36 @@ struct GRPCMessageFramer {
   /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
   static let maximumWriteBufferLength = 65_536
 
-  private var pendingMessages: OneOrManyQueue<PendingMessage>
-
-  private struct PendingMessage {
-    let bytes: [UInt8]
-    let compress: Bool
-  }
+  private var pendingMessages: OneOrManyQueue<[UInt8]>
 
   private var writeBuffer: ByteBuffer
+  
+  private var compressor: Zlib.Compressor?
 
-  init() {
+  /// Create a new ``GRPCMessageFramer``.
+  /// - Parameter compressor: An optional compressor to use when compressing messages.
+  /// - Important: The `compressor` must have been `initialized()`.
+  init(compressor: Zlib.Compressor? = nil) {
     self.pendingMessages = OneOrManyQueue()
     self.writeBuffer = ByteBuffer()
+    self.compressor = compressor
+  }
+  
+  /// Set a compressor on this ``GRPCMessageFramer``.
+  /// - Parameter compressor: An optional compressor to use when compressing messages.
+  /// - Important: The `compressor` must have been `initialized()`.
+  mutating func setCompressor(_ compressor: Zlib.Compressor?) {
+    self.compressor = compressor
+  }
+  
+  mutating func initialize() {
+    self.compressor?.initialize()
   }
 
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
   /// The resulting data will be returned when calling ``GRPCMessageFramer/next()``.
-  /// If `compress` is true, then the given bytes will be compressed using the configured compression algorithm.
-  mutating func append(_ bytes: [UInt8], compress: Bool) {
-    self.pendingMessages.append(PendingMessage(bytes: bytes, compress: compress))
+  mutating func append(_ bytes: [UInt8]) {
+    self.pendingMessages.append(bytes)
   }
 
   /// If there are pending messages to be framed, a `ByteBuffer` will be returned with the framed data.
@@ -83,16 +94,24 @@ struct GRPCMessageFramer {
     return self.writeBuffer
   }
 
-  private mutating func encode(_ message: PendingMessage) throws {
-    if message.compress {
+  private mutating func encode(_ message: [UInt8]) throws {
+    if self.compressor != nil {
       self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
-      // TODO: compress message and write the compressed message length + bytes
+      
+      // Write zeroes as length - we'll write the actual compressed size after compression.
+      let lengthIndex = self.writeBuffer.writerIndex
+      self.writeBuffer.writeInteger(UInt32(0))
+      
+      // This force-unwrap is safe, because we know `self.compressor` is not `nil`.
+      let writtenBytes = try self.compressor!.compress(message, into: &self.writeBuffer)
+      
+      self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
     } else {
       self.writeBuffer.writeMultipleIntegers(
         UInt8(0),  // Clear compression flag
-        UInt32(message.bytes.count)  // Set message length
+        UInt32(message.count)  // Set message length
       )
-      self.writeBuffer.writeBytes(message.bytes)
+      self.writeBuffer.writeBytes(message)
     }
   }
 }
