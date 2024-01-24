@@ -38,6 +38,9 @@ extension Zlib {
   /// Creates a new compressor for the given compression format.
   ///
   /// This compressor is only suitable for compressing whole messages at a time.
+  ///
+  /// - Important: ``Compressor/end()`` must be called when the compressor is not needed
+  /// anymore, to deallocate any resources allocated by `Zlib`.
   struct Compressor {
     // TODO: Make this ~Copyable when 5.9 is the lowest supported Swift version.
 
@@ -86,6 +89,9 @@ extension Zlib {
   /// Creates a new decompressor for the given compression format.
   ///
   /// This decompressor is only suitable for compressing whole messages at a time.
+  ///
+  /// - Important: ``Decompressor/end()`` must be called when the compressor is not needed
+  /// anymore, to deallocate any resources allocated by `Zlib`.
   struct Decompressor {
     // TODO: Make this ~Copyable when 5.9 is the lowest supported Swift version.
 

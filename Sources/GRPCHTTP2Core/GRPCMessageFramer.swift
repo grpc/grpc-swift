@@ -54,10 +54,6 @@ struct GRPCMessageFramer {
     self.compressor = compressor
   }
 
-  mutating func initialize() {
-    self.compressor?.initialize()
-  }
-
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
   /// The resulting data will be returned when calling ``GRPCMessageFramer/next()``.
   mutating func append(_ bytes: [UInt8]) {

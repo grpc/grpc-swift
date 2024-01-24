@@ -37,17 +37,22 @@ final class GRPCMessageFramerTests: XCTestCase {
   }
 
   private func testSingleWrite(compressionMethod: Zlib.Method) throws {
-    var framer = GRPCMessageFramer(compressor: Zlib.Compressor(method: compressionMethod))
-    framer.initialize()
+    let compressor = Zlib.Compressor(method: compressionMethod)
+    defer {
+      compressor.end()
+    }
+    var framer = GRPCMessageFramer(compressor: compressor)
 
     let message = [UInt8](repeating: 42, count: 128)
     framer.append(message)
 
     var buffer = ByteBuffer()
-    var testCompressor = Zlib.Compressor(method: compressionMethod)
-    testCompressor.initialize()
+    let testCompressor = Zlib.Compressor(method: compressionMethod)
     let compressedSize = try testCompressor.compress(message, into: &buffer)
     let compressedMessage = buffer.readSlice(length: compressedSize)
+    defer {
+      testCompressor.end()
+    }
 
     buffer = try XCTUnwrap(framer.next())
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
