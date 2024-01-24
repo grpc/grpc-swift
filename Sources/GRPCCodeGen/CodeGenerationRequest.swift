@@ -21,7 +21,8 @@ public struct CodeGenerationRequest {
   public var fileName: String
 
   /// Any comments at the top of the file such as documentation and copyright headers.
-  /// They will be placed at the top of the generated file.
+  /// They will be placed at the top of the generated file. They are already formatted,
+  /// meaning they contain  "///" and new lines.
   public var leadingTrivia: String
 
   /// The Swift imports that the generated file depends on. The gRPC specific imports aren't required
@@ -218,6 +219,7 @@ public struct CodeGenerationRequest {
   /// Represents a service described in an IDL file.
   public struct ServiceDescriptor: Hashable {
     /// Documentation from comments above the IDL service description.
+    /// It is already formatted, meaning it contains  "///" and new lines.
     public var documentation: String
 
     /// The service name in different formats.
@@ -252,6 +254,7 @@ public struct CodeGenerationRequest {
     /// Represents a method described in an IDL file.
     public struct MethodDescriptor: Hashable {
       /// Documentation from comments above the IDL method description.
+      /// It is already formatted, meaning it contains  "///" and new lines.
       public var documentation: String
 
       /// Method name in different formats.
