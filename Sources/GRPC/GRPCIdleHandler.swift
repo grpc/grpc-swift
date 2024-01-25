@@ -17,6 +17,7 @@ import Logging
 import NIOCore
 import NIOHTTP2
 import NIOTLS
+import NIOTransportServices
 
 internal final class GRPCIdleHandler: ChannelInboundHandler {
   typealias InboundIn = HTTP2Frame
@@ -287,6 +288,14 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       )
       context.fireUserInboundEventTriggered(event)
     } else {
+      #if canImport(Network)
+      if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+        if let waitsForConnectivity = event as? NIOTSNetworkEvents.WaitingForConnectivity {
+          self.mode.connectionManager?.channelError(waitsForConnectivity.transientError)
+        }
+      }
+      #endif
+
       context.fireUserInboundEventTriggered(event)
     }
   }
