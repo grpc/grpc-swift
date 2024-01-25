@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import NIOCore
 import GRPCCore
+import NIOCore
 
 /// A ``GRPCMessageDeframer`` helps with the deframing of gRPC data frames:
 /// - It reads the frame's metadata to know whether the message payload is compressed or not, and its length
@@ -27,13 +27,13 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
   static let defaultMaximumPayloadSize = Int.max
 
   typealias InboundOut = [UInt8]
-  
+
   private let decompressor: Zlib.Decompressor?
   private let maximumPayloadSize: Int?
   private var effectiveMaximumPayloadSize: Int {
     self.maximumPayloadSize ?? Self.defaultMaximumPayloadSize
   }
-  
+
   /// Create a new ``GRPCMessageDeframer``.
   /// - Parameters:
   ///   - maximumPayloadSize: The maximum size a message payload can be.
@@ -44,7 +44,7 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
     self.maximumPayloadSize = maximumPayloadSize
     self.decompressor = decompressor
   }
-  
+
   mutating func decode(buffer: inout ByteBuffer) throws -> InboundOut? {
     guard buffer.readableBytes >= Self.metadataLength else {
       // If we cannot read enough bytes to cover the metadata's length, then we
@@ -65,7 +65,7 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
       buffer.moveReaderIndex(to: originalReaderIndex)
       return nil
     }
-    
+
     if isMessageCompressed {
       guard let decompressor = self.decompressor else {
         // We cannot decompress the payload - discard the message.
@@ -76,13 +76,14 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
       if message.readableBytes > self.effectiveMaximumPayloadSize {
         throw RPCError(
           code: .resourceExhausted,
-          message: "Message has exceeded the configured maximum payload size (max: \(self.effectiveMaximumPayloadSize), actual: \(message.readableBytes))"
+          message:
+            "Message has exceeded the configured maximum payload size (max: \(self.effectiveMaximumPayloadSize), actual: \(message.readableBytes))"
         )
       }
       return Array(buffer: message)
     }
   }
-  
+
   mutating func decodeLast(buffer: inout ByteBuffer, seenEOF: Bool) throws -> InboundOut? {
     try self.decode(buffer: &buffer)
   }
