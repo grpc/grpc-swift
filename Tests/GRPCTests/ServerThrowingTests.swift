@@ -16,12 +16,13 @@
 import Dispatch
 import EchoModel
 import Foundation
-@testable import GRPC
 import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")
 let transformedError = GRPCStatus(code: .aborted, message: "transformed error")
@@ -48,13 +49,15 @@ class ImmediateThrowingEchoProvider: Echo_EchoProvider {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 
-  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
-    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func collect(
+    context: UnaryResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 
-  func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
-    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func update(
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 }
@@ -85,13 +88,15 @@ class DelayedThrowingEchoProvider: Echo_EchoProvider {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
-  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
-    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func collect(
+    context: UnaryResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
-  func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
-    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func update(
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 }
@@ -107,16 +112,18 @@ class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
     return context.eventLoop.makeSucceededFuture(thrownError)
   }
 
-  override func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
-    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  override func collect(
+    context: UnaryResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
       context.responseStatus = thrownError
       context.responsePromise.succeed(Echo_EchoResponse())
     })
   }
 
-  override func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
-    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  override func update(
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
       context.statusPromise.succeed(thrownError)
     })
@@ -150,7 +157,7 @@ class ServerThrowingTests: EchoTestCaseBase {
       }
     }
     XCTAssertThrowsError(try call.response.wait()) {
-      XCTAssertEqual(expectedError, $0 as? GRPCStatus)
+      XCTAssertEqual(self.expectedError, $0 as? GRPCStatus)
     }
   }
 
@@ -170,14 +177,17 @@ class ServerThrowingTests: EchoTestCaseBase {
       // With `ErrorReturningEchoProvider` we actually _return_ a response, which means that the `response` future
       // will _not_ fail, so in that case this test doesn't apply.
       XCTAssertThrowsError(try call.response.wait()) {
-        XCTAssertEqual(expectedError, $0 as? GRPCStatus)
+        XCTAssertEqual(self.expectedError, $0 as? GRPCStatus)
       }
     }
   }
 
   func testServerStreaming() throws {
-    let call = client
-      .expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
+    let call = client.expand(
+      Echo_EchoRequest(text: "foo")
+    ) {
+      XCTFail("no message expected, got \($0)")
+    }
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(self.expectedError, try call.status.wait())
     let trailers = try call.trailingMetadata.wait()
@@ -246,8 +256,10 @@ class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
 class ServerErrorTransformingTests: ServerThrowingTests {
   override var expectedError: GRPCStatus { return transformedError }
   override var expectedMetadata: HPACKHeaders? {
-    return HPACKHeaders([("grpc-status", "10"), ("grpc-message", "transformed error"),
-                         ("transformed", "header")])
+    return HPACKHeaders([
+      ("grpc-status", "10"), ("grpc-message", "transformed error"),
+      ("transformed", "header"),
+    ])
   }
 
   override func makeErrorDelegate() -> ServerErrorDelegate? { return ErrorTransformingDelegate() }

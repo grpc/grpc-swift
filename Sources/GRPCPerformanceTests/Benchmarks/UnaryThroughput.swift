@@ -79,7 +79,7 @@ class Unary: ServerProvidingBenchmark {
       let upperBound = min(lowerBound + batchSize, self.requestCount)
 
       let requests = (lowerBound ..< upperBound).map { _ in
-        client.get(Echo_EchoRequest.with { $0.text = self.requestText }).response
+        self.client.get(Echo_EchoRequest.with { $0.text = self.requestText }).response
       }
 
       messages += requests.count

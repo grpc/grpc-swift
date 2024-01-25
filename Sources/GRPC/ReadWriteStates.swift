@@ -130,7 +130,7 @@ struct PendingReadState {
       )
 
     case (.enabled, .none),
-         (.disabled, _):
+      (.disabled, _):
       reader = LengthPrefixedMessageReader()
     }
     return .reading(self.arity, reader)
@@ -161,7 +161,7 @@ enum ReadState {
       return .failure(.cardinalityViolation)
 
     case .reading(let readArity, var reader):
-      self = .notReading // Avoid CoWs
+      self = .notReading  // Avoid CoWs
       reader.append(buffer: &buffer)
       var messages: [ByteBuffer] = []
 
@@ -187,7 +187,7 @@ enum ReadState {
       switch (readArity, messages.count) {
       // Always allowed:
       case (.one, 0),
-           (.many, 0...):
+        (.many, 0...):
         self = .reading(readArity, reader)
         return .success(messages)
 

@@ -76,9 +76,10 @@ public struct UserInfo: CustomStringConvertible {
   }
 
   public var description: String {
-    return "[" + self.storage.map { key, value in
-      "\(key): \(value)"
-    }.joined(separator: ", ") + "]"
+    return "["
+      + self.storage.map { key, value in
+        "\(key): \(value)"
+      }.joined(separator: ", ") + "]"
   }
 
   /// A `UserInfoKey` wrapper.

@@ -35,23 +35,19 @@ internal final class ConnectionManager: @unchecked Sendable {
     var reconnect: Reconnect
 
     var candidate: EventLoopFuture<Channel>
-    var readyChannelMuxPromise: EventLoopPromise<NIOHTTP2Handler.StreamMultiplexer>
-    var candidateMuxPromise: EventLoopPromise<NIOHTTP2Handler.StreamMultiplexer>
+    var readyChannelMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
+    var candidateMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
   }
 
   internal struct ConnectedState {
     var backoffIterator: ConnectionBackoffIterator?
     var reconnect: Reconnect
     var candidate: Channel
-    var readyChannelMuxPromise: EventLoopPromise<NIOHTTP2Handler.StreamMultiplexer>
-    var multiplexer: NIOHTTP2Handler.StreamMultiplexer
+    var readyChannelMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
+    var multiplexer: HTTP2StreamMultiplexer
     var error: Error?
 
-    init(
-      from state: ConnectingState,
-      candidate: Channel,
-      multiplexer: NIOHTTP2Handler.StreamMultiplexer
-    ) {
+    init(from state: ConnectingState, candidate: Channel, multiplexer: HTTP2StreamMultiplexer) {
       self.backoffIterator = state.backoffIterator
       self.reconnect = state.reconnect
       self.candidate = candidate
@@ -62,7 +58,7 @@ internal final class ConnectionManager: @unchecked Sendable {
 
   internal struct ReadyState {
     var channel: Channel
-    var multiplexer: NIOHTTP2Handler.StreamMultiplexer
+    var multiplexer: HTTP2StreamMultiplexer
     var error: Error?
 
     init(from state: ConnectedState) {
@@ -73,7 +69,7 @@ internal final class ConnectionManager: @unchecked Sendable {
 
   internal struct TransientFailureState {
     var backoffIterator: ConnectionBackoffIterator?
-    var readyChannelMuxPromise: EventLoopPromise<NIOHTTP2Handler.StreamMultiplexer>
+    var readyChannelMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
     var scheduled: Scheduled<Void>
     var reason: Error
 
@@ -81,20 +77,24 @@ internal final class ConnectionManager: @unchecked Sendable {
       self.backoffIterator = state.backoffIterator
       self.readyChannelMuxPromise = state.readyChannelMuxPromise
       self.scheduled = scheduled
-      self.reason = reason ?? GRPCStatus(
-        code: .unavailable,
-        message: "Unexpected connection drop"
-      )
+      self.reason =
+        reason
+        ?? GRPCStatus(
+          code: .unavailable,
+          message: "Unexpected connection drop"
+        )
     }
 
     init(from state: ConnectedState, scheduled: Scheduled<Void>) {
       self.backoffIterator = state.backoffIterator
       self.readyChannelMuxPromise = state.readyChannelMuxPromise
       self.scheduled = scheduled
-      self.reason = state.error ?? GRPCStatus(
-        code: .unavailable,
-        message: "Unexpected connection drop"
-      )
+      self.reason =
+        state.error
+        ?? GRPCStatus(
+          code: .unavailable,
+          message: "Unexpected connection drop"
+        )
     }
 
     init(
@@ -105,10 +105,12 @@ internal final class ConnectionManager: @unchecked Sendable {
       self.backoffIterator = backoffIterator
       self.readyChannelMuxPromise = state.channel.eventLoop.makePromise()
       self.scheduled = scheduled
-      self.reason = state.error ?? GRPCStatus(
-        code: .unavailable,
-        message: "Unexpected connection drop"
-      )
+      self.reason =
+        state.error
+        ?? GRPCStatus(
+          code: .unavailable,
+          message: "Unexpected connection drop"
+        )
     }
   }
 
@@ -256,8 +258,8 @@ internal final class ConnectionManager: @unchecked Sendable {
     }
   }
 
-  /// Returns the `NIOHTTP2Handler.StreamMultiplexer` from the 'ready' state or `nil` if it is not available.
-  private var multiplexer: NIOHTTP2Handler.StreamMultiplexer? {
+  /// Returns the `HTTP2StreamMultiplexer` from the 'ready' state or `nil` if it is not available.
+  private var multiplexer: HTTP2StreamMultiplexer? {
     self.eventLoop.assertInEventLoop()
     switch self.state {
     case let .ready(state):
@@ -365,8 +367,8 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// Get the multiplexer from the underlying channel handling gRPC calls.
   /// if the `ConnectionManager` was configured to be `fastFailure` this will have
   /// one chance to connect - if not reconnections are managed here.
-  internal func getHTTP2Multiplexer() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
-    func getHTTP2Multiplexer0() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
+  internal func getHTTP2Multiplexer() -> EventLoopFuture<HTTP2StreamMultiplexer> {
+    func getHTTP2Multiplexer0() -> EventLoopFuture<HTTP2StreamMultiplexer> {
       switch self.callStartBehavior {
       case .waitsForConnectivity:
         return self.getHTTP2MultiplexerPatient()
@@ -386,8 +388,8 @@ internal final class ConnectionManager: @unchecked Sendable {
 
   /// Returns a future for the multiplexer which succeeded when the channel is connected.
   /// Reconnects are handled if necessary.
-  private func getHTTP2MultiplexerPatient() -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
-    let multiplexer: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer>
+  private func getHTTP2MultiplexerPatient() -> EventLoopFuture<HTTP2StreamMultiplexer> {
+    let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>
 
     switch self.state {
     case .idle:
@@ -414,9 +416,12 @@ internal final class ConnectionManager: @unchecked Sendable {
       multiplexer = self.eventLoop.makeFailedFuture(state.reason)
     }
 
-    self.logger.debug("vending multiplexer future", metadata: [
-      "connectivity_state": "\(self.state.label)",
-    ])
+    self.logger.debug(
+      "vending multiplexer future",
+      metadata: [
+        "connectivity_state": "\(self.state.label)"
+      ]
+    )
 
     return multiplexer
   }
@@ -425,12 +430,11 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// attempt, or if the state is 'idle' returns the future for the next connection attempt.
   ///
   /// Note: if the state is 'transientFailure' or 'shutdown' then a failed future will be returned.
-  private func getHTTP2MultiplexerOptimistic()
-    -> EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> {
+  private func getHTTP2MultiplexerOptimistic() -> EventLoopFuture<HTTP2StreamMultiplexer> {
     // `getHTTP2Multiplexer` makes sure we're on the event loop but let's just be sure.
     self.eventLoop.preconditionInEventLoop()
 
-    let muxFuture: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer> = { () in
+    let muxFuture: EventLoopFuture<HTTP2StreamMultiplexer> = { () in
       switch self.state {
       case .idle:
         self.startConnecting()
@@ -452,9 +456,12 @@ internal final class ConnectionManager: @unchecked Sendable {
       }
     }()
 
-    self.logger.debug("vending fast-failing multiplexer future", metadata: [
-      "connectivity_state": "\(self.state.label)",
-    ])
+    self.logger.debug(
+      "vending fast-failing multiplexer future",
+      metadata: [
+        "connectivity_state": "\(self.state.label)"
+      ]
+    )
     return muxFuture
   }
 
@@ -490,10 +497,13 @@ internal final class ConnectionManager: @unchecked Sendable {
   }
 
   private func _shutdown(mode: ShutdownMode, promise: EventLoopPromise<Void>) {
-    self.logger.debug("shutting down connection", metadata: [
-      "connectivity_state": "\(self.state.label)",
-      "shutdown.mode": "\(mode)",
-    ])
+    self.logger.debug(
+      "shutting down connection",
+      metadata: [
+        "connectivity_state": "\(self.state.label)",
+        "shutdown.mode": "\(mode)",
+      ]
+    )
 
     switch self.state {
     // We don't have a channel and we don't want one, easy!
@@ -639,12 +649,17 @@ internal final class ConnectionManager: @unchecked Sendable {
     // error is channel fatal, in which case we'll see channelInactive soon (acceptable), or it's not,
     // and future I/O will either fail fast or work. In either case, all we do is log this and move on.
     case .idle:
-      self.logger.warning("ignoring unexpected error in idle", metadata: [
-        MetadataKey.error: "\(error)",
-      ])
+      self.logger.warning(
+        "ignoring unexpected error in idle",
+        metadata: [
+          MetadataKey.error: "\(error)"
+        ]
+      )
 
     case .connecting:
-      self.connectionFailed(withError: error)
+      // Ignore the error, the channel promise will notify the manager of any error which occurs
+      // while connecting.
+      ()
 
     case var .active(state):
       state.error = error
@@ -661,11 +676,14 @@ internal final class ConnectionManager: @unchecked Sendable {
   }
 
   /// The connecting channel became `active`. Must be called on the `EventLoop`.
-  internal func channelActive(channel: Channel, multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
+  internal func channelActive(channel: Channel, multiplexer: HTTP2StreamMultiplexer) {
     self.eventLoop.preconditionInEventLoop()
-    self.logger.debug("activating connection", metadata: [
-      "connectivity_state": "\(self.state.label)",
-    ])
+    self.logger.debug(
+      "activating connection",
+      metadata: [
+        "connectivity_state": "\(self.state.label)"
+      ]
+    )
 
     switch self.state {
     case let .connecting(connecting):
@@ -692,9 +710,12 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// Must be called on the `EventLoop`.
   internal func channelInactive() {
     self.eventLoop.preconditionInEventLoop()
-    self.logger.debug("deactivating connection", metadata: [
-      "connectivity_state": "\(self.state.label)",
-    ])
+    self.logger.debug(
+      "deactivating connection",
+      metadata: [
+        "connectivity_state": "\(self.state.label)"
+      ]
+    )
 
     switch self.state {
     // We can hit inactive in connecting if we see channelInactive before channelActive; that's not
@@ -785,11 +806,13 @@ internal final class ConnectionManager: @unchecked Sendable {
         }
         self.logger.debug("scheduling connection attempt", metadata: ["delay": "0"])
         let backoffIterator = self.connectionBackoff?.makeIterator()
-        self.state = .transientFailure(TransientFailureState(
-          from: ready,
-          scheduled: scheduled,
-          backoffIterator: backoffIterator
-        ))
+        self.state = .transientFailure(
+          TransientFailureState(
+            from: ready,
+            scheduled: scheduled,
+            backoffIterator: backoffIterator
+          )
+        )
       }
 
     // This is fine: we expect the channel to become inactive after becoming idle.
@@ -810,9 +833,12 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// called on the `EventLoop`.
   internal func ready() {
     self.eventLoop.preconditionInEventLoop()
-    self.logger.debug("connection ready", metadata: [
-      "connectivity_state": "\(self.state.label)",
-    ])
+    self.logger.debug(
+      "connection ready",
+      metadata: [
+        "connectivity_state": "\(self.state.label)"
+      ]
+    )
 
     switch self.state {
     case let .active(connected):
@@ -843,9 +869,12 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// the `EventLoop`.
   internal func idle() {
     self.eventLoop.preconditionInEventLoop()
-    self.logger.debug("idling connection", metadata: [
-      "connectivity_state": "\(self.state.label)",
-    ])
+    self.logger.debug(
+      "idling connection",
+      metadata: [
+        "connectivity_state": "\(self.state.label)"
+      ]
+    )
 
     switch self.state {
     case let .active(state):
@@ -887,7 +916,8 @@ internal final class ConnectionManager: @unchecked Sendable {
   internal func maxConcurrentStreamsChanged(_ maxConcurrentStreams: Int) {
     self.eventLoop.assertInEventLoop()
     self.http2Delegate?.receivedSettingsMaxConcurrentStreams(
-      self, maxConcurrentStreams: maxConcurrentStreams
+      self,
+      maxConcurrentStreams: maxConcurrentStreams
     )
   }
 
@@ -978,7 +1008,7 @@ extension ConnectionManager {
 
   private func startConnecting(
     backoffIterator: ConnectionBackoffIterator?,
-    muxPromise: EventLoopPromise<NIOHTTP2Handler.StreamMultiplexer>
+    muxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
   ) {
     let timeoutAndBackoff = backoffIterator?.next()
 
@@ -1065,7 +1095,7 @@ extension ConnectionManager {
 
     /// Returns the `multiplexer` from a connection in the `ready` state or `nil` if it is any
     /// other state.
-    internal var multiplexer: NIOHTTP2Handler.StreamMultiplexer? {
+    internal var multiplexer: HTTP2StreamMultiplexer? {
       return self.manager.multiplexer
     }
 

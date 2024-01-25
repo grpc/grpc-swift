@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import NIOHTTP2
 import XCTest
+
+@testable import GRPC
 
 class GRPCClientChannelHandlerTests: GRPCTestCase {
   private func makeRequestHead() -> _GRPCRequestHead {
@@ -60,9 +62,9 @@ class GRPCClientChannelHandlerTests: GRPCTestCase {
 
     // Write a message, if we need to.
     if dataContainsMessage {
-      buffer.writeInteger(UInt8(0)) // not compressed
-      buffer.writeInteger(UInt32(42)) // message length
-      buffer.writeRepeatingByte(0, count: 42) // message
+      buffer.writeInteger(UInt8(0))  // not compressed
+      buffer.writeInteger(UInt32(42))  // message length
+      buffer.writeRepeatingByte(0, count: 42)  // message
     }
 
     let dataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
@@ -79,7 +81,7 @@ class GRPCClientChannelHandlerTests: GRPCTestCase {
       case .initialMetadata, .message, .trailingMetadata:
         XCTFail("Unexpected response part")
       case .status:
-        () // Expected
+        ()  // Expected
       }
     } else {
       XCTFail("Expected to read another response part")

@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOConcurrencyHelpers
 import NIOCore
 import NIOEmbedded
 import XCTest
+
+@testable import GRPC
 
 class PoolManagerStateMachineTests: GRPCTestCase {
   private func makeConnectionPool(

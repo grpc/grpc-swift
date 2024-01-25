@@ -215,8 +215,8 @@ struct PingHandler {
       "Ping strikes are not supported but we're checking for one"
     )
     guard self.activeStreams == 0, self.permitWithoutCalls,
-          let lastReceivedPingDate = self.lastReceivedPingDate,
-          let minimumReceivedPingIntervalWithoutData = self.minimumReceivedPingIntervalWithoutData
+      let lastReceivedPingDate = self.lastReceivedPingDate,
+      let minimumReceivedPingIntervalWithoutData = self.minimumReceivedPingIntervalWithoutData
     else {
       return false
     }
@@ -239,7 +239,8 @@ struct PingHandler {
 
       // The time elapsed since the previous ping is less than the minimum required
       if let lastSentPingDate = self.lastSentPingDate,
-         self.now() - lastSentPingDate < self.minimumSentPingIntervalWithoutData {
+        self.now() - lastSentPingDate < self.minimumSentPingIntervalWithoutData
+      {
         return true
       }
 

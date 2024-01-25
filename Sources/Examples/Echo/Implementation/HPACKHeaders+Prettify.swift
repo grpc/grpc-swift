@@ -16,7 +16,8 @@
 import NIOHPACK
 
 func prettify(_ headers: HPACKHeaders) -> String {
-  return "[" + headers.map { name, value, _ in
-    "'\(name)': '\(value)'"
-  }.joined(separator: ", ") + "]"
+  return "["
+    + headers.map { name, value, _ in
+      "'\(name)': '\(value)'"
+    }.joined(separator: ", ") + "]"
 }

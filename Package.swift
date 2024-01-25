@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -16,7 +16,7 @@
  */
 import PackageDescription
 // swiftformat puts the next import before the tools version.
-// swiftformat:disable:next sortedImports
+// swiftformat:disable:next sortImports
 import class Foundation.ProcessInfo
 
 let grpcPackageName = "grpc-swift"
@@ -36,7 +36,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
-    from: "1.26.0"
+    from: "1.24.1"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-transport-services.git",
@@ -45,6 +45,14 @@ let packageDependencies: [Package.Dependency] = [
   .package(
     url: "https://github.com/apple/swift-nio-extras.git",
     from: "1.4.0"
+  ),
+  .package(
+    url: "https://github.com/apple/swift-collections.git",
+    from: "1.0.5"
+  ),
+  .package(
+    url: "https://github.com/apple/swift-atomics.git",
+    from: "1.2.0"
   ),
   .package(
     url: "https://github.com/apple/swift-protobuf.git",
@@ -79,6 +87,8 @@ extension Target.Dependency {
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
   static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
+  static let reflectionService: Self = .target(name: "GRPCReflectionService")
+  static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
 
   // Target dependencies; internal
   static let grpcSampleData: Self = .target(name: "GRPCSampleData")
@@ -119,6 +129,11 @@ extension Target.Dependency {
     name: "SwiftProtobufPluginLibrary",
     package: "swift-protobuf"
   )
+  static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
+  static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
+
+  static let grpcCore: Self = .target(name: "GRPCCore")
+  static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
 }
 
 // MARK: - Targets
@@ -140,10 +155,27 @@ extension Target {
       .nioExtras,
       .logging,
       .protobuf,
+      .dequeModule,
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
     path: "Sources/GRPC"
+  )
+
+  static let grpcCore: Target = .target(
+    name: "GRPCCore",
+    dependencies: [
+      .dequeModule,
+      .atomics
+    ],
+    path: "Sources/GRPCCore"
+  )
+
+  static let grpcInProcessTransport: Target = .target(
+    name: "GRPCInProcessTransport",
+    dependencies: [
+      .grpcCore
+    ]
   )
 
   static let cgrpcZlib: Target = .target(
@@ -192,11 +224,38 @@ extension Target {
       .nioEmbedded,
       .nioTransportServices,
       .logging,
+      .reflectionService
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
     exclude: [
       "Codegen/Normalization/normalization.proto",
+      "Codegen/Serialization/echo.grpc.reflection",
+    ]
+  )
+
+  static let grpcCoreTests: Target = .testTarget(
+    name: "GRPCCoreTests",
+    dependencies: [
+      .grpcCore,
+      .grpcInProcessTransport,
+      .dequeModule,
+      .atomics
+    ]
+  )
+
+  static let grpcInProcessTransportTests: Target = .testTarget(
+    name: "GRPCInProcessTransportTests",
+    dependencies: [
+      .grpcCore,
+      .grpcInProcessTransport,
+    ]
+  )
+
+  static let grpcCodeGenTests: Target = .testTarget(
+    name: "GRPCCodeGenTests",
+    dependencies: [
+      .grpcCodeGen
     ]
   )
 
@@ -412,6 +471,43 @@ extension Target {
       "README.md",
     ]
   )
+
+  static let reflectionService: Target = .target(
+    name: "GRPCReflectionService",
+    dependencies: [
+      .grpc,
+      .nio,
+      .protobuf,
+    ],
+    path: "Sources/GRPCReflectionService",
+    exclude: [
+      "v1/reflection-v1.proto",
+      "v1Alpha/reflection-v1alpha.proto"
+    ]
+  )
+
+  static let reflectionServer: Target = .executableTarget(
+    name: "ReflectionServer",
+    dependencies: [
+      .grpc,
+      .reflectionService,
+      .helloWorldModel,
+      .nioCore,
+      .nioPosix,
+      .argumentParser,
+      .echoModel,
+      .echoImplementation
+    ],
+    path: "Sources/Examples/ReflectionService",
+    resources: [
+      .copy("Generated")
+    ]
+  )
+
+  static let grpcCodeGen: Target = .target(
+    name: "GRPCCodeGen",
+    path: "Sources/GRPCCodeGen"
+  )
 }
 
 // MARK: - Products
@@ -422,9 +518,19 @@ extension Product {
     targets: [grpcTargetName]
   )
 
+  static let grpcCore: Product = .library(
+    name: "_GRPCCore",
+    targets: ["GRPCCore"]
+  )
+
   static let cgrpcZlib: Product = .library(
     name: cgrpcZlibProductName,
     targets: [cgrpcZlibTargetName]
+  )
+
+  static let grpcReflectionService: Product = .library(
+    name: "GRPCReflectionService",
+    targets: ["GRPCReflectionService"]
   )
 
   static let protocGenGRPCSwift: Product = .executable(
@@ -444,7 +550,9 @@ let package = Package(
   name: grpcPackageName,
   products: [
     .grpc,
+    .grpcCore,
     .cgrpcZlib,
+    .grpcReflectionService,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
   ],
@@ -455,6 +563,7 @@ let package = Package(
     .cgrpcZlib,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
+    .reflectionService,
 
     // Tests etc.
     .grpcTests,
@@ -476,6 +585,17 @@ let package = Package(
     .routeGuideClient,
     .routeGuideServer,
     .packetCapture,
+    .reflectionServer,
+
+    // v2
+    .grpcCore,
+    .grpcInProcessTransport,
+    .grpcCodeGen,
+
+    // v2 tests
+    .grpcCoreTests,
+    .grpcInProcessTransportTests,
+    .grpcCodeGenTests
   ]
 )
 

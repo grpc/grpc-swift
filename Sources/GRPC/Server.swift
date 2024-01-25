@@ -20,10 +20,11 @@ import NIOExtras
 import NIOHTTP1
 import NIOHTTP2
 import NIOPosix
+import NIOTransportServices
+
 #if canImport(NIOSSL)
 import NIOSSL
 #endif
-import NIOTransportServices
 #if canImport(Network)
 import Network
 #endif
@@ -54,6 +55,10 @@ import Network
 ///    `GRPCServerPipelineConfigurator`. In the case of HTTP/2:
 ///
 ///                           ┌─────────────────────────────────┐
+///                           │      HTTP2StreamMultiplexer     │
+///                           └─▲─────────────────────────────┬─┘
+///                   HTTP2Frame│                             │HTTP2Frame
+///                           ┌─┴─────────────────────────────▼─┐
 ///                           │           HTTP2Handler          │
 ///                           └─▲─────────────────────────────┬─┘
 ///                   ByteBuffer│                             │ByteBuffer
@@ -63,7 +68,7 @@ import Network
 ///                   ByteBuffer│                             │ByteBuffer
 ///                             │                             ▼
 ///
-///    The `NIOHTTP2Handler.StreamMultiplexer` provides one `Channel` for each HTTP/2 stream (and thus each
+///    The `HTTP2StreamMultiplexer` provides one `Channel` for each HTTP/2 stream (and thus each
 ///    RPC).
 ///
 /// 3. The frames for each stream channel are routed by the `HTTP2ToRawGRPCServerCodec` handler to
@@ -112,18 +117,20 @@ public final class Server: @unchecked Sendable {
       // No TLS configuration, no SSL context.
       sslContext = nil
     }
-    #endif // canImport(NIOSSL)
+    #endif  // canImport(NIOSSL)
 
     #if canImport(Network)
     if let tlsConfiguration = configuration.tlsConfiguration {
       if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
-         let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
+        let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
+      {
         _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
       }
     }
-    #endif // canImport(Network)
+    #endif  // canImport(Network)
 
-    return bootstrap
+    return
+      bootstrap
       // Enable `SO_REUSEADDR` to avoid "address already in use" error.
       .serverChannelOption(
         ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
@@ -154,7 +161,7 @@ public final class Server: @unchecked Sendable {
 
             try sync.addHandler(sslHandler)
           }
-          #endif // canImport(NIOSSL)
+          #endif  // canImport(NIOSSL)
 
           // Configures the pipeline based on whether the connection uses TLS or not.
           try sync.addHandler(GRPCServerPipelineConfigurator(configuration: configuration))
@@ -165,7 +172,8 @@ public final class Server: @unchecked Sendable {
             hasTLS: configuration.tlsConfiguration != nil
           )
           if requiresZeroLengthWorkaround,
-             #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+            #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+          {
             try sync.addHandler(NIOFilterEmptyWritesHandler())
           }
         } catch {
@@ -282,7 +290,8 @@ extension Server {
       set {
         self
           .serviceProvidersByName = Dictionary(
-            uniqueKeysWithValues: newValue
+            uniqueKeysWithValues:
+              newValue
               .map { ($0.serviceName, $0) }
           )
       }
@@ -303,7 +312,7 @@ extension Server {
         self.tlsConfiguration = newValue.map { GRPCTLSConfiguration(transforming: $0) }
       }
     }
-    #endif // canImport(NIOSSL)
+    #endif  // canImport(NIOSSL)
 
     public var tlsConfiguration: GRPCTLSConfiguration?
 
@@ -424,7 +433,7 @@ extension Server {
       self.logger = logger
       self.debugChannelInitializer = debugChannelInitializer
     }
-    #endif // canImport(NIOSSL)
+    #endif  // canImport(NIOSSL)
 
     private init(
       eventLoopGroup: EventLoopGroup,
@@ -433,9 +442,11 @@ extension Server {
     ) {
       self.eventLoopGroup = eventLoopGroup
       self.target = target
-      self.serviceProvidersByName = Dictionary(uniqueKeysWithValues: serviceProviders.map {
-        ($0.serviceName, $0)
-      })
+      self.serviceProvidersByName = Dictionary(
+        uniqueKeysWithValues: serviceProviders.map {
+          ($0.serviceName, $0)
+        }
+      )
     }
 
     /// Make a new configuration using default values.
@@ -565,11 +576,7 @@ extension Server.Configuration.CORS.AllowedOrigins {
   struct AnyCustomCORSAllowedOrigin: GRPCCustomCORSAllowedOrigin {
     private var checkOrigin: @Sendable (String) -> String?
     private let hashInto: @Sendable (inout Hasher) -> Void
-    #if swift(>=5.7)
     private let isEqualTo: @Sendable (any GRPCCustomCORSAllowedOrigin) -> Bool
-    #else
-    private let isEqualTo: @Sendable (Any) -> Bool
-    #endif
 
     init<W: GRPCCustomCORSAllowedOrigin>(_ wrap: W) {
       self.checkOrigin = { wrap.check(origin: $0) }

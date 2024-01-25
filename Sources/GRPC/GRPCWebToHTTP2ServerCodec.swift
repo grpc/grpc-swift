@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import struct Foundation.Data
+
 import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
+
+import struct Foundation.Data
 
 /// A codec for translating between gRPC Web (as HTTP/1) and HTTP/2 frame payloads.
 internal final class GRPCWebToHTTP2ServerCodec: ChannelDuplexHandler {
@@ -242,14 +244,14 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.State {
       return self.processResponseData(payload, promise: promise)
 
     case .priority,
-         .rstStream,
-         .settings,
-         .pushPromise,
-         .ping,
-         .goAway,
-         .windowUpdate,
-         .alternativeService,
-         .origin:
+      .rstStream,
+      .settings,
+      .pushPromise,
+      .ping,
+      .goAway,
+      .windowUpdate,
+      .alternativeService,
+      .origin:
       preconditionFailure("Unsupported frame payload")
     }
   }
@@ -573,7 +575,7 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.State {
       preconditionFailure("Invalid state: haven't received request head")
 
     case let .fullyOpen(_, outbound),
-         let .clientClosedServerOpen(outbound):
+      let .clientClosedServerOpen(outbound):
       if outbound.responseHeadersSent {
         // Headers have been sent, these must be trailers, so end stream must be set.
         assert(payload.endStream)
@@ -754,8 +756,9 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.InboundState {
     let action: GRPCWebToHTTP2ServerCodec.StateMachine.Action
 
     if bytesToRead > 0,
-       let base64Encoded = self.requestBuffer!.readString(length: bytesToRead),
-       let base64Decoded = Data(base64Encoded: base64Encoded) {
+      let base64Encoded = self.requestBuffer!.readString(length: bytesToRead),
+      let base64Decoded = Data(base64Encoded: base64Encoded)
+    {
       // Recycle the input buffer and restore the request buffer.
       buffer.clear()
       buffer.writeContiguousBytes(base64Decoded)

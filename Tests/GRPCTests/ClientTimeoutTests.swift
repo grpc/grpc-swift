@@ -15,13 +15,14 @@
  */
 import EchoModel
 import Foundation
-@testable import GRPC
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import SwiftProtobuf
 import XCTest
+
+@testable import GRPC
 
 class ClientTimeoutTests: GRPCTestCase {
   var channel: EmbeddedChannel!
@@ -169,7 +170,7 @@ extension EmbeddedGRPCChannel: @unchecked Sendable {}
 
 private final class EmbeddedGRPCChannel: GRPCChannel {
   let embeddedChannel: EmbeddedChannel
-  let multiplexer: EventLoopFuture<NIOHTTP2Handler.StreamMultiplexer>
+  let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>
 
   let logger: Logger
   let scheme: String
@@ -195,11 +196,8 @@ private final class EmbeddedGRPCChannel: GRPCChannel {
       errorDelegate: errorDelegate,
       logger: logger
     ).flatMap {
-      embeddedChannel.pipeline.handler(type: NIOHTTP2Handler.self)
-    }.flatMap { h2Handler in
-      h2Handler.multiplexer
+      embeddedChannel.pipeline.handler(type: HTTP2StreamMultiplexer.self)
     }
-
     self.scheme = "http"
     self.authority = "localhost"
     self.errorDelegate = errorDelegate

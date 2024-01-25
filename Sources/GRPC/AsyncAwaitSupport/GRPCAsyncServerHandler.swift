@@ -232,19 +232,23 @@ internal final class AsyncServerHandler<
   internal private(set) var handlerStateMachine: ServerHandlerStateMachine
   /// A bag of components used by the user handler.
   @usableFromInline
-  internal private(set) var handlerComponents: Optional<ServerHandlerComponents<
-    Request,
-    Response,
-    GRPCAsyncWriterSinkDelegate<(Response, Compression)>
-  >>
+  internal private(set) var handlerComponents:
+    Optional<
+      ServerHandlerComponents<
+        Request,
+        Response,
+        GRPCAsyncWriterSinkDelegate<(Response, Compression)>
+      >
+    >
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let userHandler: @Sendable (
-    GRPCAsyncRequestStream<Request>,
-    GRPCAsyncResponseStreamWriter<Response>,
-    GRPCAsyncServerCallContext
-  ) async throws -> Void
+  internal let userHandler:
+    @Sendable (
+      GRPCAsyncRequestStream<Request>,
+      GRPCAsyncResponseStreamWriter<Response>,
+      GRPCAsyncServerCallContext
+    ) async throws -> Void
 
   @usableFromInline
   internal typealias AsyncSequenceProducer = NIOThrowingAsyncSequenceProducer<
@@ -415,7 +419,7 @@ internal final class AsyncServerHandler<
   internal func receiveInterceptedMetadata(_ headers: HPACKHeaders) {
     switch self.interceptorStateMachine.interceptedRequestMetadata() {
     case .forward:
-      () // continue
+      ()  // continue
     case .cancel:
       return self.cancel(error: nil)
     case .drop:

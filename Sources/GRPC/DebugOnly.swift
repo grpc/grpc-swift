@@ -15,5 +15,10 @@
  */
 
 internal func debugOnly(_ body: () -> Void) {
-  assert({ body(); return true }())
+  assert(
+    {
+      body()
+      return true
+    }()
+  )
 }

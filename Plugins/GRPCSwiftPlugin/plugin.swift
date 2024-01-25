@@ -53,6 +53,8 @@ struct GRPCSwiftPlugin {
         case `internal`
         /// The generated files should have `public` access level.
         case `public`
+        /// The generated files should have `package` access level.
+        case `package`
       }
 
       /// An array of paths to `.proto` files for this invocation.

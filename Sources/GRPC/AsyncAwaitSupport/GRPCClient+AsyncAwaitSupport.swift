@@ -329,7 +329,7 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
-    where RequestStream.Element == Request {
+  where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -350,7 +350,7 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
-    where RequestStream.Element == Request {
+  where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,

@@ -15,11 +15,13 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOPosix
-import protocol SwiftProtobuf.Message
 import XCTest
+
+import protocol SwiftProtobuf.Message
+
+@testable import GRPC
 
 final class InterceptedRPCCancellationTests: GRPCTestCase {
   func testCancellationWithinInterceptedRPC() throws {
@@ -168,10 +170,10 @@ final class MagicAddingClientInterceptor<
         interceptors: []
       )
 
-      self.retry!.invoke(onError: {
+      self.retry!.invoke {
         context.log.debug("intercepting error from retried rpc")
         context.errorCaught($0)
-      }) { responsePart in
+      } onResponsePart: { responsePart in
         context.log.debug("intercepting response part from retried rpc")
         context.receive(responsePart)
       }

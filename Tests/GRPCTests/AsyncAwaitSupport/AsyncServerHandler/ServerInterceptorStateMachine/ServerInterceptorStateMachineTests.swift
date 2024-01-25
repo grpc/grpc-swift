@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import NIOEmbedded
 import XCTest
+
+@testable import GRPC
 
 final class ServerInterceptorStateMachineTests: GRPCTestCase {
   func testInterceptRequestMetadataWhenIntercepting() {
     var stateMachine = ServerInterceptorStateMachine()
     stateMachine.interceptRequestMetadata().assertIntercept()
-    stateMachine.interceptRequestMetadata().assertCancel() // Can't receive metadata twice.
+    stateMachine.interceptRequestMetadata().assertCancel()  // Can't receive metadata twice.
   }
 
   func testInterceptRequestMessageWhenIntercepting() {
@@ -32,14 +34,14 @@ final class ServerInterceptorStateMachineTests: GRPCTestCase {
   func testInterceptRequestEndWhenIntercepting() {
     var stateMachine = ServerInterceptorStateMachine()
     stateMachine.interceptRequestEnd().assertIntercept()
-    stateMachine.interceptRequestEnd().assertCancel() // Can't receive end twice.
+    stateMachine.interceptRequestEnd().assertCancel()  // Can't receive end twice.
   }
 
   func testInterceptedRequestMetadataWhenIntercepting() {
     var stateMachine = ServerInterceptorStateMachine()
     stateMachine.interceptRequestMetadata().assertIntercept()
     stateMachine.interceptedRequestMetadata().assertForward()
-    stateMachine.interceptedRequestMetadata().assertCancel() // Can't intercept metadata twice.
+    stateMachine.interceptedRequestMetadata().assertCancel()  // Can't intercept metadata twice.
   }
 
   func testInterceptedRequestMessageWhenIntercepting() {
@@ -58,7 +60,7 @@ final class ServerInterceptorStateMachineTests: GRPCTestCase {
     stateMachine.interceptedRequestMetadata().assertForward()
     stateMachine.interceptRequestEnd().assertIntercept()
     stateMachine.interceptedRequestEnd().assertForward()
-    stateMachine.interceptedRequestEnd().assertCancel() // Can't intercept end twice.
+    stateMachine.interceptedRequestEnd().assertCancel()  // Can't intercept end twice.
   }
 
   func testInterceptResponseMetadataWhenIntercepting() {

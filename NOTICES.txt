@@ -21,15 +21,51 @@ This product uses scripts derived from SwiftNIO's integration testing
 framework: 'test_01_allocation_counts.sh', 'run-nio-alloc-counter-tests.sh' and
 'test_functions.sh'.
 
+It also uses derivations of SwiftNIO's lock 'NIOLock.swift' and locked value box
+'NIOLockedValueBox.swift'.
+
   * LICENSE (Apache License 2.0):
     * https://github.com/apple/swift-nio/blob/main/LICENSE.txt
   * HOMEPAGE:
     * https://github.com/apple/swift-nio
 
-This product contains a simplified derivation of SwiftNIO HTTP/2's
-'HTTP2FrameEncoder' for testing purposes.
+---
+
+This product uses derivations of SwiftNIOHTTP2's implementation of case
+insensitive comparison of strings, found in 'HPACKHeader.swift'.
+    
+    * LICENSE (Apache License 2.0):
+      * https://github.com/apple/swift-nio-http2/blob/main/LICENSE.txt
+    * HOMEPAGE:
+      * https://github.com/apple/swift-nio-http2
+
+---
+
+This product contains a derivation of the backpressure aware async stream from
+the Swift project.
 
   * LICENSE (Apache License 2.0):
-    * https://github.com/apple/swift-nio-http2/blob/main/LICENSE.txt
+    * https://github.com/apple/swift/blob/main/LICENSE.txt
   * HOMEPAGE:
-    * https://github.com/apple/swift-nio-http2
+    * https://github.com/apple/swift
+
+---
+
+This product uses derivations of swift-extras/swift-extras-base64 'Base64.swift'.
+
+  * LICENSE (Apache License 2.0):
+    * https://github.com/swift-extras/swift-extras-base64/blob/main/LICENSE
+  * HOMEPAGE:
+    * https://github.com/swift-extras/swift-extras-base64
+
+---
+
+This product uses derivations of apple/swift-openapi-generator 'StructuredSwiftRepresentation.swift',
+'TypeName.swift', 'TypeUsage.swift', 'Builtins.swift', 'RendererProtocol.swift', 'TextBasedProtocol',
+and 'Test_TextBasedRenderer'.
+    
+    * LICENSE (Apache License 2.0):
+      * https://github.com/apple/swift-openapi-generator/blob/main/LICENSE.txt
+    * HOMEPAGE:
+      * https://github.com/apple/swift-openapi-generator
+

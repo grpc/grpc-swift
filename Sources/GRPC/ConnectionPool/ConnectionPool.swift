@@ -283,7 +283,7 @@ internal final class ConnectionPool {
 
     guard case .active = self._state else {
       // Fail the promise right away if we're shutting down or already shut down.
-      promise.fail(ConnectionPoolError.shutdown)
+      promise.fail(GRPCConnectionPoolError.shutdown)
       return
     }
 
@@ -348,10 +348,13 @@ internal final class ConnectionPool {
   ) {
     // Don't overwhelm the pool with too many waiters.
     guard self.waiters.count < self.maxWaiters else {
-      logger.trace("connection pool has too many waiters", metadata: [
-        Metadata.waitersMax: "\(self.maxWaiters)",
-      ])
-      promise.fail(ConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
+      logger.trace(
+        "connection pool has too many waiters",
+        metadata: [
+          Metadata.waitersMax: "\(self.maxWaiters)"
+        ]
+      )
+      promise.fail(GRPCConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
       return
     }
 
@@ -361,30 +364,39 @@ internal final class ConnectionPool {
     // timeout before appending it to the waiters, it wont run until the next event loop tick at the
     // earliest (even if the deadline has already passed).
     waiter.scheduleTimeout(on: self.eventLoop) {
-      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: self._mostRecentError))
+      waiter.fail(GRPCConnectionPoolError.deadlineExceeded(connectionError: self._mostRecentError))
 
       if let index = self.waiters.firstIndex(where: { $0.id == waiter.id }) {
         self.waiters.remove(at: index)
 
-        logger.trace("timed out waiting for a connection", metadata: [
-          Metadata.waiterID: "\(waiter.id)",
-          Metadata.waitersCount: "\(self.waiters.count)",
-        ])
+        logger.trace(
+          "timed out waiting for a connection",
+          metadata: [
+            Metadata.waiterID: "\(waiter.id)",
+            Metadata.waitersCount: "\(self.waiters.count)",
+          ]
+        )
       }
     }
 
     // request logger
-    logger.debug("waiting for a connection to become available", metadata: [
-      Metadata.waiterID: "\(waiter.id)",
-      Metadata.waitersCount: "\(self.waiters.count)",
-    ])
+    logger.debug(
+      "waiting for a connection to become available",
+      metadata: [
+        Metadata.waiterID: "\(waiter.id)",
+        Metadata.waitersCount: "\(self.waiters.count)",
+      ]
+    )
 
     self.waiters.append(waiter)
 
     // pool logger
-    self.logger.trace("enqueued connection waiter", metadata: [
-      Metadata.waitersCount: "\(self.waiters.count)",
-    ])
+    self.logger.trace(
+      "enqueued connection waiter",
+      metadata: [
+        Metadata.waitersCount: "\(self.waiters.count)"
+      ]
+    )
 
     if self._shouldBringUpAnotherConnection() {
       self._startConnectingIdleConnection()
@@ -458,8 +470,9 @@ internal final class ConnectionPool {
   ///
   /// - Note: this is linear in the number of connections.
   @usableFromInline
-  internal func _mostAvailableConnectionIndex(
-  ) -> Dictionary<ConnectionManagerID, PerConnectionState>.Index {
+  internal func _mostAvailableConnectionIndex()
+    -> Dictionary<ConnectionManagerID, PerConnectionState>.Index
+  {
     var index = self._connections.values.startIndex
     var selectedIndex = self._connections.values.endIndex
     var mostAvailableStreams = 0
@@ -479,10 +492,10 @@ internal final class ConnectionPool {
 
   /// Reserves a stream from the connection with the most available streams, if one exists.
   ///
-  /// - Returns: The `NIOHTTP2Handler.StreamMultiplexer` from the connection the stream was reserved from,
+  /// - Returns: The `HTTP2StreamMultiplexer` from the connection the stream was reserved from,
   ///     or `nil` if no stream could be reserved.
   @usableFromInline
-  internal func _reserveStreamFromMostAvailableConnection() -> NIOHTTP2Handler.StreamMultiplexer? {
+  internal func _reserveStreamFromMostAvailableConnection() -> HTTP2StreamMultiplexer? {
     let index = self._mostAvailableConnectionIndex()
 
     if index != self._connections.endIndex {
@@ -537,7 +550,7 @@ internal final class ConnectionPool {
 
       // Fail the outstanding waiters.
       while let waiter = self.waiters.popFirst() {
-        waiter.fail(ConnectionPoolError.shutdown)
+        waiter.fail(GRPCConnectionPoolError.shutdown)
       }
 
       // Cascade the result of the shutdown into the promise.
@@ -571,16 +584,16 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
   ) {
     switch (oldState, newState) {
     case let (.ready, .transientFailure(error)),
-         let (.ready, .idle(.some(error))):
+      let (.ready, .idle(.some(error))):
       self.updateMostRecentError(error)
       self.connectionUnavailable(manager.id)
 
     case (.ready, .idle(.none)),
-         (.ready, .shutdown):
+      (.ready, .shutdown):
       self.connectionUnavailable(manager.id)
 
     case let (_, .transientFailure(error)),
-         let (_, .idle(.some(error))):
+      let (_, .idle(.some(error))):
       self.updateMostRecentError(error)
 
     default:
@@ -591,7 +604,7 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
 
     switch (oldState, newState) {
     case (.idle, .connecting),
-         (.transientFailure, .connecting):
+      (.transientFailure, .connecting):
       delegate.startedConnecting(id: .init(manager.id))
 
     case (.connecting, .ready):
@@ -675,7 +688,8 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
   internal func streamOpened(_ manager: ConnectionManager) {
     self.eventLoop.assertInEventLoop()
     if let utilization = self._connections[manager.id]?.openedStream(),
-       let delegate = self.delegate {
+      let delegate = self.delegate
+    {
       delegate.connectionUtilizationChanged(
         id: .init(manager.id),
         streamsUsed: utilization.used,
@@ -693,7 +707,8 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
 
     // Return the stream the connection and to the pool manager.
     if let utilization = self._connections.values[index].returnStream(),
-       let delegate = self.delegate {
+      let delegate = self.delegate
+    {
       delegate.connectionUtilizationChanged(
         id: .init(manager.id),
         streamsUsed: utilization.used,
@@ -765,9 +780,12 @@ extension ConnectionPool {
   private func tryServiceWaiters() {
     if self.waiters.isEmpty { return }
 
-    self.logger.trace("servicing waiters", metadata: [
-      Metadata.waitersCount: "\(self.waiters.count)",
-    ])
+    self.logger.trace(
+      "servicing waiters",
+      metadata: [
+        Metadata.waitersCount: "\(self.waiters.count)"
+      ]
+    )
 
     let now = self.now()
     var serviced = 0
@@ -791,10 +809,13 @@ extension ConnectionPool {
       }
     }
 
-    self.logger.trace("done servicing waiters", metadata: [
-      Metadata.waitersCount: "\(self.waiters.count)",
-      Metadata.waitersServiced: "\(serviced)",
-    ])
+    self.logger.trace(
+      "done servicing waiters",
+      metadata: [
+        Metadata.waitersCount: "\(self.waiters.count)",
+        Metadata.waitersServiced: "\(serviced)",
+      ]
+    )
   }
 }
 
@@ -843,40 +864,97 @@ extension ConnectionPool {
   }
 }
 
-@usableFromInline
-internal enum ConnectionPoolError: Error {
-  /// The pool is shutdown or shutting down.
-  case shutdown
+/// An error thrown from the ``GRPCChannelPool``.
+public struct GRPCConnectionPoolError: Error, CustomStringConvertible {
+  public struct Code: Hashable, Sendable, CustomStringConvertible {
+    enum Code {
+      case shutdown
+      case tooManyWaiters
+      case deadlineExceeded
+    }
 
-  /// There are too many waiters in the pool.
-  case tooManyWaiters(connectionError: Error?)
+    fileprivate var code: Code
 
-  /// The deadline for creating a stream has passed.
-  case deadlineExceeded(connectionError: Error?)
+    private init(_ code: Code) {
+      self.code = code
+    }
+
+    public var description: String {
+      String(describing: self.code)
+    }
+
+    /// The pool is shutdown or shutting down.
+    public static var shutdown: Self { Self(.shutdown) }
+
+    /// There are too many waiters in the pool.
+    public static var tooManyWaiters: Self { Self(.tooManyWaiters) }
+
+    /// The deadline for creating a stream has passed.
+    public static var deadlineExceeded: Self { Self(.deadlineExceeded) }
+  }
+
+  /// The error code.
+  public var code: Code
+
+  /// An underlying error which caused this error to be thrown.
+  public var underlyingError: Error?
+
+  public var description: String {
+    if let underlyingError = self.underlyingError {
+      return "\(self.code) (\(underlyingError))"
+    } else {
+      return String(describing: self.code)
+    }
+  }
+
+  /// Create a new connection pool error with the given code and underlying error.
+  ///
+  /// - Parameters:
+  ///   - code: The error code.
+  ///   - underlyingError: The underlying error which led to this error being thrown.
+  public init(code: Code, underlyingError: Error? = nil) {
+    self.code = code
+    self.underlyingError = underlyingError
+  }
 }
 
-extension ConnectionPoolError: GRPCStatusTransformable {
+extension GRPCConnectionPoolError {
   @usableFromInline
-  internal func makeGRPCStatus() -> GRPCStatus {
-    switch self {
+  static let shutdown = Self(code: .shutdown)
+
+  @inlinable
+  static func tooManyWaiters(connectionError: Error?) -> Self {
+    Self(code: .tooManyWaiters, underlyingError: connectionError)
+  }
+
+  @inlinable
+  static func deadlineExceeded(connectionError: Error?) -> Self {
+    Self(code: .deadlineExceeded, underlyingError: connectionError)
+  }
+}
+
+extension GRPCConnectionPoolError: GRPCStatusTransformable {
+  public func makeGRPCStatus() -> GRPCStatus {
+    switch self.code.code {
     case .shutdown:
       return GRPCStatus(
         code: .unavailable,
-        message: "The connection pool is shutdown"
+        message: "The connection pool is shutdown",
+        cause: self.underlyingError
       )
 
-    case let .tooManyWaiters(error):
+    case .tooManyWaiters:
       return GRPCStatus(
         code: .resourceExhausted,
         message: "The connection pool has no capacity for new RPCs or RPC waiters",
-        cause: error
+        cause: self.underlyingError
       )
 
-    case let .deadlineExceeded(error):
+    case .deadlineExceeded:
       return GRPCStatus(
         code: .deadlineExceeded,
         message: "Timed out waiting for an HTTP/2 stream from the connection pool",
-        cause: error
+        cause: self.underlyingError
       )
     }
   }

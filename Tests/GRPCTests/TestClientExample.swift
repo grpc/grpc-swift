@@ -218,10 +218,12 @@ extension FakeResponseStreamExampleTests {
     let get = self.client.get(.with { $0.text = "Hello!" })
 
     // Send the response as well as some trailing metadata.
-    XCTAssertNoThrow(try getResponseStream.sendMessage(
-      .with { $0.text = "Goodbye!" },
-      trailingMetadata: ["bar": "baz"]
-    ))
+    XCTAssertNoThrow(
+      try getResponseStream.sendMessage(
+        .with { $0.text = "Goodbye!" },
+        trailingMetadata: ["bar": "baz"]
+      )
+    )
 
     // Check the response values:
     XCTAssertEqual(try get.response.wait(), .with { $0.text = "Goodbye!" })
@@ -406,11 +408,14 @@ extension FakeResponseStreamExampleTests {
     update.sendEnd(promise: nil)
 
     // Check the expected request parts.
-    XCTAssertEqual(requestParts, [
-      .metadata(["foo": "bar"]),
-      .message(.with { $0.text = "foo" }),
-      .end,
-    ])
+    XCTAssertEqual(
+      requestParts,
+      [
+        .metadata(["foo": "bar"]),
+        .message(.with { $0.text = "foo" }),
+        .end,
+      ]
+    )
 
     // Send close from the server.
     XCTAssertNoThrow(try updateResponseStream.sendEnd())

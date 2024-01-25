@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import struct Foundation.Data
+
 import GRPCInteroperabilityTestModels
 import NIOHPACK
 import SwiftProtobuf
+
+import struct Foundation.Data
 
 // MARK: - Payload creation
 
@@ -115,7 +117,8 @@ extension Grpc_Testing_StreamingInputCallRequest: PayloadRequest {}
 extension HPACKHeaders {
   /// See `ServerFeatures.echoMetadata`.
   var shouldEchoMetadata: Bool {
-    return self.contains(name: "x-grpc-test-echo-initial") || self
-      .contains(name: "x-grpc-test-echo-trailing-bin")
+    return self.contains(name: "x-grpc-test-echo-initial")
+      || self
+        .contains(name: "x-grpc-test-echo-trailing-bin")
   }
 }

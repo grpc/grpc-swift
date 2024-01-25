@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 import EchoModel
-@testable import GRPC
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
+
+@testable import GRPC
 
 class FakeResponseStreamTests: GRPCTestCase {
   private typealias Request = Echo_EchoRequest

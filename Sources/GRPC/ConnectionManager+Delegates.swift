@@ -71,10 +71,10 @@ internal enum _ConnectivityState: Sendable {
   internal func isSameState(as other: _ConnectivityState) -> Bool {
     switch (self, other) {
     case (.idle, .idle),
-         (.connecting, .connecting),
-         (.ready, .ready),
-         (.transientFailure, .transientFailure),
-         (.shutdown, .shutdown):
+      (.connecting, .connecting),
+      (.ready, .ready),
+      (.transientFailure, .transientFailure),
+      (.shutdown, .shutdown):
       return true
     default:
       return false

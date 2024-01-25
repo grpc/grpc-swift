@@ -83,7 +83,7 @@ extension ConnectionPool {
 
     /// Succeed the waiter with the given multiplexer.
     @usableFromInline
-    internal func succeed(with multiplexer: NIOHTTP2Handler.StreamMultiplexer) {
+    internal func succeed(with multiplexer: HTTP2StreamMultiplexer) {
       self._scheduledTimeout?.cancel()
       self._scheduledTimeout = nil
       multiplexer.createStreamChannel(promise: self._promise, self._channelInitializer)

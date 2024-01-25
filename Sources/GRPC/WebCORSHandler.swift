@@ -55,8 +55,9 @@ extension WebCORSHandler: ChannelInboundHandler {
 
   private func receivedRequestHead(context: ChannelHandlerContext, _ head: HTTPRequestHead) {
     if head.method == .OPTIONS,
-       head.headers.contains(.accessControlRequestMethod),
-       let origin = head.headers.first(name: "origin") {
+      head.headers.contains(.accessControlRequestMethod),
+      let origin = head.headers.first(name: "origin")
+    {
       // If the request is OPTIONS with a access-control-request-method header it's a CORS
       // preflight request and is not propagated further.
       self.state = .processingPreflightRequest

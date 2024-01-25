@@ -17,6 +17,7 @@ import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
+
 import protocol SwiftProtobuf.Message
 
 /// An object representing a single RPC from the perspective of a client. It allows the caller to
@@ -325,7 +326,7 @@ extension Call {
 
     switch (self.channelPromise, self._state) {
     case let (.some(promise), .idle),
-         let (.some(promise), .invoked):
+      let (.some(promise), .invoked):
       // We already have a promise, just use that.
       return promise.futureResult
 

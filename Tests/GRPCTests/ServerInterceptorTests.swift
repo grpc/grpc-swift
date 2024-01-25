@@ -15,13 +15,14 @@
  */
 import EchoImplementation
 import EchoModel
-@testable import GRPC
 import HelloWorldModel
 import NIOCore
 import NIOEmbedded
 import NIOHTTP1
 import SwiftProtobuf
 import XCTest
+
+@testable import GRPC
 
 extension GRPCServerHandlerProtocol {
   fileprivate func receiveRequest(_ request: Echo_EchoRequest) {
@@ -45,7 +46,8 @@ class ServerInterceptorTests: GRPCTestCase {
   }
 
   private func makeRecordingInterceptor()
-    -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+    -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>
+  {
     return .init()
   }
 
@@ -98,9 +100,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Expect responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(1))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
 
     // We expect 2 request parts: the provider responds before it sees end, that's fine.
     assertThat(recordingInterceptor.requestParts, .hasCount(2))
@@ -123,9 +125,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(1))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 
   func testClientStreamingFromInterceptor() throws {
@@ -140,9 +142,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(1))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 
   func testServerStreamingFromInterceptor() throws {
@@ -155,9 +157,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(3))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 
   func testBidirectionalStreamingFromInterceptor() throws {
@@ -172,9 +174,9 @@ class ServerInterceptorTests: GRPCTestCase {
     handler.receiveEnd()
 
     // Get the responses.
-    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.metadata, .is(.some()))
     assertThat(self.recorder.messages.count, .is(3))
-    assertThat(self.recorder.status, .is(.notNil()))
+    assertThat(self.recorder.status, .is(.some()))
   }
 }
 
@@ -225,8 +227,8 @@ class ExtraRequestPartEmitter: ServerInterceptor<Echo_EchoRequest, Echo_EchoResp
 
     switch (self.part, part) {
     case (.metadata, .metadata),
-         (.message, .message),
-         (.end, .end):
+      (.message, .message),
+      (.end, .end):
       count = self.count
     default:
       count = 1

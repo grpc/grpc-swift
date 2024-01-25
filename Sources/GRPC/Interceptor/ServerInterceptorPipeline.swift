@@ -49,10 +49,13 @@ internal final class ServerInterceptorPipeline<Request, Response> {
 
   /// Called when a response part has traversed the interceptor pipeline.
   @usableFromInline
-  internal var _onResponsePart: Optional<(
-    GRPCServerResponsePart<Response>,
-    EventLoopPromise<Void>?
-  ) -> Void>
+  internal var _onResponsePart:
+    Optional<
+      (
+        GRPCServerResponsePart<Response>,
+        EventLoopPromise<Void>?
+      ) -> Void
+    >
 
   /// Called when a request part has traversed the interceptor pipeline.
   @usableFromInline

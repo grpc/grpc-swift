@@ -117,6 +117,109 @@ ${NORMALIZATION_GRPC}: ${NORMALIZATION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
 .PHONY:
 generate-normalization: ${NORMALIZATION_PB} ${NORMALIZATION_GRPC}
 
+SERIALIZATION_GRPC_REFLECTION=Tests/GRPCTests/Codegen/Serialization/echo.grpc.reflection
+
+# For serialization we'll set the ReflectionData option to true.
+${SERIALIZATION_GRPC_REFLECTION}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=false,Server=false,ReflectionData=true \
+		--grpc-swift_out=$(dir ${SERIALIZATION_GRPC_REFLECTION})
+
+# Generates binary file containing the serialized file descriptor proto for the Serialization test
+.PHONY:
+generate-reflection-data: ${SERIALIZATION_GRPC_REFLECTION}
+
+REFLECTION_V1_PROTO=Sources/GRPCReflectionService/v1/reflection-v1.proto
+REFLECTION_V1_PB=$(REFLECTION_V1_PROTO:.proto=.pb.swift)
+REFLECTION_V1_GRPC=$(REFLECTION_V1_PROTO:.proto=.grpc.swift)
+
+REFLECTION_V1ALPHA_PROTO=Sources/GRPCReflectionService/v1Alpha/reflection-v1alpha.proto
+REFLECTION_V1ALPHA_PB=$(REFLECTION_V1ALPHA_PROTO:.proto=.pb.swift)
+REFLECTION_V1ALPHA_GRPC=$(REFLECTION_V1ALPHA_PROTO:.proto=.grpc.swift)
+
+# For Reflection we'll generate only the Server code.
+${REFLECTION_V1_GRPC}: ${REFLECTION_V1_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=false \
+		--grpc-swift_out=$(dir $<)
+
+# For Reflection we'll generate only the Server code.
+${REFLECTION_V1ALPHA_GRPC}: ${REFLECTION_V1ALPHA_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=false \
+		--grpc-swift_out=$(dir $<)
+
+# Generates protobufs and gRPC server for the Reflection Service
+.PHONY:
+generate-reflection: ${REFLECTION_V1_PB} ${REFLECTION_V1_GRPC} ${REFLECTION_V1ALPHA_PB} ${REFLECTION_V1ALPHA_GRPC}
+
+TEST_REFLECTION_V1_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection-v1.grpc.swift
+TEST_REFLECTION_V1_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1/reflection-v1.pb.swift
+TEST_REFLECTION_V1ALPHA_GRPC=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection-v1alpha.grpc.swift
+TEST_REFLECTION_V1ALPHA_PB=Tests/GRPCTests/GRPCReflectionServiceTests/Generated/v1Alpha/reflection-v1alpha.pb.swift
+
+# For Testing the Reflection we'll generate only the Client code.
+${TEST_REFLECTION_V1_GRPC}: ${REFLECTION_V1_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=true,Server=false \
+		--grpc-swift_out=$(dir ${TEST_REFLECTION_V1_GRPC})
+
+${TEST_REFLECTION_V1_PB}: ${REFLECTION_V1_PROTO} ${PROTOC_GEN_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_SWIFT} \
+		--swift_out=$(dir ${TEST_REFLECTION_V1_PB})
+
+# For Testing the Reflection we'll generate only the Client code.
+${TEST_REFLECTION_V1ALPHA_GRPC}: ${REFLECTION_V1ALPHA_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=true,Server=false \
+		--grpc-swift_out=$(dir ${TEST_REFLECTION_V1ALPHA_GRPC})
+
+${TEST_REFLECTION_V1ALPHA_PB}: ${REFLECTION_V1ALPHA_PROTO} ${PROTOC_GEN_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_SWIFT} \
+		--swift_out=$(dir ${TEST_REFLECTION_V1ALPHA_PB})
+
+# Generates protobufs and gRPC clients for the Reflection Service Tests
+.PHONY:
+generate-reflection-test-clients: ${TEST_REFLECTION_V1_PB} ${TEST_REFLECTION_V1_GRPC} ${TEST_REFLECTION_V1ALPHA_PB} ${TEST_REFLECTION_V1ALPHA_GRPC}
+
+HELLOWORLD_SERIALIZED_PROTO_GRPC=Sources/Examples/ReflectionService/Generated/helloworld.grpc.reflection
+
+${HELLOWORLD_SERIALIZED_PROTO_GRPC}: ${HELLOWORLD_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=false,Server=false,ReflectionData=true \
+		--grpc-swift_out=$(dir ${HELLOWORLD_SERIALIZED_PROTO_GRPC})
+
+.PHONY:
+generate-helloworld-reflection-data: ${HELLOWORLD_SERIALIZED_PROTO_GRPC}
+
+ECHO_SERIALIZED_PROTO_GRPC=Sources/Examples/ReflectionService/Generated/echo.grpc.reflection
+
+${ECHO_SERIALIZED_PROTO_GRPC}: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=Client=false,Server=false,ReflectionData=true \
+		--grpc-swift_out=$(dir ${ECHO_SERIALIZED_PROTO_GRPC})
+
+.PHONY:
+generate-echo-reflection-data: ${ECHO_SERIALIZED_PROTO_GRPC}
+
 ### Testing ####################################################################
 
 # Normal test suite.

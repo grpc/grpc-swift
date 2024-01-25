@@ -113,7 +113,7 @@ internal struct LengthPrefixedMessageReader {
           .reserveCapacity(minimumWritableBytes: max(remainingMessageBytes, buffer.readableBytes))
 
       case .expectingCompressedFlag,
-           .expectingMessageLength:
+        .expectingMessageLength:
         // Just append the buffer; these parts are too small to make a meaningful difference.
         ()
       }

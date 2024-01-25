@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import struct Foundation.Date
-import class Foundation.DateFormatter
+
 import Logging
 import NIOConcurrencyHelpers
+
+import struct Foundation.Date
+import class Foundation.DateFormatter
 
 /// A `LogHandler` factory which captures all logs emitted by the handlers it makes.
 internal class CapturingLogHandlerFactory {

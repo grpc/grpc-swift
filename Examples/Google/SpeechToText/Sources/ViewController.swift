@@ -27,7 +27,7 @@ final class ViewController: UIViewController {
     button.backgroundColor = .darkGray
     button.layer.cornerRadius = 15
     button.clipsToBounds = true
-    button.addTarget(self, action: #selector(recordTapped), for: .touchUpInside)
+    button.addTarget(self, action: #selector(self.recordTapped), for: .touchUpInside)
     return button
   }()
 
@@ -110,7 +110,7 @@ final class ViewController: UIViewController {
     self.textView.snp.makeConstraints { make in
       make.top.equalTo(view.safeAreaLayoutGuide.snp.topMargin)
       make.left.right.equalToSuperview()
-      make.bottom.equalTo(recordButton.snp.top)
+      make.bottom.equalTo(self.recordButton.snp.top)
     }
 
     self.recordButton.snp.makeConstraints { make in

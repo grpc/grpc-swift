@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import XCTest
+
+@testable import GRPC
 
 class GRPCStatusTests: GRPCTestCase {
   func testStatusDescriptionWithoutMessage() {
@@ -58,11 +60,13 @@ class GRPCStatusTests: GRPCTestCase {
     let cause = UnderlyingError()
     XCTAssertEqual(
       "internal error (13): unknown error processing request, cause: \(cause.description)",
-      String(describing: GRPCStatus(
-        code: .internalError,
-        message: "unknown error processing request",
-        cause: cause
-      ))
+      String(
+        describing: GRPCStatus(
+          code: .internalError,
+          message: "unknown error processing request",
+          cause: cause
+        )
+      )
     )
   }
 
@@ -73,11 +77,13 @@ class GRPCStatusTests: GRPCTestCase {
     let cause = UnderlyingError()
     XCTAssertEqual(
       "internal error (13), cause: \(cause.description)",
-      String(describing: GRPCStatus(
-        code: .internalError,
-        message: nil,
-        cause: cause
-      ))
+      String(
+        describing: GRPCStatus(
+          code: .internalError,
+          message: nil,
+          cause: cause
+        )
+      )
     )
   }
 
@@ -107,10 +113,10 @@ class GRPCStatusTests: GRPCTestCase {
     // No message/cause, so uses the nil backing storage.
     XCTAssertEqual(status.testingOnly_storageObjectIdentifier, nilStorageID)
 
-    status.cause = ConnectionPoolError.tooManyWaiters(connectionError: nil)
+    status.cause = GRPCConnectionPoolError.tooManyWaiters(connectionError: nil)
     let storageID = status.testingOnly_storageObjectIdentifier
     XCTAssertNotEqual(storageID, nilStorageID)
-    XCTAssert(status.cause is ConnectionPoolError)
+    XCTAssert(status.cause is GRPCConnectionPoolError)
 
     // The storage of status should be uniquely ref'd, so setting cause to nil should not change
     // the backing storage (even if the nil storage could now be used).

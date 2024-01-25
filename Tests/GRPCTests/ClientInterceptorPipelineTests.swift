@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
+
 import Logging
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
+
+@testable import GRPC
 
 class ClientInterceptorPipelineTests: GRPCTestCase {
   override func setUp() {
@@ -159,7 +161,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
         assertThat(cancelled, .is(false))
         cancelled = true
         // We don't expect a promise: this cancellation is fired by the pipeline.
-        assertThat(promise, .is(.nil()))
+        assertThat(promise, .is(.none()))
       },
       onRequestPart: { _, _ in
         XCTFail("Unexpected request part")
@@ -202,14 +204,14 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
         assertThat(cancellations, .is(0))
         cancellations += 1
         // We don't expect a promise: this cancellation is fired by the pipeline.
-        assertThat(promise, .is(.nil()))
+        assertThat(promise, .is(.none()))
       },
       onRequestPart: { _, _ in
         XCTFail("Unexpected request part")
       },
       onResponsePart: { part in
         // We only expect the end.
-        assertThat(part.end, .is(.notNil()))
+        assertThat(part.end, .is(.some()))
       }
     )
 
@@ -262,7 +264,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 
         // Check the file and line, if expected.
         if let expectedFile = self.file, let expectedLine = self.line {
-          XCTAssertEqual("\(file)", "\(expectedFile)") // StaticString isn't Equatable
+          XCTAssertEqual("\(file)", "\(expectedFile)")  // StaticString isn't Equatable
           XCTAssertEqual(line, expectedLine)
         }
       }
