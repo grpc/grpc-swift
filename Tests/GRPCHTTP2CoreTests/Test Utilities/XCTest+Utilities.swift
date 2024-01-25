@@ -28,16 +28,3 @@ func XCTAssertThrowsError<T, E: Error>(
     errorHandler(error)
   }
 }
-
-func XCTAssertThrowsRPCError<T>(
-  _ expression: @autoclosure () throws -> T,
-  _ errorHandler: (RPCError) -> Void
-) {
-  XCTAssertThrowsError(try expression()) { error in
-    guard let error = error as? RPCError else {
-      return XCTFail("Error had unexpected type '\(type(of: error))'")
-    }
-
-    errorHandler(error)
-  }
-}

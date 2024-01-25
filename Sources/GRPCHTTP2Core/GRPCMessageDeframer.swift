@@ -29,10 +29,7 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
   typealias InboundOut = [UInt8]
 
   private let decompressor: Zlib.Decompressor?
-  private let maximumPayloadSize: Int?
-  private var effectiveMaximumPayloadSize: Int {
-    self.maximumPayloadSize ?? Self.defaultMaximumPayloadSize
-  }
+  private let maximumPayloadSize: Int
 
   /// Create a new ``GRPCMessageDeframer``.
   /// - Parameters:
@@ -40,7 +37,10 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
   ///   - decompressor: A `Zlib.Decompressor` to use when decompressing compressed gRPC messages.
   /// - Important: You must call `end()` on the `decompressor` when you're done using it, to clean
   /// up any resources allocated by `Zlib`.
-  init(maximumPayloadSize: Int? = nil, decompressor: Zlib.Decompressor? = nil) {
+  init(
+    maximumPayloadSize: Int = Self.defaultMaximumPayloadSize,
+    decompressor: Zlib.Decompressor? = nil
+  ) {
     self.maximumPayloadSize = maximumPayloadSize
     self.decompressor = decompressor
   }
@@ -68,16 +68,19 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
 
     if isMessageCompressed {
       guard let decompressor = self.decompressor else {
-        // We cannot decompress the payload - discard the message.
-        return nil
+        // We cannot decompress the payload - throw an error.
+        throw RPCError(
+          code: .internalError,
+          message: "Received a compressed message payload, but no decompressor has been configured."
+        )
       }
-      return try decompressor.decompress(&message, limit: self.effectiveMaximumPayloadSize)
+      return try decompressor.decompress(&message, limit: self.maximumPayloadSize)
     } else {
-      if message.readableBytes > self.effectiveMaximumPayloadSize {
+      if message.readableBytes > self.maximumPayloadSize {
         throw RPCError(
           code: .resourceExhausted,
           message:
-            "Message has exceeded the configured maximum payload size (max: \(self.effectiveMaximumPayloadSize), actual: \(message.readableBytes))"
+            "Message has exceeded the configured maximum payload size (max: \(self.maximumPayloadSize), actual: \(message.readableBytes))"
         )
       }
       return Array(buffer: message)
