@@ -15,14 +15,16 @@
  */
 
 import GRPCCodeGen
-import GRPCProtobuf
+import GRPCProtobufParser
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 import XCTest
 
-final class InputParserTests: XCTestCase {
+final class ProtobufToCodeGenParserTests: XCTestCase {
   func testParser() throws {
-    let parsedCodeGenRequest = try InputParser().parse(input: self.dummyFileDescriptor)
+    let parsedCodeGenRequest = try ProtobufToCodeGenParser().parse(
+      input: self.helloWorldFileDescriptor
+    )
     XCTAssertEqual(parsedCodeGenRequest.fileName, "helloworld.proto")
     XCTAssertEqual(
       parsedCodeGenRequest.leadingTrivia,
@@ -34,18 +36,30 @@ final class InputParserTests: XCTestCase {
       // Source: helloworld.proto
       //
       // For information on using the generated types, please see the documentation:
-      //   https://github.com/apple/swift-protobuf/
+      //   https://github.com/grpc/grpc-swift
 
-      // Copyright 2015 gRPC authors.\n//\n// Licensed under the Apache License, \
-      Version 2.0 (the \"License\");\n// you may not use this file except in \
-      compliance with the License.\n// You may obtain a copy of the License \
-      at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by \
-      applicable law or agreed to in writing, software\n// distributed under \
-      the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES \
-      OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License \
-      for the specific language governing permissions and\n// limitations under the License.\n\n
+      // Copyright 2015 gRPC authors.
+      //
+      // Licensed under the Apache License, \
+      Version 2.0 (the \"License\");
+      // you may not use this file except in compliance with the License.
+      // You may obtain a copy of the License at
+      //
+      //     http://www.apache.org/licenses/LICENSE-2.0
+      //
+      // Unless required by applicable law or agreed to in writing, software
+      // distributed under the License is distributed on an \"AS IS\" BASIS,
+      // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      // See the License for the specific language governing permissions and
+      // limitations under the License.
+
+
       """
     )
+    XCTAssertEqual(parsedCodeGenRequest.services.count, 1)
+    guard let service = parsedCodeGenRequest.services.first else { return XCTFail() }
+    XCTAssertEqual(service.methods.count, 1)
+    guard let service = parsedCodeGenRequest.services.first?.methods.first else { return XCTFail() }
 
     let expectedMethod = CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(
       documentation: "/// Sends a greeting.\n",
@@ -59,10 +73,7 @@ final class InputParserTests: XCTestCase {
       inputType: "HelloRequest",
       outputType: "HelloReply"
     )
-    XCTAssertEqual(
-      parsedCodeGenRequest.services[0].methods[0].documentation,
-      "/// Sends a greeting.\n"
-    )
+    XCTAssertEqual(parsedCodeGenRequest.services[0].methods[0], expectedMethod)
     let expectedService = CodeGenerationRequest.ServiceDescriptor(
       documentation: "/// The greeting service definition.\n",
       name: CodeGenerationRequest.Name(
@@ -86,9 +97,14 @@ final class InputParserTests: XCTestCase {
       parsedCodeGenRequest.lookupDeserializer("HelloRequest"),
       "ProtobufDeserializer<HelloRequest>()"
     )
+    XCTAssertEqual(parsedCodeGenRequest.dependencies.count, 1)
+    XCTAssertEqual(
+      parsedCodeGenRequest.dependencies[0],
+      CodeGenerationRequest.Dependency(module: "GRPCProtobuf")
+    )
   }
 
-  var dummyFileDescriptor: FileDescriptor {
+  var helloWorldFileDescriptor: FileDescriptor {
     let requestType = Google_Protobuf_DescriptorProto.with {
       $0.name = "HelloRequest"
       $0.field = [
@@ -138,14 +154,20 @@ final class InputParserTests: XCTestCase {
             $0.span = [14, 0, 18]
             $0.leadingDetachedComments = [
               """
-               Copyright 2015 gRPC authors.\n\n Licensed under the Apache License, \
-              Version 2.0 (the \"License\");\n you may not use this file except in \
-              compliance with the License.\n You may obtain a copy of the License \
-              at\n\n     http://www.apache.org/licenses/LICENSE-2.0\n\n Unless required by \
-              applicable law or agreed to in writing, software\n distributed under \
-              the License is distributed on an \"AS IS\" BASIS,\n WITHOUT WARRANTIES \
-              OR CONDITIONS OF ANY KIND, either express or implied.\n See the License \
-              for the specific language governing permissions and\n limitations under the License.\n
+               Copyright 2015 gRPC authors.
+
+               Licensed under the Apache License, Version 2.0 (the \"License\");
+               you may not use this file except in compliance with the License.
+               You may obtain a copy of the License at
+
+                   http://www.apache.org/licenses/LICENSE-2.0
+
+               Unless required by applicable law or agreed to in writing, software
+               distributed under the License is distributed on an \"AS IS\" BASIS,
+               WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+               See the License for the specific language governing permissions and
+               limitations under the License.
+
               """
             ]
           },

@@ -81,7 +81,7 @@ public struct CodeGenerationRequest {
   }
 
   /// Represents an import: a module or a specific item from a module.
-  public struct Dependency {
+  public struct Dependency: Equatable {
     /// If the dependency is an item, the property's value is the item representation.
     /// If the dependency is a module, this property is nil.
     public var item: Item? = nil
@@ -111,7 +111,7 @@ public struct CodeGenerationRequest {
     }
 
     /// Represents an item imported from a module.
-    public struct Item {
+    public struct Item: Equatable {
       /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
       public var kind: Kind
 
@@ -124,7 +124,7 @@ public struct CodeGenerationRequest {
       }
 
       /// Represents the imported item's kind.
-      public struct Kind {
+      public struct Kind: Equatable {
         /// Describes the keyword associated with the imported item.
         internal enum Value: String {
           case `typealias`
@@ -186,8 +186,8 @@ public struct CodeGenerationRequest {
     }
 
     /// Describes any requirement for the `@preconcurrency` attribute.
-    public struct PreconcurrencyRequirement {
-      internal enum Value {
+    public struct PreconcurrencyRequirement: Equatable {
+      internal enum Value: Equatable {
         case required
         case notRequired
         case requiredOnOS([String])
