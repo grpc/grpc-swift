@@ -32,15 +32,11 @@ struct GRPCMessageFramer {
   /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
   static let maximumWriteBufferLength = 65_536
 
-  private var pendingMessages: OneOrManyQueue<PendingMessage>
-
-  private struct PendingMessage {
-    let bytes: [UInt8]
-    let compress: Bool
-  }
+  private var pendingMessages: OneOrManyQueue<[UInt8]>
 
   private var writeBuffer: ByteBuffer
 
+  /// Create a new ``GRPCMessageFramer``.
   init() {
     self.pendingMessages = OneOrManyQueue()
     self.writeBuffer = ByteBuffer()
@@ -48,15 +44,16 @@ struct GRPCMessageFramer {
 
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
   /// The resulting data will be returned when calling ``GRPCMessageFramer/next()``.
-  /// If `compress` is true, then the given bytes will be compressed using the configured compression algorithm.
-  mutating func append(_ bytes: [UInt8], compress: Bool) {
-    self.pendingMessages.append(PendingMessage(bytes: bytes, compress: compress))
+  mutating func append(_ bytes: [UInt8]) {
+    self.pendingMessages.append(bytes)
   }
 
   /// If there are pending messages to be framed, a `ByteBuffer` will be returned with the framed data.
   /// Data may also be compressed (if configured) and multiple frames may be coalesced into the same `ByteBuffer`.
+  /// - Parameter compressor: An optional compressor: if present, payloads will be compressed; otherwise
+  /// they'll be framed as-is.
   /// - Throws: If an error is encountered, such as a compression failure, an error will be thrown.
-  mutating func next() throws -> ByteBuffer? {
+  mutating func next(compressor: Zlib.Compressor? = nil) throws -> ByteBuffer? {
     if self.pendingMessages.isEmpty {
       // Nothing pending: exit early.
       return nil
@@ -72,27 +69,34 @@ struct GRPCMessageFramer {
 
     var requiredCapacity = 0
     for message in self.pendingMessages {
-      requiredCapacity += message.bytes.count + Self.metadataLength
+      requiredCapacity += message.count + Self.metadataLength
     }
     self.writeBuffer.clear(minimumCapacity: requiredCapacity)
 
     while let message = self.pendingMessages.pop() {
-      try self.encode(message)
+      try self.encode(message, compressor: compressor)
     }
 
     return self.writeBuffer
   }
 
-  private mutating func encode(_ message: PendingMessage) throws {
-    if message.compress {
+  private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws {
+    if let compressor {
       self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
-      // TODO: compress message and write the compressed message length + bytes
+
+      // Write zeroes as length - we'll write the actual compressed size after compression.
+      let lengthIndex = self.writeBuffer.writerIndex
+      self.writeBuffer.writeInteger(UInt32(0))
+
+      // Compress and overwrite the payload length field with the right length.
+      let writtenBytes = try compressor.compress(message, into: &self.writeBuffer)
+      self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
     } else {
       self.writeBuffer.writeMultipleIntegers(
         UInt8(0),  // Clear compression flag
-        UInt32(message.bytes.count)  // Set message length
+        UInt32(message.count)  // Set message length
       )
-      self.writeBuffer.writeBytes(message.bytes)
+      self.writeBuffer.writeBytes(message)
     }
   }
 }
