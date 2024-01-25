@@ -87,6 +87,7 @@ internal final class PooledChannel: GRPCChannel {
       tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
       httpTargetWindowSize: configuration.http2.targetWindowSize,
       httpMaxFrameSize: configuration.http2.maxFrameSize,
+      waitsForConnectivity: configuration.networkFrameworkWaitForConnectivity,
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )
