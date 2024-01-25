@@ -24,6 +24,7 @@ import NIOCore
 import NIOPosix
 import NIOSSL
 import NIOTransportServices
+import GRPCSampleData
 import Security
 import XCTest
 
@@ -207,6 +208,62 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
     self.startClient(clientBuilder)
 
     XCTAssertNoThrow(try self.doEchoGet())
+  }
+
+  func testWaiterPicksUpNWError(
+    _ configure: (inout GRPCChannelPool.Configuration) -> Void
+  ) async throws {
+    let builder = Server.usingTLSBackedByNIOSSL(
+      on: self.group,
+      certificateChain: [SampleCertificate.server.certificate],
+      privateKey: SamplePrivateKey.server
+    )
+
+    let server = try await builder.bind(host: "127.0.0.1", port: 0).get()
+    defer { try? server.close().wait() }
+
+    let client = try GRPCChannelPool.with(
+      target: .hostAndPort("127.0.0.1", server.channel.localAddress!.port!),
+      transportSecurity: .tls(.makeClientConfigurationBackedByNetworkFramework()),
+      eventLoopGroup: self.tsGroup
+    ) {
+      configure(&$0)
+    }
+
+    let echo = Echo_EchoAsyncClient(channel: client)
+    do {
+      let _ = try await echo.get(.with { $0.text = "ignored" })
+    } catch let error as GRPCConnectionPoolError {
+      XCTAssertEqual(error.code, .deadlineExceeded)
+      XCTAssert(error.underlyingError is NWError)
+    } catch {
+      XCTFail("Expected GRPCConnectionPoolError")
+    }
+
+    let promise = self.group.next().makePromise(of: Void.self)
+    client.closeGracefully(deadline: .now() + .seconds(1), promise: promise)
+    try await promise.futureResult.get()
+  }
+
+  func testErrorPickedUpBeforeConnectTimeout() async throws {
+    try await self.testWaiterPicksUpNWError {
+      // Configure the wait time to be less than the connect timeout, the waiter
+      // should fail with the appropriate NWError before the connect times out.
+      $0.connectionPool.maxWaitTime = .milliseconds(500)
+      $0.connectionBackoff.minimumConnectionTimeout = 1.0
+    }
+  }
+
+  func testNotWaitingForConnectivity() async throws {
+    try await self.testWaiterPicksUpNWError {
+      // The minimum connect time is still high, but setting wait for activity to false
+      // means it fails on entering the waiting state rather than seeing out the connect
+      // timeout.
+      $0.connectionPool.maxWaitTime = .milliseconds(500)
+      $0.debugChannelInitializer = { channel in
+        channel.setOption(NIOTSChannelOptions.waitForActivity, value: false)
+      }
+    }
   }
 }
 

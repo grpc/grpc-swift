@@ -33,6 +33,7 @@ internal final class ConnectionManager: @unchecked Sendable {
   internal struct ConnectingState {
     var backoffIterator: ConnectionBackoffIterator?
     var reconnect: Reconnect
+    var connectError: Error?
 
     var candidate: EventLoopFuture<Channel>
     var readyChannelMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
@@ -656,10 +657,30 @@ internal final class ConnectionManager: @unchecked Sendable {
         ]
       )
 
-    case .connecting:
-      // Ignore the error, the channel promise will notify the manager of any error which occurs
-      // while connecting.
-      ()
+    case .connecting(var state):
+      // Record the error, the channel promise will notify the manager of any error which occurs
+      // while connecting. It may be overridden by this error if it contains more relevant
+      // information
+      if state.connectError == nil {
+        state.connectError = error
+        self.state = .connecting(state)
+
+        // The pool is only notified of connection errors when the connection transitions to the
+        // transient failure state. However, in some cases (i.e. with NIOTS), errors can be thrown
+        // during the connect but before the connect times out.
+        //
+        // This opens up a period of time where you can start a call and have it fail with
+        // deadline exceeded (because no connection was available within the configured max
+        // wait time for the pool) but without any diagnostic information. The information is
+        // available but it hasn't been made available to the pool at that point in time.
+        //
+        // The delegate can't easily be modified (it's public API) and a new API doesn't make all
+        // that much sense so we elect to check whether the delegate is the pool and call it
+        // directly.
+        if let pool = self.connectivityDelegate as? ConnectionPool {
+          pool.sync.updateMostRecentError(error)
+        }
+      }
 
     case var .active(state):
       state.error = error
@@ -935,16 +956,26 @@ extension ConnectionManager {
 
     switch self.state {
     case let .connecting(connecting):
+      let reportedError: Error
+      switch error as? ChannelError {
+      case .some(.connectTimeout):
+        // A more relevant error may have been caught earlier. Use that in preference to the
+        // timeout as it'll likely be more useful.
+        reportedError = connecting.connectError ?? error
+      default:
+        reportedError = error
+      }
+
       // Should we reconnect?
       switch connecting.reconnect {
       // No, shutdown.
       case .none:
         self.logger.debug("shutting down connection, no reconnect configured/remaining")
         self.state = .shutdown(
-          ShutdownState(closeFuture: self.eventLoop.makeSucceededFuture(()), reason: error)
+          ShutdownState(closeFuture: self.eventLoop.makeSucceededFuture(()), reason: reportedError)
         )
-        connecting.readyChannelMuxPromise.fail(error)
-        connecting.candidateMuxPromise.fail(error)
+        connecting.readyChannelMuxPromise.fail(reportedError)
+        connecting.candidateMuxPromise.fail(reportedError)
 
       // Yes, after a delay.
       case let .after(delay):
@@ -953,10 +984,10 @@ extension ConnectionManager {
           self.startConnecting()
         }
         self.state = .transientFailure(
-          TransientFailureState(from: connecting, scheduled: scheduled, reason: error)
+          TransientFailureState(from: connecting, scheduled: scheduled, reason: reportedError)
         )
         // Candidate mux users are not willing to wait.
-        connecting.candidateMuxPromise.fail(error)
+        connecting.candidateMuxPromise.fail(reportedError)
       }
 
     // The application must have called shutdown while we were trying to establish a connection

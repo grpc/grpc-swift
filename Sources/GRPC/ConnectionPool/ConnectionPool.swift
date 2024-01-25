@@ -857,6 +857,12 @@ extension ConnectionPool {
       self.pool.eventLoop.assertInEventLoop()
       return self.pool._connections.values.reduce(0) { $0 + $1.reservedStreams }
     }
+
+    /// Updates the most recent connection error.
+    internal func updateMostRecentError(_ error: Error) {
+      self.pool.eventLoop.assertInEventLoop()
+      self.pool.updateMostRecentError(error)
+    }
   }
 
   internal var sync: Sync {
