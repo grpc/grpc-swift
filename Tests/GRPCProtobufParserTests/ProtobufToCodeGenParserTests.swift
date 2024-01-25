@@ -56,10 +56,8 @@ final class ProtobufToCodeGenParserTests: XCTestCase {
 
       """
     )
+
     XCTAssertEqual(parsedCodeGenRequest.services.count, 1)
-    guard let service = parsedCodeGenRequest.services.first else { return XCTFail() }
-    XCTAssertEqual(service.methods.count, 1)
-    guard let service = parsedCodeGenRequest.services.first?.methods.first else { return XCTFail() }
 
     let expectedMethod = CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(
       documentation: "/// Sends a greeting.\n",
@@ -73,7 +71,9 @@ final class ProtobufToCodeGenParserTests: XCTestCase {
       inputType: "HelloRequest",
       outputType: "HelloReply"
     )
-    XCTAssertEqual(parsedCodeGenRequest.services[0].methods[0], expectedMethod)
+    guard let method = parsedCodeGenRequest.services.first?.methods.first else { return XCTFail() }
+    XCTAssertEqual(method, expectedMethod)
+
     let expectedService = CodeGenerationRequest.ServiceDescriptor(
       documentation: "/// The greeting service definition.\n",
       name: CodeGenerationRequest.Name(
@@ -88,7 +88,10 @@ final class ProtobufToCodeGenParserTests: XCTestCase {
       ),
       methods: [expectedMethod]
     )
-    XCTAssertEqual(parsedCodeGenRequest.services[0], expectedService)
+    guard let service = parsedCodeGenRequest.services.first else { return XCTFail() }
+    XCTAssertEqual(service, expectedService)
+    XCTAssertEqual(service.methods.count, 1)
+
     XCTAssertEqual(
       parsedCodeGenRequest.lookupSerializer("HelloRequest"),
       "ProtobufSerializer<HelloRequest>()"
