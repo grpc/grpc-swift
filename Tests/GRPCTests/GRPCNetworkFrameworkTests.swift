@@ -235,7 +235,6 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
       let _ = try await echo.get(.with { $0.text = "ignored" })
     } catch let error as GRPCConnectionPoolError {
       XCTAssertEqual(error.code, .deadlineExceeded)
-      print(error)
       XCTAssert(error.underlyingError is NWError)
     } catch {
       XCTFail("Expected GRPCConnectionPoolError")
