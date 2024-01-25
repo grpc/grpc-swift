@@ -104,6 +104,8 @@ extension FileDescriptor {
     var header = String()
     // Field number used to collect the syntax field which is usually the first
     // declaration in a.proto file.
+    // See more here:
+    // https://github.com/apple/swift-protobuf/blob/main/Protos/SwiftProtobuf/google/protobuf/descriptor.proto
     let syntaxPath = IndexPath(index: 12)
     if let syntaxLocation = self.sourceCodeInfoLocation(path: syntaxPath) {
       header = syntaxLocation.asSourceComment(
