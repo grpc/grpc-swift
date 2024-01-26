@@ -71,6 +71,31 @@ final class GRPCMessageDeframerTests: XCTestCase {
     }
   }
 
+  func testReadMessageOverSizeLimitButWithoutActualMessageBytes() throws {
+    let deframer = GRPCMessageDeframer(maximumPayloadSize: 100)
+    let processor = NIOSingleStepByteToMessageProcessor(deframer)
+
+    var buffer = ByteBuffer()
+    buffer.writeInteger(UInt8(0))
+    // Set the message length field to be over the maximum payload size, but
+    // don't write the actual message bytes. This is to ensure that the payload
+    // size limit is enforced _before_ the payload is actually read.
+    buffer.writeInteger(UInt32(101))
+
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try processor.process(buffer: buffer) { _ in
+        XCTFail("No message should be produced.")
+      }
+    ) { error in
+      XCTAssertEqual(error.code, .resourceExhausted)
+      XCTAssertEqual(
+        error.message,
+        "Message has exceeded the configured maximum payload size (max: 100, actual: 101)"
+      )
+    }
+  }
+
   func testCompressedMessageWithoutConfiguringDecompressor() throws {
     let deframer = GRPCMessageDeframer(maximumPayloadSize: 100)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
