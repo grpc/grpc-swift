@@ -54,14 +54,31 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
 
     // Store the current reader index in case we don't yet have enough
     // bytes in the buffer to decode a full frame, and need to reset it.
+    // The force-unwraps for the compression flag and message length are safe,
+    // because we've checked just above that we've got at least enough bytes to
+    // read all of the metadata.
     let originalReaderIndex = buffer.readerIndex
     let isMessageCompressed = buffer.readInteger(as: UInt8.self)! == 1
+    let messageLength = buffer.readInteger(as: UInt32.self)!
 
-    guard var message = buffer.readLengthPrefixedSlice(as: UInt32.self) else {
-      // We have moved the reader index, but we don't have enough bytes to
-      // read the full message payload, so reset it to its previous, original
-      // position for now, and return. We'll try decoding again, once more
-      // bytes become available in our buffer.
+    if messageLength > self.maximumPayloadSize {
+      throw RPCError(
+        code: .resourceExhausted,
+        message: """
+          Message has exceeded the configured maximum payload size \
+          (max: \(self.maximumPayloadSize), actual: \(messageLength))
+          """
+      )
+    }
+
+    guard var message = buffer.readSlice(length: Int(messageLength)) else {
+      // `ByteBuffer/readSlice(length:)` returns nil when there are not enough
+      // bytes to read the requested length. This can happen if we don't yet have
+      // enough bytes buffered to read the full message payload.
+      // By reading the metadata though, we have already moved the reader index,
+      // so we must reset it to its previous, original position for now,
+      // and return. We'll try decoding again, once more bytes become available
+      // in our buffer.
       buffer.moveReaderIndex(to: originalReaderIndex)
       return nil
     }
@@ -76,13 +93,6 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
       }
       return try decompressor.decompress(&message, limit: self.maximumPayloadSize)
     } else {
-      if message.readableBytes > self.maximumPayloadSize {
-        throw RPCError(
-          code: .resourceExhausted,
-          message:
-            "Message has exceeded the configured maximum payload size (max: \(self.maximumPayloadSize), actual: \(message.readableBytes))"
-        )
-      }
       return Array(buffer: message)
     }
   }

@@ -77,8 +77,8 @@ final class GRPCMessageDeframerTests: XCTestCase {
 
     var buffer = ByteBuffer()
     buffer.writeInteger(UInt8(1))
-    buffer.writeInteger(UInt32(101))
-    buffer.writeRepeatingByte(42, count: 101)
+    buffer.writeInteger(UInt32(10))
+    buffer.writeRepeatingByte(42, count: 10)
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
@@ -130,7 +130,36 @@ final class GRPCMessageDeframerTests: XCTestCase {
     try self.testReadMultipleMessagesWithCompression(method: .gzip)
   }
 
-  private func testReadMessageOverSizeLimitWithCompression(method: Zlib.Method) throws {
+  func testReadCompressedMessageOverSizeLimitBeforeDecompressing() throws {
+    let deframer = GRPCMessageDeframer(maximumPayloadSize: 1)
+    let processor = NIOSingleStepByteToMessageProcessor(deframer)
+    let compressor = Zlib.Compressor(method: .gzip)
+    var framer = GRPCMessageFramer()
+    defer {
+      compressor.end()
+    }
+
+    framer.append(Array(repeating: 42, count: 100))
+    let framedMessage = try framer.next(compressor: compressor)!
+
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try processor.process(buffer: framedMessage) { _ in
+        XCTFail("No message should be produced.")
+      }
+    ) { error in
+      XCTAssertEqual(error.code, .resourceExhausted)
+      XCTAssertEqual(
+        error.message,
+        """
+        Message has exceeded the configured maximum payload size \
+        (max: 1, actual: \(framedMessage.readableBytes - GRPCMessageDeframer.metadataLength))
+        """
+      )
+    }
+  }
+
+  private func testReadDecompressedMessageOverSizeLimit(method: Zlib.Method) throws {
     let decompressor = Zlib.Decompressor(method: method)
     let deframer = GRPCMessageDeframer(maximumPayloadSize: 100, decompressor: decompressor)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
@@ -155,11 +184,11 @@ final class GRPCMessageDeframerTests: XCTestCase {
     }
   }
 
-  func testReadMessageOverSizeLimitWithDeflateCompression() throws {
-    try self.testReadMessageOverSizeLimitWithCompression(method: .deflate)
+  func testReadDecompressedMessageOverSizeLimitWithDeflateCompression() throws {
+    try self.testReadDecompressedMessageOverSizeLimit(method: .deflate)
   }
 
-  func testReadMessageOverSizeLimitWithGZIPCompression() throws {
-    try self.testReadMessageOverSizeLimitWithCompression(method: .gzip)
+  func testReadDecompressedMessageOverSizeLimitWithGZIPCompression() throws {
+    try self.testReadDecompressedMessageOverSizeLimit(method: .gzip)
   }
 }
