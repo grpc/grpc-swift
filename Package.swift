@@ -614,7 +614,6 @@ extension Target {
     dependencies: [
       .grpcCore,
       .protobuf,
-      .protobufPluginLibrary
     ],
     path: "Sources/GRPCProtobuf"
   )
