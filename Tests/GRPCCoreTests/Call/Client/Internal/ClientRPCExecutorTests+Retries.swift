@@ -38,7 +38,11 @@ extension ClientRPCExecutorTests {
   }
 
   func testRetriesEventuallySucceed() async throws {
-    let harness = self.makeHarnessForRetries(rejectUntilAttempt: 3, withCode: .unavailable)
+    let harness = self.makeHarnessForRetries(
+      rejectUntilAttempt: 3,
+      withCode: .unavailable,
+      consumeInboundStream: true
+    )
     try await harness.bidirectional(
       request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
         try await $0.write([0])
