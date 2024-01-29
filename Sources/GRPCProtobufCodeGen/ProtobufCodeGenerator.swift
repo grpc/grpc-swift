@@ -15,7 +15,6 @@
  */
 
 import GRPCCodeGen
-import GRPCProtobuf
 import SwiftProtobufPluginLibrary
 
 public struct ProtobufCodeGenerator {

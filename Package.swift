@@ -237,7 +237,6 @@ extension Target {
       .protobuf,
       .protobufPluginLibrary,
       .grpcCodeGen,
-      .grpcProtobuf,
       .grpcProtobufCodeGen
     ],
     exclude: [

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#if os(macOS) || os(Linux)  // swift-format doesn't like canImport(Foundation.Process)
+
 import GRPCCodeGen
 import GRPCProtobufCodeGen
 import XCTest
@@ -419,3 +421,5 @@ internal func XCTAssertEqualWithDiff(
     line: line
   )
 }
+
+#endif  // os(macOS) || os(Linux)
