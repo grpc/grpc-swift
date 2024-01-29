@@ -27,17 +27,12 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
     return ClientConnectionHandler.StateMachine(allowKeepAliveWithoutCalls: keepAliveWithoutCalls)
   }
 
-  func testCloseAllStreamsWhenActive() {
-    var state = self.makeStateMachine()
-    state.streamOpened(1)
-    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepAlive: true))
-  }
-
   func testCloseSomeStreamsWhenActive() {
     var state = self.makeStateMachine()
     state.streamOpened(1)
     state.streamOpened(2)
     XCTAssertEqual(state.streamClosed(2), .none)
+    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepAlive: true))
   }
 
   func testCloseSomeStreamsWhenClosing() {
