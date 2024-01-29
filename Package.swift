@@ -128,6 +128,7 @@ extension Target.Dependency {
     name: "NIOTransportServices",
     package: "swift-nio-transport-services"
   )
+  static let nioTestUtils: Self = .product(name: "NIOTestUtils", package: "swift-nio")
   static let logging: Self = .product(name: "Logging", package: "swift-log")
   static let protobuf: Self = .product(name: "SwiftProtobuf", package: "swift-protobuf")
   static let protobufPluginLibrary: Self = .product(
@@ -312,6 +313,7 @@ extension Target {
       .nioCore,
       .nioHTTP2,
       .nioEmbedded,
+      .nioTestUtils,
     ]
   )
   
