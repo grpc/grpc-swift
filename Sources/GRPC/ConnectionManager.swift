@@ -1011,9 +1011,22 @@ extension ConnectionManager {
     switch self.state {
     case .idle:
       let iterator = self.connectionBackoff?.makeIterator()
+
+      // The iterator produces the connect timeout and the backoff to use for the next attempt. This
+      // is unfortunate if retries is set to none because we need to connect timeout but not the
+      // backoff yet the iterator will not return a value to us. To workaround this we grab the
+      // connect timeout and override it.
+      let connectTimeoutOverride: TimeAmount?
+      if let backoff = self.connectionBackoff, backoff.retries == .none {
+        connectTimeoutOverride = .seconds(timeInterval: backoff.minimumConnectionTimeout)
+      } else {
+        connectTimeoutOverride = nil
+      }
+
       self.startConnecting(
         backoffIterator: iterator,
-        muxPromise: self.eventLoop.makePromise()
+        muxPromise: self.eventLoop.makePromise(),
+        connectTimeoutOverride: connectTimeoutOverride
       )
 
     case let .transientFailure(pending):
@@ -1039,7 +1052,8 @@ extension ConnectionManager {
 
   private func startConnecting(
     backoffIterator: ConnectionBackoffIterator?,
-    muxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
+    muxPromise: EventLoopPromise<HTTP2StreamMultiplexer>,
+    connectTimeoutOverride: TimeAmount? = nil
   ) {
     let timeoutAndBackoff = backoffIterator?.next()
 
@@ -1048,10 +1062,17 @@ extension ConnectionManager {
     self.eventLoop.assertInEventLoop()
 
     let candidate: EventLoopFuture<Channel> = self.eventLoop.flatSubmit {
+      let connectTimeout: TimeAmount?
+      if let connectTimeoutOverride = connectTimeoutOverride {
+        connectTimeout = connectTimeoutOverride
+      } else {
+        connectTimeout = timeoutAndBackoff.map { TimeAmount.seconds(timeInterval: $0.timeout) }
+      }
+
       let channel: EventLoopFuture<Channel> = self.channelProvider.makeChannel(
         managedBy: self,
         onEventLoop: self.eventLoop,
-        connectTimeout: timeoutAndBackoff.map { .seconds(timeInterval: $0.timeout) },
+        connectTimeout: connectTimeout,
         logger: self.logger
       )
 

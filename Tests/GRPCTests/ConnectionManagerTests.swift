@@ -1357,6 +1357,51 @@ extension ConnectionManagerTests {
     XCTAssertGreaterThan(keepalive.interval, .seconds(1))
     XCTAssertLessThanOrEqual(keepalive.interval, .seconds(4))
   }
+
+  func testConnectTimeoutIsRespectedWithNoRetries() {
+    // Setup a factory which makes channels. We'll use this as the point to check that the
+    // connect timeout is as expected.
+    struct Provider: ConnectionManagerChannelProvider {
+      func makeChannel(
+        managedBy connectionManager: ConnectionManager,
+        onEventLoop eventLoop: any EventLoop,
+        connectTimeout: TimeAmount?,
+        logger: Logger
+      ) -> EventLoopFuture<Channel> {
+        XCTAssertEqual(connectTimeout, .seconds(314_159_265))
+        return eventLoop.makeFailedFuture(DoomedChannelError())
+      }
+    }
+
+    var configuration = self.defaultConfiguration
+    configuration.connectionBackoff = ConnectionBackoff(
+      minimumConnectionTimeout: 314_159_265,
+      retries: .none
+    )
+
+    let manager = ConnectionManager(
+      configuration: configuration,
+      channelProvider: Provider(),
+      connectivityDelegate: self.monitor,
+      logger: self.logger
+    )
+
+    // Setup the state change expectations and trigger them by asking for the multiplexer.
+    // We expect connecting to shutdown as no connect retries are configured and the factory
+    // always returns errors.
+    let multiplexer = self.waitForStateChanges([
+      Change(from: .idle, to: .connecting),
+      Change(from: .connecting, to: .shutdown),
+    ]) {
+      let multiplexer = manager.getHTTP2Multiplexer()
+      self.loop.run()
+      return multiplexer
+    }
+
+    XCTAssertThrowsError(try multiplexer.wait()) { error in
+      XCTAssert(error is DoomedChannelError)
+    }
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {
