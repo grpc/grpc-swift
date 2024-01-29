@@ -94,6 +94,7 @@ extension Target.Dependency {
   static let reflectionService: Self = .target(name: "GRPCReflectionService")
   static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
   static let grpcProtobuf: Self = .target(name: "GRPCProtobuf")
+  static let grpcProtobufCodeGen: Self = .target(name: "GRPCProtobufCodeGen")
 
   // Target dependencies; internal
   static let grpcSampleData: Self = .target(name: "GRPCSampleData")
@@ -235,6 +236,7 @@ extension Target {
     dependencies: [
       .protobuf,
       .protobufPluginLibrary,
+      .grpcCodeGen
     ],
     exclude: [
       "README.md",
@@ -341,9 +343,19 @@ extension Target {
   static let grpcProtobufTests: Target = .testTarget(
     name: "GRPCProtobufTests",
     dependencies: [
-      .grpcCore,
       .grpcProtobuf,
+      .grpcCore,
       .protobuf
+    ]
+  )
+  
+  static let grpcProtobufCodeGenTests: Target = .testTarget(
+    name: "GRPCProtobufCodeGenTests",
+    dependencies: [
+      .grpcCodeGen,
+      .grpcProtobufCodeGen,
+      .protobuf,
+      .protobufPluginLibrary
     ]
   )
   
@@ -601,9 +613,18 @@ extension Target {
     name: "GRPCProtobuf",
     dependencies: [
       .grpcCore,
-      .protobuf
+      .protobuf,
     ],
     path: "Sources/GRPCProtobuf"
+  )
+  static let grpcProtobufCodeGen: Target = .target(
+    name: "GRPCProtobufCodeGen",
+    dependencies: [
+      .protobuf,
+      .protobufPluginLibrary,
+      .grpcCodeGen
+    ],
+    path: "Sources/GRPCProtobufCodeGen"
   )
 }
 
@@ -693,6 +714,7 @@ let package = Package(
     .grpcHTTP2TransportNIOPosix,
     .grpcHTTP2TransportNIOTransportServices,
     .grpcProtobuf,
+    .grpcProtobufCodeGen,
 
     // v2 tests
     .grpcCoreTests,
@@ -702,7 +724,8 @@ let package = Package(
     .grpcHTTP2CoreTests,
     .grpcHTTP2TransportNIOPosixTests,
     .grpcHTTP2TransportNIOTransportServicesTests,
-    .grpcProtobufTests
+    .grpcProtobufTests,
+    .grpcProtobufCodeGenTests
   ]
 )
 
