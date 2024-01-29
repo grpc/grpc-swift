@@ -147,7 +147,7 @@ struct TextBasedRenderer: RendererProtocol {
   /// Renders the specified comment.
   func renderComment(_ comment: Comment) {
     let prefix: String
-    let commentString: String
+    var commentString: String
     switch comment {
     case .inline(let string):
       prefix = "//"
@@ -166,6 +166,7 @@ struct TextBasedRenderer: RendererProtocol {
       commentString = string
     }
     if prefix.isEmpty {
+      while commentString.hasSuffix("\n") { commentString.removeLast() }
       writer.writeLine(commentString)
     } else {
       let lines = commentString.transformingLines { line in
@@ -177,10 +178,18 @@ struct TextBasedRenderer: RendererProtocol {
   }
 
   /// Renders the specified import statements.
-  func renderImports(_ imports: [ImportDescription]?) { (imports ?? []).forEach(renderImport) }
+  func renderImports(_ imports: [ImportDescription]?) {
+    for (`import`, isLast) in (imports ?? []).enumeratedWithLastMarker() {
+      renderImport(`import`, isLast: isLast)
+      if isLast {
+        writer.nextLineAppendsToLastLine()
+        writer.writeLine("\n")
+      }
+    }
+  }
 
   /// Renders a single import statement.
-  func renderImport(_ description: ImportDescription) {
+  func renderImport(_ description: ImportDescription, isLast: Bool) {
     func render(preconcurrency: Bool) {
       let spiPrefix = description.spi.map { "@_spi(\($0)) " } ?? ""
       let preconcurrencyPrefix = preconcurrency ? "@preconcurrency " : ""

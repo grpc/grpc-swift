@@ -66,6 +66,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       import let Foo.Baq
       import var Foo.Bag
       import func Foo.Bak
+
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
@@ -101,6 +102,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       #else
       import Baz
       #endif
+
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
@@ -126,6 +128,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       import GRPCCore
       @_spi(Secret) import Foo
       @_spi(Secret) import enum Foo.Bar
+
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
