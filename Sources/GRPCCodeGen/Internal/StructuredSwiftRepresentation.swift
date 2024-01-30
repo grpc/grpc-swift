@@ -1441,9 +1441,8 @@ extension CodeBlock {
     CodeBlock(item: .expression(expression))
   }
 
-  /// Returns a new code block wrapping an empty line.
-  /// - Returns: A new `CodeBlock` instance containing a blank line.
-  static func emptyLine() -> Self {
+  /// A new code block wrapping an empty line.
+  static var emptyLine: Self {
     CodeBlock(item: .emptyLine)
   }
 }

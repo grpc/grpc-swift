@@ -96,6 +96,15 @@ final class Test_TextBasedRenderer: XCTestCase {
         /// Lorem ipsum
         """
     )
+    try _test(
+      .preFormatted("/// Lorem ipsum\n\n/// Lorem ipsum\n"),
+      renderedBy: TextBasedRenderer.renderComment,
+      rendersAs: """
+        /// Lorem ipsum
+
+        /// Lorem ipsum
+        """
+    )
   }
 
   func testImports() throws {
@@ -359,6 +368,16 @@ final class Test_TextBasedRenderer: XCTestCase {
       renderedBy: TextBasedRenderer.renderDeclaration,
       rendersAs: #"""
         func foo() {}
+        """#
+    )
+  }
+
+  func testEmptyLine() throws {
+    try _test(
+      .emptyLine,
+      renderedBy: TextBasedRenderer.renderCodeBlockItem(_:),
+      rendersAs: #"""
+
         """#
     )
   }

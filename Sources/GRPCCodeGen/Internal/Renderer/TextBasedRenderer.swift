@@ -98,15 +98,10 @@ final class StringCodeWriter {
   }
 
   /// Sets a flag on the writer so that the next call to `writeLine` continues
-  /// the last stored line instead of starting a new line.
+  /// the last stored line or starts on a new line.
   ///
   /// Safe to call repeatedly, it gets reset by `writeLine`.
-  func nextLineAppendsToLastLine() { nextWriteAppendsToLastLine = true }
-
-  /// Sets a flag on the writer so that the next call to `writeLine` starts on a new line.
-  ///
-  /// Safe to call repeatedly, it gets reset by `writeLine`.
-  func nextLineOnNewLine() { nextWriteAppendsToLastLine = false }
+  func nextLineAppendsToLastLine(_ append: Bool = true) { nextWriteAppendsToLastLine = append }
 }
 
 /// A renderer that uses string interpolation and concatenation
@@ -152,7 +147,7 @@ struct TextBasedRenderer: RendererProtocol {
   /// Renders the specified comment.
   func renderComment(_ comment: Comment) {
     let prefix: String
-    var commentString: String
+    let commentString: String
     switch comment {
     case .inline(let string):
       prefix = "//"
@@ -171,17 +166,13 @@ struct TextBasedRenderer: RendererProtocol {
       commentString = string
     }
 
-    let lines = commentString.transformingLines { line in
-      if line.isEmpty {
-        if !prefix.isEmpty {
-          return prefix
-        } else {
-          // A blank line that should be dropped - pre formatted documentation
-          // might contain such lines.
-          return nil
-        }
+    let lines = commentString.transformingLines { line, isLast in
+      // The last line of a comment that is blank should be dropped.
+      // Pre formatted documentation might contain such lines.
+      if line.isEmpty && prefix.isEmpty && isLast {
+        return nil
       } else {
-        let formattedPrefix = !prefix.isEmpty ? "\(prefix) " : prefix
+        let formattedPrefix = !prefix.isEmpty && !line.isEmpty ? "\(prefix) " : prefix
         return "\(formattedPrefix)\(line)"
       }
     }
@@ -1061,7 +1052,7 @@ struct TextBasedRenderer: RendererProtocol {
     switch description {
     case .declaration(let declaration): renderDeclaration(declaration)
     case .expression(let expression): renderExpression(expression)
-    case .emptyLine: writer.nextLineOnNewLine()
+    case .emptyLine: writer.nextLineAppendsToLastLine(false)
     }
   }
 
@@ -1108,8 +1099,8 @@ extension String {
   /// The closure takes a string representing one line as a parameter.
   /// - Parameter work: The closure that transforms each line.
   /// - Returns: A new string where each line has been transformed using the given closure.
-  fileprivate func transformingLines(_ work: (String) -> String?) -> [String] {
-    asLines().compactMap(work)
+  fileprivate func transformingLines(_ work: (String, Bool) -> String?) -> [String] {
+    asLines().enumeratedWithLastMarker().compactMap(work)
   }
 }
 
