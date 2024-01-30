@@ -106,7 +106,6 @@ final class Test_TextBasedRenderer: XCTestCase {
       rendersAs: #"""
         import Foo
         import Bar
-
         """#
     )
     try _test(
@@ -114,7 +113,6 @@ final class Test_TextBasedRenderer: XCTestCase {
       renderedBy: TextBasedRenderer.renderImports,
       rendersAs: #"""
         @_spi(Secret) import Foo
-
         """#
     )
     try _test(
@@ -126,7 +124,6 @@ final class Test_TextBasedRenderer: XCTestCase {
         #else
         import Foo
         #endif
-
         """#
     )
     try _test(
@@ -138,7 +135,6 @@ final class Test_TextBasedRenderer: XCTestCase {
       rendersAs: #"""
         @preconcurrency import Foo
         @preconcurrency @_spi(Secret) import Bar
-
         """#
     )
 
@@ -193,7 +189,6 @@ final class Test_TextBasedRenderer: XCTestCase {
         import func Foo.Bak
         @_spi(Secret) import func Foo.SecretBar
         @preconcurrency import func Foo.PreconcurrencyBar
-
         """#
     )
   }
@@ -838,7 +833,6 @@ final class Test_TextBasedRenderer: XCTestCase {
       rendersAs: #"""
         // hi
         import Foo
-
         struct Bar {}
 
         """#
@@ -861,7 +855,6 @@ final class Test_TextBasedRenderer: XCTestCase {
       rendersAs: #"""
         // hi
         import Foo
-
         struct Bar {
           struct Baz {}
         }

@@ -102,6 +102,11 @@ final class StringCodeWriter {
   ///
   /// Safe to call repeatedly, it gets reset by `writeLine`.
   func nextLineAppendsToLastLine() { nextWriteAppendsToLastLine = true }
+
+  /// Sets a flag on the writer so that the next call to `writeLine` starts a new line.
+  ///
+  /// Safe to call repeatedly, it gets reset by `writeLine`.
+  func nextLineOnNewLine() { nextWriteAppendsToLastLine = false }
 }
 
 /// A renderer that uses string interpolation and concatenation
@@ -165,31 +170,29 @@ struct TextBasedRenderer: RendererProtocol {
       prefix = ""
       commentString = string
     }
-    if prefix.isEmpty {
-      while commentString.hasSuffix("\n") { commentString.removeLast() }
-      writer.writeLine(commentString)
-    } else {
-      let lines = commentString.transformingLines { line in
-        if line.isEmpty { return prefix }
-        return "\(prefix) \(line)"
+
+    let lines = commentString.transformingLines { line in
+      if line.isEmpty {
+        if !prefix.isEmpty {
+          return prefix
+        } else {
+          // A blank line that should be dropped - pre formatted documentation
+          // might contain such lines.
+          return nil
+        }
+      } else {
+        let formattedPrefix = !prefix.isEmpty ? "\(prefix) " : prefix
+        return "\(formattedPrefix)\(line)"
       }
-      lines.forEach(writer.writeLine)
     }
+    lines.forEach(writer.writeLine)
   }
 
   /// Renders the specified import statements.
-  func renderImports(_ imports: [ImportDescription]?) {
-    for (`import`, isLast) in (imports ?? []).enumeratedWithLastMarker() {
-      renderImport(`import`, isLast: isLast)
-      if isLast {
-        writer.nextLineAppendsToLastLine()
-        writer.writeLine("\n")
-      }
-    }
-  }
+  func renderImports(_ imports: [ImportDescription]?) { (imports ?? []).forEach(renderImport) }
 
   /// Renders a single import statement.
-  func renderImport(_ description: ImportDescription, isLast: Bool) {
+  func renderImport(_ description: ImportDescription) {
     func render(preconcurrency: Bool) {
       let spiPrefix = description.spi.map { "@_spi(\($0)) " } ?? ""
       let preconcurrencyPrefix = preconcurrency ? "@preconcurrency " : ""
@@ -1058,6 +1061,7 @@ struct TextBasedRenderer: RendererProtocol {
     switch description {
     case .declaration(let declaration): renderDeclaration(declaration)
     case .expression(let expression): renderExpression(expression)
+    case .emptyLine: writer.nextLineOnNewLine()
     }
   }
 
@@ -1104,7 +1108,9 @@ extension String {
   /// The closure takes a string representing one line as a parameter.
   /// - Parameter work: The closure that transforms each line.
   /// - Returns: A new string where each line has been transformed using the given closure.
-  fileprivate func transformingLines(_ work: (String) -> String) -> [String] { asLines().map(work) }
+  fileprivate func transformingLines(_ work: (String) -> String?) -> [String] {
+    asLines().compactMap(work)
+  }
 }
 
 extension TextBasedRenderer {
