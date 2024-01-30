@@ -103,7 +103,7 @@ final class StringCodeWriter {
   /// Safe to call repeatedly, it gets reset by `writeLine`.
   func nextLineAppendsToLastLine() { nextWriteAppendsToLastLine = true }
 
-  /// Sets a flag on the writer so that the next call to `writeLine` starts a new line.
+  /// Sets a flag on the writer so that the next call to `writeLine` starts on a new line.
   ///
   /// Safe to call repeatedly, it gets reset by `writeLine`.
   func nextLineOnNewLine() { nextWriteAppendsToLastLine = false }

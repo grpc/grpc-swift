@@ -1446,7 +1446,6 @@ extension CodeBlock {
   static func emptyLine() -> Self {
     CodeBlock(item: .emptyLine)
   }
-
 }
 
 extension Expression {
