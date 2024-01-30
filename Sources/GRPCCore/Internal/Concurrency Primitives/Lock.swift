@@ -253,6 +253,40 @@ public struct _LockedValueBox<Value> {
   public func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
     return try self.storage.withLockedValue(mutate)
   }
+
+  /// An unsafe view over the locked value box.
+  ///
+  /// Prefer ``withLockedValue(_:)`` where possible.
+  public var unsafe: Unsafe {
+    Unsafe(storage: self.storage)
+  }
+
+  public struct Unsafe {
+    @usableFromInline
+    let storage: LockStorage<Value>
+
+    /// Manually acquire the lock.
+    @inlinable
+    public func lock() {
+      self.storage.lock()
+    }
+
+    /// Manually release the lock.
+    @inlinable
+    public func unlock() {
+      self.storage.unlock()
+    }
+
+    /// Mutate the value, assuming the lock has been acquired manually.
+    @inlinable
+    public func withValueAssumingLockIsAcquired<T>(
+      _ mutate: (inout Value) throws -> T
+    ) rethrows -> T {
+      return try self.storage.withUnsafeMutablePointerToHeader { value in
+        try mutate(&value.pointee)
+      }
+    }
+  }
 }
 
 extension _LockedValueBox: Sendable where Value: Sendable {}

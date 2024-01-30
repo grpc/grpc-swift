@@ -261,19 +261,25 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   func nextElement(
     forSubscriber id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
   ) async throws -> Element? {
-    let onNext = self._state.withLockedValue { $0.nextElement(forSubscriber: id) }
+    return try await withTaskCancellationHandler {
+      self._state.unsafe.lock()
+      let onNext = self._state.unsafe.withValueAssumingLockIsAcquired {
+        $0.nextElement(forSubscriber: id)
+      }
 
-    switch onNext {
-    case .return(let returnAndProduceMore):
-      returnAndProduceMore.producers.resume()
-      return try returnAndProduceMore.nextResult.get()
+      switch onNext {
+      case .return(let returnAndProduceMore):
+        self._state.unsafe.unlock()
+        returnAndProduceMore.producers.resume()
+        return try returnAndProduceMore.nextResult.get()
 
-    case .suspend:
-      return try await withTaskCancellationHandler {
+      case .suspend:
         return try await withCheckedThrowingContinuation { continuation in
-          let onSetContinuation = self._state.withLockedValue { state in
+          let onSetContinuation = self._state.unsafe.withValueAssumingLockIsAcquired { state in
             state.setContinuation(continuation, forSubscription: id)
           }
+
+          self._state.unsafe.unlock()
 
           switch onSetContinuation {
           case .resume(let continuation, let result):
@@ -282,17 +288,17 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
             ()
           }
         }
-      } onCancel: {
-        let onCancel = self._state.withLockedValue { state in
-          state.cancelSubscription(withID: id)
-        }
+      }
+    } onCancel: {
+      let onCancel = self._state.withLockedValue { state in
+        state.cancelSubscription(withID: id)
+      }
 
-        switch onCancel {
-        case .resume(let continuation, let result):
-          continuation.resume(with: result)
-        case .none:
-          ()
-        }
+      switch onCancel {
+      case .resume(let continuation, let result):
+        continuation.resume(with: result)
+      case .none:
+        ()
       }
     }
   }
@@ -572,9 +578,18 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
               self.producerToken += 1
               onYield = .suspend(token)
             } else {
-              // No consumers are slow. Remove the oldest value.
+              // No consumers are slow, some subscribers exist, a subset of which are waiting
+              // for a value. Drop the oldest value and resume the fastest consumers.
               self.elements.removeFirst()
-              onYield = .none
+              let continuations = self.subscriptions.takeContinuations().map {
+                ConsumerContinuations(continuations: $0, result: .success(element))
+              }
+
+              if let continuations = continuations {
+                onYield = .resume(continuations)
+              } else {
+                onYield = .none
+              }
             }
 
           case self.subscriptions.count:
