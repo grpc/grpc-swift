@@ -116,25 +116,6 @@ func printVersion(args: [String]) {
   print("\(program) \(Version.versionString)")
 }
 
-func convertOptionsToSourceGeneratortConfiguration(
-  _ options: GeneratorOptions
-) -> SourceGenerator.Configuration {
-  let accessLevel: SourceGenerator.Configuration.AccessLevel
-  switch options.visibility {
-  case .internal:
-    accessLevel = .internal
-  case .package:
-    accessLevel = .package
-  case .public:
-    accessLevel = .public
-  }
-  return SourceGenerator.Configuration(
-    accessLevel: accessLevel,
-    client: options.generateClient,
-    server: options.generateServer
-  )
-}
-
 func main(args: [String]) throws {
   if args.dropFirst().contains("--version") {
     printVersion(args: args)
@@ -189,10 +170,9 @@ func main(args: [String]) throws {
         )
         if options.v2 {
           let grpcGenerator = ProtobufCodeGenerator(
-            configs: convertOptionsToSourceGeneratortConfiguration(options),
-            file: fileDescriptor
+            configuration: SourceGenerator.Configuration(options: options)
           )
-          grpcFile.content = try grpcGenerator.generateCode()
+          grpcFile.content = try grpcGenerator.generateCode(from: fileDescriptor)
         } else {
           let grpcGenerator = Generator(fileDescriptor, options: options)
           grpcFile.content = grpcGenerator.code
@@ -212,4 +192,23 @@ do {
   try main(args: CommandLine.arguments)
 } catch {
   Log("ERROR: \(error)")
+}
+
+extension SourceGenerator.Configuration {
+  init(options: GeneratorOptions) {
+    let accessLevel: SourceGenerator.Configuration.AccessLevel
+    switch options.visibility {
+    case .internal:
+      accessLevel = .internal
+    case .package:
+      accessLevel = .package
+    case .public:
+      accessLevel = .public
+    }
+    self.init(
+      accessLevel: accessLevel,
+      client: options.generateClient,
+      server: options.generateServer
+    )
+  }
 }

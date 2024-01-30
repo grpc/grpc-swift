@@ -35,7 +35,7 @@ public struct SourceGenerator: Sendable {
     /// Whether or not server code should be generated.
     public var server: Bool
 
-    public init(accessLevel: AccessLevel, indentation: Int = 4, client: Bool, server: Bool) {
+    public init(accessLevel: AccessLevel, client: Bool, server: Bool, indentation: Int = 4) {
       self.accessLevel = accessLevel
       self.indentation = indentation
       self.client = client

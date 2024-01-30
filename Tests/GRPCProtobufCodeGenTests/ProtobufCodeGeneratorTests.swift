@@ -18,6 +18,8 @@
 
 import GRPCCodeGen
 import GRPCProtobufCodeGen
+import SwiftProtobuf
+import SwiftProtobufPluginLibrary
 import XCTest
 
 final class ProtobufCodeGeneratorTests: XCTestCase {
@@ -375,12 +377,20 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
   ) throws {
     let configs = SourceGenerator.Configuration(
       accessLevel: visibility,
-      indentation: indentation,
       client: client,
-      server: server
+      server: server,
+      indentation: indentation
     )
-    let generator = ProtobufCodeGenerator(configs: configs, file: helloWorldFileDescriptor)
-    try XCTAssertEqualWithDiff(try generator.generateCode(), expectedCode)
+    let descriptorSet = DescriptorSet(protos: [Google_Protobuf_FileDescriptorProto.helloWorld])
+    guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
+      return XCTFail(
+        """
+        Could not find the file descriptor of "helloworld.proto".
+        """
+      )
+    }
+    let generator = ProtobufCodeGenerator(configuration: configs)
+    try XCTAssertEqualWithDiff(try generator.generateCode(from: fileDescriptor), expectedCode)
   }
 }
 

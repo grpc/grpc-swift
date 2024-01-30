@@ -18,19 +18,17 @@ import GRPCCodeGen
 import SwiftProtobufPluginLibrary
 
 public struct ProtobufCodeGenerator {
-  internal var configs: SourceGenerator.Configuration
-  internal var file: FileDescriptor
+  internal var configuration: SourceGenerator.Configuration
 
-  public init(configs: SourceGenerator.Configuration, file: FileDescriptor) {
-    self.configs = configs
-    self.file = file
+  public init(configuration: SourceGenerator.Configuration) {
+    self.configuration = configuration
   }
 
-  public func generateCode() throws -> String {
+  public func generateCode(from fileDescriptor: FileDescriptor) throws -> String {
     let parser = ProtobufCodeGenParser()
-    let sourceGenerator = SourceGenerator(configuration: self.configs)
+    let sourceGenerator = SourceGenerator(configuration: self.configuration)
 
-    let codeGenerationRequest = try parser.parse(input: file)
+    let codeGenerationRequest = try parser.parse(input: fileDescriptor)
     let sourceFile = try sourceGenerator.generate(codeGenerationRequest)
     return sourceFile.contents
   }

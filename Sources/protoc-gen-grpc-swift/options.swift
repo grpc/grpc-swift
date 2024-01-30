@@ -155,7 +155,7 @@ final class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
-      case "V2":
+      case "_V2":
         if let value = Bool(pair.value) {
           self.v2 = value
         } else {
