@@ -136,8 +136,14 @@ struct TextBasedRenderer: RendererProtocol {
 
   /// Renders the specified Swift file.
   func renderFile(_ description: FileDescription) {
-    if let topComment = description.topComment { renderComment(topComment) }
-    if let imports = description.imports { renderImports(imports) }
+    if let topComment = description.topComment {
+      renderComment(topComment)
+      writer.writeLine("")
+    }
+    if let imports = description.imports {
+      renderImports(imports)
+      writer.writeLine("")
+    }
     for codeBlock in description.codeBlocks {
       renderCodeBlock(codeBlock)
       writer.writeLine("")
@@ -165,15 +171,18 @@ struct TextBasedRenderer: RendererProtocol {
       prefix = ""
       commentString = string
     }
-    if prefix.isEmpty {
-      writer.writeLine(commentString)
-    } else {
-      let lines = commentString.transformingLines { line in
-        if line.isEmpty { return prefix }
-        return "\(prefix) \(line)"
+
+    let lines = commentString.transformingLines { line, isLast in
+      // The last line of a comment that is blank should be dropped.
+      // Pre formatted documentation might contain such lines.
+      if line.isEmpty && prefix.isEmpty && isLast {
+        return nil
+      } else {
+        let formattedPrefix = !prefix.isEmpty && !line.isEmpty ? "\(prefix) " : prefix
+        return "\(formattedPrefix)\(line)"
       }
-      lines.forEach(writer.writeLine)
     }
+    lines.forEach(writer.writeLine)
   }
 
   /// Renders the specified import statements.
@@ -1095,7 +1104,9 @@ extension String {
   /// The closure takes a string representing one line as a parameter.
   /// - Parameter work: The closure that transforms each line.
   /// - Returns: A new string where each line has been transformed using the given closure.
-  fileprivate func transformingLines(_ work: (String) -> String) -> [String] { asLines().map(work) }
+  fileprivate func transformingLines(_ work: (String, Bool) -> String?) -> [String] {
+    asLines().enumeratedWithLastMarker().compactMap(work)
+  }
 }
 
 extension TextBasedRenderer {
