@@ -56,6 +56,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Some really exciting license header 2023.
+
       import GRPCCore
       import Foo
       import typealias Foo.Bar
@@ -66,6 +67,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       import let Foo.Baq
       import var Foo.Bag
       import func Foo.Bak
+
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
@@ -93,6 +95,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Some really exciting license header 2023.
+
       import GRPCCore
       @preconcurrency import Foo
       @preconcurrency import enum Foo.Bar
@@ -101,6 +104,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       #else
       import Baz
       #endif
+
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
@@ -123,9 +127,11 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Some really exciting license header 2023.
+
       import GRPCCore
       @_spi(Secret) import Foo
       @_spi(Secret) import enum Foo.Bar
+
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(dependencies: dependencies),
@@ -134,17 +140,84 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
   }
 
+  func testGeneration() throws {
+    var dependencies = [CodeGenerationRequest.Dependency]()
+    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret"))
+    dependencies.append(
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .enum, name: "Bar"),
+        module: "Foo",
+        spi: "Secret"
+      )
+    )
+
+    let serviceA = ServiceDescriptor(
+      documentation: "/// Documentation for AService\n",
+      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
+      namespace: Name(
+        base: "namespaceA",
+        generatedUpperCase: "NamespaceA",
+        generatedLowerCase: "namespaceA"
+      ),
+      methods: []
+    )
+
+    let expectedSwift =
+      """
+      /// Some really exciting license header 2023.
+
+      import GRPCCore
+      @_spi(Secret) import Foo
+      @_spi(Secret) import enum Foo.Bar
+
+      public enum NamespaceA {
+          public enum ServiceA {
+              public enum Methods {}
+              public static let methods: [MethodDescriptor] = []
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          }
+      }
+
+      /// Documentation for AService
+      public protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+
+      /// Conformance to `GRPCCore.RegistrableRPCService`.
+      extension NamespaceA.ServiceA.StreamingServiceProtocol {
+          public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
+      }
+
+      /// Documentation for AService
+      public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {}
+
+      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      extension NamespaceA.ServiceA.ServiceProtocol {
+      }
+
+      """
+    try self.assertIDLToStructuredSwiftTranslation(
+      codeGenerationRequest: makeCodeGenerationRequest(
+        services: [serviceA],
+        dependencies: dependencies
+      ),
+      expectedSwift: expectedSwift,
+      accessLevel: .public,
+      server: true
+    )
+  }
+
   private func assertIDLToStructuredSwiftTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
-    accessLevel: SourceGenerator.Configuration.AccessLevel
+    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    server: Bool = false
   ) throws {
     let translator = IDLToStructuredSwiftTranslator()
     let structuredSwift = try translator.translate(
       codeGenerationRequest: codeGenerationRequest,
       accessLevel: accessLevel,
       client: false,
-      server: false
+      server: server
     )
     let renderer = TextBasedRenderer.default
     let sourceFile = try renderer.render(structured: structuredSwift)
@@ -262,7 +335,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
   func testSameGeneratedNameServicesSameNamespaceError() throws {
     let serviceA = ServiceDescriptor(
-      documentation: "Documentation for AService",
+      documentation: "/// Documentation for AService\n",
       name: Name(base: "AService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
       namespace: Name(
         base: "namespacea",
@@ -272,7 +345,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       methods: []
     )
     let serviceB = ServiceDescriptor(
-      documentation: "Documentation for BService",
+      documentation: "/// Documentation for BService\n",
       name: Name(base: "BService", generatedUpperCase: "AService", generatedLowerCase: "aService"),
       namespace: Name(
         base: "namespacea",

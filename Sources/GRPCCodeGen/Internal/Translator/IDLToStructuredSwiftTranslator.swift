@@ -38,7 +38,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
       try partialResult.append(translateImport(dependency: newDependency))
     }
 
-    var codeBlocks: [CodeBlock] = []
+    var codeBlocks = [CodeBlock]()
     codeBlocks.append(
       contentsOf: try typealiasTranslator.translate(from: codeGenerationRequest)
     )
