@@ -136,8 +136,14 @@ struct TextBasedRenderer: RendererProtocol {
 
   /// Renders the specified Swift file.
   func renderFile(_ description: FileDescription) {
-    if let topComment = description.topComment { renderComment(topComment) }
-    if let imports = description.imports { renderImports(imports) }
+    if let topComment = description.topComment {
+      renderComment(topComment)
+      writer.writeLine("")
+    }
+    if let imports = description.imports {
+      renderImports(imports)
+      writer.writeLine("")
+    }
     for codeBlock in description.codeBlocks {
       renderCodeBlock(codeBlock)
       writer.writeLine("")
@@ -1052,7 +1058,6 @@ struct TextBasedRenderer: RendererProtocol {
     switch description {
     case .declaration(let declaration): renderDeclaration(declaration)
     case .expression(let expression): renderExpression(expression)
-    case .emptyLine: writer.nextLineAppendsToLastLine(false)
     }
   }
 

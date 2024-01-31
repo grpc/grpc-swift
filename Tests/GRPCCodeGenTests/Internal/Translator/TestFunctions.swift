@@ -72,30 +72,14 @@ internal func XCTAssertEqualWithDiff(
 }
 
 internal func makeCodeGenerationRequest(
-  services: [CodeGenerationRequest.ServiceDescriptor]
+  services: [CodeGenerationRequest.ServiceDescriptor] = [],
+  dependencies: [CodeGenerationRequest.Dependency] = []
 ) -> CodeGenerationRequest {
   return CodeGenerationRequest(
     fileName: "test.grpc",
-    leadingTrivia: "/// Some really exciting license header 2023.",
-    dependencies: [],
-    services: services,
-    lookupSerializer: {
-      "ProtobufSerializer<\($0)>()"
-    },
-    lookupDeserializer: {
-      "ProtobufDeserializer<\($0)>()"
-    }
-  )
-}
-
-internal func makeCodeGenerationRequest(
-  dependencies: [CodeGenerationRequest.Dependency]
-) -> CodeGenerationRequest {
-  return CodeGenerationRequest(
-    fileName: "test.grpc",
-    leadingTrivia: "/// Some really exciting license header 2023.",
+    leadingTrivia: "/// Some really exciting license header 2023.\n",
     dependencies: dependencies,
-    services: [],
+    services: services,
     lookupSerializer: {
       "ProtobufSerializer<\($0)>()"
     },

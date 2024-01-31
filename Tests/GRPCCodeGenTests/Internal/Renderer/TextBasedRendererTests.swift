@@ -372,16 +372,6 @@ final class Test_TextBasedRenderer: XCTestCase {
     )
   }
 
-  func testEmptyLine() throws {
-    try _test(
-      .emptyLine,
-      renderedBy: TextBasedRenderer.renderCodeBlockItem(_:),
-      rendersAs: #"""
-
-        """#
-    )
-  }
-
   func testFunctionKind() throws {
     try _test(
       .initializer,
@@ -851,7 +841,9 @@ final class Test_TextBasedRenderer: XCTestCase {
       renderedBy: TextBasedRenderer.renderFile,
       rendersAs: #"""
         // hi
+
         import Foo
+
         struct Bar {}
 
         """#
@@ -873,7 +865,9 @@ final class Test_TextBasedRenderer: XCTestCase {
       renderedBy: TextBasedRenderer.renderFile,
       rendersAs: #"""
         // hi
+
         import Foo
+
         struct Bar {
           struct Baz {}
         }

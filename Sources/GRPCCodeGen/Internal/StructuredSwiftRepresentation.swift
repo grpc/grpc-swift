@@ -1141,9 +1141,6 @@ enum CodeBlockItem: Equatable, Codable {
 
   /// An expression, such as a call of a declared function.
   case expression(Expression)
-
-  /// A blank line between code blocks.
-  case emptyLine
 }
 
 /// A code block, with an optional comment.
@@ -1439,11 +1436,6 @@ extension CodeBlock {
   /// - Returns: A new `CodeBlock` instance containing the provided declaration.
   static func expression(_ expression: Expression) -> Self {
     CodeBlock(item: .expression(expression))
-  }
-
-  /// A new code block wrapping an empty line.
-  static var emptyLine: Self {
-    CodeBlock(item: .emptyLine)
   }
 }
 
