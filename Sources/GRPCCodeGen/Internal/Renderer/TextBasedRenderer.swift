@@ -98,10 +98,10 @@ final class StringCodeWriter {
   }
 
   /// Sets a flag on the writer so that the next call to `writeLine` continues
-  /// the last stored line or starts on a new line.
+  /// the last stored line instead of starting a new line.
   ///
   /// Safe to call repeatedly, it gets reset by `writeLine`.
-  func nextLineAppendsToLastLine(_ append: Bool = true) { nextWriteAppendsToLastLine = append }
+  func nextLineAppendsToLastLine() { nextWriteAppendsToLastLine = true }
 }
 
 /// A renderer that uses string interpolation and concatenation
