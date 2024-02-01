@@ -104,9 +104,11 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         /// The greeting service definition.
         internal struct Helloworld_GreeterClient: Helloworld.Greeter.ClientProtocol {
             private let client: GRPCCore.GRPCClient
+            
             internal init(client: GRPCCore.GRPCClient) {
                 self.client = client
             }
+            
             /// Sends a greeting.
             internal func sayHello<R>(
                 request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
@@ -123,7 +125,6 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 )
             }
         }
-
         """
     )
 
@@ -212,7 +213,6 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             return ServerResponse.Stream(single: response)
           }
         }
-
         """
     )
     try testCodeGeneration(
@@ -331,9 +331,11 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         /// The greeting service definition.
         package struct Helloworld_GreeterClient: Helloworld.Greeter.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           package init(client: GRPCCore.GRPCClient) {
             self.client = client
           }
+          
           /// Sends a greeting.
           package func sayHello<R>(
             request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
@@ -350,7 +352,6 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             )
           }
         }
-
         """
     )
   }

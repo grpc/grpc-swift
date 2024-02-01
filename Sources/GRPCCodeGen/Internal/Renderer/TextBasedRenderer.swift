@@ -144,9 +144,11 @@ struct TextBasedRenderer: RendererProtocol {
       renderImports(imports)
       writer.writeLine("")
     }
-    for codeBlock in description.codeBlocks {
+    for (codeBlock, isLast) in description.codeBlocks.enumeratedWithLastMarker() {
       renderCodeBlock(codeBlock)
-      writer.writeLine("")
+      if !isLast {
+        writer.writeLine("")
+      }
     }
   }
 
@@ -556,8 +558,13 @@ struct TextBasedRenderer: RendererProtocol {
       writer.nextLineAppendsToLastLine()
     }
     writer.writeLine(" {")
-    for declaration in extensionDescription.declarations {
-      writer.withNestedLevel { renderDeclaration(declaration) }
+    for (declaration, isLast) in extensionDescription.declarations.enumeratedWithLastMarker() {
+      writer.withNestedLevel {
+        renderDeclaration(declaration)
+        if !isLast {
+          writer.writeLine("")
+        }
+      }
     }
     writer.writeLine("}")
   }
@@ -701,7 +708,14 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(" {")
     if !structDesc.members.isEmpty {
-      writer.withNestedLevel { for member in structDesc.members { renderDeclaration(member) } }
+      writer.withNestedLevel {
+        for (member, isLast) in structDesc.members.enumeratedWithLastMarker() {
+          renderDeclaration(member)
+          if !isLast {
+            writer.writeLine("")
+          }
+        }
+      }
     } else {
       writer.nextLineAppendsToLastLine()
     }
@@ -723,7 +737,14 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine(" {")
     if !protocolDesc.members.isEmpty {
-      writer.withNestedLevel { for member in protocolDesc.members { renderDeclaration(member) } }
+      writer.withNestedLevel {
+        for (member, isLast) in protocolDesc.members.enumeratedWithLastMarker() {
+          renderDeclaration(member)
+          if !isLast {
+            writer.writeLine("")
+          }
+        }
+      }
     } else {
       writer.nextLineAppendsToLastLine()
     }

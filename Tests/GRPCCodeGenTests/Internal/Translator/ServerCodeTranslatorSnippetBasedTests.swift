@@ -330,6 +330,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       internal protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for inputStreamingMethod
           func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Output>
+          
           /// Documentation for outputStreamingMethod
           func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output>
       }
@@ -358,6 +359,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       internal protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for inputStreamingMethod
           func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.InputStreaming.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Methods.InputStreaming.Output>
+          
           /// Documentation for outputStreamingMethod
           func outputStreaming(request: ServerRequest.Single<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output>
       }
@@ -367,6 +369,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               let response = try await self.inputStreaming(request: request)
               return ServerResponse.Stream(single: response)
           }
+          
           internal func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Methods.OutputStreaming.Output> {
               let response = try await self.outputStreaming(request: ServerRequest.Single(stream: request))
               return response
