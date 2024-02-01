@@ -236,7 +236,8 @@ extension Target {
     dependencies: [
       .protobuf,
       .protobufPluginLibrary,
-      .grpcCodeGen
+      .grpcCodeGen,
+      .grpcProtobufCodeGen
     ],
     exclude: [
       "README.md",
