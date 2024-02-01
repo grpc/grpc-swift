@@ -55,6 +55,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         import GRPCCore
         import GRPCProtobuf
+
         internal enum Helloworld {
             internal enum Greeter {
                 internal enum Methods {
@@ -76,10 +77,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         internal protocol Helloworld_GreeterClientProtocol: Sendable {
             /// Sends a greeting.
-
             func sayHello<R>(
                 request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
                 serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
@@ -103,14 +102,12 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         internal struct Helloworld_GreeterClient: Helloworld.Greeter.ClientProtocol {
             private let client: GRPCCore.GRPCClient
             internal init(client: GRPCCore.GRPCClient) {
                 self.client = client
             }
             /// Sends a greeting.
-
             internal func sayHello<R>(
                 request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
                 serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
@@ -161,6 +158,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         import GRPCCore
         import GRPCProtobuf
+
         public enum Helloworld {
           public enum Greeter {
             public enum Methods {
@@ -182,10 +180,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         public protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-
           func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Methods.SayHello.Output>
         }
 
@@ -204,10 +200,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         public protocol Helloworld_GreeterServiceProtocol: Helloworld.Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-
           func sayHello(request: ServerRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>
         }
 
@@ -252,6 +246,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         import GRPCCore
         import GRPCProtobuf
+
         package enum Helloworld {
           package enum Greeter {
             package enum Methods {
@@ -275,10 +270,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         package protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-
           func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Methods.SayHello.Output>
         }
 
@@ -297,10 +290,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         package protocol Helloworld_GreeterServiceProtocol: Helloworld.Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-
           func sayHello(request: ServerRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>
         }
 
@@ -313,10 +304,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         package protocol Helloworld_GreeterClientProtocol: Sendable {
           /// Sends a greeting.
-
           func sayHello<R>(
             request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
             serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
@@ -340,14 +329,12 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
-
         package struct Helloworld_GreeterClient: Helloworld.Greeter.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           package init(client: GRPCCore.GRPCClient) {
             self.client = client
           }
           /// Sends a greeting.
-
           package func sayHello<R>(
             request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
             serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
