@@ -230,8 +230,7 @@ extension ClientRPCExecutor.HedgingExecutor {
             }
 
           case .cancelled:
-            // Cancelling also resets the state.
-            nextScheduledAttempt.cancel()
+            ()
           }
 
         case .attemptCompleted(let outcome):

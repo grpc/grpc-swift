@@ -351,7 +351,7 @@ internal final class ConnectionPool {
       logger.trace(
         "connection pool has too many waiters",
         metadata: [
-          Metadata.waitersMax: "\(self.maxWaiters)"
+          Metadata.waitersMax: .stringConvertible(self.maxWaiters)
         ]
       )
       promise.fail(GRPCConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
@@ -373,7 +373,7 @@ internal final class ConnectionPool {
           "timed out waiting for a connection",
           metadata: [
             Metadata.waiterID: "\(waiter.id)",
-            Metadata.waitersCount: "\(self.waiters.count)",
+            Metadata.waitersCount: .stringConvertible(self.waiters.count),
           ]
         )
       }
@@ -384,7 +384,7 @@ internal final class ConnectionPool {
       "waiting for a connection to become available",
       metadata: [
         Metadata.waiterID: "\(waiter.id)",
-        Metadata.waitersCount: "\(self.waiters.count)",
+        Metadata.waitersCount: .stringConvertible(self.waiters.count),
       ]
     )
 
@@ -394,7 +394,7 @@ internal final class ConnectionPool {
     self.logger.trace(
       "enqueued connection waiter",
       metadata: [
-        Metadata.waitersCount: "\(self.waiters.count)"
+        Metadata.waitersCount: .stringConvertible(self.waiters.count)
       ]
     )
 
@@ -445,10 +445,10 @@ internal final class ConnectionPool {
       self.logger.debug(
         "stream reservation load factor greater than or equal to threshold, bringing up additional connection if available",
         metadata: [
-          Metadata.reservationsCount: "\(demand)",
-          Metadata.reservationsCapacity: "\(capacity)",
-          Metadata.reservationsLoad: "\(load)",
-          Metadata.reservationsLoadThreshold: "\(self.reservationLoadThreshold)",
+          Metadata.reservationsCount: .stringConvertible(demand),
+          Metadata.reservationsCapacity: .stringConvertible(capacity),
+          Metadata.reservationsLoad: .stringConvertible(load),
+          Metadata.reservationsLoadThreshold: .stringConvertible(self.reservationLoadThreshold),
         ]
       )
     }
@@ -783,7 +783,7 @@ extension ConnectionPool {
     self.logger.trace(
       "servicing waiters",
       metadata: [
-        Metadata.waitersCount: "\(self.waiters.count)"
+        Metadata.waitersCount: .stringConvertible(self.waiters.count)
       ]
     )
 
@@ -812,8 +812,8 @@ extension ConnectionPool {
     self.logger.trace(
       "done servicing waiters",
       metadata: [
-        Metadata.waitersCount: "\(self.waiters.count)",
-        Metadata.waitersServiced: "\(serviced)",
+        Metadata.waitersCount: .stringConvertible(self.waiters.count),
+        Metadata.waitersServiced: .stringConvertible(serviced),
       ]
     )
   }

@@ -64,7 +64,7 @@ struct TypealiasTranslator: SpecializedTranslator {
   }
 
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
-    var codeBlocks: [CodeBlock] = []
+    var codeBlocks = [CodeBlock]()
     let services = codeGenerationRequest.services
     let servicesByNamespace = Dictionary(
       grouping: services,

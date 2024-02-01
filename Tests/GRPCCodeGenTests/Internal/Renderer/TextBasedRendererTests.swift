@@ -89,6 +89,22 @@ final class Test_TextBasedRenderer: XCTestCase {
         // Also, bar
         """#
     )
+    try _test(
+      .preFormatted("/// Lorem ipsum\n"),
+      renderedBy: TextBasedRenderer.renderComment,
+      rendersAs: """
+        /// Lorem ipsum
+        """
+    )
+    try _test(
+      .preFormatted("/// Lorem ipsum\n\n/// Lorem ipsum\n"),
+      renderedBy: TextBasedRenderer.renderComment,
+      rendersAs: """
+        /// Lorem ipsum
+
+        /// Lorem ipsum
+        """
+    )
   }
 
   func testImports() throws {
@@ -825,7 +841,9 @@ final class Test_TextBasedRenderer: XCTestCase {
       renderedBy: TextBasedRenderer.renderFile,
       rendersAs: #"""
         // hi
+
         import Foo
+
         struct Bar {}
 
         """#
@@ -847,7 +865,9 @@ final class Test_TextBasedRenderer: XCTestCase {
       renderedBy: TextBasedRenderer.renderFile,
       rendersAs: #"""
         // hi
+
         import Foo
+
         struct Bar {
           struct Baz {}
         }
