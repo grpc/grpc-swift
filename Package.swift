@@ -189,7 +189,7 @@ extension Target {
       .grpcCore
     ]
   )
-  
+
   static let grpcInterceptors: Target = .target(
     name: "GRPCInterceptors",
     dependencies: [
@@ -208,14 +208,14 @@ extension Target {
       .dequeModule
     ]
   )
-  
+
   static let grpcHTTP2TransportNIOPosix: Target = .target(
     name: "GRPCHTTP2TransportNIOPosix",
     dependencies: [
       .grpcHTTP2Core
     ]
   )
-  
+
   static let grpcHTTP2TransportNIOTransportServices: Target = .target(
     name: "GRPCHTTP2TransportNIOTransportServices",
     dependencies: [
@@ -275,8 +275,7 @@ extension Target {
       .nioSSL, if: includeNIOSSL
     ),
     exclude: [
-      "Codegen/Normalization/normalization.proto",
-      "Codegen/Serialization/echo.grpc.reflection",
+      "Codegen/Serialization/echo.grpc.reflection"
     ]
   )
 
@@ -297,7 +296,7 @@ extension Target {
       .grpcInProcessTransport
     ]
   )
-  
+
   static let grpcInterceptorsTests: Target = .testTarget(
     name: "GRPCInterceptorsTests",
     dependencies: [
@@ -318,14 +317,14 @@ extension Target {
       .nioTestUtils,
     ]
   )
-  
+
   static let grpcHTTP2TransportNIOPosixTests: Target = .testTarget(
     name: "GRPCHTTP2TransportNIOPosixTests",
     dependencies: [
       .grpcHTTP2TransportNIOPosix
     ]
   )
-  
+
   static let grpcHTTP2TransportNIOTransportServicesTests: Target = .testTarget(
     name: "GRPCHTTP2TransportNIOTransportServicesTests",
     dependencies: [
@@ -348,7 +347,7 @@ extension Target {
       .protobuf
     ]
   )
-  
+
   static let grpcProtobufCodeGenTests: Target = .testTarget(
     name: "GRPCProtobufCodeGenTests",
     dependencies: [
@@ -358,7 +357,7 @@ extension Target {
       .protobufPluginLibrary
     ]
   )
-  
+
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -446,10 +445,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/Echo/Model",
-    exclude: [
-      "echo.proto",
-    ]
+    path: "Sources/Examples/Echo/Model"
   )
 
   static let echoImplementation: Target = .target(
@@ -488,10 +484,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/HelloWorld/Model",
-    exclude: [
-      "helloworld.proto",
-    ]
+    path: "Sources/Examples/HelloWorld/Model"
   )
 
   static let helloWorldClient: Target = .executableTarget(
@@ -525,10 +518,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/RouteGuide/Model",
-    exclude: [
-      "route_guide.proto",
-    ]
+    path: "Sources/Examples/RouteGuide/Model"
   )
 
   static let routeGuideClient: Target = .executableTarget(
@@ -579,11 +569,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/GRPCReflectionService",
-    exclude: [
-      "v1/reflection-v1.proto",
-      "v1Alpha/reflection-v1alpha.proto"
-    ]
+    path: "Sources/GRPCReflectionService"
   )
 
   static let reflectionServer: Target = .executableTarget(
@@ -608,7 +594,7 @@ extension Target {
     name: "GRPCCodeGen",
     path: "Sources/GRPCCodeGen"
   )
-  
+
   static let grpcProtobuf: Target = .target(
     name: "GRPCProtobuf",
     dependencies: [
