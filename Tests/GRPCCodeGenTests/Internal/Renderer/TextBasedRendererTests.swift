@@ -845,7 +845,6 @@ final class Test_TextBasedRenderer: XCTestCase {
         import Foo
 
         struct Bar {}
-
         """#
     )
   }
@@ -871,7 +870,6 @@ final class Test_TextBasedRenderer: XCTestCase {
         struct Bar {
           struct Baz {}
         }
-
         """#,
       indentation: 2
     )

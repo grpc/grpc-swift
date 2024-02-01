@@ -193,7 +193,6 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
       extension NamespaceA.ServiceA.ServiceProtocol {
       }
-
       """
     try self.assertIDLToStructuredSwiftTranslation(
       codeGenerationRequest: makeCodeGenerationRequest(

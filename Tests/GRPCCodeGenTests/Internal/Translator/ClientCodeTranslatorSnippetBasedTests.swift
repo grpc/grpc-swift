@@ -68,9 +68,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
+          
           /// Documentation for MethodA
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -139,9 +141,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
+          
           /// Documentation for MethodA
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -210,9 +214,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
+          
           /// Documentation for MethodA
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -281,9 +287,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
+          
           /// Documentation for MethodA
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -343,6 +351,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
+          
           /// Documentation for MethodB
           func methodB<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
@@ -363,6 +372,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
                   body
               )
           }
+          
           package func methodB<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodB.Output>) async throws -> R
@@ -378,9 +388,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       package struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           package init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
+          
           /// Documentation for MethodA
           package func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
@@ -396,6 +408,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
                   handler: body
               )
           }
+          
           /// Documentation for MethodB
           package func methodB<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
@@ -464,9 +477,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       internal struct ServiceAClient: ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           internal init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
+          
           /// Documentation for MethodA
           internal func methodA<R>(
               request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
@@ -522,6 +537,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceA
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
@@ -537,6 +553,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Line 2
       public struct ServiceBClient: ServiceB.ClientProtocol {
           private let client: GRPCCore.GRPCClient
+          
           public init(client: GRPCCore.GRPCClient) {
               self.client = client
           }
