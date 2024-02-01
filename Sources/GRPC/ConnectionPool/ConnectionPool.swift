@@ -103,7 +103,7 @@ internal final class ConnectionPool {
 
   /// A logger which always sets "GRPC" as its source.
   @usableFromInline
-  internal let logger: GRPCLogger
+  private(set) var logger: GRPCLogger
 
   /// Returns `NIODeadline` representing 'now'. This is useful for testing.
   @usableFromInline
@@ -139,6 +139,18 @@ internal final class ConnectionPool {
     /// The ID of waiter.
     @usableFromInline
     static let waiterID = "pool.waiter.id"
+    /// The maximum number of connections allowed in the pool.
+    @usableFromInline
+    static let connectionsMax = "pool.connections.max"
+    /// The number of connections in the ready state.
+    @usableFromInline
+    static let connectionsReady = "pool.connections.ready"
+    /// The number of connections in the connecting state.
+    @usableFromInline
+    static let connectionsConnecting = "pool.connections.connecting"
+    /// The number of connections in the transient failure state.
+    @usableFromInline
+    static let connectionsTransientFailure = "pool.connections.transientFailure"
   }
 
   @usableFromInline
@@ -158,6 +170,7 @@ internal final class ConnectionPool {
       (0.0 ... 1.0).contains(reservationLoadThreshold),
       "reservationLoadThreshold must be within the range 0.0 ... 1.0"
     )
+
     self.reservationLoadThreshold = reservationLoadThreshold
     self.assumedMaxConcurrentStreams = assumedMaxConcurrentStreams
 
@@ -179,6 +192,14 @@ internal final class ConnectionPool {
   /// - Parameter connections: The number of connections to add to the pool.
   internal func initialize(connections: Int) {
     assert(self._connections.isEmpty)
+    self.logger.logger[metadataKey: Metadata.id] = "\(ObjectIdentifier(self))"
+    self.logger.debug(
+      "initializing new sub-pool",
+      metadata: [
+        Metadata.waitersMax: .stringConvertible(self.maxWaiters),
+        Metadata.connectionsMax: .stringConvertible(connections),
+      ]
+    )
     self._connections.reserveCapacity(connections)
     while self._connections.count < connections {
       self.addConnectionToPool()
@@ -461,6 +482,20 @@ internal final class ConnectionPool {
   internal func _startConnectingIdleConnection() {
     if let index = self._connections.values.firstIndex(where: { $0.manager.sync.isIdle }) {
       self._connections.values[index].manager.sync.startConnecting()
+    } else {
+      let connecting = self._connections.values.count { $0.manager.sync.isConnecting }
+      let ready = self._connections.values.count { $0.manager.sync.isReady }
+      let transientFailure = self._connections.values.count { $0.manager.sync.isTransientFailure }
+
+      self.logger.debug(
+        "no idle connections in pool",
+        metadata: [
+          Metadata.connectionsConnecting: .stringConvertible(connecting),
+          Metadata.connectionsReady: .stringConvertible(ready),
+          Metadata.connectionsTransientFailure: .stringConvertible(transientFailure),
+          Metadata.waitersCount: .stringConvertible(self.waiters.count),
+        ]
+      )
     }
   }
 
@@ -962,6 +997,14 @@ extension GRPCConnectionPoolError: GRPCStatusTransformable {
         message: "Timed out waiting for an HTTP/2 stream from the connection pool",
         cause: self.underlyingError
       )
+    }
+  }
+}
+
+extension Sequence {
+  fileprivate func count(where predicate: (Element) -> Bool) -> Int {
+    return self.reduce(0) { count, element in
+      predicate(element) ? count + 1 : count
     }
   }
 }
