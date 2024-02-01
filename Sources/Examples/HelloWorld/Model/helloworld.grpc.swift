@@ -29,7 +29,7 @@ extension Helloworld_GreeterClientProtocol {
     return "helloworld.Greeter"
   }
 
-  /// Sends a greeting.
+  /// Sends a greeting
   ///
   /// - Parameters:
   ///   - request: Request to send to SayHello.
@@ -202,7 +202,7 @@ public enum Helloworld_GreeterClientMetadata {
 public protocol Helloworld_GreeterProvider: CallHandlerProvider {
   var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? { get }
 
-  /// Sends a greeting.
+  /// Sends a greeting
   func sayHello(request: Helloworld_HelloRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Helloworld_HelloReply>
 }
 
@@ -241,7 +241,7 @@ public protocol Helloworld_GreeterAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? { get }
 
-  /// Sends a greeting.
+  /// Sends a greeting
   func sayHello(
     request: Helloworld_HelloRequest,
     context: GRPCAsyncServerCallContext
