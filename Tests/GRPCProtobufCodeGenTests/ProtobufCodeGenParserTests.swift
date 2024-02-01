@@ -23,8 +23,16 @@ import XCTest
 
 final class ProtobufCodeGenParserTests: XCTestCase {
   func testParser() throws {
+    let descriptorSet = DescriptorSet(protos: [Google_Protobuf_FileDescriptorProto.helloWorld])
+    guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
+      return XCTFail(
+        """
+        Could not find the file descriptor of "helloworld.proto".
+        """
+      )
+    }
     let parsedCodeGenRequest = try ProtobufCodeGenParser().parse(
-      input: self.helloWorldFileDescriptor
+      input: fileDescriptor
     )
     XCTAssertEqual(parsedCodeGenRequest.fileName, "helloworld.proto")
     XCTAssertEqual(
@@ -105,8 +113,10 @@ final class ProtobufCodeGenParserTests: XCTestCase {
       CodeGenerationRequest.Dependency(module: "GRPCProtobuf")
     )
   }
+}
 
-  var helloWorldFileDescriptor: FileDescriptor {
+extension Google_Protobuf_FileDescriptorProto {
+  static var helloWorld: Google_Protobuf_FileDescriptorProto {
     let requestType = Google_Protobuf_DescriptorProto.with {
       $0.name = "HelloRequest"
       $0.field = [
@@ -144,7 +154,7 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         }
       ]
     }
-    let protoDescriptor = Google_Protobuf_FileDescriptorProto.with {
+    return Google_Protobuf_FileDescriptorProto.with {
       $0.name = "helloworld.proto"
       $0.package = "helloworld"
       $0.messageType = [requestType, responseType]
@@ -187,7 +197,5 @@ final class ProtobufCodeGenParserTests: XCTestCase {
       }
       $0.syntax = "proto3"
     }
-    let descriptorSet = DescriptorSet(protos: [protoDescriptor])
-    return descriptorSet.fileDescriptor(named: "helloworld.proto")!
   }
 }

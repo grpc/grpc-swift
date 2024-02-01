@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 import Foundation
+import GRPCCodeGen
+import GRPCProtobufCodeGen
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
@@ -166,9 +168,16 @@ func main(args: [String]) throws {
           fileNamingOption: options.fileNaming,
           generatedFiles: &generatedFiles
         )
-        let grpcGenerator = Generator(fileDescriptor, options: options)
+        if options.v2 {
+          let grpcGenerator = ProtobufCodeGenerator(
+            configuration: SourceGenerator.Configuration(options: options)
+          )
+          grpcFile.content = try grpcGenerator.generateCode(from: fileDescriptor)
+        } else {
+          let grpcGenerator = Generator(fileDescriptor, options: options)
+          grpcFile.content = grpcGenerator.code
+        }
         grpcFile.name = grpcFileName
-        grpcFile.content = grpcGenerator.code
         response.file.append(grpcFile)
       }
     }
@@ -183,4 +192,23 @@ do {
   try main(args: CommandLine.arguments)
 } catch {
   Log("ERROR: \(error)")
+}
+
+extension SourceGenerator.Configuration {
+  init(options: GeneratorOptions) {
+    let accessLevel: SourceGenerator.Configuration.AccessLevel
+    switch options.visibility {
+    case .internal:
+      accessLevel = .internal
+    case .package:
+      accessLevel = .package
+    case .public:
+      accessLevel = .public
+    }
+    self.init(
+      accessLevel: accessLevel,
+      client: options.generateClient,
+      server: options.generateServer
+    )
+  }
 }
