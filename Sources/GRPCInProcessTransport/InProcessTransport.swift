@@ -22,21 +22,16 @@ public enum InProcessTransport {
   /// and a client using that server transport.
   ///
   /// - Parameters:
-  ///   - methodConfiguration: Method specific configuration used by the client transport to
-  ///       determine how RPCs should be executed.
-  ///   - retryThrottle: The retry throttle the client transport uses to determine whether a call
-  ///       should be retried.
+  ///   - serviceConfiguration: Configuration describing how methods should be executed.
   /// - Returns: A tuple containing the connected server and client in-process transports.
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   public static func makePair(
-    methodConfiguration: MethodConfigurations = MethodConfigurations(),
-    retryThrottle: RetryThrottle? = nil
+    serviceConfiguration: ServiceConfiguration = ServiceConfiguration()
   ) -> (server: InProcessServerTransport, client: InProcessClientTransport) {
     let server = InProcessServerTransport()
     let client = InProcessClientTransport(
       server: server,
-      methodConfiguration: methodConfiguration,
-      retryThrottle: retryThrottle
+      serviceConfiguration: serviceConfiguration
     )
     return (server, client)
   }

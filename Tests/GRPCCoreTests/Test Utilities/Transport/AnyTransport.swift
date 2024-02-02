@@ -48,7 +48,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     }
 
     self._configuration = { descriptor in
-      transport.executionConfiguration(forMethod: descriptor)
+      transport.configuration(forMethod: descriptor)
     }
   }
 
@@ -72,7 +72,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     return result as! T
   }
 
-  func executionConfiguration(
+  func configuration(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfiguration? {
     self._configuration(descriptor)

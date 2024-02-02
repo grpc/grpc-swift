@@ -98,22 +98,22 @@ public struct InProcessClientTransport: ClientTransport {
 
   public let retryThrottle: RetryThrottle?
 
-  private let methodConfiguration: MethodConfigurations
+  private let methodConfiguration: _MethodConfigurations
   private let state: _LockedValueBox<State>
 
   /// Creates a new in-process client transport.
   ///
   /// - Parameters:
   ///   - server: The in-process server transport to connect to.
-  ///   - methodConfiguration: Method specific configuration.
-  ///   - retryThrottle: A throttle to apply to RPCs which are hedged or retried.
+  ///   - serviceConfiguration: Service configuration.
   public init(
     server: InProcessServerTransport,
-    methodConfiguration: MethodConfigurations = MethodConfigurations(),
-    retryThrottle: RetryThrottle? = nil
+    serviceConfiguration: ServiceConfiguration = ServiceConfiguration()
   ) {
-    self.retryThrottle = retryThrottle
-    self.methodConfiguration = methodConfiguration
+    self.retryThrottle = serviceConfiguration.retryThrottlingPolicy.map {
+      RetryThrottle(policy: $0)
+    }
+    self.methodConfiguration = _MethodConfigurations(serviceConfiguration: serviceConfiguration)
     self.state = _LockedValueBox(.unconnected(.init(serverTransport: server)))
   }
 
@@ -336,7 +336,7 @@ public struct InProcessClientTransport: ClientTransport {
   ///
   /// - Parameter descriptor: The method to lookup configuration for.
   /// - Returns: Execution configuration for the method, if it exists.
-  public func executionConfiguration(
+  public func configuration(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfiguration? {
     self.methodConfiguration[descriptor]

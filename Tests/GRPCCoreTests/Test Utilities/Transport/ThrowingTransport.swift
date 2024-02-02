@@ -36,7 +36,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
     // no-op
   }
 
-  func executionConfiguration(
+  func configuration(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfiguration? {
     return nil
