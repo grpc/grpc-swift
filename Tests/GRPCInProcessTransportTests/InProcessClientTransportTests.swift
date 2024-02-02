@@ -187,7 +187,7 @@ final class InProcessClientTransportTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigurations()
     configurations.setDefaultConfiguration(defaultConfiguration)
 
@@ -203,7 +203,7 @@ final class InProcessClientTransportTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
     client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -255,7 +255,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     var methodConfiguration = MethodConfigurations()
     methodConfiguration.setDefaultConfiguration(
-      configuration ?? .init(retryPolicy: defaultPolicy)
+      configuration ?? .init(names: [], executionPolicy: .retry(defaultPolicy))
     )
     return InProcessClientTransport(
       server: server,

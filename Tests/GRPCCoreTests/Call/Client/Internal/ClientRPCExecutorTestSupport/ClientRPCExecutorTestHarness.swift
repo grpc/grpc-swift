@@ -146,10 +146,7 @@ struct ClientRPCExecutorTestHarness {
       if let configuration = configuration {
         executionConfiguration = configuration
       } else {
-        executionConfiguration = MethodConfiguration(
-          executionPolicy: nil,
-          timeout: nil
-        )
+        executionConfiguration = MethodConfiguration(names: [])
       }
 
       // Execute the request.
