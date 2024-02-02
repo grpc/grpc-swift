@@ -286,7 +286,8 @@ extension Target {
       .grpcCore,
       .grpcInProcessTransport,
       .dequeModule,
-      .atomics
+      .atomics,
+      .protobuf,
     ]
   )
 
