@@ -58,7 +58,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         internal enum Helloworld {
             internal enum Greeter {
-                internal enum Methods {
+                internal enum Method {
                     internal enum SayHello {
                         internal typealias Input = HelloRequest
                         internal typealias Output = HelloReply
@@ -67,10 +67,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                             method: "SayHello"
                         )
                     }
+                    internal static let descriptors: [MethodDescriptor] = [
+                        Methods.SayHello.descriptor
+                    ]
                 }
-                internal static let methods: [MethodDescriptor] = [
-                    Methods.SayHello.descriptor
-                ]
                 internal typealias ClientProtocol = Helloworld_GreeterClientProtocol
                 internal typealias Client = Helloworld_GreeterClient
             }
@@ -162,7 +162,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         public enum Helloworld {
           public enum Greeter {
-            public enum Methods {
+            public enum Method {
               public enum SayHello {
                 public typealias Input = HelloRequest
                 public typealias Output = HelloReply
@@ -171,10 +171,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                   method: "SayHello"
                 )
               }
+              public static let descriptors: [MethodDescriptor] = [
+                Methods.SayHello.descriptor
+              ]
             }
-            public static let methods: [MethodDescriptor] = [
-              Methods.SayHello.descriptor
-            ]
             public typealias StreamingServiceProtocol = Helloworld_GreeterServiceStreamingProtocol
             public typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
           }
@@ -249,7 +249,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         package enum Helloworld {
           package enum Greeter {
-            package enum Methods {
+            package enum Method {
               package enum SayHello {
                 package typealias Input = HelloRequest
                 package typealias Output = HelloReply
@@ -258,10 +258,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                   method: "SayHello"
                 )
               }
+              package static let descriptors: [MethodDescriptor] = [
+                Methods.SayHello.descriptor
+              ]
             }
-            package static let methods: [MethodDescriptor] = [
-              Methods.SayHello.descriptor
-            ]
             package typealias StreamingServiceProtocol = Helloworld_GreeterServiceStreamingProtocol
             package typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
             package typealias ClientProtocol = Helloworld_GreeterClientProtocol
