@@ -23,7 +23,7 @@
 /// ```swift
 /// public enum Echo {
 ///   public enum Echo {
-///     public enum Methods {
+///     public enum Method {
 ///       public enum Get {
 ///         public typealias Input = Echo_EchoRequest
 ///         public typealias Output = Echo_EchoResponse
@@ -36,12 +36,13 @@
 ///         public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Collect")
 ///       }
 ///       // ...
+///
+///       public static let descriptors: [MethodDescriptor] = [
+///         echo.Echo.Get.descriptor,
+///         echo.Echo.Collect.descriptor,
+///         // ...
+///       ]
 ///     }
-///     public static let methods: [MethodDescriptor] = [
-///       echo.Echo.Get.descriptor,
-///       echo.Echo.Collect.descriptor,
-///       // ...
-///     ]
 ///
 ///     public typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
 ///     public typealias ServiceProtocol = echo_EchoServiceProtocol
@@ -119,7 +120,7 @@ extension TypealiasTranslator {
       accessModifier: self.accessModifier,
       name: service.name.generatedUpperCase
     )
-    var methodsEnum = EnumDescription(accessModifier: self.accessModifier, name: "Methods")
+    var methodsEnum = EnumDescription(accessModifier: self.accessModifier, name: "Method")
     let methods = service.methods
 
     // Create the method specific enums.
@@ -127,11 +128,12 @@ extension TypealiasTranslator {
       let methodEnum = self.makeMethodEnum(from: method, in: service)
       methodsEnum.members.append(methodEnum)
     }
-    serviceEnum.members.append(.enum(methodsEnum))
 
     // Create the method descriptor array.
     let methodDescriptorsDeclaration = self.makeMethodDescriptors(for: service)
-    serviceEnum.members.append(methodDescriptorsDeclaration)
+    methodsEnum.members.append(methodDescriptorsDeclaration)
+
+    serviceEnum.members.append(.enum(methodsEnum))
 
     if self.server {
       // Create the streaming and non-streaming service protocol type aliases.
@@ -231,7 +233,7 @@ extension TypealiasTranslator {
       accessModifier: self.accessModifier,
       isStatic: true,
       kind: .let,
-      left: .identifier(.pattern("methods")),
+      left: .identifier(.pattern("descriptors")),
       type: .array(.member("MethodDescriptor")),
       right: .literal(.array(methodDescriptors))
     )
