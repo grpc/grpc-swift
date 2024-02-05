@@ -35,7 +35,7 @@ public struct MethodConfiguration: Hashable, Sendable {
     /// If the method is empty then the configuration will be the default for all methods in the
     /// specified service.
     public var method: String
-    
+
     /// Create a new name.
     ///
     /// If the service is empty then `method` must also be empty and the configuration specifies
@@ -109,7 +109,7 @@ public struct MethodConfiguration: Hashable, Sendable {
   public var executionPolicy: ExecutionPolicy?
 
   /// Create an execution configuration.
-  /// 
+  ///
   /// - Parameters:
   ///   - names: The names of methods this configuration applies to.
   ///   - timeout: The default timeout for the RPC.
