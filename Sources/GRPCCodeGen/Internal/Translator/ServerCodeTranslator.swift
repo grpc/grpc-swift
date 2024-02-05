@@ -125,7 +125,10 @@ extension ServerCodeTranslator {
       )
     )
 
-    return .commentable(.preFormatted(service.documentation), streamingProtocol)
+    return .commentable(
+      .preFormatted(service.documentation),
+      .guarded(self.availabilityGuard, streamingProtocol)
+    )
   }
 
   private func makeStreamingMethodSignature(
@@ -188,7 +191,10 @@ extension ServerCodeTranslator {
       ]
     )
     let registerRPCsBody = self.makeRegisterRPCsMethodBody(for: service, in: codeGenerationRequest)
-    return .function(signature: registerRPCsSignature, body: registerRPCsBody)
+    return .guarded(
+      self.availabilityGuard,
+      .function(signature: registerRPCsSignature, body: registerRPCsBody)
+    )
   }
 
   private func makeRegisterRPCsMethodBody(

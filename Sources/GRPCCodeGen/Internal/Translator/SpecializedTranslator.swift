@@ -46,4 +46,13 @@ extension SpecializedTranslator {
       }
     }
   }
+
+  internal var availabilityGuard: AvailabilityDescription {
+    AvailabilityDescription(osVersions: [
+      .init(os: .macOS, version: "13.0"),
+      .init(os: .iOS, version: "16.0"),
+      .init(os: .watchOS, version: "9.0"),
+      .init(os: .tvOS, version: "16.0"),
+    ])
+  }
 }

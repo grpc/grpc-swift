@@ -181,10 +181,12 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       }
 
       /// Documentation for AService
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
 
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
+          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
 
