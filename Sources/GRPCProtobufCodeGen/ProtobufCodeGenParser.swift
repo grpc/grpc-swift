@@ -23,7 +23,14 @@ import struct GRPCCodeGen.CodeGenerationRequest
 /// Parses a ``FileDescriptor`` object into a ``CodeGenerationRequest`` object.
 internal struct ProtobufCodeGenParser {
   internal init() {}
-  internal func parse(input: FileDescriptor) throws -> CodeGenerationRequest {
+  internal func parse(
+    input: FileDescriptor,
+    protoFileToModuleMappings: ProtoFileToModuleMappings
+  ) throws -> CodeGenerationRequest {
+    let protobufNamer = SwiftProtobufNamer(
+      currentFile: input,
+      protoFileToModuleMappings: protoFileToModuleMappings
+    )
     var header = input.header
     // Ensuring there is a blank line after the header.
     if !header.isEmpty && !header.hasSuffix("\n\n") {
@@ -51,7 +58,11 @@ internal struct ProtobufCodeGenParser {
       "ProtobufDeserializer<\(messageType)>()"
     }
     let services = input.services.map {
-      CodeGenerationRequest.ServiceDescriptor(descriptor: $0, package: input.package)
+      CodeGenerationRequest.ServiceDescriptor(
+        descriptor: $0,
+        package: input.package,
+        protobufNamer: protobufNamer
+      )
     }
 
     return CodeGenerationRequest(
@@ -66,9 +77,16 @@ internal struct ProtobufCodeGenParser {
 }
 
 extension CodeGenerationRequest.ServiceDescriptor {
-  fileprivate init(descriptor: ServiceDescriptor, package: String) {
+  fileprivate init(
+    descriptor: ServiceDescriptor,
+    package: String,
+    protobufNamer: SwiftProtobufNamer
+  ) {
     let methods = descriptor.methods.map {
-      CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(descriptor: $0)
+      CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(
+        descriptor: $0,
+        protobufNamer: protobufNamer
+      )
     }
     let name = CodeGenerationRequest.Name(
       base: descriptor.name,
@@ -86,7 +104,7 @@ extension CodeGenerationRequest.ServiceDescriptor {
 }
 
 extension CodeGenerationRequest.ServiceDescriptor.MethodDescriptor {
-  fileprivate init(descriptor: MethodDescriptor) {
+  fileprivate init(descriptor: MethodDescriptor, protobufNamer: SwiftProtobufNamer) {
     let name = CodeGenerationRequest.Name(
       base: descriptor.name,
       generatedUpperCase: NamingUtils.toUpperCamelCase(descriptor.name),
@@ -98,8 +116,8 @@ extension CodeGenerationRequest.ServiceDescriptor.MethodDescriptor {
       name: name,
       isInputStreaming: descriptor.clientStreaming,
       isOutputStreaming: descriptor.serverStreaming,
-      inputType: descriptor.inputType.name,
-      outputType: descriptor.outputType.name
+      inputType: protobufNamer.fullName(message: descriptor.inputType),
+      outputType: protobufNamer.fullName(message: descriptor.outputType)
     )
   }
 }

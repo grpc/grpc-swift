@@ -60,8 +60,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             internal enum Greeter {
                 internal enum Method {
                     internal enum SayHello {
-                        internal typealias Input = HelloRequest
-                        internal typealias Output = HelloReply
+                        internal typealias Input = Helloworld_HelloRequest
+                        internal typealias Output = Helloworld_HelloReply
                         internal static let descriptor = MethodDescriptor(
                             service: "helloworld.Greeter",
                             method: "SayHello"
@@ -164,8 +164,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           public enum Greeter {
             public enum Method {
               public enum SayHello {
-                public typealias Input = HelloRequest
-                public typealias Output = HelloReply
+                public typealias Input = Helloworld_HelloRequest
+                public typealias Output = Helloworld_HelloReply
                 public static let descriptor = MethodDescriptor(
                   service: "helloworld.Greeter",
                   method: "SayHello"
@@ -251,8 +251,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           package enum Greeter {
             package enum Method {
               package enum SayHello {
-                package typealias Input = HelloRequest
-                package typealias Output = HelloReply
+                package typealias Input = Helloworld_HelloRequest
+                package typealias Output = Helloworld_HelloReply
                 package static let descriptor = MethodDescriptor(
                   service: "helloworld.Greeter",
                   method: "SayHello"
@@ -378,7 +378,13 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
       )
     }
     let generator = ProtobufCodeGenerator(configuration: configs)
-    try XCTAssertEqualWithDiff(try generator.generateCode(from: fileDescriptor), expectedCode)
+    try XCTAssertEqualWithDiff(
+      try generator.generateCode(
+        from: fileDescriptor,
+        protoFileToModuleMappings: ProtoFileToModuleMappings()
+      ),
+      expectedCode
+    )
   }
 }
 

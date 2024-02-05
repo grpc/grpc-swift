@@ -32,7 +32,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
       )
     }
     let parsedCodeGenRequest = try ProtobufCodeGenParser().parse(
-      input: fileDescriptor
+      input: fileDescriptor,
+      protoFileToModuleMappings: ProtoFileToModuleMappings()
     )
     XCTAssertEqual(parsedCodeGenRequest.fileName, "helloworld.proto")
     XCTAssertEqual(
@@ -75,8 +76,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
       ),
       isInputStreaming: false,
       isOutputStreaming: false,
-      inputType: "HelloRequest",
-      outputType: "HelloReply"
+      inputType: "Helloworld_HelloRequest",
+      outputType: "Helloworld_HelloReply"
     )
     guard let method = parsedCodeGenRequest.services.first?.methods.first else { return XCTFail() }
     XCTAssertEqual(method, expectedMethod)

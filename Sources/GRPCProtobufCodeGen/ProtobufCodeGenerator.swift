@@ -24,11 +24,17 @@ public struct ProtobufCodeGenerator {
     self.configuration = configuration
   }
 
-  public func generateCode(from fileDescriptor: FileDescriptor) throws -> String {
+  public func generateCode(
+    from fileDescriptor: FileDescriptor,
+    protoFileToModuleMappings: ProtoFileToModuleMappings
+  ) throws -> String {
     let parser = ProtobufCodeGenParser()
     let sourceGenerator = SourceGenerator(configuration: self.configuration)
 
-    let codeGenerationRequest = try parser.parse(input: fileDescriptor)
+    let codeGenerationRequest = try parser.parse(
+      input: fileDescriptor,
+      protoFileToModuleMappings: protoFileToModuleMappings
+    )
     let sourceFile = try sourceGenerator.generate(codeGenerationRequest)
     return sourceFile.contents
   }
