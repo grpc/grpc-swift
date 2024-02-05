@@ -38,8 +38,8 @@
 ///       // ...
 ///
 ///       public static let descriptors: [MethodDescriptor] = [
-///         echo.Echo.Get.descriptor,
-///         echo.Echo.Collect.descriptor,
+///         Echo.Echo.Method.Get.descriptor,
+///         Echo.Echo.Method.Collect.descriptor,
 ///         // ...
 ///       ]
 ///     }
@@ -222,7 +222,9 @@ extension TypealiasTranslator {
     for methodName in methodNames {
       let methodDescriptorPath = Expression.memberAccess(
         MemberAccessDescription(
-          left: .identifierType(.member(["Methods", methodName])),
+          left: .identifierType(
+            .member([service.namespacedTypealiasGeneratedName, "Method", methodName])
+          ),
           right: "descriptor"
         )
       )
@@ -245,7 +247,7 @@ extension TypealiasTranslator {
     let streamingServiceProtocolTypealias = Declaration.typealias(
       accessModifier: self.accessModifier,
       name: "StreamingServiceProtocol",
-      existingType: .member("\(service.namespacedGeneratedName)ServiceStreamingProtocol")
+      existingType: .member("\(service.namespacedGeneratedName)StreamingServiceProtocol")
     )
     let serviceProtocolTypealias = Declaration.typealias(
       accessModifier: self.accessModifier,

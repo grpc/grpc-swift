@@ -46,21 +46,21 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>(),
-                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Method.MethodA.Input>(),
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>(),
                   body
               )
           }
@@ -76,14 +76,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.unary(
                   request: request,
-                  descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
+                  descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
@@ -120,21 +120,21 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>(),
-                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Method.MethodA.Input>(),
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>(),
                   body
               )
           }
@@ -150,14 +150,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.clientStreaming(
                   request: request,
-                  descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
+                  descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
@@ -194,21 +194,21 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>(),
-                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Method.MethodA.Input>(),
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>(),
                   body
               )
           }
@@ -224,14 +224,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.serverStreaming(
                   request: request,
-                  descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
+                  descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
@@ -268,21 +268,21 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>(),
-                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Method.MethodA.Input>(),
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>(),
                   body
               )
           }
@@ -298,14 +298,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.bidirectionalStreaming(
                   request: request,
-                  descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
+                  descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
@@ -321,7 +321,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     )
   }
 
-  func testClientCodeTranslatorMultipleMethods() throws {
+  func testClientCodeTranslatorMultipleMethod() throws {
     let methodA = MethodDescriptor(
       documentation: "/// Documentation for MethodA",
       name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
@@ -350,41 +350,41 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       package protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
           
           /// Documentation for MethodB
           func methodB<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodB.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodB.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodB.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodB.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodB.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodB.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodB.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       extension NamespaceA.ServiceA.ClientProtocol {
           package func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>(),
-                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Method.MethodA.Input>(),
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>(),
                   body
               )
           }
           
           package func methodB<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodB.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodB.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodB.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodB(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Methods.MethodB.Input>(),
-                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Methods.MethodB.Output>(),
+                  serializer: ProtobufSerializer<NamespaceA.ServiceA.Method.MethodB.Input>(),
+                  deserializer: ProtobufDeserializer<NamespaceA.ServiceA.Method.MethodB.Output>(),
                   body
               )
           }
@@ -400,14 +400,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           package func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.clientStreaming(
                   request: request,
-                  descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
+                  descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
@@ -416,14 +416,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodB
           package func methodB<R>(
-              request: ClientRequest.Single<NamespaceA.ServiceA.Methods.MethodB.Input>,
-              serializer: some MessageSerializer<NamespaceA.ServiceA.Methods.MethodB.Input>,
-              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Methods.MethodB.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Methods.MethodB.Output>) async throws -> R
+              request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodB.Input>,
+              serializer: some MessageSerializer<NamespaceA.ServiceA.Method.MethodB.Input>,
+              deserializer: some MessageDeserializer<NamespaceA.ServiceA.Method.MethodB.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodB.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.serverStreaming(
                   request: request,
-                  descriptor: NamespaceA.ServiceA.Methods.MethodB.descriptor,
+                  descriptor: NamespaceA.ServiceA.Method.MethodB.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
@@ -460,21 +460,21 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       internal protocol ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       extension ServiceA.ClientProtocol {
           internal func methodA<R>(
-              request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<ServiceA.Method.MethodA.Input>,
+              _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<ServiceA.Methods.MethodA.Input>(),
-                  deserializer: ProtobufDeserializer<ServiceA.Methods.MethodA.Output>(),
+                  serializer: ProtobufSerializer<ServiceA.Method.MethodA.Input>(),
+                  deserializer: ProtobufDeserializer<ServiceA.Method.MethodA.Output>(),
                   body
               )
           }
@@ -490,14 +490,14 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           internal func methodA<R>(
-              request: ClientRequest.Single<ServiceA.Methods.MethodA.Input>,
-              serializer: some MessageSerializer<ServiceA.Methods.MethodA.Input>,
-              deserializer: some MessageDeserializer<ServiceA.Methods.MethodA.Output>,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Methods.MethodA.Output>) async throws -> R
+              request: ClientRequest.Single<ServiceA.Method.MethodA.Input>,
+              serializer: some MessageSerializer<ServiceA.Method.MethodA.Input>,
+              deserializer: some MessageDeserializer<ServiceA.Method.MethodA.Output>,
+              _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.unary(
                   request: request,
-                  descriptor: ServiceA.Methods.MethodA.descriptor,
+                  descriptor: ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   handler: body
