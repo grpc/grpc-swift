@@ -68,7 +68,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                         )
                     }
                     internal static let descriptors: [MethodDescriptor] = [
-                        Methods.SayHello.descriptor
+                        Helloworld.Greeter.Method.SayHello.descriptor
                     ]
                 }
                 internal typealias ClientProtocol = Helloworld_GreeterClientProtocol
@@ -80,22 +80,22 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         internal protocol Helloworld_GreeterClientProtocol: Sendable {
             /// Sends a greeting.
             func sayHello<R>(
-                request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
-                serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
-                deserializer: some MessageDeserializer<Helloworld.Greeter.Methods.SayHello.Output>,
-                _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>) async throws -> R
+                request: ClientRequest.Single<Helloworld.Greeter.Method.SayHello.Input>,
+                serializer: some MessageSerializer<Helloworld.Greeter.Method.SayHello.Input>,
+                deserializer: some MessageDeserializer<Helloworld.Greeter.Method.SayHello.Output>,
+                _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Method.SayHello.Output>) async throws -> R
             ) async throws -> R where R: Sendable
         }
 
         extension Helloworld.Greeter.ClientProtocol {
             internal func sayHello<R>(
-                request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
-                _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>) async throws -> R
+                request: ClientRequest.Single<Helloworld.Greeter.Method.SayHello.Input>,
+                _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Method.SayHello.Output>) async throws -> R
             ) async throws -> R where R: Sendable {
                 try await self.sayHello(
                     request: request,
-                    serializer: ProtobufSerializer<Helloworld.Greeter.Methods.SayHello.Input>(),
-                    deserializer: ProtobufDeserializer<Helloworld.Greeter.Methods.SayHello.Output>(),
+                    serializer: ProtobufSerializer<Helloworld.Greeter.Method.SayHello.Input>(),
+                    deserializer: ProtobufDeserializer<Helloworld.Greeter.Method.SayHello.Output>(),
                     body
                 )
             }
@@ -111,14 +111,14 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             
             /// Sends a greeting.
             internal func sayHello<R>(
-                request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
-                serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
-                deserializer: some MessageDeserializer<Helloworld.Greeter.Methods.SayHello.Output>,
-                _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>) async throws -> R
+                request: ClientRequest.Single<Helloworld.Greeter.Method.SayHello.Input>,
+                serializer: some MessageSerializer<Helloworld.Greeter.Method.SayHello.Input>,
+                deserializer: some MessageDeserializer<Helloworld.Greeter.Method.SayHello.Output>,
+                _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Method.SayHello.Output>) async throws -> R
             ) async throws -> R where R: Sendable {
                 try await self.client.unary(
                     request: request,
-                    descriptor: Helloworld.Greeter.Methods.SayHello.descriptor,
+                    descriptor: Helloworld.Greeter.Method.SayHello.descriptor,
                     serializer: serializer,
                     deserializer: deserializer,
                     handler: body
@@ -172,10 +172,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 )
               }
               public static let descriptors: [MethodDescriptor] = [
-                Methods.SayHello.descriptor
+                Helloworld.Greeter.Method.SayHello.descriptor
               ]
             }
-            public typealias StreamingServiceProtocol = Helloworld_GreeterServiceStreamingProtocol
+            public typealias StreamingServiceProtocol = Helloworld_GreeterStreamingServiceProtocol
             public typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
           }
         }
@@ -183,16 +183,16 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         /// The greeting service definition.
         public protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Methods.SayHello.Output>
+          func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Method.SayHello.Output>
         }
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
         extension Helloworld.Greeter.StreamingServiceProtocol {
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
             router.registerHandler(
-              for: Helloworld.Greeter.Methods.SayHello.descriptor,
-              deserializer: ProtobufDeserializer<Helloworld.Greeter.Methods.SayHello.Input>(),
-              serializer: ProtobufSerializer<Helloworld.Greeter.Methods.SayHello.Output>(),
+              forMethod: Helloworld.Greeter.Method.SayHello.descriptor,
+              deserializer: ProtobufDeserializer<Helloworld.Greeter.Method.SayHello.Input>(),
+              serializer: ProtobufSerializer<Helloworld.Greeter.Method.SayHello.Output>(),
               handler: { request in
                 try await self.sayHello(request: request)
               }
@@ -203,12 +203,12 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         /// The greeting service definition.
         public protocol Helloworld_GreeterServiceProtocol: Helloworld.Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>
+          func sayHello(request: ServerRequest.Single<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld.Greeter.Method.SayHello.Output>
         }
 
         /// Partial conformance to `Helloworld_GreeterStreamingServiceProtocol`.
         extension Helloworld.Greeter.ServiceProtocol {
-          public func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Methods.SayHello.Output> {
+          public func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Method.SayHello.Output> {
             let response = try await self.sayHello(request: ServerRequest.Single(stream: request))
             return ServerResponse.Stream(single: response)
           }
@@ -259,10 +259,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 )
               }
               package static let descriptors: [MethodDescriptor] = [
-                Methods.SayHello.descriptor
+                Helloworld.Greeter.Method.SayHello.descriptor
               ]
             }
-            package typealias StreamingServiceProtocol = Helloworld_GreeterServiceStreamingProtocol
+            package typealias StreamingServiceProtocol = Helloworld_GreeterStreamingServiceProtocol
             package typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
             package typealias ClientProtocol = Helloworld_GreeterClientProtocol
             package typealias Client = Helloworld_GreeterClient
@@ -272,16 +272,16 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         /// The greeting service definition.
         package protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Methods.SayHello.Output>
+          func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Method.SayHello.Output>
         }
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
         extension Helloworld.Greeter.StreamingServiceProtocol {
           package func registerMethods(with router: inout GRPCCore.RPCRouter) {
             router.registerHandler(
-              for: Helloworld.Greeter.Methods.SayHello.descriptor,
-              deserializer: ProtobufDeserializer<Helloworld.Greeter.Methods.SayHello.Input>(),
-              serializer: ProtobufSerializer<Helloworld.Greeter.Methods.SayHello.Output>(),
+              forMethod: Helloworld.Greeter.Method.SayHello.descriptor,
+              deserializer: ProtobufDeserializer<Helloworld.Greeter.Method.SayHello.Input>(),
+              serializer: ProtobufSerializer<Helloworld.Greeter.Method.SayHello.Output>(),
               handler: { request in
                 try await self.sayHello(request: request)
               }
@@ -292,12 +292,12 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         /// The greeting service definition.
         package protocol Helloworld_GreeterServiceProtocol: Helloworld.Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>
+          func sayHello(request: ServerRequest.Single<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld.Greeter.Method.SayHello.Output>
         }
 
         /// Partial conformance to `Helloworld_GreeterStreamingServiceProtocol`.
         extension Helloworld.Greeter.ServiceProtocol {
-          package func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Methods.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Methods.SayHello.Output> {
+          package func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Method.SayHello.Output> {
             let response = try await self.sayHello(request: ServerRequest.Single(stream: request))
             return ServerResponse.Stream(single: response)
           }
@@ -307,22 +307,22 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         package protocol Helloworld_GreeterClientProtocol: Sendable {
           /// Sends a greeting.
           func sayHello<R>(
-            request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
-            serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
-            deserializer: some MessageDeserializer<Helloworld.Greeter.Methods.SayHello.Output>,
-            _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>) async throws -> R
+            request: ClientRequest.Single<Helloworld.Greeter.Method.SayHello.Input>,
+            serializer: some MessageSerializer<Helloworld.Greeter.Method.SayHello.Input>,
+            deserializer: some MessageDeserializer<Helloworld.Greeter.Method.SayHello.Output>,
+            _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable
         }
 
         extension Helloworld.Greeter.ClientProtocol {
           package func sayHello<R>(
-            request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
-            _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>) async throws -> R
+            request: ClientRequest.Single<Helloworld.Greeter.Method.SayHello.Input>,
+            _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
             try await self.sayHello(
               request: request,
-              serializer: ProtobufSerializer<Helloworld.Greeter.Methods.SayHello.Input>(),
-              deserializer: ProtobufDeserializer<Helloworld.Greeter.Methods.SayHello.Output>(),
+              serializer: ProtobufSerializer<Helloworld.Greeter.Method.SayHello.Input>(),
+              deserializer: ProtobufDeserializer<Helloworld.Greeter.Method.SayHello.Output>(),
               body
             )
           }
@@ -338,14 +338,14 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           
           /// Sends a greeting.
           package func sayHello<R>(
-            request: ClientRequest.Single<Helloworld.Greeter.Methods.SayHello.Input>,
-            serializer: some MessageSerializer<Helloworld.Greeter.Methods.SayHello.Input>,
-            deserializer: some MessageDeserializer<Helloworld.Greeter.Methods.SayHello.Output>,
-            _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Methods.SayHello.Output>) async throws -> R
+            request: ClientRequest.Single<Helloworld.Greeter.Method.SayHello.Input>,
+            serializer: some MessageSerializer<Helloworld.Greeter.Method.SayHello.Input>,
+            deserializer: some MessageDeserializer<Helloworld.Greeter.Method.SayHello.Output>,
+            _ body: @Sendable @escaping (ClientResponse.Single<Helloworld.Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
             try await self.client.unary(
               request: request,
-              descriptor: Helloworld.Greeter.Methods.SayHello.descriptor,
+              descriptor: Helloworld.Greeter.Method.SayHello.descriptor,
               serializer: serializer,
               deserializer: deserializer,
               handler: body

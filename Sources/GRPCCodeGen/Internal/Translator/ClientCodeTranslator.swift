@@ -24,21 +24,21 @@
 /// ```swift
 /// public protocol Foo_BarClientProtocol: Sendable {
 ///   func baz<R: Sendable>(
-///     request: ClientRequest.Single<foo.Bar.Methods.baz.Input>,
-///     serializer: some MessageSerializer<foo.Bar.Methods.baz.Input>,
-///     deserializer: some MessageDeserializer<foo.Bar.Methods.baz.Output>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Methods.Baz.Output>) async throws -> R
-///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.Baz.Output>
+///     request: ClientRequest.Single<foo.Bar.Method.baz.Input>,
+///     serializer: some MessageSerializer<foo.Bar.Method.baz.Input>,
+///     deserializer: some MessageDeserializer<foo.Bar.Method.baz.Output>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Method.Baz.Output>) async throws -> R
+///   ) async throws -> ServerResponse.Stream<foo.Bar.Method.Baz.Output>
 /// }
 /// extension Foo.Bar.ClientProtocol {
 ///   public func get<R: Sendable>(
-///     request: ClientRequest.Single<Foo.Bar.Methods.Baz.Input>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo.Bar.Methods.Baz.Output>) async throws -> R
+///     request: ClientRequest.Single<Foo.Bar.Method.Baz.Input>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo.Bar.Method.Baz.Output>) async throws -> R
 ///   ) async rethrows -> R {
 ///     try await self.baz(
 ///       request: request,
-///       serializer: ProtobufSerializer<Foo.Bar.Methods.Baz.Input>(),
-///       deserializer: ProtobufDeserializer<Foo.Bar.Methods.Baz.Output>(),
+///       serializer: ProtobufSerializer<Foo.Bar.Method.Baz.Input>(),
+///       deserializer: ProtobufDeserializer<Foo.Bar.Method.Baz.Output>(),
 ///       body
 ///     )
 /// }
@@ -48,14 +48,14 @@
 ///     self.client = client
 ///   }
 ///   public func methodA<R: Sendable>(
-///     request: ClientRequest.Stream<namespaceA.ServiceA.Methods.methodA.Input>,
-///     serializer: some MessageSerializer<namespaceA.ServiceA.Methods.methodA.Input>,
-///     deserializer: some MessageDeserializer<namespaceA.ServiceA.Methods.methodA.Output>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Methods.methodA.Output>) async throws -> R
+///     request: ClientRequest.Stream<namespaceA.ServiceA.Method.methodA.Input>,
+///     serializer: some MessageSerializer<namespaceA.ServiceA.Method.methodA.Input>,
+///     deserializer: some MessageDeserializer<namespaceA.ServiceA.Method.methodA.Output>,
+///     _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Method.methodA.Output>) async throws -> R
 ///   ) async rethrows -> R {
 ///    try await self.client.clientStreaming(
 ///      request: request,
-///      descriptor: NamespaceA.ServiceA.Methods.MethodA.descriptor,
+///      descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
 ///      serializer: serializer,
 ///      deserializer: deserializer,
 ///      handler: body
@@ -399,7 +399,7 @@ extension ClientCodeTranslator {
         .init(
           label: "descriptor",
           expression: .identifierPattern(
-            "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase).descriptor"
+            "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
           )
         ),
         .init(label: "serializer", expression: .identifierPattern("serializer")),
@@ -439,7 +439,7 @@ extension ClientCodeTranslator {
     type: InputOutputType
   ) -> String {
     var components: String =
-      "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase)"
+      "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase)"
 
     switch type {
     case .input:

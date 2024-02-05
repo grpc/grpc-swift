@@ -175,7 +175,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
               public enum Method {
                   public static let descriptors: [MethodDescriptor] = []
               }
-              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
               public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
           }
       }
