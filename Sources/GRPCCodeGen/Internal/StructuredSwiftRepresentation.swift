@@ -804,7 +804,7 @@ struct DeprecationDescription: Equatable, Codable {
   var renamed: String?
 }
 
-/// A description of a deprecation notice.
+/// A description of an availability guard.
 ///
 /// For example: `@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)`
 struct AvailabilityDescription: Equatable, Codable {
