@@ -38,10 +38,10 @@
 ///       // ...
 ///
 ///       public static let descriptors: [MethodDescriptor] = [
-///       echo.Echo.Get.descriptor,
-///       echo.Echo.Collect.descriptor,
-///       // ...
-///     ]
+///         echo.Echo.Get.descriptor,
+///         echo.Echo.Collect.descriptor,
+///         // ...
+///       ]
 ///     }
 ///
 ///     public typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
