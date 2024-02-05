@@ -108,6 +108,13 @@ extension RuntimeError {
   public struct Code: Hashable, Sendable {
     private enum Value {
       case invalidArgument
+      case serverIsAlreadyRunning
+      case serverIsStopped
+      case failedToStartTransport
+      case noTransportsConfigured
+      case clientIsAlreadyRunning
+      case clientIsStopped
+      case transportError
     }
 
     private var value: Value
@@ -115,8 +122,44 @@ extension RuntimeError {
       self.value = value
     }
 
+    /// An argument was invalid.
     public static var invalidArgument: Self {
       Self(.invalidArgument)
+    }
+
+    /// At attempt to start the server was made but it is already running.
+    public static var serverIsAlreadyRunning: Self {
+      Self(.serverIsAlreadyRunning)
+    }
+
+    /// At attempt to start the server was made but it has already stopped.
+    public static var serverIsStopped: Self {
+      Self(.serverIsStopped)
+    }
+
+    /// The server couldn't be started because a transport failed to start.
+    public static var failedToStartTransport: Self {
+      Self(.failedToStartTransport)
+    }
+
+    /// The server couldn't be started because no transports were configured.
+    public static var noTransportsConfigured: Self {
+      Self(.noTransportsConfigured)
+    }
+
+    /// At attempt to start the client was made but it is already running.
+    public static var clientIsAlreadyRunning: Self {
+      Self(.clientIsAlreadyRunning)
+    }
+
+    /// At attempt to start the client was made but it has already stopped.
+    public static var clientIsStopped: Self {
+      Self(.clientIsStopped)
+    }
+
+    /// The transport threw an error whilst connected.
+    public static var transportError: Self {
+      Self(.transportError)
     }
   }
 }

@@ -265,7 +265,7 @@ final class GRPCClientTests: XCTestCase {
       client.close()
 
       // RPC should fail now.
-      await XCTAssertThrowsErrorAsync(ofType: ClientError.self) {
+      await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
         try await client.unary(
           request: .init(message: [3, 1, 4, 1, 5]),
           descriptor: BinaryEcho.Methods.collect,
@@ -287,7 +287,7 @@ final class GRPCClientTests: XCTestCase {
           client.close()
 
           // Attempts to start a new RPC should fail.
-          await XCTAssertThrowsErrorAsync(ofType: ClientError.self) {
+          await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
             try await client.unary(
               request: .init(message: [3, 1, 4, 1, 5]),
               descriptor: BinaryEcho.Methods.collect,
@@ -372,7 +372,7 @@ final class GRPCClientTests: XCTestCase {
     try await task.value
 
     // Client is stopped, should throw an error.
-    await XCTAssertThrowsErrorAsync(ofType: ClientError.self) {
+    await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
       try await client.run()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .clientIsStopped)
@@ -388,7 +388,7 @@ final class GRPCClientTests: XCTestCase {
     try await Task.sleep(for: .milliseconds(10))
 
     // Client is already running, should throw an error.
-    await XCTAssertThrowsErrorAsync(ofType: ClientError.self) {
+    await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
       try await client.run()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .clientIsAlreadyRunning)
