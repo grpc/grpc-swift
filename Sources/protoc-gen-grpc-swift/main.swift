@@ -173,8 +173,7 @@ func main(args: [String]) throws {
             configuration: SourceGenerator.Configuration(options: options)
           )
           grpcFile.content = try grpcGenerator.generateCode(
-            from: fileDescriptor,
-            protoFileToModuleMappings: options.protoToModuleMappings
+            from: fileDescriptor
           )
         } else {
           let grpcGenerator = Generator(fileDescriptor, options: options)
