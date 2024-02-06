@@ -31,23 +31,23 @@
 /// extension foo.Bar.StreamingServiceProtocol {
 ///   public func registerRPCs(with router: inout RPCRouter) {
 ///     router.registerHandler(
-///       for: foo.Method.baz.descriptor,
-///       deserializer: ProtobufDeserializer<foo.Methods.baz.Input>(),
-///       serializer: ProtobufSerializer<foo.Methods.baz.Output>(),
+///       forMethod: foo.Method.baz.descriptor,
+///       deserializer: ProtobufDeserializer<foo.Method.baz.Input>(),
+///       serializer: ProtobufSerializer<foo.Method.baz.Output>(),
 ///       handler: { request in try await self.baz(request: request) }
 ///     )
 ///   }
 /// }
 /// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
 ///   func baz(
-///     request: ServerRequest.Single<foo.Bar.Methods.baz.Input>
-///   ) async throws -> ServerResponse.Single<foo.Bar.Methods.baz.Output>
+///     request: ServerRequest.Single<foo.Bar.Method.baz.Input>
+///   ) async throws -> ServerResponse.Single<foo.Bar.Method.baz.Output>
 /// }
 /// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
 /// extension foo.Bar.ServiceProtocol {
 ///   public func baz(
-///     request: ServerRequest.Stream<foo.Bar.Methods.baz.Input>
-///   ) async throws -> ServerResponse.Stream<foo.Bar.Methods.baz.Output> {
+///     request: ServerRequest.Stream<foo.Bar.Method.baz.Input>
+///   ) async throws -> ServerResponse.Stream<foo.Bar.Method.baz.Output> {
 ///     let response = try await self.baz(request: ServerRequest.Single(stream: request)
 ///     return ServerResponse.Stream(single: response)
 ///   }
@@ -125,7 +125,10 @@ extension ServerCodeTranslator {
       )
     )
 
-    return .commentable(.preFormatted(service.documentation), streamingProtocol)
+    return .commentable(
+      .preFormatted(service.documentation),
+      .guarded(self.availabilityGuard, streamingProtocol)
+    )
   }
 
   private func makeStreamingMethodSignature(
@@ -188,7 +191,10 @@ extension ServerCodeTranslator {
       ]
     )
     let registerRPCsBody = self.makeRegisterRPCsMethodBody(for: service, in: codeGenerationRequest)
-    return .function(signature: registerRPCsSignature, body: registerRPCsBody)
+    return .guarded(
+      self.availabilityGuard,
+      .function(signature: registerRPCsSignature, body: registerRPCsBody)
+    )
   }
 
   private func makeRegisterRPCsMethodBody(
@@ -221,7 +227,7 @@ extension ServerCodeTranslator {
     var arguments = [FunctionArgumentDescription]()
     arguments.append(
       .init(
-        label: "for",
+        label: "forMethod",
         expression: .identifierPattern(
           self.methodDescriptorPath(for: method, service: service)
         )
@@ -460,7 +466,7 @@ extension ServerCodeTranslator {
     type: InputOutputType
   ) -> String {
     var components: String =
-      "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase)"
+      "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase)"
 
     switch type {
     case .input:
@@ -478,7 +484,7 @@ extension ServerCodeTranslator {
     service: CodeGenerationRequest.ServiceDescriptor
   ) -> String {
     return
-      "\(service.namespacedTypealiasGeneratedName).Methods.\(method.name.generatedUpperCase).descriptor"
+      "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
   }
 
   /// Generates the fully qualified name of the type alias for a service protocol.

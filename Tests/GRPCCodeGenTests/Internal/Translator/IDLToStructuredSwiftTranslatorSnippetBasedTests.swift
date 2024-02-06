@@ -172,18 +172,21 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       public enum NamespaceA {
           public enum ServiceA {
-              public enum Methods {}
-              public static let methods: [MethodDescriptor] = []
-              public typealias StreamingServiceProtocol = NamespaceA_ServiceAServiceStreamingProtocol
+              public enum Method {
+                  public static let descriptors: [MethodDescriptor] = []
+              }
+              public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
               public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
           }
       }
 
       /// Documentation for AService
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
 
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
+          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
 
