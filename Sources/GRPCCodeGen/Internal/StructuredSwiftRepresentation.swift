@@ -764,6 +764,9 @@ indirect enum Declaration: Equatable, Codable {
   /// A declaration that adds a comment on top of the provided declaration.
   case deprecated(DeprecationDescription, Declaration)
 
+  /// A declaration that adds an availability guard on top of the provided declaration.
+  case guarded(AvailabilityDescription, Declaration)
+
   /// A variable declaration.
   case variable(VariableDescription)
 
@@ -799,6 +802,42 @@ struct DeprecationDescription: Equatable, Codable {
 
   /// A new name of the symbol, allowing the user to get a fix-it.
   var renamed: String?
+}
+
+/// A description of an availability guard.
+///
+/// For example: `@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)`
+struct AvailabilityDescription: Equatable, Codable {
+  /// The array of OSes and versions which are specified in the availability guard.
+  var osVersions: [OSVersion]
+  init(osVersions: [OSVersion]) {
+    self.osVersions = osVersions
+  }
+
+  /// An OS and its version.
+  struct OSVersion: Equatable, Codable {
+    var os: OS
+    var version: String
+    init(os: OS, version: String) {
+      self.os = os
+      self.version = version
+    }
+  }
+
+  /// One of the possible OSes.
+  // swift-format-ignore: DontRepeatTypeInStaticProperties
+  struct OS: Equatable, Codable {
+    var name: String
+
+    init(name: String) {
+      self.name = name
+    }
+
+    static let macOS = Self(name: "macOS")
+    static let iOS = Self(name: "iOS")
+    static let watchOS = Self(name: "watchOS")
+    static let tvOS = Self(name: "tvOS")
+  }
 }
 
 /// A description of an assignment expression.
@@ -1803,6 +1842,7 @@ extension Declaration {
       switch self {
       case .commentable(_, let declaration): return declaration.accessModifier
       case .deprecated(_, let declaration): return declaration.accessModifier
+      case .guarded(_, let declaration): return declaration.accessModifier
       case .variable(let variableDescription): return variableDescription.accessModifier
       case .extension(let extensionDescription): return extensionDescription.accessModifier
       case .struct(let structDescription): return structDescription.accessModifier
@@ -1821,6 +1861,9 @@ extension Declaration {
       case .deprecated(let deprecationDescription, var declaration):
         declaration.accessModifier = newValue
         self = .deprecated(deprecationDescription, declaration)
+      case .guarded(let availability, var declaration):
+        declaration.accessModifier = newValue
+        self = .guarded(availability, declaration)
       case .variable(var variableDescription):
         variableDescription.accessModifier = newValue
         self = .variable(variableDescription)

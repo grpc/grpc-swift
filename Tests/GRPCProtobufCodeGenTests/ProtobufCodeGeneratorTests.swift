@@ -102,6 +102,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
+        @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
         internal struct Helloworld_GreeterClient: Helloworld.Greeter.ClientProtocol {
             private let client: GRPCCore.GRPCClient
             
@@ -181,6 +182,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
+        @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
         public protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
           func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Method.SayHello.Output>
@@ -188,6 +190,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
         extension Helloworld.Greeter.StreamingServiceProtocol {
+          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
             router.registerHandler(
               forMethod: Helloworld.Greeter.Method.SayHello.descriptor,
@@ -270,6 +273,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
+        @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
         package protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
           func sayHello(request: ServerRequest.Stream<Helloworld.Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld.Greeter.Method.SayHello.Output>
@@ -277,6 +281,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
         extension Helloworld.Greeter.StreamingServiceProtocol {
+          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           package func registerMethods(with router: inout GRPCCore.RPCRouter) {
             router.registerHandler(
               forMethod: Helloworld.Greeter.Method.SayHello.descriptor,
@@ -329,6 +334,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         /// The greeting service definition.
+        @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
         package struct Helloworld_GreeterClient: Helloworld.Greeter.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           

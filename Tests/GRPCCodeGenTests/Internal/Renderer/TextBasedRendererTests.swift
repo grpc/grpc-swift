@@ -667,6 +667,21 @@ final class Test_TextBasedRenderer: XCTestCase {
     )
   }
 
+  func testAvailability() throws {
+    try _test(
+      .init(osVersions: [
+        .init(os: .macOS, version: "12.0"),
+        .init(os: .iOS, version: "13.1.2"),
+        .init(os: .watchOS, version: "8.1.2"),
+        .init(os: .tvOS, version: "15.0.2"),
+      ]),
+      renderedBy: TextBasedRenderer.renderAvailability,
+      rendersAs: #"""
+        @available(macOS 12.0, iOS 13.1.2, watchOS 8.1.2, tvOS 15.0.2, *)
+        """#
+    )
+  }
+
   func testBindingKind() throws {
     try _test(
       .var,
