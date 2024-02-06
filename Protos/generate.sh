@@ -172,6 +172,20 @@ function generate_reflection_data_example {
   done
 }
 
+function generate_rpc_code_for_tests {
+  local protos=(
+    "$here/upstream/grpc/service_config/service_config.proto"
+    "$here/upstream/grpc/lookup/v1/rls.proto"
+    "$here/upstream/grpc/lookup/v1/rls_config.proto"
+    "$here/upstream/google/rpc/code.proto"
+  )
+  local output="$root/Tests/GRPCCoreTests/Configuration/Generated"
+
+  for proto in "${protos[@]}"; do
+    generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=DropPath"
+  done
+}
+
 #------------------------------------------------------------------------------
 
 # Examples
@@ -187,3 +201,4 @@ generate_echo_reflection_data_for_tests
 
 # Misc. tests
 generate_normalization_for_tests
+generate_rpc_code_for_tests

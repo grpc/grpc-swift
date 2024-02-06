@@ -236,7 +236,7 @@ extension ClientRPCExecutorTests {
       request: ClientRequest.Stream {
         try await $0.write([0])
       },
-      configuration: .init(retryPolicy: retryPolicy)
+      configuration: .init(names: [], executionPolicy: .retry(retryPolicy))
     ) { response in
       let end = ContinuousClock.now
       let duration = end - start
@@ -272,7 +272,7 @@ extension ClientRPCExecutorTests {
         request: ClientRequest.Stream {
           try await $0.write([0])
         },
-        configuration: .init(retryPolicy: retryPolicy)
+        configuration: .init(names: [], executionPolicy: .retry(retryPolicy))
       ) { response in
         switch response.accepted {
         case .success:
@@ -304,6 +304,6 @@ extension MethodConfiguration {
       retryableStatusCodes: codes
     )
 
-    return Self(retryPolicy: policy, timeout: timeout)
+    return Self(names: [], timeout: timeout, executionPolicy: .retry(policy))
   }
 }
