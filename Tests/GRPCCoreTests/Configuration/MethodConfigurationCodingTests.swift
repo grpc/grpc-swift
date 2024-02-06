@@ -220,7 +220,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
 
   func testEncodeDecodeRetryPolicy() throws {
     let policy = RetryPolicy(
-      maximumAttempts: 1,
+      maximumAttempts: 3,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(3),
       backoffMultiplier: 1.6,
