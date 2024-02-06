@@ -25,11 +25,11 @@ internal struct ProtobufCodeGenParser {
   let input: FileDescriptor
   let namer: SwiftProtobufNamer
 
-  internal init(input: FileDescriptor) {
+  internal init(input: FileDescriptor, protoFileModuleMappings: ProtoFileToModuleMappings) {
     self.input = input
     self.namer = SwiftProtobufNamer(
       currentFile: input,
-      protoFileToModuleMappings: ProtoFileToModuleMappings()
+      protoFileToModuleMappings: protoFileModuleMappings
     )
   }
 

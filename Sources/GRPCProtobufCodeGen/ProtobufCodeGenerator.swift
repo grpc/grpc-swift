@@ -20,14 +20,20 @@ import SwiftProtobufPluginLibrary
 public struct ProtobufCodeGenerator {
   internal var configuration: SourceGenerator.Configuration
 
-  public init(configuration: SourceGenerator.Configuration) {
+  public init(
+    configuration: SourceGenerator.Configuration
+  ) {
     self.configuration = configuration
   }
 
   public func generateCode(
-    from fileDescriptor: FileDescriptor
+    from fileDescriptor: FileDescriptor,
+    protoFileModuleMappings: ProtoFileToModuleMappings
   ) throws -> String {
-    let parser = ProtobufCodeGenParser(input: fileDescriptor)
+    let parser = ProtobufCodeGenParser(
+      input: fileDescriptor,
+      protoFileModuleMappings: protoFileModuleMappings
+    )
     let sourceGenerator = SourceGenerator(configuration: self.configuration)
 
     let codeGenerationRequest = try parser.parse()

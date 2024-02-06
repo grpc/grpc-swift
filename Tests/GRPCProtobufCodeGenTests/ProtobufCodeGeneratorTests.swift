@@ -386,7 +386,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     let generator = ProtobufCodeGenerator(configuration: configs)
     try XCTAssertEqualWithDiff(
       try generator.generateCode(
-        from: fileDescriptor
+        from: fileDescriptor,
+        protoFileModuleMappings: ProtoFileToModuleMappings()
       ),
       expectedCode
     )

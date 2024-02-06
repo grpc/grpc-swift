@@ -31,7 +31,7 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         """
       )
     }
-    let parsedCodeGenRequest = try ProtobufCodeGenParser(input: fileDescriptor).parse()
+    let parsedCodeGenRequest = try ProtobufCodeGenParser(input: fileDescriptor, protoFileModuleMappings: ProtoFileToModuleMappings()).parse()
     XCTAssertEqual(parsedCodeGenRequest.fileName, "helloworld.proto")
     XCTAssertEqual(
       parsedCodeGenRequest.leadingTrivia,
