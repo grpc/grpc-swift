@@ -201,7 +201,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     var client = InProcessClientTransport(
       server: InProcessServerTransport(),
-      serviceConfiguration: .init()
+      serviceConfiguration: serviceConfiguration
     )
 
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
