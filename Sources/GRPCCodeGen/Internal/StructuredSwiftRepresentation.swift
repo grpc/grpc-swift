@@ -825,6 +825,7 @@ struct AvailabilityDescription: Equatable, Codable {
   }
 
   /// One of the possible OSes.
+  // swift-format-ignore: DontRepeatTypeInStaticProperties
   struct OS: Equatable, Codable {
     var name: String
 
