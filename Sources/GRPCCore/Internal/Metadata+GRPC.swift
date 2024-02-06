@@ -38,7 +38,7 @@ extension Metadata {
   }
 
   @inlinable
-  var timeout: Duration? {
+  public var timeout: Duration? {
     get {
       self.firstString(forKey: .timeout).flatMap { Timeout(decoding: $0)?.duration }
     }
