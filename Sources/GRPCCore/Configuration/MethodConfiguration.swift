@@ -81,7 +81,7 @@ public struct MethodConfiguration: Hashable, Sendable {
   /// The maximum allowed payload size in bytes for an individual message.
   ///
   /// If a client attempts to send an object larger than this value, it will not be sent and the
-  /// client will see a error. Note that 0 is a valid value, meaning that the request message
+  /// client will see an error. Note that 0 is a valid value, meaning that the request message
   /// must be empty.
   public var maxRequestMessageBytes: Int?
 
@@ -311,7 +311,7 @@ public struct HedgingPolicy: Hashable, Sendable {
   /// - Parameters:
   ///   - maximumAttempts: The maximum number of attempts allowed for the RPC.
   ///   - hedgingDelay: The delay between each hedged RPC.
-  ///   - nonFatalStatusCodes: The set of status codes which indicated other hedged RPCs may still
+  ///   - nonFatalStatusCodes: The set of status codes which indicate other hedged RPCs may still
   ///       succeed.
   /// - Precondition: `maximumAttempts` must be greater than zero.
   public init(
@@ -337,10 +337,10 @@ public struct HedgingPolicy: Hashable, Sendable {
 }
 
 private func validateMaxAttempts(_ value: Int) throws -> Int {
-  guard value > 0 else {
+  guard value > 1 else {
     throw RuntimeError(
       code: .invalidArgument,
-      message: "max_attempts must be greater than zero (was \(value))"
+      message: "max_attempts must be greater than one (was \(value))"
     )
   }
 

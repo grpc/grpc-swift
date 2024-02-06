@@ -198,20 +198,20 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
   func testDecodeRetryPolicy() throws {
     let json = """
       {
-        "maxAttempts": 1,
+        "maxAttempts": 3,
         "initialBackoff": "1s",
         "maxBackoff": "3s",
         "backoffMultiplier": 1.6,
-        "retryableStatusCodes": ["ABORTED"]
+        "retryableStatusCodes": ["ABORTED", "UNAVAILABLE"]
       }
       """
 
     let expected = RetryPolicy(
-      maximumAttempts: 1,
+      maximumAttempts: 3,
       initialBackoff: .seconds(1),
       maximumBackoff: .seconds(3),
       backoffMultiplier: 1.6,
-      retryableStatusCodes: [.aborted]
+      retryableStatusCodes: [.aborted, .unavailable]
     )
 
     let decoded = try self.decoder.decode(RetryPolicy.self, from: Data(json.utf8))
@@ -233,17 +233,20 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
   }
 
   func testDecodeRetryPolicyWithInvalidRetryMaxAttempts() throws {
-    let json = """
-      {
-        "maxAttempts": -1,
-        "initialBackoff": "1s",
-        "maxBackoff": "3s",
-        "backoffMultiplier": 1.6,
-        "retryableStatusCodes": ["ABORTED"]
-      }
-      """
+    let cases = ["-1", "0", "1"]
+    for maxAttempts in cases {
+      let json = """
+        {
+          "maxAttempts": \(maxAttempts),
+          "initialBackoff": "1s",
+          "maxBackoff": "3s",
+          "backoffMultiplier": 1.6,
+          "retryableStatusCodes": ["ABORTED"]
+        }
+        """
 
-    try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
+      try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
+    }
   }
 
   func testDecodeRetryPolicyWithInvalidInitialBackoff() throws {
@@ -251,7 +254,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
     for backoff in cases {
       let json = """
         {
-          "maxAttempts": -1,
+          "maxAttempts": 3,
           "initialBackoff": "\(backoff)",
           "maxBackoff": "3s",
           "backoffMultiplier": 1.6,
@@ -267,7 +270,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
     for backoff in cases {
       let json = """
         {
-          "maxAttempts": -1,
+          "maxAttempts": 3,
           "initialBackoff": "1s",
           "maxBackoff": "\(backoff)",
           "backoffMultiplier": 1.6,
@@ -283,7 +286,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
     for multiplier in cases {
       let json = """
         {
-          "maxAttempts": -1,
+          "maxAttempts": 3,
           "initialBackoff": "1s",
           "maxBackoff": "3s",
           "backoffMultiplier": \(multiplier),
@@ -297,7 +300,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
   func testDecodeRetryPolicyWithEmptyRetryableStatusCodes() throws {
     let json = """
       {
-        "maxAttempts": -1,
+        "maxAttempts": 3,
         "initialBackoff": "1s",
         "maxBackoff": "3s",
         "backoffMultiplier": 1,

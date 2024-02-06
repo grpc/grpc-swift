@@ -244,7 +244,7 @@ extension ServiceConfiguration {
     ///
     /// - Parameters:
     ///   - maxTokens: The initial, and maximum number of tokens. Must be greater than zero.
-    ///   - tokenRatio: The amount of tokens to add on each successful RPc. Must be greater
+    ///   - tokenRatio: The amount of tokens to add on each successful RPC. Must be greater
     ///       than zero.
     public init(maxTokens: Int, tokenRatio: Double) throws {
       self.maxTokens = maxTokens
