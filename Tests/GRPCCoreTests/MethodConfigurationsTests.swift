@@ -24,7 +24,7 @@ final class MethodConfigurationsTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigurations()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let descriptor = MethodDescriptor(service: "test", method: "first")
@@ -35,7 +35,7 @@ final class MethodConfigurationsTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
     configurations[descriptor] = overrideConfiguration
 
     XCTAssertEqual(configurations[descriptor], overrideConfiguration)
@@ -47,7 +47,7 @@ final class MethodConfigurationsTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigurations()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
@@ -58,7 +58,7 @@ final class MethodConfigurationsTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -71,7 +71,7 @@ final class MethodConfigurationsTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(hedgingPolicy: policy)
+    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigurations()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
@@ -82,7 +82,7 @@ final class MethodConfigurationsTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(retryPolicy: retryPolicy)
+    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test2", method: "second")

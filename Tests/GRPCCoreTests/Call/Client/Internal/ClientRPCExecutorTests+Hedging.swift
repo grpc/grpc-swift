@@ -200,6 +200,6 @@ extension MethodConfiguration {
       nonFatalStatusCodes: nonFatalCodes
     )
 
-    return Self(hedgingPolicy: policy, timeout: timeout)
+    return Self(names: [], timeout: timeout, executionPolicy: .hedge(policy))
   }
 }

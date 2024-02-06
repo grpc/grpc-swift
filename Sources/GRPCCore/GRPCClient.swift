@@ -393,7 +393,7 @@ public struct GRPCClient: Sendable {
     }
 
     // No configuration found, return the "vanilla" configuration.
-    return MethodConfiguration(executionPolicy: nil, timeout: nil)
+    return MethodConfiguration(names: [], timeout: nil, executionPolicy: nil)
   }
 }
 
