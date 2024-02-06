@@ -172,7 +172,10 @@ func main(args: [String]) throws {
           let grpcGenerator = ProtobufCodeGenerator(
             configuration: SourceGenerator.Configuration(options: options)
           )
-          grpcFile.content = try grpcGenerator.generateCode(from: fileDescriptor)
+          grpcFile.content = try grpcGenerator.generateCode(
+            from: fileDescriptor,
+            protoFileModuleMappings: options.protoToModuleMappings
+          )
         } else {
           let grpcGenerator = Generator(fileDescriptor, options: options)
           grpcFile.content = grpcGenerator.code
