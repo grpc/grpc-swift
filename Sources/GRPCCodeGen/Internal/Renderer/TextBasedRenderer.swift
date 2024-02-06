@@ -818,6 +818,8 @@ struct TextBasedRenderer: RendererProtocol {
       renderCommentableDeclaration(comment: comment, declaration: nestedDeclaration)
     case let .deprecated(deprecation, nestedDeclaration):
       renderDeprecatedDeclaration(deprecation: deprecation, declaration: nestedDeclaration)
+    case let .guarded(availability, nestedDeclaration):
+      renderGuardedDeclaration(availability: availability, declaration: nestedDeclaration)
     case .variable(let variableDescription): renderVariable(variableDescription)
     case .extension(let extensionDescription): renderExtension(extensionDescription)
     case .struct(let structDescription): renderStruct(structDescription)
@@ -1071,6 +1073,21 @@ struct TextBasedRenderer: RendererProtocol {
     ]
     .compactMap({ $0 })
     let line = "@available(\(things.joined(separator: ", ")))"
+    writer.writeLine(line)
+  }
+
+  /// Renders the specified declaration with an availability guard annotation.
+  func renderGuardedDeclaration(availability: AvailabilityDescription, declaration: Declaration) {
+    renderAvailability(availability)
+    renderDeclaration(declaration)
+  }
+
+  func renderAvailability(_ availability: AvailabilityDescription) {
+    var line = "@available("
+    for osVersion in availability.osVersions {
+      line.append("\(osVersion.os.name) \(osVersion.version), ")
+    }
+    line.append("*)")
     writer.writeLine(line)
   }
 

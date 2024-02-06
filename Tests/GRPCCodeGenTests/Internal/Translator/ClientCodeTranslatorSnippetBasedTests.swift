@@ -66,6 +66,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -139,6 +140,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -212,6 +214,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -285,6 +288,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -386,6 +390,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       package struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -475,6 +480,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       internal struct ServiceAClient: ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -535,6 +541,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       extension NamespaceA.ServiceA.ClientProtocol {
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA.ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -551,6 +558,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceB
       ///
       /// Line 2
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public struct ServiceBClient: ServiceB.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           

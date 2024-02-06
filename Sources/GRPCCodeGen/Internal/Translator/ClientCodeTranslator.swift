@@ -332,12 +332,15 @@ extension ClientCodeTranslator {
       )
     }
 
-    return .struct(
-      StructDescription(
-        accessModifier: self.accessModifier,
-        name: "\(service.namespacedGeneratedName)Client",
-        conformances: ["\(service.namespacedTypealiasGeneratedName).ClientProtocol"],
-        members: [clientProperty, initializer] + methods
+    return .guarded(
+      self.availabilityGuard,
+      .struct(
+        StructDescription(
+          accessModifier: self.accessModifier,
+          name: "\(service.namespacedGeneratedName)Client",
+          conformances: ["\(service.namespacedTypealiasGeneratedName).ClientProtocol"],
+          members: [clientProperty, initializer] + methods
+        )
       )
     )
   }
