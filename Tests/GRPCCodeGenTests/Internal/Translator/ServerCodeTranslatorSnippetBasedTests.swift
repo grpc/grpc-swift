@@ -57,6 +57,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func unary(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.Unary.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.Unary.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -71,11 +72,13 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for unaryMethod
           func unary(request: ServerRequest.Single<NamespaceA.ServiceA.Method.Unary.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Method.Unary.Output>
       }
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ServiceProtocol {
           public func unary(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.Unary.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.Unary.Output> {
               let response = try await self.unary(request: ServerRequest.Single(stream: request))
@@ -123,6 +126,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.InputStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           package func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -137,11 +141,13 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       package protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for inputStreamingMethod
           func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.InputStreaming.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Method.InputStreaming.Output>
       }
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ServiceProtocol {
           package func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.InputStreaming.Output> {
               let response = try await self.inputStreaming(request: request)
@@ -193,6 +199,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -207,11 +214,13 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for outputStreamingMethod
           func outputStreaming(request: ServerRequest.Single<NamespaceA.ServiceA.Method.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Output>
       }
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ServiceProtocol {
           public func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Output> {
               let response = try await self.outputStreaming(request: ServerRequest.Single(stream: request))
@@ -263,6 +272,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func bidirectionalStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.BidirectionalStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.BidirectionalStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           package func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -277,11 +287,13 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       package protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for bidirectionalStreamingMethod
           func bidirectionalStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.BidirectionalStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.BidirectionalStreaming.Output>
       }
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ServiceProtocol {
       }
       """
@@ -344,6 +356,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func outputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -366,6 +379,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       internal protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {
           /// Documentation for inputStreamingMethod
           func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.InputStreaming.Input>) async throws -> ServerResponse.Single<NamespaceA.ServiceA.Method.InputStreaming.Output>
@@ -374,6 +388,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func outputStreaming(request: ServerRequest.Single<NamespaceA.ServiceA.Method.OutputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.OutputStreaming.Output>
       }
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ServiceProtocol {
           internal func inputStreaming(request: ServerRequest.Stream<NamespaceA.ServiceA.Method.InputStreaming.Input>) async throws -> ServerResponse.Stream<NamespaceA.ServiceA.Method.InputStreaming.Output> {
               let response = try await self.inputStreaming(request: request)
@@ -422,6 +437,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           func methodA(request: ServerRequest.Stream<ServiceA.Method.MethodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Method.MethodA.Output>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -436,11 +452,13 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       internal protocol ServiceAServiceProtocol: ServiceA.StreamingServiceProtocol {
           /// Documentation for MethodA
           func methodA(request: ServerRequest.Single<ServiceA.Method.MethodA.Input>) async throws -> ServerResponse.Single<ServiceA.Method.MethodA.Output>
       }
       /// Partial conformance to `ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension ServiceA.ServiceProtocol {
           internal func methodA(request: ServerRequest.Stream<ServiceA.Method.MethodA.Input>) async throws -> ServerResponse.Stream<ServiceA.Method.MethodA.Output> {
               let response = try await self.methodA(request: ServerRequest.Single(stream: request))
@@ -483,26 +501,32 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {}
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ServiceProtocol {
       }
       /// Documentation for ServiceB
       @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceBStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
       /// Conformance to `GRPCCore.RegistrableRPCService`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceB.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
       /// Documentation for ServiceB
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceBServiceProtocol: NamespaceA.ServiceB.StreamingServiceProtocol {}
       /// Partial conformance to `NamespaceA_ServiceBStreamingServiceProtocol`.
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceB.ServiceProtocol {
       }
       """

@@ -43,6 +43,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -52,6 +53,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
@@ -117,6 +119,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -126,6 +129,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
@@ -191,6 +195,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -200,6 +205,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA.ServiceA.Method.MethodA.Input>,
@@ -265,6 +271,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -274,6 +281,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
@@ -347,6 +355,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       package protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -364,6 +373,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA.ServiceA.Method.MethodB.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ClientProtocol {
           package func methodA<R>(
               request: ClientRequest.Stream<NamespaceA.ServiceA.Method.MethodA.Input>,
@@ -457,6 +467,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       internal protocol ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -466,6 +477,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Single<ServiceA.Method.MethodA.Output>) async throws -> R
           ) async throws -> R where R: Sendable
       }
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension ServiceA.ClientProtocol {
           internal func methodA<R>(
               request: ClientRequest.Single<ServiceA.Method.MethodA.Input>,
@@ -537,7 +549,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {}
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension NamespaceA.ServiceA.ClientProtocol {
       }
       /// Documentation for ServiceA
@@ -552,7 +566,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceB
       ///
       /// Line 2
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       public protocol ServiceBClientProtocol: Sendable {}
+      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
       extension ServiceB.ClientProtocol {
       }
       /// Documentation for ServiceB

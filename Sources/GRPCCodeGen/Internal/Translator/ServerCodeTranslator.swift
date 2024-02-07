@@ -22,12 +22,14 @@
 /// a representation for the following generated code:
 ///
 /// ```swift
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol foo_BarServiceStreamingProtocol: GRPCCore.RegistrableRPCService {
 ///   func baz(
 ///     request: ServerRequest.Stream<foo.Method.baz.Input>
 ///   ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
 /// }
 /// // Generated conformance to `RegistrableRPCService`.
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension foo.Bar.StreamingServiceProtocol {
 ///   public func registerRPCs(with router: inout RPCRouter) {
 ///     router.registerHandler(
@@ -38,12 +40,14 @@
 ///     )
 ///   }
 /// }
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
 ///   func baz(
 ///     request: ServerRequest.Single<foo.Bar.Method.baz.Input>
 ///   ) async throws -> ServerResponse.Single<foo.Bar.Method.baz.Output>
 /// }
 /// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension foo.Bar.ServiceProtocol {
 ///   public func baz(
 ///     request: ServerRequest.Stream<foo.Bar.Method.baz.Input>
@@ -168,9 +172,12 @@ extension ServerCodeTranslator {
   ) -> Declaration {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
     let registerRPCMethod = self.makeRegisterRPCsMethod(for: service, in: codeGenerationRequest)
-    return .extension(
-      onType: streamingProtocol,
-      declarations: [registerRPCMethod]
+    return .guarded(
+      self.availabilityGuard,
+      .extension(
+        onType: streamingProtocol,
+        declarations: [registerRPCMethod]
+      )
     )
   }
 
@@ -297,12 +304,15 @@ extension ServerCodeTranslator {
 
     return .commentable(
       .preFormatted(service.documentation),
-      .protocol(
-        ProtocolDescription(
-          accessModifier: self.accessModifier,
-          name: protocolName,
-          conformances: [streamingProtocol],
-          members: methods
+      .guarded(
+        self.availabilityGuard,
+        .protocol(
+          ProtocolDescription(
+            accessModifier: self.accessModifier,
+            name: protocolName,
+            conformances: [streamingProtocol],
+            members: methods
+          )
         )
       )
     )
@@ -363,9 +373,12 @@ extension ServerCodeTranslator {
     }
 
     let protocolName = self.protocolNameTypealias(service: service, streaming: false)
-    return .extension(
-      onType: protocolName,
-      declarations: methods
+    return .guarded(
+      self.availabilityGuard,
+      .extension(
+        onType: protocolName,
+        declarations: methods
+      )
     )
   }
 

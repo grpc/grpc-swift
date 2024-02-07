@@ -22,6 +22,7 @@
 /// a representation for the following generated code:
 ///
 /// ```swift
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarClientProtocol: Sendable {
 ///   func baz<R: Sendable>(
 ///     request: ClientRequest.Single<foo.Bar.Method.baz.Input>,
@@ -30,6 +31,7 @@
 ///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Method.Baz.Output>) async throws -> R
 ///   ) async throws -> ServerResponse.Stream<foo.Bar.Method.Baz.Output>
 /// }
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension Foo.Bar.ClientProtocol {
 ///   public func get<R: Sendable>(
 ///     request: ClientRequest.Single<Foo.Bar.Method.Baz.Input>,
@@ -42,6 +44,7 @@
 ///       body
 ///     )
 /// }
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public struct foo_BarClient: foo.Bar.ClientProtocol {
 ///   private let client: GRPCCore.GRPCClient
 ///   public init(client: GRPCCore.GRPCClient) {
@@ -120,7 +123,7 @@ extension ClientCodeTranslator {
         members: methods
       )
     )
-    return clientProtocol
+    return .guarded(self.availabilityGuard, clientProtocol)
   }
 
   private func makeExtensionProtocol(
@@ -142,7 +145,10 @@ extension ClientCodeTranslator {
         declarations: methods
       )
     )
-    return clientProtocolExtension
+    return .guarded(
+      self.availabilityGuard,
+      clientProtocolExtension
+    )
   }
 
   private func makeClientProtocolMethod(
