@@ -22,14 +22,14 @@
 /// a representation for the following generated code:
 ///
 /// ```swift
-/// @available(macOS 13.0, *)
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol foo_BarServiceStreamingProtocol: GRPCCore.RegistrableRPCService {
 ///   func baz(
 ///     request: ServerRequest.Stream<foo.Method.baz.Input>
 ///   ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
 /// }
 /// // Generated conformance to `RegistrableRPCService`.
-/// @available(macOS 13.0, *)
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension foo.Bar.StreamingServiceProtocol {
 ///   public func registerRPCs(with router: inout RPCRouter) {
 ///     router.registerHandler(
@@ -40,14 +40,14 @@
 ///     )
 ///   }
 /// }
-/// @available(macOS 13.0, *)
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
 ///   func baz(
 ///     request: ServerRequest.Single<foo.Bar.Method.baz.Input>
 ///   ) async throws -> ServerResponse.Single<foo.Bar.Method.baz.Output>
 /// }
 /// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
-/// @available(macOS 13.0, *)
+/// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension foo.Bar.ServiceProtocol {
 ///   public func baz(
 ///     request: ServerRequest.Stream<foo.Bar.Method.baz.Input>
