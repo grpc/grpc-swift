@@ -248,6 +248,39 @@ internal final class ConnectionManager: @unchecked Sendable {
     }
   }
 
+  /// Returns whether the state is 'connecting'.
+  private var isConnecting: Bool {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .connecting:
+      return true
+    case .idle, .transientFailure, .active, .ready, .shutdown:
+      return false
+    }
+  }
+
+  /// Returns whether the state is 'ready'.
+  private var isReady: Bool {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .ready:
+      return true
+    case .idle, .active, .connecting, .transientFailure, .shutdown:
+      return false
+    }
+  }
+
+  /// Returns whether the state is 'ready'.
+  private var isTransientFailure: Bool {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .transientFailure:
+      return true
+    case .idle, .connecting, .active, .ready, .shutdown:
+      return false
+    }
+  }
+
   /// Returns whether the state is 'shutdown'.
   private var isShutdown: Bool {
     self.eventLoop.assertInEventLoop()
@@ -1140,7 +1173,22 @@ extension ConnectionManager {
       return self.manager.isIdle
     }
 
-    /// Returne `true` if the connection is in the shutdown state.
+    /// Returns `true` if the connection is in the connecting state.
+    internal var isConnecting: Bool {
+      return self.manager.isConnecting
+    }
+
+    /// Returns `true` if the connection is in the ready state.
+    internal var isReady: Bool {
+      return self.manager.isReady
+    }
+
+    /// Returns `true` if the connection is in the transient failure state.
+    internal var isTransientFailure: Bool {
+      return self.manager.isTransientFailure
+    }
+
+    /// Returns `true` if the connection is in the shutdown state.
     internal var isShutdown: Bool {
       return self.manager.isShutdown
     }
