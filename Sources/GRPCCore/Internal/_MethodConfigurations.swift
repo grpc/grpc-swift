@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// TODO: when swift(>=5.9), use 'package' access level
+
 /// A collection of ``MethodConfiguration``s, mapped to specific methods or services.
 ///
 /// When creating a new instance, no overrides and no default will be set for using when getting
@@ -23,12 +25,20 @@
 ///
 /// Use the subscript to get and set configurations for specific methods.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct MethodConfigurations: Sendable, Hashable {
-  private var elements: [MethodDescriptor: MethodConfiguration]
+public struct _MethodConfigurations: Sendable, Hashable {
+  private var elements: [MethodConfiguration.Name: MethodConfiguration]
 
-  /// Create a new ``MethodConfigurations`` with no overrides and no default configuration.
-  public init() {
+  /// Create a new ``_MethodConfigurations``.
+  ///
+  /// - Parameter serviceConfiguration: The configuration to read ``MethodConfiguration`` from.
+  public init(serviceConfiguration: ServiceConfiguration = ServiceConfiguration()) {
     self.elements = [:]
+
+    for configuration in serviceConfiguration.methodConfiguration {
+      for name in configuration.names {
+        self.elements[name] = configuration
+      }
+    }
   }
 
   /// Get or set the corresponding ``MethodConfiguration`` for the given ``MethodDescriptor``.
@@ -44,25 +54,27 @@ public struct MethodConfigurations: Sendable, Hashable {
   ///  - descriptor: The ``MethodDescriptor`` for which to get or set a ``MethodConfiguration``.
   public subscript(_ descriptor: MethodDescriptor) -> MethodConfiguration? {
     get {
-      if let configuration = self.elements[descriptor] {
+      var name = MethodConfiguration.Name(service: descriptor.service, method: descriptor.method)
+
+      if let configuration = self.elements[name] {
         return configuration
       }
 
       // Check if the config is set at the service level by clearing the method.
-      var descriptor = descriptor
-      descriptor.method = ""
+      name.method = ""
 
-      if let configuration = self.elements[descriptor] {
+      if let configuration = self.elements[name] {
         return configuration
       }
 
       // Check if the config is set at the global level by clearing the service and method.
-      descriptor.service = ""
-      return self.elements[descriptor]
+      name.service = ""
+      return self.elements[name]
     }
 
     set {
-      self.elements[descriptor] = newValue
+      let name = MethodConfiguration.Name(service: descriptor.service, method: descriptor.method)
+      self.elements[name] = newValue
     }
   }
 
@@ -70,8 +82,8 @@ public struct MethodConfigurations: Sendable, Hashable {
   ///
   /// - Parameter configuration: The default configuration.
   public mutating func setDefaultConfiguration(_ configuration: MethodConfiguration?) {
-    let descriptor = MethodDescriptor(service: "", method: "")
-    self.elements[descriptor] = configuration
+    let name = MethodConfiguration.Name(service: "", method: "")
+    self.elements[name] = configuration
   }
 
   /// Set a default configuration for a service.
@@ -87,6 +99,7 @@ public struct MethodConfigurations: Sendable, Hashable {
     _ configuration: MethodConfiguration?,
     forService service: String
   ) {
-    self.elements[MethodDescriptor(service: service, method: "")] = configuration
+    let name = MethodConfiguration.Name(service: "", method: "")
+    self.elements[name] = configuration
   }
 }

@@ -71,11 +71,9 @@ public protocol ClientTransport: Sendable {
     _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T
 
-  /// Returns the execution configuration for a given method.
+  /// Returns the configuration for a given method.
   ///
   /// - Parameter descriptor: The method to lookup configuration for.
-  /// - Returns: Execution configuration for the method, if it exists.
-  func executionConfiguration(
-    forMethod descriptor: MethodDescriptor
-  ) -> MethodConfiguration?
+  /// - Returns: Configuration for the method, if it exists.
+  func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfiguration?
 }

@@ -66,10 +66,10 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     }
   }
 
-  func executionConfiguration(
+  func configuration(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfiguration? {
-    self.transport.executionConfiguration(forMethod: descriptor)
+    self.transport.configuration(forMethod: descriptor)
   }
 }
 

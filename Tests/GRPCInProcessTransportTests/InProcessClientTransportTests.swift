@@ -187,14 +187,28 @@ final class InProcessClientTransportTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
-    var configurations = MethodConfigurations()
-    configurations.setDefaultConfiguration(defaultConfiguration)
 
-    var client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
+    var serviceConfiguration = ServiceConfiguration(
+      methodConfiguration: [
+        MethodConfiguration(
+          names: [
+            MethodConfiguration.Name(service: "", method: "")
+          ],
+          executionPolicy: .hedge(policy)
+        )
+      ]
+    )
+
+    var client = InProcessClientTransport(
+      server: InProcessServerTransport(),
+      serviceConfiguration: serviceConfiguration
+    )
 
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
-    XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), defaultConfiguration)
+    XCTAssertEqual(
+      client.configuration(forMethod: firstDescriptor),
+      serviceConfiguration.methodConfiguration.first
+    )
 
     let retryPolicy = RetryPolicy(
       maximumAttempts: 10,
@@ -203,12 +217,26 @@ final class InProcessClientTransportTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
-    configurations[firstDescriptor] = overrideConfiguration
-    client = InProcessClientTransport(server: .init(), methodConfiguration: configurations)
+
+    let overrideConfiguration = MethodConfiguration(
+      names: [MethodConfiguration.Name(service: "test", method: "second")],
+      executionPolicy: .retry(retryPolicy)
+    )
+    serviceConfiguration.methodConfiguration.append(overrideConfiguration)
+    client = InProcessClientTransport(
+      server: InProcessServerTransport(),
+      serviceConfiguration: serviceConfiguration
+    )
+
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
-    XCTAssertEqual(client.executionConfiguration(forMethod: firstDescriptor), overrideConfiguration)
-    XCTAssertEqual(client.executionConfiguration(forMethod: secondDescriptor), defaultConfiguration)
+    XCTAssertEqual(
+      client.configuration(forMethod: firstDescriptor),
+      serviceConfiguration.methodConfiguration.first
+    )
+    XCTAssertEqual(
+      client.configuration(forMethod: secondDescriptor),
+      serviceConfiguration.methodConfiguration.last
+    )
   }
 
   func testOpenMultipleStreamsThenClose() async throws {
@@ -242,7 +270,6 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func makeClient(
-    configuration: MethodConfiguration? = nil,
     server: InProcessServerTransport = InProcessServerTransport()
   ) -> InProcessClientTransport {
     let defaultPolicy = RetryPolicy(
@@ -253,13 +280,18 @@ final class InProcessClientTransportTests: XCTestCase {
       retryableStatusCodes: [.unavailable]
     )
 
-    var methodConfiguration = MethodConfigurations()
-    methodConfiguration.setDefaultConfiguration(
-      configuration ?? .init(names: [], executionPolicy: .retry(defaultPolicy))
+    let serviceConfiguration = ServiceConfiguration(
+      methodConfiguration: [
+        MethodConfiguration(
+          names: [MethodConfiguration.Name(service: "", method: "")],
+          executionPolicy: .retry(defaultPolicy)
+        )
+      ]
     )
+
     return InProcessClientTransport(
       server: server,
-      methodConfiguration: methodConfiguration
+      serviceConfiguration: serviceConfiguration
     )
   }
 }
