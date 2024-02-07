@@ -56,7 +56,7 @@ enum GRPCStreamStateMachineConfiguration {
   )
 }
 
-fileprivate enum GRPCStreamStateMachineState {
+enum GRPCStreamStateMachineState {
   case clientIdleServerIdle(ClientIdleServerIdleState)
   case clientOpenServerIdle(ClientOpenServerIdleState)
   case clientOpenServerOpen(ClientOpenServerOpenState)
@@ -76,7 +76,7 @@ fileprivate enum GRPCStreamStateMachineState {
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
     
-    var messageBuffer: OneOrManyQueue<[UInt8]>
+    var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(
       previousState: ClientIdleServerIdleState,
@@ -94,7 +94,7 @@ fileprivate enum GRPCStreamStateMachineState {
       )
       self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
       
-      self.messageBuffer = .init()
+      self.inboundMessageBuffer = .init()
     }
   }
   
@@ -105,14 +105,14 @@ fileprivate enum GRPCStreamStateMachineState {
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
     
-    var messageBuffer: OneOrManyQueue<[UInt8]>
+    var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(previousState: ClientOpenServerIdleState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.deframer = previousState.deframer
       self.decompressor = previousState.decompressor
-      self.messageBuffer = previousState.messageBuffer
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
   
@@ -123,14 +123,14 @@ fileprivate enum GRPCStreamStateMachineState {
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
     
-    var messageBuffer: OneOrManyQueue<[UInt8]>
+    var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(previousState: ClientOpenServerOpenState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.deframer = previousState.deframer
       self.decompressor = previousState.decompressor
-      self.messageBuffer = previousState.messageBuffer
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
   
@@ -141,11 +141,14 @@ fileprivate enum GRPCStreamStateMachineState {
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
     
+    var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
+    
     init(previousState: ClientOpenServerIdleState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.deframer = previousState.deframer
       self.decompressor = previousState.decompressor
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
   
@@ -156,14 +159,14 @@ fileprivate enum GRPCStreamStateMachineState {
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
     
-    var messageBuffer: OneOrManyQueue<[UInt8]>
+    var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(previousState: ClientOpenServerOpenState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.deframer = previousState.deframer
       self.decompressor = previousState.decompressor
-      self.messageBuffer = previousState.messageBuffer
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
 }
@@ -319,7 +322,9 @@ extension GRPCStreamStateMachine {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is already closed, can't have received the end stream trailer twice.")
       case .clientClosedServerIdle:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is idle.")
-      case .clientClosedServerOpen:
+      case .clientClosedServerOpen(let state):
+        state.compressor?.end()
+        state.decompressor?.end()
         self.state = .clientClosedServerClosed
       case .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is already closed.")
@@ -353,7 +358,7 @@ extension GRPCStreamStateMachine {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent a message before sending the initial metadata.")
       case .clientOpenServerOpen(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
-          state.messageBuffer.append(deframedMessage)
+          state.inboundMessageBuffer.append(deframedMessage)
         }
         if endStream {
           self.state = .clientOpenServerClosed(.init(previousState: state))
@@ -370,11 +375,11 @@ extension GRPCStreamStateMachine {
     mutating func nextInboundMessage() -> [UInt8]? {
       switch self.state {
       case .clientOpenServerOpen(var state):
-        let message = state.messageBuffer.pop()
+        let message = state.inboundMessageBuffer.pop()
         self.state = .clientOpenServerOpen(state)
         return message
       case .clientOpenServerClosed(var state):
-        let message = state.messageBuffer.pop()
+        let message = state.inboundMessageBuffer.pop()
         self.state = .clientOpenServerClosed(state)
         return message
       case .clientOpenServerIdle, 
@@ -444,7 +449,9 @@ extension GRPCStreamStateMachine {
         self.state = .clientOpenServerClosed(.init(previousState: state))
       case .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, can't send anything else.")
-      case .clientClosedServerOpen:
+      case .clientClosedServerOpen(let state):
+        state.compressor?.end()
+        state.decompressor?.end()
         self.state = .clientClosedServerClosed
       case .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if closed.")
@@ -460,7 +467,7 @@ extension GRPCStreamStateMachine {
           """
         )
       }
-        
+
       // We validate the received headers: compression must be valid if set, and
       // grpc-timeout and method name must be present.
       // If end stream is set, the client will be closed - otherwise, it will be opened.
@@ -493,7 +500,7 @@ extension GRPCStreamStateMachine {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't have received a message if client is idle.")
       case .clientOpenServerIdle(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
-          state.messageBuffer.append(deframedMessage)
+          state.inboundMessageBuffer.append(deframedMessage)
         }
         
         if endStream {
@@ -503,7 +510,7 @@ extension GRPCStreamStateMachine {
         }
       case .clientOpenServerOpen(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
-          state.messageBuffer.append(deframedMessage)
+          state.inboundMessageBuffer.append(deframedMessage)
         }
         
         if endStream {
@@ -539,15 +546,15 @@ extension GRPCStreamStateMachine {
     mutating func nextInboundMessage() -> [UInt8]? {
       switch self.state {
       case .clientOpenServerIdle(var state):
-        let request = state.messageBuffer.pop()
+        let request = state.inboundMessageBuffer.pop()
         self.state = .clientOpenServerIdle(state)
         return request
       case .clientOpenServerOpen(var state):
-        let request = state.messageBuffer.pop()
+        let request = state.inboundMessageBuffer.pop()
         self.state = .clientOpenServerOpen(state)
         return request
       case .clientClosedServerOpen(var state):
-        let request = state.messageBuffer.pop()
+        let request = state.inboundMessageBuffer.pop()
         self.state = .clientClosedServerOpen(state)
         return request
       case .clientClosedServerIdle,
