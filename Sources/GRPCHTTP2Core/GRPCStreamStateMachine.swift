@@ -20,11 +20,11 @@ import NIOCore
 fileprivate protocol GRPCStreamStateMachineProtocol {
   var state: GRPCStreamStateMachineState { get set }
 
-  mutating func send(metadata: Metadata)
-  mutating func send(message: [UInt8], endStream: Bool)
-  mutating func send(status: String, trailingMetadata: Metadata)
+  mutating func send(metadata: Metadata) throws
+  mutating func send(message: [UInt8], endStream: Bool) throws
+  mutating func send(status: String, trailingMetadata: Metadata) throws
   
-  mutating func receive(metadata: Metadata, endStream: Bool)
+  mutating func receive(metadata: Metadata, endStream: Bool) throws
   mutating func receive(message: ByteBuffer, endStream: Bool) throws
   
   mutating func nextOutboundMessage() throws -> ByteBuffer?
@@ -184,20 +184,20 @@ struct GRPCStreamStateMachine {
     }
   }
   
-  mutating func send(metadata: Metadata) {
-    self._stateMachine.send(metadata: metadata)
+  mutating func send(metadata: Metadata) throws {
+    try self._stateMachine.send(metadata: metadata)
   }
   
-  mutating func send(message: [UInt8], endStream: Bool) {
-    self._stateMachine.send(message: message, endStream: endStream)
+  mutating func send(message: [UInt8], endStream: Bool) throws {
+    try self._stateMachine.send(message: message, endStream: endStream)
   }
   
-  mutating func send(status: String, trailingMetadata: Metadata) {
-    self._stateMachine.send(status: status, trailingMetadata: trailingMetadata)
+  mutating func send(status: String, trailingMetadata: Metadata) throws {
+    try self._stateMachine.send(status: status, trailingMetadata: trailingMetadata)
   }
   
-  mutating func receive(metadata: Metadata, endStream: Bool) {
-    self._stateMachine.receive(metadata: metadata, endStream: endStream)
+  mutating func receive(metadata: Metadata, endStream: Bool) throws {
+    try self._stateMachine.receive(metadata: metadata, endStream: endStream)
   }
   
   mutating func receive(message: ByteBuffer, endStream: Bool) throws {
@@ -222,7 +222,7 @@ extension GRPCStreamStateMachine {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
     }
 
-    mutating func send(metadata: Metadata) {
+    mutating func send(metadata: Metadata) throws {
       // Client sends metadata only when opening the stream.
       // They send grpc-timeout and method name along with it.
       // TODO: should these things be validated in the handler or here?
@@ -236,19 +236,17 @@ extension GRPCStreamStateMachine {
           compressionAlgorithm: compressionAlgorithm
         ))
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
-        // Client is already open: we shouldn't be sending metadata.
-        preconditionFailure("Invalid state: client is already open")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is already open: shouldn't be sending metadata.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        // Client is closed: we shouldn't be sending metadata again.
-        preconditionFailure("Invalid state: client is closed")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed: can't send metadata.")
       }
     }
 
-    mutating func send(message: [UInt8], endStream: Bool) {
+    mutating func send(message: [UInt8], endStream: Bool) throws {
       // Client sends message.
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Client not yet open")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client not yet open.")
       case .clientOpenServerIdle(var state):
         state.framer.append(message)
         if endStream {
@@ -268,12 +266,12 @@ extension GRPCStreamStateMachine {
         // Do nothing.
         ()
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("Client is closed, cannot send a message")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, cannot send a message.")
       }
     }
     
-    mutating func send(status: String, trailingMetadata: Metadata) {
-      // Nothing to do: only server send status and trailing metadata.
+    mutating func send(status: String, trailingMetadata: Metadata) throws {
+      throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client cannot send status and trailer.")
     }
     
     /// Returns the client's next request to the server.
@@ -281,7 +279,7 @@ extension GRPCStreamStateMachine {
     mutating func nextOutboundMessage() throws -> ByteBuffer? {
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Client is not open yet.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is not open yet.")
       case .clientOpenServerIdle(var clientOpenState):
         let request = try clientOpenState.framer.next(compressor: clientOpenState.compressor)
         self.state = .clientOpenServerIdle(clientOpenState)
@@ -294,44 +292,44 @@ extension GRPCStreamStateMachine {
         // Nothing to do: no point in sending request if server is closed.
         return nil
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("Can't send request if client is closed")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't send request if client is closed.")
       }
     }
     
-    mutating func receive(metadata: Metadata, endStream: Bool) {
+    mutating func receive(metadata: Metadata, endStream: Bool) throws {
       // This is metadata received by the client from the server.
       // It can be initial, which confirms that the server is now open;
       // or an END_STREAM trailer, meaning the response is over.
       if endStream {
-        self.clientReceivedEndHeader()
+        try self.clientReceivedEndHeader()
       } else {
-        self.clientReceivedMetadata()
+        try self.clientReceivedMetadata()
       }
     }
     
-    mutating func clientReceivedEndHeader() {
+    mutating func clientReceivedEndHeader() throws {
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Client can't have received a stream end trailer if both client and server are idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't have received a stream end trailer if both client and server are idle.")
       case .clientOpenServerIdle:
-        preconditionFailure("Server cannot have sent an end stream header if it is still idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent an end stream header if it is still idle.")
       case .clientOpenServerOpen(let state):
         self.state = .clientOpenServerClosed(.init(previousState: state))
       case .clientOpenServerClosed:
-        preconditionFailure("Server is already closed, can't have received the end stream trailer twice.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is already closed, can't have received the end stream trailer twice.")
       case .clientClosedServerIdle:
-        preconditionFailure("Server cannot have sent end stream trailer if it is idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is idle.")
       case .clientClosedServerOpen:
         self.state = .clientClosedServerClosed
       case .clientClosedServerClosed:
-        preconditionFailure("Server cannot have sent end stream trailer if it is already closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is already closed.")
       }
     }
     
-    mutating func clientReceivedMetadata() {
+    mutating func clientReceivedMetadata() throws {
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Server cannot have sent metadata if the client is idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent metadata if the client is idle.")
       case .clientOpenServerIdle(let state):
         self.state = .clientOpenServerOpen(.init(previousState: state))
       case .clientOpenServerOpen:
@@ -340,10 +338,9 @@ extension GRPCStreamStateMachine {
         // Do nothing in this case.
         ()
       case .clientOpenServerClosed, .clientClosedServerClosed:
-        preconditionFailure("Server is closed, nothing could have been sent.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, nothing could have been sent.")
       case .clientClosedServerIdle, .clientClosedServerOpen:
-        preconditionFailure("Client is closed, cannot have received anything.")
-        ()
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, cannot have received anything.")
       }
     }
     
@@ -351,9 +348,9 @@ extension GRPCStreamStateMachine {
       // This is a message received by the client, from the server.
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Cannot have received anything from server if client is not yet open.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot have received anything from server if client is not yet open.")
       case .clientOpenServerIdle:
-        preconditionFailure("Server cannot have sent a message before sending the initial metadata.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent a message before sending the initial metadata.")
       case .clientOpenServerOpen(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
           state.messageBuffer.append(deframedMessage)
@@ -364,9 +361,9 @@ extension GRPCStreamStateMachine {
           self.state = .clientOpenServerOpen(state)
         }
       case .clientOpenServerClosed:
-        preconditionFailure("Cannot have received anything from a closed server.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot have received anything from a closed server.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("Shouldn't receive anything if client's closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Shouldn't receive anything if client's closed.")
       }
     }
     
@@ -406,57 +403,62 @@ extension GRPCStreamStateMachine {
       self.supportedCompressionAlgorithms = supportedCompressionAlgorithms
     }
     
-    mutating func send(metadata: Metadata) {
+    mutating func send(metadata: Metadata) throws {
       // Server sends initial metadata. This transitions server to open.
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Client cannot be idle if server is sending initial metadata: it must have opened.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client cannot be idle if server is sending initial metadata: it must have opened.")
       case .clientOpenServerIdle(let state):
         self.state = .clientOpenServerOpen(.init(previousState: state))
       case .clientOpenServerOpen:
-        preconditionFailure("Server has already sent initial metadata.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server has already sent initial metadata.")
       case .clientOpenServerClosed:
-        preconditionFailure("Server cannot send metadata if closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot send metadata if closed.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("No point in sending initial metadata if client is closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("No point in sending initial metadata if client is closed.")
       }
     }
     
-    mutating func send(message: [UInt8], endStream: Bool) {
+    mutating func send(message: [UInt8], endStream: Bool) throws {
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Cannot send a message when idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot send a message when idle.")
       case .clientOpenServerIdle:
-        preconditionFailure("Server must have sent initial metadata before sending a message.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server must have sent initial metadata before sending a message.")
       case .clientOpenServerOpen(var state):
         state.framer.append(message)
         self.state = .clientOpenServerOpen(state)
       case .clientOpenServerClosed:
-        preconditionFailure("Server can't send a message if it's closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send a message if it's closed.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("Server can't send a message to a closed client.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send a message to a closed client.")
       }
     }
     
-    mutating func send(status: String, trailingMetadata: Metadata) {
+    mutating func send(status: String, trailingMetadata: Metadata) throws {
       // Close the server.
       switch self.state {
       case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        preconditionFailure("Server can't send anything if idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if idle.")
       case .clientOpenServerOpen(let state):
         self.state = .clientOpenServerClosed(.init(previousState: state))
       case .clientOpenServerClosed:
-        preconditionFailure("Server is closed, can't send anything else.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, can't send anything else.")
       case .clientClosedServerOpen:
         self.state = .clientClosedServerClosed
       case .clientClosedServerClosed:
-        preconditionFailure("Server can't send anything if closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if closed.")
       }
     }
     
-    mutating func receive(metadata: Metadata, endStream: Bool) {
+    mutating func receive(metadata: Metadata, endStream: Bool) throws {
       if endStream {
-        preconditionFailure("Client should have opened before ending the stream: stream shouldn't have been closed when sending initial metadata.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition(
+          """
+          Client should have opened before ending the stream:
+          stream shouldn't have been closed when sending initial metadata.
+          """
+        )
       }
         
       // We validate the received headers: compression must be valid if set, and
@@ -474,9 +476,9 @@ extension GRPCStreamStateMachine {
           compressionAlgorithm: GRPCStreamStateMachineConfiguration.CompressionAlgorithm(rawValue: metadata.encoding ?? "")
         ))
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
-        preconditionFailure("Client shouldn't have sent metadata twice.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client shouldn't have sent metadata twice.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("Client can't have sent metadata if closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't have sent metadata if closed.")
       }
     }
     
@@ -488,7 +490,7 @@ extension GRPCStreamStateMachine {
     mutating func receive(message: ByteBuffer, endStream: Bool) throws {
       switch self.state {
       case .clientIdleServerIdle:
-        preconditionFailure("Can't have received a message if client is idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't have received a message if client is idle.")
       case .clientOpenServerIdle(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
           state.messageBuffer.append(deframedMessage)
@@ -514,17 +516,14 @@ extension GRPCStreamStateMachine {
         // Ignore the rest of the request: do nothing.
         ()
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        preconditionFailure("Client can't send a message if closed.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't send a message if closed.")
       }
     }
     
     mutating func nextOutboundMessage() throws -> ByteBuffer? {
       switch self.state {
       case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCError(
-          errorCode: .failedPrecondition,
-          message: "Server is not open yet."
-        )
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is not open yet.")
       case .clientOpenServerOpen(var state):
         let response = try state.framer.next(compressor: state.compressor)
         self.state = .clientOpenServerOpen(state)
@@ -533,10 +532,7 @@ extension GRPCStreamStateMachine {
         // No point in sending response if client is closed: do nothing.
         return nil
       case .clientOpenServerClosed, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCError(
-          errorCode: .failedPrecondition,
-          message: "Can't send response if server is closed."
-        )
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't send response if server is closed.")
       }
     }
     
@@ -564,7 +560,7 @@ extension GRPCStreamStateMachine {
   }
 }
 
-fileprivate func assertionFailureAndCreateRPCError(errorCode: RPCError.Code, message: String) -> RPCError {
+fileprivate func assertionFailureAndCreateRPCErrorOnFailedPrecondition(_ message: String) -> RPCError {
   assertionFailure(message)
-  return RPCError(code: errorCode, message: message)
+  return RPCError(code: .failedPrecondition, message: message)
 }
