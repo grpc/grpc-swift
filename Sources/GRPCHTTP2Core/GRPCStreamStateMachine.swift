@@ -19,7 +19,7 @@ import NIOCore
 
 fileprivate protocol GRPCStreamStateMachineProtocol {
   var state: GRPCStreamStateMachineState { get set }
-
+  
   mutating func send(metadata: Metadata) throws
   mutating func send(message: [UInt8], endStream: Bool) throws
   mutating func send(status: String, trailingMetadata: Metadata) throws
@@ -32,27 +32,10 @@ fileprivate protocol GRPCStreamStateMachineProtocol {
 }
 
 enum GRPCStreamStateMachineConfiguration {
-  enum CompressionAlgorithm: String {
-    case identity
-    case deflate
-    case gzip
-    
-    func getZlibMethod() -> Zlib.Method? {
-      switch self {
-      case .identity:
-        return nil
-      case .deflate:
-        return .deflate
-      case .gzip:
-        return .gzip
-      }
-    }
-  }
-
   case client(maximumPayloadSize: Int)
   case server(
     maximumPayloadSize: Int,
-    supportedCompressionAlgorithms: [CompressionAlgorithm]
+    supportedCompressionAlgorithms: [Encoding]
   )
 }
 
@@ -80,9 +63,9 @@ enum GRPCStreamStateMachineState {
     
     init(
       previousState: ClientIdleServerIdleState,
-      compressionAlgorithm: GRPCStreamStateMachineConfiguration.CompressionAlgorithm?
+      compressionAlgorithm: Encoding?
     ) {
-      if let zlibMethod = compressionAlgorithm?.getZlibMethod() {
+      if let zlibMethod = Zlib.Method(encoding: compressionAlgorithm) {
         self.compressor = Zlib.Compressor(method: zlibMethod)
         self.decompressor = Zlib.Decompressor(method: zlibMethod)
       }
@@ -175,14 +158,18 @@ enum GRPCStreamStateMachineState {
 struct GRPCStreamStateMachine {
   private var _stateMachine: GRPCStreamStateMachineProtocol
   
-  init(configuration: GRPCStreamStateMachineConfiguration) {
+  init(
+    configuration: GRPCStreamStateMachineConfiguration,
+    skipAssertions: Bool = false
+  ) {
     switch configuration {
     case .client(let maximumPayloadSize):
-      self._stateMachine = Client(maximumPayloadSize: maximumPayloadSize)
+      self._stateMachine = Client(maximumPayloadSize: maximumPayloadSize, skipAssertions: skipAssertions)
     case .server(let maximumPayloadSize, let supportedCompressionAlgorithms):
       self._stateMachine = Server(
         maximumPayloadSize: maximumPayloadSize,
-        supportedCompressionAlgorithms: supportedCompressionAlgorithms
+        supportedCompressionAlgorithms: supportedCompressionAlgorithms,
+        skipAssertions: skipAssertions
       )
     }
   }
@@ -220,23 +207,27 @@ struct GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   struct Client: GRPCStreamStateMachineProtocol {
     fileprivate var state: GRPCStreamStateMachineState
+    private let skipAssertions: Bool
 
-    init(maximumPayloadSize: Int) {
+    init(maximumPayloadSize: Int, skipAssertions: Bool) {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
+      self.skipAssertions = skipAssertions
     }
 
     mutating func send(metadata: Metadata) throws {
       // Client sends metadata only when opening the stream.
-      // They send grpc-timeout and method name along with it.
-      // TODO: should these things be validated in the handler or here?
-      
-      let compressionAlgorithm = GRPCStreamStateMachineConfiguration.CompressionAlgorithm(rawValue: metadata.encoding ?? "")
-      
       switch self.state {
       case .clientIdleServerIdle(let state):
+        guard metadata.endpoint != nil else {
+          throw RPCError(
+            code: .invalidArgument,
+            message: "Endpoint is missing: client cannot send initial metadata without it."
+          )
+        }
+
         self.state = .clientOpenServerIdle(.init(
           previousState: state,
-          compressionAlgorithm: compressionAlgorithm
+          compressionAlgorithm: metadata.encoding
         ))
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is already open: shouldn't be sending metadata.")
@@ -340,12 +331,12 @@ extension GRPCStreamStateMachine {
       case .clientOpenServerOpen:
         // This state is valid: server can send trailing metadata without END_STREAM
         // set, and follow it with an empty message frame where the flag *is* set.
-        // Do nothing in this case.
+        // TODO: set some flag that we're expecting empty data frame with end stream
         ()
-      case .clientOpenServerClosed, .clientClosedServerClosed:
+      case .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, nothing could have been sent.")
-      case .clientClosedServerIdle, .clientClosedServerOpen:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, cannot have received anything.")
+      case .clientClosedServerClosed, .clientClosedServerIdle, .clientClosedServerOpen:
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, shouldn't have received anything.")
       }
     }
     
@@ -390,22 +381,31 @@ extension GRPCStreamStateMachine {
         return nil
       }
     }
+    
+    private func assertionFailureAndCreateRPCErrorOnFailedPrecondition(_ message: String) -> RPCError {
+      if !self.skipAssertions {
+        assertionFailure(message)
+      }
+      return RPCError(code: .failedPrecondition, message: message)
+    }
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCStreamStateMachine {
   struct Server: GRPCStreamStateMachineProtocol {
-    typealias SupportedCompressionAlgorithms = [GRPCStreamStateMachineConfiguration.CompressionAlgorithm]
     fileprivate var state: GRPCStreamStateMachineState
-    let supportedCompressionAlgorithms: SupportedCompressionAlgorithms
+    let supportedCompressionAlgorithms: [Encoding]
+    private let skipAssertions: Bool
     
     init(
       maximumPayloadSize: Int,
-      supportedCompressionAlgorithms: SupportedCompressionAlgorithms
+      supportedCompressionAlgorithms: [Encoding],
+      skipAssertions: Bool
     ) {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
       self.supportedCompressionAlgorithms = supportedCompressionAlgorithms
+      self.skipAssertions = skipAssertions
     }
     
     mutating func send(metadata: Metadata) throws {
@@ -480,7 +480,7 @@ extension GRPCStreamStateMachine {
       case .clientIdleServerIdle(let state):
         self.state = .clientOpenServerIdle(.init(
           previousState: state,
-          compressionAlgorithm: GRPCStreamStateMachineConfiguration.CompressionAlgorithm(rawValue: metadata.encoding ?? "")
+          compressionAlgorithm: metadata.encoding
         ))
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client shouldn't have sent metadata twice.")
@@ -564,10 +564,45 @@ extension GRPCStreamStateMachine {
         return nil
       }
     }
+    
+    private func assertionFailureAndCreateRPCErrorOnFailedPrecondition(_ message: String) -> RPCError {
+      if !self.skipAssertions {
+        assertionFailure(message)
+      }
+      return RPCError(code: .failedPrecondition, message: message)
+    }
   }
 }
 
-fileprivate func assertionFailureAndCreateRPCErrorOnFailedPrecondition(_ message: String) -> RPCError {
-  assertionFailure(message)
-  return RPCError(code: .failedPrecondition, message: message)
+extension MethodDescriptor {
+  init?(fullyQualifiedMethod: String) {
+    let split = fullyQualifiedMethod.split(separator: "/")
+    guard split.count == 2 else {
+      return nil
+    }
+    self.init(service: String(split[0]), method: String(split[1]))
+  }
+}
+
+extension Metadata {
+  public var endpoint: MethodDescriptor? {
+    get {
+      self[stringValues: ":path"]
+        .first(where: { _ in true })
+        .flatMap { MethodDescriptor(fullyQualifiedMethod: $0) }
+    }
+  }
+}
+
+extension Zlib.Method {
+  init?(encoding: Encoding?) {
+    switch encoding {
+    case .none, .identity:
+      return nil
+    case .deflate:
+      self = .deflate
+    case .gzip:
+      self = .gzip
+    }
+  }
 }

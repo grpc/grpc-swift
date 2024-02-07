@@ -52,13 +52,13 @@ extension Metadata {
   }
   
   @inlinable
-  public var encoding: String? {
+  public var encoding: Encoding? {
     get {
-      self.firstString(forKey: .encoding)
+      self.firstString(forKey: .encoding).flatMap { Encoding(rawValue: $0) }
     }
     set {
       if let newValue {
-        self.replaceOrAddString(newValue, forKey: .encoding)
+        self.replaceOrAddString(newValue.rawValue, forKey: .encoding)
       } else {
         self.removeAllValues(forKey: .encoding)
       }
