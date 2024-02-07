@@ -28,7 +28,7 @@ import Atomics
 ///
 /// However, in most cases you should prefer wrapping the ``GRPCClient`` with a generated stub.
 ///
-/// You can set ``MethodConfiguration``s on this client to override whatever configurations have been
+/// You can set ``ServiceConfiguration``s on this client to override whatever configurations have been
 /// set on the given transport. You can also use ``ClientInterceptor``s to implement cross-cutting
 /// logic which apply to all RPCs. Example uses of interceptors include authentication and logging.
 ///
@@ -37,21 +37,32 @@ import Atomics
 /// The following example demonstrates how to create and configure a client.
 ///
 /// ```swift
-/// // Create a configuration object for the client.
+/// // Create a configuration object for the client and override the timeout for the 'Get' method on
+/// // the 'echo.Echo' service. This configuration takes precedence over any set by the transport.
 /// var configuration = GRPCClient.Configuration()
-///
-/// // Override the timeout for the 'Get' method on the 'echo.Echo' service. This configuration
-/// // takes precedence over any set by the transport.
-/// let echoGet = MethodDescriptor(service: "echo.Echo", method: "Get")
-/// configuration.method.overrides[echoGet] = MethodConfiguration(
-///   executionPolicy: nil,
-///   timeout: .seconds(5)
+/// configuration.service.override = ServiceConfiguration(
+///   methodConfiguration: [
+///     MethodConfiguration(
+///       names: [
+///         MethodConfiguration.Name(service: "echo.Echo", method: "Get")
+///       ],
+///       timeout: .seconds(5)
+///     )
+///   ]
 /// )
 ///
-/// // Configure a fallback timeout for all RPCs if no configuration is provided in the overrides
-/// // or by the transport.
-/// let defaultMethodConfiguration = MethodConfiguration(executionPolicy: nil, timeout: seconds(10))
-/// configuration.method.defaults.setDefaultConfiguration(defaultMethodConfiguration)
+/// // Configure a fallback timeout for all RPCs (indicated by an empty service and method name) if
+/// // no configuration is provided in the overrides or by the transport.
+/// configuration.service.defaults = ServiceConfiguration(
+///   methodConfiguration: [
+///     MethodConfiguration(
+///       names: [
+///         MethodConfiguration.Name(service: "", method: "")
+///       ],
+///       timeout: .seconds(10)
+///     )
+///   ]
+/// )
 ///
 /// // Finally create a transport and instantiate the client, adding an interceptor.
 /// let inProcessServerTransport = InProcessServerTransport()
@@ -114,6 +125,11 @@ public struct GRPCClient: Sendable {
   /// The configuration used by the client.
   public let configuration: Configuration
 
+  /// A cache of method config overrides.
+  private let methodConfigurationOverrides: _MethodConfigurations
+  /// A cache of method config defaults.
+  private let methodConfigurationDefaults: _MethodConfigurations
+
   /// The current state of the client.
   private let state: ManagedAtomic<State>
 
@@ -149,6 +165,14 @@ public struct GRPCClient: Sendable {
     self.transport = transport
     self.interceptors = interceptors
     self.configuration = configuration
+
+    self.methodConfigurationOverrides = _MethodConfigurations(
+      serviceConfiguration: self.configuration.service.overrides
+    )
+    self.methodConfigurationDefaults = _MethodConfigurations(
+      serviceConfiguration: self.configuration.service.defaults
+    )
+
     self.state = ManagedAtomic(.notStarted)
   }
 
@@ -380,15 +404,15 @@ public struct GRPCClient: Sendable {
   }
 
   private func resolveMethodConfiguration(for descriptor: MethodDescriptor) -> MethodConfiguration {
-    if let configuration = self.configuration.method.overrides[descriptor] {
+    if let configuration = self.methodConfigurationOverrides[descriptor] {
       return configuration
     }
 
-    if let configuration = self.transport.executionConfiguration(forMethod: descriptor) {
+    if let configuration = self.transport.configuration(forMethod: descriptor) {
       return configuration
     }
 
-    if let configuration = self.configuration.method.defaults[descriptor] {
+    if let configuration = self.methodConfigurationDefaults[descriptor] {
       return configuration
     }
 
@@ -400,41 +424,44 @@ public struct GRPCClient: Sendable {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCClient {
   public struct Configuration: Sendable {
-    /// Configuration for how methods are executed.
+    /// Configuration for how the client interacts with services.
     ///
-    /// Method configuration determines how each RPC is executed by the client. Some services and
+    /// The configuration includes information about how the client should load balance requests,
+    /// how retries should be throttled and how methods should be executed. Some services and
     /// transports provide this information to the client when the server name is resolved. However,
-    /// you override this configuration and set default values should no override be set and the
+    /// you can override this configuration and set default values should no override be set and the
     /// transport doesn't provide a value.
-    public var method: Method
+    ///
+    /// See also ``ServiceConfiguration``.
+    public var service: Service
 
     /// Creates a new default configuration.
     public init() {
-      self.method = Method()
+      self.service = Service()
     }
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCClient.Configuration {
-  /// Configuration for how methods should be executed.
+  /// Configuration for how the client interacts with services.
   ///
   /// In most cases the client should defer to the configuration provided by the transport as this
   /// can be provided to the transport as part of name resolution when establishing a connection.
   ///
   /// The client first checks ``overrides`` for a configuration, followed by the transport, followed
   /// by ``defaults``.
-  public struct Method: Sendable, Hashable {
+  public struct Service: Sendable, Hashable {
     /// Configuration to use in precedence to that provided by the transport.
-    public var overrides: MethodConfigurations
+    public var overrides: ServiceConfiguration
 
     /// Configuration to use only if there are no overrides and the transport doesn't specify
     /// any configuration.
-    public var defaults: MethodConfigurations
+    public var defaults: ServiceConfiguration
 
     public init() {
-      self.overrides = MethodConfigurations()
-      self.defaults = MethodConfigurations()
+      self.overrides = ServiceConfiguration()
+      self.defaults = ServiceConfiguration()
     }
   }
 }

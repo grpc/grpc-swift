@@ -103,6 +103,14 @@ public struct RetryThrottle: Sendable {
     self.scaledTokensAvailable = LockedValueBox(scaledTokens)
   }
 
+  /// Create a new throttle.
+  ///
+  /// - Parameter policy: The policy to use to configure the throttle.
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  public init(policy: ServiceConfiguration.RetryThrottlingPolicy) {
+    self.init(maximumTokens: policy.maxTokens, tokenRatio: policy.tokenRatio)
+  }
+
   /// Records a success, adding a token to the throttle.
   @usableFromInline
   func recordSuccess() {
