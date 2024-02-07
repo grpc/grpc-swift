@@ -173,7 +173,7 @@ extension ServerCodeTranslator {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
     let registerRPCMethod = self.makeRegisterRPCsMethod(for: service, in: codeGenerationRequest)
     return .guarded(
-      .init(osVersions: [.init(os: .macOS, version: "13.0")]),
+      self.availabilityGuard,
       .extension(
         onType: streamingProtocol,
         declarations: [registerRPCMethod]
@@ -305,7 +305,7 @@ extension ServerCodeTranslator {
     return .commentable(
       .preFormatted(service.documentation),
       .guarded(
-        .init(osVersions: [.init(os: .macOS, version: "13.0")]),
+        self.availabilityGuard,
         .protocol(
           ProtocolDescription(
             accessModifier: self.accessModifier,
@@ -374,7 +374,7 @@ extension ServerCodeTranslator {
 
     let protocolName = self.protocolNameTypealias(service: service, streaming: false)
     return .guarded(
-      .init(osVersions: [.init(os: .macOS, version: "13.0")]),
+      self.availabilityGuard,
       .extension(
         onType: protocolName,
         declarations: methods

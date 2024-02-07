@@ -259,11 +259,11 @@ extension TypealiasTranslator {
 
     return [
       .guarded(
-        .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+        self.availabilityGuard,
         streamingServiceProtocolTypealias
       ),
       .guarded(
-        .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+        self.availabilityGuard,
         serviceProtocolTypealias
       ),
     ]
@@ -273,7 +273,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     return .guarded(
-      .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+      self.availabilityGuard,
       .typealias(
         accessModifier: self.accessModifier,
         name: "ClientProtocol",
@@ -286,7 +286,7 @@ extension TypealiasTranslator {
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
     return .guarded(
-      .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+      self.availabilityGuard,
       .typealias(
         accessModifier: self.accessModifier,
         name: "Client",
