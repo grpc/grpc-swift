@@ -50,12 +50,27 @@ extension Metadata {
       }
     }
   }
+  
+  @inlinable
+  public var encoding: String? {
+    get {
+      self.firstString(forKey: .encoding)
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue, forKey: .encoding)
+      } else {
+        self.removeAllValues(forKey: .encoding)
+      }
+    }
+  }
 }
 
 extension Metadata {
   @usableFromInline
   enum GRPCKey: String, Sendable, Hashable {
     case timeout = "grpc-timeout"
+    case encoding = "grpc-encoding"
     case retryPushbackMs = "grpc-retry-pushback-ms"
     case previousRPCAttempts = "grpc-previous-rpc-attempts"
   }
