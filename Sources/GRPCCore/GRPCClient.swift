@@ -424,9 +424,9 @@ public struct GRPCClient: Sendable {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCClient {
   public struct Configuration: Sendable {
-    /// Configuration for the client interacts with services.
+    /// Configuration for how the client interacts with services.
     ///
-    /// The configuration includes information about how the client should load balancing requests,
+    /// The configuration includes information about how the client should load balance requests,
     /// how retries should be throttled and how methods should be executed. Some services and
     /// transports provide this information to the client when the server name is resolved. However,
     /// you can override this configuration and set default values should no override be set and the
@@ -444,7 +444,7 @@ extension GRPCClient {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCClient.Configuration {
-  /// Configuration for the client interacts with services.
+  /// Configuration for how the client interacts with services.
   ///
   /// In most cases the client should defer to the configuration provided by the transport as this
   /// can be provided to the transport as part of name resolution when establishing a connection.
