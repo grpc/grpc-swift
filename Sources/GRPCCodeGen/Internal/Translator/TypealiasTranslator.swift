@@ -38,13 +38,15 @@
 ///       // ...
 ///
 ///       public static let descriptors: [MethodDescriptor] = [
-///         Echo.Echo.Method.Get.descriptor,
-///         Echo.Echo.Method.Collect.descriptor,
+///         Get.descriptor,
+///         Collect.descriptor,
 ///         // ...
 ///       ]
 ///     }
 ///
+///     @available(macOS 13.0, *)
 ///     public typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
+///     @available(macOS 13.0, *)
 ///     public typealias ServiceProtocol = echo_EchoServiceProtocol
 ///
 ///   }
@@ -223,7 +225,7 @@ extension TypealiasTranslator {
       let methodDescriptorPath = Expression.memberAccess(
         MemberAccessDescription(
           left: .identifierType(
-            .member([service.namespacedTypealiasGeneratedName, "Method", methodName])
+            .member([methodName])
           ),
           right: "descriptor"
         )
@@ -255,26 +257,41 @@ extension TypealiasTranslator {
       existingType: .member("\(service.namespacedGeneratedName)ServiceProtocol")
     )
 
-    return [streamingServiceProtocolTypealias, serviceProtocolTypealias]
+    return [
+      .guarded(
+        .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+        streamingServiceProtocolTypealias
+      ),
+      .guarded(
+        .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+        serviceProtocolTypealias
+      ),
+    ]
   }
 
   private func makeClientProtocolTypealias(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    return .typealias(
-      accessModifier: self.accessModifier,
-      name: "ClientProtocol",
-      existingType: .member("\(service.namespacedGeneratedName)ClientProtocol")
+    return .guarded(
+      .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+      .typealias(
+        accessModifier: self.accessModifier,
+        name: "ClientProtocol",
+        existingType: .member("\(service.namespacedGeneratedName)ClientProtocol")
+      )
     )
   }
 
   private func makeClientStructTypealias(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    return .typealias(
-      accessModifier: self.accessModifier,
-      name: "Client",
-      existingType: .member("\(service.namespacedGeneratedName)Client")
+    return .guarded(
+      .init(osVersions: [(.init(os: .macOS, version: "13.0"))]),
+      .typealias(
+        accessModifier: self.accessModifier,
+        name: "Client",
+        existingType: .member("\(service.namespacedGeneratedName)Client")
+      )
     )
   }
 }
