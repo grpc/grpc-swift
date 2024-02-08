@@ -17,6 +17,11 @@
 import GRPCCore
 import NIOCore
 
+enum OnMetadataReceived {
+  case reject(status: Status, trailers: Metadata)
+  case doNothing
+}
+
 fileprivate protocol GRPCStreamStateMachineProtocol {
   var state: GRPCStreamStateMachineState { get set }
   
@@ -24,7 +29,7 @@ fileprivate protocol GRPCStreamStateMachineProtocol {
   mutating func send(message: [UInt8], endStream: Bool) throws
   mutating func send(status: String, trailingMetadata: Metadata) throws
   
-  mutating func receive(metadata: Metadata, endStream: Bool) throws
+  mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived
   mutating func receive(message: ByteBuffer, endStream: Bool) throws
   
   mutating func nextOutboundMessage() throws -> ByteBuffer?
@@ -186,7 +191,7 @@ struct GRPCStreamStateMachine {
     try self._stateMachine.send(status: status, trailingMetadata: trailingMetadata)
   }
   
-  mutating func receive(metadata: Metadata, endStream: Bool) throws {
+  mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
     try self._stateMachine.receive(metadata: metadata, endStream: endStream)
   }
   
@@ -290,7 +295,7 @@ extension GRPCStreamStateMachine {
       }
     }
     
-    mutating func receive(metadata: Metadata, endStream: Bool) throws {
+    mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
       // This is metadata received by the client from the server.
       // It can be initial, which confirms that the server is now open;
       // or an END_STREAM trailer, meaning the response is over.
@@ -299,6 +304,7 @@ extension GRPCStreamStateMachine {
       } else {
         try self.clientReceivedMetadata()
       }
+      return .doNothing
     }
     
     mutating func clientReceivedEndHeader() throws {
@@ -331,8 +337,11 @@ extension GRPCStreamStateMachine {
       case .clientOpenServerOpen:
         // This state is valid: server can send trailing metadata without END_STREAM
         // set, and follow it with an empty message frame where the flag *is* set.
-        // TODO: set some flag that we're expecting empty data frame with end stream
         ()
+        // TODO: I believe we should set some flag in the state to signal that
+        // we're expecting an empty data frame with END_STREAM set; otherwise,
+        // we could get an infinite number of metadata frames from the server -
+        // not sure this should be allowed.
       case .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, nothing could have been sent.")
       case .clientClosedServerClosed, .clientClosedServerIdle, .clientClosedServerOpen:
@@ -457,8 +466,8 @@ extension GRPCStreamStateMachine {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if closed.")
       }
     }
-    
-    mutating func receive(metadata: Metadata, endStream: Bool) throws {
+
+    mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
       if endStream {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition(
           """
@@ -467,13 +476,65 @@ extension GRPCStreamStateMachine {
           """
         )
       }
+      
+      guard let contentType = metadata.contentType else {
+        throw RPCError(code: .invalidArgument, message: "Invalid or empty content-type.")
+      }
+      
+      guard let endpoint = metadata.endpoint else {
+        throw RPCError(code: .unimplemented, message: "No :path header has been set.")
+      }
+      
+      // TODO: Should we verify the RPCRouter can handle this endpoint here,
+      // or should we verify that in the handler?
+      
+      let encodingValues = metadata[stringValues: "grpc-encoding"]
+      var encodingValuesIterator = encodingValues.makeIterator()
+      if let rawEncoding = encodingValuesIterator.next() {
+        guard encodingValuesIterator.next() == nil else {
+          throw RPCError(
+            code: .invalidArgument,
+            message: "grpc-encoding must contain no more than one value"
+          )
+        }
+        guard let encoding = Encoding(rawValue: rawEncoding) else {
+          let status = Status(
+            code: .unimplemented,
+            message: "\(rawEncoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
+          )
+          let trailers = Metadata(dictionaryLiteral: (
+            "grpc-accept-encoding",
+            .string(self.supportedCompressionAlgorithms
+              .map({ $0.rawValue })
+              .joined(separator: ",")
+            )
+          ))
+          return .reject(status: status, trailers: trailers)
+        }
 
-      // We validate the received headers: compression must be valid if set, and
-      // grpc-timeout and method name must be present.
-      // If end stream is set, the client will be closed - otherwise, it will be opened.
-      guard self.hasValidHeaders(metadata) else {
-        self.state = .clientClosedServerClosed
-        return
+        guard self.supportedCompressionAlgorithms.contains(where: { $0 == encoding }) else {
+          if self.supportedCompressionAlgorithms.isEmpty {
+            throw RPCError(
+              code: .unimplemented,
+              message: "Compression is not supported"
+            )
+          } else {
+            let status = Status(
+              code: .unimplemented,
+              message: "\(encoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
+            )
+            let trailers = Metadata(dictionaryLiteral: (
+              "grpc-accept-encoding",
+              .string(self.supportedCompressionAlgorithms
+                .map({ $0.rawValue })
+                .joined(separator: ",")
+              )
+            ))
+            return .reject(status: status, trailers: trailers)
+          }
+        }
+        
+        // All good
       }
 
       switch self.state {
@@ -482,16 +543,12 @@ extension GRPCStreamStateMachine {
           previousState: state,
           compressionAlgorithm: metadata.encoding
         ))
+        return .doNothing
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client shouldn't have sent metadata twice.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't have sent metadata if closed.")
       }
-    }
-    
-    private func hasValidHeaders(_ metadata: Metadata) -> Bool {
-      // TODO: validate grpc-timeout and method name are present, content type, compression if present. 
-      return false
     }
     
     mutating func receive(message: ByteBuffer, endStream: Bool) throws {
@@ -590,6 +647,28 @@ extension Metadata {
       self[stringValues: ":path"]
         .first(where: { _ in true })
         .flatMap { MethodDescriptor(fullyQualifiedMethod: $0) }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue.fullyQualifiedMethod, forKey: ":path")
+      } else {
+        self.removeAllValues(forKey: ":path")
+      }
+    }
+  }
+  
+  public var contentType: ContentType? {
+    get {
+      self[stringValues: "content-type"]
+        .first(where: { _ in true })
+        .flatMap { ContentType(value: $0) }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue.canonicalValue, forKey: "content-type")
+      } else {
+        self.removeAllValues(forKey: "content-type")
+      }
     }
   }
 }
