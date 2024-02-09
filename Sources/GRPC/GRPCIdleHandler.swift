@@ -44,7 +44,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   /// Returns the age of the connection in seconds.
   private var connectionAgeInSeconds: UInt64 {
     let now = NIODeadline.now()
-    let nanoseconds = self.creationTime.uptimeNanoseconds - now.uptimeNanoseconds
+    let nanoseconds = now.uptimeNanoseconds - self.creationTime.uptimeNanoseconds
     let seconds = nanoseconds / 1_000_000_000
     return seconds
   }
