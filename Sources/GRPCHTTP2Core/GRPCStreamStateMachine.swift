@@ -51,7 +51,7 @@ enum GRPCStreamStateMachineState {
   case clientOpenServerClosed(ClientOpenServerClosedState)
   case clientClosedServerIdle(ClientClosedServerIdleState)
   case clientClosedServerOpen(ClientClosedServerOpenState)
-  case clientClosedServerClosed
+  case clientClosedServerClosed(ClientClosedServerClosedState)
 
   struct ClientIdleServerIdleState {
     let maximumPayloadSize: Int
@@ -154,6 +154,18 @@ enum GRPCStreamStateMachineState {
       self.compressor = previousState.compressor
       self.deframer = previousState.deframer
       self.decompressor = previousState.decompressor
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+    }
+  }
+  
+  struct ClientClosedServerClosedState {
+    var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
+    
+    init(previousState: ClientClosedServerOpenState) {
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+    }
+    
+    init(previousState: ClientOpenServerClosedState) {
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
@@ -260,10 +272,12 @@ extension GRPCStreamStateMachine {
         } else {
           self.state = .clientOpenServerOpen(state)
         }
-      case .clientOpenServerClosed:
+      case .clientOpenServerClosed(let state):
         // The server has closed, so it makes no sense to send the rest of the request.
-        // Do nothing.
-        ()
+        // However, do close if endStream is set.
+        if endStream {
+          self.state = .clientClosedServerClosed(.init(previousState: state))
+        }
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, cannot send a message.")
       }
@@ -279,19 +293,25 @@ extension GRPCStreamStateMachine {
       switch self.state {
       case .clientIdleServerIdle:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is not open yet.")
-      case .clientOpenServerIdle(var clientOpenState):
-        let request = try clientOpenState.framer.next(compressor: clientOpenState.compressor)
-        self.state = .clientOpenServerIdle(clientOpenState)
+      case .clientOpenServerIdle(var state):
+        let request = try state.framer.next(compressor: state.compressor)
+        self.state = .clientOpenServerIdle(state)
         return request
-      case .clientOpenServerOpen(var clientOpenState):
-        let request = try clientOpenState.framer.next(compressor: clientOpenState.compressor)
-        self.state = .clientOpenServerOpen(clientOpenState)
+      case .clientOpenServerOpen(var state):
+        let request = try state.framer.next(compressor: state.compressor)
+        self.state = .clientOpenServerOpen(state)
         return request
-      case .clientOpenServerClosed:
+      case .clientOpenServerClosed, .clientClosedServerClosed:
         // Nothing to do: no point in sending request if server is closed.
         return nil
-      case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't send request if client is closed.")
+      case .clientClosedServerIdle(var state):
+        let request = try state.framer.next(compressor: state.compressor)
+        self.state = .clientClosedServerIdle(state)
+        return request
+      case .clientClosedServerOpen(var state):
+        let request = try state.framer.next(compressor: state.compressor)
+        self.state = .clientClosedServerOpen(state)
+        return request
       }
     }
     
@@ -322,7 +342,7 @@ extension GRPCStreamStateMachine {
       case .clientClosedServerOpen(let state):
         state.compressor?.end()
         state.decompressor?.end()
-        self.state = .clientClosedServerClosed
+        self.state = .clientClosedServerClosed(.init(previousState: state))
       case .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is already closed.")
       }
@@ -354,7 +374,7 @@ extension GRPCStreamStateMachine {
       switch self.state {
       case .clientIdleServerIdle:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot have received anything from server if client is not yet open.")
-      case .clientOpenServerIdle:
+      case .clientOpenServerIdle, .clientClosedServerIdle:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent a message before sending the initial metadata.")
       case .clientOpenServerOpen(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
@@ -365,10 +385,21 @@ extension GRPCStreamStateMachine {
         } else {
           self.state = .clientOpenServerOpen(state)
         }
+      case .clientClosedServerOpen(var state):
+        // The client may have sent the end stream and thus it's closed,
+        // but the server may still be responding.
+        try state.deframer.process(buffer: message) { deframedMessage in
+          state.inboundMessageBuffer.append(deframedMessage)
+        }
+        if endStream {
+          self.state = .clientClosedServerClosed(.init(previousState: state))
+        } else {
+          self.state = .clientClosedServerOpen(state)
+        }
       case .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot have received anything from a closed server.")
-      case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Shouldn't receive anything if client's closed.")
+      case .clientClosedServerClosed:
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Shouldn't have received anything if both client and server are closed.")
       }
     }
     
@@ -382,11 +413,17 @@ extension GRPCStreamStateMachine {
         let message = state.inboundMessageBuffer.pop()
         self.state = .clientOpenServerClosed(state)
         return message
-      case .clientOpenServerIdle, 
+      case .clientClosedServerOpen(var state):
+        let message = state.inboundMessageBuffer.pop()
+        self.state = .clientClosedServerOpen(state)
+        return message
+      case .clientClosedServerClosed(var state):
+        let message = state.inboundMessageBuffer.pop()
+        self.state = .clientClosedServerClosed(state)
+        return message
+      case .clientOpenServerIdle,
           .clientIdleServerIdle, 
-          .clientClosedServerIdle,
-          .clientClosedServerOpen,
-          .clientClosedServerClosed:
+          .clientClosedServerIdle:
         return nil
       }
     }
@@ -461,7 +498,7 @@ extension GRPCStreamStateMachine {
       case .clientClosedServerOpen(let state):
         state.compressor?.end()
         state.decompressor?.end()
-        self.state = .clientClosedServerClosed
+        self.state = .clientClosedServerClosed(.init(previousState: state))
       case .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if closed.")
       }
