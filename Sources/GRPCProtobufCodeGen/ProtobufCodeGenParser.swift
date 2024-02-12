@@ -24,9 +24,17 @@ import struct GRPCCodeGen.CodeGenerationRequest
 internal struct ProtobufCodeGenParser {
   let input: FileDescriptor
   let namer: SwiftProtobufNamer
+  let extraModuleImports: [String]
+  let protoToModuleMappings: ProtoFileToModuleMappings
 
-  internal init(input: FileDescriptor, protoFileModuleMappings: ProtoFileToModuleMappings) {
+  internal init(
+    input: FileDescriptor,
+    protoFileModuleMappings: ProtoFileToModuleMappings,
+    extraModuleImports: [String]
+  ) {
     self.input = input
+    self.extraModuleImports = extraModuleImports
+    self.protoToModuleMappings = protoFileModuleMappings
     self.namer = SwiftProtobufNamer(
       currentFile: input,
       protoFileToModuleMappings: protoFileModuleMappings
@@ -50,10 +58,6 @@ internal struct ProtobufCodeGenParser {
       //   https://github.com/grpc/grpc-swift
 
       """
-    var dependencies = self.input.dependencies.map {
-      CodeGenerationRequest.Dependency(module: $0.name)
-    }
-    dependencies.append(CodeGenerationRequest.Dependency(module: "GRPCProtobuf"))
     let lookupSerializer: (String) -> String = { messageType in
       "ProtobufSerializer<\(messageType)>()"
     }
@@ -71,11 +75,31 @@ internal struct ProtobufCodeGenParser {
     return CodeGenerationRequest(
       fileName: self.input.name,
       leadingTrivia: header + leadingTrivia,
-      dependencies: dependencies,
+      dependencies: self.codeDependencies,
       services: services,
       lookupSerializer: lookupSerializer,
       lookupDeserializer: lookupDeserializer
     )
+  }
+}
+
+extension ProtobufCodeGenParser {
+  fileprivate var codeDependencies: [CodeGenerationRequest.Dependency] {
+    var codeDependencies: [CodeGenerationRequest.Dependency] = [.init(module: "GRPCProtobuf")]
+    // Adding as dependencies the modules containing generated code or types for
+    // '.proto' files imported in the '.proto' file we are parsing.
+    codeDependencies.append(
+      contentsOf: (self.protoToModuleMappings.neededModules(forFile: self.input) ?? []).map {
+        CodeGenerationRequest.Dependency(module: $0)
+      }
+    )
+    // Adding extra imports passed in as an option to the plugin.
+    codeDependencies.append(
+      contentsOf: self.extraModuleImports.sorted().map {
+        CodeGenerationRequest.Dependency(module: $0)
+      }
+    )
+    return codeDependencies
   }
 }
 

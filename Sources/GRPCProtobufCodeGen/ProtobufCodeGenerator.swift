@@ -28,11 +28,13 @@ public struct ProtobufCodeGenerator {
 
   public func generateCode(
     from fileDescriptor: FileDescriptor,
-    protoFileModuleMappings: ProtoFileToModuleMappings
+    protoFileModuleMappings: ProtoFileToModuleMappings,
+    extraModuleImports: [String]
   ) throws -> String {
     let parser = ProtobufCodeGenParser(
       input: fileDescriptor,
-      protoFileModuleMappings: protoFileModuleMappings
+      protoFileModuleMappings: protoFileModuleMappings,
+      extraModuleImports: extraModuleImports
     )
     let sourceGenerator = SourceGenerator(configuration: self.configuration)
 
