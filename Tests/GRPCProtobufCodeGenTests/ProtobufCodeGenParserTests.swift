@@ -49,15 +49,7 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
           $0.protoFilePath = ["different-module.proto"]
           $0.moduleName = "DifferentModule"
-        },
-        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
-          $0.protoFilePath = ["bifferent-module.proto"]
-          $0.moduleName = "BifferentModule"
-        },
-        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
-          $0.protoFilePath = ["ziff.proto"]
-          $0.moduleName = "ZiffModule"
-        },
+        }
       ]
     }
     let parsedCodeGenRequest = try ProtobufCodeGenParser(
