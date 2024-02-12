@@ -52,8 +52,8 @@ public struct NameResolver: Sendable {
   }
 
   /// Create a new name resolver.
-  public init(results: RPCAsyncSequence<NameResolutionResult>, updateMode: UpdateMode) {
-    self.names = results
+  public init(names: RPCAsyncSequence<NameResolutionResult>, updateMode: UpdateMode) {
+    self.names = names
     self.updateMode = updateMode
   }
 }
@@ -66,11 +66,12 @@ public struct NameResolutionResult: Hashable, Sendable {
   public var endpoints: [Endpoint]
 
   /// The service configuration reported by the resolver, or an error if it couldn't be parsed.
-  public var serviceConfiguration: Result<ServiceConfiguration, RPCError>
+  /// This value may be `nil` if the resolver doesn't support fetching service configuration.
+  public var serviceConfiguration: Result<ServiceConfiguration, RPCError>?
 
   public init(
     endpoints: [Endpoint],
-    serviceConfiguration: Result<ServiceConfiguration, RPCError>
+    serviceConfiguration: Result<ServiceConfiguration, RPCError>?
   ) {
     self.endpoints = endpoints
     self.serviceConfiguration = serviceConfiguration
@@ -127,3 +128,9 @@ extension NameResolverFactory {
 
 /// A target which can be resolved to a ``SocketAddress``.
 public protocol ResolvableTarget {}
+
+/// A namespace for resolvable targets.
+public enum ResolvableTargets {}
+
+/// A namespace for name resolver factories.
+public enum NameResolvers {}

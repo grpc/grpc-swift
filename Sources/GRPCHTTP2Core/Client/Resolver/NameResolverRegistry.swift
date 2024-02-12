@@ -40,14 +40,26 @@
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct NameResolverRegistry {
   private enum Factory {
+    case ipv4(NameResolvers.IPv4)
+    case ipv6(NameResolvers.IPv6)
     case other(any NameResolverFactory)
 
     init(_ factory: some NameResolverFactory) {
-      self = .other(factory)
+      if let ipv4 = factory as? NameResolvers.IPv4 {
+        self = .ipv4(ipv4)
+      } else if let ipv6 = factory as? NameResolvers.IPv6 {
+        self = .ipv6(ipv6)
+      } else {
+        self = .other(factory)
+      }
     }
 
     func makeResolverIfCompatible<Target: ResolvableTarget>(_ target: Target) -> NameResolver? {
       switch self {
+      case .ipv4(let factory):
+        return factory.makeResolverIfCompatible(target)
+      case .ipv6(let factory):
+        return factory.makeResolverIfCompatible(target)
       case .other(let factory):
         return factory.makeResolverIfCompatible(target)
       }
@@ -55,6 +67,10 @@ public struct NameResolverRegistry {
 
     func hasTarget<Target: ResolvableTarget>(_ target: Target) -> Bool {
       switch self {
+      case .ipv4(let factory):
+        return factory.isCompatible(withTarget: target)
+      case .ipv6(let factory):
+        return factory.isCompatible(withTarget: target)
       case .other(let factory):
         return factory.isCompatible(withTarget: target)
       }
@@ -62,6 +78,10 @@ public struct NameResolverRegistry {
 
     func `is`<Factory: NameResolverFactory>(ofType factoryType: Factory.Type) -> Bool {
       switch self {
+      case .ipv4:
+        return NameResolvers.IPv4.self == factoryType
+      case .ipv6:
+        return NameResolvers.IPv6.self == factoryType
       case .other(let factory):
         return type(of: factory) == factoryType
       }
@@ -76,8 +96,15 @@ public struct NameResolverRegistry {
   }
 
   /// Returns a new name resolver registry with the default factories registered.
+  ///
+  /// The default resolvers include:
+  /// - ``NameResolvers/IPv4``,
+  /// - ``NameResolvers/IPv6``.
   public static var defaults: Self {
-    return NameResolverRegistry()
+    var resolvers = NameResolverRegistry()
+    resolvers.registerFactory(NameResolvers.IPv4())
+    resolvers.registerFactory(NameResolvers.IPv6())
+    return resolvers
   }
 
   /// The number of resolver factories in the registry.
