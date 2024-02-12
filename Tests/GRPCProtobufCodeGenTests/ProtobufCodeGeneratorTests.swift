@@ -405,7 +405,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     try XCTAssertEqualWithDiff(
       try generator.generateCode(
         from: fileDescriptor,
-        protoFileModuleMappings: ProtoFileToModuleMappings()
+        protoFileModuleMappings: ProtoFileToModuleMappings(),
+        extraModuleImports: []
       ),
       expectedCode
     )
