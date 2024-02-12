@@ -38,6 +38,17 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   /// The mode we're operating in.
   private let mode: Mode
 
+  /// The time the handler was created.
+  private let creationTime: NIODeadline
+
+  /// Returns the age of the connection in seconds.
+  private var connectionAgeInSeconds: UInt64 {
+    let now = NIODeadline.now()
+    let nanoseconds = now.uptimeNanoseconds - self.creationTime.uptimeNanoseconds
+    let seconds = nanoseconds / 1_000_000_000
+    return seconds
+  }
+
   private var context: ChannelHandlerContext?
 
   /// The mode of operation: the client tracks additional connection state in the connection
@@ -77,6 +88,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       maximumPingsWithoutData: configuration.maximumPingsWithoutData,
       minimumSentPingIntervalWithoutData: configuration.minimumSentPingIntervalWithoutData
     )
+    self.creationTime = .now()
   }
 
   init(
@@ -97,6 +109,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       minimumReceivedPingIntervalWithoutData: configuration.minimumReceivedPingIntervalWithoutData,
       maximumPingStrikes: configuration.maximumPingStrikes
     )
+    self.creationTime = .now()
   }
 
   private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
@@ -176,7 +189,10 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       // Close on the next event-loop tick so we don't drop any events which are
       // currently being processed.
       context.eventLoop.execute {
-        self.stateMachine.logger.debug("closing connection")
+        self.stateMachine.logger.debug(
+          "closing connection",
+          metadata: ["connection_age_secs": .stringConvertible(self.connectionAgeInSeconds)]
+        )
         context.close(mode: .all, promise: nil)
       }
     }
