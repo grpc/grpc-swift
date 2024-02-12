@@ -313,7 +313,7 @@ final class GRPCServerTests: XCTestCase {
 
   func testTestRunServerWithNoTransport() async throws {
     let server = GRPCServer(transports: [], services: [])
-    await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
+    await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
       try await server.run()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .noTransportsConfigured)
@@ -328,7 +328,7 @@ final class GRPCServerTests: XCTestCase {
     try await task.value
 
     // Server is stopped, should throw an error.
-    await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
+    await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
       try await server.run()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .serverIsStopped)
@@ -337,7 +337,7 @@ final class GRPCServerTests: XCTestCase {
 
   func testRunServerWhenTransportThrows() async throws {
     let server = GRPCServer(transports: [ThrowOnRunServerTransport()], services: [])
-    await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
+    await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
       try await server.run()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .failedToStartTransport)
@@ -379,7 +379,7 @@ final class GRPCServerTests: XCTestCase {
         }
       }
 
-      await XCTAssertThrowsErrorAsync(ofType: ServerError.self) {
+      await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
         try await server.run()
       } errorHandler: { error in
         XCTAssertEqual(error.code, .failedToStartTransport)

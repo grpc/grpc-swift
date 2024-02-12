@@ -17,10 +17,10 @@ import GRPCCore
 import XCTest
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-final class ServerErrorTests: XCTestCase {
+final class RuntimeErrorTests: XCTestCase {
   func testCopyOnWrite() {
-    // ServerError has a heap based storage, so check CoW semantics are correctly implemented.
-    let error1 = ServerError(code: .failedToStartTransport, message: "Failed to start transport")
+    // RuntimeError has a heap based storage, so check CoW semantics are correctly implemented.
+    let error1 = RuntimeError(code: .failedToStartTransport, message: "Failed to start transport")
     var error2 = error1
     error2.code = .serverIsAlreadyRunning
     XCTAssertEqual(error1.code, .failedToStartTransport)
@@ -38,10 +38,10 @@ final class ServerErrorTests: XCTestCase {
   }
 
   func testCustomStringConvertible() {
-    let error1 = ServerError(code: .failedToStartTransport, message: "Failed to start transport")
+    let error1 = RuntimeError(code: .failedToStartTransport, message: "Failed to start transport")
     XCTAssertDescription(error1, #"failedToStartTransport: "Failed to start transport""#)
 
-    let error2 = ServerError(
+    let error2 = RuntimeError(
       code: .failedToStartTransport,
       message: "Failed to start transport",
       cause: CancellationError()
