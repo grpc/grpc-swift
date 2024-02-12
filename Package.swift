@@ -379,7 +379,7 @@ extension Target {
     ]
   )
 
-  static let interoperabilityTests: Target = .target(
+  static let interoperabilityTestImplementation: Target = .target(
     name: "InteroperabilityTests",
     dependencies: [
       .grpc,
@@ -713,7 +713,7 @@ let package = Package(
     .grpcHTTP2TransportNIOTransportServices,
     .grpcProtobuf,
     .grpcProtobufCodeGen,
-    .interoperabilityTests,
+    .interoperabilityTestImplementation,
 
     // v2 tests
     .grpcCoreTests,
