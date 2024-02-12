@@ -55,7 +55,7 @@ import Atomics
 /// ## Starting and stopping the server
 ///
 /// Once you have configured the server call ``run()`` to start it. Calling ``run()`` starts each
-/// of the server's transports. A ``ServerError`` is thrown if any of the transports can't be
+/// of the server's transports. A ``RuntimeError`` is thrown if any of the transports can't be
 /// started.
 ///
 /// ```swift
@@ -154,7 +154,7 @@ public struct GRPCServer: Sendable {
   /// Starts the server and runs until all registered transports have closed.
   ///
   /// No RPCs are processed until all transports are listening. If a transport fails to start
-  /// listening then all open transports are closed and a ``ServerError`` is thrown.
+  /// listening then all open transports are closed and a ``RuntimeError`` is thrown.
   ///
   /// This function returns when all transports have stopped listening and all requests have been
   /// handled. You can signal to transports that they should stop listening by calling
@@ -163,7 +163,7 @@ public struct GRPCServer: Sendable {
   /// To stop the server more abruptly you can cancel the task that this function is running in.
   ///
   /// - Note: You can only call this function once, repeated calls will result in a
-  ///   ``ServerError`` being thrown.
+  ///   ``RuntimeError`` being thrown.
   public func run() async throws {
     let (wasNotStarted, actualState) = self.state.compareExchange(
       expected: .notStarted,
@@ -176,13 +176,13 @@ public struct GRPCServer: Sendable {
       case .notStarted:
         fatalError()
       case .starting, .running:
-        throw ServerError(
+        throw RuntimeError(
           code: .serverIsAlreadyRunning,
           message: "The server is already running and can only be started once."
         )
 
       case .stopping, .stopped:
-        throw ServerError(
+        throw RuntimeError(
           code: .serverIsStopped,
           message: "The server has stopped and can only be started once."
         )
@@ -195,7 +195,7 @@ public struct GRPCServer: Sendable {
     }
 
     if self.transports.isEmpty {
-      throw ServerError(
+      throw RuntimeError(
         code: .noTransportsConfigured,
         message: """
           Can't start server, no transports are configured. You must add at least one transport \
@@ -217,7 +217,7 @@ public struct GRPCServer: Sendable {
         // Some listeners may have started and have streams which need closing.
         await self.rejectRequests(listeners)
 
-        throw ServerError(
+        throw RuntimeError(
           code: .failedToStartTransport,
           message: """
             Server didn't start because the '\(type(of: transport))' transport threw an error \

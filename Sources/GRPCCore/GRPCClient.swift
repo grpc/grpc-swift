@@ -196,12 +196,12 @@ public struct GRPCClient: Sendable {
         // The value wasn't exchanged so the original value can't be 'notStarted'.
         fatalError()
       case .running:
-        throw ClientError(
+        throw RuntimeError(
           code: .clientIsAlreadyRunning,
           message: "The client is already running and can only be started once."
         )
       case .stopping, .stopped:
-        throw ClientError(
+        throw RuntimeError(
           code: .clientIsStopped,
           message: "The client has stopped and can only be started once."
         )
@@ -216,7 +216,7 @@ public struct GRPCClient: Sendable {
     do {
       try await self.transport.connect(lazily: false)
     } catch {
-      throw ClientError(
+      throw RuntimeError(
         code: .transportError,
         message: "The transport threw an error while connected.",
         cause: error
@@ -385,7 +385,7 @@ public struct GRPCClient: Sendable {
       // queuing the request if not yet started.
       ()
     case .stopping, .stopped:
-      throw ClientError(
+      throw RuntimeError(
         code: .clientIsStopped,
         message: "Client has been stopped. Can't make any more RPCs."
       )
