@@ -25,10 +25,17 @@ final class ProtobufCodeGenParserTests: XCTestCase {
   func testParser() throws {
     let descriptorSet = DescriptorSet(
       protos: [
-        Google_Protobuf_FileDescriptorProto.makeEmpty("same-module.proto"),
-        Google_Protobuf_FileDescriptorProto.makeEmpty("different-module.proto"),
+        Google_Protobuf_FileDescriptorProto(
+          name: "same-module.proto",
+          package: "same-package"
+        ),
+        Google_Protobuf_FileDescriptorProto(
+          name: "different-module.proto",
+          package: "different-package"
+        ),
         Google_Protobuf_FileDescriptorProto.helloWorld,
-      ])
+      ]
+    )
 
     guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
       return XCTFail(
@@ -42,7 +49,15 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
           $0.protoFilePath = ["different-module.proto"]
           $0.moduleName = "DifferentModule"
-        }
+        },
+        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
+          $0.protoFilePath = ["bifferent-module.proto"]
+          $0.moduleName = "BifferentModule"
+        },
+        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
+          $0.protoFilePath = ["ziff.proto"]
+          $0.moduleName = "ZiffModule"
+        },
       ]
     }
     let parsedCodeGenRequest = try ProtobufCodeGenParser(
@@ -81,8 +96,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
     )
 
     XCTAssertEqual(parsedCodeGenRequest.dependencies.count, 3)
-    let expectedDependencyNames = ["DifferentModule", "ExtraModule", "GRPCProtobuf"]
-    let parsedDependencyNames = parsedCodeGenRequest.dependencies.map { $0.module }.sorted()
+    let expectedDependencyNames = ["GRPCProtobuf", "DifferentModule", "ExtraModule"]
+    let parsedDependencyNames = parsedCodeGenRequest.dependencies.map { $0.module }
     XCTAssertEqual(parsedDependencyNames, expectedDependencyNames)
 
     XCTAssertEqual(parsedCodeGenRequest.services.count, 1)
@@ -217,14 +232,9 @@ extension Google_Protobuf_FileDescriptorProto {
     }
   }
 
-  static func makeEmpty(_ name: String) -> Google_Protobuf_FileDescriptorProto {
-    Google_Protobuf_FileDescriptorProto.with {
-      $0.name = name
-      $0.service = []
-      $0.dependency = []
-      $0.messageType = []
-      $0.package = "\(name)-package"
-      $0.syntax = "proto3"
-    }
+  internal init(name: String, package: String) {
+    self.init()
+    self.name = name
+    self.package = package
   }
 }

@@ -95,7 +95,7 @@ extension ProtobufCodeGenParser {
     )
     // Adding extra imports passed in as an option to the plugin.
     codeDependencies.append(
-      contentsOf: self.extraModuleImports.map {
+      contentsOf: self.extraModuleImports.sorted().map {
         CodeGenerationRequest.Dependency(module: $0)
       }
     )

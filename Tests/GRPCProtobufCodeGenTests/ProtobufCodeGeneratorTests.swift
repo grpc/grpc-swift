@@ -401,8 +401,11 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     )
     let descriptorSet = DescriptorSet(
       protos: [
-        Google_Protobuf_FileDescriptorProto.makeEmpty("same-module.proto"),
-        Google_Protobuf_FileDescriptorProto.makeEmpty("different-module.proto"),
+        Google_Protobuf_FileDescriptorProto(name: "same-module.proto", package: "same-package"),
+        Google_Protobuf_FileDescriptorProto(
+          name: "different-module.proto",
+          package: "different-package"
+        ),
         Google_Protobuf_FileDescriptorProto.helloWorld,
       ])
     guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
