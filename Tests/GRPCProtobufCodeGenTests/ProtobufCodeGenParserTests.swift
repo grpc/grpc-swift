@@ -23,7 +23,7 @@ import XCTest
 
 final class ProtobufCodeGenParserTests: XCTestCase {
   func testParser() throws {
-    var descriptorSet = DescriptorSet(
+    let descriptorSet = DescriptorSet(
       protos: [
         Google_Protobuf_FileDescriptorProto.makeEmpty("same-module.proto"),
         Google_Protobuf_FileDescriptorProto.makeEmpty("different-module.proto"),

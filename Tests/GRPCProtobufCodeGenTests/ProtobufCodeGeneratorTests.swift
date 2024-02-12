@@ -55,6 +55,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         import GRPCCore
         import GRPCProtobuf
+        import DifferentModule
+        import ExtraModule
 
         internal enum Helloworld {
             internal enum Greeter {
@@ -164,6 +166,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         import GRPCCore
         import GRPCProtobuf
+        import DifferentModule
+        import ExtraModule
 
         public enum Helloworld {
           public enum Greeter {
@@ -258,6 +262,8 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         import GRPCCore
         import GRPCProtobuf
+        import DifferentModule
+        import ExtraModule
 
         package enum Helloworld {
           package enum Greeter {
@@ -393,7 +399,12 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
       server: server,
       indentation: indentation
     )
-    let descriptorSet = DescriptorSet(protos: [Google_Protobuf_FileDescriptorProto.helloWorld])
+    let descriptorSet = DescriptorSet(
+      protos: [
+        Google_Protobuf_FileDescriptorProto.makeEmpty("same-module.proto"),
+        Google_Protobuf_FileDescriptorProto.makeEmpty("different-module.proto"),
+        Google_Protobuf_FileDescriptorProto.helloWorld,
+      ])
     guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
       return XCTFail(
         """
@@ -401,12 +412,21 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         """
       )
     }
+
+    let moduleMappings = SwiftProtobuf_GenSwift_ModuleMappings.with {
+      $0.mapping = [
+        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
+          $0.protoFilePath = ["different-module.proto"]
+          $0.moduleName = "DifferentModule"
+        }
+      ]
+    }
     let generator = ProtobufCodeGenerator(configuration: configs)
     try XCTAssertEqualWithDiff(
       try generator.generateCode(
         from: fileDescriptor,
-        protoFileModuleMappings: ProtoFileToModuleMappings(),
-        extraModuleImports: []
+        protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
+        extraModuleImports: ["ExtraModule"]
       ),
       expectedCode
     )

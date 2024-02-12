@@ -85,8 +85,7 @@ internal struct ProtobufCodeGenParser {
 
 extension ProtobufCodeGenParser {
   fileprivate var codeDependencies: [CodeGenerationRequest.Dependency] {
-    var codeDependencies = [CodeGenerationRequest.Dependency]()
-
+    var codeDependencies: [CodeGenerationRequest.Dependency] = [.init(module: "GRPCProtobuf")]
     // Adding as dependencies the modules containing generated code or types for
     // '.proto' files imported in the '.proto' file we are parsing.
     codeDependencies.append(
@@ -100,7 +99,6 @@ extension ProtobufCodeGenParser {
         CodeGenerationRequest.Dependency(module: $0)
       }
     )
-    codeDependencies.append(CodeGenerationRequest.Dependency(module: "GRPCProtobuf"))
     return codeDependencies
   }
 }
