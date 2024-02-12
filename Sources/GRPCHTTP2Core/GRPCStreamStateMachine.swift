@@ -156,6 +156,14 @@ enum GRPCStreamStateMachineState {
       self.decompressor = previousState.decompressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
+    
+    init(previousState: ClientClosedServerIdleState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
+      self.deframer = previousState.deframer
+      self.decompressor = previousState.decompressor
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+    }
   }
   
   struct ClientClosedServerClosedState {
@@ -461,28 +469,36 @@ extension GRPCStreamStateMachine {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client cannot be idle if server is sending initial metadata: it must have opened.")
       case .clientOpenServerIdle(let state):
         self.state = .clientOpenServerOpen(.init(previousState: state))
-      case .clientOpenServerOpen:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server has already sent initial metadata.")
-      case .clientOpenServerClosed:
+      case .clientOpenServerClosed, .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot send metadata if closed.")
-      case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("No point in sending initial metadata if client is closed.")
+      case .clientClosedServerIdle(let state):
+        self.state = .clientClosedServerOpen(.init(previousState: state))
+      case .clientOpenServerOpen, .clientClosedServerOpen:
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server has already sent initial metadata.")
+        
       }
     }
     
     mutating func send(message: [UInt8], endStream: Bool) throws {
       switch self.state {
-      case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot send a message when idle.")
-      case .clientOpenServerIdle:
+      case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server must have sent initial metadata before sending a message.")
       case .clientOpenServerOpen(var state):
         state.framer.append(message)
-        self.state = .clientOpenServerOpen(state)
-      case .clientOpenServerClosed:
+        if endStream {
+          self.state = .clientOpenServerClosed(.init(previousState: state))
+        } else {
+          self.state = .clientOpenServerOpen(state)
+        }
+      case .clientClosedServerOpen(var state):
+        state.framer.append(message)
+        if endStream {
+          self.state = .clientClosedServerClosed(.init(previousState: state))
+        } else {
+          self.state = .clientClosedServerOpen(state)
+        }
+      case .clientOpenServerClosed, .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send a message if it's closed.")
-      case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send a message to a closed client.")
       }
     }
     
@@ -490,22 +506,20 @@ extension GRPCStreamStateMachine {
       // Close the server.
       switch self.state {
       case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if idle.")
+        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send status if idle.")
       case .clientOpenServerOpen(let state):
         self.state = .clientOpenServerClosed(.init(previousState: state))
-      case .clientOpenServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, can't send anything else.")
       case .clientClosedServerOpen(let state):
         state.compressor?.end()
         state.decompressor?.end()
         self.state = .clientClosedServerClosed(.init(previousState: state))
-      case .clientClosedServerClosed:
+      case .clientOpenServerClosed, .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if closed.")
       }
     }
 
     mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
-      if endStream {
+      if endStream, case .clientIdleServerIdle = self.state {
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition(
           """
           Client should have opened before ending the stream:
@@ -514,51 +528,37 @@ extension GRPCStreamStateMachine {
         )
       }
       
-      guard let contentType = metadata.contentType else {
-        throw RPCError(code: .invalidArgument, message: "Invalid or empty content-type.")
-      }
-      
-      guard let endpoint = metadata.endpoint else {
-        throw RPCError(code: .unimplemented, message: "No :path header has been set.")
-      }
-      
-      // TODO: Should we verify the RPCRouter can handle this endpoint here,
-      // or should we verify that in the handler?
-      
-      let encodingValues = metadata[stringValues: "grpc-encoding"]
-      var encodingValuesIterator = encodingValues.makeIterator()
-      if let rawEncoding = encodingValuesIterator.next() {
-        guard encodingValuesIterator.next() == nil else {
-          throw RPCError(
-            code: .invalidArgument,
-            message: "grpc-encoding must contain no more than one value"
-          )
+      switch self.state {
+      case .clientIdleServerIdle(let state):
+        self.state = .clientOpenServerIdle(.init(
+          previousState: state,
+          compressionAlgorithm: metadata.encoding
+        ))
+        
+        guard let contentType = metadata.contentType else {
+          throw RPCError(code: .invalidArgument, message: "Invalid or empty content-type.")
         }
-        guard let encoding = Encoding(rawValue: rawEncoding) else {
-          let status = Status(
-            code: .unimplemented,
-            message: "\(rawEncoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
-          )
-          let trailers = Metadata(dictionaryLiteral: (
-            "grpc-accept-encoding",
-            .string(self.supportedCompressionAlgorithms
-              .map({ $0.rawValue })
-              .joined(separator: ",")
-            )
-          ))
-          return .reject(status: status, trailers: trailers)
+        
+        guard let endpoint = metadata.endpoint else {
+          throw RPCError(code: .unimplemented, message: "No :path header has been set.")
         }
-
-        guard self.supportedCompressionAlgorithms.contains(where: { $0 == encoding }) else {
-          if self.supportedCompressionAlgorithms.isEmpty {
+        
+        // TODO: Should we verify the RPCRouter can handle this endpoint here,
+        // or should we verify that in the handler?
+        
+        let encodingValues = metadata[stringValues: "grpc-encoding"]
+        var encodingValuesIterator = encodingValues.makeIterator()
+        if let rawEncoding = encodingValuesIterator.next() {
+          guard encodingValuesIterator.next() == nil else {
             throw RPCError(
-              code: .unimplemented,
-              message: "Compression is not supported"
+              code: .invalidArgument,
+              message: "grpc-encoding must contain no more than one value"
             )
-          } else {
+          }
+          guard let encoding = Encoding(rawValue: rawEncoding) else {
             let status = Status(
               code: .unimplemented,
-              message: "\(encoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
+              message: "\(rawEncoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
             )
             let trailers = Metadata(dictionaryLiteral: (
               "grpc-accept-encoding",
@@ -569,17 +569,29 @@ extension GRPCStreamStateMachine {
             ))
             return .reject(status: status, trailers: trailers)
           }
-        }
-        
-        // All good
-      }
 
-      switch self.state {
-      case .clientIdleServerIdle(let state):
-        self.state = .clientOpenServerIdle(.init(
-          previousState: state,
-          compressionAlgorithm: metadata.encoding
-        ))
+          guard self.supportedCompressionAlgorithms.contains(where: { $0 == encoding }) else {
+            if self.supportedCompressionAlgorithms.isEmpty {
+              throw RPCError(
+                code: .unimplemented,
+                message: "Compression is not supported"
+              )
+            } else {
+              let status = Status(
+                code: .unimplemented,
+                message: "\(encoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
+              )
+              let trailers = Metadata(dictionaryLiteral: (
+                "grpc-accept-encoding",
+                .string(self.supportedCompressionAlgorithms
+                  .map({ $0.rawValue })
+                  .joined(separator: ",")
+                )
+              ))
+              return .reject(status: status, trailers: trailers)
+            }
+          }
+        }
         return .doNothing
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client shouldn't have sent metadata twice.")
@@ -629,9 +641,10 @@ extension GRPCStreamStateMachine {
         let response = try state.framer.next(compressor: state.compressor)
         self.state = .clientOpenServerOpen(state)
         return response
-      case .clientClosedServerOpen:
-        // No point in sending response if client is closed: do nothing.
-        return nil
+      case .clientClosedServerOpen(var state):
+        let response = try state.framer.next(compressor: state.compressor)
+        self.state = .clientClosedServerOpen(state)
+        return response
       case .clientOpenServerClosed, .clientClosedServerClosed:
         throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't send response if server is closed.")
       }
@@ -647,13 +660,16 @@ extension GRPCStreamStateMachine {
         let request = state.inboundMessageBuffer.pop()
         self.state = .clientOpenServerOpen(state)
         return request
+      case .clientOpenServerClosed(var state):
+        let request = state.inboundMessageBuffer.pop()
+        self.state = .clientOpenServerClosed(state)
+        return request
       case .clientClosedServerOpen(var state):
         let request = state.inboundMessageBuffer.pop()
         self.state = .clientClosedServerOpen(state)
         return request
       case .clientClosedServerIdle,
           .clientIdleServerIdle,
-          .clientOpenServerClosed,
           .clientClosedServerClosed:
         return nil
       }
