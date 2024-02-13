@@ -135,7 +135,8 @@ final class NameResolverRegistryTests: XCTestCase {
     XCTAssert(resolvers.containsFactory(ofType: NameResolvers.IPv4.self))
     XCTAssert(resolvers.containsFactory(ofType: NameResolvers.IPv6.self))
     XCTAssert(resolvers.containsFactory(ofType: NameResolvers.UnixDomainSocket.self))
-    XCTAssertEqual(resolvers.count, 3)
+    XCTAssert(resolvers.containsFactory(ofType: NameResolvers.VirtualSocket.self))
+    XCTAssertEqual(resolvers.count, 4)
   }
 
   func testMakeResolver() {
@@ -249,6 +250,21 @@ final class NameResolverRegistryTests: XCTestCase {
     for _ in 0 ..< 1000 {
       let result = try await XCTUnwrapAsync { try await iterator.next() }
       XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.unixDomainSocket(path: "/foo")])])
+      XCTAssertNil(result.serviceConfiguration)
+    }
+  }
+
+  func testVSOCKResolver() async throws {
+    let factory = NameResolvers.VirtualSocket()
+    let resolver = factory.resolver(for: .vsock(contextID: .any, port: .any))
+
+    XCTAssertEqual(resolver.updateMode, .pull)
+
+    // The VSOCK resolver always returns the same values.
+    var iterator = resolver.names.makeAsyncIterator()
+    for _ in 0 ..< 1000 {
+      let result = try await XCTUnwrapAsync { try await iterator.next() }
+      XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.vsock(contextID: .any, port: .any)])])
       XCTAssertNil(result.serviceConfiguration)
     }
   }

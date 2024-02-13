@@ -28,9 +28,9 @@
 /// // type `CustomResolver.ResolvableTarget`.
 /// registry.registerFactory(CustomResolver())
 ///
-/// // Remove the Unix Domain Socket and VSOCK resolvers, if they exist.
+/// // Remove the Unix Domain Socket and Virtual Socket resolvers, if they exist.
 /// registry.removeFactory(ofType: NameResolvers.UnixDomainSocket.self)
-/// registry.removeFactory(ofType: NameResolvers.VSOCK.self)
+/// registry.removeFactory(ofType: NameResolvers.VirtualSocket.self)
 ///
 /// // Resolve an IPv4 target
 /// if let resolver = registry.makeResolver(for: .ipv4(host: "localhost", port: 80)) {
@@ -43,6 +43,7 @@ public struct NameResolverRegistry {
     case ipv4(NameResolvers.IPv4)
     case ipv6(NameResolvers.IPv6)
     case unix(NameResolvers.UnixDomainSocket)
+    case vsock(NameResolvers.VirtualSocket)
     case other(any NameResolverFactory)
 
     init(_ factory: some NameResolverFactory) {
@@ -52,6 +53,8 @@ public struct NameResolverRegistry {
         self = .ipv6(ipv6)
       } else if let unix = factory as? NameResolvers.UnixDomainSocket {
         self = .unix(unix)
+      } else if let vsock = factory as? NameResolvers.VirtualSocket {
+        self = .vsock(vsock)
       } else {
         self = .other(factory)
       }
@@ -64,6 +67,8 @@ public struct NameResolverRegistry {
       case .ipv6(let factory):
         return factory.makeResolverIfCompatible(target)
       case .unix(let factory):
+        return factory.makeResolverIfCompatible(target)
+      case .vsock(let factory):
         return factory.makeResolverIfCompatible(target)
       case .other(let factory):
         return factory.makeResolverIfCompatible(target)
@@ -78,6 +83,8 @@ public struct NameResolverRegistry {
         return factory.isCompatible(withTarget: target)
       case .unix(let factory):
         return factory.isCompatible(withTarget: target)
+      case .vsock(let factory):
+        return factory.isCompatible(withTarget: target)
       case .other(let factory):
         return factory.isCompatible(withTarget: target)
       }
@@ -91,6 +98,8 @@ public struct NameResolverRegistry {
         return NameResolvers.IPv6.self == factoryType
       case .unix:
         return NameResolvers.UnixDomainSocket.self == factoryType
+      case .vsock:
+        return NameResolvers.VirtualSocket.self == factoryType
       case .other(let factory):
         return type(of: factory) == factoryType
       }
@@ -109,12 +118,14 @@ public struct NameResolverRegistry {
   /// The default resolvers include:
   /// - ``NameResolvers/IPv4``,
   /// - ``NameResolvers/IPv6``,
-  /// - ``NameResolvers/UnixDomainSocket``.
+  /// - ``NameResolvers/UnixDomainSocket``,
+  /// - ``NameResolvers/VirtualSocket``.
   public static var defaults: Self {
     var resolvers = NameResolverRegistry()
     resolvers.registerFactory(NameResolvers.IPv4())
     resolvers.registerFactory(NameResolvers.IPv6())
     resolvers.registerFactory(NameResolvers.UnixDomainSocket())
+    resolvers.registerFactory(NameResolvers.VirtualSocket())
     return resolvers
   }
 
