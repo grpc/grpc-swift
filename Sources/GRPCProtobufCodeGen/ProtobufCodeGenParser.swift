@@ -120,10 +120,14 @@ extension CodeGenerationRequest.ServiceDescriptor {
       generatedUpperCase: NamingUtils.toUpperCamelCase(descriptor.name),
       generatedLowerCase: NamingUtils.toLowerCamelCase(descriptor.name)
     )
+
+    // Packages that are based on the path of the '.proto' file usually
+    // contain dots. For example: "grpc.test".
+    let cleanNamespace = package.replacingOccurrences(of: ".", with: "_")
     let namespace = CodeGenerationRequest.Name(
-      base: package,
-      generatedUpperCase: NamingUtils.toUpperCamelCase(package),
-      generatedLowerCase: NamingUtils.toLowerCamelCase(package)
+      base: cleanNamespace,
+      generatedUpperCase: NamingUtils.toUpperCamelCase(cleanNamespace),
+      generatedLowerCase: NamingUtils.toLowerCamelCase(cleanNamespace)
     )
     let documentation = descriptor.protoSourceComments()
     self.init(documentation: documentation, name: name, namespace: namespace, methods: methods)

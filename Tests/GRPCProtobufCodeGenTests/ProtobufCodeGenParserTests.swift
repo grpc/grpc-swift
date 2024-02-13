@@ -103,8 +103,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
       ),
       isInputStreaming: false,
       isOutputStreaming: false,
-      inputType: "Helloworld_HelloRequest",
-      outputType: "Helloworld_HelloReply"
+      inputType: "Hello_World_HelloRequest",
+      outputType: "Hello_World_HelloReply"
     )
     guard let method = parsedCodeGenRequest.services.first?.methods.first else { return XCTFail() }
     XCTAssertEqual(method, expectedMethod)
@@ -117,9 +117,9 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         generatedLowerCase: "greeter"
       ),
       namespace: CodeGenerationRequest.Name(
-        base: "helloworld",
-        generatedUpperCase: "Helloworld",
-        generatedLowerCase: "helloworld"
+        base: "hello_world",
+        generatedUpperCase: "HelloWorld",
+        generatedLowerCase: "helloWorld"
       ),
       methods: [expectedMethod]
     )
@@ -170,8 +170,8 @@ extension Google_Protobuf_FileDescriptorProto {
       $0.method = [
         Google_Protobuf_MethodDescriptorProto.with {
           $0.name = "SayHello"
-          $0.inputType = ".helloworld.HelloRequest"
-          $0.outputType = ".helloworld.HelloReply"
+          $0.inputType = ".hello.world.HelloRequest"
+          $0.outputType = ".hello.world.HelloReply"
           $0.clientStreaming = false
           $0.serverStreaming = false
         }
@@ -179,7 +179,7 @@ extension Google_Protobuf_FileDescriptorProto {
     }
     return Google_Protobuf_FileDescriptorProto.with {
       $0.name = "helloworld.proto"
-      $0.package = "helloworld"
+      $0.package = "hello.world"
       $0.dependency = ["same-module.proto", "different-module.proto"]
       $0.publicDependency = [1, 2]
       $0.messageType = [requestType, responseType]
