@@ -170,16 +170,14 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       @_spi(Secret) import Foo
       @_spi(Secret) import enum Foo.Bar
 
-      public enum NamespaceA {
-          public enum ServiceA {
-              public enum Method {
-                  public static let descriptors: [MethodDescriptor] = []
-              }
-              @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-              public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
-              @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-              public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+      public enum NamespaceA_ServiceA {
+          public enum Method {
+              public static let descriptors: [MethodDescriptor] = []
           }
+          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
       }
 
       /// Documentation for AService
@@ -188,18 +186,18 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-      extension NamespaceA.ServiceA.StreamingServiceProtocol {
+      extension NamespaceA_ServiceA.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
 
       /// Documentation for AService
       @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-      public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA.ServiceA.StreamingServiceProtocol {}
+      public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
 
       /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
       @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-      extension NamespaceA.ServiceA.ServiceProtocol {
+      extension NamespaceA_ServiceA.ServiceProtocol {
       }
       """
     try self.assertIDLToStructuredSwiftTranslation(
@@ -379,8 +377,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services within the same namespace must have unique generated upper case names. \
-            AService is used as a generated upper case name for multiple services in the namespacea namespace.
+            There must be a unique (namespace, service_name) pair for each service. \
+            NamespaceA_AService is used as a <namespace>_<service_name> construction for multiple services.
             """
         )
       )
@@ -541,7 +539,11 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   func testSameGeneratedNameNoNamespaceServiceAndNamespaceError() throws {
     let serviceA = ServiceDescriptor(
       documentation: "Documentation for SameName service with no namespace",
-      name: Name(base: "SameName", generatedUpperCase: "SameName", generatedLowerCase: "sameName"),
+      name: Name(
+        base: "SameName",
+        generatedUpperCase: "SameName_BService",
+        generatedLowerCase: "sameName"
+      ),
       namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
       methods: []
     )
@@ -572,8 +574,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         CodeGenError(
           code: .nonUniqueServiceName,
           message: """
-            Services with no namespace must not have the same generated upper case names as the namespaces. \
-            SameName is used as a generated upper case name for a service with no namespace and a namespace.
+            There must be a unique (namespace, service_name) pair for each service. \
+            SameName_BService is used as a <namespace>_<service_name> construction for multiple services.
             """
         )
       )

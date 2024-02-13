@@ -69,19 +69,20 @@ struct TypealiasTranslator: SpecializedTranslator {
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks = [CodeBlock]()
     let services = codeGenerationRequest.services
-    let servicesByNamespace = Dictionary(
+    let servicesByEnumName = Dictionary(
       grouping: services,
-      by: { $0.namespace.generatedUpperCase }
+      by: { $0.namespacedGeneratedName }
     )
 
-    // Sorting the keys and the services in each list of the dictionary is necessary
-    // so that the generated enums are deterministically ordered.
-    for (generatedNamespace, services) in servicesByNamespace.sorted(by: { $0.key < $1.key }) {
-      let namespaceCodeBlocks = try self.makeNamespaceEnum(
-        for: generatedNamespace,
-        containing: services.sorted(by: { $0.name.generatedUpperCase < $1.name.generatedUpperCase })
-      )
-      codeBlocks.append(contentsOf: namespaceCodeBlocks)
+    // Sorting the keys of the dictionary is necessary so that the generated enums are deterministically ordered.
+    for (generatedEnumName, services) in servicesByEnumName.sorted(by: { $0.key < $1.key }) {
+      for service in services {
+        codeBlocks.append(
+          CodeBlock(
+            item: .declaration(try self.makeServiceEnum(from: service, named: generatedEnumName))
+          )
+        )
+      }
     }
 
     return codeBlocks
@@ -89,38 +90,13 @@ struct TypealiasTranslator: SpecializedTranslator {
 }
 
 extension TypealiasTranslator {
-  private func makeNamespaceEnum(
-    for namespace: String,
-    containing services: [CodeGenerationRequest.ServiceDescriptor]
-  ) throws -> [CodeBlock] {
-    var serviceDeclarations = [Declaration]()
-
-    // Create the service specific enums.
-    for service in services {
-      let serviceEnum = try self.makeServiceEnum(from: service)
-      serviceDeclarations.append(serviceEnum)
-    }
-
-    // If there is no namespace, the service enums are independent CodeBlocks.
-    // If there is a namespace, the associated enum will contain the service enums and will
-    // be represented as a single CodeBlock element.
-    if namespace.isEmpty {
-      return serviceDeclarations.map {
-        CodeBlock(item: .declaration($0))
-      }
-    } else {
-      var namespaceEnum = EnumDescription(accessModifier: self.accessModifier, name: namespace)
-      namespaceEnum.members = serviceDeclarations
-      return [CodeBlock(item: .declaration(.enum(namespaceEnum)))]
-    }
-  }
-
   private func makeServiceEnum(
-    from service: CodeGenerationRequest.ServiceDescriptor
+    from service: CodeGenerationRequest.ServiceDescriptor,
+    named name: String
   ) throws -> Declaration {
     var serviceEnum = EnumDescription(
       accessModifier: self.accessModifier,
-      name: service.name.generatedUpperCase
+      name: name
     )
     var methodsEnum = EnumDescription(accessModifier: self.accessModifier, name: "Method")
     let methods = service.methods
