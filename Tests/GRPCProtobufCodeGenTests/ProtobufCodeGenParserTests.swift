@@ -23,7 +23,20 @@ import XCTest
 
 final class ProtobufCodeGenParserTests: XCTestCase {
   func testParser() throws {
-    let descriptorSet = DescriptorSet(protos: [Google_Protobuf_FileDescriptorProto.helloWorld])
+    let descriptorSet = DescriptorSet(
+      protos: [
+        Google_Protobuf_FileDescriptorProto(
+          name: "same-module.proto",
+          package: "same-package"
+        ),
+        Google_Protobuf_FileDescriptorProto(
+          name: "different-module.proto",
+          package: "different-package"
+        ),
+        Google_Protobuf_FileDescriptorProto.helloWorld,
+      ]
+    )
+
     guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
       return XCTFail(
         """
@@ -31,9 +44,18 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         """
       )
     }
+    let moduleMappings = SwiftProtobuf_GenSwift_ModuleMappings.with {
+      $0.mapping = [
+        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
+          $0.protoFilePath = ["different-module.proto"]
+          $0.moduleName = "DifferentModule"
+        }
+      ]
+    }
     let parsedCodeGenRequest = try ProtobufCodeGenParser(
       input: fileDescriptor,
-      protoFileModuleMappings: ProtoFileToModuleMappings()
+      protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
+      extraModuleImports: ["ExtraModule"]
     ).parse()
     XCTAssertEqual(parsedCodeGenRequest.fileName, "helloworld.proto")
     XCTAssertEqual(
@@ -64,6 +86,11 @@ final class ProtobufCodeGenParserTests: XCTestCase {
 
       """
     )
+
+    XCTAssertEqual(parsedCodeGenRequest.dependencies.count, 3)
+    let expectedDependencyNames = ["GRPCProtobuf", "DifferentModule", "ExtraModule"]
+    let parsedDependencyNames = parsedCodeGenRequest.dependencies.map { $0.module }
+    XCTAssertEqual(parsedDependencyNames, expectedDependencyNames)
 
     XCTAssertEqual(parsedCodeGenRequest.services.count, 1)
 
@@ -107,11 +134,6 @@ final class ProtobufCodeGenParserTests: XCTestCase {
     XCTAssertEqual(
       parsedCodeGenRequest.lookupDeserializer("HelloRequest"),
       "ProtobufDeserializer<HelloRequest>()"
-    )
-    XCTAssertEqual(parsedCodeGenRequest.dependencies.count, 1)
-    XCTAssertEqual(
-      parsedCodeGenRequest.dependencies[0],
-      CodeGenerationRequest.Dependency(module: "GRPCProtobuf")
     )
   }
 }
@@ -158,6 +180,8 @@ extension Google_Protobuf_FileDescriptorProto {
     return Google_Protobuf_FileDescriptorProto.with {
       $0.name = "helloworld.proto"
       $0.package = "helloworld"
+      $0.dependency = ["same-module.proto", "different-module.proto"]
+      $0.publicDependency = [1, 2]
       $0.messageType = [requestType, responseType]
       $0.service = [service]
       $0.sourceCodeInfo = Google_Protobuf_SourceCodeInfo.with {
@@ -198,5 +222,11 @@ extension Google_Protobuf_FileDescriptorProto {
       }
       $0.syntax = "proto3"
     }
+  }
+
+  internal init(name: String, package: String) {
+    self.init()
+    self.name = name
+    self.package = package
   }
 }
