@@ -134,6 +134,8 @@ final class NameResolverRegistryTests: XCTestCase {
     let resolvers = NameResolverRegistry.defaults
     XCTAssert(resolvers.containsFactory(ofType: NameResolvers.IPv4.self))
     XCTAssert(resolvers.containsFactory(ofType: NameResolvers.IPv6.self))
+    XCTAssert(resolvers.containsFactory(ofType: NameResolvers.UnixDomainSocket.self))
+    XCTAssertEqual(resolvers.count, 3)
   }
 
   func testMakeResolver() {
@@ -232,6 +234,21 @@ final class NameResolverRegistryTests: XCTestCase {
           Endpoint(addresses: [.ipv6(host: "bar", port: 444)]),
         ]
       )
+      XCTAssertNil(result.serviceConfiguration)
+    }
+  }
+
+  func testUDSResolver() async throws {
+    let factory = NameResolvers.UnixDomainSocket()
+    let resolver = factory.resolver(for: .unixDomainSocket(path: "/foo"))
+
+    XCTAssertEqual(resolver.updateMode, .pull)
+
+    // The UDS resolver always returns the same values.
+    var iterator = resolver.names.makeAsyncIterator()
+    for _ in 0 ..< 1000 {
+      let result = try await XCTUnwrapAsync { try await iterator.next() }
+      XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.unixDomainSocket(path: "/foo")])])
       XCTAssertNil(result.serviceConfiguration)
     }
   }
