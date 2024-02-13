@@ -38,7 +38,7 @@ extension Metadata {
   }
 
   @inlinable
-  public var timeout: Duration? {
+  var timeout: Duration? {
     get {
       self.firstString(forKey: .timeout).flatMap { Timeout(decoding: $0)?.duration }
     }
@@ -50,27 +50,12 @@ extension Metadata {
       }
     }
   }
-  
-  @inlinable
-  public var encoding: Encoding? {
-    get {
-      self.firstString(forKey: .encoding).flatMap { Encoding(rawValue: $0) }
-    }
-    set {
-      if let newValue {
-        self.replaceOrAddString(newValue.rawValue, forKey: .encoding)
-      } else {
-        self.removeAllValues(forKey: .encoding)
-      }
-    }
-  }
 }
 
 extension Metadata {
   @usableFromInline
   enum GRPCKey: String, Sendable, Hashable {
     case timeout = "grpc-timeout"
-    case encoding = "grpc-encoding"
     case retryPushbackMs = "grpc-retry-pushback-ms"
     case previousRPCAttempts = "grpc-previous-rpc-attempts"
   }

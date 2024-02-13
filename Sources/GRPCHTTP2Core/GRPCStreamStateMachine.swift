@@ -37,10 +37,13 @@ fileprivate protocol GRPCStreamStateMachineProtocol {
 }
 
 enum GRPCStreamStateMachineConfiguration {
-  case client(maximumPayloadSize: Int)
+  case client(
+    maximumPayloadSize: Int,
+    supportedCompressionAlgorithms: [CompressionAlgorithm]
+  )
   case server(
     maximumPayloadSize: Int,
-    supportedCompressionAlgorithms: [Encoding]
+    supportedCompressionAlgorithms: [CompressionAlgorithm]
   )
 }
 
@@ -57,30 +60,51 @@ enum GRPCStreamStateMachineState {
     let maximumPayloadSize: Int
   }
   
+  enum DecompressionConfiguration {
+    case decompressionNotYetKnown
+    case decompression(CompressionAlgorithm?)
+  }
+  
   struct ClientOpenServerIdleState {
+    let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
     
-    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
+    // The deframer must be optional because the client will not have one configured
+    // until the server opens and sends a grpc-encoding header.
+    // It will be present for the server though, because even though it's idle,
+    // it can still receive compressed messages from the client.
+    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
     
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(
       previousState: ClientIdleServerIdleState,
-      compressionAlgorithm: Encoding?
+      compressionAlgorithm: CompressionAlgorithm?,
+      decompressionConfiguration: DecompressionConfiguration
     ) {
+      self.maximumPayloadSize = previousState.maximumPayloadSize
+      
       if let zlibMethod = Zlib.Method(encoding: compressionAlgorithm) {
         self.compressor = Zlib.Compressor(method: zlibMethod)
-        self.decompressor = Zlib.Decompressor(method: zlibMethod)
       }
-      
       self.framer = GRPCMessageFramer()
-      let decoder = GRPCMessageDeframer(
-        maximumPayloadSize: previousState.maximumPayloadSize,
-        decompressor: self.decompressor
-      )
-      self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
+      
+      // TODO: we should check here or in a `MessageEncoder` (instead of the state machine)
+      // that the server supports the given encoding - otherwise return the corresponding response.
+      if case .decompression(let decompressionAlgorithm) = decompressionConfiguration {
+        if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
+          self.decompressor = Zlib.Decompressor(method: zlibMethod)
+        }
+        let decoder = GRPCMessageDeframer(
+          maximumPayloadSize: previousState.maximumPayloadSize,
+          decompressor: self.decompressor
+        )
+        self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
+      } else {
+        self.deframer = nil
+      }
       
       self.inboundMessageBuffer = .init()
     }
@@ -95,11 +119,29 @@ enum GRPCStreamStateMachineState {
     
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
-    init(previousState: ClientOpenServerIdleState) {
+    init(
+      previousState: ClientOpenServerIdleState,
+      decompressionAlgorithm: CompressionAlgorithm?
+    ) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
-      self.deframer = previousState.deframer
-      self.decompressor = previousState.decompressor
+      
+      if let previousDeframer = previousState.deframer {
+        self.deframer = previousDeframer
+        self.decompressor = previousState.decompressor
+      } else {
+        // TODO: we should check here or in a `MessageEncoder` (instead of the state machine)
+        // that the client supports the given encoding - otherwise return the corresponding response.
+        if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
+          self.decompressor = Zlib.Decompressor(method: zlibMethod)
+        }
+        let decoder = GRPCMessageDeframer(
+          maximumPayloadSize: previousState.maximumPayloadSize,
+          decompressor: self.decompressor
+        )
+        self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
+      }
+
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
@@ -108,7 +150,7 @@ enum GRPCStreamStateMachineState {
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
     
-    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
+    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
     
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
@@ -120,18 +162,34 @@ enum GRPCStreamStateMachineState {
       self.decompressor = previousState.decompressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
+    
+    init(previousState: ClientOpenServerIdleState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+      // The server went directly from idle to closed - this means it sent a
+      // trailers-only response:
+      // - if we're the client, the previous state was a nil deframer, but that
+      // is okay because we don't need a deframer as the server won't be sending
+      // any messages;
+      // - if we're the server, we'll keep whatever deframer we had.
+      self.deframer = previousState.deframer
+      self.decompressor = previousState.decompressor
+    }
   }
   
   struct ClientClosedServerIdleState {
+    let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
     
-    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
+    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
     
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(previousState: ClientOpenServerIdleState) {
+      self.maximumPayloadSize = previousState.maximumPayloadSize
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.deframer = previousState.deframer
@@ -157,19 +215,39 @@ enum GRPCStreamStateMachineState {
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
     
-    init(previousState: ClientClosedServerIdleState) {
+    init(
+      previousState: ClientClosedServerIdleState,
+      decompressionAlgorithm: CompressionAlgorithm?
+    ) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
-      self.deframer = previousState.deframer
-      self.decompressor = previousState.decompressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
+      
+      if let previousDeframer = previousState.deframer {
+        self.deframer = previousDeframer
+        self.decompressor = previousState.decompressor
+      } else {
+        if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
+          self.decompressor = Zlib.Decompressor(method: zlibMethod)
+        }
+        let decoder = GRPCMessageDeframer(
+          maximumPayloadSize: previousState.maximumPayloadSize,
+          decompressor: self.decompressor
+        )
+        self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
+      }
     }
   }
   
   struct ClientClosedServerClosedState {
+    // These are already deframed, so we don't need the deframer anymore.
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
     
     init(previousState: ClientClosedServerOpenState) {
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+    }
+    
+    init(previousState: ClientClosedServerIdleState) {
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
     
@@ -188,8 +266,12 @@ struct GRPCStreamStateMachine {
     skipAssertions: Bool = false
   ) {
     switch configuration {
-    case .client(let maximumPayloadSize):
-      self._stateMachine = Client(maximumPayloadSize: maximumPayloadSize, skipAssertions: skipAssertions)
+    case .client(let maximumPayloadSize, let supportedCompressionAlgorithms):
+      self._stateMachine = Client(
+        maximumPayloadSize: maximumPayloadSize,
+        supportedCompressionAlgorithms: supportedCompressionAlgorithms,
+        skipAssertions: skipAssertions
+      )
     case .server(let maximumPayloadSize, let supportedCompressionAlgorithms):
       self._stateMachine = Server(
         maximumPayloadSize: maximumPayloadSize,
@@ -232,10 +314,16 @@ struct GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   struct Client: GRPCStreamStateMachineProtocol {
     fileprivate var state: GRPCStreamStateMachineState
+    private let supportedCompressionAlgorithms: [CompressionAlgorithm]
     private let skipAssertions: Bool
 
-    init(maximumPayloadSize: Int, skipAssertions: Bool) {
+    init(
+      maximumPayloadSize: Int,
+      supportedCompressionAlgorithms: [CompressionAlgorithm],
+      skipAssertions: Bool
+    ) {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
+      self.supportedCompressionAlgorithms = supportedCompressionAlgorithms
       self.skipAssertions = skipAssertions
     }
 
@@ -243,7 +331,7 @@ extension GRPCStreamStateMachine {
       // Client sends metadata only when opening the stream.
       switch self.state {
       case .clientIdleServerIdle(let state):
-        guard metadata.endpoint != nil else {
+        guard metadata.path != nil else {
           throw RPCError(
             code: .invalidArgument,
             message: "Endpoint is missing: client cannot send initial metadata without it."
@@ -252,12 +340,13 @@ extension GRPCStreamStateMachine {
 
         self.state = .clientOpenServerIdle(.init(
           previousState: state,
-          compressionAlgorithm: metadata.encoding
+          compressionAlgorithm: metadata.encoding,
+          decompressionConfiguration: .decompressionNotYetKnown
         ))
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is already open: shouldn't be sending metadata.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is already open: shouldn't be sending metadata.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed: can't send metadata.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is closed: can't send metadata.")
       }
     }
 
@@ -265,7 +354,7 @@ extension GRPCStreamStateMachine {
       // Client sends message.
       switch self.state {
       case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client not yet open.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client not yet open.")
       case .clientOpenServerIdle(var state):
         state.framer.append(message)
         if endStream {
@@ -287,12 +376,12 @@ extension GRPCStreamStateMachine {
           self.state = .clientClosedServerClosed(.init(previousState: state))
         }
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, cannot send a message.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is closed, cannot send a message.")
       }
     }
     
     mutating func send(status: String, trailingMetadata: Metadata) throws {
-      throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client cannot send status and trailer.")
+      throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client cannot send status and trailer.")
     }
     
     /// Returns the client's next request to the server.
@@ -300,7 +389,7 @@ extension GRPCStreamStateMachine {
     mutating func nextOutboundMessage() throws -> ByteBuffer? {
       switch self.state {
       case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is not open yet.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is not open yet.")
       case .clientOpenServerIdle(var state):
         let request = try state.framer.next(compressor: state.compressor)
         self.state = .clientOpenServerIdle(state)
@@ -309,9 +398,12 @@ extension GRPCStreamStateMachine {
         let request = try state.framer.next(compressor: state.compressor)
         self.state = .clientOpenServerOpen(state)
         return request
-      case .clientOpenServerClosed, .clientClosedServerClosed:
-        // Nothing to do: no point in sending request if server is closed.
-        return nil
+      case .clientOpenServerClosed(var state):
+        // Server may have closed but still be waiting for client messages,
+        // for example if it's a client-streaming RPC.
+        let request = try state.framer.next(compressor: state.compressor)
+        self.state = .clientOpenServerClosed(state)
+        return request
       case .clientClosedServerIdle(var state):
         let request = try state.framer.next(compressor: state.compressor)
         self.state = .clientClosedServerIdle(state)
@@ -320,70 +412,76 @@ extension GRPCStreamStateMachine {
         let request = try state.framer.next(compressor: state.compressor)
         self.state = .clientClosedServerOpen(state)
         return request
+      case .clientClosedServerClosed:
+        // Nothing to do if both are closed.
+        return nil
       }
     }
     
     mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
-      // This is metadata received by the client from the server.
-      // It can be initial, which confirms that the server is now open;
-      // or an END_STREAM trailer, meaning the response is over.
-      if endStream {
-        try self.clientReceivedEndHeader()
-      } else {
-        try self.clientReceivedMetadata()
-      }
-      return .doNothing
-    }
-    
-    mutating func clientReceivedEndHeader() throws {
       switch self.state {
       case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't have received a stream end trailer if both client and server are idle.")
-      case .clientOpenServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent an end stream header if it is still idle.")
-      case .clientOpenServerOpen(let state):
-        self.state = .clientOpenServerClosed(.init(previousState: state))
-      case .clientOpenServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is already closed, can't have received the end stream trailer twice.")
-      case .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is idle.")
-      case .clientClosedServerOpen(let state):
-        state.compressor?.end()
-        state.decompressor?.end()
-        self.state = .clientClosedServerClosed(.init(previousState: state))
-      case .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent end stream trailer if it is already closed.")
-      }
-    }
-    
-    mutating func clientReceivedMetadata() throws {
-      switch self.state {
-      case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent metadata if the client is idle.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server cannot have sent metadata if the client is idle.")
       case .clientOpenServerIdle(let state):
-        self.state = .clientOpenServerOpen(.init(previousState: state))
-      case .clientOpenServerOpen:
-        // This state is valid: server can send trailing metadata without END_STREAM
-        // set, and follow it with an empty message frame where the flag *is* set.
-        ()
-        // TODO: I believe we should set some flag in the state to signal that
-        // we're expecting an empty data frame with END_STREAM set; otherwise,
-        // we could get an infinite number of metadata frames from the server -
-        // not sure this should be allowed.
-      case .clientOpenServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is closed, nothing could have been sent.")
-      case .clientClosedServerClosed, .clientClosedServerIdle, .clientClosedServerOpen:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client is closed, shouldn't have received anything.")
+        if endStream {
+          // This is a trailers-only response: close server.
+          self.state = .clientOpenServerClosed(.init(previousState: state))
+        } else {
+          self.state = .clientOpenServerOpen(.init(
+            previousState: state,
+            decompressionAlgorithm: metadata.encoding
+          ))
+        }
+      case .clientOpenServerOpen(let state):
+        if endStream {
+          self.state = .clientOpenServerClosed(.init(previousState: state))
+        } else {
+          // This state is valid: server can send trailing metadata without END_STREAM
+          // set, and follow it with an empty message frame where the flag *is* set.
+          ()
+          // TODO: I believe we should set some flag in the state to signal that
+          // we're expecting an empty data frame with END_STREAM set; otherwise,
+          // we could get an infinite number of metadata frames from the server -
+          // not sure this should be allowed.
+        }
+      case .clientClosedServerIdle(let state):
+        if endStream {
+          // This is a trailers-only response.
+          self.state = .clientClosedServerClosed(.init(previousState: state))
+        } else {
+          self.state = .clientClosedServerOpen(.init(
+            previousState: state,
+            decompressionAlgorithm: metadata.encoding
+          ))
+        }
+      case .clientClosedServerOpen(let state):
+        if endStream {
+          state.compressor?.end()
+          state.decompressor?.end()
+          self.state = .clientClosedServerClosed(.init(previousState: state))
+        } else {
+          // This state is valid: server can send trailing metadata without END_STREAM
+          // set, and follow it with an empty message frame where the flag *is* set.
+          ()
+          // TODO: I believe we should set some flag in the state to signal that
+          // we're expecting an empty data frame with END_STREAM set; otherwise,
+          // we could get an infinite number of metadata frames from the server -
+          // not sure this should be allowed.
+        }
+      case .clientOpenServerClosed, .clientClosedServerClosed:
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server is closed, nothing could have been sent.")
       }
+      
+      return .doNothing
     }
     
     mutating func receive(message: ByteBuffer, endStream: Bool) throws {
       // This is a message received by the client, from the server.
       switch self.state {
       case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot have received anything from server if client is not yet open.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Cannot have received anything from server if client is not yet open.")
       case .clientOpenServerIdle, .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot have sent a message before sending the initial metadata.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server cannot have sent a message before sending the initial metadata.")
       case .clientOpenServerOpen(var state):
         try state.deframer.process(buffer: message) { deframedMessage in
           state.inboundMessageBuffer.append(deframedMessage)
@@ -405,9 +503,9 @@ extension GRPCStreamStateMachine {
           self.state = .clientClosedServerOpen(state)
         }
       case .clientOpenServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Cannot have received anything from a closed server.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Cannot have received anything from a closed server.")
       case .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Shouldn't have received anything if both client and server are closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Shouldn't have received anything if both client and server are closed.")
       }
     }
     
@@ -429,18 +527,18 @@ extension GRPCStreamStateMachine {
         let message = state.inboundMessageBuffer.pop()
         self.state = .clientClosedServerClosed(state)
         return message
-      case .clientOpenServerIdle,
-          .clientIdleServerIdle, 
+      case .clientIdleServerIdle,
+          .clientOpenServerIdle,
           .clientClosedServerIdle:
         return nil
       }
     }
     
-    private func assertionFailureAndCreateRPCErrorOnFailedPrecondition(_ message: String) -> RPCError {
+    private func assertionFailureAndCreateRPCErrorOnInternalError(_ message: String, line: UInt = #line) -> RPCError {
       if !self.skipAssertions {
-        assertionFailure(message)
+        assertionFailure(message, line: line)
       }
-      return RPCError(code: .failedPrecondition, message: message)
+      return RPCError(code: .internalError, message: message)
     }
   }
 }
@@ -449,12 +547,12 @@ extension GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   struct Server: GRPCStreamStateMachineProtocol {
     fileprivate var state: GRPCStreamStateMachineState
-    let supportedCompressionAlgorithms: [Encoding]
+    let supportedCompressionAlgorithms: [CompressionAlgorithm]
     private let skipAssertions: Bool
     
     init(
       maximumPayloadSize: Int,
-      supportedCompressionAlgorithms: [Encoding],
+      supportedCompressionAlgorithms: [CompressionAlgorithm],
       skipAssertions: Bool
     ) {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
@@ -466,15 +564,21 @@ extension GRPCStreamStateMachine {
       // Server sends initial metadata. This transitions server to open.
       switch self.state {
       case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client cannot be idle if server is sending initial metadata: it must have opened.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client cannot be idle if server is sending initial metadata: it must have opened.")
       case .clientOpenServerIdle(let state):
-        self.state = .clientOpenServerOpen(.init(previousState: state))
+        self.state = .clientOpenServerOpen(.init(
+          previousState: state,
+          decompressionAlgorithm: metadata.encoding
+        ))
       case .clientOpenServerClosed, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server cannot send metadata if closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server cannot send metadata if closed.")
       case .clientClosedServerIdle(let state):
-        self.state = .clientClosedServerOpen(.init(previousState: state))
+        self.state = .clientClosedServerOpen(.init(
+          previousState: state,
+          decompressionAlgorithm: metadata.encoding
+        ))
       case .clientOpenServerOpen, .clientClosedServerOpen:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server has already sent initial metadata.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server has already sent initial metadata.")
         
       }
     }
@@ -482,7 +586,7 @@ extension GRPCStreamStateMachine {
     mutating func send(message: [UInt8], endStream: Bool) throws {
       switch self.state {
       case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server must have sent initial metadata before sending a message.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server must have sent initial metadata before sending a message.")
       case .clientOpenServerOpen(var state):
         state.framer.append(message)
         if endStream {
@@ -498,7 +602,7 @@ extension GRPCStreamStateMachine {
           self.state = .clientClosedServerOpen(state)
         }
       case .clientOpenServerClosed, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send a message if it's closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server can't send a message if it's closed.")
       }
     }
     
@@ -506,7 +610,7 @@ extension GRPCStreamStateMachine {
       // Close the server.
       switch self.state {
       case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send status if idle.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server can't send status if idle.")
       case .clientOpenServerOpen(let state):
         self.state = .clientOpenServerClosed(.init(previousState: state))
       case .clientClosedServerOpen(let state):
@@ -514,15 +618,15 @@ extension GRPCStreamStateMachine {
         state.decompressor?.end()
         self.state = .clientClosedServerClosed(.init(previousState: state))
       case .clientOpenServerClosed, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server can't send anything if closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server can't send anything if closed.")
       }
     }
 
     mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
       if endStream, case .clientIdleServerIdle = self.state {
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition(
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError(
           """
-          Client should have opened before ending the stream:
+          Client should have opened before ending the stream: \
           stream shouldn't have been closed when sending initial metadata.
           """
         )
@@ -530,16 +634,26 @@ extension GRPCStreamStateMachine {
       
       switch self.state {
       case .clientIdleServerIdle(let state):
+        var preferredCompressionEncoding: CompressionAlgorithm? = nil
+        if let acceptedEncodings = metadata.acceptedEncodings {
+          for acceptedEncoding in acceptedEncodings where self.supportedCompressionAlgorithms.contains(where: { $0 == acceptedEncoding }) {
+            // Found the preferred encoding: use it to compress responses.
+            preferredCompressionEncoding = acceptedEncoding
+            break
+          }
+        }
+        
         self.state = .clientOpenServerIdle(.init(
           previousState: state,
-          compressionAlgorithm: metadata.encoding
+          compressionAlgorithm: preferredCompressionEncoding,
+          decompressionConfiguration: .decompression(metadata.encoding)
         ))
         
         guard let contentType = metadata.contentType else {
           throw RPCError(code: .invalidArgument, message: "Invalid or empty content-type.")
         }
         
-        guard let endpoint = metadata.endpoint else {
+        guard let endpoint = metadata.path else {
           throw RPCError(code: .unimplemented, message: "No :path header has been set.")
         }
         
@@ -555,7 +669,7 @@ extension GRPCStreamStateMachine {
               message: "grpc-encoding must contain no more than one value"
             )
           }
-          guard let encoding = Encoding(rawValue: rawEncoding) else {
+          guard let encoding = CompressionAlgorithm(rawValue: rawEncoding) else {
             let status = Status(
               code: .unimplemented,
               message: "\(rawEncoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
@@ -563,7 +677,7 @@ extension GRPCStreamStateMachine {
             let trailers = Metadata(dictionaryLiteral: (
               "grpc-accept-encoding",
               .string(self.supportedCompressionAlgorithms
-                .map({ $0.rawValue })
+                .map({ $0.name })
                 .joined(separator: ",")
               )
             ))
@@ -584,7 +698,7 @@ extension GRPCStreamStateMachine {
               let trailers = Metadata(dictionaryLiteral: (
                 "grpc-accept-encoding",
                 .string(self.supportedCompressionAlgorithms
-                  .map({ $0.rawValue })
+                  .map({ $0.name })
                   .joined(separator: ",")
                 )
               ))
@@ -594,18 +708,21 @@ extension GRPCStreamStateMachine {
         }
         return .doNothing
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client shouldn't have sent metadata twice.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client shouldn't have sent metadata twice.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't have sent metadata if closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client can't have sent metadata if closed.")
       }
     }
     
     mutating func receive(message: ByteBuffer, endStream: Bool) throws {
       switch self.state {
       case .clientIdleServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't have received a message if client is idle.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Can't have received a message if client is idle.")
       case .clientOpenServerIdle(var state):
-        try state.deframer.process(buffer: message) { deframedMessage in
+        // Deframer must be present on the server side, as we know the decompression
+        // algorithm from the moment the client opens.
+        assert(state.deframer != nil)
+        try state.deframer!.process(buffer: message) { deframedMessage in
           state.inboundMessageBuffer.append(deframedMessage)
         }
         
@@ -629,14 +746,14 @@ extension GRPCStreamStateMachine {
         // Ignore the rest of the request: do nothing.
         ()
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Client can't send a message if closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client can't send a message if closed.")
       }
     }
     
     mutating func nextOutboundMessage() throws -> ByteBuffer? {
       switch self.state {
       case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Server is not open yet.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server is not open yet.")
       case .clientOpenServerOpen(var state):
         let response = try state.framer.next(compressor: state.compressor)
         self.state = .clientOpenServerOpen(state)
@@ -646,7 +763,7 @@ extension GRPCStreamStateMachine {
         self.state = .clientClosedServerOpen(state)
         return response
       case .clientOpenServerClosed, .clientClosedServerClosed:
-        throw assertionFailureAndCreateRPCErrorOnFailedPrecondition("Can't send response if server is closed.")
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Can't send response if server is closed.")
       }
     }
     
@@ -668,18 +785,18 @@ extension GRPCStreamStateMachine {
         let request = state.inboundMessageBuffer.pop()
         self.state = .clientClosedServerOpen(state)
         return request
-      case .clientClosedServerIdle,
-          .clientIdleServerIdle,
-          .clientClosedServerClosed:
+      case .clientClosedServerClosed(var state):
+        let request = state.inboundMessageBuffer.pop()
+        self.state = .clientClosedServerClosed(state)
+        return request
+      case .clientClosedServerIdle, .clientIdleServerIdle:
         return nil
       }
     }
     
-    private func assertionFailureAndCreateRPCErrorOnFailedPrecondition(_ message: String) -> RPCError {
-      if !self.skipAssertions {
-        assertionFailure(message)
-      }
-      return RPCError(code: .failedPrecondition, message: message)
+    private func assertionFailureAndCreateRPCErrorOnInternalError(_ message: String, line: UInt = #line) -> RPCError {
+      assert(self.skipAssertions, message, line: line)
+      return RPCError(code: .internalError, message: message)
     }
   }
 }
@@ -695,46 +812,97 @@ extension MethodDescriptor {
 }
 
 extension Metadata {
-  public var endpoint: MethodDescriptor? {
+  var path: MethodDescriptor? {
     get {
-      self[stringValues: ":path"]
-        .first(where: { _ in true })
+      self.firstString(forKey: .endpoint)
         .flatMap { MethodDescriptor(fullyQualifiedMethod: $0) }
     }
     set {
       if let newValue {
-        self.replaceOrAddString(newValue.fullyQualifiedMethod, forKey: ":path")
+        self.replaceOrAddString(newValue.fullyQualifiedMethod, forKey: .endpoint)
       } else {
-        self.removeAllValues(forKey: ":path")
+        self.removeAllValues(forKey: .endpoint)
       }
     }
   }
   
-  public var contentType: ContentType? {
+  var contentType: ContentType? {
     get {
-      self[stringValues: "content-type"]
-        .first(where: { _ in true })
+      self.firstString(forKey: .contentType)
         .flatMap { ContentType(value: $0) }
     }
     set {
       if let newValue {
-        self.replaceOrAddString(newValue.canonicalValue, forKey: "content-type")
+        self.replaceOrAddString(newValue.canonicalValue, forKey: .contentType)
       } else {
-        self.removeAllValues(forKey: "content-type")
+        self.removeAllValues(forKey: .contentType)
       }
     }
+  }
+  
+  var encoding: CompressionAlgorithm? {
+    get {
+      self.firstString(forKey: .encoding).flatMap { CompressionAlgorithm(rawValue: $0) }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue.name, forKey: .encoding)
+      } else {
+        self.removeAllValues(forKey: .encoding)
+      }
+    }
+  }
+  
+  var acceptedEncodings: [CompressionAlgorithm]? {
+    get {
+      self.firstString(forKey: .acceptEncoding)?
+        .split(separator: ",")
+        .compactMap { CompressionAlgorithm(rawValue: String($0)) }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue.map({ $0.name }).joined(separator: ","), forKey: .acceptEncoding)
+      } else {
+        self.removeAllValues(forKey: .acceptEncoding)
+      }
+    }
+  }
+  
+  private enum GRPCHTTP2Keys: String {
+    case endpoint = ":path"
+    case contentType = "content-type"
+    case encoding = "grpc-encoding"
+    case acceptEncoding = "grpc-accept-encoding"
+  }
+  
+  private func firstString(forKey key: GRPCHTTP2Keys) -> String? {
+    self[stringValues: key.rawValue].first(where: { _ in true })
+  }
+  
+  private mutating func replaceOrAddString(_ value: String, forKey key: GRPCHTTP2Keys) {
+    self.replaceOrAddString(value, forKey: key.rawValue)
+  }
+
+  private mutating func removeAllValues(forKey key: GRPCHTTP2Keys) {
+    self.removeAllValues(forKey: key.rawValue)
   }
 }
 
 extension Zlib.Method {
-  init?(encoding: Encoding?) {
+  init?(encoding: CompressionAlgorithm?) {
+    guard let encoding else {
+      return nil
+    }
+    
     switch encoding {
-    case .none, .identity:
+    case .identity:
       return nil
     case .deflate:
       self = .deflate
     case .gzip:
       self = .gzip
+    default:
+      return nil
     }
   }
 }

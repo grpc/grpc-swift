@@ -16,25 +16,14 @@
 
 // See:
 // - https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
-// - https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
-public enum ContentType {
+enum ContentType {
   case protobuf
-  case webProtobuf
-  case webTextProtobuf
 
   init?(value: String) {
     switch value {
     case "application/grpc",
       "application/grpc+proto":
       self = .protobuf
-
-    case "application/grpc-web",
-      "application/grpc-web+proto":
-      self = .webProtobuf
-
-    case "application/grpc-web-text",
-      "application/grpc-web-text+proto":
-      self = .webTextProtobuf
 
     default:
       return nil
@@ -46,12 +35,6 @@ public enum ContentType {
     case .protobuf:
       // This is more widely supported than "application/grpc+proto"
       return "application/grpc"
-
-    case .webProtobuf:
-      return "application/grpc-web+proto"
-
-    case .webTextProtobuf:
-      return "application/grpc-web-text+proto"
     }
   }
 }
