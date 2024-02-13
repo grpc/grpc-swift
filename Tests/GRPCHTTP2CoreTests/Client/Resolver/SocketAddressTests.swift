@@ -56,6 +56,9 @@ final class SocketAddressTests: XCTestCase {
 
     address = .vsock(contextID: 314, port: 159)
     XCTAssertDescription(address, "[vsock]314:159")
+    address = .vsock(contextID: .any, port: .any)
+    XCTAssertDescription(address, "[vsock]-1:-1")
+
   }
 
   func testSocketAddressSubTypesDescription() {
@@ -68,7 +71,10 @@ final class SocketAddressTests: XCTestCase {
     let uds = SocketAddress.UnixDomainSocket(path: "baz")
     XCTAssertDescription(uds, "[unix]baz")
 
-    let vsock = SocketAddress.VirtualSocket(contextID: 314, port: 159)
+    var vsock = SocketAddress.VirtualSocket(contextID: 314, port: 159)
     XCTAssertDescription(vsock, "[vsock]314:159")
+    vsock.contextID = .any
+    vsock.port = .any
+    XCTAssertDescription(vsock, "[vsock]-1:-1")
   }
 }
