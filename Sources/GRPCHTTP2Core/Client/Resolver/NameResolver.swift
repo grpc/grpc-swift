@@ -46,7 +46,7 @@ public struct NameResolver: Sendable {
   }
 }
 
-/// The result of name resolution, a service of endpoints to connection to and the service
+/// The result of name resolution, a list of endpoints to connect to and the service
 /// configuration reported by the resolver.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct NameResolutionResult: Hashable, Sendable {
