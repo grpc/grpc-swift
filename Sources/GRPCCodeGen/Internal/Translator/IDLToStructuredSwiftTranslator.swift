@@ -101,64 +101,30 @@ extension IDLToStructuredSwiftTranslator {
   private func validateInput(_ codeGenerationRequest: CodeGenerationRequest) throws {
     try self.checkServiceDescriptorsAreUnique(codeGenerationRequest.services)
 
-    let servicesByUpperCaseNamespace = Dictionary(
+    let servicesByGeneratedEnumName = Dictionary(
       grouping: codeGenerationRequest.services,
-      by: { $0.namespace.generatedUpperCase }
+      by: { $0.namespacedGeneratedName }
     )
-    try self.checkServiceNamesAreUnique(for: servicesByUpperCaseNamespace)
+    try self.checkServiceEnumNamesAreUnique(for: servicesByGeneratedEnumName)
 
     for service in codeGenerationRequest.services {
       try self.checkMethodNamesAreUnique(in: service)
     }
   }
 
-  // Verify service names are unique within each namespace and that services with no namespace
-  // don't have the same names as any of the namespaces.
-  private func checkServiceNamesAreUnique(
-    for servicesByUpperCaseNamespace: [String: [CodeGenerationRequest.ServiceDescriptor]]
+  // Verify service enum names are unique.
+  private func checkServiceEnumNamesAreUnique(
+    for servicesByGeneratedEnumName: [String: [CodeGenerationRequest.ServiceDescriptor]]
   ) throws {
-    // Check that if there are services in an empty namespace, none have names which match other namespaces,
-    // to ensure that there are no enums with the same name in the type aliases part of the generated code.
-    if let noNamespaceServices = servicesByUpperCaseNamespace[""] {
-      let upperCaseNamespaces = servicesByUpperCaseNamespace.keys
-      for service in noNamespaceServices {
-        if upperCaseNamespaces.contains(service.name.generatedUpperCase) {
-          throw CodeGenError(
-            code: .nonUniqueServiceName,
-            message: """
-              Services with no namespace must not have the same generated upper case names as the namespaces. \
-              \(service.name.generatedUpperCase) is used as a generated upper case name for a service with no namespace and a namespace.
-              """
-          )
-        }
-      }
-    }
-
-    // Check that the generated upper case names for services are unique within each namespace, to ensure that
-    // the service enums from each namespace enum have unique names.
-    for (namespace, services) in servicesByUpperCaseNamespace {
-      var upperCaseNames: Set<String> = []
-
-      for service in services {
-        if upperCaseNames.contains(service.name.generatedUpperCase) {
-          let errorMessage: String
-          if namespace.isEmpty {
-            errorMessage = """
-              Services in an empty namespace must have unique generated upper case names. \
-              \(service.name.generatedUpperCase) is used as a generated upper case name for multiple services without namespaces.
-              """
-          } else {
-            errorMessage = """
-              Services within the same namespace must have unique generated upper case names. \
-              \(service.name.generatedUpperCase) is used as a generated upper case name for multiple services in the \(service.namespace.base) namespace.
-              """
-          }
-          throw CodeGenError(
-            code: .nonUniqueServiceName,
-            message: errorMessage
-          )
-        }
-        upperCaseNames.insert(service.name.generatedUpperCase)
+    for (generatedEnumName, services) in servicesByGeneratedEnumName {
+      if services.count > 1 {
+        throw CodeGenError(
+          code: .nonUniqueServiceName,
+          message: """
+            There must be a unique (namespace, service_name) pair for each service. \
+            \(generatedEnumName) is used as a <namespace>_<service_name> construction for multiple services.
+            """
+        )
       }
     }
   }
@@ -230,14 +196,6 @@ extension IDLToStructuredSwiftTranslator {
 }
 
 extension CodeGenerationRequest.ServiceDescriptor {
-  var namespacedTypealiasGeneratedName: String {
-    if self.namespace.generatedUpperCase.isEmpty {
-      return self.name.generatedUpperCase
-    } else {
-      return "\(self.namespace.generatedUpperCase).\(self.name.generatedUpperCase)"
-    }
-  }
-
   var namespacedGeneratedName: String {
     if self.namespace.generatedUpperCase.isEmpty {
       return self.name.generatedUpperCase

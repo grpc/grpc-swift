@@ -479,7 +479,7 @@ extension ServerCodeTranslator {
     type: InputOutputType
   ) -> String {
     var components: String =
-      "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase)"
+      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase)"
 
     switch type {
     case .input:
@@ -497,7 +497,7 @@ extension ServerCodeTranslator {
     service: CodeGenerationRequest.ServiceDescriptor
   ) -> String {
     return
-      "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
+      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
   }
 
   /// Generates the fully qualified name of the type alias for a service protocol.
@@ -506,9 +506,9 @@ extension ServerCodeTranslator {
     streaming: Bool
   ) -> String {
     if streaming {
-      return "\(service.namespacedTypealiasGeneratedName).StreamingServiceProtocol"
+      return "\(service.namespacedGeneratedName).StreamingServiceProtocol"
     }
-    return "\(service.namespacedTypealiasGeneratedName).ServiceProtocol"
+    return "\(service.namespacedGeneratedName).ServiceProtocol"
   }
 
   /// Generates the name of a service protocol.

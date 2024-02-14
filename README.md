@@ -61,7 +61,7 @@ package dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.15.0")
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.21.0")
 ]
 ```
 
@@ -74,41 +74,36 @@ dependencies: [
 ]
 ```
 
-##### Xcode
-
-From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
-projects][xcode-spm] and link targets to products of those packages; this is the
-easiest way to integrate gRPC Swift with an existing `xcodeproj`.
-
-##### Manual Integration
-
-Alternatively, gRPC Swift can be manually integrated into a project:
-
-1. Build an Xcode project: `swift package generate-xcodeproj`,
-1. Add the generated project to your own project, and
-1. Add a build dependency on `GRPC`.
-
 ### Getting the `protoc` Plugins
 
 Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
 [GitHub][protobuf-releases].
 
-To build the plugins, run `make plugins` in the main directory. This uses the
-Swift Package Manager to build both of the necessary plugins:
-`protoc-gen-swift`, which generates Protocol Buffer support code and
-`protoc-gen-grpc-swift`, which generates gRPC interface code.
+To build the plugins, run:
+- `swift build -c release --product protoc-gen-swift` to build the `protoc`
+  plugin which generates Protocol Buffer support code, and
+- `swift build -c release --product protoc-gen-grpc-swift` to build the `protoc` plugin
+  which generates gRPC interface code.
 
 To install these plugins, just copy the two executables (`protoc-gen-swift` and
-`protoc-gen-grpc-swift`) that show up in the main directory into a directory
+`protoc-gen-grpc-swift`) from the build directory (`.build/release`) into a directory
 that is part of your `PATH` environment variable. Alternatively the full path to
 the plugins can be specified when using `protoc`.
 
-#### Homebrew
+### Using the Swift Package Manager plugin
 
-The plugins are available from [homebrew](https://brew.sh) and can be installed with:
-```bash
-    $ brew install swift-protobuf grpc-swift
-```
+You can also use the Swift Package Manager build plugin to generate messages and
+gRPC code at build time rather than using `protoc` to generate them ahead of
+time. Using this method Swift Package Manager takes care of building
+`protoc-gen-swift` and `protoc-gen-grpc-swift` for you.
+
+One important distinction between using the Swift Package Manager build plugin
+and generating the code ahead of time is that the build plugin has an implicit
+dependency on `protoc`. It's therefore unsuitable for _libraries_ as they can't
+guarantee that end users will have `protoc` available at compile time.
+
+You can find more documentation about the Swift Package Manager build plugin in
+[Using the Swift Package Manager plugin][spm-plugin-grpc].
 
 ## Examples
 
@@ -140,25 +135,25 @@ The `docs` directory contains documentation, including:
 - How to configure keepalive in [`docs/keepalive.md`][docs-keepalive]
 - Support for Apple Platforms and NIO Transport Services in
   [`docs/apple-platforms.md`][docs-apple]
-  
+
 ## Benchmarks
 
-Benchmarks for `grpc-swift` are in a separate Swift Package in the `Performance/Benchmarks` subfolder of this repository. 
+Benchmarks for `grpc-swift` are in a separate Swift Package in the `Performance/Benchmarks` subfolder of this repository.
 They use the [`package-benchmark`](https://github.com/ordo-one/package-benchmark) plugin.
 Benchmarks depends on the [`jemalloc`](https://jemalloc.net) memory allocation library, which is used by `package-benchmark` to capture memory allocation statistics.
-An installation guide can be found in the [Getting Started article](https://swiftpackageindex.com/ordo-one/package-benchmark/documentation/benchmark/gettingstarted#Installing-Prerequisites-and-Platform-Support) of `package-benchmark`. 
+An installation guide can be found in the [Getting Started article](https://swiftpackageindex.com/ordo-one/package-benchmark/documentation/benchmark/gettingstarted#Installing-Prerequisites-and-Platform-Support) of `package-benchmark`.
 Afterwards you can run the benchmarks from CLI by going to the `Performance/Benchmarks` subfolder (e.g. `cd Performance/Benchmarks`) and invoking:
 ```
 swift package benchmark
 ```
 
-Profiling benchmarks or building the benchmarks in release mode in Xcode with `jemalloc` is currently not supported and requires disabling `jemalloc`. 
+Profiling benchmarks or building the benchmarks in release mode in Xcode with `jemalloc` is currently not supported and requires disabling `jemalloc`.
 Make sure Xcode is closed and then open it from the CLI with the `BENCHMARK_DISABLE_JEMALLOC=true` environment variable set e.g.:
 ```
 BENCHMARK_DISABLE_JEMALLOC=true xed .
 ```
 
-For more information please refer to `swift package benchmark --help` or the [documentation of `package-benchmark`](https://swiftpackageindex.com/ordo-one/package-benchmark/documentation/benchmark). 
+For more information please refer to `swift package benchmark --help` or the [documentation of `package-benchmark`](https://swiftpackageindex.com/ordo-one/package-benchmark/documentation/benchmark).
 
 ## Security
 
@@ -190,3 +185,4 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
 [examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/main/Examples
 [examples-in-source]: https://github.com/grpc/grpc-swift/tree/main/Sources/Examples
+[spm-plugin-grpc]: https://swiftpackageindex.com/grpc/grpc-swift/main/documentation/protoc-gen-grpc-swift/spm-plugin
