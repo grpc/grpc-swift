@@ -22,9 +22,15 @@ final class NameResolverRegistryTests: XCTestCase {
   struct FailingResolver: NameResolverFactory {
     typealias Target = StringTarget
 
+    private let code: RPCError.Code
+
+    init(code: RPCError.Code = .unavailable) {
+      self.code = code
+    }
+
     func resolver(for target: NameResolverRegistryTests.StringTarget) -> NameResolver {
       let stream = AsyncThrowingStream(NameResolutionResult.self) {
-        $0.yield(with: .failure(RPCError(code: .unavailable, message: target.value)))
+        $0.yield(with: .failure(RPCError(code: self.code, message: target.value)))
       }
 
       return NameResolver(results: RPCAsyncSequence(wrapping: stream), updateMode: .pull)
@@ -45,14 +51,35 @@ final class NameResolverRegistryTests: XCTestCase {
     XCTAssertEqual(resolvers.count, 0)
   }
 
-  func testRegisterFactory() {
+  func testRegisterFactory() async throws {
     var resolvers = NameResolverRegistry()
-    resolvers.registerFactory(FailingResolver())
+    resolvers.registerFactory(FailingResolver(code: .unknown))
     XCTAssertEqual(resolvers.count, 1)
 
-    // Adding a resolver of the same type replaces it.
-    resolvers.registerFactory(FailingResolver())
+    do {
+      let resolver = resolvers.makeResolver(for: StringTarget(value: "foo"))
+      await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
+        var iterator = resolver?.names.makeAsyncIterator()
+        _ = try await iterator?.next()
+      } errorHandler: { error in
+        XCTAssertEqual(error.code, .unknown)
+      }
+    }
+
+    // Adding a resolver of the same type replaces it. Use the code of the thrown error to
+    // distinguish between the instances.
+    resolvers.registerFactory(FailingResolver(code: .cancelled))
     XCTAssertEqual(resolvers.count, 1)
+
+    do {
+      let resolver = resolvers.makeResolver(for: StringTarget(value: "foo"))
+      await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
+        var iterator = resolver?.names.makeAsyncIterator()
+        _ = try await iterator?.next()
+      } errorHandler: { error in
+        XCTAssertEqual(error.code, .cancelled)
+      }
+    }
   }
 
   func testRemoveFactory() {
