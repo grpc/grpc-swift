@@ -32,11 +32,23 @@ public struct NameResolver: Sendable {
   /// How ``names`` is updated and should be consumed.
   public let updateMode: UpdateMode
 
-  public enum UpdateMode: Hashable, Sendable {
+  public struct UpdateMode: Hashable, Sendable {
+    enum Value: Hashable, Sendable {
+      case push
+      case pull
+    }
+
+    let value: Value
+
+    private init(_ value: Value) {
+      self.value = value
+    }
+
     /// Addresses are pushed to the resolve by an external source.
-    case push
+    public static var push: Self { Self(.push) }
+
     /// Addresses are resolved lazily, when the caller asks them to be resolved.
-    case pull
+    public static var pull: Self { Self(.pull) }
   }
 
   /// Create a new name resolver.
