@@ -166,7 +166,7 @@ final class ProtobufCodeGenParserTests: XCTestCase {
       namespace: CodeGenerationRequest.Name(
         base: "hello.world",
         generatedUpperCase: "Hello_World",
-        generatedLowerCase: "hello_World"
+        generatedLowerCase: "hello_world"
       ),
       methods: [expectedMethod]
     )
@@ -181,6 +181,87 @@ final class ProtobufCodeGenParserTests: XCTestCase {
     XCTAssertEqual(
       parsedCodeGenRequest.lookupDeserializer("Hello_World_HelloRequest"),
       "ProtobufDeserializer<Hello_World_HelloRequest>()"
+    )
+  }
+
+  func testParserEmptyPackage() throws {
+    let descriptorSet = DescriptorSet(
+      protos: [
+        Google_Protobuf_FileDescriptorProto(
+          name: "same-module.proto",
+          package: "same-package"
+        ),
+        Google_Protobuf_FileDescriptorProto(
+          name: "different-module.proto",
+          package: "different-package"
+        ),
+        Google_Protobuf_FileDescriptorProto.helloWorldEmptyPackage,
+      ]
+    )
+
+    guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
+      return XCTFail(
+        """
+        Could not find the file descriptor of "helloworld.proto".
+        """
+      )
+    }
+    let moduleMappings = SwiftProtobuf_GenSwift_ModuleMappings.with {
+      $0.mapping = [
+        SwiftProtobuf_GenSwift_ModuleMappings.Entry.with {
+          $0.protoFilePath = ["different-module.proto"]
+          $0.moduleName = "DifferentModule"
+        }
+      ]
+    }
+    let parsedCodeGenRequest = try ProtobufCodeGenParser(
+      input: fileDescriptor,
+      protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
+      extraModuleImports: ["ExtraModule"]
+    ).parse()
+
+    self.testCommonHelloworldParsedRequestFields(for: parsedCodeGenRequest)
+
+    let expectedMethod = CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(
+      documentation: "/// Sends a greeting.\n",
+      name: CodeGenerationRequest.Name(
+        base: "SayHello",
+        generatedUpperCase: "SayHello",
+        generatedLowerCase: "sayHello"
+      ),
+      isInputStreaming: false,
+      isOutputStreaming: false,
+      inputType: "HelloRequest",
+      outputType: "HelloReply"
+    )
+    guard let method = parsedCodeGenRequest.services.first?.methods.first else { return XCTFail() }
+    XCTAssertEqual(method, expectedMethod)
+
+    let expectedService = CodeGenerationRequest.ServiceDescriptor(
+      documentation: "/// The greeting service definition.\n",
+      name: CodeGenerationRequest.Name(
+        base: "Greeter",
+        generatedUpperCase: "Greeter",
+        generatedLowerCase: "greeter"
+      ),
+      namespace: CodeGenerationRequest.Name(
+        base: "",
+        generatedUpperCase: "",
+        generatedLowerCase: ""
+      ),
+      methods: [expectedMethod]
+    )
+    guard let service = parsedCodeGenRequest.services.first else { return XCTFail() }
+    XCTAssertEqual(service, expectedService)
+    XCTAssertEqual(service.methods.count, 1)
+
+    XCTAssertEqual(
+      parsedCodeGenRequest.lookupSerializer("HelloRequest"),
+      "ProtobufSerializer<HelloRequest>()"
+    )
+    XCTAssertEqual(
+      parsedCodeGenRequest.lookupDeserializer("HelloRequest"),
+      "ProtobufDeserializer<HelloRequest>()"
     )
   }
 }
@@ -330,6 +411,27 @@ extension Google_Protobuf_FileDescriptorProto {
 
     return helloWorldCopy
   }
+
+  static var helloWorldEmptyPackage: Google_Protobuf_FileDescriptorProto {
+    let service = Google_Protobuf_ServiceDescriptorProto.with {
+      $0.name = "Greeter"
+      $0.method = [
+        Google_Protobuf_MethodDescriptorProto.with {
+          $0.name = "SayHello"
+          $0.inputType = ".HelloRequest"
+          $0.outputType = ".HelloReply"
+          $0.clientStreaming = false
+          $0.serverStreaming = false
+        }
+      ]
+    }
+    var helloWorldCopy = self.helloWorld
+    helloWorldCopy.package = ""
+    helloWorldCopy.service = [service]
+
+    return helloWorldCopy
+  }
+
   internal init(name: String, package: String) {
     self.init()
     self.name = name

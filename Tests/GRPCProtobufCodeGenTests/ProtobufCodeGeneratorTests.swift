@@ -25,6 +25,7 @@ import XCTest
 final class ProtobufCodeGeneratorTests: XCTestCase {
   func testProtobufCodeGenerator() throws {
     try testCodeGeneration(
+      proto: Google_Protobuf_FileDescriptorProto.helloWorldNestedPackage,
       indentation: 4,
       visibility: .internal,
       client: true,
@@ -134,6 +135,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     )
 
     try testCodeGeneration(
+      proto: Google_Protobuf_FileDescriptorProto.helloWorld,
       indentation: 2,
       visibility: .public,
       client: false,
@@ -167,13 +169,13 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import DifferentModule
         import ExtraModule
 
-        public enum Hello_World_Greeter {
+        public enum Helloworld_Greeter {
           public enum Method {
             public enum SayHello {
-              public typealias Input = Hello_World_HelloRequest
-              public typealias Output = Hello_World_HelloReply
+              public typealias Input = Helloworld_HelloRequest
+              public typealias Output = Helloworld_HelloReply
               public static let descriptor = MethodDescriptor(
-                service: "hello.world.Greeter",
+                service: "helloworld.Greeter",
                 method: "SayHello"
               )
             }
@@ -182,27 +184,27 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             ]
           }
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-          public typealias StreamingServiceProtocol = Hello_World_GreeterStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = Helloworld_GreeterStreamingServiceProtocol
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-          public typealias ServiceProtocol = Hello_World_GreeterServiceProtocol
+          public typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
         }
 
         /// The greeting service definition.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        public protocol Hello_World_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+        public protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Stream<Hello_World_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Hello_World_Greeter.Method.SayHello.Output>
+          func sayHello(request: ServerRequest.Stream<Helloworld_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld_Greeter.Method.SayHello.Output>
         }
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        extension Hello_World_Greeter.StreamingServiceProtocol {
+        extension Helloworld_Greeter.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
             router.registerHandler(
-              forMethod: Hello_World_Greeter.Method.SayHello.descriptor,
-              deserializer: ProtobufDeserializer<Hello_World_Greeter.Method.SayHello.Input>(),
-              serializer: ProtobufSerializer<Hello_World_Greeter.Method.SayHello.Output>(),
+              forMethod: Helloworld_Greeter.Method.SayHello.descriptor,
+              deserializer: ProtobufDeserializer<Helloworld_Greeter.Method.SayHello.Input>(),
+              serializer: ProtobufSerializer<Helloworld_Greeter.Method.SayHello.Output>(),
               handler: { request in
                 try await self.sayHello(request: request)
               }
@@ -212,15 +214,15 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         /// The greeting service definition.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        public protocol Hello_World_GreeterServiceProtocol: Hello_World_Greeter.StreamingServiceProtocol {
+        public protocol Helloworld_GreeterServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Single<Hello_World_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Single<Hello_World_Greeter.Method.SayHello.Output>
+          func sayHello(request: ServerRequest.Single<Helloworld_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Single<Helloworld_Greeter.Method.SayHello.Output>
         }
 
-        /// Partial conformance to `Hello_World_GreeterStreamingServiceProtocol`.
+        /// Partial conformance to `Helloworld_GreeterStreamingServiceProtocol`.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        extension Hello_World_Greeter.ServiceProtocol {
-          public func sayHello(request: ServerRequest.Stream<Hello_World_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Hello_World_Greeter.Method.SayHello.Output> {
+        extension Helloworld_Greeter.ServiceProtocol {
+          public func sayHello(request: ServerRequest.Stream<Helloworld_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Helloworld_Greeter.Method.SayHello.Output> {
             let response = try await self.sayHello(request: ServerRequest.Single(stream: request))
             return ServerResponse.Stream(single: response)
           }
@@ -228,6 +230,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         """
     )
     try testCodeGeneration(
+      proto: Google_Protobuf_FileDescriptorProto.helloWorldEmptyPackage,
       indentation: 2,
       visibility: .package,
       client: true,
@@ -261,13 +264,13 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import DifferentModule
         import ExtraModule
 
-        package enum Hello_World_Greeter {
+        package enum Greeter {
           package enum Method {
             package enum SayHello {
-              package typealias Input = Hello_World_HelloRequest
-              package typealias Output = Hello_World_HelloReply
+              package typealias Input = HelloRequest
+              package typealias Output = HelloReply
               package static let descriptor = MethodDescriptor(
-                service: "hello.world.Greeter",
+                service: "Greeter",
                 method: "SayHello"
               )
             }
@@ -276,31 +279,31 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             ]
           }
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-          package typealias StreamingServiceProtocol = Hello_World_GreeterStreamingServiceProtocol
+          package typealias StreamingServiceProtocol = GreeterStreamingServiceProtocol
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-          package typealias ServiceProtocol = Hello_World_GreeterServiceProtocol
+          package typealias ServiceProtocol = GreeterServiceProtocol
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-          package typealias ClientProtocol = Hello_World_GreeterClientProtocol
+          package typealias ClientProtocol = GreeterClientProtocol
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-          package typealias Client = Hello_World_GreeterClient
+          package typealias Client = GreeterClient
         }
 
         /// The greeting service definition.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        package protocol Hello_World_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+        package protocol GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Stream<Hello_World_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Hello_World_Greeter.Method.SayHello.Output>
+          func sayHello(request: ServerRequest.Stream<Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Greeter.Method.SayHello.Output>
         }
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        extension Hello_World_Greeter.StreamingServiceProtocol {
+        extension Greeter.StreamingServiceProtocol {
           @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
           package func registerMethods(with router: inout GRPCCore.RPCRouter) {
             router.registerHandler(
-              forMethod: Hello_World_Greeter.Method.SayHello.descriptor,
-              deserializer: ProtobufDeserializer<Hello_World_Greeter.Method.SayHello.Input>(),
-              serializer: ProtobufSerializer<Hello_World_Greeter.Method.SayHello.Output>(),
+              forMethod: Greeter.Method.SayHello.descriptor,
+              deserializer: ProtobufDeserializer<Greeter.Method.SayHello.Input>(),
+              serializer: ProtobufSerializer<Greeter.Method.SayHello.Output>(),
               handler: { request in
                 try await self.sayHello(request: request)
               }
@@ -310,15 +313,15 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         /// The greeting service definition.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        package protocol Hello_World_GreeterServiceProtocol: Hello_World_Greeter.StreamingServiceProtocol {
+        package protocol GreeterServiceProtocol: Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-          func sayHello(request: ServerRequest.Single<Hello_World_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Single<Hello_World_Greeter.Method.SayHello.Output>
+          func sayHello(request: ServerRequest.Single<Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Single<Greeter.Method.SayHello.Output>
         }
 
-        /// Partial conformance to `Hello_World_GreeterStreamingServiceProtocol`.
+        /// Partial conformance to `GreeterStreamingServiceProtocol`.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        extension Hello_World_Greeter.ServiceProtocol {
-          package func sayHello(request: ServerRequest.Stream<Hello_World_Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Hello_World_Greeter.Method.SayHello.Output> {
+        extension Greeter.ServiceProtocol {
+          package func sayHello(request: ServerRequest.Stream<Greeter.Method.SayHello.Input>) async throws -> ServerResponse.Stream<Greeter.Method.SayHello.Output> {
             let response = try await self.sayHello(request: ServerRequest.Single(stream: request))
             return ServerResponse.Stream(single: response)
           }
@@ -326,26 +329,26 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         /// The greeting service definition.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        package protocol Hello_World_GreeterClientProtocol: Sendable {
+        package protocol GreeterClientProtocol: Sendable {
           /// Sends a greeting.
           func sayHello<R>(
-            request: ClientRequest.Single<Hello_World_Greeter.Method.SayHello.Input>,
-            serializer: some MessageSerializer<Hello_World_Greeter.Method.SayHello.Input>,
-            deserializer: some MessageDeserializer<Hello_World_Greeter.Method.SayHello.Output>,
-            _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_Greeter.Method.SayHello.Output>) async throws -> R
+            request: ClientRequest.Single<Greeter.Method.SayHello.Input>,
+            serializer: some MessageSerializer<Greeter.Method.SayHello.Input>,
+            deserializer: some MessageDeserializer<Greeter.Method.SayHello.Output>,
+            _ body: @Sendable @escaping (ClientResponse.Single<Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable
         }
 
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        extension Hello_World_Greeter.ClientProtocol {
+        extension Greeter.ClientProtocol {
           package func sayHello<R>(
-            request: ClientRequest.Single<Hello_World_Greeter.Method.SayHello.Input>,
-            _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_Greeter.Method.SayHello.Output>) async throws -> R
+            request: ClientRequest.Single<Greeter.Method.SayHello.Input>,
+            _ body: @Sendable @escaping (ClientResponse.Single<Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
             try await self.sayHello(
               request: request,
-              serializer: ProtobufSerializer<Hello_World_Greeter.Method.SayHello.Input>(),
-              deserializer: ProtobufDeserializer<Hello_World_Greeter.Method.SayHello.Output>(),
+              serializer: ProtobufSerializer<Greeter.Method.SayHello.Input>(),
+              deserializer: ProtobufDeserializer<Greeter.Method.SayHello.Output>(),
               body
             )
           }
@@ -353,7 +356,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
 
         /// The greeting service definition.
         @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-        package struct Hello_World_GreeterClient: Hello_World_Greeter.ClientProtocol {
+        package struct GreeterClient: Greeter.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
           package init(client: GRPCCore.GRPCClient) {
@@ -362,14 +365,14 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           
           /// Sends a greeting.
           package func sayHello<R>(
-            request: ClientRequest.Single<Hello_World_Greeter.Method.SayHello.Input>,
-            serializer: some MessageSerializer<Hello_World_Greeter.Method.SayHello.Input>,
-            deserializer: some MessageDeserializer<Hello_World_Greeter.Method.SayHello.Output>,
-            _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_Greeter.Method.SayHello.Output>) async throws -> R
+            request: ClientRequest.Single<Greeter.Method.SayHello.Input>,
+            serializer: some MessageSerializer<Greeter.Method.SayHello.Input>,
+            deserializer: some MessageDeserializer<Greeter.Method.SayHello.Output>,
+            _ body: @Sendable @escaping (ClientResponse.Single<Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
             try await self.client.unary(
               request: request,
-              descriptor: Hello_World_Greeter.Method.SayHello.descriptor,
+              descriptor: Greeter.Method.SayHello.descriptor,
               serializer: serializer,
               deserializer: deserializer,
               handler: body
@@ -381,6 +384,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
   }
 
   func testCodeGeneration(
+    proto: Google_Protobuf_FileDescriptorProto,
     indentation: Int,
     visibility: SourceGenerator.Configuration.AccessLevel,
     client: Bool,
@@ -400,7 +404,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           name: "different-module.proto",
           package: "different-package"
         ),
-        Google_Protobuf_FileDescriptorProto.helloWorldNestedPackage,
+        proto,
       ])
     guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
       return XCTFail(

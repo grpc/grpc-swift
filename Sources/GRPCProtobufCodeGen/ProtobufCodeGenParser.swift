@@ -180,11 +180,10 @@ extension SwiftProtobufNamer {
 
   internal func formattedLowerCasePackage(file: FileDescriptor) -> String {
     let upperCasePackage = self.formattedUpperCasePackage(file: file)
-    let lowerCaseFirstComponent = NamingUtils.toLowerCamelCase(
-      String(upperCasePackage.split(separator: "_")[0])
-    )
-
-    return lowerCaseFirstComponent + upperCasePackage.dropFirst(lowerCaseFirstComponent.count)
+    let lowerCaseComponents = upperCasePackage.split(separator: "_").map { component in
+      NamingUtils.toLowerCamelCase(String(component))
+    }
+    return lowerCaseComponents.joined(separator: "_")
   }
 }
 
