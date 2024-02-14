@@ -382,9 +382,8 @@ extension Target {
   static let interoperabilityTestImplementation: Target = .target(
     name: "InteroperabilityTests",
     dependencies: [
-      .grpc,
-      .nio,
-      .protobuf,
+      .grpcCore,
+      .grpcProtobuf
     ]
   )
   
