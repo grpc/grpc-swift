@@ -400,7 +400,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           name: "different-module.proto",
           package: "different-package"
         ),
-        Google_Protobuf_FileDescriptorProto.helloWorld,
+        Google_Protobuf_FileDescriptorProto.helloWorldNestedPackage,
       ])
     guard let fileDescriptor = descriptorSet.fileDescriptor(named: "helloworld.proto") else {
       return XCTFail(

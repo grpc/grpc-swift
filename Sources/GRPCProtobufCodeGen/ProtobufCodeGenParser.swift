@@ -173,20 +173,27 @@ extension FileDescriptor {
 }
 
 extension SwiftProtobufNamer {
-  internal func trimTrailingUnderscores(from name: String) -> String {
-    var nameCopy = name
-    while nameCopy.hasSuffix("_") {
-      nameCopy = String(nameCopy.dropLast())
-    }
-    return nameCopy
-  }
-
   internal func formattedUpperCasePackage(file: FileDescriptor) -> String {
     let unformattedPackage = self.typePrefix(forFile: file)
-    return trimTrailingUnderscores(from: unformattedPackage)
+    return unformattedPackage.trimTrailingUnderscores()
   }
 
   internal func formattedLowerCasePackage(file: FileDescriptor) -> String {
-    return file.package.lowercased().replacingOccurrences(of: ".", with: "_")
+    let upperCasePackage = self.formattedUpperCasePackage(file: file)
+    let lowerCaseFirstComponent = NamingUtils.toLowerCamelCase(
+      String(upperCasePackage.split(separator: "_")[0])
+    )
+
+    return lowerCaseFirstComponent + upperCasePackage.dropFirst(lowerCaseFirstComponent.count)
+  }
+}
+
+extension String {
+  internal func trimTrailingUnderscores() -> String {
+    if let index = self.lastIndex(where: { $0 != "_" }) {
+      return String(self[...index])
+    } else {
+      return ""
+    }
   }
 }
