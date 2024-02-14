@@ -117,9 +117,9 @@ final class ProtobufCodeGenParserTests: XCTestCase {
         generatedLowerCase: "greeter"
       ),
       namespace: CodeGenerationRequest.Name(
-        base: "hello_world",
-        generatedUpperCase: "HelloWorld",
-        generatedLowerCase: "helloWorld"
+        base: "hello.world",
+        generatedUpperCase: "Hello_World",
+        generatedLowerCase: "hello_world"
       ),
       methods: [expectedMethod]
     )

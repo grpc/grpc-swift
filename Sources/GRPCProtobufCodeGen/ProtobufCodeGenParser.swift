@@ -68,7 +68,8 @@ internal struct ProtobufCodeGenParser {
       CodeGenerationRequest.ServiceDescriptor(
         descriptor: $0,
         package: input.package,
-        protobufNamer: self.namer
+        protobufNamer: self.namer,
+        file: self.input
       )
     }
 
@@ -107,7 +108,8 @@ extension CodeGenerationRequest.ServiceDescriptor {
   fileprivate init(
     descriptor: ServiceDescriptor,
     package: String,
-    protobufNamer: SwiftProtobufNamer
+    protobufNamer: SwiftProtobufNamer,
+    file: FileDescriptor
   ) {
     let methods = descriptor.methods.map {
       CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(
@@ -123,11 +125,10 @@ extension CodeGenerationRequest.ServiceDescriptor {
 
     // Packages that are based on the path of the '.proto' file usually
     // contain dots. For example: "grpc.test".
-    let cleanNamespace = package.replacingOccurrences(of: ".", with: "_")
     let namespace = CodeGenerationRequest.Name(
-      base: cleanNamespace,
-      generatedUpperCase: NamingUtils.toUpperCamelCase(cleanNamespace),
-      generatedLowerCase: NamingUtils.toLowerCamelCase(cleanNamespace)
+      base: package,
+      generatedUpperCase: protobufNamer.formattedUpperCasePackage(file: file),
+      generatedLowerCase: protobufNamer.formattedLowerCasePackage(file: file)
     )
     let documentation = descriptor.protoSourceComments()
     self.init(documentation: documentation, name: name, namespace: namespace, methods: methods)
@@ -168,5 +169,24 @@ extension FileDescriptor {
       )
     }
     return header
+  }
+}
+
+extension SwiftProtobufNamer {
+  internal func trimTrailingUnderscores(from name: String) -> String {
+    var nameCopy = name
+    while nameCopy.hasSuffix("_") {
+      nameCopy = String(nameCopy.dropLast())
+    }
+    return nameCopy
+  }
+
+  internal func formattedUpperCasePackage(file: FileDescriptor) -> String {
+    let unformattedPackage = self.typePrefix(forFile: file)
+    return trimTrailingUnderscores(from: unformattedPackage)
+  }
+
+  internal func formattedLowerCasePackage(file: FileDescriptor) -> String {
+    return file.package.lowercased().replacingOccurrences(of: ".", with: "_")
   }
 }
