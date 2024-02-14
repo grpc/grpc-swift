@@ -141,7 +141,7 @@ extension ClientCodeTranslator {
     }
     let clientProtocolExtension = Declaration.extension(
       ExtensionDescription(
-        onType: "\(service.namespacedTypealiasGeneratedName).ClientProtocol",
+        onType: "\(service.namespacedGeneratedName).ClientProtocol",
         declarations: methods
       )
     )
@@ -344,7 +344,7 @@ extension ClientCodeTranslator {
         StructDescription(
           accessModifier: self.accessModifier,
           name: "\(service.namespacedGeneratedName)Client",
-          conformances: ["\(service.namespacedTypealiasGeneratedName).ClientProtocol"],
+          conformances: ["\(service.namespacedGeneratedName).ClientProtocol"],
           members: [clientProperty, initializer] + methods
         )
       )
@@ -408,7 +408,7 @@ extension ClientCodeTranslator {
         .init(
           label: "descriptor",
           expression: .identifierPattern(
-            "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
+            "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
           )
         ),
         .init(label: "serializer", expression: .identifierPattern("serializer")),
@@ -448,7 +448,7 @@ extension ClientCodeTranslator {
     type: InputOutputType
   ) -> String {
     var components: String =
-      "\(service.namespacedTypealiasGeneratedName).Method.\(method.name.generatedUpperCase)"
+      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase)"
 
     switch type {
     case .input:
