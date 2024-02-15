@@ -105,7 +105,8 @@ extension Target.Dependency {
   static let interopTestModels: Self = .target(name: "GRPCInteroperabilityTestModels")
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
-
+  static let interoperabilityTests: Self = .target(name: "InteroperabilityTests")
+  
   // Product dependencies
   static let argumentParser: Self = .product(
     name: "ArgumentParser",
@@ -378,6 +379,14 @@ extension Target {
     ]
   )
 
+  static let interoperabilityTestImplementation: Target = .target(
+    name: "InteroperabilityTests",
+    dependencies: [
+      .grpcCore,
+      .grpcProtobuf
+    ]
+  )
+  
   static let interopTestImplementation: Target = .target(
     name: "GRPCInteroperabilityTestsImplementation",
     dependencies: [
@@ -703,6 +712,7 @@ let package = Package(
     .grpcHTTP2TransportNIOTransportServices,
     .grpcProtobuf,
     .grpcProtobufCodeGen,
+    .interoperabilityTestImplementation,
 
     // v2 tests
     .grpcCoreTests,
@@ -713,7 +723,7 @@ let package = Package(
     .grpcHTTP2TransportNIOPosixTests,
     .grpcHTTP2TransportNIOTransportServicesTests,
     .grpcProtobufTests,
-    .grpcProtobufCodeGenTests
+    .grpcProtobufCodeGenTests,
   ]
 )
 

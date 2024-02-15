@@ -186,6 +186,21 @@ function generate_rpc_code_for_tests {
   done
 }
 
+function generate_service_messages_interop_tests {
+  local protos=(
+    "$here/tests/interoperability/src/proto/grpc/testing/empty_service.proto"
+    "$here/tests/interoperability/src/proto/grpc/testing/empty.proto"
+    "$here/tests/interoperability/src/proto/grpc/testing/messages.proto"
+    "$here/tests/interoperability/src/proto/grpc/testing/test.proto"
+  )
+  local output="$root/Sources/InteroperabilityTests/Generated"
+  
+  for proto in "${protos[@]}"; do
+    generate_message "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "FileNaming=DropPath"
+    generate_grpc "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "Server=true" "_V2=true" "FileNaming=DropPath"
+  done
+}
+
 #------------------------------------------------------------------------------
 
 # Examples
@@ -198,6 +213,9 @@ generate_reflection_data_example
 generate_reflection_service
 generate_reflection_client_for_tests
 generate_echo_reflection_data_for_tests
+
+# Interoperability tests
+generate_service_messages_interop_tests
 
 # Misc. tests
 generate_normalization_for_tests
