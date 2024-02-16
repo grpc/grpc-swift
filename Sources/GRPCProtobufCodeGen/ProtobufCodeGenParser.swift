@@ -68,7 +68,8 @@ internal struct ProtobufCodeGenParser {
       CodeGenerationRequest.ServiceDescriptor(
         descriptor: $0,
         package: input.package,
-        protobufNamer: self.namer
+        protobufNamer: self.namer,
+        file: self.input
       )
     }
 
@@ -107,7 +108,8 @@ extension CodeGenerationRequest.ServiceDescriptor {
   fileprivate init(
     descriptor: ServiceDescriptor,
     package: String,
-    protobufNamer: SwiftProtobufNamer
+    protobufNamer: SwiftProtobufNamer,
+    file: FileDescriptor
   ) {
     let methods = descriptor.methods.map {
       CodeGenerationRequest.ServiceDescriptor.MethodDescriptor(
@@ -120,10 +122,13 @@ extension CodeGenerationRequest.ServiceDescriptor {
       generatedUpperCase: NamingUtils.toUpperCamelCase(descriptor.name),
       generatedLowerCase: NamingUtils.toLowerCamelCase(descriptor.name)
     )
+
+    // Packages that are based on the path of the '.proto' file usually
+    // contain dots. For example: "grpc.test".
     let namespace = CodeGenerationRequest.Name(
       base: package,
-      generatedUpperCase: NamingUtils.toUpperCamelCase(package),
-      generatedLowerCase: NamingUtils.toLowerCamelCase(package)
+      generatedUpperCase: protobufNamer.formattedUpperCasePackage(file: file),
+      generatedLowerCase: protobufNamer.formattedLowerCasePackage(file: file)
     )
     let documentation = descriptor.protoSourceComments()
     self.init(documentation: documentation, name: name, namespace: namespace, methods: methods)
@@ -164,5 +169,30 @@ extension FileDescriptor {
       )
     }
     return header
+  }
+}
+
+extension SwiftProtobufNamer {
+  internal func formattedUpperCasePackage(file: FileDescriptor) -> String {
+    let unformattedPackage = self.typePrefix(forFile: file)
+    return unformattedPackage.trimTrailingUnderscores()
+  }
+
+  internal func formattedLowerCasePackage(file: FileDescriptor) -> String {
+    let upperCasePackage = self.formattedUpperCasePackage(file: file)
+    let lowerCaseComponents = upperCasePackage.split(separator: "_").map { component in
+      NamingUtils.toLowerCamelCase(String(component))
+    }
+    return lowerCaseComponents.joined(separator: "_")
+  }
+}
+
+extension String {
+  internal func trimTrailingUnderscores() -> String {
+    if let index = self.lastIndex(where: { $0 != "_" }) {
+      return String(self[...index])
+    } else {
+      return ""
+    }
   }
 }
