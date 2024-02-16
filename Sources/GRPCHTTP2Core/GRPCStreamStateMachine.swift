@@ -16,20 +16,28 @@
 
 import GRPCCore
 import NIOCore
+import NIOHPACK
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 enum OnMetadataReceived {
-  case reject(status: Status, trailers: Metadata)
+  case reject(status: Status, trailers: HPACKHeaders)
   case doNothing
 }
 
+enum Scheme: String {
+  case http
+  case https
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 fileprivate protocol GRPCStreamStateMachineProtocol {
   var state: GRPCStreamStateMachineState { get set }
   
-  mutating func send(metadata: Metadata) throws
+  mutating func send(metadata: Metadata) throws -> HPACKHeaders
   mutating func send(message: [UInt8], endStream: Bool) throws
-  mutating func send(status: String, trailingMetadata: Metadata) throws
+  mutating func send(status: Status, metadata: Metadata, trailersOnly: Bool) throws -> HPACKHeaders
   
-  mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived
+  mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived
   mutating func receive(message: ByteBuffer, endStream: Bool) throws
   
   mutating func nextOutboundMessage() throws -> ByteBuffer?
@@ -38,12 +46,16 @@ fileprivate protocol GRPCStreamStateMachineProtocol {
 
 enum GRPCStreamStateMachineConfiguration {
   case client(
+    methodDescriptor: MethodDescriptor,
+    scheme: Scheme,
     maximumPayloadSize: Int,
-    supportedCompressionAlgorithms: [CompressionAlgorithm]
+    outboundEncoding: CompressionAlgorithm?,
+    acceptedEncodings: [CompressionAlgorithm]
   )
   case server(
+    scheme: Scheme,
     maximumPayloadSize: Int,
-    supportedCompressionAlgorithms: [CompressionAlgorithm]
+    acceptedEncodings: [CompressionAlgorithm]
   )
 }
 
@@ -69,6 +81,7 @@ enum GRPCStreamStateMachineState {
     let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
+    var outboundCompression: CompressionAlgorithm?
     
     // The deframer must be optional because the client will not have one configured
     // until the server opens and sends a grpc-encoding header.
@@ -90,9 +103,13 @@ enum GRPCStreamStateMachineState {
         self.compressor = Zlib.Compressor(method: zlibMethod)
       }
       self.framer = GRPCMessageFramer()
+      self.outboundCompression = compressionAlgorithm
       
-      // TODO: we should check here or in a `MessageEncoder` (instead of the state machine)
-      // that the server supports the given encoding - otherwise return the corresponding response.
+      // In the case of the server, we will know what the decompression algorithm
+      // will be, since we know what the inbound encoding is, as the client has
+      // sent it when starting the request.
+      // In the case of the client, it will need to wait until the server responds
+      // with its initial metadata.
       if case .decompression(let decompressionAlgorithm) = decompressionConfiguration {
         if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
           self.decompressor = Zlib.Decompressor(method: zlibMethod)
@@ -121,17 +138,19 @@ enum GRPCStreamStateMachineState {
     
     init(
       previousState: ClientOpenServerIdleState,
-      decompressionAlgorithm: CompressionAlgorithm?
+      decompressionAlgorithm: CompressionAlgorithm? = nil
     ) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       
+      // In the case of the server, it will already have a deframer set up,
+      // because it already knows what encoding the client is using.
+      // In the case of the client, it will only be able to set it up
+      // after it receives the chosen encoding from the server.
       if let previousDeframer = previousState.deframer {
         self.deframer = previousDeframer
         self.decompressor = previousState.decompressor
       } else {
-        // TODO: we should check here or in a `MessageEncoder` (instead of the state machine)
-        // that the client supports the given encoding - otherwise return the corresponding response.
         if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
           self.decompressor = Zlib.Decompressor(method: zlibMethod)
         }
@@ -182,6 +201,7 @@ enum GRPCStreamStateMachineState {
     let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
+    var outboundCompression: CompressionAlgorithm?
     
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
@@ -192,6 +212,7 @@ enum GRPCStreamStateMachineState {
       self.maximumPayloadSize = previousState.maximumPayloadSize
       self.framer = previousState.framer
       self.compressor = previousState.compressor
+      self.outboundCompression = previousState.outboundCompression
       self.deframer = previousState.deframer
       self.decompressor = previousState.decompressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
@@ -217,12 +238,16 @@ enum GRPCStreamStateMachineState {
     
     init(
       previousState: ClientClosedServerIdleState,
-      decompressionAlgorithm: CompressionAlgorithm?
+      decompressionAlgorithm: CompressionAlgorithm? = nil
     ) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
       
+      // In the case of the server, it will already have a deframer set up,
+      // because it already knows what encoding the client is using.
+      // In the case of the client, it will only be able to set it up
+      // after it receives the chosen encoding from the server.
       if let previousDeframer = previousState.deframer {
         self.deframer = previousDeframer
         self.decompressor = previousState.decompressor
@@ -266,22 +291,35 @@ struct GRPCStreamStateMachine {
     skipAssertions: Bool = false
   ) {
     switch configuration {
-    case .client(let maximumPayloadSize, let supportedCompressionAlgorithms):
+    case .client(
+      let methodDescriptor,
+      let scheme,
+      let maximumPayloadSize,
+      let outboundEncoding,
+      let acceptedEncodings
+    ):
       self._stateMachine = Client(
+        methodDescriptor: methodDescriptor,
+        scheme: scheme,
         maximumPayloadSize: maximumPayloadSize,
-        supportedCompressionAlgorithms: supportedCompressionAlgorithms,
+        outboundEncoding: outboundEncoding,
+        acceptedEncodings: acceptedEncodings,
         skipAssertions: skipAssertions
       )
-    case .server(let maximumPayloadSize, let supportedCompressionAlgorithms):
+    case .server(
+      let scheme,
+      let maximumPayloadSize,
+      let acceptedEncodings
+    ):
       self._stateMachine = Server(
         maximumPayloadSize: maximumPayloadSize,
-        supportedCompressionAlgorithms: supportedCompressionAlgorithms,
+        acceptedEncodings: acceptedEncodings,
         skipAssertions: skipAssertions
       )
     }
   }
   
-  mutating func send(metadata: Metadata) throws {
+  mutating func send(metadata: Metadata) throws -> HPACKHeaders {
     try self._stateMachine.send(metadata: metadata)
   }
   
@@ -289,11 +327,11 @@ struct GRPCStreamStateMachine {
     try self._stateMachine.send(message: message, endStream: endStream)
   }
   
-  mutating func send(status: String, trailingMetadata: Metadata) throws {
-    try self._stateMachine.send(status: status, trailingMetadata: trailingMetadata)
+  mutating func send(status: Status, metadata: Metadata, trailersOnly: Bool) throws -> HPACKHeaders {
+    try self._stateMachine.send(status: status, metadata: metadata, trailersOnly: trailersOnly)
   }
   
-  mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
+  mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
     try self._stateMachine.receive(metadata: metadata, endStream: endStream)
   }
   
@@ -314,35 +352,66 @@ struct GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   struct Client: GRPCStreamStateMachineProtocol {
     fileprivate var state: GRPCStreamStateMachineState
-    private let supportedCompressionAlgorithms: [CompressionAlgorithm]
+    
+    private let methodDescriptor: MethodDescriptor
+    private let scheme: Scheme
+    private let outboundEncoding: CompressionAlgorithm?
+    private let acceptedEncodings: [CompressionAlgorithm]
     private let skipAssertions: Bool
 
     init(
+      methodDescriptor: MethodDescriptor,
+      scheme: Scheme,
       maximumPayloadSize: Int,
-      supportedCompressionAlgorithms: [CompressionAlgorithm],
+      outboundEncoding: CompressionAlgorithm?,
+      acceptedEncodings: [CompressionAlgorithm],
       skipAssertions: Bool
     ) {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
-      self.supportedCompressionAlgorithms = supportedCompressionAlgorithms
+      self.methodDescriptor = methodDescriptor
+      self.scheme = scheme
+      self.outboundEncoding = outboundEncoding
+      self.acceptedEncodings = acceptedEncodings
       self.skipAssertions = skipAssertions
     }
+    
+    private func makeClientHeaders(from metadata: Metadata) -> HPACKHeaders {
+      var headers = HPACKHeaders()
+      headers.reserveCapacity(7 + metadata.count)
+      
+      // Add required headers
+      // See https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
+      headers.path = self.methodDescriptor
+      headers.scheme = self.scheme
+      headers.method = "POST"
+      headers.contentType = .protobuf
+      headers.te = "trailers" // Used to detect incompatible proxies
+      
+      if let encoding = self.outboundEncoding {
+        headers.encoding = encoding
+      }
+      
+      if !self.acceptedEncodings.isEmpty {
+        headers.acceptedEncodings = self.acceptedEncodings
+      }
+      
+      for metadataPair in metadata {
+        headers.add(name: metadataPair.key, value: metadataPair.value.stringValue)
+      }
 
-    mutating func send(metadata: Metadata) throws {
+      return headers
+    }
+
+    mutating func send(metadata: Metadata) throws -> HPACKHeaders {
       // Client sends metadata only when opening the stream.
       switch self.state {
       case .clientIdleServerIdle(let state):
-        guard metadata.path != nil else {
-          throw RPCError(
-            code: .invalidArgument,
-            message: "Endpoint is missing: client cannot send initial metadata without it."
-          )
-        }
-
         self.state = .clientOpenServerIdle(.init(
           previousState: state,
-          compressionAlgorithm: metadata.encoding,
+          compressionAlgorithm: self.outboundEncoding,
           decompressionConfiguration: .decompressionNotYetKnown
         ))
+        return self.makeClientHeaders(from: metadata)
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is already open: shouldn't be sending metadata.")
       case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
@@ -380,7 +449,7 @@ extension GRPCStreamStateMachine {
       }
     }
     
-    mutating func send(status: String, trailingMetadata: Metadata) throws {
+    mutating func send(status: Status, metadata: Metadata, trailersOnly: Bool) throws -> HPACKHeaders {
       throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client cannot send status and trailer.")
     }
     
@@ -418,7 +487,7 @@ extension GRPCStreamStateMachine {
       }
     }
     
-    mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
+    mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
       switch self.state {
       case .clientIdleServerIdle:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server cannot have sent metadata if the client is idle.")
@@ -547,39 +616,54 @@ extension GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   struct Server: GRPCStreamStateMachineProtocol {
     fileprivate var state: GRPCStreamStateMachineState
-    let supportedCompressionAlgorithms: [CompressionAlgorithm]
+    let acceptedEncodings: [CompressionAlgorithm]
     private let skipAssertions: Bool
     
     init(
       maximumPayloadSize: Int,
-      supportedCompressionAlgorithms: [CompressionAlgorithm],
+      acceptedEncodings: [CompressionAlgorithm],
       skipAssertions: Bool
     ) {
       self.state = .clientIdleServerIdle(.init(maximumPayloadSize: maximumPayloadSize))
-      self.supportedCompressionAlgorithms = supportedCompressionAlgorithms
+      self.acceptedEncodings = acceptedEncodings
       self.skipAssertions = skipAssertions
     }
     
-    mutating func send(metadata: Metadata) throws {
-      // Server sends initial metadata. This transitions server to open.
+    private func makeResponseHeaders(outboundEncoding: CompressionAlgorithm?, customMetadata: Metadata) -> HPACKHeaders {
+      // Response headers always contain :status (HTTP Status 200) and content-type.
+      // They may also contain grpc-encoding, grpc-accept-encoding, and custom metadata.
+      var headers = HPACKHeaders()
+      headers.reserveCapacity(4 + customMetadata.count)
+
+      headers.status = "200"
+      headers.contentType = .protobuf
+      
+      if let outboundEncoding {
+        headers.encoding = outboundEncoding
+      }
+
+      for metadataPair in customMetadata {
+        headers.add(name: metadataPair.key, value: metadataPair.value.stringValue)
+      }
+
+      return headers
+    }
+    
+    mutating func send(metadata: Metadata) throws -> HPACKHeaders {
+      // Server sends initial metadata
       switch self.state {
+      case .clientOpenServerIdle(let state):
+        self.state = .clientOpenServerOpen(.init(previousState: state))
+        return self.makeResponseHeaders(outboundEncoding: state.outboundCompression, customMetadata: metadata)
+      case .clientClosedServerIdle(let state):
+        self.state = .clientClosedServerOpen(.init(previousState: state))
+        return self.makeResponseHeaders(outboundEncoding: state.outboundCompression, customMetadata: metadata)
       case .clientIdleServerIdle:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client cannot be idle if server is sending initial metadata: it must have opened.")
-      case .clientOpenServerIdle(let state):
-        self.state = .clientOpenServerOpen(.init(
-          previousState: state,
-          decompressionAlgorithm: metadata.encoding
-        ))
       case .clientOpenServerClosed, .clientClosedServerClosed:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server cannot send metadata if closed.")
-      case .clientClosedServerIdle(let state):
-        self.state = .clientClosedServerOpen(.init(
-          previousState: state,
-          decompressionAlgorithm: metadata.encoding
-        ))
       case .clientOpenServerOpen, .clientClosedServerOpen:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server has already sent initial metadata.")
-        
       }
     }
     
@@ -606,23 +690,62 @@ extension GRPCStreamStateMachine {
       }
     }
     
-    mutating func send(status: String, trailingMetadata: Metadata) throws {
+    private func makeTrailers(
+      status: Status,
+      customMetadata: Metadata,
+      trailersOnly: Bool
+    ) -> HPACKHeaders {
+      // Trailers always contain the grpc-status header, and optionally,
+      // grpc-status-message, and custom metadata.
+      // If it's a trailers-only response, they will also contain :status and
+      // content-type.
+      var headers = HPACKHeaders()
+      
+      if trailersOnly {
+        // Reserve 5 for capacity: 3 for the required headers, and 1 for the
+        // optional status message.
+        headers.reserveCapacity(4 + customMetadata.count)
+        headers.status = "200"
+        headers.contentType = .protobuf
+      } else {
+        // Reserve 2 for capacity: one for the required grpc-status, and
+        // one for the optional message.
+        headers.reserveCapacity(2 + customMetadata.count)
+      }
+      
+      headers.grpcStatus = status.code
+      
+      if !status.message.isEmpty {
+        // TODO: this message has to be percent-encoded
+        headers.grpcStatusMessage = status.message
+      }
+      
+      for metadataPair in customMetadata {
+        headers.add(name: metadataPair.key, value: metadataPair.value.stringValue)
+      }
+      
+      return headers
+    }
+
+    mutating func send(status: Status, metadata: Metadata, trailersOnly: Bool) throws -> HPACKHeaders {
       // Close the server.
       switch self.state {
-      case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
-        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server can't send status if idle.")
       case .clientOpenServerOpen(let state):
         self.state = .clientOpenServerClosed(.init(previousState: state))
+        return self.makeTrailers(status: status, customMetadata: metadata, trailersOnly: trailersOnly)
       case .clientClosedServerOpen(let state):
         state.compressor?.end()
         state.decompressor?.end()
         self.state = .clientClosedServerClosed(.init(previousState: state))
+        return self.makeTrailers(status: status, customMetadata: metadata, trailersOnly: trailersOnly)
+      case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server can't send status if idle.")
       case .clientOpenServerClosed, .clientClosedServerClosed:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server can't send anything if closed.")
       }
     }
 
-    mutating func receive(metadata: Metadata, endStream: Bool) throws -> OnMetadataReceived {
+    mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
       if endStream, case .clientIdleServerIdle = self.state {
         throw self.assertionFailureAndCreateRPCErrorOnInternalError(
           """
@@ -634,58 +757,38 @@ extension GRPCStreamStateMachine {
       
       switch self.state {
       case .clientIdleServerIdle(let state):
-        var preferredCompressionEncoding: CompressionAlgorithm? = nil
-        if let acceptedEncodings = metadata.acceptedEncodings {
-          for acceptedEncoding in acceptedEncodings where self.supportedCompressionAlgorithms.contains(where: { $0 == acceptedEncoding }) {
-            // Found the preferred encoding: use it to compress responses.
-            preferredCompressionEncoding = acceptedEncoding
-            break
-          }
-        }
-        
-        self.state = .clientOpenServerIdle(.init(
-          previousState: state,
-          compressionAlgorithm: preferredCompressionEncoding,
-          decompressionConfiguration: .decompression(metadata.encoding)
-        ))
-        
         guard let contentType = metadata.contentType else {
-          throw RPCError(code: .invalidArgument, message: "Invalid or empty content-type.")
+          throw RPCError(code: .invalidArgument, message: "Invalid or empty \(GRPCHTTP2Keys.contentType.rawValue).")
         }
         
         guard let endpoint = metadata.path else {
-          throw RPCError(code: .unimplemented, message: "No :path header has been set.")
+          throw RPCError(code: .unimplemented, message: "No \(GRPCHTTP2Keys.path.rawValue) header has been set.")
         }
-        
         // TODO: Should we verify the RPCRouter can handle this endpoint here,
         // or should we verify that in the handler?
         
-        let encodingValues = metadata[stringValues: "grpc-encoding"]
+        var outboundEncoding: CompressionAlgorithm? = nil
+        if let clientAdvertisedEncodings = metadata.acceptedEncodings {
+          for clientAcceptedEncoding in clientAdvertisedEncodings where self.acceptedEncodings.contains(where: { $0 == clientAcceptedEncoding }) {
+            // Found the preferred encoding: use it to compress responses.
+            outboundEncoding = clientAcceptedEncoding
+            break
+          }
+        }
+
+        var inboundEncoding: CompressionAlgorithm? = nil
+        let encodingValues = metadata[GRPCHTTP2Keys.encoding.rawValue]
         var encodingValuesIterator = encodingValues.makeIterator()
         if let rawEncoding = encodingValuesIterator.next() {
           guard encodingValuesIterator.next() == nil else {
             throw RPCError(
               code: .invalidArgument,
-              message: "grpc-encoding must contain no more than one value"
+              message: "\(GRPCHTTP2Keys.encoding) must contain no more than one value."
             )
-          }
-          guard let encoding = CompressionAlgorithm(rawValue: rawEncoding) else {
-            let status = Status(
-              code: .unimplemented,
-              message: "\(rawEncoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
-            )
-            let trailers = Metadata(dictionaryLiteral: (
-              "grpc-accept-encoding",
-              .string(self.supportedCompressionAlgorithms
-                .map({ $0.name })
-                .joined(separator: ",")
-              )
-            ))
-            return .reject(status: status, trailers: trailers)
           }
 
-          guard self.supportedCompressionAlgorithms.contains(where: { $0 == encoding }) else {
-            if self.supportedCompressionAlgorithms.isEmpty {
+          guard let clientEncoding = CompressionAlgorithm(rawValue: rawEncoding), self.acceptedEncodings.contains(where: { $0 == clientEncoding }) else {
+            if self.acceptedEncodings.isEmpty {
               throw RPCError(
                 code: .unimplemented,
                 message: "Compression is not supported"
@@ -693,19 +796,27 @@ extension GRPCStreamStateMachine {
             } else {
               let status = Status(
                 code: .unimplemented,
-                message: "\(encoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
+                message: "\(rawEncoding) compression is not supported; supported algorithms are listed in grpc-accept-encoding"
               )
-              let trailers = Metadata(dictionaryLiteral: (
-                "grpc-accept-encoding",
-                .string(self.supportedCompressionAlgorithms
+              let trailers = HPACKHeaders(httpHeaders: [
+                "grpc-accept-encoding":
+                self.acceptedEncodings
                   .map({ $0.name })
                   .joined(separator: ",")
-                )
-              ))
+              ])
               return .reject(status: status, trailers: trailers)
             }
           }
+          
+          inboundEncoding = clientEncoding
         }
+        
+        self.state = .clientOpenServerIdle(.init(
+          previousState: state,
+          compressionAlgorithm: outboundEncoding,
+          decompressionConfiguration: .decompression(inboundEncoding)
+        ))
+        
         return .doNothing
       case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
         throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client shouldn't have sent metadata twice.")
@@ -811,17 +922,65 @@ extension MethodDescriptor {
   }
 }
 
+private enum GRPCHTTP2Keys: String {
+  case path = ":path"
+  case contentType = "content-type"
+  case encoding = "grpc-encoding"
+  case acceptEncoding = "grpc-accept-encoding"
+  case scheme = ":scheme"
+  case method = ":method"
+  case te = "te"
+  case status = ":status"
+  case grpcStatus = "grpc-status"
+  case grpcStatusMessage = "grpc-status-message"
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Metadata {
   var path: MethodDescriptor? {
     get {
-      self.firstString(forKey: .endpoint)
+      self.firstString(forKey: .path)
+        .flatMap { MethodDescriptor(fullyQualifiedMethod: $0) }
+    }
+  }
+  
+  var contentType: ContentType? {
+    get {
+      self.firstString(forKey: .contentType)
+        .flatMap { ContentType(value: $0) }
+    }
+  }
+  
+  var encoding: CompressionAlgorithm? {
+    get {
+      self.firstString(forKey: .encoding).flatMap { CompressionAlgorithm(rawValue: $0) }
+    }
+  }
+  
+  var acceptedEncodings: [CompressionAlgorithm]? {
+    get {
+      self.firstString(forKey: .acceptEncoding)?
+        .split(separator: ",")
+        .compactMap { CompressionAlgorithm(rawValue: String($0)) }
+    }
+  }
+  
+  private func firstString(forKey key: GRPCHTTP2Keys) -> String? {
+    self[stringValues: key.rawValue].first(where: { _ in true })
+  }
+}
+
+extension HPACKHeaders {
+  var path: MethodDescriptor? {
+    get {
+      self.firstString(forKey: .path)
         .flatMap { MethodDescriptor(fullyQualifiedMethod: $0) }
     }
     set {
       if let newValue {
-        self.replaceOrAddString(newValue.fullyQualifiedMethod, forKey: .endpoint)
+        self.replaceOrAddString(newValue.fullyQualifiedMethod, forKey: .path)
       } else {
-        self.removeAllValues(forKey: .endpoint)
+        self.removeAllValues(forKey: .path)
       }
     }
   }
@@ -868,23 +1027,96 @@ extension Metadata {
     }
   }
   
-  private enum GRPCHTTP2Keys: String {
-    case endpoint = ":path"
-    case contentType = "content-type"
-    case encoding = "grpc-encoding"
-    case acceptEncoding = "grpc-accept-encoding"
+  var scheme: Scheme? {
+    get {
+      self.firstString(forKey: .scheme).flatMap { Scheme(rawValue: $0) }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue.rawValue, forKey: .scheme)
+      } else {
+        self.removeAllValues(forKey: .scheme)
+      }
+    }
+  }
+  
+  var method: String? {
+    get {
+      self.firstString(forKey: .method)
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue, forKey: .method)
+      } else {
+        self.removeAllValues(forKey: .method)
+      }
+    }
+  }
+  
+  var te: String? {
+    get {
+      self.firstString(forKey: .te)
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue, forKey: .te)
+      } else {
+        self.removeAllValues(forKey: .te)
+      }
+    }
+  }
+  
+  var status: String? {
+    get {
+      self.firstString(forKey: .status)
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue, forKey: .status)
+      } else {
+        self.removeAllValues(forKey: .status)
+      }
+    }
+  }
+  
+  var grpcStatus: Status.Code? {
+    get {
+      self.firstString(forKey: .grpcStatus)
+        .flatMap { Int($0) }
+        .flatMap { Status.Code(rawValue: $0) }
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(String(newValue.rawValue), forKey: .grpcStatus)
+      } else {
+        self.removeAllValues(forKey: .grpcStatus)
+      }
+    }
+  }
+  
+  var grpcStatusMessage: String? {
+    get {
+      self.firstString(forKey: .grpcStatusMessage)
+    }
+    set {
+      if let newValue {
+        self.replaceOrAddString(newValue, forKey: .grpcStatusMessage)
+      } else {
+        self.removeAllValues(forKey: .grpcStatusMessage)
+      }
+    }
   }
   
   private func firstString(forKey key: GRPCHTTP2Keys) -> String? {
-    self[stringValues: key.rawValue].first(where: { _ in true })
+    self[key.rawValue].first(where: { _ in true })
   }
   
   private mutating func replaceOrAddString(_ value: String, forKey key: GRPCHTTP2Keys) {
-    self.replaceOrAddString(value, forKey: key.rawValue)
+    self.replaceOrAdd(name: value, value: key.rawValue)
   }
 
   private mutating func removeAllValues(forKey key: GRPCHTTP2Keys) {
-    self.removeAllValues(forKey: key.rawValue)
+    self.remove(name: key.rawValue)
   }
 }
 
