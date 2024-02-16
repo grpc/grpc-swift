@@ -20,18 +20,18 @@
  Copyright (c) 2015-2016, Wojciech Muła, Alfred Klomp,  Daniel Lemire
  (Unless otherwise stated in the source code)
  All rights reserved.
- 
+
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are
  met:
- 
+
  1. Redistributions of source code must retain the above copyright
  notice, this list of conditions and the following disclaimer.
- 
+
  2. Redistributions in binary form must reproduce the above copyright
  notice, this list of conditions and the following disclaimer in the
  documentation and/or other materials provided with the distribution.
- 
+
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
  IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -48,19 +48,19 @@
 // https://github.com/client9/stringencoders/blob/master/src/modp_b64.c
 /*
  The MIT License (MIT)
- 
+
  Copyright (c) 2016 Nick Galbreath
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in all
  copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -74,45 +74,53 @@ enum Base64 {
   struct DecodingOptions: OptionSet {
     internal let rawValue: UInt
     internal init(rawValue: UInt) { self.rawValue = rawValue }
-    
+
     internal static let base64UrlAlphabet = DecodingOptions(rawValue: UInt(1 << 0))
     internal static let omitPaddingCharacter = DecodingOptions(rawValue: UInt(1 << 1))
   }
-  
+
   enum DecodingError: Error, Equatable {
     case invalidLength
     case invalidCharacter(UInt8)
     case unexpectedPaddingCharacter
     case unexpectedEnd
   }
-  
+
   static func encode<Buffer: Collection>(bytes: Buffer) -> String where Buffer.Element == UInt8 {
     guard !bytes.isEmpty else {
       return ""
     }
-    
+
     // In Base64, 3 bytes become 4 output characters, and we pad to the
     // nearest multiple of four.
     let base64StringLength = ((bytes.count + 2) / 3) * 4
     let alphabet = Base64.encodeBase64
-    
+
     return String(customUnsafeUninitializedCapacity: base64StringLength) { backingStorage in
       var input = bytes.makeIterator()
       var offset = 0
       while let firstByte = input.next() {
         let secondByte = input.next()
         let thirdByte = input.next()
-        
+
         backingStorage[offset] = Base64.encode(alphabet: alphabet, firstByte: firstByte)
-        backingStorage[offset + 1] = Base64.encode(alphabet: alphabet, firstByte: firstByte, secondByte: secondByte)
-        backingStorage[offset + 2] = Base64.encode(alphabet: alphabet, secondByte: secondByte, thirdByte: thirdByte)
+        backingStorage[offset + 1] = Base64.encode(
+          alphabet: alphabet,
+          firstByte: firstByte,
+          secondByte: secondByte
+        )
+        backingStorage[offset + 2] = Base64.encode(
+          alphabet: alphabet,
+          secondByte: secondByte,
+          thirdByte: thirdByte
+        )
         backingStorage[offset + 3] = Base64.encode(alphabet: alphabet, thirdByte: thirdByte)
         offset += 4
       }
       return offset
     }
   }
-  
+
   static func decode(
     string encoded: String,
     options: DecodingOptions = []
@@ -122,25 +130,25 @@ enum Base64 {
       guard characterPointer.count > 0 else {
         return []
       }
-      
+
       let outputLength = ((characterPointer.count + 3) / 4) * 3
-      
+
       return try characterPointer.withMemoryRebound(to: UInt8.self) { (input) -> [UInt8] in
         try [UInt8](unsafeUninitializedCapacity: outputLength) { output, length in
           try Self._decodeChromium(from: input, into: output, length: &length, options: options)
         }
       }
     }
-    
+
     if decoded != nil {
       return decoded!
     }
-    
+
     var encoded = encoded
     encoded.makeContiguousUTF8()
     return try Self.decode(string: encoded, options: options)
   }
-  
+
   private static func _decodeChromium(
     from inBuffer: UnsafeBufferPointer<UInt8>,
     into outBuffer: UnsafeMutableBufferPointer<UInt8>,
@@ -157,13 +165,13 @@ enum Base64 {
       // everythin alright so far
       break
     }
-    
+
     let outputLength = ((inBuffer.count + 3) / 4) * 3
     let fullchunks = remaining == 0 ? inBuffer.count / 4 - 1 : inBuffer.count / 4
     guard outBuffer.count >= outputLength else {
       preconditionFailure("Expected the out buffer to be at least as long as outputLength")
     }
-    
+
     try Self.withUnsafeDecodingTablesAsBufferPointers(options: options) { d0, d1, d2, d3 in
       var outIndex = 0
       if fullchunks > 0 {
@@ -174,12 +182,12 @@ enum Base64 {
           let a2 = inBuffer[inIndex + 2]
           let a3 = inBuffer[inIndex + 3]
           var x: UInt32 = d0[Int(a0)] | d1[Int(a1)] | d2[Int(a2)] | d3[Int(a3)]
-          
+
           if x >= Self.badCharacter {
             // TODO: Inspect characters here better
             throw DecodingError.invalidCharacter(inBuffer[inIndex])
           }
-          
+
           withUnsafePointer(to: &x) { ptr in
             ptr.withMemoryRebound(to: UInt8.self, capacity: 4) { newPtr in
               outBuffer[outIndex] = newPtr[0]
@@ -190,7 +198,7 @@ enum Base64 {
           }
         }
       }
-      
+
       // inIndex is the first index in the last chunk
       let inIndex = fullchunks * 4
       let a0 = inBuffer[inIndex]
@@ -203,13 +211,13 @@ enum Base64 {
       if inIndex + 3 < inBuffer.count, inBuffer[inIndex + 3] != Self.encodePaddingCharacter {
         a3 = inBuffer[inIndex + 3]
       }
-      
+
       var x: UInt32 = d0[Int(a0)] | d1[Int(a1)] | d2[Int(a2 ?? 65)] | d3[Int(a3 ?? 65)]
       if x >= Self.badCharacter {
         // TODO: Inspect characters here better
         throw DecodingError.invalidCharacter(inBuffer[inIndex])
       }
-      
+
       withUnsafePointer(to: &x) { ptr in
         ptr.withMemoryRebound(to: UInt8.self, capacity: 4) { newPtr in
           outBuffer[outIndex] = newPtr[0]
@@ -224,11 +232,11 @@ enum Base64 {
           }
         }
       }
-      
+
       length = outIndex
     }
   }
-  
+
   private static func withUnsafeDecodingTablesAsBufferPointers<R>(
     options: Base64.DecodingOptions,
     _ body: (
@@ -240,12 +248,12 @@ enum Base64 {
     let decoding1 = options.contains(.base64UrlAlphabet) ? Self.decoding1url : Self.decoding1
     let decoding2 = options.contains(.base64UrlAlphabet) ? Self.decoding2url : Self.decoding2
     let decoding3 = options.contains(.base64UrlAlphabet) ? Self.decoding3url : Self.decoding3
-    
+
     assert(decoding0.count == 256)
     assert(decoding1.count == 256)
     assert(decoding2.count == 256)
     assert(decoding3.count == 256)
-    
+
     return try decoding0.withUnsafeBufferPointer { (d0) -> R in
       try decoding1.withUnsafeBufferPointer { (d1) -> R in
         try decoding2.withUnsafeBufferPointer { (d2) -> R in
@@ -256,9 +264,9 @@ enum Base64 {
       }
     }
   }
-  
+
   private static let encodePaddingCharacter: UInt8 = 61
-  
+
   private static let encodeBase64: [UInt8] = [
     UInt8(ascii: "A"), UInt8(ascii: "B"), UInt8(ascii: "C"), UInt8(ascii: "D"),
     UInt8(ascii: "E"), UInt8(ascii: "F"), UInt8(ascii: "G"), UInt8(ascii: "H"),
@@ -277,12 +285,12 @@ enum Base64 {
     UInt8(ascii: "4"), UInt8(ascii: "5"), UInt8(ascii: "6"), UInt8(ascii: "7"),
     UInt8(ascii: "8"), UInt8(ascii: "9"), UInt8(ascii: "+"), UInt8(ascii: "/"),
   ]
-  
+
   private static func encode(alphabet: [UInt8], firstByte: UInt8) -> UInt8 {
     let index = firstByte >> 2
     return alphabet[Int(index)]
   }
-  
+
   private static func encode(alphabet: [UInt8], firstByte: UInt8, secondByte: UInt8?) -> UInt8 {
     var index = (firstByte & 0b00000011) << 4
     if let secondByte = secondByte {
@@ -290,7 +298,7 @@ enum Base64 {
     }
     return alphabet[Int(index)]
   }
-  
+
   private static func encode(alphabet: [UInt8], secondByte: UInt8?, thirdByte: UInt8?) -> UInt8 {
     guard let secondByte = secondByte else {
       // No second byte means we are just emitting padding.
@@ -302,7 +310,7 @@ enum Base64 {
     }
     return alphabet[Int(index)]
   }
-  
+
   private static func encode(alphabet: [UInt8], thirdByte: UInt8?) -> UInt8 {
     guard let thirdByte = thirdByte else {
       // No third byte means just padding.
@@ -311,9 +319,9 @@ enum Base64 {
     let index = thirdByte & 0b00111111
     return alphabet[Int(index)]
   }
-  
+
   private static let badCharacter: UInt32 = 0x01FF_FFFF
-  
+
   private static let decoding0: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
@@ -359,7 +367,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding1: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
@@ -405,7 +413,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding2: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
@@ -451,7 +459,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding3: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
@@ -497,7 +505,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding0url: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 0
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 6
@@ -543,7 +551,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding1url: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 0
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 6
@@ -589,7 +597,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding2url: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 0
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 6
@@ -635,7 +643,7 @@ enum Base64 {
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,
   ]
-  
+
   private static let decoding3url: [UInt32] = [
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 0
     0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF, 0x01FF_FFFF,  // 6
@@ -687,30 +695,37 @@ extension String {
   /// This is a backport of a proposed String initializer that will allow writing directly into an uninitialized String's backing memory.
   ///
   /// As this API does not exist prior to 5.3 on Linux, or on older Apple platforms, we fake it out with a pointer and accept the extra copy.
-  init(backportUnsafeUninitializedCapacity capacity: Int,
-       initializingUTF8With initializer: (_ buffer: UnsafeMutableBufferPointer<UInt8>) throws -> Int) rethrows {
-    
+  init(
+    backportUnsafeUninitializedCapacity capacity: Int,
+    initializingUTF8With initializer: (_ buffer: UnsafeMutableBufferPointer<UInt8>) throws -> Int
+  ) rethrows {
+
     // The buffer will store zero terminated C string
     let buffer = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: capacity + 1)
     defer {
       buffer.deallocate()
     }
-    
+
     let initializedCount = try initializer(buffer)
     precondition(initializedCount <= capacity, "Overran buffer in initializer!")
-    
+
     // add zero termination
     buffer[initializedCount] = 0
-    
+
     self = String(cString: buffer.baseAddress!)
   }
-  
-  init(customUnsafeUninitializedCapacity capacity: Int,
-       initializingUTF8With initializer: (_ buffer: UnsafeMutableBufferPointer<UInt8>) throws -> Int) rethrows {
+
+  init(
+    customUnsafeUninitializedCapacity capacity: Int,
+    initializingUTF8With initializer: (_ buffer: UnsafeMutableBufferPointer<UInt8>) throws -> Int
+  ) rethrows {
     if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
       try self.init(unsafeUninitializedCapacity: capacity, initializingUTF8With: initializer)
     } else {
-      try self.init(backportUnsafeUninitializedCapacity: capacity, initializingUTF8With: initializer)
+      try self.init(
+        backportUnsafeUninitializedCapacity: capacity,
+        initializingUTF8With: initializer
+      )
     }
   }
 }
