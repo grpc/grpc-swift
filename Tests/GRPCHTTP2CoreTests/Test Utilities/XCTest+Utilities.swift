@@ -37,3 +37,24 @@ func XCTAssertDescription(
 ) {
   XCTAssertEqual(String(describing: subject), expected, file: file, line: line)
 }
+
+func XCTUnwrapAsync<T>(_ expression: () async throws -> T?) async throws -> T {
+  let value = try await expression()
+  return try XCTUnwrap(value)
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+func XCTAssertThrowsErrorAsync<T, E: Error>(
+  ofType: E.Type = E.self,
+  _ expression: () async throws -> T,
+  errorHandler: (E) -> Void
+) async {
+  do {
+    _ = try await expression()
+    XCTFail("Expression didn't throw")
+  } catch let error as E {
+    errorHandler(error)
+  } catch {
+    XCTFail("Error had unexpected type '\(type(of: error))'")
+  }
+}
