@@ -17,10 +17,16 @@
 import GRPCCore
 import NIOCore
 import NIOHPACK
+import NIOHTTP1
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 enum OnMetadataReceived {
   case receivedMetadata(Metadata)
+
+  // Client-specific actions
+  case failedRequest(Status)
+  case doNothing
+
   // Server-specific actions
   case rejectRPC(trailers: HPACKHeaders)
 }
@@ -496,6 +502,41 @@ extension GRPCStreamStateMachine {
   ) throws -> OnMetadataReceived {
     switch self.state {
     case .clientOpenServerIdle(let state):
+      guard metadata.grpcStatus != nil || metadata.status == "200" else {
+        let httpStatusCode = metadata.status
+          .flatMap { Int($0) }
+          .map { HTTPResponseStatus(statusCode: $0) }
+
+        guard let httpStatusCode else {
+          return .failedRequest(
+            .init(code: .unknown, message: "Unexpected non-200 HTTP Status Code.")
+          )
+        }
+
+        if (100 ... 199).contains(httpStatusCode.code) {
+          // For 1xx status codes, the entire header should be skipped and a
+          // subsequent header should be read.
+          // See https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+          return .doNothing
+        }
+
+        // Close the client and forward the mapped status code.
+        self.state = .clientClosedServerIdle(.init(previousState: state))
+        return .failedRequest(
+          .init(
+            code: Status.Code(httpStatusCode: httpStatusCode),
+            message: "Unexpected non-200 HTTP Status Code."
+          )
+        )
+      }
+
+      let contentTypeHeader = metadata.first(name: GRPCHTTP2Keys.contentType.rawValue)
+      guard contentTypeHeader.flatMap(ContentType.init) != nil else {
+        return .failedRequest(
+          .init(code: .internalError, message: "Missing \(GRPCHTTP2Keys.contentType) header")
+        )
+      }
+
       if endStream {
         // This is a trailers-only response: close server.
         self.state = .clientOpenServerClosed(.init(previousState: state))
@@ -522,6 +563,40 @@ extension GRPCStreamStateMachine {
       }
       return .receivedMetadata(Metadata(headers: metadata))
     case .clientClosedServerIdle(let state):
+      guard metadata.grpcStatus != nil || metadata.status == "200" else {
+        let httpStatusCode = metadata.status
+          .flatMap { Int($0) }
+          .map { HTTPResponseStatus(statusCode: $0) }
+
+        guard let httpStatusCode else {
+          return .failedRequest(
+            .init(code: .unknown, message: "Unexpected non-200 HTTP Status Code.")
+          )
+        }
+
+        if (100 ... 199).contains(httpStatusCode.code) {
+          // For 1xx status codes, the entire header should be skipped and a
+          // subsequent header should be read.
+          // See https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+          return .doNothing
+        }
+
+        // Forward the mapped status code.
+        return .failedRequest(
+          .init(
+            code: Status.Code(httpStatusCode: httpStatusCode),
+            message: "Unexpected non-200 HTTP Status Code."
+          )
+        )
+      }
+
+      let contentTypeHeader = metadata.first(name: GRPCHTTP2Keys.contentType.rawValue)
+      guard contentTypeHeader.flatMap(ContentType.init) != nil else {
+        return .failedRequest(
+          .init(code: .internalError, message: "Missing \(GRPCHTTP2Keys.contentType) header")
+        )
+      }
+
       if endStream {
         // This is a trailers-only response.
         self.state = .clientClosedServerClosed(.init(previousState: state))
@@ -823,7 +898,7 @@ extension GRPCStreamStateMachine {
         var trailers = HPACKHeaders()
         trailers.reserveCapacity(2)
         trailers.grpcStatus = .unimplemented
-        trailers.grpcStatusMessage = "No \(GRPCHTTP2Keys.path.rawValue) header has been set."
+        trailers.grpcStatusMessage = "No \(GRPCHTTP2Keys.path) header has been set."
         return .rejectRPC(trailers: trailers)
       }
 
@@ -1012,7 +1087,7 @@ extension MethodDescriptor {
   }
 }
 
-internal enum GRPCHTTP2Keys: String, CaseIterable {
+internal enum GRPCHTTP2Keys: String {
   case path = ":path"
   case contentType = "content-type"
   case encoding = "grpc-encoding"
@@ -1202,10 +1277,7 @@ extension Zlib.Method {
 extension Metadata {
   init(headers: HPACKHeaders) {
     var metadata = Metadata()
-    // TODO: since this is what we'll pass on to the user, I was wondering if it would be useful
-    // to filter out the headers that relate to the protocol, and just leave the user-defined ones.
-    for header in headers
-    where !GRPCHTTP2Keys.allCases.contains(where: { $0.rawValue == header.name }) {
+    for header in headers {
       if header.name.hasSuffix("-bin") {
         do {
           let decodedBinary = try header.value.base64Decoded()
@@ -1218,5 +1290,25 @@ extension Metadata {
       }
     }
     self = metadata
+  }
+}
+
+extension Status.Code {
+  // See https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+  init(httpStatusCode: HTTPResponseStatus) {
+    switch httpStatusCode {
+    case .badRequest:
+      self = .internalError
+    case .unauthorized:
+      self = .unauthenticated
+    case .forbidden:
+      self = .permissionDenied
+    case .notFound:
+      self = .unimplemented
+    case .tooManyRequests, .badGateway, .serviceUnavailable, .gatewayTimeout:
+      self = .unavailable
+    default:
+      self = .unknown
+    }
   }
 }
