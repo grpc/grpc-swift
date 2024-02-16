@@ -26,26 +26,26 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
   
   private func makeClientStateMachine() -> GRPCStreamStateMachine {
     GRPCStreamStateMachine(
-      configuration: .client(
+      configuration: .client( .init(
         methodDescriptor: .init(service: "test", method: "test"),
         scheme: .http,
-        maximumPayloadSize: 100,
         outboundEncoding: nil,
         acceptedEncodings: [.deflate]
-      ),
+      )),
+      maximumPayloadSize: 100,
       skipAssertions: true
     )
   }
   
   private func makeClientStateMachineWithCompression() -> GRPCStreamStateMachine {
     GRPCStreamStateMachine(
-      configuration: .client(
+      configuration: .client(.init(
         methodDescriptor: .init(service: "test", method: "test"),
         scheme: .http,
-        maximumPayloadSize: 100,
         outboundEncoding: .deflate,
         acceptedEncodings: [.deflate]
-      ),
+      )),
+      maximumPayloadSize: 100,
       skipAssertions: true
     )
   }
@@ -1118,22 +1118,22 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   
   private func makeServerStateMachine() -> GRPCStreamStateMachine {
     GRPCStreamStateMachine(
-      configuration: .server(
+      configuration: .server(.init(
         scheme: .http,
-        maximumPayloadSize: 100,
         acceptedEncodings: []
-      ),
+      )),
+      maximumPayloadSize: 100,
       skipAssertions: true
     )
   }
   
   private func makeServerStateMachineWithCompression() -> GRPCStreamStateMachine {
     GRPCStreamStateMachine(
-      configuration: .server(
+      configuration: .server(.init(
         scheme: .http,
-        maximumPayloadSize: 100,
         acceptedEncodings: [.deflate]
-      ),
+      )),
+      maximumPayloadSize: 100,
       skipAssertions: true
     )
   }
