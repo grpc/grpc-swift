@@ -88,7 +88,7 @@ public struct Metadata: Sendable, Hashable {
 
     /// The value as a String. If it was originally stored as a binary, the base64-encoded String version
     /// of the binary data will be returned instead.
-    public var stringValue: String {
+    public func encoded() -> String {
       switch self {
       case .string(let string):
         return string
