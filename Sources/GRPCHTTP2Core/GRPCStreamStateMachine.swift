@@ -679,13 +679,9 @@ extension GRPCStreamStateMachine {
       } else {
         self.state = .clientClosedServerOpen(state)
       }
-    case .clientOpenServerClosed:
+    case .clientOpenServerClosed, .clientClosedServerClosed:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError(
         "Cannot have received anything from a closed server."
-      )
-    case .clientClosedServerClosed:
-      throw self.assertionFailureAndCreateRPCErrorOnInternalError(
-        "Shouldn't have received anything if both client and server are closed."
       )
     }
   }
