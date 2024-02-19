@@ -42,6 +42,7 @@ public struct NameResolverRegistry {
   private enum Factory {
     case ipv4(NameResolvers.IPv4)
     case ipv6(NameResolvers.IPv6)
+    case unix(NameResolvers.UnixDomainSocket)
     case other(any NameResolverFactory)
 
     init(_ factory: some NameResolverFactory) {
@@ -49,6 +50,8 @@ public struct NameResolverRegistry {
         self = .ipv4(ipv4)
       } else if let ipv6 = factory as? NameResolvers.IPv6 {
         self = .ipv6(ipv6)
+      } else if let unix = factory as? NameResolvers.UnixDomainSocket {
+        self = .unix(unix)
       } else {
         self = .other(factory)
       }
@@ -59,6 +62,8 @@ public struct NameResolverRegistry {
       case .ipv4(let factory):
         return factory.makeResolverIfCompatible(target)
       case .ipv6(let factory):
+        return factory.makeResolverIfCompatible(target)
+      case .unix(let factory):
         return factory.makeResolverIfCompatible(target)
       case .other(let factory):
         return factory.makeResolverIfCompatible(target)
@@ -71,6 +76,8 @@ public struct NameResolverRegistry {
         return factory.isCompatible(withTarget: target)
       case .ipv6(let factory):
         return factory.isCompatible(withTarget: target)
+      case .unix(let factory):
+        return factory.isCompatible(withTarget: target)
       case .other(let factory):
         return factory.isCompatible(withTarget: target)
       }
@@ -82,6 +89,8 @@ public struct NameResolverRegistry {
         return NameResolvers.IPv4.self == factoryType
       case .ipv6:
         return NameResolvers.IPv6.self == factoryType
+      case .unix:
+        return NameResolvers.UnixDomainSocket.self == factoryType
       case .other(let factory):
         return type(of: factory) == factoryType
       }
@@ -99,11 +108,13 @@ public struct NameResolverRegistry {
   ///
   /// The default resolvers include:
   /// - ``NameResolvers/IPv4``,
-  /// - ``NameResolvers/IPv6``.
+  /// - ``NameResolvers/IPv6``,
+  /// - ``NameResolvers/UnixDomainSocket``.
   public static var defaults: Self {
     var resolvers = NameResolverRegistry()
     resolvers.registerFactory(NameResolvers.IPv4())
     resolvers.registerFactory(NameResolvers.IPv6())
+    resolvers.registerFactory(NameResolvers.UnixDomainSocket())
     return resolvers
   }
 
