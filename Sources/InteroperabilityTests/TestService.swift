@@ -110,7 +110,8 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
           }
         }
         try await writer.write(response)
-        try await Task.sleep(nanoseconds: UInt64(responseParameter.intervalUs))
+        // We convert the `intervalUs` value from microseconds to nanoseconds.
+        try await Task.sleep(nanoseconds: UInt64(responseParameter.intervalUs) * 1000)
       }
       return [:]
     }
@@ -149,9 +150,16 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   {
     return ServerResponse.Stream { writer in
       for try await message in request.messages {
+        // If a request message has a responseStatus set, the server should return that status.
+        // If the code is an error code, the server will throw an error containing that code
+        // and the message set in the responseStatus.
+        // If the code is `ok`, the server will automatically send back an `ok` status with the response.
         if message.responseStatus.isInitialized {
-          let code = Status.Code(rawValue: Int(message.responseStatus.code))
-          let status = Status.init(code: code ?? .unknown, message: message.responseStatus.message)
+          guard let code = Status.Code(rawValue: Int(message.responseStatus.code)) else {
+            throw RPCError(code: .invalidArgument, message: "The response status code is invalid.")
+          }
+
+          let status = Status(code: code, message: message.responseStatus.message)
           if let error = RPCError(status: status) {
             throw error
           }
