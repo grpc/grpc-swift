@@ -259,18 +259,29 @@ enum GRPCStreamStateMachineState {
   }
 
   struct ClientClosedServerClosedState {
+    // We still need the framer and compressor in case the server has closed
+    // but its buffer is not yet empty and still needs to send messages out to
+    // the client.
+    var framer: GRPCMessageFramer
+    var compressor: Zlib.Compressor?
     // These are already deframed, so we don't need the deframer anymore.
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
 
     init(previousState: ClientClosedServerOpenState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
 
     init(previousState: ClientClosedServerIdleState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
 
     init(previousState: ClientOpenServerClosedState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
   }
@@ -463,38 +474,31 @@ extension GRPCStreamStateMachine {
       )
     }
   }
-  
-  enum OnClientNextOutboundMessage {
-    case sendMessage(ByteBuffer)
-    case keepAwaitingNewMessages
-    case requestEnded
-  }
-
   /// Returns the client's next request to the server.
   /// - Returns: The request to be made to the server.
-  private mutating func clientNextOutboundMessage() throws -> OnClientNextOutboundMessage {
+  private mutating func clientNextOutboundMessage() throws -> ByteBuffer? {
     switch self.state {
     case .clientIdleServerIdle:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is not open yet.")
     case .clientOpenServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerIdle(state)
-      return request != nil ? .sendMessage(request!) : .keepAwaitingNewMessages
+      return request
     case .clientOpenServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return request != nil ? .sendMessage(request!) : .keepAwaitingNewMessages
+      return request
     case .clientClosedServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerIdle(state)
-      return request != nil ? .sendMessage(request!) : .keepAwaitingNewMessages
+      return request
     case .clientClosedServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      return request != nil ? .sendMessage(request!) : .keepAwaitingNewMessages
+      return request
     case .clientOpenServerClosed, .clientClosedServerClosed:
       // Nothing to do if server is closed.
-      return .requestEnded
+      return nil
     }
   }
 
@@ -546,10 +550,12 @@ extension GRPCStreamStateMachine {
         var inboundEncoding: CompressionAlgorithm?
         if let serverEncoding = metadata.first(name: GRPCHTTP2Keys.encoding.rawValue) {
           guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding) else {
-            return .failedRequest(.init(
-              code: .internalError,
-              message: "The server picked a compression algorithm the client does not know about."
-            ))
+            return .failedRequest(
+              .init(
+                code: .internalError,
+                message: "The server picked a compression algorithm the client does not know about."
+              )
+            )
           }
           inboundEncoding = parsedEncoding
         }
@@ -617,10 +623,12 @@ extension GRPCStreamStateMachine {
         var inboundEncoding: CompressionAlgorithm?
         if let serverEncoding = metadata.first(name: GRPCHTTP2Keys.encoding.rawValue) {
           guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding) else {
-            return .failedRequest(.init(
-              code: .internalError,
-              message: "The server picked a compression algorithm the client does not know about."
-            ))
+            return .failedRequest(
+              .init(
+                code: .internalError,
+                message: "The server picked a compression algorithm the client does not know about."
+              )
+            )
           }
           inboundEncoding = parsedEncoding
         }
@@ -770,7 +778,7 @@ extension GRPCStreamStateMachine {
     if !configuration.acceptedEncodings.isEmpty {
       headers.acceptedEncodings = configuration.acceptedEncodings
     }
-    
+
     for metadataPair in customMetadata {
       headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
     }
@@ -778,7 +786,10 @@ extension GRPCStreamStateMachine {
     return headers
   }
 
-  private mutating func serverSend(metadata: Metadata, configuration: GRPCStreamStateMachineConfiguration.ServerConfiguration) throws -> HPACKHeaders {
+  private mutating func serverSend(
+    metadata: Metadata,
+    configuration: GRPCStreamStateMachineConfiguration.ServerConfiguration
+  ) throws -> HPACKHeaders {
     // Server sends initial metadata
     switch self.state {
     case .clientOpenServerIdle(let state):
@@ -927,7 +938,7 @@ extension GRPCStreamStateMachine {
         var trailers = HPACKHeaders()
         trailers.reserveCapacity(2)
         trailers.grpcStatus = .unimplemented
-        trailers.grpcStatusMessage = "No \(GRPCHTTP2Keys.path) header has been set."
+        trailers.grpcStatusMessage = "No \(GRPCHTTP2Keys.path.rawValue) header has been set."
         return .rejectRPC(trailers: trailers)
       }
 
@@ -989,7 +1000,8 @@ extension GRPCStreamStateMachine {
         // Find the preferred encoding and use it to compress responses.
         // If it's identity, just skip it altogether, since we won't be
         // compressing.
-        outboundEncoding = clientAdvertisedEncodings
+        outboundEncoding =
+          clientAdvertisedEncodings
           .first { isIdentityOrCompatibleEncoding($0) }
           .flatMap { $0 == .identity ? nil : $0 }
       }
@@ -1066,10 +1078,14 @@ extension GRPCStreamStateMachine {
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
       return response
-    case .clientOpenServerClosed, .clientClosedServerClosed:
-      throw self.assertionFailureAndCreateRPCErrorOnInternalError(
-        "Can't send response if server is closed."
-      )
+    case .clientOpenServerClosed(var state):
+      let response = try state.framer.next(compressor: state.compressor)
+      self.state = .clientOpenServerClosed(state)
+      return response
+    case .clientClosedServerClosed(var state):
+      let response = try state.framer.next(compressor: state.compressor)
+      self.state = .clientClosedServerClosed(state)
+      return response
     }
   }
 
