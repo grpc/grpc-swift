@@ -17,23 +17,22 @@
 import Foundation
 import GRPCCore
 
-@available(macOS 13.0, *)
-public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
-  public func unimplementedCall(
-    request: GRPCCore.ServerRequest.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Input>
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
+  internal func unimplementedCall(
+    request: ServerRequest.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Input>
   ) async throws
-    -> GRPCCore.ServerResponse.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Output>
+    -> ServerResponse.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Output>
   {
     throw RPCError(code: .unimplemented, message: "The RPC is not implemented.")
   }
 
   /// Server implements `emptyCall` which immediately returns the empty message.
-  public func emptyCall(
-    request: GRPCCore.ServerRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>
-  ) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output>
-  {
+  internal func emptyCall(
+    request: ServerRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>
+  ) async throws -> ServerResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output> {
     let message = Grpc_Testing_TestService.Method.EmptyCall.Output()
-    return GRPCCore.ServerResponse.Single(message: message)
+    return ServerResponse.Single(message: message)
   }
 
   /// Server implements `unaryCall` which immediately returns a `SimpleResponse` with a payload
@@ -42,17 +41,22 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
   ///
   /// If the server does not support the `responseType`, then it should fail the RPC with
   /// `INVALID_ARGUMENT`.
-  public func unaryCall(
-    request: GRPCCore.ServerRequest.Single<Grpc_Testing_TestService.Method.UnaryCall.Input>
-  ) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_TestService.Method.UnaryCall.Output>
-  {
+  internal func unaryCall(
+    request: ServerRequest.Single<Grpc_Testing_TestService.Method.UnaryCall.Input>
+  ) async throws -> ServerResponse.Single<Grpc_Testing_TestService.Method.UnaryCall.Output> {
+    // If the request has a responseStatus set, the server should return that status.
+    // If the code is an error code, the server will throw an error containing that code
+    // and the message set in the responseStatus.
+    // If the code is `ok`, the server will automatically send back an `ok` status.
     if request.message.responseStatus.isInitialized {
-      let code = Status.Code(rawValue: Int(request.message.responseStatus.code))
-      let status = Status.init(
-        code: code ?? .unknown,
+      guard let code = Status.Code(rawValue: Int(request.message.responseStatus.code)) else {
+        throw RPCError(code: .invalidArgument, message: "The response status code is invalid.")
+      }
+      let status = Status(
+        code: code,
         message: request.message.responseStatus.message
       )
-      if let error = GRPCCore.RPCError(status: status) {
+      if let error = RPCError(status: status) {
         throw error
       }
     }
@@ -78,10 +82,10 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
   /// long as the response payload is different for each request. In addition it adds cache control
   /// headers such that the response can be cached by proxies in the response path. Server should
   /// be behind a caching proxy for this test to pass. Currently we set the max-age to 60 seconds.
-  public func cacheableUnaryCall(
-    request: GRPCCore.ServerRequest.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>
+  internal func cacheableUnaryCall(
+    request: ServerRequest.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>
   ) async throws
-    -> GRPCCore.ServerResponse.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>
+    -> ServerResponse.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>
   {
     throw RPCError(code: .unimplemented, message: "The RPC is not implemented.")
   }
@@ -91,12 +95,12 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
   /// Each `StreamingOutputCallResponse` should have a payload body of size `ResponseParameter.size`
   /// bytes, as specified by its respective `ResponseParameter`. After sending all responses, it
   /// closes with OK.
-  public func streamingOutputCall(
-    request: GRPCCore.ServerRequest.Single<
+  internal func streamingOutputCall(
+    request: ServerRequest.Single<
       Grpc_Testing_TestService.Method.StreamingOutputCall.Input
     >
   ) async throws
-    -> GRPCCore.ServerResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>
+    -> ServerResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>
   {
     return ServerResponse.Stream { writer in
       for responseParameter in request.message.responseParameters {
@@ -106,6 +110,7 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
           }
         }
         try await writer.write(response)
+        try await Task.sleep(nanoseconds: UInt64(responseParameter.intervalUs))
       }
       return [:]
     }
@@ -114,10 +119,10 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
   /// Server implements `streamingInputCall` which upon half close immediately returns a
   /// `StreamingInputCallResponse` where `aggregatedPayloadSize` is the sum of all request payload
   /// bodies received.
-  public func streamingInputCall(
-    request: GRPCCore.ServerRequest.Stream<Grpc_Testing_TestService.Method.StreamingInputCall.Input>
+  internal func streamingInputCall(
+    request: ServerRequest.Stream<Grpc_Testing_TestService.Method.StreamingInputCall.Input>
   ) async throws
-    -> GRPCCore.ServerResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>
+    -> ServerResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>
   {
     var aggregatedPayloadSize = 0
 
@@ -129,7 +134,7 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
       $0.aggregatedPayloadSize = Int32(aggregatedPayloadSize)
     }
 
-    return GRPCCore.ServerResponse.Single(message: responseMessage)
+    return ServerResponse.Single(message: responseMessage)
   }
 
   /// Server implements `fullDuplexCall` by replying, in order, with one
@@ -137,24 +142,23 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
   /// `StreamingOutputCallRequest`. Each `StreamingOutputCallResponse` should have a payload body
   /// of size `ResponseParameter.size` bytes, as specified by its respective `ResponseParameter`s.
   /// After receiving half close and sending all responses, it closes with OK.
-  public func fullDuplexCall(
-    request: GRPCCore.ServerRequest.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Input>
+  internal func fullDuplexCall(
+    request: ServerRequest.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Input>
   ) async throws
-    -> GRPCCore.ServerResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>
+    -> ServerResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>
   {
     return ServerResponse.Stream { writer in
       for try await message in request.messages {
         if message.responseStatus.isInitialized {
           let code = Status.Code(rawValue: Int(message.responseStatus.code))
           let status = Status.init(code: code ?? .unknown, message: message.responseStatus.message)
-          if let error = GRPCCore.RPCError(status: status) {
+          if let error = RPCError(status: status) {
             throw error
           }
         }
 
         for responseParameter in message.responseParameters {
-          let response = Grpc_Testing_StreamingOutputCallResponse.with {
-            response in
+          let response = Grpc_Testing_StreamingOutputCallResponse.with { response in
             response.payload = Grpc_Testing_Payload.with {
               $0.body = Data(count: Int(responseParameter.size))
             }
@@ -169,10 +173,10 @@ public struct TestProvider: Grpc_Testing_TestService.ServiceProtocol {
   /// This is not implemented as it is not described in the specification.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md
-  public func halfDuplexCall(
-    request: GRPCCore.ServerRequest.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>
+  internal func halfDuplexCall(
+    request: ServerRequest.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>
   ) async throws
-    -> GRPCCore.ServerResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>
+    -> ServerResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>
   {
     throw RPCError(code: .unimplemented, message: "The RPC is not implemented.")
   }
