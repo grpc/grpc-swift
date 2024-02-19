@@ -34,7 +34,7 @@ final class NameResolverRegistryTests: XCTestCase {
         $0.yield(with: .failure(RPCError(code: self.code, message: target.value)))
       }
 
-      return NameResolver(results: RPCAsyncSequence(wrapping: stream), updateMode: .pull)
+      return NameResolver(names: RPCAsyncSequence(wrapping: stream), updateMode: .pull)
     }
   }
 
@@ -127,6 +127,112 @@ final class NameResolverRegistryTests: XCTestCase {
     } errorHandler: { error in
       XCTAssertEqual(error.code, .unavailable)
       XCTAssertEqual(error.message, "foo")
+    }
+  }
+
+  func testDefaultResolvers() {
+    let resolvers = NameResolverRegistry.defaults
+    XCTAssert(resolvers.containsFactory(ofType: NameResolvers.IPv4.self))
+    XCTAssert(resolvers.containsFactory(ofType: NameResolvers.IPv6.self))
+  }
+
+  func testMakeResolver() {
+    let resolvers = NameResolverRegistry()
+    XCTAssertNil(resolvers.makeResolver(for: .ipv4(host: "foo")))
+  }
+
+  func testCustomResolver() async throws {
+    struct EmptyTarget: ResolvableTarget {
+      static var scheme: String { "empty" }
+    }
+
+    struct CustomResolver: NameResolverFactory {
+      func resolver(for target: EmptyTarget) -> NameResolver {
+        return NameResolver(
+          names: RPCAsyncSequence(wrapping: AsyncStream { $0.finish() }),
+          updateMode: .push
+        )
+      }
+    }
+
+    var resolvers = NameResolverRegistry.defaults
+    resolvers.registerFactory(CustomResolver())
+    let resolver = try XCTUnwrap(resolvers.makeResolver(for: EmptyTarget()))
+    XCTAssertEqual(resolver.updateMode, .push)
+    for try await _ in resolver.names {
+      XCTFail("Expected an empty sequence")
+    }
+  }
+
+  func testIPv4ResolverForSingleHost() async throws {
+    let factory = NameResolvers.IPv4()
+    let resolver = factory.resolver(for: .ipv4(host: "foo", port: 1234))
+
+    XCTAssertEqual(resolver.updateMode, .pull)
+
+    // The IPv4 resolver always returns the same values.
+    var iterator = resolver.names.makeAsyncIterator()
+    for _ in 0 ..< 1000 {
+      let result = try await XCTUnwrapAsync { try await iterator.next() }
+      XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.ipv4(host: "foo", port: 1234)])])
+      XCTAssertNil(result.serviceConfiguration)
+    }
+  }
+
+  func testIPv4ResolverForMultipleHosts() async throws {
+    let factory = NameResolvers.IPv4()
+    let resolver = factory.resolver(for: .ipv4(pairs: [("foo", 443), ("bar", 444)]))
+
+    XCTAssertEqual(resolver.updateMode, .pull)
+
+    // The IPv4 resolver always returns the same values.
+    var iterator = resolver.names.makeAsyncIterator()
+    for _ in 0 ..< 1000 {
+      let result = try await XCTUnwrapAsync { try await iterator.next() }
+      XCTAssertEqual(
+        result.endpoints,
+        [
+          Endpoint(addresses: [.ipv4(host: "foo", port: 443)]),
+          Endpoint(addresses: [.ipv4(host: "bar", port: 444)]),
+        ]
+      )
+      XCTAssertNil(result.serviceConfiguration)
+    }
+  }
+
+  func testIPv6ResolverForSingleHost() async throws {
+    let factory = NameResolvers.IPv6()
+    let resolver = factory.resolver(for: .ipv6(host: "foo", port: 1234))
+
+    XCTAssertEqual(resolver.updateMode, .pull)
+
+    // The IPv6 resolver always returns the same values.
+    var iterator = resolver.names.makeAsyncIterator()
+    for _ in 0 ..< 1000 {
+      let result = try await XCTUnwrapAsync { try await iterator.next() }
+      XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.ipv6(host: "foo", port: 1234)])])
+      XCTAssertNil(result.serviceConfiguration)
+    }
+  }
+
+  func testIPv6ResolverForMultipleHosts() async throws {
+    let factory = NameResolvers.IPv6()
+    let resolver = factory.resolver(for: .ipv6(pairs: [("foo", 443), ("bar", 444)]))
+
+    XCTAssertEqual(resolver.updateMode, .pull)
+
+    // The IPv6 resolver always returns the same values.
+    var iterator = resolver.names.makeAsyncIterator()
+    for _ in 0 ..< 1000 {
+      let result = try await XCTUnwrapAsync { try await iterator.next() }
+      XCTAssertEqual(
+        result.endpoints,
+        [
+          Endpoint(addresses: [.ipv6(host: "foo", port: 443)]),
+          Endpoint(addresses: [.ipv6(host: "bar", port: 444)]),
+        ]
+      )
+      XCTAssertNil(result.serviceConfiguration)
     }
   }
 }
