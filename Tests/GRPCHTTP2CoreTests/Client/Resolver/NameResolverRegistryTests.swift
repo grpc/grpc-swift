@@ -205,7 +205,7 @@ final class NameResolverRegistryTests: XCTestCase {
 
     XCTAssertEqual(resolver.updateMode, .pull)
 
-    // The IPv4 resolver always returns the same values.
+    // The IPv6 resolver always returns the same values.
     var iterator = resolver.names.makeAsyncIterator()
     for _ in 0 ..< 1000 {
       let result = try await XCTUnwrapAsync { try await iterator.next() }
