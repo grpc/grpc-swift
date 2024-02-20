@@ -219,7 +219,7 @@ enum GRPCStreamStateMachineState {
 
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
-
+    
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
 
     init(previousState: ClientOpenServerOpenState) {
@@ -264,6 +264,7 @@ enum GRPCStreamStateMachineState {
     // the client.
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
+
     // These are already deframed, so we don't need the deframer anymore.
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
 
@@ -357,7 +358,18 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func nextOutboundMessage() throws -> ByteBuffer? {
+  /// The result of requesting the next outbound message.
+  enum OnNextOutboundMessage {
+    /// Either the receiving party is closed, so we shouldn't send any more messages; or the sender is done
+    /// writing messages (i.e. we are now closed).
+    case noMoreMessages
+    /// There isn't a message ready to be sent, but we could still receive more, so keep trying.
+    case awaitMoreMessages
+    /// A message is ready to be sent.
+    case sendMessage(ByteBuffer)
+  }
+  
+  mutating func nextOutboundMessage() throws -> OnNextOutboundMessage {
     switch self.configuration {
     case .client:
       return try self.clientNextOutboundMessage()
@@ -474,31 +486,36 @@ extension GRPCStreamStateMachine {
       )
     }
   }
+  
   /// Returns the client's next request to the server.
   /// - Returns: The request to be made to the server.
-  private mutating func clientNextOutboundMessage() throws -> ByteBuffer? {
+  private mutating func clientNextOutboundMessage() throws -> OnNextOutboundMessage {
     switch self.state {
     case .clientIdleServerIdle:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError("Client is not open yet.")
     case .clientOpenServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerIdle(state)
-      return request
+      return request != nil ? .sendMessage(request!) : .awaitMoreMessages
     case .clientOpenServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return request
+      return request != nil ? .sendMessage(request!) : .awaitMoreMessages
     case .clientClosedServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerIdle(state)
-      return request
+      // If the client is closed and there is no message to be sent, then we
+      // are done sending messages, as we cannot call send(message:) anymore.
+      return request != nil ? .sendMessage(request!) : .noMoreMessages
     case .clientClosedServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      return request
+      // If the client is closed and there is no message to be sent, then we
+      // are done sending messages, as we cannot call send(message:) anymore.
+      return request != nil ? .sendMessage(request!) : .noMoreMessages
     case .clientOpenServerClosed, .clientClosedServerClosed:
       // Nothing to do if server is closed.
-      return nil
+      return .noMoreMessages
     }
   }
 
@@ -1066,26 +1083,26 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func serverNextOutboundMessage() throws -> ByteBuffer? {
+  private mutating func serverNextOutboundMessage() throws -> OnNextOutboundMessage {
     switch self.state {
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError("Server is not open yet.")
     case .clientOpenServerOpen(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return response
+      return response != nil ? .sendMessage(response!) : .awaitMoreMessages
     case .clientClosedServerOpen(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      return response
+      return response != nil ? .sendMessage(response!) : .awaitMoreMessages
     case .clientOpenServerClosed(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerClosed(state)
-      return response
+      return response != nil ? .sendMessage(response!) : .noMoreMessages
     case .clientClosedServerClosed(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerClosed(state)
-      return response
+      return response != nil ? .sendMessage(response!) : .noMoreMessages
     }
   }
 
