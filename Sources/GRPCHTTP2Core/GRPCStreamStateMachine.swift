@@ -272,18 +272,21 @@ enum GRPCStreamStateMachineState {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
+      previousState.decompressor?.end()
     }
 
     init(previousState: ClientClosedServerIdleState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
+      previousState.decompressor?.end()
     }
 
     init(previousState: ClientOpenServerClosedState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
+      previousState.decompressor?.end()
     }
   }
 }
@@ -504,17 +507,36 @@ extension GRPCStreamStateMachine {
     case .clientClosedServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerIdle(state)
-      // If the client is closed and there is no message to be sent, then we
-      // are done sending messages, as we cannot call send(message:) anymore.
-      return request != nil ? .sendMessage(request!) : .noMoreMessages
+      if let request {
+        return .sendMessage(request)
+      } else {
+        // If the client is closed and there is no message to be sent, then we
+        // are done sending messages, as we cannot call send(message:) anymore.
+        // There are no more messages to be sent, so we can end the compressor.
+        state.compressor?.end()
+        return .noMoreMessages
+      }
     case .clientClosedServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      // If the client is closed and there is no message to be sent, then we
-      // are done sending messages, as we cannot call send(message:) anymore.
-      return request != nil ? .sendMessage(request!) : .noMoreMessages
-    case .clientOpenServerClosed, .clientClosedServerClosed:
-      // Nothing to do if server is closed.
+      if let request {
+        return .sendMessage(request)
+      } else {
+        // If the client is closed and there is no message to be sent, then we
+        // are done sending messages, as we cannot call send(message:) anymore.
+        // There are no more messages to be sent, so we can end the compressor.
+        state.compressor?.end()
+        return .noMoreMessages
+      }
+    case .clientOpenServerClosed(let state):
+      // No point in sending any more requests if the server is closed:
+      // we end the compressor.
+      state.compressor?.end()
+      return .noMoreMessages
+    case .clientClosedServerClosed(let state):
+      // No point in sending any more requests if the server is closed:
+      // we end the compressor.
+      state.compressor?.end()
       return .noMoreMessages
     }
   }
@@ -660,8 +682,6 @@ extension GRPCStreamStateMachine {
       return .receivedMetadata(Metadata(headers: metadata))
     case .clientClosedServerOpen(let state):
       if endStream {
-        state.compressor?.end()
-        state.decompressor?.end()
         self.state = .clientClosedServerClosed(.init(previousState: state))
       } else {
         // This state is valid: server can send trailing metadata without grpc-status
@@ -913,8 +933,6 @@ extension GRPCStreamStateMachine {
       self.state = .clientOpenServerClosed(.init(previousState: state))
       return self.makeTrailers(status: status, customMetadata: metadata, trailersOnly: trailersOnly)
     case .clientClosedServerOpen(let state):
-      state.compressor?.end()
-      state.decompressor?.end()
       self.state = .clientClosedServerClosed(.init(previousState: state))
       return self.makeTrailers(status: status, customMetadata: metadata, trailersOnly: trailersOnly)
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
@@ -1098,11 +1116,23 @@ extension GRPCStreamStateMachine {
     case .clientOpenServerClosed(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerClosed(state)
-      return response != nil ? .sendMessage(response!) : .noMoreMessages
+      if let response {
+        return .sendMessage(response)
+      } else {
+        // There are no more messages to be sent, so we can end the compressor.
+        state.compressor?.end()
+        return .noMoreMessages
+      }
     case .clientClosedServerClosed(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerClosed(state)
-      return response != nil ? .sendMessage(response!) : .noMoreMessages
+      if let response {
+        return .sendMessage(response)
+      } else {
+        // There are no more messages to be sent, so we can end the compressor.
+        state.compressor?.end()
+        return .noMoreMessages
+      }
     }
   }
 
