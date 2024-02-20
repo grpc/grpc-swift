@@ -458,10 +458,19 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     for targetState in [TargetStateMachineState.clientOpenServerIdle, .clientOpenServerOpen] {
       var stateMachine = self.makeClientStateMachine(targetState: targetState)
 
-      XCTAssertNil(try stateMachine.nextOutboundMessage())
+      var action = try stateMachine.nextOutboundMessage()
+      guard case .awaitMoreMessages = action else {
+        XCTFail("Expected action to be sendMessage but was \(action)")
+        return
+      }
 
       XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
-      let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
+      
+      action = try stateMachine.nextOutboundMessage()
+      guard case .sendMessage(let request) = action else {
+        XCTFail("Expected action to be sendMessage but was \(action)")
+        return
+      }
 
       let expectedBytes: [UInt8] = [
         0,  // compression flag: unset
@@ -471,7 +480,11 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       XCTAssertEqual(Array(buffer: request), expectedBytes)
 
       // And then make sure that nothing else is returned anymore
-      XCTAssertNil(try stateMachine.nextOutboundMessage())
+      action = try stateMachine.nextOutboundMessage()
+      guard case .awaitMoreMessages = action else {
+        XCTFail("Expected action to be sendMessage but was \(action)")
+        return
+      }
     }
   }
 
@@ -481,11 +494,20 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       compressionEnabled: true
     )
 
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .awaitMoreMessages = action else {
+      XCTFail("Expected action to be awaitMoreMessages but was \(action)")
+      return
+    }
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    
+    action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let request) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
 
     var framer = GRPCMessageFramer()
     let compressor = Zlib.Compressor(method: .deflate)
@@ -503,11 +525,20 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       compressionEnabled: true
     )
 
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .awaitMoreMessages = action else {
+      XCTFail("Expected action to be awaitMoreMessages but was \(action)")
+      return
+    }
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    
+    action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let request) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
 
     var framer = GRPCMessageFramer()
     let compressor = Zlib.Compressor(method: .deflate)
@@ -522,13 +553,21 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
   func testNextOutboundMessageWhenClientOpenAndServerClosed() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerClosed)
 
-    // No messages to send, so make sure nil is returned
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    // No more messages to send
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be .noMoreMessages but was \(action)")
+      return
+    }
 
-    // Queue a message, but assert the next outbound message is nil nevertheless,
+    // Queue a message, but assert the action is .noMoreMessages nevertheless,
     // because the server is closed.
     XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be .noMoreMessages but was \(action)")
+      return
+    }
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerIdle() throws {
@@ -539,7 +578,12 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     // Make sure that getting the next outbound message _does_ return the message
     // we have enqueued.
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let request) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
+    
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
@@ -548,7 +592,11 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(Array(buffer: request), expectedBytes)
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be noMoreMessages but was \(action)")
+      return
+    }
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerOpen() throws {
@@ -559,7 +607,12 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     // Make sure that getting the next outbound message _does_ return the message
     // we have enqueued.
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let request) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
+
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
@@ -568,10 +621,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(Array(buffer: request), expectedBytes)
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be noMoreMessages but was \(action)")
+      return
+    }
   }
 
-  func testNextOutboundMessageWhenClientClosedAndServerClosed() {
+  func testNextOutboundMessageWhenClientClosedAndServerClosed() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerOpen)
     // Send a message
     XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
@@ -584,7 +641,11 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     // Even though we have enqueued a message, don't send it, because the server
     // is closed.
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be noMoreMessages but was \(action)")
+      return
+    }
   }
 
   // - MARK: Next inbound message
@@ -1362,47 +1423,19 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   func testNextOutboundMessageWhenClientOpenAndServerOpen() throws {
     var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen)
 
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .awaitMoreMessages = action else {
+      XCTFail("Expected action to be awaitMoreMessages but was \(action)")
+      return
+    }
 
     XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
-
-    let expectedBytes: [UInt8] = [
-      0,  // compression flag: unset
-      0, 0, 0, 2,  // message length: 2 bytes
-      42, 42,  // original message
-    ]
-    XCTAssertEqual(Array(buffer: request), expectedBytes)
-
-    // And then make sure that nothing else is returned anymore
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
-  }
-
-  func testNextOutboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
-    var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen, compressionEnabled: true)
-
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
-
-    let originalMessage = [UInt8]([42, 42, 43, 43])
-    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
-
-    var framer = GRPCMessageFramer()
-    let compressor = Zlib.Compressor(method: .deflate)
-    defer { compressor.end() }
-    framer.append(originalMessage)
-
-    let framedMessage = try XCTUnwrap(framer.next(compressor: compressor))
-    let expectedBytes = Array(buffer: framedMessage)
-    XCTAssertEqual(Array(buffer: request), expectedBytes)
-  }
-
-  func testNextOutboundMessageWhenClientOpenAndServerClosed() throws {
-    var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen)
-
-    // Send message and close server
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: true))
-    let response = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    
+    action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let response) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
 
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
@@ -1412,7 +1445,66 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertEqual(Array(buffer: response), expectedBytes)
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    action = try stateMachine.nextOutboundMessage()
+    guard case .awaitMoreMessages = action else {
+      XCTFail("Expected action to be awaitMoreMessages but was \(action)")
+      return
+    }
+  }
+
+  func testNextOutboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
+    var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen, compressionEnabled: true)
+
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .awaitMoreMessages = action else {
+      XCTFail("Expected action to be awaitMoreMessages but was \(action)")
+      return
+    }
+
+    let originalMessage = [UInt8]([42, 42, 43, 43])
+    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
+    
+    action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let response) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
+
+    var framer = GRPCMessageFramer()
+    let compressor = Zlib.Compressor(method: .deflate)
+    defer { compressor.end() }
+    framer.append(originalMessage)
+
+    let framedMessage = try XCTUnwrap(framer.next(compressor: compressor))
+    let expectedBytes = Array(buffer: framedMessage)
+    XCTAssertEqual(Array(buffer: response), expectedBytes)
+  }
+
+  func testNextOutboundMessageWhenClientOpenAndServerClosed() throws {
+    var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen)
+
+    // Send message and close server
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: true))
+    
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let response) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
+
+    let expectedBytes: [UInt8] = [
+      0,  // compression flag: unset
+      0, 0, 0, 2,  // message length: 2 bytes
+      42, 42,  // original message
+    ]
+    XCTAssertEqual(Array(buffer: response), expectedBytes)
+
+    // And then make sure that nothing else is returned anymore
+    action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be noMoreMessages but was \(action)")
+      return
+    }
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerIdle() throws {
@@ -1441,7 +1533,12 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     // Make sure that getting the next outbound message _does_ return the message
     // we have enqueued.
-    let request = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let response) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
+    
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
@@ -1451,10 +1548,14 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       43, 43,  // original message
     ]
-    XCTAssertEqual(Array(buffer: request), expectedBytes)
+    XCTAssertEqual(Array(buffer: response), expectedBytes)
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    action = try stateMachine.nextOutboundMessage()
+    guard case .awaitMoreMessages = action else {
+      XCTFail("Expected action to be awaitMoreMessages but was \(action)")
+      return
+    }
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerClosed() throws {
@@ -1465,7 +1566,11 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     // We have enqueued a message, make sure we return it even though server is closed,
     // because we haven't yet drained all of the pending messages.
-    let response = try XCTUnwrap(stateMachine.nextOutboundMessage())
+    var action = try stateMachine.nextOutboundMessage()
+    guard case .sendMessage(let response) = action else {
+      XCTFail("Expected action to be sendMessage but was \(action)")
+      return
+    }
 
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
@@ -1475,7 +1580,11 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertEqual(Array(buffer: response), expectedBytes)
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertNil(try stateMachine.nextOutboundMessage())
+    action = try stateMachine.nextOutboundMessage()
+    guard case .noMoreMessages = action else {
+      XCTFail("Expected action to be noMoreMessages but was \(action)")
+      return
+    }
   }
 
   // - MARK: Next inbound message
