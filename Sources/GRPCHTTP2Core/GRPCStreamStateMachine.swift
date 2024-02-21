@@ -19,18 +19,6 @@ import NIOCore
 import NIOHPACK
 import NIOHTTP1
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-enum OnMetadataReceived {
-  case receivedMetadata(Metadata)
-
-  // Client-specific actions
-  case failedRequest(Status)
-  case doNothing
-
-  // Server-specific actions
-  case rejectRPC(trailers: HPACKHeaders)
-}
-
 enum Scheme: String {
   case http
   case https
@@ -339,6 +327,17 @@ struct GRPCStreamStateMachine {
     }
   }
 
+  enum OnMetadataReceived: Equatable {
+    case receivedMetadata(Metadata)
+
+    // Client-specific actions
+    case failedRequest(Status)
+    case doNothing
+
+    // Server-specific actions
+    case rejectRPC(trailers: HPACKHeaders)
+  }
+  
   mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
     switch self.configuration {
     case .client:
@@ -362,7 +361,7 @@ struct GRPCStreamStateMachine {
   }
 
   /// The result of requesting the next outbound message.
-  enum OnNextOutboundMessage {
+  enum OnNextOutboundMessage: Equatable {
     /// Either the receiving party is closed, so we shouldn't send any more messages; or the sender is done
     /// writing messages (i.e. we are now closed).
     case noMoreMessages
