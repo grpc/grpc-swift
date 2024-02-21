@@ -73,14 +73,6 @@ extension HPACKHeaders {
   ]
 }
 
-fileprivate func assertRejectedRPC(_ action: GRPCStreamStateMachine.OnMetadataReceived, expression: (HPACKHeaders) -> Void) {
-  guard case .rejectRPC(let trailers) = action else {
-    XCTFail("RPC should have been rejected.")
-    return
-  }
-  expression(trailers)
-}
-
 final class GRPCStreamClientStateMachineTests: XCTestCase {
   private func makeClientStateMachine(
     targetState: TargetStateMachineState,
@@ -778,6 +770,24 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         "Client cannot be idle if server is sending initial metadata: it must have opened."
       )
     }
+    
+    // - MARK: Common paths
+
+    func testNormalFlow() {
+      // TODO: implement
+    }
+    
+    func testClientClosesBeforeServerOpens() {
+      // TODO: implement
+    }
+    
+    func testClientClosesBeforeServerResponds() {
+      // TODO: implement
+    }
+    
+    func testServerRejectsRPC() {
+      // TODO: implement
+    }
   }
 
   func testSendMetadataWhenClientOpenAndServerIdle() throws {
@@ -1078,7 +1088,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       metadata: .receivedHeadersWithoutContentType,
       endStream: false
     )
-    assertRejectedRPC(action) { trailers in
+    self.assertRejectedRPC(action) { trailers in
       XCTAssertEqual(trailers.count, 1)
       XCTAssertEqual(trailers.status, "415")
     }
@@ -1091,7 +1101,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       metadata: .receivedHeadersWithInvalidContentType,
       endStream: false
     )
-    assertRejectedRPC(action) { trailers in
+    self.assertRejectedRPC(action) { trailers in
       XCTAssertEqual(trailers.count, 1)
       XCTAssertEqual(trailers.status, "415")
     }
@@ -1105,7 +1115,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       endStream: false
     )
 
-    assertRejectedRPC(action) { trailers in
+    self.assertRejectedRPC(action) { trailers in
       XCTAssertEqual(trailers.count, 2)
       XCTAssertEqual(trailers.grpcStatus, .unimplemented)
       XCTAssertEqual(trailers.grpcStatusMessage, "No :path header has been set.")
@@ -1122,7 +1132,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       endStream: false
     )
     
-    assertRejectedRPC(action) { trailers in
+    self.assertRejectedRPC(action) { trailers in
       XCTAssertEqual(trailers.count, 3)
       XCTAssertEqual(trailers.grpcStatus, .unimplemented)
       XCTAssertEqual(
@@ -1574,5 +1584,32 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertNil(stateMachine.nextInboundMessage())
   }
+  
+  // - MARK: Common paths
 
+  func testNormalFlow() {
+    // TODO: implement
+  }
+  
+  func testClientClosesBeforeServerOpens() {
+    // TODO: implement
+  }
+  
+  func testClientClosesBeforeServerResponds() {
+    // TODO: implement
+  }
+  
+  func testServerRejectsRPC() {
+    // TODO: implement
+  }
+}
+
+extension XCTestCase {
+  func assertRejectedRPC(_ action: GRPCStreamStateMachine.OnMetadataReceived, expression: (HPACKHeaders) -> Void) {
+    guard case .rejectRPC(let trailers) = action else {
+      XCTFail("RPC should have been rejected.")
+      return
+    }
+    expression(trailers)
+  }
 }
