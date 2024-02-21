@@ -38,6 +38,7 @@ func XCTAssertDescription(
   XCTAssertEqual(String(describing: subject), expected, file: file, line: line)
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTUnwrapAsync<T>(_ expression: () async throws -> T?) async throws -> T {
   let value = try await expression()
   return try XCTUnwrap(value)
