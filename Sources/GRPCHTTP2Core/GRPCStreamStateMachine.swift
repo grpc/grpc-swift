@@ -207,7 +207,7 @@ enum GRPCStreamStateMachineState {
 
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
-    
+
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
 
     init(previousState: ClientOpenServerOpenState) {
@@ -337,7 +337,7 @@ struct GRPCStreamStateMachine {
     // Server-specific actions
     case rejectRPC(trailers: HPACKHeaders)
   }
-  
+
   mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
     switch self.configuration {
     case .client:
@@ -370,7 +370,7 @@ struct GRPCStreamStateMachine {
     /// A message is ready to be sent.
     case sendMessage(ByteBuffer)
   }
-  
+
   mutating func nextOutboundMessage() throws -> OnNextOutboundMessage {
     switch self.configuration {
     case .client:
@@ -488,7 +488,7 @@ extension GRPCStreamStateMachine {
       )
     }
   }
-  
+
   /// Returns the client's next request to the server.
   /// - Returns: The request to be made to the server.
   private mutating func clientNextOutboundMessage() throws -> OnNextOutboundMessage {
@@ -1368,7 +1368,8 @@ extension Metadata {
         }
       } else {
         if header.name == GRPCHTTP2Keys.grpcStatusMessage.rawValue,
-            let decodedStatusMessage = headers.grpcStatusMessage {
+          let decodedStatusMessage = headers.grpcStatusMessage
+        {
           metadata.addString(decodedStatusMessage, forKey: header.name)
         } else {
           metadata.addString(header.value, forKey: header.name)

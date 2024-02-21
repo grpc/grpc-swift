@@ -54,12 +54,12 @@ extension HPACKHeaders {
   ]
   static let receivedHeadersWithInvalidContentType: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
-    GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid"
+    GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid",
   ]
   static let receivedHeadersWithoutEndpoint: Self = [
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
   ]
-  
+
   // Server
   static let serverInitialMetadata: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
@@ -453,7 +453,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
 
       XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
-      
+
       let expectedBytes: [UInt8] = [
         0,  // compression flag: unset
         0, 0, 0, 2,  // message length: 2 bytes
@@ -479,7 +479,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
-    
+
     let request = try stateMachine.nextOutboundMessage()
     var framer = GRPCMessageFramer()
     let compressor = Zlib.Compressor(method: .deflate)
@@ -500,7 +500,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
-    
+
     let request = try stateMachine.nextOutboundMessage()
     var framer = GRPCMessageFramer()
     let compressor = Zlib.Compressor(method: .deflate)
@@ -697,7 +697,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     targetState: TargetStateMachineState,
     compressionEnabled: Bool = false
   ) -> GRPCStreamStateMachine {
-    
+
     var stateMachine = GRPCStreamStateMachine(
       configuration: .server(
         .init(
@@ -770,21 +770,21 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         "Client cannot be idle if server is sending initial metadata: it must have opened."
       )
     }
-    
+
     // - MARK: Common paths
 
     func testNormalFlow() {
       // TODO: implement
     }
-    
+
     func testClientClosesBeforeServerOpens() {
       // TODO: implement
     }
-    
+
     func testClientClosesBeforeServerResponds() {
       // TODO: implement
     }
-    
+
     func testServerRejectsRPC() {
       // TODO: implement
     }
@@ -1057,7 +1057,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = makeServerStateMachine(targetState: .clientIdleServerIdle)
 
     let action = try stateMachine.receive(metadata: .clientInitialMetadata, endStream: false)
-    XCTAssertEqual(action, .receivedMetadata([":path": "test/test", "content-type": "application/grpc"]))
+    XCTAssertEqual(
+      action,
+      .receivedMetadata([":path": "test/test", "content-type": "application/grpc"])
+    )
   }
 
   func testReceiveMetadataWhenClientIdleAndServerIdle_WithEndStream() {
@@ -1131,7 +1134,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       metadata: .clientInitialMetadataWithGzipCompression,
       endStream: false
     )
-    
+
     self.assertRejectedRPC(action) { trailers in
       XCTAssertEqual(trailers.count, 3)
       XCTAssertEqual(trailers.grpcStatus, .unimplemented)
@@ -1145,7 +1148,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       XCTAssertEqual(trailers.acceptedEncodings, [.deflate])
     }
   }
-  
+
   //TODO: add more encoding-related validation tests (for both client and server)
 
   func testReceiveMetadataWhenClientOpenAndServerIdle() throws {
@@ -1356,7 +1359,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
 
     XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
-    
+
     let response = try stateMachine.nextOutboundMessage()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
@@ -1370,13 +1373,16 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   }
 
   func testNextOutboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
-    var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen, compressionEnabled: true)
+    var stateMachine = makeServerStateMachine(
+      targetState: .clientOpenServerOpen,
+      compressionEnabled: true
+    )
 
     XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
-    
+
     let response = try stateMachine.nextOutboundMessage()
     var framer = GRPCMessageFramer()
     let compressor = Zlib.Compressor(method: .deflate)
@@ -1393,7 +1399,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     // Send message and close server
     XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: true))
-    
+
     let response = try stateMachine.nextOutboundMessage()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
@@ -1498,7 +1504,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   }
 
   func testNextInboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
-    var stateMachine = makeServerStateMachine(targetState: .clientOpenServerOpen, compressionEnabled: true)
+    var stateMachine = makeServerStateMachine(
+      targetState: .clientOpenServerOpen,
+      compressionEnabled: true
+    )
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     var framer = GRPCMessageFramer()
@@ -1584,28 +1593,31 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertNil(stateMachine.nextInboundMessage())
   }
-  
+
   // - MARK: Common paths
 
   func testNormalFlow() {
     // TODO: implement
   }
-  
+
   func testClientClosesBeforeServerOpens() {
     // TODO: implement
   }
-  
+
   func testClientClosesBeforeServerResponds() {
     // TODO: implement
   }
-  
+
   func testServerRejectsRPC() {
     // TODO: implement
   }
 }
 
 extension XCTestCase {
-  func assertRejectedRPC(_ action: GRPCStreamStateMachine.OnMetadataReceived, expression: (HPACKHeaders) -> Void) {
+  func assertRejectedRPC(
+    _ action: GRPCStreamStateMachine.OnMetadataReceived,
+    expression: (HPACKHeaders) -> Void
+  ) {
     guard case .rejectRPC(let trailers) = action else {
       XCTFail("RPC should have been rejected.")
       return
