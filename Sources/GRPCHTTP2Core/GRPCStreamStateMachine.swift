@@ -613,10 +613,6 @@ extension GRPCStreamStateMachine {
         // This state is valid: server can send trailing metadata without grpc-status
         // or END_STREAM set, and follow it with an empty message frame where they are set.
         ()
-        // TODO: I believe we should set some flag in the state to signal that
-        // we're expecting an empty data frame with END_STREAM set; otherwise,
-        // we could get an infinite number of metadata frames from the server -
-        // not sure this should be allowed.
       }
       return .receivedMetadata(Metadata(headers: metadata))
     case .clientClosedServerIdle(let state):
@@ -686,10 +682,6 @@ extension GRPCStreamStateMachine {
         // This state is valid: server can send trailing metadata without grpc-status
         // or END_STREAM set, and follow it with an empty message frame where they are set.
         ()
-        // TODO: I believe we should set some flag in the state to signal that
-        // we're expecting an empty data frame with END_STREAM set; otherwise,
-        // we could get an infinite number of metadata frames from the server -
-        // not sure this should be allowed.
       }
       return .receivedMetadata(Metadata(headers: metadata))
     case .clientClosedServerClosed:
@@ -910,7 +902,6 @@ extension GRPCStreamStateMachine {
     headers.grpcStatus = status.code
 
     if !status.message.isEmpty {
-      // TODO: this message has to be percent-encoded
       headers.grpcStatusMessage = status.message
     }
 
@@ -1314,11 +1305,16 @@ extension HPACKHeaders {
 
   var grpcStatusMessage: String? {
     get {
-      self.firstString(forKey: .grpcStatusMessage)
+      if let message = self.firstString(forKey: .grpcStatusMessage) {
+        return GRPCStatusMessageMarshaller.unmarshall(message)
+      }
+      return nil
     }
     set {
       if let newValue {
-        self.add(newValue, forKey: .grpcStatusMessage)
+        if let percentEncodedMessage = GRPCStatusMessageMarshaller.marshall(newValue) {
+          self.add(percentEncodedMessage, forKey: .grpcStatusMessage)
+        }
       } else {
         self.removeAllValues(forKey: .grpcStatusMessage)
       }
@@ -1371,7 +1367,12 @@ extension Metadata {
           metadata.addString(header.value, forKey: header.name)
         }
       } else {
-        metadata.addString(header.value, forKey: header.name)
+        if header.name == GRPCHTTP2Keys.grpcStatusMessage.rawValue,
+            let decodedStatusMessage = headers.grpcStatusMessage {
+          metadata.addString(decodedStatusMessage, forKey: header.name)
+        } else {
+          metadata.addString(header.value, forKey: header.name)
+        }
       }
     }
     self = metadata
