@@ -414,12 +414,12 @@ struct GRPCIdleHandlerStateMachine {
 
     switch self.state {
     case let .operating(state):
+      operations.notifyConnectionManager(about: .quiescing)
       if state.hasOpenStreams {
         // There are open streams: send a GOAWAY frame and wait for the stream count to reach zero.
         //
         // It's okay if we haven't seen a SETTINGS frame at this point; we've initiated the shutdown
         // so making a connection is ready isn't necessary.
-        operations.notifyConnectionManager(about: .quiescing)
 
         // TODO: we should ratchet down the last initiated stream after 1-RTT.
         //
@@ -475,8 +475,8 @@ struct GRPCIdleHandlerStateMachine {
       // A SETTINGS frame MUST follow the connection preface. (RFC 7540 § 3.5)
       assert(state.hasSeenSettings)
 
+      operations.notifyConnectionManager(about: .quiescing)
       if state.hasOpenStreams {
-        operations.notifyConnectionManager(about: .quiescing)
         switch state.role {
         case .client:
           // The server sent us a GOAWAY we'll just stop opening new streams and will send a GOAWAY
@@ -500,7 +500,9 @@ struct GRPCIdleHandlerStateMachine {
     case let .waitingToIdle(state):
       // There can't be any open streams, but we have a few loose ends to clear up: we need to
       // cancel the idle timeout, send a GOAWAY frame and then close.
+      // We should also notify the connection manager that quiescing is happening.
       self.state = .closing(.init(fromWaitingToIdle: state))
+      operations.notifyConnectionManager(about: .quiescing)
       operations.cancelIdleTask(state.idleTask)
       operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
       operations.closeChannel()

@@ -194,6 +194,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     op3.assertGoAway(streamID: .rootStream)
     op3.assertShouldClose()
     op3.assertCancelIdleTimeout()
+    op3.assertConnectionManager(.quiescing)
 
     // Close; we were going to go idle anyway.
     let op4 = stateMachine.channelInactive()
@@ -207,6 +208,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     let op1 = stateMachine.initiateGracefulShutdown()
     op1.assertGoAway(streamID: .rootStream)
     op1.assertShouldClose()
+    op1.assertConnectionManager(.quiescing)
 
     // Closed.
     let op2 = stateMachine.channelInactive()
@@ -223,6 +225,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     // Initiate shutdown.
     let op2 = stateMachine.initiateGracefulShutdown()
     op2.assertShouldNotClose()
+    op2.assertConnectionManager(.quiescing)
 
     // Receive a GOAWAY; no change.
     let op3 = stateMachine.receiveGoAway()
@@ -467,8 +470,9 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     let op5 = stateMachine.receiveGoAway()
     // We're the client, there are no server initiated streams, so GOAWAY with root stream.
     op5.assertGoAway(streamID: 0)
-    // No open streams, so we can close now.
+    // No open streams, so we can close now. Also assert the connection manager got a quiescing event.
     op5.assertShouldClose()
+    op5.assertConnectionManager(.quiescing)
 
     // Closed.
     let op6 = stateMachine.channelInactive()
@@ -495,6 +499,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     let op4 = stateMachine.receiveGoAway()
     op4.assertGoAway(streamID: .maxID)
     op4.assertShouldPingAfterGoAway()
+    op4.assertConnectionManager(.quiescing)
 
     // Create another stream. This is fine, the client hasn't ack'd the ping yet.
     let op5 = stateMachine.streamCreated(withID: 7)
