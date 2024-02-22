@@ -311,7 +311,11 @@ struct GRPCStreamStateMachine {
     case .client:
       try self.clientSend(message: message, endStream: endStream)
     case .server:
-      try self.serverSend(message: message, endStream: endStream)
+      assert(
+        !endStream,
+        "Can't end response stream by sending a message - send(status:metadata:trailersOnly:) must be called"
+      )
+      try self.serverSend(message: message)
     }
   }
 
@@ -323,7 +327,11 @@ struct GRPCStreamStateMachine {
         "Client cannot send status and trailer."
       )
     case .server:
-      return try self.serverSend(status: status, metadata: metadata, trailersOnly: trailersOnly)
+      return try self.serverSend(
+        status: status,
+        customMetadata: metadata,
+        trailersOnly: trailersOnly
+      )
     }
   }
 
@@ -335,7 +343,7 @@ struct GRPCStreamStateMachine {
     case doNothing
 
     // Server-specific actions
-    case rejectRPC(trailers: HPACKHeaders)
+    case rejectRPC(status: Status?, trailers: HPACKHeaders?)
   }
 
   mutating func receive(metadata: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
@@ -849,7 +857,7 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func serverSend(message: [UInt8], endStream: Bool) throws {
+  private mutating func serverSend(message: [UInt8]) throws {
     switch self.state {
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError(
@@ -857,18 +865,10 @@ extension GRPCStreamStateMachine {
       )
     case .clientOpenServerOpen(var state):
       state.framer.append(message)
-      if endStream {
-        self.state = .clientOpenServerClosed(.init(previousState: state))
-      } else {
-        self.state = .clientOpenServerOpen(state)
-      }
+      self.state = .clientOpenServerOpen(state)
     case .clientClosedServerOpen(var state):
       state.framer.append(message)
-      if endStream {
-        self.state = .clientClosedServerClosed(.init(previousState: state))
-      } else {
-        self.state = .clientClosedServerOpen(state)
-      }
+      self.state = .clientClosedServerOpen(state)
     case .clientOpenServerClosed, .clientClosedServerClosed:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError(
         "Server can't send a message if it's closed."
@@ -877,26 +877,39 @@ extension GRPCStreamStateMachine {
   }
 
   private func makeTrailers(
-    status: Status,
-    customMetadata: Metadata,
+    status: Status?,
+    customMetadata: Metadata?,
     trailersOnly: Bool
   ) -> HPACKHeaders {
+    // If status isn't present, it means we're returning a non-200 HTTP :status
+    // header. This should already be included in the custom metadata: assert
+    // this and simply return those headers.
+    guard let status else {
+      assert(customMetadata != nil, "Something is very wrong")
+      var headers = HPACKHeaders()
+      for metadataPair in customMetadata! {
+        headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
+      }
+      assert(headers.status != nil && headers.status != "200")
+      return headers
+    }
+
     // Trailers always contain the grpc-status header, and optionally,
     // grpc-status-message, and custom metadata.
     // If it's a trailers-only response, they will also contain :status and
     // content-type.
     var headers = HPACKHeaders()
-
+    let customMetadataCount = customMetadata?.count ?? 0
     if trailersOnly {
       // Reserve 4 for capacity: 3 for the required headers, and 1 for the
       // optional status message.
-      headers.reserveCapacity(4 + customMetadata.count)
+      headers.reserveCapacity(4 + customMetadataCount)
       headers.status = "200"
       headers.contentType = .protobuf
     } else {
       // Reserve 2 for capacity: one for the required grpc-status, and
       // one for the optional message.
-      headers.reserveCapacity(2 + customMetadata.count)
+      headers.reserveCapacity(2 + customMetadataCount)
     }
 
     headers.grpcStatus = status.code
@@ -905,26 +918,36 @@ extension GRPCStreamStateMachine {
       headers.grpcStatusMessage = status.message
     }
 
-    for metadataPair in customMetadata {
-      headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
+    if let customMetadata {
+      for metadataPair in customMetadata {
+        headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
+      }
     }
 
     return headers
   }
 
   private mutating func serverSend(
-    status: Status,
-    metadata: Metadata,
+    status: Status?,
+    customMetadata: Metadata?,
     trailersOnly: Bool
   ) throws -> HPACKHeaders {
     // Close the server.
     switch self.state {
     case .clientOpenServerOpen(let state):
       self.state = .clientOpenServerClosed(.init(previousState: state))
-      return self.makeTrailers(status: status, customMetadata: metadata, trailersOnly: trailersOnly)
+      return self.makeTrailers(
+        status: status,
+        customMetadata: customMetadata,
+        trailersOnly: trailersOnly
+      )
     case .clientClosedServerOpen(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
-      return self.makeTrailers(status: status, customMetadata: metadata, trailersOnly: trailersOnly)
+      return self.makeTrailers(
+        status: status,
+        customMetadata: customMetadata,
+        trailersOnly: trailersOnly
+      )
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
       throw self.assertionFailureAndCreateRPCErrorOnInternalError(
         "Server can't send status if idle."
@@ -956,15 +979,15 @@ extension GRPCStreamStateMachine {
         // Respond with HTTP-level Unsupported Media Type status code.
         var trailers = HPACKHeaders()
         trailers.status = "415"
-        return .rejectRPC(trailers: trailers)
+        return .rejectRPC(status: nil, trailers: trailers)
       }
 
       guard metadata.path != nil else {
-        var trailers = HPACKHeaders()
-        trailers.reserveCapacity(2)
-        trailers.grpcStatus = .unimplemented
-        trailers.grpcStatusMessage = "No \(GRPCHTTP2Keys.path.rawValue) header has been set."
-        return .rejectRPC(trailers: trailers)
+        let status = Status(
+          code: .unimplemented,
+          message: "No \(GRPCHTTP2Keys.path.rawValue) header has been set."
+        )
+        return .rejectRPC(status: status, trailers: nil)
       }
 
       func isIdentityOrCompatibleEncoding(_ clientEncoding: CompressionAlgorithm) -> Bool {
@@ -981,33 +1004,31 @@ extension GRPCStreamStateMachine {
       var encodingValuesIterator = encodingValues.makeIterator()
       if let rawEncoding = encodingValuesIterator.next() {
         guard encodingValuesIterator.next() == nil else {
-          var trailers = HPACKHeaders()
-          trailers.reserveCapacity(2)
-          trailers.grpcStatus = .internalError
-          trailers.grpcStatusMessage =
-            "\(GRPCHTTP2Keys.encoding) must contain no more than one value."
-          return .rejectRPC(trailers: trailers)
+          let status = Status(
+            code: .internalError,
+            message: "\(GRPCHTTP2Keys.encoding) must contain no more than one value."
+          )
+          return .rejectRPC(status: status, trailers: nil)
         }
 
         guard let clientEncoding = CompressionAlgorithm(rawValue: String(rawEncoding)),
           isIdentityOrCompatibleEncoding(clientEncoding)
         else {
           if configuration.acceptedEncodings.isEmpty {
-            var trailers = HPACKHeaders()
-            trailers.reserveCapacity(2)
-            trailers.grpcStatus = .unimplemented
-            trailers.grpcStatusMessage = "Compression is not supported"
-            return .rejectRPC(trailers: trailers)
+            let status = Status(code: .unimplemented, message: "Compression is not supported")
+            return .rejectRPC(status: status, trailers: nil)
           } else {
             var trailers = HPACKHeaders()
-            trailers.reserveCapacity(3)
-            trailers.grpcStatus = .unimplemented
-            trailers.grpcStatusMessage = """
-              \(rawEncoding) compression is not supported; \
-              supported algorithms are listed in grpc-accept-encoding
-              """
+            trailers.reserveCapacity(1)
+            let status = Status(
+              code: .unimplemented,
+              message: """
+                \(rawEncoding) compression is not supported; \
+                supported algorithms are listed in grpc-accept-encoding
+                """
+            )
             trailers.acceptedEncodings = configuration.acceptedEncodings
-            return .rejectRPC(trailers: trailers)
+            return .rejectRPC(status: status, trailers: trailers)
           }
         }
 
