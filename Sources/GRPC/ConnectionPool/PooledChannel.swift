@@ -96,6 +96,7 @@ internal final class PooledChannel: GRPCChannel {
       perPoolConfiguration: .init(
         maxConnections: configuration.connectionPool.connectionsPerEventLoop,
         maxWaiters: configuration.connectionPool.maxWaitersPerEventLoop,
+        minConnections: configuration.connectionPool.minConnections,
         loadThreshold: configuration.connectionPool.reservationLoadThreshold,
         assumedMaxConcurrentStreams: 100,
         connectionBackoff: configuration.connectionBackoff,

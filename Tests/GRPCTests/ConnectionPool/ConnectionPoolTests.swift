@@ -62,7 +62,8 @@ final class ConnectionPoolTests: GRPCTestCase {
   ) -> ConnectionPool {
     return ConnectionPool(
       eventLoop: self.eventLoop,
-      maxWaiters: waiters,
+      maxWaiters: waiters, 
+      minConnections: 1,
       reservationLoadThreshold: reservationLoadThreshold,
       assumedMaxConcurrentStreams: 100,
       connectionBackoff: connectionBackoff,
