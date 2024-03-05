@@ -311,10 +311,11 @@ struct GRPCStreamStateMachine {
     case .client:
       try self.clientSend(message: message, endStream: endStream)
     case .server:
-      assert(
-        !endStream,
-        "Can't end response stream by sending a message - send(status:metadata:trailersOnly:) must be called"
-      )
+      guard !endStream else {
+        throw self.assertionFailureAndCreateRPCErrorOnInternalError(
+          "Can't end response stream by sending a message - send(status:metadata:trailersOnly:) must be called"
+        )
+      }
       try self.serverSend(message: message)
     }
   }
