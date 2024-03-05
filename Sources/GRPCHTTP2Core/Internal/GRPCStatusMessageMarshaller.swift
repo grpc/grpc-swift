@@ -15,12 +15,12 @@
  */
 
 // swiftformat:disable:next enumNamespaces
-public struct GRPCStatusMessageMarshaller {
+enum GRPCStatusMessageMarshaller {
   /// Adds percent encoding to the given message.
   ///
   /// - Parameter message: Message to percent encode.
   /// - Returns: Percent encoded string, or `nil` if it could not be encoded.
-  public static func marshall(_ message: String) -> String? {
+  static func marshall(_ message: String) -> String? {
     return percentEncode(message)
   }
 
@@ -29,7 +29,7 @@ public struct GRPCStatusMessageMarshaller {
   /// - Parameter message: Message to remove encoding from.
   /// - Returns: The string with percent encoding removed, or the input string if the encoding
   ///   could not be removed.
-  public static func unmarshall(_ message: String) -> String {
+  static func unmarshall(_ message: String) -> String {
     return removePercentEncoding(message)
   }
 }

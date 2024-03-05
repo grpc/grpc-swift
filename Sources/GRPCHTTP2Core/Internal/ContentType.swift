@@ -17,13 +17,13 @@
 // See:
 // - https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
 enum ContentType {
-  case protobuf
+  case grpc
 
   init?(value: String) {
     switch value {
     case "application/grpc",
       "application/grpc+proto":
-      self = .protobuf
+      self = .grpc
 
     default:
       return nil
@@ -32,7 +32,7 @@ enum ContentType {
 
   var canonicalValue: String {
     switch self {
-    case .protobuf:
+    case .grpc:
       // This is more widely supported than "application/grpc+proto"
       return "application/grpc"
     }
