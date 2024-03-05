@@ -16,7 +16,7 @@
 
 /// Server features which may be required for tests.
 ///
-/// We use this enum to match up tests we can run on the NIO client against the NIO server at
+/// We use this enum to match up tests we can run on the client against the server at
 /// run time.
 ///
 /// These features are listed in the [gRPC interoperability test description
@@ -31,37 +31,26 @@
 ///
 /// - Note: This is not a complete set of features, only those used in either the client or server.
 public enum ServerFeature {
-  /// See TestServiceProvider_NIO.emptyCall.
+  /// See TestService.emptyCall.
   case emptyCall
 
-  /// See TestServiceProvider_NIO.unaryCall.
+  /// See TestService.unaryCall.
   case unaryCall
 
-  /// See TestServiceProvider_NIO.cacheableUnaryCall.
+  /// See TestService.cacheableUnaryCall.
   case cacheableUnaryCall
 
-  /// When the client sets expect_compressed to true, the server expects the client request to be
-  /// compressed. If it's not, it fails the RPC with INVALID_ARGUMENT. Note that
-  /// `response_compressed` is present on both SimpleRequest (unary) and StreamingOutputCallRequest
-  /// (streaming).
-  case compressedRequest
-
-  /// When the client sets response_compressed to true, the server's response is sent back
-  /// compressed. Note that response_compressed is present on both SimpleRequest (unary) and
-  /// StreamingOutputCallRequest (streaming).
-  case compressedResponse
-
-  /// See TestServiceProvider_NIO.streamingInputCall.
+  /// See TestService.streamingInputCall.
   case streamingInputCall
 
-  /// See TestServiceProvider_NIO.streamingOutputCall.
+  /// See TestService.streamingOutputCall.
   case streamingOutputCall
 
-  /// See TestServiceProvider_NIO.fullDuplexCall.
+  /// See TestService.fullDuplexCall.
   case fullDuplexCall
 
   /// When the client sends a `responseStatus` in the request payload, the server closes the stream
-  /// with the status code and messsage contained within said `responseStatus`. The server will not
+  /// with the status code and message contained within said `responseStatus`. The server will not
   /// process any further messages on the stream sent by the client. This can be used by clients to
   /// verify correct handling of different status codes and associated status messages end-to-end.
   case echoStatus
