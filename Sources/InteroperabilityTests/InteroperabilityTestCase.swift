@@ -15,7 +15,7 @@
  */
 import GRPCCore
 
-@available(macOS 13.0, *)
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public protocol InteroperabilityTest {
   /// Run a test case using the given connection.
   ///
