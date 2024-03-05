@@ -1,4 +1,3 @@
-import Dispatch
 /*
  * Copyright 2024, gRPC Authors All rights reserved.
  *
@@ -14,6 +13,7 @@ import Dispatch
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import GRPCCore
 import GRPCInProcessTransport
 
