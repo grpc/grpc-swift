@@ -335,7 +335,7 @@ struct PingPong: InteroperabilityTest {
         case 4:
           try assertEqual(message.payload.body, Data(count: 58_979))
         default:
-          return
+          try assertFailure("We should only receive messages with ids between 1 and 4.")
         }
 
         // Add the next id to the continuation.
@@ -464,7 +464,6 @@ struct CustomMetadata: InteroperabilityTest {
     try await testServiceClient.unaryCall(
       request: ClientRequest.Single(message: unaryRequest, metadata: metadata)
     ) { response in
-      // Check the initial metadata.
       // Check the initial metadata.
       let receivedInitialMetadata = response.metadata
       try checkInitialMetadata(receivedInitialMetadata)
