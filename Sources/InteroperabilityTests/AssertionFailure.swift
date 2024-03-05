@@ -34,3 +34,27 @@ public func assertTrue(
     throw AssertionFailure(message: message, file: file, line: line)
   }
 }
+
+/// Asserts that the two given values are equal.
+public func assertEqual<T: Equatable>(
+  _ value1: T,
+  _ value2: T,
+  file: String = #fileID,
+  line: Int = #line
+) throws {
+  return try assertTrue(
+    value1 == value2,
+    "'\(value1)' is not equal to '\(value2)'",
+    file: file,
+    line: line
+  )
+}
+
+/// Asserts a failure on a certain conditional branch.
+public func assertFailure(
+  _ message: String = "Failure.",
+  file: String = #fileID,
+  line: Int = #line
+) throws {
+  throw AssertionFailure(message: message, file: file, line: line)
+}

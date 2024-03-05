@@ -383,6 +383,7 @@ extension Target {
     name: "InteroperabilityTests",
     dependencies: [
       .grpcCore,
+      .grpcInProcessTransport,
       .grpcProtobuf
     ]
   )

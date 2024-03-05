@@ -344,9 +344,9 @@ extension ClientResponse.Stream {
     }
   }
 
-  /// Returns metadata received from the server at the end of the response.
+  /// Returns the messages received from the server.
   ///
-  /// Unlike ``metadata``, for rejected RPCs the metadata returned may contain values.
+  /// For rejected RPCs the `RPCAsyncSequence` throws a `RPCError``.
   public var messages: RPCAsyncSequence<Message> {
     switch self.accepted {
     case let .success(contents):
