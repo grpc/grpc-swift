@@ -274,8 +274,8 @@ extension GRPCChannelPool.Configuration {
     ///
     /// Defaults to 100.
     public var maxWaitersPerEventLoop: Int = 100
-      
-    /// The minimum number of connections to keep open in this pool. 
+
+    /// The minimum number of connections to keep open in this pool.
     /// This number of connections will never go idle and be closed.
     public var minConnections: Int = 1
 

@@ -84,7 +84,7 @@ internal final class ConnectionPool {
   /// there are this many waiters in the queue then the next waiter will be failed immediately.
   @usableFromInline
   internal let maxWaiters: Int
-  
+
   /// The number of connections in the pool that should always be kept open (i.e. they won't go idle).
   /// In other words, it's the number of connections for which we should ignore idle timers.
   @usableFromInline
@@ -212,7 +212,9 @@ internal final class ConnectionPool {
     while self._connections.count < connections {
       // If we have less than the minimum number of connections, don't let
       // the new connection close when idle.
-      let idleBehavior = numberOfKeepOpenConnections > 0 ? ConnectionManager.IdleBehavior.neverGoIdle : .closeWhenIdleTimeout
+      let idleBehavior =
+        numberOfKeepOpenConnections > 0
+        ? ConnectionManager.IdleBehavior.neverGoIdle : .closeWhenIdleTimeout
       numberOfKeepOpenConnections -= 1
       self.addConnectionToPool(idleBehavior: idleBehavior)
     }
@@ -704,8 +706,10 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
 
     // If we have less than the minimum number of connections, don't let
     // the new connection close when idle.
-    let idleBehavior = self.sync.activeConnections < self.minConnections ? ConnectionManager.IdleBehavior.neverGoIdle : .closeWhenIdleTimeout
-    
+    let idleBehavior =
+      self.sync.activeConnections < self.minConnections
+      ? ConnectionManager.IdleBehavior.neverGoIdle : .closeWhenIdleTimeout
+
     // Replace the connection with a new idle one.
     self.addConnectionToPool(idleBehavior: idleBehavior)
 
@@ -897,7 +901,7 @@ extension ConnectionPool {
       self.pool.eventLoop.assertInEventLoop()
       return self.pool._connections.values.reduce(0) { $0 &+ ($1.manager.sync.isIdle ? 1 : 0) }
     }
-    
+
     /// The number of active (i.e. connecting or connected) connections in the pool.
     internal var activeConnections: Int {
       self.pool.eventLoop.assertInEventLoop()

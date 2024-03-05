@@ -25,14 +25,14 @@ import NIOHTTP2
 // event loop is being used.
 @usableFromInline
 internal final class ConnectionManager: @unchecked Sendable {
-  
+
   /// Whether the connection managed by this manager should be allowed to go idle and be closed, or
   /// if it should remain open indefinitely even when there are no active streams.
   internal enum IdleBehavior {
     case closeWhenIdleTimeout
     case neverGoIdle
   }
-  
+
   internal enum Reconnect {
     case none
     case after(TimeInterval)
@@ -331,7 +331,7 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// The configuration to use when backing off between connection attempts, if reconnection
   /// attempts should be made at all.
   private let connectionBackoff: ConnectionBackoff?
-  
+
   /// Whether this connection should be allowed to go idle (and thus be closed when the idle timer fires).
   internal let idleBehavior: IdleBehavior
 

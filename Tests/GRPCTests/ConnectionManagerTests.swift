@@ -58,7 +58,7 @@ class ConnectionManagerTests: GRPCTestCase {
     return ConnectionManager(
       configuration: configuration,
       channelProvider: channelProvider.map { HookedChannelProvider($0) },
-      connectivityDelegate: self.monitor, 
+      connectivityDelegate: self.monitor,
       idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )
@@ -948,7 +948,7 @@ extension ConnectionManagerTests {
       channelProvider: HookedChannelProvider { _, loop in
         return loop.makeFailedFuture(DoomedChannelError())
       },
-      connectivityDelegate: nil, 
+      connectivityDelegate: nil,
       idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )
@@ -1208,7 +1208,7 @@ extension ConnectionManagerTests {
 
         return eventLoop.makeSucceededFuture(channel)
       },
-      callStartBehavior: .waitsForConnectivity, 
+      callStartBehavior: .waitsForConnectivity,
       idleBehavior: .closeWhenIdleTimeout,
       connectionBackoff: ConnectionBackoff(),
       connectivityDelegate: nil,
@@ -1385,7 +1385,7 @@ extension ConnectionManagerTests {
     let manager = ConnectionManager(
       configuration: configuration,
       channelProvider: Provider(),
-      connectivityDelegate: self.monitor, 
+      connectivityDelegate: self.monitor,
       idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )

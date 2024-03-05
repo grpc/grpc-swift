@@ -32,7 +32,7 @@ internal final class PoolManager {
     /// The maximum number of waiters per pool.
     @usableFromInline
     var maxWaiters: Int
-    
+
     /// The minimum number of connections to keep open per pool.
     /// This number of connections will never go idle and be closed.
     @usableFromInline
