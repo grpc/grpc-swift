@@ -298,26 +298,21 @@ enum GRPCStreamStateMachineState {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
-      previousState.decompressor?.end()
     }
 
     init(previousState: ClientClosedServerIdleState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
-      previousState.decompressor?.end()
     }
 
     init(previousState: ClientOpenServerClosedState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
-      previousState.decompressor?.end()
     }
   }
 }
-
-// - MARK: Client
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct GRPCStreamStateMachine {
@@ -378,6 +373,7 @@ struct GRPCStreamStateMachine {
     case receivedMetadata(Metadata)
 
     // Client-specific actions
+    case receivedStatusAndMetadata(status: Status, metadata: Metadata)
     case failedRequest(status: Status, metadata: Metadata)
     case doNothing
 
@@ -445,7 +441,33 @@ struct GRPCStreamStateMachine {
       return self.serverNextInboundMessage()
     }
   }
+  
+  mutating func tearDown() {
+    switch self.state {
+    case .clientIdleServerIdle(let state):
+      ()
+    case .clientOpenServerIdle(let state):
+      state.compressor?.end()
+      state.decompressor?.end()
+    case .clientOpenServerOpen(let state):
+      state.compressor?.end()
+      state.decompressor?.end()
+    case .clientOpenServerClosed(let state):
+      state.compressor?.end()
+      state.decompressor?.end()
+    case .clientClosedServerIdle(let state):
+      state.compressor?.end()
+      state.decompressor?.end()
+    case .clientClosedServerOpen(let state):
+      state.compressor?.end()
+      state.decompressor?.end()
+    case .clientClosedServerClosed(let state):
+      state.compressor?.end()
+    }
+  }
 }
+
+// - MARK: Client
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCStreamStateMachine {
@@ -566,10 +588,6 @@ extension GRPCStreamStateMachine {
         self.state = .clientClosedServerIdle(state)
         return .sendMessage(request)
       } else {
-        // If the client is closed and there is no message to be sent, then we
-        // are done sending messages, as we cannot call send(message:) anymore.
-        // There are no more messages to be sent, so we can end the compressor.
-        state.compressor?.end()
         self.state = .clientClosedServerIdle(state)
         return .noMoreMessages
       }
@@ -579,22 +597,11 @@ extension GRPCStreamStateMachine {
         self.state = .clientClosedServerOpen(state)
         return .sendMessage(request)
       } else {
-        // If the client is closed and there is no message to be sent, then we
-        // are done sending messages, as we cannot call send(message:) anymore.
-        // There are no more messages to be sent, so we can end the compressor.
-        state.compressor?.end()
         self.state = .clientClosedServerOpen(state)
         return .noMoreMessages
       }
-    case .clientOpenServerClosed(let state):
-      // No point in sending any more requests if the server is closed:
-      // we end the compressor.
-      state.compressor?.end()
-      return .noMoreMessages
-    case .clientClosedServerClosed(let state):
-      // No point in sending any more requests if the server is closed:
-      // we end the compressor.
-      state.compressor?.end()
+    case .clientOpenServerClosed, .clientClosedServerClosed:
+      // No point in sending any more requests if the server is closed.
       return .noMoreMessages
     }
   }
@@ -675,6 +682,27 @@ extension GRPCStreamStateMachine {
     }
     return .success(inboundEncoding)
   }
+  
+  private func validateAndReturnStatusAndMetadata(_ metadata: HPACKHeaders) throws -> OnMetadataReceived {
+    let statusCode = metadata.firstString(forKey: .grpcStatus)
+      .flatMap { Int($0) }
+      .flatMap { Status.Code(rawValue: $0) }
+    guard let statusCode else {
+      try self.invalidState("Non-initial metadata must be a trailer containing grpc-status")
+    }
+    
+    let statusMessage = metadata.firstString(forKey: .grpcStatusMessage)
+      .map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
+    
+    var convertedMetadata = Metadata(headers: metadata)
+    convertedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
+    convertedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
+    
+    return .receivedStatusAndMetadata(
+      status: Status(code: statusCode, message: statusMessage),
+      metadata: convertedMetadata
+    )
+  }
 
   private mutating func clientReceive(
     metadata: HPACKHeaders,
@@ -705,14 +733,15 @@ extension GRPCStreamStateMachine {
       return .receivedMetadata(Metadata(headers: metadata))
 
     case .clientOpenServerOpen(let state):
+      // This state is valid even if endStream is not set: server can send
+      // trailing metadata without END_STREAM set, and follow it with an
+      // empty message frame where it is set.
+      // However, we must make sure that grpc-status is set, otherwise this
+      // is an invalid state.
       if endStream {
         self.state = .clientOpenServerClosed(.init(previousState: state))
-      } else {
-        // This state is valid: server can send trailing metadata without grpc-status
-        // or END_STREAM set, and follow it with an empty message frame where they are set.
-        ()
       }
-      return .receivedMetadata(Metadata(headers: metadata))
+      return try self.validateAndReturnStatusAndMetadata(metadata)
 
     case .clientClosedServerIdle(let state):
       if let failedValidation = self.validateHeaders(metadata) {
@@ -738,14 +767,15 @@ extension GRPCStreamStateMachine {
       return .receivedMetadata(Metadata(headers: metadata))
 
     case .clientClosedServerOpen(let state):
+      // This state is valid even if endStream is not set: server can send
+      // trailing metadata without END_STREAM set, and follow it with an
+      // empty message frame where it is set.
+      // However, we must make sure that grpc-status is set, otherwise this
+      // is an invalid state.
       if endStream {
         self.state = .clientClosedServerClosed(.init(previousState: state))
-      } else {
-        // This state is valid: server can send trailing metadata without grpc-status
-        // or END_STREAM set, and follow it with an empty message frame where they are set.
-        ()
       }
-      return .receivedMetadata(Metadata(headers: metadata))
+      return try self.validateAndReturnStatusAndMetadata(metadata)
 
     case .clientClosedServerClosed:
       // We could end up here if we received a grpc-status header in a previous
@@ -1205,8 +1235,6 @@ extension GRPCStreamStateMachine {
         self.state = .clientOpenServerClosed(state)
         return .sendMessage(response)
       } else {
-        // There are no more messages to be sent, so we can end the compressor.
-        state.compressor?.end()
         self.state = .clientOpenServerClosed(state)
         return .noMoreMessages
       }
@@ -1216,8 +1244,6 @@ extension GRPCStreamStateMachine {
         self.state = .clientClosedServerClosed(state)
         return .sendMessage(response)
       } else {
-        // There are no more messages to be sent, so we can end the compressor.
-        state.compressor?.end()
         self.state = .clientClosedServerClosed(state)
         return .noMoreMessages
       }
