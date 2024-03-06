@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import GRPCCore
 import GRPCInProcessTransport
 
 import struct Foundation.Data
+
+@testable import GRPCCore
 
 /// This test verifies that implementations support zero-size messages. Ideally, client
 /// implementations would verify that the request and response were zero bytes serialized, but
@@ -274,18 +275,9 @@ struct ServerStreaming: InteroperabilityTest {
 struct PingPong: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
-    #if swift(>=5.9)
     let asyncStream = AsyncStream.makeStream(of: Int.self)
-    let continuation = asyncStream.continuation
-    let stream = asyncStream.stream
-    #else
-    let continuation: AsyncStream<Int>.Continuation!
-    let stream = AsyncStream(Int.self) { streamContinuation in
-      continuation = streamContinuation
-    }
-    #endif
     let request = ClientRequest.Stream { writer in
-      for try await id in stream {
+      for try await id in asyncStream.stream {
         var message = Grpc_Testing_StreamingOutputCallRequest()
         switch id {
         case 1:
@@ -330,7 +322,7 @@ struct PingPong: InteroperabilityTest {
         try await writer.write(message)
       }
     }
-    continuation.yield(1)
+    asyncStream.continuation.yield(1)
     try await testServiceClient.fullDuplexCall(request: request) { response in
       var id = 1
       for try await message in response.messages {
@@ -349,7 +341,7 @@ struct PingPong: InteroperabilityTest {
 
         // Add the next id to the continuation.
         id += 1
-        continuation.yield(id)
+        asyncStream.continuation.yield(id)
       }
     }
   }
