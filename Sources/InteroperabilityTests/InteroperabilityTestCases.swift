@@ -274,9 +274,18 @@ struct ServerStreaming: InteroperabilityTest {
 struct PingPong: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
+    #if swift(>=5.9)
     let asyncStream = AsyncStream.makeStream(of: Int.self)
+    let continuation = asyncStream.continuation
+    let stream = asyncStream.stream
+    #else
+    let continuation: AsyncStream<Int>.Continuation!
+    let stream = AsyncStream(Int.self) { streamContinuation in
+      continuation = streamContinuation
+    }
+    #endif
     let request = ClientRequest.Stream { writer in
-      for try await id in asyncStream.stream {
+      for try await id in stream {
         var message = Grpc_Testing_StreamingOutputCallRequest()
         switch id {
         case 1:
@@ -321,7 +330,7 @@ struct PingPong: InteroperabilityTest {
         try await writer.write(message)
       }
     }
-    asyncStream.continuation.yield(1)
+    continuation.yield(1)
     try await testServiceClient.fullDuplexCall(request: request) { response in
       var id = 1
       for try await message in response.messages {
@@ -340,7 +349,7 @@ struct PingPong: InteroperabilityTest {
 
         // Add the next id to the continuation.
         id += 1
-        asyncStream.continuation.yield(id)
+        continuation.yield(id)
       }
     }
   }
@@ -472,8 +481,7 @@ struct CustomMetadata: InteroperabilityTest {
       try assertEqual(response.message.payload.body, Data(count: 314_159))
 
       // Check the trailing metadata.
-      let receivedTrailingMetadata = response.trailingMetadata
-      try checkTrailingMetadata(receivedInitialMetadata)
+      try checkTrailingMetadata(response.trailingMetadata)
     }
 
     let streamingRequest = ClientRequest.Stream(metadata: streamingMetadata) { writer in
@@ -625,7 +633,6 @@ struct SpecialStatusMessage: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
 
-    let code = 2
     let responseMessage = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
     let message = Grpc_Testing_SimpleRequest.with {
       $0.responseStatus = Grpc_Testing_EchoStatus.with {
