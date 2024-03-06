@@ -58,14 +58,14 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.acceptEncoding.rawValue: "gzip",
     GRPCHTTP2Keys.encoding.rawValue: "gzip",
   ]
-  static let receivedHeadersWithoutContentType: Self = [
+  static let receivedWithoutContentType: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test"
   ]
-  static let receivedHeadersWithInvalidContentType: Self = [
+  static let receivedWithInvalidContentType: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid",
   ]
-  static let receivedHeadersWithoutEndpoint: Self = [
+  static let receivedWithoutEndpoint: Self = [
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
   ]
 
@@ -125,7 +125,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       // Open server
       XCTAssertNoThrow(try stateMachine.receive(metadata: serverMetadata, endStream: false))
       // Close server
-      XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+      XCTAssertNoThrow(try stateMachine.receive(metadata: .serverTrailers, endStream: true))
     case .clientClosedServerIdle:
       // Open client
       XCTAssertNoThrow(try stateMachine.send(metadata: []))
@@ -146,7 +146,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       // Close client
       XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
       // Close server
-      XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+      XCTAssertNoThrow(try stateMachine.receive(metadata: .serverTrailers, endStream: true))
     }
 
     return stateMachine
@@ -253,7 +253,6 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         XCTAssertEqual(error.message, "Client cannot send status and trailer.")
       }
     }
-
   }
 
   // - MARK: Receive initial metadata
@@ -270,10 +269,9 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     }
   }
 
-  func testReceiveInitialMetadataWhenServerIdleOrOpen() throws {
+  func testReceiveInitialMetadataWhenServerIdle() throws {
     for targetState in [
-      TargetStateMachineState.clientOpenServerIdle, .clientOpenServerOpen, .clientClosedServerIdle,
-      .clientClosedServerOpen,
+      TargetStateMachineState.clientOpenServerIdle, .clientClosedServerIdle,
     ] {
       var stateMachine = self.makeClientStateMachine(targetState: targetState)
 
@@ -297,6 +295,64 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       ]
       expectedMetadata.addBinary([42, 43, 44], forKey: "custom-bin")
       XCTAssertEqual(action, .receivedMetadata(expectedMetadata))
+    }
+  }
+
+  func testReceiveInitialMetadataWhenServerOpen() throws {
+    for targetState in [
+      TargetStateMachineState.clientOpenServerOpen, .clientClosedServerOpen,
+    ] {
+      var stateMachine = self.makeClientStateMachine(targetState: targetState)
+
+      // Receiving initial metadata again should throw if grpc-status is not present.
+      XCTAssertThrowsError(
+        ofType: RPCError.self,
+        try stateMachine.receive(
+          metadata: [
+            GRPCHTTP2Keys.status.rawValue: "200",
+            GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
+            GRPCHTTP2Keys.encoding.rawValue: "deflate",
+            "custom": "123",
+            "custom-bin": String(base64Encoding: [42, 43, 44]),
+          ],
+          endStream: false
+        )
+      ) { error in
+        XCTAssertEqual(error.code, .internalError)
+        XCTAssertEqual(
+          error.message,
+          "Non-initial metadata must be a trailer containing grpc-status"
+        )
+      }
+
+      // Now make sure everything works well if we include grpc-status
+      let action = try stateMachine.receive(
+        metadata: [
+          GRPCHTTP2Keys.status.rawValue: "200",
+          GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.ok.rawValue),
+          GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
+          GRPCHTTP2Keys.encoding.rawValue: "deflate",
+          "custom": "123",
+          "custom-bin": String(base64Encoding: [42, 43, 44]),
+        ],
+        endStream: false
+      )
+
+      var expectedMetadata: Metadata = [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-encoding": "deflate",
+        "custom": "123",
+      ]
+      expectedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
+      expectedMetadata.addBinary([42, 43, 44], forKey: "custom-bin")
+      XCTAssertEqual(
+        action,
+        .receivedStatusAndMetadata(
+          status: Status(code: .ok, message: ""),
+          metadata: expectedMetadata
+        )
+      )
     }
   }
 
@@ -344,6 +400,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       let action = try stateMachine.receive(
         metadata: [
           GRPCHTTP2Keys.status.rawValue: "200",
+          GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.ok.rawValue),
           GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
           GRPCHTTP2Keys.encoding.rawValue: "deflate",
           "custom": "123",
@@ -357,7 +414,13 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         "grpc-encoding": "deflate",
         "custom": "123",
       ]
-      XCTAssertEqual(action, .receivedMetadata(expectedMetadata))
+      XCTAssertEqual(
+        action,
+        .receivedStatusAndMetadata(
+          status: .init(code: .ok, message: ""),
+          metadata: expectedMetadata
+        )
+      )
     }
   }
 
@@ -574,7 +637,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
 
     // Close server
-    XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+    XCTAssertNoThrow(try stateMachine.receive(metadata: .serverTrailers, endStream: true))
 
     // Close client
     XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
@@ -634,7 +697,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     try stateMachine.receive(message: receivedBytes, endStream: false)
 
     // Close server
-    XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+    XCTAssertNoThrow(try stateMachine.receive(metadata: .serverTrailers, endStream: true))
 
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
@@ -670,7 +733,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     try stateMachine.receive(message: receivedBytes, endStream: false)
 
     // Close server
-    XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+    XCTAssertNoThrow(try stateMachine.receive(metadata: .serverTrailers, endStream: true))
 
     // Close client
     XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
@@ -746,7 +809,16 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       metadata: .serverTrailers,
       endStream: true
     )
-    XCTAssertEqual(metadataReceivedAction, .receivedMetadata(Metadata(headers: .serverTrailers)))
+    let receivedMetadata = {
+      var m = Metadata(headers: .serverTrailers)
+      m.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
+      m.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
+      return m
+    }()
+    XCTAssertEqual(
+      metadataReceivedAction,
+      .receivedStatusAndMetadata(status: .init(code: .ok, message: ""), metadata: receivedMetadata)
+    )
 
     XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
@@ -812,7 +884,16 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       metadata: .serverTrailers,
       endStream: true
     )
-    XCTAssertEqual(metadataReceivedAction, .receivedMetadata(Metadata(headers: .serverTrailers)))
+    let receivedMetadata = {
+      var m = Metadata(headers: .serverTrailers)
+      m.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
+      m.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
+      return m
+    }()
+    XCTAssertEqual(
+      metadataReceivedAction,
+      .receivedStatusAndMetadata(status: .init(code: .ok, message: ""), metadata: receivedMetadata)
+    )
 
     XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
@@ -881,7 +962,16 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       metadata: .serverTrailers,
       endStream: true
     )
-    XCTAssertEqual(metadataReceivedAction, .receivedMetadata(Metadata(headers: .serverTrailers)))
+    let receivedMetadata = {
+      var m = Metadata(headers: .serverTrailers)
+      m.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
+      m.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
+      return m
+    }()
+    XCTAssertEqual(
+      metadataReceivedAction,
+      .receivedStatusAndMetadata(status: .init(code: .ok, message: ""), metadata: receivedMetadata)
+    )
 
     XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
@@ -1267,7 +1357,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
 
     let action = try stateMachine.receive(
-      metadata: .receivedHeadersWithoutContentType,
+      metadata: .receivedWithoutContentType,
       endStream: false
     )
 
@@ -1281,7 +1371,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
 
     let action = try stateMachine.receive(
-      metadata: .receivedHeadersWithInvalidContentType,
+      metadata: .receivedWithInvalidContentType,
       endStream: false
     )
 
@@ -1295,17 +1385,20 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
 
     let action = try stateMachine.receive(
-      metadata: .receivedHeadersWithoutEndpoint,
+      metadata: .receivedWithoutEndpoint,
       endStream: false
     )
 
     self.assertRejectedRPC(action) { trailers in
-      XCTAssertEqual(trailers, [
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-status": "12",
-        "grpc-status-message": "No :path header has been set."
-      ])
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "12",
+          "grpc-status-message": "No :path header has been set.",
+        ]
+      )
     }
   }
 
@@ -1320,13 +1413,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
 
     self.assertRejectedRPC(action) { trailers in
-      XCTAssertEqual(trailers, [
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-        "grpc-status": "12",
-        "grpc-status-message": "gzip compression is not supported; supported algorithms are listed in grpc-accept-encoding"
-      ])
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+          "grpc-status": "12",
+          "grpc-status-message":
+            "gzip compression is not supported; supported algorithms are listed in grpc-accept-encoding",
+        ]
+      )
     }
   }
 
@@ -1988,7 +2085,7 @@ extension XCTestCase {
     try frameMessages([message], compress: compress)
   }
 
-  func frameMessages(_ messages: any Sequence<[UInt8]>, compress: Bool) throws -> ByteBuffer {
+  func frameMessages(_ messages: [[UInt8]], compress: Bool) throws -> ByteBuffer {
     var framer = GRPCMessageFramer()
     let compressor: Zlib.Compressor? = {
       if compress {

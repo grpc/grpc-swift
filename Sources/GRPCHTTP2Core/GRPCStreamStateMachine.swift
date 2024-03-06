@@ -441,10 +441,10 @@ struct GRPCStreamStateMachine {
       return self.serverNextInboundMessage()
     }
   }
-  
+
   mutating func tearDown() {
     switch self.state {
-    case .clientIdleServerIdle(let state):
+    case .clientIdleServerIdle:
       ()
     case .clientOpenServerIdle(let state):
       state.compressor?.end()
@@ -605,7 +605,7 @@ extension GRPCStreamStateMachine {
       return .noMoreMessages
     }
   }
-  
+
   private mutating func validateHeaders(_ metadata: HPACKHeaders) -> OnMetadataReceived? {
     let grpcStatus = metadata.firstString(forKey: .grpcStatus)
       .flatMap { Int($0) }
@@ -643,7 +643,7 @@ extension GRPCStreamStateMachine {
         metadata: Metadata(headers: metadata)
       )
     }
-    
+
     let contentTypeHeader = metadata.first(name: GRPCHTTP2Keys.contentType.rawValue)
     guard contentTypeHeader.flatMap(ContentType.init) != nil else {
       return .failedRequest(
@@ -654,27 +654,29 @@ extension GRPCStreamStateMachine {
         metadata: Metadata(headers: metadata)
       )
     }
-    
+
     return nil
   }
-  
+
   private enum ProcessInboundEncodingResult {
     case error(OnMetadataReceived)
     case success(CompressionAlgorithm)
   }
-  
+
   private func processInboundEncoding(_ metadata: HPACKHeaders) -> ProcessInboundEncodingResult {
     let inboundEncoding: CompressionAlgorithm
     if let serverEncoding = metadata.first(name: GRPCHTTP2Keys.encoding.rawValue) {
       guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding) else {
-        return .error(.failedRequest(
-          status: .init(
-            code: .internalError,
-            message:
-              "The server picked a compression algorithm ('\(serverEncoding)') the client does not know about."
-          ),
-          metadata: Metadata(headers: metadata)
-        ))
+        return .error(
+          .failedRequest(
+            status: .init(
+              code: .internalError,
+              message:
+                "The server picked a compression algorithm ('\(serverEncoding)') the client does not know about."
+            ),
+            metadata: Metadata(headers: metadata)
+          )
+        )
       }
       inboundEncoding = parsedEncoding
     } else {
@@ -682,22 +684,25 @@ extension GRPCStreamStateMachine {
     }
     return .success(inboundEncoding)
   }
-  
-  private func validateAndReturnStatusAndMetadata(_ metadata: HPACKHeaders) throws -> OnMetadataReceived {
+
+  private func validateAndReturnStatusAndMetadata(
+    _ metadata: HPACKHeaders
+  ) throws -> OnMetadataReceived {
     let statusCode = metadata.firstString(forKey: .grpcStatus)
       .flatMap { Int($0) }
       .flatMap { Status.Code(rawValue: $0) }
     guard let statusCode else {
       try self.invalidState("Non-initial metadata must be a trailer containing grpc-status")
     }
-    
-    let statusMessage = metadata.firstString(forKey: .grpcStatusMessage)
+
+    let statusMessage =
+      metadata.firstString(forKey: .grpcStatusMessage)
       .map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
-    
+
     var convertedMetadata = Metadata(headers: metadata)
     convertedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
     convertedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
-    
+
     return .receivedStatusAndMetadata(
       status: Status(code: statusCode, message: statusMessage),
       metadata: convertedMetadata
@@ -1102,7 +1107,11 @@ extension GRPCStreamStateMachine {
         else {
           if configuration.acceptedEncodings.isEmpty {
             let status = Status(code: .unimplemented, message: "Compression is not supported")
-            let trailers = self.makeTrailers(status: status, customMetadata: nil, trailersOnly: true)
+            let trailers = self.makeTrailers(
+              status: status,
+              customMetadata: nil,
+              trailersOnly: true
+            )
             return .rejectRPC(trailers: trailers)
           } else {
             let status = Status(
@@ -1114,9 +1123,16 @@ extension GRPCStreamStateMachine {
             )
             var customTrailers = Metadata()
             for acceptedEncoding in configuration.acceptedEncodings {
-              customTrailers.addString(acceptedEncoding.name, forKey: GRPCHTTP2Keys.acceptEncoding.rawValue)
+              customTrailers.addString(
+                acceptedEncoding.name,
+                forKey: GRPCHTTP2Keys.acceptEncoding.rawValue
+              )
             }
-            let trailers = self.makeTrailers(status: status, customMetadata: customTrailers, trailersOnly: true)
+            let trailers = self.makeTrailers(
+              status: status,
+              customMetadata: customTrailers,
+              trailersOnly: true
+            )
             return .rejectRPC(trailers: trailers)
           }
         }
