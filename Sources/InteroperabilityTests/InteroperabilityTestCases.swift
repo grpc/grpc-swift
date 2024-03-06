@@ -207,9 +207,7 @@ struct ServerStreaming: InteroperabilityTest {
           try assertEqual(message.payload.body.count, responseSize)
         } else {
           throw AssertionFailure(
-            message: "There were less than four responses received.",
-            file: #fileID,
-            line: #line
+            message: "There were less than four responses received."
           )
         }
       }
@@ -282,10 +280,11 @@ struct PingPong: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let ids = AsyncStream.makeStream(of: Int.self)
+
     let request = ClientRequest.Stream { writer in
+      let sizes = [(31_415, 27_182), (9, 8), (2_653, 1_828), (58_979, 45_904)]
       for try await id in ids.stream {
         var message = Grpc_Testing_StreamingOutputCallRequest()
-        let sizes = [(31_415, 27_182), (9, 8), (2_653, 1_828), (58_979, 45_904)]
         switch id {
         case 1 ... 4:
           let (responseSize, bodySize) = sizes[id - 1]
@@ -320,9 +319,7 @@ struct PingPong: InteroperabilityTest {
           try assertEqual(message.payload.body, Data(count: 58_979))
         default:
           throw AssertionFailure(
-            message: "We should only receive messages with ids between 1 and 4.",
-            file: #fileID,
-            line: #line
+            message: "We should only receive messages with ids between 1 and 4."
           )
         }
 
@@ -483,9 +480,7 @@ struct CustomMetadata: InteroperabilityTest {
         }
       case .failure(_):
         throw AssertionFailure(
-          message: "The client should have received a response from the server.",
-          file: #fileID,
-          line: #line
+          message: "The client should have received a response from the server."
         )
       }
     }
@@ -549,9 +544,7 @@ struct StatusCodeAndMessage: InteroperabilityTest {
       case .success(_):
         throw AssertionFailure(
           message:
-            "The client should receive an error with the status code and message sent by the client.",
-          file: #fileID,
-          line: #line
+            "The client should receive an error with the status code and message sent by the client."
         )
       }
     }
@@ -571,9 +564,7 @@ struct StatusCodeAndMessage: InteroperabilityTest {
         for try await _ in response.messages {
           throw AssertionFailure(
             message:
-              "The client should receive an error with the status code and message sent by the client.",
-            file: #fileID,
-            line: #line
+              "The client should receive an error with the status code and message sent by the client."
           )
         }
       } catch let error as RPCError {
@@ -624,9 +615,7 @@ struct SpecialStatusMessage: InteroperabilityTest {
       switch response.accepted {
       case .success(_):
         throw AssertionFailure(
-          message: "The response should be an error with the error code 2.",
-          file: #fileID,
-          line: #line
+          message: "The response should be an error with the error code 2."
         )
       case .failure(let error):
         try assertEqual(error.code.rawValue, 2)
@@ -662,9 +651,7 @@ struct UnimplementedMethod: InteroperabilityTest {
       switch result {
       case .success(_):
         throw AssertionFailure(
-          message: "The result should be an error.",
-          file: #fileID,
-          line: #line
+          message: "The result should be an error."
         )
       case .failure(let error):
         try assertEqual(error.code, .unimplemented)
@@ -698,9 +685,7 @@ struct UnimplementedService: InteroperabilityTest {
       switch result {
       case .success(_):
         throw AssertionFailure(
-          message: "The result should be an error.",
-          file: #fileID,
-          line: #line
+          message: "The result should be an error."
         )
       case .failure(let error):
         try assertEqual(error.code, .unimplemented)

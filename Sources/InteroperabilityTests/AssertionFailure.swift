@@ -21,6 +21,12 @@ public struct AssertionFailure: Error {
   public var message: String
   public var file: String
   public var line: Int
+
+  public init(message: String, file: String = #fileID, line: Int = #line) {
+    self.message = message
+    self.file = file
+    self.line = line
+  }
 }
 
 /// Asserts that the value of an expression is `true`.
