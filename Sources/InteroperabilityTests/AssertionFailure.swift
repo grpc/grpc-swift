@@ -49,12 +49,3 @@ public func assertEqual<T: Equatable>(
     line: line
   )
 }
-
-/// Asserts a failure on a certain conditional branch.
-public func assertFailure(
-  _ message: String = "Failure.",
-  file: String = #fileID,
-  line: Int = #line
-) throws {
-  throw AssertionFailure(message: message, file: file, line: line)
-}

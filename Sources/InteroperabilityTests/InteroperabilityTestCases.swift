@@ -15,7 +15,6 @@
  */
 
 import GRPCCore
-import GRPCInProcessTransport
 
 import struct Foundation.Data
 
@@ -76,8 +75,9 @@ struct LargeUnary: InteroperabilityTest {
         $0.body = Data(count: 271_828)
       }
     }
-    try await testServiceClient.unaryCall(request: ClientRequest.Single(message: request)) {
-      response in
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: request)
+    ) { response in
       try assertEqual(
         response.message.payload,
         Grpc_Testing_Payload.with {
@@ -196,8 +196,9 @@ struct ServerStreaming: InteroperabilityTest {
       }
     }
 
-    try await testServiceClient.streamingOutputCall(request: ClientRequest.Single(message: request))
-    { response in
+    try await testServiceClient.streamingOutputCall(
+      request: ClientRequest.Single(message: request)
+    ) { response in
       var responseParts = response.messages.makeAsyncIterator()
       // There are 4 response sizes, so if there isn't a message for each one,
       // it means that the client didn't receive 4 messages back.
@@ -205,9 +206,15 @@ struct ServerStreaming: InteroperabilityTest {
         if let message = try await responseParts.next() {
           try assertEqual(message.payload.body.count, responseSize)
         } else {
-          try assertFailure("There were less than four responses received.")
+          throw AssertionFailure(
+            message: "There were less than four responses received.",
+            file: #fileID,
+            line: #line
+          )
         }
       }
+      // Check that there were not more than 4 responses from the server.
+      try assertEqual(try await responseParts.next(), nil)
     }
   }
 }
@@ -274,54 +281,31 @@ struct ServerStreaming: InteroperabilityTest {
 struct PingPong: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
-    let asyncStream = AsyncStream.makeStream(of: Int.self)
+    let ids = AsyncStream.makeStream(of: Int.self)
     let request = ClientRequest.Stream { writer in
-      for try await id in asyncStream.stream {
+      for try await id in ids.stream {
         var message = Grpc_Testing_StreamingOutputCallRequest()
+        let sizes = [(31_415, 27_182), (9, 8), (2_653, 1_828), (58_979, 45_904)]
         switch id {
-        case 1:
+        case 1 ... 4:
+          let (responseSize, bodySize) = sizes[id - 1]
           message.responseParameters = [
             Grpc_Testing_ResponseParameters.with {
-              $0.size = 31_415
+              $0.size = Int32(responseSize)
             }
           ]
           message.payload = Grpc_Testing_Payload.with {
-            $0.body = Data(count: 27_182)
-          }
-        case 2:
-          message.responseParameters = [
-            Grpc_Testing_ResponseParameters.with {
-              $0.size = 9
-            }
-          ]
-          message.payload = Grpc_Testing_Payload.with {
-            $0.body = Data(count: 8)
-          }
-        case 3:
-          message.responseParameters = [
-            Grpc_Testing_ResponseParameters.with {
-              $0.size = 2_653
-            }
-          ]
-          message.payload = Grpc_Testing_Payload.with {
-            $0.body = Data(count: 1_828)
-          }
-        case 4:
-          message.responseParameters = [
-            Grpc_Testing_ResponseParameters.with {
-              $0.size = 58_979
-            }
-          ]
-          message.payload = Grpc_Testing_Payload.with {
-            $0.body = Data(count: 45_904)
+            $0.body = Data(count: bodySize)
           }
         default:
+          // When the id is higher than 4 it means the client received all the expected responses
+          // and it doesn't need to send another message.
           return
         }
         try await writer.write(message)
       }
     }
-    asyncStream.continuation.yield(1)
+    ids.continuation.yield(1)
     try await testServiceClient.fullDuplexCall(request: request) { response in
       var id = 1
       for try await message in response.messages {
@@ -335,12 +319,16 @@ struct PingPong: InteroperabilityTest {
         case 4:
           try assertEqual(message.payload.body, Data(count: 58_979))
         default:
-          try assertFailure("We should only receive messages with ids between 1 and 4.")
+          throw AssertionFailure(
+            message: "We should only receive messages with ids between 1 and 4.",
+            file: #fileID,
+            line: #line
+          )
         }
 
         // Add the next id to the continuation.
         id += 1
-        asyncStream.continuation.yield(id)
+        ids.continuation.yield(id)
       }
     }
   }
@@ -361,11 +349,7 @@ struct PingPong: InteroperabilityTest {
 struct EmptyStream: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
-
-    let request = ClientRequest.Stream { writer in
-      let message = Grpc_Testing_StreamingOutputCallRequest()
-      try await writer.write(message)
-    }
+    let request = ClientRequest.Stream<Grpc_Testing_StreamingOutputCallRequest> { _ in }
 
     try await testServiceClient.fullDuplexCall(request: request) { response in
       var messages = response.messages.makeAsyncIterator()
@@ -426,25 +410,13 @@ struct CustomMetadata: InteroperabilityTest {
   let trailingMetadataValue: [UInt8] = [0xAB, 0xAB, 0xAB]
 
   func checkInitialMetadata(_ metadata: Metadata) throws {
-    try assertEqual(metadata.count, 1)
-    var metadataIterator = metadata.makeIterator()
-    guard let initialMetadataPair = metadataIterator.next() else {
-      try assertFailure("The initial metadata should contain a key value pair.")
-      return
-    }
-    try assertEqual(initialMetadataPair.key, self.initialMetadataName)
-    try assertEqual(initialMetadataPair.value, Metadata.Value.string(self.initialMetadataValue))
+    let values = metadata[self.initialMetadataName]
+    try assertEqual(Array(values), [.string(self.initialMetadataValue)])
   }
 
   func checkTrailingMetadata(_ metadata: Metadata) throws {
-    try assertEqual(metadata.count, 1)
-    var metadataIterator = metadata.makeIterator()
-    guard let trailingMetadataPair = metadataIterator.next() else {
-      try assertFailure("The trailing metadata should contain a key value pair.")
-      return
-    }
-    try assertEqual(trailingMetadataPair.key, self.trailingMetadataName)
-    try assertEqual(trailingMetadataPair.value, Metadata.Value.binary(self.trailingMetadataValue))
+    let values = metadata[self.trailingMetadataName]
+    try assertEqual(Array(values), [.binary(self.trailingMetadataValue)])
   }
 
   func run(client: GRPCClient) async throws {
@@ -456,10 +428,10 @@ struct CustomMetadata: InteroperabilityTest {
         $0.body = Data(count: 271_828)
       }
     }
-    var metadata = Metadata()
-    metadata.addString(self.initialMetadataValue, forKey: self.initialMetadataName)
-    metadata.addBinary(self.trailingMetadataValue, forKey: self.trailingMetadataName)
-    let streamingMetadata = metadata
+    let metadata: Metadata = [
+      self.initialMetadataName: .string(self.initialMetadataValue),
+      self.trailingMetadataName: .binary(self.trailingMetadataValue),
+    ]
 
     try await testServiceClient.unaryCall(
       request: ClientRequest.Single(message: unaryRequest, metadata: metadata)
@@ -475,7 +447,7 @@ struct CustomMetadata: InteroperabilityTest {
       try checkTrailingMetadata(response.trailingMetadata)
     }
 
-    let streamingRequest = ClientRequest.Stream(metadata: streamingMetadata) { writer in
+    let streamingRequest = ClientRequest.Stream(metadata: metadata) { writer in
       let message = Grpc_Testing_StreamingOutputCallRequest.with {
         $0.responseParameters = [
           Grpc_Testing_ResponseParameters.with {
@@ -496,23 +468,25 @@ struct CustomMetadata: InteroperabilityTest {
         let receivedInitialMetadata = response.metadata
         try self.checkInitialMetadata(receivedInitialMetadata)
 
-        var responseParts = contents.bodyParts.makeAsyncIterator()
-        for _ in 1 ... 2 {
-          switch try await responseParts.next() {
+        let parts = try await contents.bodyParts.reduce(into: []) { $0.append($1) }
+        try assertEqual(parts.count, 2)
+
+        for part in parts {
+          switch part {
           // Check the message.
           case .message(let message):
             try assertEqual(message.payload.body, Data(count: 314_159))
           // Check the trailing metadata.
           case .trailingMetadata(let receivedTrailingMetadata):
             try self.checkTrailingMetadata(receivedTrailingMetadata)
-          default:
-            try assertFailure(
-              "The client should have received only a message and trailing metadata."
-            )
           }
         }
       case .failure(_):
-        try assertFailure("The client should have received a response from the server.")
+        throw AssertionFailure(
+          message: "The client should have received a response from the server.",
+          file: #fileID,
+          line: #line
+        )
       }
     }
   }
@@ -565,33 +539,46 @@ struct StatusCodeAndMessage: InteroperabilityTest {
       }
     }
 
-    try await testServiceClient.unaryCall(request: ClientRequest.Single(message: message)) {
-      response in
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: message)
+    ) { response in
       switch response.accepted {
       case .failure(let error):
         try assertEqual(error.code.rawValue, self.expectedCode)
         try assertEqual(error.message, self.expectedMessage)
       case .success(_):
-        try assertFailure(
-          "The client should receive an error with the status code and message sent by the client."
+        throw AssertionFailure(
+          message:
+            "The client should receive an error with the status code and message sent by the client.",
+          file: #fileID,
+          line: #line
         )
       }
     }
 
     let request = ClientRequest.Stream { writer in
-      let message = Grpc_Testing_StreamingOutputCallRequest()
+      let message = Grpc_Testing_StreamingOutputCallRequest.with {
+        $0.responseStatus = Grpc_Testing_EchoStatus.with {
+          $0.code = Int32(self.expectedCode)
+          $0.message = self.expectedMessage
+        }
+      }
       try await writer.write(message)
     }
 
     try await testServiceClient.fullDuplexCall(request: request) { response in
-      switch response.accepted {
-      case .failure(let error):
+      do {
+        for try await _ in response.messages {
+          throw AssertionFailure(
+            message:
+              "The client should receive an error with the status code and message sent by the client.",
+            file: #fileID,
+            line: #line
+          )
+        }
+      } catch let error as RPCError {
         try assertEqual(error.code.rawValue, self.expectedCode)
         try assertEqual(error.message, self.expectedMessage)
-      case .success(_):
-        try assertFailure(
-          "The client should receive an error with the status code and message sent by the client."
-        )
       }
     }
   }
@@ -631,11 +618,16 @@ struct SpecialStatusMessage: InteroperabilityTest {
         $0.message = responseMessage
       }
     }
-    try await testServiceClient.unaryCall(request: ClientRequest.Single(message: message)) {
-      response in
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: message)
+    ) { response in
       switch response.accepted {
       case .success(_):
-        try assertFailure("The response should be an error with the error code 2.")
+        throw AssertionFailure(
+          message: "The response should be an error with the error code 2.",
+          file: #fileID,
+          line: #line
+        )
       case .failure(let error):
         try assertEqual(error.code.rawValue, 2)
         try assertEqual(error.message, responseMessage)
@@ -665,14 +657,17 @@ struct UnimplementedMethod: InteroperabilityTest {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     try await testServiceClient.unimplementedCall(
       request: ClientRequest.Single(message: Grpc_Testing_Empty())
-    ) {
-      response in
+    ) { response in
       let result = response.accepted
       switch result {
       case .success(_):
-        try assertFailure("The result should be an error.")
+        throw AssertionFailure(
+          message: "The result should be an error.",
+          file: #fileID,
+          line: #line
+        )
       case .failure(let error):
-        try assertEqual(error.code, RPCError.Code.unimplemented)
+        try assertEqual(error.code, .unimplemented)
       }
     }
   }
@@ -698,14 +693,17 @@ struct UnimplementedService: InteroperabilityTest {
     let unimplementedServiceClient = Grpc_Testing_UnimplementedService.Client(client: client)
     try await unimplementedServiceClient.unimplementedCall(
       request: ClientRequest.Single(message: Grpc_Testing_Empty())
-    ) {
-      response in
+    ) { response in
       let result = response.accepted
       switch result {
       case .success(_):
-        try assertFailure("The result should be an error.")
+        throw AssertionFailure(
+          message: "The result should be an error.",
+          file: #fileID,
+          line: #line
+        )
       case .failure(let error):
-        try assertEqual(error.code, RPCError.Code.unimplemented)
+        try assertEqual(error.code, .unimplemented)
       }
     }
   }

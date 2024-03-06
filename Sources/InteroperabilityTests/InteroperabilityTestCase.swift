@@ -95,32 +95,4 @@ extension InteroperabilityTestCase {
       return UnimplementedService()
     }
   }
-
-  /// The set of server features required to run this test.
-  public var requiredServerFeatures: Set<ServerFeature> {
-    switch self {
-    case .emptyUnary:
-      return [.emptyCall]
-    case .largeUnary:
-      return [.unaryCall]
-    case .clientStreaming:
-      return [.streamingInputCall]
-    case .serverStreaming:
-      return [.streamingOutputCall]
-    case .pingPong:
-      return [.fullDuplexCall]
-    case .emptyStream:
-      return [.fullDuplexCall]
-    case .customMetadata:
-      return [.unaryCall, .fullDuplexCall, .echoMetadata]
-    case .statusCodeAndMessage:
-      return [.unaryCall, .fullDuplexCall, .echoStatus]
-    case .specialStatusMessage:
-      return [.unaryCall, .echoStatus]
-    case .unimplementedMethod:
-      return []
-    case .unimplementedService:
-      return []
-    }
-  }
 }
