@@ -21,6 +21,12 @@ public struct AssertionFailure: Error {
   public var message: String
   public var file: String
   public var line: Int
+
+  public init(message: String, file: String = #fileID, line: Int = #line) {
+    self.message = message
+    self.file = file
+    self.line = line
+  }
 }
 
 /// Asserts that the value of an expression is `true`.
@@ -33,4 +39,19 @@ public func assertTrue(
   guard try expression() else {
     throw AssertionFailure(message: message, file: file, line: line)
   }
+}
+
+/// Asserts that the two given values are equal.
+public func assertEqual<T: Equatable>(
+  _ value1: T,
+  _ value2: T,
+  file: String = #fileID,
+  line: Int = #line
+) throws {
+  return try assertTrue(
+    value1 == value2,
+    "'\(value1)' is not equal to '\(value2)'",
+    file: file,
+    line: line
+  )
 }
