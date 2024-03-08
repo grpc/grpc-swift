@@ -393,18 +393,23 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       GRPCHTTP2Keys.status.rawValue: "200",
       GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
       GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.internalError.rawValue),
-      GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall("Some status message")!,
-      "custom-key": "custom-value"
+      GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall(
+        "Some status message"
+      )!,
+      "custom-key": "custom-value",
     ]
     let trailers = try stateMachine.receive(metadata: trailersOnlyResponse, endStream: true)
     switch trailers {
     case .receivedStatusAndMetadata(let status, let metadata):
       XCTAssertEqual(status, Status(code: .internalError, message: "Some status message"))
-      XCTAssertEqual(metadata, [
-        ":status": "200",
-        "content-type": "application/grpc",
-        "custom-key": "custom-value"
-      ])
+      XCTAssertEqual(
+        metadata,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "custom-key": "custom-value",
+        ]
+      )
     case .receivedMetadata, .doNothing, .rejectRPC:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
@@ -463,18 +468,23 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       GRPCHTTP2Keys.status.rawValue: "200",
       GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
       GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.internalError.rawValue),
-      GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall("Some status message")!,
-      "custom-key": "custom-value"
+      GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall(
+        "Some status message"
+      )!,
+      "custom-key": "custom-value",
     ]
     let trailers = try stateMachine.receive(metadata: trailersOnlyResponse, endStream: true)
     switch trailers {
     case .receivedStatusAndMetadata(let status, let metadata):
       XCTAssertEqual(status, Status(code: .internalError, message: "Some status message"))
-      XCTAssertEqual(metadata, [
-        ":status": "200",
-        "content-type": "application/grpc",
-        "custom-key": "custom-value"
-      ])
+      XCTAssertEqual(
+        metadata,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "custom-key": "custom-value",
+        ]
+      )
     case .receivedMetadata, .doNothing, .rejectRPC:
       XCTFail("Expected .receivedStatusAndMetadata")
     }

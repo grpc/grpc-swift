@@ -566,7 +566,9 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func clientValidateHeadersReceivedFromServer(_ metadata: HPACKHeaders) -> OnMetadataReceived? {
+  private mutating func clientValidateHeadersReceivedFromServer(
+    _ metadata: HPACKHeaders
+  ) -> OnMetadataReceived? {
     var httpStatus: String? {
       metadata.firstString(forKey: .status)
     }
@@ -651,9 +653,12 @@ extension GRPCStreamStateMachine {
   ) throws -> OnMetadataReceived {
     let rawStatusCode = metadata.firstString(forKey: .grpcStatus)
     guard let rawStatusCode,
-          let intStatusCode = Int(rawStatusCode),
-          let statusCode = Status.Code(rawValue: intStatusCode) else {
-      let message = "Non-initial metadata must be a trailer containing a valid grpc-status" + (rawStatusCode.flatMap { "but was \($0)" } ?? "")
+      let intStatusCode = Int(rawStatusCode),
+      let statusCode = Status.Code(rawValue: intStatusCode)
+    else {
+      let message =
+        "Non-initial metadata must be a trailer containing a valid grpc-status"
+        + (rawStatusCode.flatMap { "but was \($0)" } ?? "")
       throw RPCError(code: .unknown, message: message)
     }
 
@@ -697,7 +702,7 @@ extension GRPCStreamStateMachine {
             maximumPayloadSize: state.maximumPayloadSize,
             decompressor: decompressor
           )
-          
+
           self.state = .clientOpenServerOpen(
             .init(
               previousState: state,
@@ -1076,9 +1081,9 @@ extension GRPCStreamStateMachine {
             customMetadata = nil
           } else {
             statusMessage = """
-                \(rawEncoding) compression is not supported; \
-                supported algorithms are listed in grpc-accept-encoding
-                """
+              \(rawEncoding) compression is not supported; \
+              supported algorithms are listed in grpc-accept-encoding
+              """
             customMetadata = {
               var trailers = Metadata()
               trailers.reserveCapacity(configuration.acceptedEncodings.count)
@@ -1118,7 +1123,8 @@ extension GRPCStreamStateMachine {
       // compressing.
       for clientAdvertisedEncoding in clientAdvertisedEncodings {
         if let algorithm = CompressionAlgorithm(rawValue: String(clientAdvertisedEncoding)),
-           isIdentityOrCompatibleEncoding(algorithm) {
+          isIdentityOrCompatibleEncoding(algorithm)
+        {
           outboundEncoding = algorithm
           break
         }
@@ -1140,7 +1146,7 @@ extension GRPCStreamStateMachine {
           maximumPayloadSize: state.maximumPayloadSize,
           decompressor: decompressor
         )
-        
+
         self.state = .clientOpenServerIdle(
           .init(
             previousState: state,
