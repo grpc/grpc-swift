@@ -1072,14 +1072,14 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(error.code, .deadlineExceeded)
     XCTAssertNotEqual(error.code, .shutdown)
   }
-    
+
   func testMinimumConnectionsAreOpenRightAfterInitializing() {
     let controller = ChannelController()
     let pool = self.makePool(minConnections: 5, channelProvider: controller)
-    
+
     pool.initialize(connections: 20)
     self.eventLoop.run()
-    
+
     XCTAssertEqual(pool.sync.connections, 20)
     XCTAssertEqual(pool.sync.idleConnections, 15)
     XCTAssertEqual(pool.sync.activeConnections, 5)
@@ -1088,7 +1088,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.reservedStreams, 0)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
   }
-  
+
   func testMinimumConnectionsAreOpenAfterOneIsQuiesced() {
     let controller = ChannelController()
     let pool = self.makePool(
@@ -1105,7 +1105,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 1)
     XCTAssertEqual(pool.sync.activeConnections, 1)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
-    
+
     // Open two streams, which, because the maxConcurrentStreams is 1, will
     // create two channels.
     let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
@@ -1130,12 +1130,12 @@ final class ConnectionPoolTests: GRPCTestCase {
     controller.openStreamInChannel(atIndex: 0)
     XCTAssertNoThrow(try w2.wait())
     controller.openStreamInChannel(atIndex: 1)
-    
+
     XCTAssertEqual(pool.sync.connections, 2)
     XCTAssertEqual(pool.sync.idleConnections, 0)
     XCTAssertEqual(pool.sync.activeConnections, 2)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
-    
+
     // Quiesce the connection that should be kept alive.
     // Another connection should be brought back up immediately after, to maintain
     // the minimum number of active connections that won't go idle.
@@ -1144,7 +1144,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 1)
     XCTAssertEqual(pool.sync.activeConnections, 2)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
-    
+
     // Now quiesce the other one. This will add a new idle connection, but it
     // won't connect it right away.
     controller.sendGoAwayToChannel(atIndex: 1)
@@ -1153,7 +1153,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.activeConnections, 2)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
   }
-  
+
   func testMinimumConnectionsAreOpenAfterOneIsClosed() {
     let controller = ChannelController()
     let pool = self.makePool(
@@ -1170,7 +1170,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 1)
     XCTAssertEqual(pool.sync.activeConnections, 1)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
-    
+
     // Open two streams, which, because the maxConcurrentStreams is 1, will
     // create two channels.
     let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
@@ -1195,12 +1195,12 @@ final class ConnectionPoolTests: GRPCTestCase {
     controller.openStreamInChannel(atIndex: 0)
     XCTAssertNoThrow(try w2.wait())
     controller.openStreamInChannel(atIndex: 1)
-    
+
     XCTAssertEqual(pool.sync.connections, 2)
     XCTAssertEqual(pool.sync.idleConnections, 0)
     XCTAssertEqual(pool.sync.activeConnections, 2)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
-    
+
     // Close the connection that will be kept alive.
     // It should be brought back up immediately after closing.
     controller.fireChannelInactiveForChannel(atIndex: 0)
@@ -1208,7 +1208,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 0)
     XCTAssertEqual(pool.sync.activeConnections, 2)
     XCTAssertEqual(pool.sync.transientFailureConnections, 0)
-    
+
     // Now close the other one, which won't be brought back up immediately.
     // It should remain in transient failure state.
     controller.fireChannelInactiveForChannel(atIndex: 1)

@@ -235,7 +235,7 @@ internal final class ConnectionPool {
     let id = manager.id
     self._connections[id] = PerConnectionState(manager: manager)
     self.delegate?.connectionAdded(id: .init(id))
-    
+
     // If it's one of the connections that should be kept open, then connect
     // straight away.
     if case .neverGoIdle = idleBehavior {
@@ -747,12 +747,13 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     if let droppedReservations = self._connections[id]?.unavailable(), droppedReservations > 0 {
       self.streamLender.returnStreams(droppedReservations, to: self)
     }
-    
+
     // Now that a connection has become unavailable, we must make sure the minimum
     // number of connections is still met.
     if let connectionManager = self._connections[id]?.manager,
-       case .neverGoIdle = connectionManager.idleBehavior,
-        connectionManager.sync.isTransientFailure {
+      case .neverGoIdle = connectionManager.idleBehavior,
+      connectionManager.sync.isTransientFailure
+    {
       connectionManager.sync.startConnecting()
     }
   }
@@ -923,13 +924,17 @@ extension ConnectionPool {
     /// The number of active (i.e. connecting or ready) connections in the pool.
     internal var activeConnections: Int {
       self.pool.eventLoop.assertInEventLoop()
-      return self.pool._connections.values.reduce(0) { $0 &+ (($1.manager.sync.isReady || $1.manager.sync.isConnecting) ? 1 : 0) }
+      return self.pool._connections.values.reduce(0) {
+        $0 &+ (($1.manager.sync.isReady || $1.manager.sync.isConnecting) ? 1 : 0)
+      }
     }
-    
+
     /// The number of connections in the pool in transient failure state.
     internal var transientFailureConnections: Int {
       self.pool.eventLoop.assertInEventLoop()
-      return self.pool._connections.values.reduce(0) { $0 &+ ($1.manager.sync.isTransientFailure ? 1 : 0) }
+      return self.pool._connections.values.reduce(0) {
+        $0 &+ ($1.manager.sync.isTransientFailure ? 1 : 0)
+      }
     }
 
     /// The number of streams currently available to reserve across all connections in the pool.
