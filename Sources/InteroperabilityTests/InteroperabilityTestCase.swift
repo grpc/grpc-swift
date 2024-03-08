@@ -16,7 +16,7 @@
 import GRPCCore
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public protocol InteroperabilityTest {
+public protocol InteroperabilityTest: Sendable {
   /// Run a test case using the given connection.
   ///
   /// The test case is considered unsuccessful if any exception is thrown, conversely if no

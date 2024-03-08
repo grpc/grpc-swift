@@ -33,7 +33,7 @@ import struct Foundation.Data
 /// - response is non-null
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct EmptyUnary: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     try await testServiceClient.emptyCall(
       request: ClientRequest.Single(message: Grpc_Testing_Empty())
@@ -67,7 +67,7 @@ struct EmptyUnary: InteroperabilityTest {
 ///   the entire response message against a golden response
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct LargeUnary: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let request = Grpc_Testing_SimpleRequest.with { request in
       request.responseSize = 314_159
@@ -134,7 +134,7 @@ struct LargeUnary: InteroperabilityTest {
 /// - response aggregated_payload_size is 74922
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct ClientStreaming: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let request = ClientRequest.Stream { writer in
       for bytes in [27182, 8, 1828, 45904] {
@@ -185,7 +185,7 @@ struct ClientStreaming: InteroperabilityTest {
 ///   comparing the entire response messages against golden responses
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct ServerStreaming: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let responseSizes = [31415, 9, 2653, 58979]
     let request = Grpc_Testing_StreamingOutputCallRequest.with { request in
@@ -277,7 +277,7 @@ struct ServerStreaming: InteroperabilityTest {
 ///   comparing the entire response messages against golden responses
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct PingPong: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let ids = AsyncStream.makeStream(of: Int.self)
 
@@ -344,7 +344,7 @@ struct PingPong: InteroperabilityTest {
 /// - exactly zero responses
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct EmptyStream: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let request = ClientRequest.Stream<Grpc_Testing_StreamingOutputCallRequest> { _ in }
 
@@ -416,7 +416,7 @@ struct CustomMetadata: InteroperabilityTest {
     try assertEqual(Array(values), [.binary(self.trailingMetadataValue)])
   }
 
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
 
     let unaryRequest = Grpc_Testing_SimpleRequest.with { request in
@@ -524,7 +524,7 @@ struct StatusCodeAndMessage: InteroperabilityTest {
   let expectedCode = 2
   let expectedMessage = "test status message"
 
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
 
     let message = Grpc_Testing_SimpleRequest.with {
@@ -599,7 +599,7 @@ struct StatusCodeAndMessage: InteroperabilityTest {
 ///   whitespace characters
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct SpecialStatusMessage: InteroperabilityTest {
-  @Sendable func run(client: GRPCClient) async throws {
+  func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
 
     let responseMessage = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
