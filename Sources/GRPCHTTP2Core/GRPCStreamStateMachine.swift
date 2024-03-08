@@ -694,11 +694,12 @@ extension GRPCStreamStateMachine {
   private func validateAndReturnStatusAndMetadata(
     _ metadata: HPACKHeaders
   ) throws -> OnMetadataReceived {
-    let statusCode = metadata.firstString(forKey: .grpcStatus)
-      .flatMap { Int($0) }
-      .flatMap { Status.Code(rawValue: $0) }
-    guard let statusCode else {
-      try self.invalidState("Non-initial metadata must be a trailer containing grpc-status")
+    let rawStatusCode = metadata.firstString(forKey: .grpcStatus)
+    guard let rawStatusCode,
+          let intStatusCode = Int(rawStatusCode),
+          let statusCode = Status.Code(rawValue: intStatusCode) else {
+      let message = "Non-initial metadata must be a trailer containing a valid grpc-status" + (rawStatusCode.flatMap { "but was \($0)" } ?? "")
+      throw RPCError(code: .unknown, message: message)
     }
 
     let statusMessage =

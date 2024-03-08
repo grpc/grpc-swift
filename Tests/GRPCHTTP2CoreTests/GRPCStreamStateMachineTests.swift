@@ -318,10 +318,10 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           endStream: false
         )
       ) { error in
-        XCTAssertEqual(error.code, .internalError)
+        XCTAssertEqual(error.code, .unknown)
         XCTAssertEqual(
           error.message,
-          "Non-initial metadata must be a trailer containing grpc-status"
+          "Non-initial metadata must be a trailer containing a valid grpc-status"
         )
       }
 
