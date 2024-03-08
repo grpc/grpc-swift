@@ -1115,36 +1115,35 @@ extension GRPCStreamStateMachine {
         guard let clientEncoding = CompressionAlgorithm(rawValue: String(rawEncoding)),
           isIdentityOrCompatibleEncoding(clientEncoding)
         else {
+          let statusMessage: String
+          let customMetadata: Metadata?
           if configuration.acceptedEncodings.isEmpty {
-            let status = Status(code: .unimplemented, message: "Compression is not supported")
-            let trailers = self.makeTrailers(
-              status: status,
-              customMetadata: nil,
-              trailersOnly: true
-            )
-            return .rejectRPC(trailers: trailers)
+            statusMessage = "Compression is not supported"
+            customMetadata = nil
           } else {
-            let status = Status(
-              code: .unimplemented,
-              message: """
+            statusMessage = """
                 \(rawEncoding) compression is not supported; \
                 supported algorithms are listed in grpc-accept-encoding
                 """
-            )
-            var customTrailers = Metadata()
-            for acceptedEncoding in configuration.acceptedEncodings {
-              customTrailers.addString(
-                acceptedEncoding.name,
-                forKey: GRPCHTTP2Keys.acceptEncoding.rawValue
-              )
-            }
-            let trailers = self.makeTrailers(
-              status: status,
-              customMetadata: customTrailers,
-              trailersOnly: true
-            )
-            return .rejectRPC(trailers: trailers)
+            customMetadata = {
+              var trailers = Metadata()
+              trailers.reserveCapacity(configuration.acceptedEncodings.count)
+              for acceptedEncoding in configuration.acceptedEncodings {
+                trailers.addString(
+                  acceptedEncoding.name,
+                  forKey: GRPCHTTP2Keys.acceptEncoding.rawValue
+                )
+              }
+              return trailers
+            }()
           }
+
+          let trailers = self.makeTrailers(
+            status: Status(code: .unimplemented, message: statusMessage),
+            customMetadata: customMetadata,
+            trailersOnly: true
+          )
+          return .rejectRPC(trailers: trailers)
         }
 
         // Server supports client's encoding.
