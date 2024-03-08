@@ -213,8 +213,8 @@ extension ServerRequest.Single {
     var initialMetadata = Metadata()
     var trailingMetadata = Metadata()
 
-    for value in self.metadata[stringValues: "x-grpc-test-echo-initia"] {
-      initialMetadata.addString(value, forKey: "x-grpc-test-echo-initia")
+    for value in self.metadata[stringValues: "x-grpc-test-echo-initial"] {
+      initialMetadata.addString(value, forKey: "x-grpc-test-echo-initial")
     }
 
     for value in self.metadata[binaryValues: "x-grpc-test-echo-trailing-bin"] {
@@ -231,8 +231,8 @@ extension ServerRequest.Stream {
     var initialMetadata = Metadata()
     var trailingMetadata = Metadata()
 
-    for value in self.metadata[stringValues: "x-grpc-test-echo-initia"] {
-      initialMetadata.addString(value, forKey: "x-grpc-test-echo-initia")
+    for value in self.metadata[stringValues: "x-grpc-test-echo-initial"] {
+      initialMetadata.addString(value, forKey: "x-grpc-test-echo-initial")
     }
 
     for value in self.metadata[binaryValues: "x-grpc-test-echo-trailing-bin"] {
