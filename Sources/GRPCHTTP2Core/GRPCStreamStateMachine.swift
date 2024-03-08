@@ -1368,12 +1368,7 @@ extension Metadata {
           metadata.addString(header.value, forKey: header.name)
         }
       } else {
-        if header.name == GRPCHTTP2Keys.grpcStatusMessage.rawValue {
-          let decodedStatusMessage = GRPCStatusMessageMarshaller.unmarshall(header.value)
-          metadata.addString(decodedStatusMessage, forKey: header.name)
-        } else {
-          metadata.addString(header.value, forKey: header.name)
-        }
+        metadata.addString(header.value, forKey: header.name)
       }
     }
     self = metadata
