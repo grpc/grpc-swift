@@ -361,6 +361,15 @@ extension Target {
     ]
   )
 
+  static let interoperabilityUnitTests: Target = .testTarget(
+    name: "InteroperabilityUnitTests",
+    dependencies: [
+      .grpcInProcessTransport,
+      .interoperabilityTests,
+      .grpcCore
+    ]
+  )
+  
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -724,6 +733,7 @@ let package = Package(
     .grpcHTTP2TransportNIOTransportServicesTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
+    .interoperabilityUnitTests
   ]
 )
 
