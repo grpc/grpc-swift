@@ -970,30 +970,11 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private func makeNon200StatusTrailers(_ customMetadata: Metadata?) -> HPACKHeaders {
-    assert(customMetadata != nil, "Something is very wrong")
-    var headers = HPACKHeaders()
-    headers.reserveCapacity(customMetadata?.count ?? 0)
-    for metadataPair in customMetadata! {
-      headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
-    }
-    let httpStatus = headers.firstString(forKey: .status)
-    assert(httpStatus != nil && httpStatus != "200")
-    return headers
-  }
-
   private func makeTrailers(
-    status: Status?,
+    status: Status,
     customMetadata: Metadata?,
     trailersOnly: Bool
   ) -> HPACKHeaders {
-    // If status isn't present, it means we're returning a non-200 HTTP :status
-    // header. This should already be included in the custom metadata: assert
-    // this and simply return those headers.
-    guard let status else {
-      return makeNon200StatusTrailers(customMetadata)
-    }
-
     // Trailers always contain the grpc-status header, and optionally,
     // grpc-status-message, and custom metadata.
     // If it's a trailers-only response, they will also contain :status and
