@@ -238,12 +238,15 @@ internal final class ConnectionPool {
 
     // If it's one of the connections that should be kept open, then connect
     // straight away.
-    if case .neverGoIdle = idleBehavior {
+    switch idleBehavior {
+    case .neverGoIdle:
       self.eventLoop.execute {
         if manager.sync.isIdle {
           manager.sync.startConnecting()
         }
       }
+    case .closeWhenIdleTimeout:
+      ()
     }
   }
 
@@ -714,14 +717,9 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     // Grab the number of reserved streams (before invalidating the index by adding a connection).
     let reservedStreams = self._connections.values[index].reservedStreams
 
-    // If we have less than the minimum number of connections, don't let
-    // the new connection close when idle.
-    let idleBehavior =
-      self.sync.activeConnections < self.minConnections
-      ? ConnectionManager.IdleBehavior.neverGoIdle : .closeWhenIdleTimeout
-
-    // Replace the connection with a new idle one.
-    self.addConnectionToPool(idleBehavior: idleBehavior)
+    // Replace the connection with a new idle one. Keep the idle behavior, so that
+    // if it's a connection that should be kept alive, we maintain it.
+    self.addConnectionToPool(idleBehavior: manager.idleBehavior)
 
     // Since we're removing this connection from the pool (and no new streams can be created on
     // the connection), the pool manager can ignore any streams reserved against this connection.
@@ -746,15 +744,6 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     // as a dropped reservation, we need to tell the pool manager about them.
     if let droppedReservations = self._connections[id]?.unavailable(), droppedReservations > 0 {
       self.streamLender.returnStreams(droppedReservations, to: self)
-    }
-
-    // Now that a connection has become unavailable, we must make sure the minimum
-    // number of connections is still met.
-    if let connectionManager = self._connections[id]?.manager,
-      case .neverGoIdle = connectionManager.idleBehavior,
-      connectionManager.sync.isTransientFailure
-    {
-      connectionManager.sync.startConnecting()
     }
   }
 }
