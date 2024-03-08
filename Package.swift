@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.8
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -106,7 +106,7 @@ extension Target.Dependency {
   static let interopTestImplementation: Self =
     .target(name: "GRPCInteroperabilityTestsImplementation")
   static let interoperabilityTests: Self = .target(name: "InteroperabilityTests")
-  
+
   // Product dependencies
   static let argumentParser: Self = .product(
     name: "ArgumentParser",
@@ -386,7 +386,7 @@ extension Target {
       .grpcProtobuf
     ]
   )
-  
+
   static let interopTestImplementation: Target = .target(
     name: "GRPCInteroperabilityTestsImplementation",
     dependencies: [
