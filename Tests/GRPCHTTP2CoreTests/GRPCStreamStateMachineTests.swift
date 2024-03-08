@@ -405,7 +405,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         "content-type": "application/grpc",
         "custom-key": "custom-value"
       ])
-    case .receivedMetadata, .failedRequest, .doNothing, .rejectRPC:
+    case .receivedMetadata, .doNothing, .rejectRPC:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
   }
@@ -475,7 +475,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         "content-type": "application/grpc",
         "custom-key": "custom-value"
       ])
-    case .receivedMetadata, .failedRequest, .doNothing, .rejectRPC:
+    case .receivedMetadata, .doNothing, .rejectRPC:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
   }

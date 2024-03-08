@@ -377,7 +377,6 @@ struct GRPCStreamStateMachine {
 
     // Client-specific actions
     case receivedStatusAndMetadata(status: Status, metadata: Metadata)
-    case failedRequest(status: Status, metadata: Metadata)
     case doNothing
 
     // Server-specific actions
@@ -625,7 +624,7 @@ extension GRPCStreamStateMachine {
         .map { HTTPResponseStatus(statusCode: $0) }
 
       guard let httpStatusCode else {
-        return .failedRequest(
+        return .receivedStatusAndMetadata(
           status: .init(code: .unknown, message: "Unexpected non-200 HTTP Status Code."),
           metadata: Metadata(headers: metadata)
         )
@@ -642,7 +641,7 @@ extension GRPCStreamStateMachine {
       if case .clientOpenServerIdle(let state) = self.state {
         self.state = .clientClosedServerIdle(.init(previousState: state))
       }
-      return .failedRequest(
+      return .receivedStatusAndMetadata(
         status: .init(
           code: Status.Code(httpStatusCode: httpStatusCode),
           message: "Unexpected non-200 HTTP Status Code."
@@ -653,7 +652,7 @@ extension GRPCStreamStateMachine {
 
     let contentTypeHeader = metadata.first(name: GRPCHTTP2Keys.contentType.rawValue)
     guard contentTypeHeader.flatMap(ContentType.init) != nil else {
-      return .failedRequest(
+      return .receivedStatusAndMetadata(
         status: .init(
           code: .internalError,
           message: "Missing \(GRPCHTTP2Keys.contentType) header"
@@ -675,7 +674,7 @@ extension GRPCStreamStateMachine {
     if let serverEncoding = metadata.first(name: GRPCHTTP2Keys.encoding.rawValue) {
       guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding) else {
         return .error(
-          .failedRequest(
+          .receivedStatusAndMetadata(
             status: .init(
               code: .internalError,
               message:
