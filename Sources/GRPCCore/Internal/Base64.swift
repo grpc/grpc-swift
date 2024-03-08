@@ -70,6 +70,7 @@
  SOFTWARE.
  */
 
+// swift-format-ignore: DontRepeatTypeInStaticProperties
 enum Base64 {
   struct DecodingOptions: OptionSet {
     internal let rawValue: UInt
@@ -94,7 +95,7 @@ enum Base64 {
     // In Base64, 3 bytes become 4 output characters, and we pad to the
     // nearest multiple of four.
     let base64StringLength = ((bytes.count + 2) / 3) * 4
-    let alphabet = Base64.base64Encodings
+    let alphabet = Base64.encodeBase64
 
     return String(customUnsafeUninitializedCapacity: base64StringLength) { backingStorage in
       var input = bytes.makeIterator()
@@ -267,7 +268,7 @@ enum Base64 {
 
   private static let encodePaddingCharacter: UInt8 = 61
 
-  private static let base64Encodings: [UInt8] = [
+  private static let encodeBase64: [UInt8] = [
     UInt8(ascii: "A"), UInt8(ascii: "B"), UInt8(ascii: "C"), UInt8(ascii: "D"),
     UInt8(ascii: "E"), UInt8(ascii: "F"), UInt8(ascii: "G"), UInt8(ascii: "H"),
     UInt8(ascii: "I"), UInt8(ascii: "J"), UInt8(ascii: "K"), UInt8(ascii: "L"),
