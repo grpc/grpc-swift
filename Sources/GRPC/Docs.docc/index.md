@@ -28,7 +28,8 @@ gRPC Swift Version | Earliest Swift Version
 `1.8.0 ..< 1.11.0` | 5.4
 `1.11.0..< 1.16.0`.| 5.5
 `1.16.0..< 1.20.0` | 5.6
-`1.20.0...`        | 5.7
+`1.20.0..< 1.22.0` | 5.7
+`1.22.0...`        | 5.8
 
 Versions of clients and services which are use Swift's Concurrency support
 are available from gRPC Swift 1.8.0 and require Swift 5.6 and newer.
