@@ -1154,21 +1154,20 @@ extension GRPCStreamStateMachine {
 
       // Secondly, find a compatible encoding the server can use to compress outbound messages,
       // based on the encodings the client has advertised.
-      let outboundEncoding: CompressionAlgorithm
+      var outboundEncoding: CompressionAlgorithm = .identity
       let clientAdvertisedEncodings = metadata.values(
         forHeader: GRPCHTTP2Keys.acceptEncoding.rawValue,
         canonicalForm: true
       )
-      .compactMap { CompressionAlgorithm(rawValue: String($0)) }
-      if !clientAdvertisedEncodings.isEmpty {
-        // Find the preferred encoding and use it to compress responses.
-        // If it's identity, just skip it altogether, since we won't be
-        // compressing.
-        outboundEncoding =
-          clientAdvertisedEncodings
-          .first { isIdentityOrCompatibleEncoding($0) } ?? .identity
-      } else {
-        outboundEncoding = .identity
+      // Find the preferred encoding and use it to compress responses.
+      // If it's identity, just skip it altogether, since we won't be
+      // compressing.
+      for clientAdvertisedEncoding in clientAdvertisedEncodings {
+        if let algorithm = CompressionAlgorithm(rawValue: String(clientAdvertisedEncoding)),
+           isIdentityOrCompatibleEncoding(algorithm) {
+          outboundEncoding = algorithm
+          break
+        }
       }
 
       if endStream {
