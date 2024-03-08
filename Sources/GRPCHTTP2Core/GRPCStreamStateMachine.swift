@@ -17,7 +17,7 @@
 import GRPCCore
 import NIOCore
 import NIOHPACK
-import enum NIOHTTP1.HTTPResponseStatus
+import NIOHTTP1
 
 enum Scheme: String {
   case http
