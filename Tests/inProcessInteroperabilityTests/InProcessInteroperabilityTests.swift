@@ -22,7 +22,7 @@ import XCTest
 
 final class InProcessInteroperabilityTests: XCTestCase {
   func runInProcessTransport(
-    interopTest: @escaping (GRPCClient) async throws -> Void
+    interopTestCase: InteroperabilityTestCase
   ) async throws {
     do {
       let inProcess = InProcessTransport.makePair()
@@ -38,7 +38,7 @@ final class InProcessInteroperabilityTests: XCTestCase {
             clientGroup.addTask {
               try await client.run()
             }
-            try await interopTest(client)
+            try await interopTestCase.makeTest().run(client: client)
 
             clientGroup.cancelAll()
           }
@@ -53,57 +53,54 @@ final class InProcessInteroperabilityTests: XCTestCase {
   }
 
   func testEmtyUnary() async throws {
-    let emptyUnaryTestCase = InteroperabilityTestCase.emptyUnary.makeTest()
-    try await runInProcessTransport(interopTest: emptyUnaryTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.emptyUnary)
   }
 
   func testLargeUnary() async throws {
-    let largeUnaryTestCase = LargeUnary()
-    try await runInProcessTransport(interopTest: largeUnaryTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.largeUnary)
   }
 
   func testClientStreaming() async throws {
-    let clientStreamingTestCase = ClientStreaming()
-    try await runInProcessTransport(interopTest: clientStreamingTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.clientStreaming)
   }
 
   func testServerStreaming() async throws {
-    let serverStreamingTestCase = ServerStreaming()
-    try await runInProcessTransport(interopTest: serverStreamingTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.serverStreaming)
   }
 
   func testPingPong() async throws {
-    let pingPongTestCase = PingPong()
-    try await runInProcessTransport(interopTest: pingPongTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.pingPong)
   }
 
   func testEmptyStream() async throws {
-    let emptyStreamTestCase = EmptyStream()
-    try await runInProcessTransport(interopTest: emptyStreamTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.emptyStream)
   }
 
   func testCustomMetdata() async throws {
-    let customMetadataTestCase = CustomMetadata()
-    try await runInProcessTransport(interopTest: customMetadataTestCase.run)
+    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.customMetadata)
   }
 
   func testStatusCodeAndMessage() async throws {
-    let statusCodeAndMessageTestCase = StatusCodeAndMessage()
-    try await runInProcessTransport(interopTest: statusCodeAndMessageTestCase.run)
+    try await self.runInProcessTransport(
+      interopTestCase: InteroperabilityTestCase.statusCodeAndMessage
+    )
   }
 
   func testSpecialStatusMessage() async throws {
-    let specialStatusMessageTestCase = StatusCodeAndMessage()
-    try await runInProcessTransport(interopTest: specialStatusMessageTestCase.run)
+    try await self.runInProcessTransport(
+      interopTestCase: InteroperabilityTestCase.specialStatusMessage
+    )
   }
 
   func testUnimplementedMethod() async throws {
-    let unimplementedMethodTestCase = StatusCodeAndMessage()
-    try await runInProcessTransport(interopTest: unimplementedMethodTestCase.run)
+    try await self.runInProcessTransport(
+      interopTestCase: InteroperabilityTestCase.unimplementedMethod
+    )
   }
 
   func testUnimplementedService() async throws {
-    let unimplementedServiceTestCase = StatusCodeAndMessage()
-    try await runInProcessTransport(interopTest: unimplementedServiceTestCase.run)
+    try await self.runInProcessTransport(
+      interopTestCase: InteroperabilityTestCase.unimplementedService
+    )
   }
 }
