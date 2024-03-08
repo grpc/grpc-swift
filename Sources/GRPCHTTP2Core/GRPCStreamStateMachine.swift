@@ -54,11 +54,6 @@ enum GRPCStreamStateMachineState {
     let maximumPayloadSize: Int
   }
 
-  enum DecompressionState {
-    case notYetKnown
-    case known(CompressionAlgorithm)
-  }
-
   struct ClientOpenServerIdleState {
     let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
@@ -76,36 +71,16 @@ enum GRPCStreamStateMachineState {
 
     init(
       previousState: ClientIdleServerIdleState,
-      compressionAlgorithm: CompressionAlgorithm,
-      decompressionState: DecompressionState
+      compressor: Zlib.Compressor?,
+      framer: GRPCMessageFramer,
+      decompressor: Zlib.Decompressor?,
+      deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     ) {
       self.maximumPayloadSize = previousState.maximumPayloadSize
-
-      if let zlibMethod = Zlib.Method(encoding: compressionAlgorithm) {
-        self.compressor = Zlib.Compressor(method: zlibMethod)
-      }
-      self.framer = GRPCMessageFramer()
-      self.outboundCompression = compressionAlgorithm
-
-      // In the case of the server, we will know what the decompression algorithm
-      // will be, since we know what the inbound encoding is, as the client has
-      // sent it when starting the request.
-      // In the case of the client, it will need to wait until the server responds
-      // with its initial metadata.
-      switch decompressionState {
-      case .notYetKnown:
-        self.deframer = nil
-      case .known(let decompressionAlgorithm):
-        if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
-          self.decompressor = Zlib.Decompressor(method: zlibMethod)
-        }
-        let decoder = GRPCMessageDeframer(
-          maximumPayloadSize: previousState.maximumPayloadSize,
-          decompressor: self.decompressor
-        )
-        self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
-      }
-
+      self.compressor = compressor
+      self.framer = framer
+      self.decompressor = decompressor
+      self.deframer = deframer
       self.inboundMessageBuffer = .init()
     }
   }
@@ -119,38 +94,16 @@ enum GRPCStreamStateMachineState {
 
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
 
-    /// This should be called from the server path, as the deframer will already be configured in this scenario.
-    init(previousState: ClientOpenServerIdleState) {
-      self.framer = previousState.framer
-      self.compressor = previousState.compressor
-
-      // In the case of the server, it will already have a deframer set up,
-      // because it already knows what encoding the client is using:
-      // it's okay to force-unwrap.
-      self.deframer = previousState.deframer!
-      self.decompressor = previousState.decompressor
-
-      self.inboundMessageBuffer = previousState.inboundMessageBuffer
-    }
-
-    /// This should only be called from the client path, as the deframer has not yet been set up.
     init(
       previousState: ClientOpenServerIdleState,
-      decompressionAlgorithm: CompressionAlgorithm
+      deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>,
+      decompressor: Zlib.Decompressor?
     ) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
 
-      // In the case of the client, it will only be able to set up the deframer
-      // after it receives the chosen encoding from the server.
-      if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
-        self.decompressor = Zlib.Decompressor(method: zlibMethod)
-      }
-      let decoder = GRPCMessageDeframer(
-        maximumPayloadSize: previousState.maximumPayloadSize,
-        decompressor: self.decompressor
-      )
-      self.deframer = NIOSingleStepByteToMessageProcessor(decoder)
+      self.deframer = deframer
+      self.decompressor = decompressor
 
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
@@ -513,11 +466,16 @@ extension GRPCStreamStateMachine {
     // Client sends metadata only when opening the stream.
     switch self.state {
     case .clientIdleServerIdle(let state):
+      let outboundEncoding = configuration.outboundEncoding
+      let compressor = Zlib.Method(encoding: outboundEncoding)
+        .flatMap { Zlib.Compressor(method: $0) }
       self.state = .clientOpenServerIdle(
         .init(
           previousState: state,
-          compressionAlgorithm: configuration.outboundEncoding,
-          decompressionState: .notYetKnown
+          compressor: compressor,
+          framer: GRPCMessageFramer(),
+          decompressor: nil,
+          deframer: nil
         )
       )
       return self.makeClientHeaders(
@@ -733,10 +691,18 @@ extension GRPCStreamStateMachine {
         case .error(let failure):
           return failure
         case .success(let inboundEncoding):
+          let decompressor = Zlib.Method(encoding: inboundEncoding)
+            .flatMap { Zlib.Decompressor(method: $0) }
+          let deframer = GRPCMessageDeframer(
+            maximumPayloadSize: state.maximumPayloadSize,
+            decompressor: decompressor
+          )
+          
           self.state = .clientOpenServerOpen(
             .init(
               previousState: state,
-              decompressionAlgorithm: inboundEncoding
+              deframer: NIOSingleStepByteToMessageProcessor(deframer),
+              decompressor: decompressor
             )
           )
           return .receivedMetadata(Metadata(headers: metadata))
@@ -923,7 +889,16 @@ extension GRPCStreamStateMachine {
     // Server sends initial metadata
     switch self.state {
     case .clientOpenServerIdle(let state):
-      self.state = .clientOpenServerOpen(.init(previousState: state))
+      self.state = .clientOpenServerOpen(
+        .init(
+          previousState: state,
+          // In the case of the server, it will already have a deframer set up,
+          // because it already knows what encoding the client is using:
+          // it's okay to force-unwrap.
+          deframer: state.deframer!,
+          decompressor: state.decompressor
+        )
+      )
       return self.makeResponseHeaders(
         outboundEncoding: state.outboundCompression,
         configuration: configuration,
@@ -1157,11 +1132,22 @@ extension GRPCStreamStateMachine {
           )
         )
       } else {
+        let compressor = Zlib.Method(encoding: outboundEncoding)
+          .flatMap { Zlib.Compressor(method: $0) }
+        let decompressor = Zlib.Method(encoding: inboundEncoding)
+          .flatMap { Zlib.Decompressor(method: $0) }
+        let deframer = GRPCMessageDeframer(
+          maximumPayloadSize: state.maximumPayloadSize,
+          decompressor: decompressor
+        )
+        
         self.state = .clientOpenServerIdle(
           .init(
             previousState: state,
-            compressionAlgorithm: outboundEncoding,
-            decompressionState: .known(inboundEncoding)
+            compressor: compressor,
+            framer: GRPCMessageFramer(),
+            decompressor: decompressor,
+            deframer: NIOSingleStepByteToMessageProcessor(deframer)
           )
         )
       }
