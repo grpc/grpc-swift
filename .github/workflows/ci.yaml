@@ -61,7 +61,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
           - image: swift:5.10-jammy
-            swift-version: 5.10
+            swift-version: '5.10'
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
