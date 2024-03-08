@@ -637,10 +637,7 @@ extension GRPCStreamStateMachine {
         return .doNothing
       }
 
-      // Close the client if open, and forward the mapped status code.
-      if case .clientOpenServerIdle(let state) = self.state {
-        self.state = .clientClosedServerIdle(.init(previousState: state))
-      }
+      // Forward the mapped status code.
       return .receivedStatusAndMetadata(
         status: .init(
           code: Status.Code(httpStatusCode: httpStatusCode),
@@ -723,6 +720,7 @@ extension GRPCStreamStateMachine {
     switch self.state {
     case .clientOpenServerIdle(let state):
       if let failedValidation = self.clientValidateHeadersReceivedFromServer(metadata) {
+        self.state = .clientClosedServerIdle(.init(previousState: state))
         return failedValidation
       }
 
