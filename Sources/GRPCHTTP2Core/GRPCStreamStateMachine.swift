@@ -17,7 +17,7 @@
 import GRPCCore
 import NIOCore
 import NIOHPACK
-import NIOHTTP1
+import enum NIOHTTP1.HTTPResponseStatus
 
 enum Scheme: String {
   case http
@@ -55,8 +55,8 @@ enum GRPCStreamStateMachineState {
   }
 
   enum DecompressionState {
-    case decompressionNotYetKnown
-    case decompression(CompressionAlgorithm)
+    case notYetKnown
+    case known(CompressionAlgorithm)
   }
 
   struct ClientOpenServerIdleState {
@@ -93,9 +93,9 @@ enum GRPCStreamStateMachineState {
       // In the case of the client, it will need to wait until the server responds
       // with its initial metadata.
       switch decompressionState {
-      case .decompressionNotYetKnown:
+      case .notYetKnown:
         self.deframer = nil
-      case .decompression(let decompressionAlgorithm):
+      case .known(let decompressionAlgorithm):
         if let zlibMethod = Zlib.Method(encoding: decompressionAlgorithm) {
           self.decompressor = Zlib.Decompressor(method: zlibMethod)
         }
@@ -344,7 +344,7 @@ struct GRPCStreamStateMachine {
     case .client:
       try self.clientSend(message: message, endStream: endStream)
     case .server:
-      guard !endStream else {
+      if endStream {
         try self.invalidState(
           "Can't end response stream by sending a message - send(status:metadata:trailersOnly:) must be called"
         )
@@ -353,8 +353,11 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func send(status: Status, metadata: Metadata, trailersOnly: Bool) throws -> HPACKHeaders
-  {
+  mutating func send(
+    status: Status,
+    metadata: Metadata,
+    trailersOnly: Bool
+  ) throws -> HPACKHeaders {
     switch self.configuration {
     case .client:
       try self.invalidState(
@@ -515,7 +518,7 @@ extension GRPCStreamStateMachine {
         .init(
           previousState: state,
           compressionAlgorithm: configuration.outboundEncoding,
-          decompressionState: .decompressionNotYetKnown
+          decompressionState: .notYetKnown
         )
       )
       return self.makeClientHeaders(
@@ -606,12 +609,16 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func validateHeaders(_ metadata: HPACKHeaders) -> OnMetadataReceived? {
-    let grpcStatus = metadata.firstString(forKey: .grpcStatus)
-      .flatMap { Int($0) }
-      .flatMap { Status.Code(rawValue: $0) }
-    let httpStatus = metadata.firstString(forKey: .status)
-    guard grpcStatus != nil || httpStatus == "200" else {
+  private mutating func clientValidateHeadersReceivedFromServer(_ metadata: HPACKHeaders) -> OnMetadataReceived? {
+    var httpStatus: String? {
+      metadata.firstString(forKey: .status)
+    }
+    var grpcStatus: Status.Code? {
+      metadata.firstString(forKey: .grpcStatus)
+        .flatMap { Int($0) }
+        .flatMap { Status.Code(rawValue: $0) }
+    }
+    guard httpStatus == "200" || grpcStatus != nil else {
       let httpStatusCode =
         httpStatus
         .flatMap { Int($0) }
@@ -715,13 +722,14 @@ extension GRPCStreamStateMachine {
   ) throws -> OnMetadataReceived {
     switch self.state {
     case .clientOpenServerIdle(let state):
-      if let failedValidation = self.validateHeaders(metadata) {
+      if let failedValidation = self.clientValidateHeadersReceivedFromServer(metadata) {
         return failedValidation
       }
 
       if endStream {
         // This is a trailers-only response: close server.
         self.state = .clientOpenServerClosed(.init(previousState: state))
+        return try self.validateAndReturnStatusAndMetadata(metadata)
       } else {
         switch self.processInboundEncoding(metadata) {
         case .error(let failure):
@@ -733,9 +741,9 @@ extension GRPCStreamStateMachine {
               decompressionAlgorithm: inboundEncoding
             )
           )
+          return .receivedMetadata(Metadata(headers: metadata))
         }
       }
-      return .receivedMetadata(Metadata(headers: metadata))
 
     case .clientOpenServerOpen(let state):
       // This state is valid even if endStream is not set: server can send
@@ -749,13 +757,14 @@ extension GRPCStreamStateMachine {
       return try self.validateAndReturnStatusAndMetadata(metadata)
 
     case .clientClosedServerIdle(let state):
-      if let failedValidation = self.validateHeaders(metadata) {
+      if let failedValidation = self.clientValidateHeadersReceivedFromServer(metadata) {
         return failedValidation
       }
 
       if endStream {
         // This is a trailers-only response: close server.
         self.state = .clientClosedServerClosed(.init(previousState: state))
+        return try self.validateAndReturnStatusAndMetadata(metadata)
       } else {
         switch self.processInboundEncoding(metadata) {
         case .error(let failure):
@@ -767,9 +776,9 @@ extension GRPCStreamStateMachine {
               decompressionAlgorithm: inboundEncoding
             )
           )
+          return .receivedMetadata(Metadata(headers: metadata))
         }
       }
-      return .receivedMetadata(Metadata(headers: metadata))
 
     case .clientClosedServerOpen(let state):
       // This state is valid even if endStream is not set: server can send
@@ -966,6 +975,7 @@ extension GRPCStreamStateMachine {
   private func makeNon200StatusTrailers(_ customMetadata: Metadata?) -> HPACKHeaders {
     assert(customMetadata != nil, "Something is very wrong")
     var headers = HPACKHeaders()
+    headers.reserveCapacity(customMetadata?.count ?? 0)
     for metadataPair in customMetadata! {
       headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
     }
@@ -1022,8 +1032,8 @@ extension GRPCStreamStateMachine {
   }
 
   private mutating func serverSend(
-    status: Status?,
-    customMetadata: Metadata?,
+    status: Status,
+    customMetadata: Metadata,
     trailersOnly: Bool
   ) throws -> HPACKHeaders {
     // Close the server.
@@ -1174,7 +1184,7 @@ extension GRPCStreamStateMachine {
           .init(
             previousState: state,
             compressionAlgorithm: outboundEncoding,
-            decompressionState: .decompression(inboundEncoding)
+            decompressionState: .known(inboundEncoding)
           )
         )
       }
@@ -1349,6 +1359,7 @@ extension Zlib.Method {
 extension Metadata {
   init(headers: HPACKHeaders) {
     var metadata = Metadata()
+    metadata.reserveCapacity(headers.count)
     for header in headers {
       if header.name.hasSuffix("-bin") {
         do {

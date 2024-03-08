@@ -385,11 +385,29 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     }
   }
 
-  func testReceiveEndTrailerWhenClientOpenAndServerIdle() {
+  func testReceiveEndTrailerWhenClientOpenAndServerIdle() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerIdle)
 
-    // Receive a trailer-only response
-    XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+    // Receive a trailers-only response
+    let trailersOnlyResponse: HPACKHeaders = [
+      GRPCHTTP2Keys.status.rawValue: "200",
+      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
+      GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.internalError.rawValue),
+      GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall("Some status message")!,
+      "custom-key": "custom-value"
+    ]
+    let trailers = try stateMachine.receive(metadata: trailersOnlyResponse, endStream: true)
+    switch trailers {
+    case .receivedStatusAndMetadata(let status, let metadata):
+      XCTAssertEqual(status, Status(code: .internalError, message: "Some status message"))
+      XCTAssertEqual(metadata, [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "custom-key": "custom-value"
+      ])
+    case .receivedMetadata, .failedRequest, .doNothing, .rejectRPC:
+      XCTFail("Expected .receivedStatusAndMetadata")
+    }
   }
 
   func testReceiveEndTrailerWhenServerOpen() throws {
@@ -437,11 +455,29 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     }
   }
 
-  func testReceiveEndTrailerWhenClientClosedAndServerIdle() {
+  func testReceiveEndTrailerWhenClientClosedAndServerIdle() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientClosedServerIdle)
 
     // Server sends a trailers-only response
-    XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+    let trailersOnlyResponse: HPACKHeaders = [
+      GRPCHTTP2Keys.status.rawValue: "200",
+      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
+      GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.internalError.rawValue),
+      GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall("Some status message")!,
+      "custom-key": "custom-value"
+    ]
+    let trailers = try stateMachine.receive(metadata: trailersOnlyResponse, endStream: true)
+    switch trailers {
+    case .receivedStatusAndMetadata(let status, let metadata):
+      XCTAssertEqual(status, Status(code: .internalError, message: "Some status message"))
+      XCTAssertEqual(metadata, [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "custom-key": "custom-value"
+      ])
+    case .receivedMetadata, .failedRequest, .doNothing, .rejectRPC:
+      XCTFail("Expected .receivedStatusAndMetadata")
+    }
   }
 
   func testReceiveEndTrailerWhenClientClosedAndServerClosed() {
@@ -450,7 +486,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     // Close server again (endStream = true) and assert we don't throw.
     // This can happen if the previous close was caused by a grpc-status header
     // and then the server sends an empty frame with EOS set.
-    XCTAssertNoThrow(try stateMachine.receive(metadata: .init(), endStream: true))
+    XCTAssertEqual(try stateMachine.receive(metadata: .init(), endStream: true), .doNothing)
   }
 
   // - MARK: Receive message

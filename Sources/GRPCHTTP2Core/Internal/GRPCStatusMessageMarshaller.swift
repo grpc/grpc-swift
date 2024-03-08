@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// swiftformat:disable:next enumNamespaces
 enum GRPCStatusMessageMarshaller {
   /// Adds percent encoding to the given message.
   ///
