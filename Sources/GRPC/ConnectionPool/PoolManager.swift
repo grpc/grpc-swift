@@ -33,6 +33,11 @@ internal final class PoolManager {
     @usableFromInline
     var maxWaiters: Int
 
+    /// The minimum number of connections to keep open per pool.
+    /// This number of connections will never go idle and be closed.
+    @usableFromInline
+    var minConnections: Int
+
     /// A load threshold in the range `0.0 ... 1.0` beyond which another connection will be started
     /// (assuming there is a connection available to start).
     @usableFromInline
@@ -62,6 +67,7 @@ internal final class PoolManager {
     internal init(
       maxConnections: Int,
       maxWaiters: Int,
+      minConnections: Int,
       loadThreshold: Double,
       assumedMaxConcurrentStreams: Int = 100,
       connectionBackoff: ConnectionBackoff,
@@ -70,6 +76,7 @@ internal final class PoolManager {
     ) {
       self.maxConnections = maxConnections
       self.maxWaiters = maxWaiters
+      self.minConnections = minConnections
       self.loadThreshold = loadThreshold
       self.assumedMaxConcurrentStreams = assumedMaxConcurrentStreams
       self.connectionBackoff = connectionBackoff
@@ -225,6 +232,7 @@ internal final class PoolManager {
       return ConnectionPool(
         eventLoop: eventLoop,
         maxWaiters: configuration.maxWaiters,
+        minConnections: configuration.minConnections,
         reservationLoadThreshold: configuration.loadThreshold,
         assumedMaxConcurrentStreams: configuration.assumedMaxConcurrentStreams,
         connectionBackoff: configuration.connectionBackoff,

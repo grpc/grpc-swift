@@ -275,6 +275,10 @@ extension GRPCChannelPool.Configuration {
     /// Defaults to 100.
     public var maxWaitersPerEventLoop: Int = 100
 
+    /// The minimum number of connections to keep open in this pool, per EventLoop.
+    /// This number of connections per EventLoop will never go idle and be closed.
+    public var minConnectionsPerEventLoop: Int = 0
+
     /// The maximum amount of time a caller is willing to wait for a stream for before timing out.
     ///
     /// Defaults to 30 seconds.

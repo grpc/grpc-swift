@@ -25,6 +25,14 @@ import NIOHTTP2
 // event loop is being used.
 @usableFromInline
 internal final class ConnectionManager: @unchecked Sendable {
+
+  /// Whether the connection managed by this manager should be allowed to go idle and be closed, or
+  /// if it should remain open indefinitely even when there are no active streams.
+  internal enum IdleBehavior {
+    case closeWhenIdleTimeout
+    case neverGoIdle
+  }
+
   internal enum Reconnect {
     case none
     case after(TimeInterval)
@@ -324,6 +332,9 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// attempts should be made at all.
   private let connectionBackoff: ConnectionBackoff?
 
+  /// Whether this connection should be allowed to go idle (and thus be closed when the idle timer fires).
+  internal let idleBehavior: IdleBehavior
+
   /// A logger.
   internal var logger: Logger
 
@@ -356,12 +367,14 @@ internal final class ConnectionManager: @unchecked Sendable {
     configuration: ClientConnection.Configuration,
     channelProvider: ConnectionManagerChannelProvider? = nil,
     connectivityDelegate: ConnectionManagerConnectivityDelegate?,
+    idleBehavior: IdleBehavior,
     logger: Logger
   ) {
     self.init(
       eventLoop: configuration.eventLoopGroup.next(),
       channelProvider: channelProvider ?? DefaultChannelProvider(configuration: configuration),
       callStartBehavior: configuration.callStartBehavior.wrapped,
+      idleBehavior: idleBehavior,
       connectionBackoff: configuration.connectionBackoff,
       connectivityDelegate: connectivityDelegate,
       http2Delegate: nil,
@@ -373,6 +386,7 @@ internal final class ConnectionManager: @unchecked Sendable {
     eventLoop: EventLoop,
     channelProvider: ConnectionManagerChannelProvider,
     callStartBehavior: CallStartBehavior.Behavior,
+    idleBehavior: IdleBehavior,
     connectionBackoff: ConnectionBackoff?,
     connectivityDelegate: ConnectionManagerConnectivityDelegate?,
     http2Delegate: ConnectionManagerHTTP2Delegate?,
@@ -392,6 +406,7 @@ internal final class ConnectionManager: @unchecked Sendable {
     self.connectionBackoff = connectionBackoff
     self.connectivityDelegate = connectivityDelegate
     self.http2Delegate = http2Delegate
+    self.idleBehavior = idleBehavior
 
     self.connectionID = connectionID
     self.channelNumber = channelNumber
@@ -799,7 +814,7 @@ internal final class ConnectionManager: @unchecked Sendable {
       // Yes, after some time.
       case let .after(delay):
         let error = GRPCStatus(code: .unavailable, message: "Connection closed while connecting")
-        // Fail the candidate mux promise. KEep the 'readyChannelMuxPromise' as we'll try again.
+        // Fail the candidate mux promise. Keep the 'readyChannelMuxPromise' as we'll try again.
         connecting.candidateMuxPromise.fail(error)
 
         let scheduled = self.eventLoop.scheduleTask(in: .seconds(timeInterval: delay)) {

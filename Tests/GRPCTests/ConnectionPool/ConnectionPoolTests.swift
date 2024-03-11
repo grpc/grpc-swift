@@ -53,6 +53,8 @@ final class ConnectionPoolTests: GRPCTestCase {
   private func makePool(
     waiters: Int = 1000,
     reservationLoadThreshold: Double = 0.9,
+    minConnections: Int = 0,
+    assumedMaxConcurrentStreams: Int = 100,
     now: @escaping () -> NIODeadline = { .now() },
     connectionBackoff: ConnectionBackoff = ConnectionBackoff(),
     delegate: GRPCConnectionPoolDelegate? = nil,
@@ -63,8 +65,9 @@ final class ConnectionPoolTests: GRPCTestCase {
     return ConnectionPool(
       eventLoop: self.eventLoop,
       maxWaiters: waiters,
+      minConnections: minConnections,
       reservationLoadThreshold: reservationLoadThreshold,
-      assumedMaxConcurrentStreams: 100,
+      assumedMaxConcurrentStreams: assumedMaxConcurrentStreams,
       connectionBackoff: connectionBackoff,
       channelProvider: channelProvider,
       streamLender: HookedStreamLender(
@@ -1068,6 +1071,87 @@ final class ConnectionPoolTests: GRPCTestCase {
     let error = GRPCConnectionPoolError(code: .deadlineExceeded)
     XCTAssertEqual(error.code, .deadlineExceeded)
     XCTAssertNotEqual(error.code, .shutdown)
+  }
+
+  func testMinimumConnectionsAreOpenRightAfterInitializing() {
+    let controller = ChannelController()
+    let pool = self.makePool(minConnections: 5, channelProvider: controller)
+
+    pool.initialize(connections: 20)
+    self.eventLoop.run()
+
+    XCTAssertEqual(pool.sync.connections, 20)
+    XCTAssertEqual(pool.sync.idleConnections, 15)
+    XCTAssertEqual(pool.sync.activeConnections, 5)
+    XCTAssertEqual(pool.sync.waiters, 0)
+    XCTAssertEqual(pool.sync.availableStreams, 0)
+    XCTAssertEqual(pool.sync.reservedStreams, 0)
+    XCTAssertEqual(pool.sync.transientFailureConnections, 0)
+  }
+
+  func testMinimumConnectionsAreOpenAfterOneIsQuiesced() {
+    let controller = ChannelController()
+    let pool = self.makePool(
+      minConnections: 1,
+      assumedMaxConcurrentStreams: 1,
+      channelProvider: controller
+    )
+
+    // Initialize two connections, and make sure that only one of them is active,
+    // since we have set minConnections to 1.
+    pool.initialize(connections: 2)
+    self.eventLoop.run()
+    XCTAssertEqual(pool.sync.connections, 2)
+    XCTAssertEqual(pool.sync.idleConnections, 1)
+    XCTAssertEqual(pool.sync.activeConnections, 1)
+    XCTAssertEqual(pool.sync.transientFailureConnections, 0)
+
+    // Open two streams, which, because the maxConcurrentStreams is 1, will
+    // create two channels.
+    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    // Start creating the channels.
+    self.eventLoop.run()
+
+    // Make both connections ready.
+    controller.connectChannel(atIndex: 0)
+    controller.sendSettingsToChannel(atIndex: 0)
+    controller.connectChannel(atIndex: 1)
+    controller.sendSettingsToChannel(atIndex: 1)
+
+    // Run the loop to create the streams/connections.
+    self.eventLoop.run()
+    XCTAssertNoThrow(try w1.wait())
+    controller.openStreamInChannel(atIndex: 0)
+    XCTAssertNoThrow(try w2.wait())
+    controller.openStreamInChannel(atIndex: 1)
+
+    XCTAssertEqual(pool.sync.connections, 2)
+    XCTAssertEqual(pool.sync.idleConnections, 0)
+    XCTAssertEqual(pool.sync.activeConnections, 2)
+    XCTAssertEqual(pool.sync.transientFailureConnections, 0)
+
+    // Quiesce the connection that should be kept alive.
+    // Another connection should be brought back up immediately after, to maintain
+    // the minimum number of active connections that won't go idle.
+    controller.sendGoAwayToChannel(atIndex: 0)
+    XCTAssertEqual(pool.sync.connections, 3)
+    XCTAssertEqual(pool.sync.idleConnections, 1)
+    XCTAssertEqual(pool.sync.activeConnections, 2)
+    XCTAssertEqual(pool.sync.transientFailureConnections, 0)
+
+    // Now quiesce the other one. This will add a new idle connection, but it
+    // won't connect it right away.
+    controller.sendGoAwayToChannel(atIndex: 1)
+    XCTAssertEqual(pool.sync.connections, 4)
+    XCTAssertEqual(pool.sync.idleConnections, 2)
+    XCTAssertEqual(pool.sync.activeConnections, 2)
+    XCTAssertEqual(pool.sync.transientFailureConnections, 0)
   }
 }
 

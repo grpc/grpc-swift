@@ -33,6 +33,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     return ConnectionPool(
       eventLoop: eventLoop,
       maxWaiters: maxWaiters,
+      minConnections: 0,
       reservationLoadThreshold: loadThreshold,
       assumedMaxConcurrentStreams: maxConcurrentStreams,
       connectionBackoff: connectionBackoff,

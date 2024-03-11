@@ -24,7 +24,8 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   typealias OutboundOut = HTTP2Frame
 
   /// The amount of time to wait before closing the channel when there are no active streams.
-  private let idleTimeout: TimeAmount
+  /// If nil, then we shouldn't schedule idle tasks.
+  private let idleTimeout: TimeAmount?
 
   /// The ping handler.
   private var pingHandler: PingHandler
@@ -78,7 +79,12 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     logger: Logger
   ) {
     self.mode = .client(connectionManager, multiplexer)
-    self.idleTimeout = idleTimeout
+    switch connectionManager.idleBehavior {
+    case .neverGoIdle:
+      self.idleTimeout = nil
+    case .closeWhenIdleTimeout:
+      self.idleTimeout = idleTimeout
+    }
     self.stateMachine = .init(role: .client, logger: logger)
     self.pingHandler = PingHandler(
       pingCode: 5,
@@ -135,7 +141,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     }
 
     // Handle idle timeout creation/cancellation.
-    if let idleTask = operations.idleTask {
+    if let idleTimeout = self.idleTimeout, let idleTask = operations.idleTask {
       switch idleTask {
       case let .cancel(task):
         self.stateMachine.logger.debug("idle timeout task cancelled")
@@ -145,9 +151,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
         if self.idleTimeout != .nanoseconds(.max), let context = self.context {
           self.stateMachine.logger.debug(
             "scheduling idle timeout task",
-            metadata: [MetadataKey.delayMs: "\(self.idleTimeout.milliseconds)"]
+            metadata: [MetadataKey.delayMs: "\(idleTimeout.milliseconds)"]
           )
-          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+          let task = context.eventLoop.scheduleTask(in: idleTimeout) {
             self.stateMachine.logger.debug("idle timeout task fired")
             self.idleTimeoutFired()
           }
