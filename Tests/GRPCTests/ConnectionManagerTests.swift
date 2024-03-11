@@ -59,6 +59,7 @@ class ConnectionManagerTests: GRPCTestCase {
       configuration: configuration,
       channelProvider: channelProvider.map { HookedChannelProvider($0) },
       connectivityDelegate: self.monitor,
+      idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )
   }
@@ -948,6 +949,7 @@ extension ConnectionManagerTests {
         return loop.makeFailedFuture(DoomedChannelError())
       },
       connectivityDelegate: nil,
+      idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )
     let candidate = manager.getHTTP2Multiplexer()
@@ -1207,6 +1209,7 @@ extension ConnectionManagerTests {
         return eventLoop.makeSucceededFuture(channel)
       },
       callStartBehavior: .waitsForConnectivity,
+      idleBehavior: .closeWhenIdleTimeout,
       connectionBackoff: ConnectionBackoff(),
       connectivityDelegate: nil,
       http2Delegate: http2,
@@ -1383,6 +1386,7 @@ extension ConnectionManagerTests {
       configuration: configuration,
       channelProvider: Provider(),
       connectivityDelegate: self.monitor,
+      idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )
 

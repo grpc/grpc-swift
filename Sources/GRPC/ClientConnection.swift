@@ -131,6 +131,7 @@ public final class ClientConnection: Sendable {
     self.connectionManager = ConnectionManager(
       configuration: configuration,
       connectivityDelegate: monitor,
+      idleBehavior: .closeWhenIdleTimeout,
       logger: configuration.backgroundActivityLogger
     )
   }

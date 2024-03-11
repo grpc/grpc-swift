@@ -85,6 +85,11 @@ internal final class ConnectionPool {
   @usableFromInline
   internal let maxWaiters: Int
 
+  /// The number of connections in the pool that should always be kept open (i.e. they won't go idle).
+  /// In other words, it's the number of connections for which we should ignore idle timers.
+  @usableFromInline
+  internal let minConnections: Int
+
   /// Configuration for backoff between subsequence connection attempts.
   @usableFromInline
   internal let connectionBackoff: ConnectionBackoff
@@ -157,6 +162,7 @@ internal final class ConnectionPool {
   init(
     eventLoop: EventLoop,
     maxWaiters: Int,
+    minConnections: Int,
     reservationLoadThreshold: Double,
     assumedMaxConcurrentStreams: Int,
     connectionBackoff: ConnectionBackoff,
@@ -176,6 +182,7 @@ internal final class ConnectionPool {
 
     self._connections = [:]
     self.maxWaiters = maxWaiters
+    self.minConnections = minConnections
     self.waiters = CircularBuffer(initialCapacity: 16)
 
     self.eventLoop = eventLoop
@@ -201,17 +208,25 @@ internal final class ConnectionPool {
       ]
     )
     self._connections.reserveCapacity(connections)
+    var numberOfKeepOpenConnections = self.minConnections
     while self._connections.count < connections {
-      self.addConnectionToPool()
+      // If we have less than the minimum number of connections, don't let
+      // the new connection close when idle.
+      let idleBehavior =
+        numberOfKeepOpenConnections > 0
+        ? ConnectionManager.IdleBehavior.neverGoIdle : .closeWhenIdleTimeout
+      numberOfKeepOpenConnections -= 1
+      self.addConnectionToPool(idleBehavior: idleBehavior)
     }
   }
 
   /// Make and add a new connection to the pool.
-  private func addConnectionToPool() {
+  private func addConnectionToPool(idleBehavior: ConnectionManager.IdleBehavior) {
     let manager = ConnectionManager(
       eventLoop: self.eventLoop,
       channelProvider: self.channelProvider,
       callStartBehavior: .waitsForConnectivity,
+      idleBehavior: idleBehavior,
       connectionBackoff: self.connectionBackoff,
       connectivityDelegate: self,
       http2Delegate: self,
@@ -220,6 +235,19 @@ internal final class ConnectionPool {
     let id = manager.id
     self._connections[id] = PerConnectionState(manager: manager)
     self.delegate?.connectionAdded(id: .init(id))
+
+    // If it's one of the connections that should be kept open, then connect
+    // straight away.
+    switch idleBehavior {
+    case .neverGoIdle:
+      self.eventLoop.execute {
+        if manager.sync.isIdle {
+          manager.sync.startConnecting()
+        }
+      }
+    case .closeWhenIdleTimeout:
+      ()
+    }
   }
 
   // MARK: - Called from the pool manager
@@ -689,8 +717,9 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     // Grab the number of reserved streams (before invalidating the index by adding a connection).
     let reservedStreams = self._connections.values[index].reservedStreams
 
-    // Replace the connection with a new idle one.
-    self.addConnectionToPool()
+    // Replace the connection with a new idle one. Keep the idle behavior, so that
+    // if it's a connection that should be kept alive, we maintain it.
+    self.addConnectionToPool(idleBehavior: manager.idleBehavior)
 
     // Since we're removing this connection from the pool (and no new streams can be created on
     // the connection), the pool manager can ignore any streams reserved against this connection.
@@ -879,6 +908,22 @@ extension ConnectionPool {
     internal var idleConnections: Int {
       self.pool.eventLoop.assertInEventLoop()
       return self.pool._connections.values.reduce(0) { $0 &+ ($1.manager.sync.isIdle ? 1 : 0) }
+    }
+
+    /// The number of active (i.e. connecting or ready) connections in the pool.
+    internal var activeConnections: Int {
+      self.pool.eventLoop.assertInEventLoop()
+      return self.pool._connections.values.reduce(0) {
+        $0 &+ (($1.manager.sync.isReady || $1.manager.sync.isConnecting) ? 1 : 0)
+      }
+    }
+
+    /// The number of connections in the pool in transient failure state.
+    internal var transientFailureConnections: Int {
+      self.pool.eventLoop.assertInEventLoop()
+      return self.pool._connections.values.reduce(0) {
+        $0 &+ ($1.manager.sync.isTransientFailure ? 1 : 0)
+      }
     }
 
     /// The number of streams currently available to reserve across all connections in the pool.
