@@ -544,20 +544,18 @@ extension GRPCStreamStateMachine {
       return request.map { .sendMessage($0) } ?? .awaitMoreMessages
     case .clientClosedServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
+      self.state = .clientClosedServerIdle(state)
       if let request {
-        self.state = .clientClosedServerIdle(state)
         return .sendMessage(request)
       } else {
-        self.state = .clientClosedServerIdle(state)
         return .noMoreMessages
       }
     case .clientClosedServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
+      self.state = .clientClosedServerOpen(state)
       if let request {
-        self.state = .clientClosedServerOpen(state)
         return .sendMessage(request)
       } else {
-        self.state = .clientClosedServerOpen(state)
         return .noMoreMessages
       }
     case .clientOpenServerClosed, .clientClosedServerClosed:
@@ -1226,20 +1224,18 @@ extension GRPCStreamStateMachine {
       return response.map { .sendMessage($0) } ?? .awaitMoreMessages
     case .clientOpenServerClosed(var state):
       let response = try state.framer.next(compressor: state.compressor)
+      self.state = .clientOpenServerClosed(state)
       if let response {
-        self.state = .clientOpenServerClosed(state)
         return .sendMessage(response)
       } else {
-        self.state = .clientOpenServerClosed(state)
         return .noMoreMessages
       }
     case .clientClosedServerClosed(var state):
       let response = try state.framer.next(compressor: state.compressor)
+      self.state = .clientClosedServerClosed(state)
       if let response {
-        self.state = .clientClosedServerClosed(state)
         return .sendMessage(response)
       } else {
-        self.state = .clientClosedServerClosed(state)
         return .noMoreMessages
       }
     }
