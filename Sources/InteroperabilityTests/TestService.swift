@@ -32,7 +32,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
     request: ServerRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>
   ) async throws -> ServerResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output> {
     let message = Grpc_Testing_TestService.Method.EmptyCall.Output()
-    let (initialMetadata, trailingMetadata) = request.extractInitialAndTrailingMetadata()
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
     return ServerResponse.Single(
       message: message,
       metadata: initialMetadata,
@@ -77,7 +77,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
       }
     }
 
-    let (initialMetadata, trailingMetadata) = request.extractInitialAndTrailingMetadata()
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
 
     return ServerResponse.Single(
       message: responseMessage,
@@ -113,7 +113,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>
   {
-    let (initialMetadata, trailingMetadata) = request.extractInitialAndTrailingMetadata()
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
     return ServerResponse.Stream(metadata: initialMetadata) { writer in
       for responseParameter in request.message.responseParameters {
         let response = Grpc_Testing_StreamingOutputCallResponse.with { response in
@@ -147,7 +147,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
       $0.aggregatedPayloadSize = Int32(aggregatedPayloadSize)
     }
 
-    let (initialMetadata, trailingMetadata) = request.extractInitialAndTrailingMetadata()
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
     return ServerResponse.Single(
       message: responseMessage,
       metadata: initialMetadata,
@@ -165,7 +165,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>
   {
-    let (initialMetadata, trailingMetadata) = request.extractInitialAndTrailingMetadata()
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
     return ServerResponse.Stream(metadata: initialMetadata) { writer in
       for try await message in request.messages {
         // If a request message has a responseStatus set, the server should return that status.
@@ -208,34 +208,14 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   }
 }
 
-extension ServerRequest.Single {
-  fileprivate func extractInitialAndTrailingMetadata() -> (Metadata, Metadata) {
+extension Metadata {
+  fileprivate func makeInitialAndTrailingMetadata() -> (Metadata, Metadata) {
     var initialMetadata = Metadata()
     var trailingMetadata = Metadata()
-
-    for value in self.metadata[stringValues: "x-grpc-test-echo-initial"] {
+    for value in self[stringValues: "x-grpc-test-echo-initial"] {
       initialMetadata.addString(value, forKey: "x-grpc-test-echo-initial")
     }
-
-    for value in self.metadata[binaryValues: "x-grpc-test-echo-trailing-bin"] {
-      trailingMetadata.addBinary(value, forKey: "x-grpc-test-echo-trailing-bin")
-    }
-
-    return (initialMetadata, trailingMetadata)
-  }
-}
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension ServerRequest.Stream {
-  fileprivate func extractInitialAndTrailingMetadata() -> (Metadata, Metadata) {
-    var initialMetadata = Metadata()
-    var trailingMetadata = Metadata()
-
-    for value in self.metadata[stringValues: "x-grpc-test-echo-initial"] {
-      initialMetadata.addString(value, forKey: "x-grpc-test-echo-initial")
-    }
-
-    for value in self.metadata[binaryValues: "x-grpc-test-echo-trailing-bin"] {
+    for value in self[binaryValues: "x-grpc-test-echo-trailing-bin"] {
       trailingMetadata.addBinary(value, forKey: "x-grpc-test-echo-trailing-bin")
     }
 
