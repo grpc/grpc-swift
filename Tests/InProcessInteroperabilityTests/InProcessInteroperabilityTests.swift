@@ -53,54 +53,46 @@ final class InProcessInteroperabilityTests: XCTestCase {
   }
 
   func testEmtyUnary() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.emptyUnary)
+    try await self.runInProcessTransport(interopTestCase: .emptyUnary)
   }
 
   func testLargeUnary() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.largeUnary)
+    try await self.runInProcessTransport(interopTestCase: .largeUnary)
   }
 
   func testClientStreaming() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.clientStreaming)
+    try await self.runInProcessTransport(interopTestCase: .clientStreaming)
   }
 
   func testServerStreaming() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.serverStreaming)
+    try await self.runInProcessTransport(interopTestCase: .serverStreaming)
   }
 
   func testPingPong() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.pingPong)
+    try await self.runInProcessTransport(interopTestCase: .pingPong)
   }
 
   func testEmptyStream() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.emptyStream)
+    try await self.runInProcessTransport(interopTestCase: .emptyStream)
   }
 
   func testCustomMetdata() async throws {
-    try await self.runInProcessTransport(interopTestCase: InteroperabilityTestCase.customMetadata)
+    try await self.runInProcessTransport(interopTestCase: .customMetadata)
   }
 
   func testStatusCodeAndMessage() async throws {
-    try await self.runInProcessTransport(
-      interopTestCase: InteroperabilityTestCase.statusCodeAndMessage
-    )
+    try await self.runInProcessTransport(interopTestCase: .statusCodeAndMessage)
   }
 
   func testSpecialStatusMessage() async throws {
-    try await self.runInProcessTransport(
-      interopTestCase: InteroperabilityTestCase.specialStatusMessage
-    )
+    try await self.runInProcessTransport(interopTestCase: .specialStatusMessage)
   }
 
   func testUnimplementedMethod() async throws {
-    try await self.runInProcessTransport(
-      interopTestCase: InteroperabilityTestCase.unimplementedMethod
-    )
+    try await self.runInProcessTransport(interopTestCase: .unimplementedMethod)
   }
 
   func testUnimplementedService() async throws {
-    try await self.runInProcessTransport(
-      interopTestCase: InteroperabilityTestCase.unimplementedService
-    )
+    try await self.runInProcessTransport(interopTestCase: .unimplementedService)
   }
 }
