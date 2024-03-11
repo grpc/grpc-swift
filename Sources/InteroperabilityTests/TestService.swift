@@ -32,7 +32,12 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
     request: ServerRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>
   ) async throws -> ServerResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output> {
     let message = Grpc_Testing_TestService.Method.EmptyCall.Output()
-    return ServerResponse.Single(message: message)
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
+    return ServerResponse.Single(
+      message: message,
+      metadata: initialMetadata,
+      trailingMetadata: trailingMetadata
+    )
   }
 
   /// Server implements `unaryCall` which immediately returns a `SimpleResponse` with a payload
@@ -72,7 +77,13 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
       }
     }
 
-    return ServerResponse.Single(message: responseMessage)
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
+
+    return ServerResponse.Single(
+      message: responseMessage,
+      metadata: initialMetadata,
+      trailingMetadata: trailingMetadata
+    )
   }
 
   /// Server gets the default `SimpleRequest` proto as the request. The content of the request is
@@ -102,7 +113,8 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>
   {
-    return ServerResponse.Stream { writer in
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
+    return ServerResponse.Stream(metadata: initialMetadata) { writer in
       for responseParameter in request.message.responseParameters {
         let response = Grpc_Testing_StreamingOutputCallResponse.with { response in
           response.payload = Grpc_Testing_Payload.with { payload in
@@ -113,7 +125,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
         // We convert the `intervalUs` value from microseconds to nanoseconds.
         try await Task.sleep(nanoseconds: UInt64(responseParameter.intervalUs) * 1000)
       }
-      return [:]
+      return trailingMetadata
     }
   }
 
@@ -135,7 +147,12 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
       $0.aggregatedPayloadSize = Int32(aggregatedPayloadSize)
     }
 
-    return ServerResponse.Single(message: responseMessage)
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
+    return ServerResponse.Single(
+      message: responseMessage,
+      metadata: initialMetadata,
+      trailingMetadata: trailingMetadata
+    )
   }
 
   /// Server implements `fullDuplexCall` by replying, in order, with one
@@ -148,7 +165,8 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>
   {
-    return ServerResponse.Stream { writer in
+    let (initialMetadata, trailingMetadata) = request.metadata.makeInitialAndTrailingMetadata()
+    return ServerResponse.Stream(metadata: initialMetadata) { writer in
       for try await message in request.messages {
         // If a request message has a responseStatus set, the server should return that status.
         // If the code is an error code, the server will throw an error containing that code
@@ -174,7 +192,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
           try await writer.write(response)
         }
       }
-      return [:]
+      return trailingMetadata
     }
   }
 
@@ -187,5 +205,20 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>
   {
     throw RPCError(code: .unimplemented, message: "The RPC is not implemented.")
+  }
+}
+
+extension Metadata {
+  fileprivate func makeInitialAndTrailingMetadata() -> (Metadata, Metadata) {
+    var initialMetadata = Metadata()
+    var trailingMetadata = Metadata()
+    for value in self[stringValues: "x-grpc-test-echo-initial"] {
+      initialMetadata.addString(value, forKey: "x-grpc-test-echo-initial")
+    }
+    for value in self[binaryValues: "x-grpc-test-echo-trailing-bin"] {
+      trailingMetadata.addBinary(value, forKey: "x-grpc-test-echo-trailing-bin")
+    }
+
+    return (initialMetadata, trailingMetadata)
   }
 }
