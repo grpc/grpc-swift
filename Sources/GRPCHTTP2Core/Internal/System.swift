@@ -32,9 +32,9 @@ enum System {
       #if canImport(Darwin)
       Darwin.gethostname(pointer.baseAddress, pointer.count)
       #elseif canImport(Glibc)
-      Glibc.gethostname(pointer.baseAddress, pointer.count)
+      Glibc.gethostname(pointer.baseAddress!, pointer.count)
       #elseif canImport(Musl)
-      Musl.gethostname(pointer.baseAddress, pointer.count)
+      Musl.gethostname(pointer.baseAddress!, pointer.count)
       #endif
     }
 
