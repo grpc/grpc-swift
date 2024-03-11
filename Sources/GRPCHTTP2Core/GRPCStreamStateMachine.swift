@@ -41,7 +41,7 @@ enum GRPCStreamStateMachineConfiguration {
   }
 }
 
-enum GRPCStreamStateMachineState {
+fileprivate enum GRPCStreamStateMachineState {
   case clientIdleServerIdle(ClientIdleServerIdleState)
   case clientOpenServerIdle(ClientOpenServerIdleState)
   case clientOpenServerOpen(ClientOpenServerOpenState)

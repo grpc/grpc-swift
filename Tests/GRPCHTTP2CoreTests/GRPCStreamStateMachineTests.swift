@@ -21,7 +21,7 @@ import XCTest
 
 @testable import GRPCHTTP2Core
 
-enum TargetStateMachineState: CaseIterable {
+fileprivate enum TargetStateMachineState: CaseIterable {
   case clientIdleServerIdle
   case clientOpenServerIdle
   case clientOpenServerOpen
@@ -31,7 +31,7 @@ enum TargetStateMachineState: CaseIterable {
   case clientClosedServerClosed
 }
 
-extension HPACKHeaders {
+fileprivate extension HPACKHeaders {
   // Client
   static let clientInitialMetadata: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
