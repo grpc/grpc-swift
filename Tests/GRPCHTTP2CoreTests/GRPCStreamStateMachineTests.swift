@@ -245,8 +245,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         ofType: RPCError.self,
         try stateMachine.send(
           status: Status(code: .ok, message: ""),
-          metadata: .init(),
-          trailersOnly: false
+          metadata: .init()
         )
       ) { error in
         XCTAssertEqual(error.code, .internalError)
@@ -1063,8 +1062,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       XCTAssertNoThrow(
         try stateMachine.send(
           status: .init(code: .ok, message: ""),
-          metadata: [],
-          trailersOnly: false
+          metadata: []
         )
       )
     case .clientClosedServerIdle:
@@ -1090,8 +1088,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       XCTAssertNoThrow(
         try stateMachine.send(
           status: .init(code: .ok, message: ""),
-          metadata: [],
-          trailersOnly: false
+          metadata: []
         )
       )
     }
@@ -1263,48 +1260,58 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
   // - MARK: Send Status and Trailers
 
-  func testSendStatusAndTrailersWhenClientIdleAndServerIdle() {
+  func testSendStatusAndTrailersWhenClientIdle() {
     var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
+        metadata: .init()
       )
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server can't send status if idle.")
+      XCTAssertEqual(error.message, "Server can't send status if client is idle.")
     }
   }
 
-  func testSendStatusAndTrailersWhenClientOpenAndServerIdle() {
+  func testSendStatusAndTrailersWhenClientOpenAndServerIdle() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
 
+    let trailers = try stateMachine.send(
+      status: .init(code: .unknown, message: "RPC unknown"),
+      metadata: .init()
+    )
+    
+    // Make sure it's a trailers-only response: it must have :status header and content-type
+    XCTAssertEqual(trailers, [
+      ":status": "200",
+      "content-type": "application/grpc",
+      "grpc-status": "2",
+      "grpc-status-message": "RPC unknown"
+    ])
+
+    // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(
-        status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
-      )
+      try stateMachine.send(message: [], endStream: false)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server can't send status if idle.")
+      XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
     }
   }
 
-  func testSendStatusAndTrailersWhenClientOpenAndServerOpen() {
+  func testSendStatusAndTrailersWhenClientOpenAndServerOpen() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
-    XCTAssertNoThrow(
-      try stateMachine.send(
-        status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
-      )
+    let trailers = try stateMachine.send(
+      status: .init(code: .ok, message: ""),
+      metadata: .init()
     )
+    
+    // Make sure it's NOT a trailers-only response, because the server was
+    // already open (so it sent initial metadata): it shouldn't have :status or content-type headers
+    XCTAssertEqual(trailers, ["grpc-status": "0"])
 
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
@@ -1323,8 +1330,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       ofType: RPCError.self,
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
+        metadata: .init()
       )
     ) { error in
       XCTAssertEqual(error.code, .internalError)
@@ -1332,33 +1338,52 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     }
   }
 
-  func testSendStatusAndTrailersWhenClientClosedAndServerIdle() {
+  func testSendStatusAndTrailersWhenClientClosedAndServerIdle() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientClosedServerIdle)
 
+    let trailers = try stateMachine.send(
+      status: .init(code: .unknown, message: "RPC unknown"),
+      metadata: .init()
+    )
+    
+    // Make sure it's a trailers-only response: it must have :status header and content-type
+    XCTAssertEqual(trailers, [
+      ":status": "200",
+      "content-type": "application/grpc",
+      "grpc-status": "2",
+      "grpc-status-message": "RPC unknown"
+    ])
+    
+    // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(
-        status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
-      )
+      try stateMachine.send(message: [], endStream: false)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server can't send status if idle.")
+      XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
     }
   }
 
-  func testSendStatusAndTrailersWhenClientClosedAndServerOpen() {
+  func testSendStatusAndTrailersWhenClientClosedAndServerOpen() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientClosedServerOpen)
 
-    // Client is closed but may still be awaiting response, so we should be able to send it.
-    XCTAssertNoThrow(
-      try stateMachine.send(
-        status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
-      )
+    let trailers = try stateMachine.send(
+      status: .init(code: .ok, message: ""),
+      metadata: .init()
     )
+    
+    // Make sure it's NOT a trailers-only response, because the server was
+    // already open (so it sent initial metadata): it shouldn't have :status or content-type headers
+    XCTAssertEqual(trailers, ["grpc-status": "0"])
+
+    // Try sending another message: it should fail because server is now closed.
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try stateMachine.send(message: [], endStream: false)
+    ) { error in
+      XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
+    }
   }
 
   func testSendStatusAndTrailersWhenClientClosedAndServerClosed() {
@@ -1368,8 +1393,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       ofType: RPCError.self,
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: .init(),
-        trailersOnly: false
+        metadata: .init()
       )
     ) { error in
       XCTAssertEqual(error.code, .internalError)
@@ -1721,8 +1745,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertNoThrow(
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: [],
-        trailersOnly: false
+        metadata: []
       )
     )
 
@@ -1788,8 +1811,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertNoThrow(
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: [],
-        trailersOnly: false
+        metadata: []
       )
     )
 
@@ -1862,8 +1884,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertNoThrow(
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: [],
-        trailersOnly: false
+        metadata: []
       )
     )
 
@@ -1909,8 +1930,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertNoThrow(
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
-        metadata: [],
-        trailersOnly: false
+        metadata: []
       )
     )
 
@@ -1979,8 +1999,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Server ends
     let response = try stateMachine.send(
       status: .init(code: .ok, message: ""),
-      metadata: [],
-      trailersOnly: false
+      metadata: []
     )
     XCTAssertEqual(response, ["grpc-status": "0"])
 
@@ -2042,8 +2061,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Server ends
     let response = try stateMachine.send(
       status: .init(code: .ok, message: ""),
-      metadata: [],
-      trailersOnly: false
+      metadata: []
     )
     XCTAssertEqual(response, ["grpc-status": "0"])
 
@@ -2105,8 +2123,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Server ends
     let response = try stateMachine.send(
       status: .init(code: .ok, message: ""),
-      metadata: [],
-      trailersOnly: false
+      metadata: []
     )
     XCTAssertEqual(response, ["grpc-status": "0"])
 

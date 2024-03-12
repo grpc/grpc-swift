@@ -308,8 +308,7 @@ struct GRPCStreamStateMachine {
 
   mutating func send(
     status: Status,
-    metadata: Metadata,
-    trailersOnly: Bool
+    metadata: Metadata
   ) throws -> HPACKHeaders {
     switch self.configuration {
     case .client:
@@ -319,8 +318,7 @@ struct GRPCStreamStateMachine {
     case .server:
       return try self.serverSend(
         status: status,
-        customMetadata: metadata,
-        trailersOnly: trailersOnly
+        customMetadata: metadata
       )
     }
   }
@@ -990,8 +988,7 @@ extension GRPCStreamStateMachine {
 
   private mutating func serverSend(
     status: Status,
-    customMetadata: Metadata,
-    trailersOnly: Bool
+    customMetadata: Metadata
   ) throws -> HPACKHeaders {
     // Close the server.
     switch self.state {
@@ -1000,18 +997,32 @@ extension GRPCStreamStateMachine {
       return self.makeTrailers(
         status: status,
         customMetadata: customMetadata,
-        trailersOnly: trailersOnly
+        trailersOnly: false
       )
     case .clientClosedServerOpen(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
       return self.makeTrailers(
         status: status,
         customMetadata: customMetadata,
-        trailersOnly: trailersOnly
+        trailersOnly: false
       )
-    case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
+    case .clientOpenServerIdle(let state):
+      self.state = .clientOpenServerClosed(.init(previousState: state))
+      return self.makeTrailers(
+        status: status,
+        customMetadata: customMetadata,
+        trailersOnly: true
+      )
+    case .clientClosedServerIdle(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return self.makeTrailers(
+        status: status,
+        customMetadata: customMetadata,
+        trailersOnly: true
+      )
+    case .clientIdleServerIdle:
       try self.invalidState(
-        "Server can't send status if idle."
+        "Server can't send status if client is idle."
       )
     case .clientOpenServerClosed, .clientClosedServerClosed:
       try self.invalidState(
