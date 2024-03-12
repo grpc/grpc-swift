@@ -21,7 +21,7 @@ import XCTest
 
 @testable import GRPCHTTP2Core
 
-fileprivate enum TargetStateMachineState: CaseIterable {
+private enum TargetStateMachineState: CaseIterable {
   case clientIdleServerIdle
   case clientOpenServerIdle
   case clientOpenServerOpen
@@ -31,16 +31,16 @@ fileprivate enum TargetStateMachineState: CaseIterable {
   case clientClosedServerClosed
 }
 
-fileprivate extension HPACKHeaders {
+extension HPACKHeaders {
   // Client
-  static let clientInitialMetadata: Self = [
+  fileprivate static let clientInitialMetadata: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.scheme.rawValue: "http",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.te.rawValue: "trailers",
   ]
-  static let clientInitialMetadataWithDeflateCompression: Self = [
+  fileprivate static let clientInitialMetadataWithDeflateCompression: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.method.rawValue: "POST",
@@ -49,7 +49,7 @@ fileprivate extension HPACKHeaders {
     GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
     GRPCHTTP2Keys.encoding.rawValue: "deflate",
   ]
-  static let clientInitialMetadataWithGzipCompression: Self = [
+  fileprivate static let clientInitialMetadataWithGzipCompression: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.method.rawValue: "POST",
@@ -58,30 +58,30 @@ fileprivate extension HPACKHeaders {
     GRPCHTTP2Keys.acceptEncoding.rawValue: "gzip",
     GRPCHTTP2Keys.encoding.rawValue: "gzip",
   ]
-  static let receivedWithoutContentType: Self = [
+  fileprivate static let receivedWithoutContentType: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test"
   ]
-  static let receivedWithInvalidContentType: Self = [
+  fileprivate static let receivedWithInvalidContentType: Self = [
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid",
   ]
-  static let receivedWithoutEndpoint: Self = [
+  fileprivate static let receivedWithoutEndpoint: Self = [
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
   ]
 
   // Server
-  static let serverInitialMetadata: Self = [
+  fileprivate static let serverInitialMetadata: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
   ]
-  static let serverInitialMetadataWithDeflateCompression: Self = [
+  fileprivate static let serverInitialMetadataWithDeflateCompression: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     GRPCHTTP2Keys.encoding.rawValue: "deflate",
     GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
   ]
-  static let serverTrailers: Self = [
+  fileprivate static let serverTrailers: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     GRPCHTTP2Keys.grpcStatus.rawValue: "0",
@@ -1282,14 +1282,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       status: .init(code: .unknown, message: "RPC unknown"),
       metadata: .init()
     )
-    
+
     // Make sure it's a trailers-only response: it must have :status header and content-type
-    XCTAssertEqual(trailers, [
-      ":status": "200",
-      "content-type": "application/grpc",
-      "grpc-status": "2",
-      "grpc-status-message": "RPC unknown"
-    ])
+    XCTAssertEqual(
+      trailers,
+      [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-status": "2",
+        "grpc-status-message": "RPC unknown",
+      ]
+    )
 
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
@@ -1308,7 +1311,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       status: .init(code: .ok, message: ""),
       metadata: .init()
     )
-    
+
     // Make sure it's NOT a trailers-only response, because the server was
     // already open (so it sent initial metadata): it shouldn't have :status or content-type headers
     XCTAssertEqual(trailers, ["grpc-status": "0"])
@@ -1345,15 +1348,18 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       status: .init(code: .unknown, message: "RPC unknown"),
       metadata: .init()
     )
-    
+
     // Make sure it's a trailers-only response: it must have :status header and content-type
-    XCTAssertEqual(trailers, [
-      ":status": "200",
-      "content-type": "application/grpc",
-      "grpc-status": "2",
-      "grpc-status-message": "RPC unknown"
-    ])
-    
+    XCTAssertEqual(
+      trailers,
+      [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-status": "2",
+        "grpc-status-message": "RPC unknown",
+      ]
+    )
+
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
@@ -1371,7 +1377,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       status: .init(code: .ok, message: ""),
       metadata: .init()
     )
-    
+
     // Make sure it's NOT a trailers-only response, because the server was
     // already open (so it sent initial metadata): it shouldn't have :status or content-type headers
     XCTAssertEqual(trailers, ["grpc-status": "0"])
