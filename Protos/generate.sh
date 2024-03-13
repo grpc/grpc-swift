@@ -216,7 +216,11 @@ function generate_worker_service {
 
   for proto in "${protos[@]}"; do
     generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
-    generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "Server=true" "_V2=true" "FileNaming=PathToUnderscores"
+    if [ "$proto" == "$here/upstream/grpc/testing/worker_service.proto" ]; then
+      generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "Client=false" "_V2=true" "FileNaming=PathToUnderscores"
+    else
+      generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "_V2=true" "FileNaming=PathToUnderscores"
+    fi
   done
 }
 
