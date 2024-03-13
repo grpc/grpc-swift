@@ -87,7 +87,7 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runServer(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.RunServer.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunServer.Output>
-    
+
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -95,10 +95,10 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runClient(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.RunClient.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
-    
+
     /// Just return the core count - unary call
     func coreCount(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.CoreCount.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.CoreCount.Output>
-    
+
     /// Quit this worker
     func quitWorker(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.QuitWorker.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.QuitWorker.Output>
 }
@@ -152,7 +152,7 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runServer(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.RunServer.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunServer.Output>
-    
+
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -160,10 +160,10 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runClient(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.RunClient.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
-    
+
     /// Just return the core count - unary call
     func coreCount(request: ServerRequest.Single<Grpc_Testing_WorkerService.Method.CoreCount.Input>) async throws -> ServerResponse.Single<Grpc_Testing_WorkerService.Method.CoreCount.Output>
-    
+
     /// Quit this worker
     func quitWorker(request: ServerRequest.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Input>) async throws -> ServerResponse.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Output>
 }
@@ -175,7 +175,7 @@ extension Grpc_Testing_WorkerService.ServiceProtocol {
         let response = try await self.coreCount(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-    
+
     internal func quitWorker(request: ServerRequest.Stream<Grpc_Testing_WorkerService.Method.QuitWorker.Input>) async throws -> ServerResponse.Stream<Grpc_Testing_WorkerService.Method.QuitWorker.Output> {
         let response = try await self.quitWorker(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
@@ -196,7 +196,7 @@ internal protocol Grpc_Testing_WorkerServiceClientProtocol: Sendable {
         deserializer: some MessageDeserializer<Grpc_Testing_WorkerService.Method.RunServer.Output>,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_WorkerService.Method.RunServer.Output>) async throws -> R
     ) async throws -> R where R: Sendable
-    
+
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -209,7 +209,7 @@ internal protocol Grpc_Testing_WorkerServiceClientProtocol: Sendable {
         deserializer: some MessageDeserializer<Grpc_Testing_WorkerService.Method.RunClient.Output>,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>) async throws -> R
     ) async throws -> R where R: Sendable
-    
+
     /// Just return the core count - unary call
     func coreCount<R>(
         request: ClientRequest.Single<Grpc_Testing_WorkerService.Method.CoreCount.Input>,
@@ -217,7 +217,7 @@ internal protocol Grpc_Testing_WorkerServiceClientProtocol: Sendable {
         deserializer: some MessageDeserializer<Grpc_Testing_WorkerService.Method.CoreCount.Output>,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_WorkerService.Method.CoreCount.Output>) async throws -> R
     ) async throws -> R where R: Sendable
-    
+
     /// Quit this worker
     func quitWorker<R>(
         request: ClientRequest.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Input>,
@@ -240,7 +240,7 @@ extension Grpc_Testing_WorkerService.ClientProtocol {
             body
         )
     }
-    
+
     internal func runClient<R>(
         request: ClientRequest.Stream<Grpc_Testing_WorkerService.Method.RunClient.Input>,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>) async throws -> R
@@ -252,7 +252,7 @@ extension Grpc_Testing_WorkerService.ClientProtocol {
             body
         )
     }
-    
+
     internal func coreCount<R>(
         request: ClientRequest.Single<Grpc_Testing_WorkerService.Method.CoreCount.Input>,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_WorkerService.Method.CoreCount.Output>) async throws -> R
@@ -264,7 +264,7 @@ extension Grpc_Testing_WorkerService.ClientProtocol {
             body
         )
     }
-    
+
     internal func quitWorker<R>(
         request: ClientRequest.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Input>,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Output>) async throws -> R
@@ -281,11 +281,11 @@ extension Grpc_Testing_WorkerService.ClientProtocol {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 internal struct Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-    
+
     internal init(client: GRPCCore.GRPCClient) {
         self.client = client
     }
-    
+
     /// Start server with specified workload.
     /// First request sent specifies the ServerConfig followed by ServerStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -306,7 +306,7 @@ internal struct Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerService.Cli
             handler: body
         )
     }
-    
+
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -327,7 +327,7 @@ internal struct Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerService.Cli
             handler: body
         )
     }
-    
+
     /// Just return the core count - unary call
     internal func coreCount<R>(
         request: ClientRequest.Single<Grpc_Testing_WorkerService.Method.CoreCount.Input>,
@@ -343,7 +343,7 @@ internal struct Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerService.Cli
             handler: body
         )
     }
-    
+
     /// Quit this worker
     internal func quitWorker<R>(
         request: ClientRequest.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Input>,
