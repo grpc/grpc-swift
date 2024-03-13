@@ -23,7 +23,7 @@ upstream="$here/upstream"
 checkouts="$(mktemp -d)"
 
 # Clone the grpc and google protos into the staging area.
-git clone --depth 1 https://github.com/grpc/grpc-proto "$checkouts/grpc-proto"
+git clone --depth 2 https://github.com/grpc/grpc-proto "$checkouts/grpc-proto"
 git clone --depth 1 https://github.com/googleapis/googleapis.git "$checkouts/googleapis"
 
 # Remove the old protos.
@@ -33,12 +33,21 @@ rm -rf "$upstream"
 # rather than source repository name.
 mkdir -p "$upstream/grpc"
 mkdir -p "$upstream/google"
+mkdir -p "$upstream/grpc/testing"
+mkdir -p "$upstream/grpc/core"
 
 # Copy over the grpc-proto protos.
 cp -rp "$checkouts/grpc-proto/grpc/service_config" "$upstream/grpc/service_config"
 cp -rp "$checkouts/grpc-proto/grpc/lookup" "$upstream/grpc/lookup"
 cp -rp "$checkouts/grpc-proto/grpc/reflection" "$upstream/grpc/reflection"
 cp -rp "$checkouts/grpc-proto/grpc/examples" "$upstream/grpc/examples"
+cp -rp "$checkouts/grpc-proto/grpc/testing/benchmark_service.proto" "$upstream/grpc/testing/benchmark_service.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/messages.proto" "$upstream/grpc/testing/messages.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/worker_service.proto" "$upstream/grpc/testing/worker_service.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/control.proto" "$upstream/grpc/testing/control.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/payloads.proto" "$upstream/grpc/testing/payloads.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/stats.proto" "$upstream/grpc/testing/stats.proto"
+cp -rp "$checkouts/grpc-proto/grpc/core/stats.proto" "$upstream/grpc/core/stats.proto"
 
 # Copy over the googleapis protos.
 mkdir -p "$upstream/google/rpc"
