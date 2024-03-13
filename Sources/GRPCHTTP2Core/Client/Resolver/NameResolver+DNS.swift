@@ -111,7 +111,7 @@ extension NameResolvers.DNS {
     /// JSON decoder used for decoding service configuration.
     let decoder: JSONDecoder
     /// The hostname of the system the resolver is running on. May be used when a service config
-    /// from a list of config choices.
+    /// is picked from a list of config choices.
     let hostname: String
 
     /// Prefix for DNS TXT records containing gRPC config.
@@ -258,15 +258,33 @@ extension NameResolvers.DNS {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension NameResolvers.DNS.Resolver: AsyncSequence, AsyncIteratorProtocol {
+extension NameResolvers.DNS.Resolver: AsyncSequence {
   typealias Element = NameResolutionResult
 
-  func makeAsyncIterator() -> NameResolvers.DNS.Resolver {
-    return self
+  func makeAsyncIterator() -> AsyncIterator {
+    return AsyncIterator(resolver: self)
   }
 
-  func next() async throws -> NameResolutionResult? {
-    return try await self.resolve()
+  struct AsyncIterator: AsyncIteratorProtocol {
+    typealias Element = NameResolutionResult
+
+    private let resolver: NameResolvers.DNS.Resolver
+    private var finished = false
+
+    init(resolver: NameResolvers.DNS.Resolver) {
+      self.resolver = resolver
+    }
+
+    mutating func next() async throws -> NameResolutionResult? {
+      if self.finished { return nil }
+
+      do {
+        return try await self.resolver.resolve()
+      } catch {
+        self.finished = true
+        throw error
+      }
+    }
   }
 }
 
