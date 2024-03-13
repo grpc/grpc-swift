@@ -23,7 +23,7 @@ upstream="$here/upstream"
 checkouts="$(mktemp -d)"
 
 # Clone the grpc and google protos into the staging area.
-git clone --depth 2 https://github.com/grpc/grpc-proto "$checkouts/grpc-proto"
+git clone --depth 1 https://github.com/grpc/grpc-proto "$checkouts/grpc-proto"
 git clone --depth 1 https://github.com/googleapis/googleapis.git "$checkouts/googleapis"
 
 # Remove the old protos.
@@ -31,7 +31,6 @@ rm -rf "$upstream"
 
 # Create new directories to poulate. These are based on proto package name
 # rather than source repository name.
-mkdir -p "$upstream/grpc"
 mkdir -p "$upstream/google"
 mkdir -p "$upstream/grpc/testing"
 mkdir -p "$upstream/grpc/core"

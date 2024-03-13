@@ -201,7 +201,7 @@ function generate_service_messages_interop_tests {
   done
 }
 
-function generate_qps_code {
+function generate_worker_service {
   local protos=(
     "$here/upstream/grpc/testing/payloads.proto"
     "$here/upstream/grpc/testing/control.proto"
@@ -210,14 +210,13 @@ function generate_qps_code {
     "$here/upstream/grpc/testing/benchmark_service.proto"
     "$here/upstream/grpc/testing/worker_service.proto"
   )
-
   local output="$root/Sources/performance-worker/Generated"
   
   generate_message "$here/upstream/grpc/core/stats.proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
 
   for proto in "${protos[@]}"; do
-    generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=DropPath"
-    generate_grpc "$proto" "$here/upstream/" "$output" "Visibility=Internal" "Server=true" "_V2=true" "FileNaming=DropPath"
+    generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
+    generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "Server=true" "_V2=true" "FileNaming=PathToUnderscores"
   done
 }
 
@@ -241,5 +240,5 @@ generate_service_messages_interop_tests
 generate_normalization_for_tests
 generate_rpc_code_for_tests
 
-# QPS Tests
-generate_qps_code
+# Performance worker service
+generate_worker_service
