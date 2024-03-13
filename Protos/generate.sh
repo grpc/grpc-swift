@@ -206,8 +206,8 @@ function generate_qps_code {
     "$here/upstream/grpc/testing/payloads.proto"
     "$here/upstream/grpc/testing/control.proto"
     "$here/upstream/grpc/testing/messages.proto"
-    "$here/upstream/grpc/testing/messages.proto"
     "$here/upstream/grpc/testing/stats.proto"
+    "$here/upstream/grpc/testing/benchmark_service.proto"
     "$here/upstream/grpc/testing/worker_service.proto"
   )
 
