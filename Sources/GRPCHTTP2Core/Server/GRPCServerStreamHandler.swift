@@ -34,11 +34,13 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   init(
     scheme: Scheme,
     acceptedEncodings: [CompressionAlgorithm],
-    maximumPayloadSize: Int
+    maximumPayloadSize: Int,
+    skipStateMachineAssertions: Bool = false
   ) {
     self.stateMachine = .init(
       configuration: .server(.init(scheme: scheme, acceptedEncodings: acceptedEncodings)),
-      maximumPayloadSize: maximumPayloadSize
+      maximumPayloadSize: maximumPayloadSize,
+      skipAssertions: skipStateMachineAssertions
     )
   }
 
