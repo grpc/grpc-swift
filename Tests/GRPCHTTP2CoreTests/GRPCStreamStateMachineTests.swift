@@ -268,6 +268,28 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     }
   }
 
+  func testReceiveInvalidInitialMetadataWhenServerIdle() throws {
+    for targetState in [
+      TargetStateMachineState.clientOpenServerIdle, .clientClosedServerIdle,
+    ] {
+      var stateMachine = self.makeClientStateMachine(targetState: targetState)
+
+      // Receive metadata with unexpected non-200 status code
+      let action = try stateMachine.receive(
+        metadata: [GRPCHTTP2Keys.status.rawValue: "300"],
+        endStream: false
+      )
+
+      XCTAssertEqual(
+        action,
+        .receivedStatusAndMetadata(
+          status: .init(code: .unknown, message: "Unexpected non-200 HTTP Status Code."),
+          metadata: [":status": "300"]
+        )
+      )
+    }
+  }
+
   func testReceiveInitialMetadataWhenServerIdle() throws {
     for targetState in [
       TargetStateMachineState.clientOpenServerIdle, .clientClosedServerIdle,

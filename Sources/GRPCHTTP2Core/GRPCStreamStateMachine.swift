@@ -259,6 +259,12 @@ private enum GRPCStreamStateMachineState {
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
 
+    init(previousState: ClientOpenServerIdleState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+    }
+
     init(previousState: ClientOpenServerClosedState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
@@ -562,9 +568,14 @@ extension GRPCStreamStateMachine {
     }
   }
 
+  private enum ServerHeadersValidationResult {
+    case valid
+    case invalid(OnMetadataReceived)
+  }
+
   private mutating func clientValidateHeadersReceivedFromServer(
     _ metadata: HPACKHeaders
-  ) -> OnMetadataReceived? {
+  ) -> ServerHeadersValidationResult {
     var httpStatus: String? {
       metadata.firstString(forKey: .status)
     }
@@ -580,9 +591,11 @@ extension GRPCStreamStateMachine {
         .map { HTTPResponseStatus(statusCode: $0) }
 
       guard let httpStatusCode else {
-        return .receivedStatusAndMetadata(
-          status: .init(code: .unknown, message: "Unexpected non-200 HTTP Status Code."),
-          metadata: Metadata(headers: metadata)
+        return .invalid(
+          .receivedStatusAndMetadata(
+            status: .init(code: .unknown, message: "HTTP Status Code is missing."),
+            metadata: Metadata(headers: metadata)
+          )
         )
       }
 
@@ -590,31 +603,35 @@ extension GRPCStreamStateMachine {
         // For 1xx status codes, the entire header should be skipped and a
         // subsequent header should be read.
         // See https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
-        return .doNothing
+        return .invalid(.doNothing)
       }
 
       // Forward the mapped status code.
-      return .receivedStatusAndMetadata(
-        status: .init(
-          code: Status.Code(httpStatusCode: httpStatusCode),
-          message: "Unexpected non-200 HTTP Status Code."
-        ),
-        metadata: Metadata(headers: metadata)
+      return .invalid(
+        .receivedStatusAndMetadata(
+          status: .init(
+            code: Status.Code(httpStatusCode: httpStatusCode),
+            message: "Unexpected non-200 HTTP Status Code."
+          ),
+          metadata: Metadata(headers: metadata)
+        )
       )
     }
 
     let contentTypeHeader = metadata.first(name: GRPCHTTP2Keys.contentType.rawValue)
     guard contentTypeHeader.flatMap(ContentType.init) != nil else {
-      return .receivedStatusAndMetadata(
-        status: .init(
-          code: .internalError,
-          message: "Missing \(GRPCHTTP2Keys.contentType) header"
-        ),
-        metadata: Metadata(headers: metadata)
+      return .invalid(
+        .receivedStatusAndMetadata(
+          status: .init(
+            code: .internalError,
+            message: "Missing \(GRPCHTTP2Keys.contentType) header"
+          ),
+          metadata: Metadata(headers: metadata)
+        )
       )
     }
 
-    return nil
+    return .valid
   }
 
   private enum ProcessInboundEncodingResult {
@@ -678,16 +695,20 @@ extension GRPCStreamStateMachine {
   ) throws -> OnMetadataReceived {
     switch self.state {
     case .clientOpenServerIdle(let state):
-      if let failedValidation = self.clientValidateHeadersReceivedFromServer(metadata) {
+      switch (self.clientValidateHeadersReceivedFromServer(metadata), endStream) {
+      case (.invalid(let action), true):
+        // The headers are invalid, but the server signalled that it was
+        // closing the stream, so close both client and server.
+        self.state = .clientClosedServerClosed(.init(previousState: state))
+        return action
+      case (.invalid(let action), false):
         self.state = .clientClosedServerIdle(.init(previousState: state))
-        return failedValidation
-      }
-
-      if endStream {
+        return action
+      case (.valid, true):
         // This is a trailers-only response: close server.
         self.state = .clientOpenServerClosed(.init(previousState: state))
         return try self.validateAndReturnStatusAndMetadata(metadata)
-      } else {
+      case (.valid, false):
         switch self.processInboundEncoding(metadata) {
         case .error(let failure):
           return failure
@@ -722,15 +743,20 @@ extension GRPCStreamStateMachine {
       return try self.validateAndReturnStatusAndMetadata(metadata)
 
     case .clientClosedServerIdle(let state):
-      if let failedValidation = self.clientValidateHeadersReceivedFromServer(metadata) {
-        return failedValidation
-      }
-
-      if endStream {
+      switch (self.clientValidateHeadersReceivedFromServer(metadata), endStream) {
+      case (.invalid(let action), true):
+        // The headers are invalid, but the server signalled that it was
+        // closing the stream, so close the server side too.
+        self.state = .clientClosedServerClosed(.init(previousState: state))
+        return action
+      case (.invalid(let action), false):
+        // Client is already closed, so we don't need to update our state.
+        return action
+      case (.valid, true):
         // This is a trailers-only response: close server.
         self.state = .clientClosedServerClosed(.init(previousState: state))
         return try self.validateAndReturnStatusAndMetadata(metadata)
-      } else {
+      case (.valid, false):
         switch self.processInboundEncoding(metadata) {
         case .error(let failure):
           return failure
