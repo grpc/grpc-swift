@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+import Atomics
 import GRPCCore
 
 import struct Foundation.Data
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
+  /// Used to check if
+  var working = ManagedAtomic<Bool>(true)
+
   /// One request followed by one response.
   /// The server returns the client payload as-is.
   func unaryCall(
@@ -27,16 +31,17 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   ) async throws
     -> GRPCCore.ServerResponse.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>
   {
-
     // Throw an error if the status is not `ok`. Otherwise, an `ok` status is automatically sent
     // if the request is successful.
     if request.message.responseStatus.isInitialized {
-      try self.echoStatus(responseStatus: request.message.responseStatus)
+      try self.checkOkStatus(request.message.responseStatus)
     }
 
     return ServerResponse.Single(
       message: Grpc_Testing_BenchmarkService.Method.UnaryCall.Output.with {
-        $0.payload = request.message.payload
+        $0.payload = Grpc_Testing_Payload.with {
+          $0.body = Data(count: Int(request.message.responseSize))
+        }
       }
     )
   }
@@ -51,11 +56,13 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
     return ServerResponse.Stream { writer in
       for try await message in request.messages {
         if message.responseStatus.isInitialized {
-          try self.echoStatus(responseStatus: message.responseStatus)
+          try self.checkOkStatus(message.responseStatus)
         }
         try await writer.write(
           Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
-            $0.payload = message.payload
+            $0.payload = Grpc_Testing_Payload.with {
+              $0.body = Data(count: Int(message.responseSize))
+            }
           }
         )
       }
@@ -70,7 +77,21 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>
   {
-    throw RPCError(code: .unimplemented, message: "The RPC is not implemented.")
+    var responseSize = 0
+    for try await message in request.messages {
+      if message.responseStatus.isInitialized {
+        try self.checkOkStatus(message.responseStatus)
+      }
+      responseSize = Int(message.responseSize)
+    }
+
+    return ServerResponse.Single(
+      message: Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output.with {
+        $0.payload = Grpc_Testing_Payload.with {
+          $0.body = Data(count: responseSize)
+        }
+      }
+    )
   }
 
   /// Single-sided unbounded streaming from server to client
@@ -82,17 +103,19 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   {
     return ServerResponse.Stream { writer in
       if request.message.responseStatus.isInitialized {
-        try self.echoStatus(responseStatus: request.message.responseStatus)
+        try self.checkOkStatus(request.message.responseStatus)
       }
 
-      while true {
+      while working.load(ordering: .acquiring) {
         try await writer.write(
           Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
-            $0.payload = request.message.payload
+            $0.payload = Grpc_Testing_Payload.with {
+              $0.body = Data(count: Int(request.message.responseSize))
+            }
           }
         )
-        try await Task.sleep(nanoseconds: 10)
       }
+      return [:]
     }
   }
 
@@ -106,7 +129,7 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>
   {
     return ServerResponse.Stream { writer in
-      while true {
+      while working.load(ordering: .acquiring) {
         try await writer.write(
           Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
             $0.payload = Grpc_Testing_Payload.with {
@@ -114,22 +137,20 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
             }
           }
         )
-        try await Task.sleep(nanoseconds: 10)
       }
+      return [:]
     }
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension BenchmarkService {
-  private func echoStatus(responseStatus: Grpc_Testing_EchoStatus) throws {
-    guard let code = Status.Code(rawValue: Int(responseStatus.code))
-    else {
+  private func checkOkStatus(_ responseStatus: Grpc_Testing_EchoStatus) throws {
+    guard let code = Status.Code(rawValue: Int(responseStatus.code)) else {
       throw RPCError(code: .invalidArgument, message: "The response status code is invalid.")
     }
-    let status = Status(code: code, message: responseStatus.message)
-    if let error = RPCError(status: status) {
-      throw error
+    if let code = RPCError.Code(code) {
+      throw RPCError(code: code, message: responseStatus.message)
     }
   }
 }
