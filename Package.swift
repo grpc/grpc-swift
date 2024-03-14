@@ -95,6 +95,7 @@ extension Target.Dependency {
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
   static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
+  static let performanceWorker: Self = .target(name: "performance-worker")
   static let reflectionService: Self = .target(name: "GRPCReflectionService")
   static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
   static let grpcProtobuf: Self = .target(name: "GRPCProtobuf")
@@ -250,6 +251,14 @@ extension Target {
     ]
   )
 
+  static let performanceWorker: Target = .executableTarget(
+    name: "performance-worker",
+    dependencies: [
+      .grpcCore,
+      .grpcProtobuf
+    ]
+  )
+    
   static let grpcSwiftPlugin: Target = .plugin(
     name: "GRPCSwiftPlugin",
     capability: .buildTool(),
@@ -366,6 +375,15 @@ extension Target {
     ]
   )
 
+  static let inProcessInteroperabilityTests: Target = .testTarget(
+    name: "InProcessInteroperabilityTests",
+    dependencies: [
+      .grpcInProcessTransport,
+      .interoperabilityTests,
+      .grpcCore
+    ]
+  )
+  
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -718,6 +736,7 @@ let package = Package(
     .grpcProtobuf,
     .grpcProtobufCodeGen,
     .interoperabilityTestImplementation,
+    .performanceWorker,
 
     // v2 tests
     .grpcCoreTests,
@@ -729,6 +748,7 @@ let package = Package(
     .grpcHTTP2TransportNIOTransportServicesTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
+    .inProcessInteroperabilityTests
   ]
 )
 
