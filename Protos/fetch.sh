@@ -31,14 +31,22 @@ rm -rf "$upstream"
 
 # Create new directories to poulate. These are based on proto package name
 # rather than source repository name.
-mkdir -p "$upstream/grpc"
 mkdir -p "$upstream/google"
+mkdir -p "$upstream/grpc/testing"
+mkdir -p "$upstream/grpc/core"
 
 # Copy over the grpc-proto protos.
 cp -rp "$checkouts/grpc-proto/grpc/service_config" "$upstream/grpc/service_config"
 cp -rp "$checkouts/grpc-proto/grpc/lookup" "$upstream/grpc/lookup"
 cp -rp "$checkouts/grpc-proto/grpc/reflection" "$upstream/grpc/reflection"
 cp -rp "$checkouts/grpc-proto/grpc/examples" "$upstream/grpc/examples"
+cp -rp "$checkouts/grpc-proto/grpc/testing/benchmark_service.proto" "$upstream/grpc/testing/benchmark_service.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/messages.proto" "$upstream/grpc/testing/messages.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/worker_service.proto" "$upstream/grpc/testing/worker_service.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/control.proto" "$upstream/grpc/testing/control.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/payloads.proto" "$upstream/grpc/testing/payloads.proto"
+cp -rp "$checkouts/grpc-proto/grpc/testing/stats.proto" "$upstream/grpc/testing/stats.proto"
+cp -rp "$checkouts/grpc-proto/grpc/core/stats.proto" "$upstream/grpc/core/stats.proto"
 
 # Copy over the googleapis protos.
 mkdir -p "$upstream/google/rpc"

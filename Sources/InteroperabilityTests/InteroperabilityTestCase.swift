@@ -66,7 +66,7 @@ public enum InteroperabilityTestCase: String, CaseIterable {
   }
 }
 
-@available(macOS 13.0, *)
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension InteroperabilityTestCase {
   /// Return a new instance of the test case.
   public func makeTest() -> InteroperabilityTest {

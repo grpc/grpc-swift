@@ -201,6 +201,29 @@ function generate_service_messages_interop_tests {
   done
 }
 
+function generate_worker_service {
+  local protos=(
+    "$here/upstream/grpc/testing/payloads.proto"
+    "$here/upstream/grpc/testing/control.proto"
+    "$here/upstream/grpc/testing/messages.proto"
+    "$here/upstream/grpc/testing/stats.proto"
+    "$here/upstream/grpc/testing/benchmark_service.proto"
+    "$here/upstream/grpc/testing/worker_service.proto"
+  )
+  local output="$root/Sources/performance-worker/Generated"
+  
+  generate_message "$here/upstream/grpc/core/stats.proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
+
+  for proto in "${protos[@]}"; do
+    generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
+    if [ "$proto" == "$here/upstream/grpc/testing/worker_service.proto" ]; then
+      generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "Client=false" "_V2=true" "FileNaming=PathToUnderscores"
+    else
+      generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "_V2=true" "FileNaming=PathToUnderscores"
+    fi
+  done
+}
+
 #------------------------------------------------------------------------------
 
 # Examples
@@ -220,3 +243,6 @@ generate_service_messages_interop_tests
 # Misc. tests
 generate_normalization_for_tests
 generate_rpc_code_for_tests
+
+# Performance worker service
+generate_worker_service
