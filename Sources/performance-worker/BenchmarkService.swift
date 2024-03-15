@@ -25,7 +25,7 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   var working = ManagedAtomic<Bool>(true)
 
   /// One request followed by one response.
-  /// The server returns the client payload as-is.
+  /// The server returns a client payload with the size requested by the client.
   func unaryCall(
     request: GRPCCore.ServerRequest.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>
   ) async throws
@@ -47,7 +47,7 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   }
 
   /// Repeated sequence of one request followed by one response.
-  /// The server returns the client payload as-is on each response
+  /// The server returns a payload with the size requested by the client for each received message.
   func streamingCall(
     request: GRPCCore.ServerRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>
   ) async throws
@@ -70,8 +70,8 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
     }
   }
 
-  /// Single-sided unbounded streaming from client to server
-  /// The server returns the client payload as-is once the client does WritesDone
+  /// Single-sided unbounded streaming from client to server.
+  /// The server returns a payload with the size requested by the client once the client does WritesDone.
   func streamingFromClient(
     request: ServerRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>
   ) async throws
@@ -94,8 +94,8 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
     )
   }
 
-  /// Single-sided unbounded streaming from server to client
-  /// The server repeatedly returns the client payload as-is
+  /// Single-sided unbounded streaming from server to client.
+  /// The server repeatedly returns a payload with the size requested by the client.
   func streamingFromServer(
     request: ServerRequest.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>
   ) async throws
