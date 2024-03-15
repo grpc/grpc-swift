@@ -21,8 +21,8 @@ import struct Foundation.Data
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
-  /// Used to check if
-  var working = ManagedAtomic<Bool>(true)
+  /// Used to check if the server can be streaming responses.
+  private let working = ManagedAtomic<Bool>(true)
 
   /// One request followed by one response.
   /// The server returns a client payload with the size requested by the client.
@@ -101,19 +101,17 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>
   {
-    return ServerResponse.Stream { writer in
-      if request.message.responseStatus.isInitialized {
-        try self.checkOkStatus(request.message.responseStatus)
+    if request.message.responseStatus.isInitialized {
+      try self.checkOkStatus(request.message.responseStatus)
+    }
+    let response = Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
+      $0.payload = Grpc_Testing_Payload.with {
+        $0.body = Data(count: Int(request.message.responseSize))
       }
-
+    }
+    return ServerResponse.Stream { writer in
       while working.load(ordering: .acquiring) {
-        try await writer.write(
-          Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
-            $0.payload = Grpc_Testing_Payload.with {
-              $0.body = Data(count: Int(request.message.responseSize))
-            }
-          }
-        )
+        try await writer.write(response)
       }
       return [:]
     }
@@ -133,15 +131,17 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
         try self.checkOkStatus(message.responseStatus)
       }
     }
+
+    // Always use the same canned response for bidirectional streaming.
+    // This is allowed by the spec.
+    let response = Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
+      $0.payload = Grpc_Testing_Payload.with {
+        $0.body = Data(count: 100)
+      }
+    }
     return ServerResponse.Stream { writer in
       while working.load(ordering: .acquiring) {
-        try await writer.write(
-          Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
-            $0.payload = Grpc_Testing_Payload.with {
-              $0.body = Data(count: 100)
-            }
-          }
-        )
+        try await writer.write(response)
       }
       return [:]
     }
