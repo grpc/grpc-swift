@@ -128,12 +128,17 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   ) async throws
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>
   {
+    for try await message in request.messages {
+      if message.responseStatus.isInitialized {
+        try self.checkOkStatus(message.responseStatus)
+      }
+    }
     return ServerResponse.Stream { writer in
       while working.load(ordering: .acquiring) {
         try await writer.write(
           Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
             $0.payload = Grpc_Testing_Payload.with {
-              $0.body = Data(count: Int.random(in: 1 ..< 10))
+              $0.body = Data(count: 100)
             }
           }
         )
