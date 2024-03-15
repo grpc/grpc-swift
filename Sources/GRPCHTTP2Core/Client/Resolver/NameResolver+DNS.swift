@@ -276,7 +276,12 @@ extension NameResolvers.DNS.Resolver: AsyncSequence {
     }
 
     mutating func next() async throws -> NameResolutionResult? {
-      if self.finished { return nil }
+      if self.finished {
+        return nil
+      } else if Task.isCancelled {
+        self.finished = true
+        throw CancellationError()
+      }
 
       do {
         return try await self.resolver.resolve()
