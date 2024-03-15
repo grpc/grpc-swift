@@ -440,11 +440,16 @@ extension GRPCStreamStateMachine {
     var headers = HPACKHeaders()
     headers.reserveCapacity(7 + customMetadata.count)
 
-    // Add required headers
+    // Add required headers.
     // See https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
-    headers.add(methodDescriptor.fullyQualifiedMethod, forKey: .path)
-    headers.add(scheme.rawValue, forKey: .scheme)
+    
+    // The order is important here: reserved HTTP2 headers (those starting with `:`)
+    // must come before all other headers.
     headers.add("POST", forKey: .method)
+    headers.add(scheme.rawValue, forKey: .scheme)
+    headers.add(methodDescriptor.fullyQualifiedMethod, forKey: .path)
+    
+    // Add required gRPC headers.
     headers.add(ContentType.grpc.canonicalValue, forKey: .contentType)
     headers.add("trailers", forKey: .te)  // Used to detect incompatible proxies
 
