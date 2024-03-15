@@ -187,7 +187,7 @@ private enum GRPCStreamStateMachineState {
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
 
-    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
+    let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
 
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
@@ -205,11 +205,10 @@ private enum GRPCStreamStateMachineState {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
 
-      // In the case of the server, it will already have a deframer set up,
-      // because it already knows what encoding the client is using:
-      // it's okay to force-unwrap.
-      self.deframer = previousState.deframer!
-      self.decompressor = previousState.decompressor
+      // In the case of the server, we don't need to deframe/decompress any more
+      // messages, since the client's closed.
+      self.deframer = nil
+      self.decompressor = nil
 
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
@@ -442,13 +441,13 @@ extension GRPCStreamStateMachine {
 
     // Add required headers.
     // See https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
-    
+
     // The order is important here: reserved HTTP2 headers (those starting with `:`)
     // must come before all other headers.
     headers.add("POST", forKey: .method)
     headers.add(scheme.rawValue, forKey: .scheme)
     headers.add(methodDescriptor.fullyQualifiedMethod, forKey: .path)
-    
+
     // Add required gRPC headers.
     headers.add(ContentType.grpc.canonicalValue, forKey: .contentType)
     headers.add("trailers", forKey: .te)  // Used to detect incompatible proxies
@@ -834,7 +833,8 @@ extension GRPCStreamStateMachine {
     case .clientClosedServerOpen(var state):
       // The client may have sent the end stream and thus it's closed,
       // but the server may still be responding.
-      try state.deframer.process(buffer: bytes) { deframedMessage in
+      // The client must have a deframer set up, so force-unwrap is okay.
+      try state.deframer!.process(buffer: bytes) { deframedMessage in
         state.inboundMessageBuffer.append(deframedMessage)
       }
       if endStream {
