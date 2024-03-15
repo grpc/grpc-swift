@@ -132,8 +132,9 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
       }
     }
 
-    // Always use the same canned response for bidirectional streaming.
-    // This is allowed by the spec.
+    // The 100 size is used by the other implementations as well.
+    // We are using the same canned response size for all responses
+    // as it is allowed by the spec.
     let response = Grpc_Testing_BenchmarkService.Method.StreamingCall.Output.with {
       $0.payload = Grpc_Testing_Payload.with {
         $0.body = Data(count: 100)
