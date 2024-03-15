@@ -124,14 +124,8 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
       Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input
     >
   ) async throws
-    -> GRPCCore.ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>
+    -> ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>
   {
-    for try await message in request.messages {
-      if message.responseStatus.isInitialized {
-        try self.checkOkStatus(message.responseStatus)
-      }
-    }
-
     // The 100 size is used by the other implementations as well.
     // We are using the same canned response size for all responses
     // as it is allowed by the spec.
@@ -140,12 +134,41 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
         $0.body = Data(count: 100)
       }
     }
-    return ServerResponse.Stream { writer in
-      while working.load(ordering: .acquiring) {
-        try await writer.write(response)
+
+    var serverResponse = ServerResponse.Stream<
+      Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output
+    >(accepted: .failure(RPCError(code: .internalError, message: "There was a server issue.")))
+
+    try await withThrowingTaskGroup(
+      of: ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>?.self
+    ) { group in
+      group.addTask {
+        for try await message in request.messages {
+          if message.responseStatus.isInitialized {
+            try self.checkOkStatus(message.responseStatus)
+          }
+        }
+        _ = self.working.exchange(false, ordering: .acquiring)
+        return nil
       }
-      return [:]
+      group.addTask {
+        return ServerResponse.Stream { writer in
+          while working.load(ordering: .acquiring) {
+            try await writer.write(response)
+          }
+          return [:]
+        }
+      }
+      for try await result in group {
+        guard let result = result else {
+          continue
+        }
+        serverResponse = result
+        group.cancelAll()
+      }
+      group.cancelAll()
     }
+    return serverResponse
   }
 }
 
