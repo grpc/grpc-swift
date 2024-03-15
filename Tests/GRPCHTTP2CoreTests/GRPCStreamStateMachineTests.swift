@@ -45,7 +45,7 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.scheme.rawValue: "https",
-    GRPCHTTP2Keys.te.rawValue: "te",
+    GRPCHTTP2Keys.te.rawValue: "trailers",
     GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
     GRPCHTTP2Keys.encoding.rawValue: "deflate",
   ]
@@ -54,7 +54,7 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.scheme.rawValue: "https",
-    GRPCHTTP2Keys.te.rawValue: "te",
+    GRPCHTTP2Keys.te.rawValue: "trailers",
     GRPCHTTP2Keys.acceptEncoding.rawValue: "gzip",
     GRPCHTTP2Keys.encoding.rawValue: "gzip",
   ]
@@ -67,6 +67,45 @@ extension HPACKHeaders {
   ]
   fileprivate static let receivedWithoutEndpoint: Self = [
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
+  ]
+  fileprivate static let receivedWithoutTE: Self = [
+    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.scheme.rawValue: "http",
+    GRPCHTTP2Keys.method.rawValue: "POST",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+  ]
+  fileprivate static let receivedWithInvalidTE: Self = [
+    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.scheme.rawValue: "http",
+    GRPCHTTP2Keys.method.rawValue: "POST",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+    GRPCHTTP2Keys.te.rawValue: "invalidte",
+  ]
+  fileprivate static let receivedWithoutMethod: Self = [
+    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.scheme.rawValue: "http",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+    GRPCHTTP2Keys.te.rawValue: "trailers",
+  ]
+  fileprivate static let receivedWithInvalidMethod: Self = [
+    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.scheme.rawValue: "http",
+    GRPCHTTP2Keys.method.rawValue: "GET",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+    GRPCHTTP2Keys.te.rawValue: "trailers",
+  ]
+  fileprivate static let receivedWithoutScheme: Self = [
+    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.method.rawValue: "POST",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+    GRPCHTTP2Keys.te.rawValue: "trailers",
+  ]
+  fileprivate static let receivedWithInvalidScheme: Self = [
+    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.scheme.rawValue: "invalidscheme",
+    GRPCHTTP2Keys.method.rawValue: "POST",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+    GRPCHTTP2Keys.te.rawValue: "trailers",
   ]
 
   // Server
@@ -1497,6 +1536,136 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           "content-type": "application/grpc",
           "grpc-status": "12",
           "grpc-status-message": "No :path header has been set.",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_MissingTE() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      metadata: .receivedWithoutTE,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "3",
+          "grpc-status-message":
+            "\"te\" header is expected to be present and have a value of \"trailers\".",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_InvalidTE() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      metadata: .receivedWithInvalidTE,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "3",
+          "grpc-status-message":
+            "\"te\" header is expected to be present and have a value of \"trailers\".",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_MissingMethod() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      metadata: .receivedWithoutMethod,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "3",
+          "grpc-status-message":
+            ":method header is expected to be present and have a value of \"POST\".",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_InvalidMethod() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      metadata: .receivedWithInvalidMethod,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "3",
+          "grpc-status-message":
+            ":method header is expected to be present and have a value of \"POST\".",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_MissingScheme() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      metadata: .receivedWithoutScheme,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "3",
+          "grpc-status-message": ":scheme header must be present and one of \"http\" or \"https\".",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_InvalidScheme() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      metadata: .receivedWithInvalidScheme,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": "3",
+          "grpc-status-message": ":scheme header must be present and one of \"http\" or \"https\".",
         ]
       )
     }
