@@ -88,6 +88,7 @@ extension HPACKHeaders {
   ]
 }
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCStreamClientStateMachineTests: XCTestCase {
   private func makeClientStateMachine(
     targetState: TargetStateMachineState,
@@ -1045,6 +1046,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
   }
 }
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCStreamServerStateMachineTests: XCTestCase {
   private func makeServerStateMachine(
     targetState: TargetStateMachineState,
@@ -2161,6 +2163,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 }
 
 extension XCTestCase {
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   func assertRejectedRPC(
     _ action: GRPCStreamStateMachine.OnMetadataReceived,
     expression: (HPACKHeaders) throws -> Void
