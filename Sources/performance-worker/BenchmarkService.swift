@@ -110,7 +110,7 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
       }
     }
     return ServerResponse.Stream { writer in
-      while working.load(ordering: .acquiring) {
+      while working.load(ordering: .relaxed) {
         try await writer.write(response)
       }
       return [:]
@@ -146,10 +146,10 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
               try self.checkOkStatus(message.responseStatus)
             }
           }
-          _ = inboundStreaming.exchange(false, ordering: .acquiring)
+          inboundStreaming.store(false, ordering: .relaxed)
         }
         group.addTask {
-          while inboundStreaming.load(ordering: .acquiring)
+          while inboundStreaming.load(ordering: .relaxed)
             && self.working.load(ordering: .acquiring)
           {
             try await writer.write(response)
