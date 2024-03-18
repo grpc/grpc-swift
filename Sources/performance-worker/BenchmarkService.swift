@@ -135,40 +135,31 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
       }
     }
 
-    var serverResponse = ServerResponse.Stream<
-      Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output
-    >(accepted: .failure(RPCError(code: .internalError, message: "There was a server issue.")))
+    // Marks if the inbound streaming is ongoing or finished.
+    let inboundStreaming = ManagedAtomic<Bool>(true)
 
-    try await withThrowingTaskGroup(
-      of: ServerResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>?.self
-    ) { group in
-      group.addTask {
-        for try await message in request.messages {
-          if message.responseStatus.isInitialized {
-            try self.checkOkStatus(message.responseStatus)
+    return ServerResponse.Stream { writer in
+      try await withThrowingTaskGroup(of: Void.self) { group in
+        group.addTask {
+          for try await message in request.messages {
+            if message.responseStatus.isInitialized {
+              try self.checkOkStatus(message.responseStatus)
+            }
           }
+          _ = inboundStreaming.exchange(false, ordering: .acquiring)
         }
-        _ = self.working.exchange(false, ordering: .acquiring)
-        return nil
-      }
-      group.addTask {
-        return ServerResponse.Stream { writer in
-          while working.load(ordering: .acquiring) {
+        group.addTask {
+          while inboundStreaming.load(ordering: .acquiring)
+            && self.working.load(ordering: .acquiring)
+          {
             try await writer.write(response)
           }
-          return [:]
         }
-      }
-      for try await result in group {
-        guard let result = result else {
-          continue
-        }
-        serverResponse = result
+        try await group.next()
         group.cancelAll()
+        return [:]
       }
-      group.cancelAll()
     }
-    return serverResponse
   }
 }
 
