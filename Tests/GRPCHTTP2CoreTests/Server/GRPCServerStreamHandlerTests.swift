@@ -25,6 +25,34 @@ import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCServerStreamHandlerTests: XCTestCase {
+  func testH2FramesAreIgnored() throws {
+    let handler = GRPCServerStreamHandler(
+      scheme: .http,
+      acceptedEncodings: [],
+      maximumPayloadSize: 1
+    )
+
+    let channel = EmbeddedChannel(handler: handler)
+
+    let framesToBeIgnored: [HTTP2Frame.FramePayload] = [
+      .ping(.init(), ack: false),
+      .goAway(lastStreamID: .rootStream, errorCode: .cancel, opaqueData: nil),
+      // TODO: add .priority(StreamPriorityData) - right now, StreamPriorityData's
+      // initialiser is internal, so I can't create one of these frames.
+      .rstStream(.cancel),
+      .settings(.ack),
+      .pushPromise(.init(pushedStreamID: .maxID, headers: [:])),
+      .windowUpdate(windowSizeIncrement: 4),
+      .alternativeService(origin: nil, field: nil),
+      .origin([]),
+    ]
+
+    for toBeIgnored in framesToBeIgnored {
+      XCTAssertNoThrow(try channel.writeInbound(toBeIgnored))
+      XCTAssertNil(try channel.readInbound(as: HTTP2Frame.FramePayload.self))
+    }
+  }
+
   func testClientInitialMetadataWithoutContentTypeResultsInRejectedRPC() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
@@ -46,21 +74,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
       )
     )
-    
+
     // Make sure we have sent a trailers-only response
-    guard
-      case .headers(let writtenTrailersOnlyResponse) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(writtenTrailersOnlyResponse.headers, [":status": "415"])
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
   }
-  
+
   func testClientInitialMetadataWithoutMethodResultsInRejectedRPC() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
@@ -82,16 +103,9 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
       )
     )
-    
+
     // Make sure we have sent a trailers-only response
-    guard
-      case .headers(let writtenTrailersOnlyResponse) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenTrailersOnlyResponse.headers,
@@ -99,12 +113,13 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         GRPCHTTP2Keys.status.rawValue: "200",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.invalidArgument.rawValue),
-        GRPCHTTP2Keys.grpcStatusMessage.rawValue: ":method header is expected to be present and have a value of \"POST\".",
+        GRPCHTTP2Keys.grpcStatusMessage.rawValue:
+          ":method header is expected to be present and have a value of \"POST\".",
       ]
     )
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
   }
-  
+
   func testClientInitialMetadataWithoutSchemeResultsInRejectedRPC() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
@@ -126,16 +141,9 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
       )
     )
-    
+
     // Make sure we have sent a trailers-only response
-    guard
-      case .headers(let writtenTrailersOnlyResponse) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenTrailersOnlyResponse.headers,
@@ -143,12 +151,13 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         GRPCHTTP2Keys.status.rawValue: "200",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.invalidArgument.rawValue),
-        GRPCHTTP2Keys.grpcStatusMessage.rawValue: ":scheme header must be present and one of \"http\" or \"https\".",
+        GRPCHTTP2Keys.grpcStatusMessage.rawValue:
+          ":scheme header must be present and one of \"http\" or \"https\".",
       ]
     )
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
   }
-  
+
   func testClientInitialMetadataWithoutPathResultsInRejectedRPC() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
@@ -170,16 +179,9 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
       )
     )
-    
+
     // Make sure we have sent a trailers-only response
-    guard
-      case .headers(let writtenTrailersOnlyResponse) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenTrailersOnlyResponse.headers,
@@ -192,7 +194,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     )
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
   }
-  
+
   func testClientInitialMetadataWithoutTEResultsInRejectedRPC() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
@@ -207,23 +209,16 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       GRPCHTTP2Keys.path.rawValue: "test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
-      GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
+      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     ]
     XCTAssertNoThrow(
       try channel.writeInbound(
         HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
       )
     )
-    
+
     // Make sure we have sent a trailers-only response
-    guard
-      case .headers(let writtenTrailersOnlyResponse) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenTrailersOnlyResponse.headers,
@@ -231,12 +226,13 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         GRPCHTTP2Keys.status.rawValue: "200",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.invalidArgument.rawValue),
-        GRPCHTTP2Keys.grpcStatusMessage.rawValue: "\"te\" header is expected to be present and have a value of \"trailers\".",
+        GRPCHTTP2Keys.grpcStatusMessage.rawValue:
+          "\"te\" header is expected to be present and have a value of \"trailers\".",
       ]
     )
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
   }
-  
+
   func testNotAcceptedEncodingResultsInRejectedRPC() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
@@ -263,14 +259,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Make sure we haven't sent back an error response, and that we read the initial metadata
     // Make sure we have sent a trailers-only response
-    guard
-      case .headers(let writtenTrailersOnlyResponse) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenTrailersOnlyResponse.headers,
@@ -322,14 +311,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertNoThrow(try channel.writeOutbound(serverInitialMetadata))
 
     // Make sure we wrote back the initial metadata
-    guard
-      case .headers(let writtenHeaders) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenHeaders = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenHeaders.headers,
@@ -401,14 +383,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertNoThrow(try channel.writeOutbound(serverInitialMetadata))
 
     // Make sure we wrote back the initial metadata
-    guard
-      case .headers(let writtenHeaders) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenHeaders = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenHeaders.headers,
@@ -472,14 +447,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertNoThrow(try channel.writeOutbound(serverInitialMetadata))
 
     // Make sure we wrote back the initial metadata
-    guard
-      case .headers(let writtenHeaders) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenHeaders = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenHeaders.headers,
@@ -510,14 +478,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertNoThrow(try channel.writeOutbound(serverDataPayload))
 
     // Make sure we wrote back the right message
-    guard
-      case .data(let writtenMessage) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write data")
-      return
-    }
+    let writtenMessage = try channel.assertReadDataOutbound()
 
     var expectedBuffer = ByteBuffer()
     expectedBuffer.writeInteger(UInt8(0))  // not compressed
@@ -533,14 +494,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertNoThrow(try channel.writeOutbound(trailers))
 
     // Make sure we wrote back the status and trailers
-    guard
-      case .headers(let writtenStatus) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write data")
-      return
-    }
+    let writtenStatus = try channel.assertReadHeadersOutbound()
 
     XCTAssertTrue(writtenStatus.endStream)
     XCTAssertEqual(
@@ -591,14 +545,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertNoThrow(try channel.writeOutbound(serverInitialMetadata))
 
     // Make sure we wrote back the initial metadata
-    guard
-      case .headers(let writtenHeaders) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write headers")
-      return
-    }
+    let writtenHeaders = try channel.assertReadHeadersOutbound()
 
     XCTAssertEqual(
       writtenHeaders.headers,
@@ -612,33 +559,74 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     // Receive client's first message
     var buffer = ByteBuffer()
     buffer.writeInteger(UInt8(0))  // not compressed
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer))))
+    )
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
-    
+
     buffer.clear()
     buffer.writeInteger(UInt32(30))  // message length
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer))))
+    )
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
-    
+
     buffer.clear()
     buffer.writeRepeatingByte(0, count: 10)  // first part of the message
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer))))
+    )
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
-    
+
     buffer.clear()
     buffer.writeRepeatingByte(1, count: 10)  // second part of the message
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer))))
+    )
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
-    
+
     buffer.clear()
     buffer.writeRepeatingByte(2, count: 10)  // third part of the message
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer))))
+    )
 
     // Make sure we haven't sent back an error response, and that we read the message properly
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
     XCTAssertEqual(
       try channel.readInbound(as: RPCRequestPart.self),
-      RPCRequestPart.message([UInt8](repeating: 0, count: 10) + [UInt8](repeating: 1, count: 10) + [UInt8](repeating: 2, count: 10))
+      RPCRequestPart.message(
+        [UInt8](repeating: 0, count: 10) + [UInt8](repeating: 1, count: 10)
+          + [UInt8](repeating: 2, count: 10)
+      )
     )
   }
+}
+
+extension EmbeddedChannel {
+  fileprivate func assertReadHeadersOutbound() throws -> HTTP2Frame.FramePayload.Headers {
+    guard
+      case .headers(let writtenHeaders) = try XCTUnwrap(
+        try self.readOutbound(as: HTTP2Frame.FramePayload.self)
+      )
+    else {
+      throw TestError.assertionFailure("Expected to write headers")
+    }
+    return writtenHeaders
+  }
+
+  fileprivate func assertReadDataOutbound() throws -> HTTP2Frame.FramePayload.Data {
+    guard
+      case .data(let writtenMessage) = try XCTUnwrap(
+        try self.readOutbound(as: HTTP2Frame.FramePayload.self)
+      )
+    else {
+      throw TestError.assertionFailure("Expected to write data")
+    }
+    return writtenMessage
+  }
+}
+
+private enum TestError: Error {
+  case assertionFailure(String)
 }

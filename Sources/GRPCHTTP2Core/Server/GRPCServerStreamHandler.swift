@@ -60,7 +60,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
           case .receiveMessage(let message):
             context.fireChannelRead(self.wrapInboundOut(.message(message)))
           case .noMoreMessages:
-            context.channel.close(mode: .input, promise: nil)
+            context.close(mode: .input, promise: nil)
           }
         } catch {
           context.fireErrorCaught(error)
@@ -68,6 +68,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
       case .fileRegion:
         preconditionFailure("Unexpected IOData.fileRegion")
       }
+
     case .headers(let headers):
       do {
         let action = try self.stateMachine.receive(
@@ -92,6 +93,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
       } catch {
         context.fireErrorCaught(error)
       }
+
     case .ping, .goAway, .priority, .rstStream, .settings, .pushPromise, .windowUpdate,
       .alternativeService, .origin:
       ()
@@ -106,12 +108,24 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
     }
     context.fireChannelReadComplete()
   }
+
+  func handlerRemoved(context: ChannelHandlerContext) {
+    self.stateMachine.tearDown()
+  }
 }
 
 // - MARK: ChannelOutboundHandler
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCServerStreamHandler {
+  private func flushIfNeeded(_ context: ChannelHandlerContext) {
+    if self.isReading {
+      self.flushPending = true
+    } else {
+      context.flush()
+    }
+  }
+
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let frame = self.unwrapOutboundIn(data)
     switch frame {
@@ -119,6 +133,7 @@ extension GRPCServerStreamHandler {
       do {
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: nil)
+        self.flushIfNeeded(context)
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
@@ -126,6 +141,7 @@ extension GRPCServerStreamHandler {
         // TODO: move the promise handling into the state machine
         promise?.fail(error)
       }
+
     case .message(let message):
       do {
         try self.stateMachine.send(message: message, endStream: false)
@@ -141,11 +157,7 @@ extension GRPCServerStreamHandler {
             self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
             promise: nil
           )
-          if self.isReading {
-            self.flushPending = true
-          } else {
-            context.flush()
-          }
+          self.flushIfNeeded(context)
         }
         // TODO: move the promise handling into the state machine
         promise?.succeed()
@@ -154,16 +166,13 @@ extension GRPCServerStreamHandler {
         // TODO: move the promise handling into the state machine
         promise?.fail(error)
       }
+
     case .status(let status, let metadata):
       do {
         let headers = try self.stateMachine.send(status: status, metadata: metadata)
         let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
         context.write(self.wrapOutboundOut(response), promise: nil)
-        if self.isReading {
-          self.flushPending = true
-        } else {
-          context.flush()
-        }
+        self.flushIfNeeded(context)
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
