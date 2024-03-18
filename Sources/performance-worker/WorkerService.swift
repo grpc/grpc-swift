@@ -26,11 +26,11 @@ struct WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
     request: ServerRequest.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Input>
   ) async throws -> ServerResponse.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Output> {
     if let testClient = self.testClient {
-      testClient?.close()
+      testClient.close()
     } else if let testServer = self.testServer {
       testServer.stopListening()
     }
-    return ServerResponse.Single(Grpc_Testing_WorkerService.Method.QuitWorker.Output())
+    return ServerResponse.Single(message: Grpc_Testing_WorkerService.Method.QuitWorker.Output())
   }
 
   func coreCount(
@@ -38,8 +38,8 @@ struct WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   ) async throws -> ServerResponse.Single<Grpc_Testing_WorkerService.Method.CoreCount.Output> {
     let coreCount = System.coreCount
     return ServerResponse.Single(
-      Grpc_Testing_WorkerService.Method.CoreCount.Output.with {
-        $0.cores = coreCount
+      message: Grpc_Testing_WorkerService.Method.CoreCount.Output.with {
+        $0.cores = Int32(coreCount)
       }
     )
   }
@@ -49,7 +49,7 @@ struct WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   ) async throws
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunServer.Output>
   {
-    throw RPCError(status: .Code(.unimplemented))
+    throw RPCError(code: .unimplemented, message: "This RPC has not been implemented yet.")
   }
 
   func runClient(
@@ -57,6 +57,6 @@ struct WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   ) async throws
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
   {
-    throw RPCError(status: .Code(.unimplemented))
+    throw RPCError(code: .unimplemented, message: "This RPC has not been implemented yet.")
   }
 }
