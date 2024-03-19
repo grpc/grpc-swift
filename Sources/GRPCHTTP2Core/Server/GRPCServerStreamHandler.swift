@@ -145,20 +145,7 @@ extension GRPCServerStreamHandler {
     case .message(let message):
       do {
         try self.stateMachine.send(message: message, endStream: false)
-        switch try self.stateMachine.nextOutboundMessage() {
-        case .noMoreMessages:
-          // We shouldn't close the channel in this case, because we still have
-          // to send back a status and trailers to properly end the RPC stream.
-          ()
-        case .awaitMoreMessages:
-          ()
-        case .sendMessage(let byteBuffer):
-          context.write(
-            self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
-            promise: nil
-          )
-          self.flushIfNeeded(context)
-        }
+        self.flushIfNeeded(context)
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
@@ -180,6 +167,26 @@ extension GRPCServerStreamHandler {
         // TODO: move the promise handling into the state machine
         promise?.fail(error)
       }
+    }
+  }
+  
+  func flush(context: ChannelHandlerContext) {
+    do {
+      switch try self.stateMachine.nextOutboundMessage() {
+      case .noMoreMessages:
+        // We shouldn't close the channel in this case, because we still have
+        // to send back a status and trailers to properly end the RPC stream.
+        ()
+      case .awaitMoreMessages:
+        ()
+      case .sendMessage(let byteBuffer):
+        context.writeAndFlush(
+          self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
+          promise: nil
+        )
+      }
+    } catch {
+      context.fireErrorCaught(error)
     }
   }
 }
