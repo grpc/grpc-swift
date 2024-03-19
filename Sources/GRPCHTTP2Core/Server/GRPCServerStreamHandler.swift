@@ -169,7 +169,7 @@ extension GRPCServerStreamHandler {
       }
     }
   }
-  
+
   func flush(context: ChannelHandlerContext) {
     do {
       switch try self.stateMachine.nextOutboundMessage() {

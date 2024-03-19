@@ -601,16 +601,16 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       )
     )
   }
-  
+
   func testSendMultipleMessagesInSingleBuffer() throws {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
       maximumPayloadSize: 100
     )
-    
+
     let channel = EmbeddedChannel(handler: handler)
-    
+
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.path.rawValue: "test/test",
@@ -624,14 +624,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
       )
     )
-    
+
     // Make sure we haven't sent back an error response, and that we read the initial metadata
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
     XCTAssertEqual(
       try channel.readInbound(as: RPCRequestPart.self),
       RPCRequestPart.metadata(Metadata(headers: clientInitialMetadata))
     )
-    
+
     // Write back server's initial metadata
     let headers: HPACKHeaders = [
       "some-custom-header": "some-custom-value"
@@ -641,19 +641,19 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Read out the metadata
     _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-    
+
     // This is where this test actually begins. We want to write two messages
     // without flushing, and make sure that no messages are sent down the pipeline
     // until we flush. Once we flush, both messages should be sent in the same ByteBuffer.
-    
+
     // Write back first message and make sure nothing's written in the channel.
     XCTAssertNoThrow(channel.write(RPCResponsePart.message([UInt8](repeating: 1, count: 4))))
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
-    
+
     // Write back second message and make sure nothing's written in the channel.
     XCTAssertNoThrow(channel.write(RPCResponsePart.message([UInt8](repeating: 2, count: 4))))
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
-    
+
     // Now flush and check we *do* write the data.
     channel.flush()
 
@@ -667,17 +667,22 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     }
 
     // Make sure both messages have been framed together in the ByteBuffer.
-    XCTAssertEqual(writtenMessage.data, .byteBuffer(.init(bytes: [
-      // First message
-      0, // Compression disabled
-      0, 0, 0, 4, // Message length
-      1, 1, 1, 1, // First message data
+    XCTAssertEqual(
+      writtenMessage.data,
+      .byteBuffer(
+        .init(bytes: [
+          // First message
+          0,  // Compression disabled
+          0, 0, 0, 4,  // Message length
+          1, 1, 1, 1,  // First message data
 
-      // Second message
-      0, // Compression disabled
-      0, 0, 0, 4, // Message length
-      2, 2, 2, 2 // Second message data
-    ])))
+          // Second message
+          0,  // Compression disabled
+          0, 0, 0, 4,  // Message length
+          2, 2, 2, 2,  // Second message data
+        ])
+      )
+    )
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
   }
 }
@@ -693,7 +698,7 @@ extension EmbeddedChannel {
     }
     return writtenHeaders
   }
-  
+
   fileprivate func assertReadDataOutbound() throws -> HTTP2Frame.FramePayload.Data {
     guard
       case .data(let writtenMessage) = try XCTUnwrap(
