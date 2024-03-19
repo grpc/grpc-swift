@@ -60,7 +60,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
           case .receiveMessage(let message):
             context.fireChannelRead(self.wrapInboundOut(.message(message)))
           case .noMoreMessages:
-            context.close(mode: .input, promise: nil)
+            context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
           }
         } catch {
           context.fireErrorCaught(error)

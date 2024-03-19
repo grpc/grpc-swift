@@ -657,14 +657,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     // Now flush and check we *do* write the data.
     channel.flush()
 
-    guard
-      case .data(let writtenMessage) = try XCTUnwrap(
-        try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      )
-    else {
-      XCTFail("Expected to write data")
-      return
-    }
+    let writtenMessage = try channel.assertReadDataOutbound()
 
     // Make sure both messages have been framed together in the ByteBuffer.
     XCTAssertEqual(
