@@ -678,6 +678,86 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     )
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
   }
+
+  func testMessageAndStatusAreNotReordered() throws {
+    let handler = GRPCServerStreamHandler(
+      scheme: .http,
+      acceptedEncodings: [],
+      maximumPayloadSize: 100
+    )
+
+    let channel = EmbeddedChannel(handler: handler)
+
+    // Receive client's initial metadata
+    let clientInitialMetadata: HPACKHeaders = [
+      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.scheme.rawValue: "http",
+      GRPCHTTP2Keys.method.rawValue: "POST",
+      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+      GRPCHTTP2Keys.te.rawValue: "trailers",
+    ]
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
+      )
+    )
+
+    // Make sure we haven't sent back an error response, and that we read the initial metadata
+    XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCRequestPart.self),
+      RPCRequestPart.metadata(Metadata(headers: clientInitialMetadata))
+    )
+
+    // Write back server's initial metadata
+    let serverInitialMetadata = RPCResponsePart.metadata(Metadata(headers: [:]))
+    XCTAssertNoThrow(try channel.writeOutbound(serverInitialMetadata))
+
+    // Read out the metadata
+    _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
+
+    // This is where this test actually begins. We want to write a message followed
+    // by status and trailers, and only flush after both writes.
+    // Because messages are buffered and potentially bundled together in a single
+    // ByteBuffer by the GPRCMessageFramer, we want to make sure that the status
+    // and trailers won't be written before the messages.
+
+    // Write back message and make sure nothing's written in the channel.
+    XCTAssertNoThrow(channel.write(RPCResponsePart.message([UInt8](repeating: 1, count: 4))))
+    XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+
+    // Write status + metadata and make sure nothing's written.
+    XCTAssertNoThrow(channel.write(RPCResponsePart.status(.init(code: .ok, message: ""), [:])))
+    XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+
+    // Now flush and check we *do* write the data in the right order: message first,
+    // trailers second.
+    channel.flush()
+
+    let writtenMessage = try channel.assertReadDataOutbound()
+
+    // Make sure we first get message.
+    XCTAssertEqual(
+      writtenMessage.data,
+      .byteBuffer(
+        .init(bytes: [
+          // First message
+          0,  // Compression disabled
+          0, 0, 0, 4,  // Message length
+          1, 1, 1, 1,  // First message data
+        ])
+      )
+    )
+    XCTAssertFalse(writtenMessage.endStream)
+
+    // Make sure we get trailers.
+    let writtenTrailers = try channel.assertReadHeadersOutbound()
+    XCTAssertEqual(writtenTrailers.headers, ["grpc-status": "0"])
+    XCTAssertTrue(writtenTrailers.endStream)
+
+    // Make sure we get nothing else.
+    XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+  }
 }
 
 extension EmbeddedChannel {

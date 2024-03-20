@@ -31,6 +31,11 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   private var isReading = false
   private var flushPending = false
 
+  // We buffer the final status + trailers to avoid reordering issues (i.e.,
+  // if there are messages still not written into the channel because flush has
+  // not been called, but the server sends back trailers).
+  private var pendingTrailers: HTTP2Frame.FramePayload?
+
   init(
     scheme: Scheme,
     acceptedEncodings: [CompressionAlgorithm],
@@ -43,7 +48,12 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
       skipAssertions: skipStateMachineAssertions
     )
   }
+}
 
+// - MARK: ChannelInboundHandler
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension GRPCServerStreamHandler {
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     self.isReading = true
     let frame = self.unwrapInboundIn(data)
@@ -54,11 +64,18 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
       case .byteBuffer(let buffer):
         do {
           try self.stateMachine.receive(message: buffer, endStream: endStream)
-          switch self.stateMachine.nextInboundMessage() {
+
+          var nextInboundMessage = self.stateMachine.nextInboundMessage()
+          while case .receiveMessage(let message) = nextInboundMessage {
+            context.fireChannelRead(self.wrapInboundOut(.message(message)))
+            nextInboundMessage = self.stateMachine.nextInboundMessage()
+          }
+
+          switch nextInboundMessage {
           case .awaitMoreMessages:
             ()
-          case .receiveMessage(let message):
-            context.fireChannelRead(self.wrapInboundOut(.message(message)))
+          case .receiveMessage:
+            preconditionFailure("This isn't possible: we'd still be inside the while loop.")
           case .noMoreMessages:
             context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
           }
@@ -118,14 +135,6 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCServerStreamHandler {
-  private func flushIfNeeded(_ context: ChannelHandlerContext) {
-    if self.isReading {
-      self.flushPending = true
-    } else {
-      context.flush()
-    }
-  }
-
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let frame = self.unwrapOutboundIn(data)
     switch frame {
@@ -133,7 +142,7 @@ extension GRPCServerStreamHandler {
       do {
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: nil)
-        self.flushIfNeeded(context)
+        self.flushPending = true
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
@@ -145,7 +154,6 @@ extension GRPCServerStreamHandler {
     case .message(let message):
       do {
         try self.stateMachine.send(message: message, endStream: false)
-        self.flushIfNeeded(context)
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
@@ -158,8 +166,7 @@ extension GRPCServerStreamHandler {
       do {
         let headers = try self.stateMachine.send(status: status, metadata: metadata)
         let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
-        context.write(self.wrapOutboundOut(response), promise: nil)
-        self.flushIfNeeded(context)
+        self.pendingTrailers = response
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
@@ -172,18 +179,37 @@ extension GRPCServerStreamHandler {
 
   func flush(context: ChannelHandlerContext) {
     do {
-      switch try self.stateMachine.nextOutboundMessage() {
-      case .noMoreMessages:
-        // We shouldn't close the channel in this case, because we still have
-        // to send back a status and trailers to properly end the RPC stream.
-        ()
-      case .awaitMoreMessages:
-        ()
-      case .sendMessage(let byteBuffer):
-        context.writeAndFlush(
+      if self.isReading {
+        // We don't want to flush yet if we're still in a read loop.
+        return
+      }
+
+      var nextOutboundMessage = try self.stateMachine.nextOutboundMessage()
+      while case .sendMessage(let byteBuffer) = nextOutboundMessage {
+        context.write(
           self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
           promise: nil
         )
+        self.flushPending = true
+        nextOutboundMessage = try self.stateMachine.nextOutboundMessage()
+      }
+
+      switch nextOutboundMessage {
+      case .noMoreMessages:
+        if let pendingTrailers = self.pendingTrailers {
+          context.write(self.wrapOutboundOut(pendingTrailers), promise: nil)
+          self.flushPending = true
+          self.pendingTrailers = nil
+        }
+      case .awaitMoreMessages:
+        ()
+      case .sendMessage:
+        preconditionFailure("This isn't possible: we'd still be inside the while loop.")
+      }
+
+      if self.flushPending {
+        context.flush()
+        self.flushPending = false
       }
     } catch {
       context.fireErrorCaught(error)
