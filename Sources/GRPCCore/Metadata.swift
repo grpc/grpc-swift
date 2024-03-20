@@ -85,6 +85,17 @@ public struct Metadata: Sendable, Hashable {
   public enum Value: Sendable, Hashable {
     case string(String)
     case binary([UInt8])
+
+    /// The value as a String. If it was originally stored as a binary, the base64-encoded String version
+    /// of the binary data will be returned instead.
+    public func encoded() -> String {
+      switch self {
+      case .string(let string):
+        return string
+      case .binary(let bytes):
+        return Base64.encode(bytes: bytes)
+      }
+    }
   }
 
   /// A metadata key-value pair.

@@ -255,7 +255,8 @@ extension Target {
     name: "performance-worker",
     dependencies: [
       .grpcCore,
-      .grpcProtobuf
+      .grpcProtobuf,
+      .nioCore
     ]
   )
     
