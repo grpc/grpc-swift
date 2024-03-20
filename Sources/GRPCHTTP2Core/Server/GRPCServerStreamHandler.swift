@@ -63,7 +63,7 @@ extension GRPCServerStreamHandler {
       switch frameData.data {
       case .byteBuffer(let buffer):
         do {
-          try self.stateMachine.receive(message: buffer, endStream: endStream)
+          try self.stateMachine.receive(buffer: buffer, endStream: endStream)
           loop: while true {
             switch self.stateMachine.nextInboundMessage() {
             case .receiveMessage(let message):
@@ -86,7 +86,7 @@ extension GRPCServerStreamHandler {
     case .headers(let headers):
       do {
         let action = try self.stateMachine.receive(
-          metadata: headers.headers,
+          headers: headers.headers,
           endStream: headers.endStream
         )
         switch action {
