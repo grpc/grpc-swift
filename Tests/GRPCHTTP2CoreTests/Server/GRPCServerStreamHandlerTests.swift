@@ -257,7 +257,6 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       )
     )
 
-    // Make sure we haven't sent back an error response, and that we read the initial metadata
     // Make sure we have sent a trailers-only response
     let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
 
@@ -413,7 +412,8 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100
+      maximumPayloadSize: 100,
+      skipStateMachineAssertions: true
     )
 
     let channel = EmbeddedChannel(handler: handler)
@@ -505,6 +505,16 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         "custom-header": "custom-value",
       ]
     )
+
+    // Try writing and assert it throws to make sure we don't allow writes
+    // after closing.
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try channel.writeOutbound(trailers)
+    ) { error in
+      XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Server can't send anything if closed.")
+    }
   }
 
   func testReceiveMessageSplitAcrossMultipleBuffers() throws {
