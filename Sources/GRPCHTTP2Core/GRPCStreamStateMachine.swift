@@ -691,7 +691,8 @@ extension GRPCStreamStateMachine {
     let inboundEncoding: CompressionAlgorithm
     if let serverEncoding = headers.first(name: GRPCHTTP2Keys.encoding.rawValue) {
       guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding),
-              configuration.acceptedEncodings.contains(parsedEncoding) else {
+        configuration.acceptedEncodings.contains(parsedEncoding)
+      else {
         return .error(
           .receivedStatusAndMetadata(
             status: .init(

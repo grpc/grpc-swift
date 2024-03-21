@@ -67,21 +67,28 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     let channel = EmbeddedChannel(handler: handler)
-    
+
     // Send client's initial metadata
     let request = RPCRequestPart.metadata(Metadata(headers: [:]))
     XCTAssertNoThrow(try channel.writeOutbound(request))
-    
+
     // Receive server's initial metadata without :status
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue
     ]
-    
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))))
-    
+
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
+
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
-      .status(.init(code: .unknown, message: "HTTP Status Code is missing."), Metadata(headers: serverInitialMetadata))
+      .status(
+        .init(code: .unknown, message: "HTTP Status Code is missing."),
+        Metadata(headers: serverInitialMetadata)
+      )
     )
   }
 
@@ -96,22 +103,26 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     let channel = EmbeddedChannel(handler: handler)
-    
+
     // Send client's initial metadata
     let request = RPCRequestPart.metadata(Metadata(headers: [:]))
     XCTAssertNoThrow(try channel.writeOutbound(request))
-    
+
     // Receive server's initial metadata with 1xx status
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "104",
-      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue
+      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     ]
-    
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))))
-    
+
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
+
     XCTAssertNil(try channel.readInbound(as: RPCResponsePart.self))
   }
-  
+
   func testServerInitialMetadataOtherNon200HTTPStatusCodeResultsInFinishedRPC() throws {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
@@ -123,22 +134,29 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     let channel = EmbeddedChannel(handler: handler)
-    
+
     // Send client's initial metadata
     let request = RPCRequestPart.metadata(Metadata(headers: [:]))
     XCTAssertNoThrow(try channel.writeOutbound(request))
-    
+
     // Receive server's initial metadata with non-200 and non-1xx :status
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: String(HTTPResponseStatus.tooManyRequests.code),
-      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue
+      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     ]
-    
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))))
-    
+
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
+
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
-      .status(.init(code: .unavailable, message: "Unexpected non-200 HTTP Status Code."), Metadata(headers: serverInitialMetadata))
+      .status(
+        .init(code: .unavailable, message: "Unexpected non-200 HTTP Status Code."),
+        Metadata(headers: serverInitialMetadata)
+      )
     )
   }
 
@@ -153,21 +171,28 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     let channel = EmbeddedChannel(handler: handler)
-    
+
     // Send client's initial metadata
     let request = RPCRequestPart.metadata(Metadata(headers: [:]))
     XCTAssertNoThrow(try channel.writeOutbound(request))
-    
+
     // Receive server's initial metadata without content-type
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200"
     ]
-    
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))))
-    
+
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
+
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
-      .status(.init(code: .internalError, message: "Missing content-type header"), Metadata(headers: serverInitialMetadata))
+      .status(
+        .init(code: .internalError, message: "Missing content-type header"),
+        Metadata(headers: serverInitialMetadata)
+      )
     )
   }
 
@@ -199,25 +224,30 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
         GRPCHTTP2Keys.encoding.rawValue: "deflate",
-        GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate"
+        GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
       ]
     )
-    
+
     // Server sends initial metadata with unsupported encoding
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200",
       GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
-      GRPCHTTP2Keys.encoding.rawValue: "gzip"
+      GRPCHTTP2Keys.encoding.rawValue: "gzip",
     ]
-    
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))))
-    
+
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
+
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
       .status(
         .init(
           code: .internalError,
-          message: "The server picked a compression algorithm ('gzip') the client does not know about."
+          message:
+            "The server picked a compression algorithm ('gzip') the client does not know about."
         ),
         Metadata(headers: serverInitialMetadata)
       )
@@ -251,21 +281,25 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.path.rawValue: "test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
-        GRPCHTTP2Keys.te.rawValue: "trailers"
+        GRPCHTTP2Keys.te.rawValue: "trailers",
       ]
     )
-    
+
     // Server sends initial metadata
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200",
-      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue
+      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     ]
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
       .metadata(Metadata(headers: serverInitialMetadata))
     )
-    
+
     // Server sends message over payload limit
     var buffer = ByteBuffer()
     buffer.writeInteger(UInt8(0))  // not compressed
@@ -282,7 +316,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
         "Message has exceeded the configured maximum payload size (max: 1, actual: 42)"
       )
     }
-    
+
     // Make sure we didn't read the received message
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
   }
@@ -298,7 +332,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     let channel = EmbeddedChannel(handler: handler)
-    
+
     // Write client's initial metadata
     XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.metadata(Metadata())))
     let clientInitialMetadata: HPACKHeaders = [
@@ -315,20 +349,27 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200",
       GRPCHTTP2Keys.grpcStatus.rawValue: "0",
-      GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
+      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     ]
     XCTAssertNoThrow(
-      try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(
-        headers: serverInitialMetadata,
-        endStream: true
-      )))
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(
+          .init(
+            headers: serverInitialMetadata,
+            endStream: true
+          )
+        )
+      )
     )
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
-      .status(.init(code: .ok, message: ""), [
-        GRPCHTTP2Keys.status.rawValue: "200",
-        GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
-      ])
+      .status(
+        .init(code: .ok, message: ""),
+        [
+          GRPCHTTP2Keys.status.rawValue: "200",
+          GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+        ]
+      )
     )
 
     // We should throw if the server sends another message, since it's closed the stream already.
@@ -364,16 +405,19 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // Make sure we have sent the corresponding frame, and that nothing has been written back.
     let writtenHeaders = try channel.assertReadHeadersOutbound()
-    XCTAssertEqual(writtenHeaders.headers, [
+    XCTAssertEqual(
+      writtenHeaders.headers,
+      [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.path.rawValue: "test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
-      
-    ])
+
+      ]
+    )
     XCTAssertNil(try channel.readInbound(as: RPCResponsePart.self))
-    
+
     // Receive server's initial metadata
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200",
@@ -381,7 +425,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       "some-custom-header": "some-custom-value",
     ]
     XCTAssertNoThrow(
-      try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata)))
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
     )
 
     XCTAssertEqual(
@@ -390,8 +436,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     // Send a message
-    XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42))))
-    
+    XCTAssertNoThrow(
+      try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
+    )
+
     // Assert we wrote it successfully into the channel
     let writtenMessage = try channel.assertReadDataOutbound()
     var expectedBuffer = ByteBuffer()
@@ -399,24 +447,24 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     expectedBuffer.writeInteger(UInt32(42))  // message length
     expectedBuffer.writeRepeatingByte(1, count: 42)  // message
     XCTAssertEqual(writtenMessage.data, .byteBuffer(expectedBuffer))
-    
+
     // Half-close the outbound end: this would be triggered by finishing the client's writer.
     XCTAssertNoThrow(channel.close(mode: .output, promise: nil))
-    
+
     // Flush to make sure the EOS is written.
     channel.flush()
-    
+
     // Make sure the EOS frame was sent
     let emptyEOSFrame = try channel.assertReadDataOutbound()
     XCTAssertEqual(emptyEOSFrame.data, .byteBuffer(.init()))
     XCTAssertTrue(emptyEOSFrame.endStream)
-    
+
     // Make sure we cannot write anymore because client's closed.
     try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
     XCTAssertThrowsError(ofType: RPCError.self, try channel.throwIfErrorCaught()) { error in
       XCTAssertEqual(error.code, .internalError)
     }
-    
+
     // Server sends back response message
     var buffer = ByteBuffer()
     buffer.writeInteger(UInt8(0))  // not compressed
@@ -432,11 +480,17 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     // Server sends status to end RPC
-    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: [
-      GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.dataLoss.rawValue),
-      GRPCHTTP2Keys.grpcStatusMessage.rawValue: "Test data loss",
-      "custom-header": "custom-value",
-    ]))))
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(
+          .init(headers: [
+            GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.dataLoss.rawValue),
+            GRPCHTTP2Keys.grpcStatusMessage.rawValue: "Test data loss",
+            "custom-header": "custom-value",
+          ])
+        )
+      )
+    )
 
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
@@ -462,16 +516,19 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // Make sure we have sent the corresponding frame, and that nothing has been written back.
     let writtenHeaders = try channel.assertReadHeadersOutbound()
-    XCTAssertEqual(writtenHeaders.headers, [
+    XCTAssertEqual(
+      writtenHeaders.headers,
+      [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.path.rawValue: "test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
-      
-    ])
+
+      ]
+    )
     XCTAssertNil(try channel.readInbound(as: RPCResponsePart.self))
-    
+
     // Receive server's initial metadata
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200",
@@ -479,7 +536,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       "some-custom-header": "some-custom-value",
     ]
     XCTAssertNoThrow(
-      try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata)))
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
     )
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
@@ -487,8 +546,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     )
 
     // Send a message
-    XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42))))
-    
+    XCTAssertNoThrow(
+      try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
+    )
+
     // Assert we wrote it successfully into the channel
     let writtenMessage = try channel.assertReadDataOutbound()
     var expectedBuffer = ByteBuffer()
@@ -560,16 +621,19 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // Make sure we have sent the corresponding frame, and that nothing has been written back.
     let writtenHeaders = try channel.assertReadHeadersOutbound()
-    XCTAssertEqual(writtenHeaders.headers, [
+    XCTAssertEqual(
+      writtenHeaders.headers,
+      [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.path.rawValue: "test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
-      
-    ])
+
+      ]
+    )
     XCTAssertNil(try channel.readInbound(as: RPCResponsePart.self))
-    
+
     // Receive server's initial metadata
     let serverInitialMetadata: HPACKHeaders = [
       GRPCHTTP2Keys.status.rawValue: "200",
@@ -577,7 +641,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       "some-custom-header": "some-custom-value",
     ]
     XCTAssertNoThrow(
-      try channel.writeInbound(HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata)))
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
     )
     XCTAssertEqual(
       try channel.readInbound(as: RPCResponsePart.self),
