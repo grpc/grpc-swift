@@ -460,17 +460,24 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     XCTAssertTrue(emptyEOSFrame.endStream)
 
     // Make sure we cannot write anymore because client's closed.
-    try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
-    XCTAssertThrowsError(ofType: RPCError.self, try channel.throwIfErrorCaught()) { error in
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
+    ) { error in
       XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Client is closed, cannot send a message.")
     }
+
+    // This is needed to clear the EmbeddedChannel's stored error, otherwise
+    // it will be thrown when writing inbound.
+    try? channel.throwIfErrorCaught()
 
     // Server sends back response message
     var buffer = ByteBuffer()
     buffer.writeInteger(UInt8(0))  // not compressed
     buffer.writeInteger(UInt32(42))  // message length
     buffer.writeRepeatingByte(0, count: 42)  // message
-    let serverDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
+    let serverDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer))
     XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(serverDataPayload)))
 
     // Make sure we read the message properly

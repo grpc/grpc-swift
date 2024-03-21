@@ -67,7 +67,7 @@ extension GRPCClientStreamHandler {
       switch frameData.data {
       case .byteBuffer(let buffer):
         do {
-          try self.stateMachine.receive(message: buffer, endStream: endStream)
+          try self.stateMachine.receive(buffer: buffer, endStream: endStream)
           loop: while true {
             switch self.stateMachine.nextInboundMessage() {
             case .receiveMessage(let message):
@@ -97,10 +97,10 @@ extension GRPCClientStreamHandler {
         case .receivedMetadata(let metadata):
           context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
 
-        case .rejectRPC(let trailers):
+        case .rejectRPC:
           throw RPCError(
             code: .internalError,
-            message: "Server cannot get rejectRPC."
+            message: "Client cannot get rejectRPC."
           )
 
         case .receivedStatusAndMetadata(let status, let metadata):
@@ -167,7 +167,6 @@ extension GRPCClientStreamHandler {
 
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     if case .output = mode {
-      // We need to send an HTTP2 frame with the EOS flag set.
       do {
         try self.stateMachine.closeOutbound()
       } catch {
@@ -195,8 +194,19 @@ extension GRPCClientStreamHandler {
           )
 
         case .noMoreMessages:
+          self.flushPending = true
+          context.write(
+            self.wrapOutboundOut(
+              HTTP2Frame.FramePayload.data(
+                .init(
+                  data: .byteBuffer(.init()),
+                  endStream: true
+                )
+              )
+            ),
+            promise: nil
+          )
           context.close(mode: .output, promise: nil)
-          // This isn't enough, I'd have to send an empty framepayload with EOS set, but I've already sent an empty frame because I called .send(message:[], endStream: true) in close() above. The solution is to have a close() method on the state machine to decouple the message from the closing.
           break loop
 
         case .awaitMoreMessages:
