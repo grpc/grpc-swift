@@ -18,40 +18,42 @@ import Dispatch
 import NIOCore
 import NIOFileSystem
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if canImport(Darwin)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Glibc)
 import Glibc
 #else
 let badOS = { fatalError("unsupported OS") }()
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if canImport(Darwin)
 private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF
-#elseif os(Linux) || os(FreeBSD) || os(Android)
+#elseif canImport(Musl) || canImport(Glibc)
 private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
 #endif
 
 /// Current server stats.
 internal struct ServerStats: Sendable {
-  let time: Double
-  let userTime: Double
-  let systemTime: Double
-  let totalCpuTime: UInt64
-  let idleCpuTime: UInt64
+  var time: Double
+  var userTime: Double
+  var systemTime: Double
+  var totalCPUTime: UInt64
+  var idleCPUTime: UInt64
 
   init(
     time: Double,
     userTime: Double,
     systemTime: Double,
-    totalCpuTime: UInt64,
-    idleCPuTime: UInt64
+    totalCPUTime: UInt64,
+    idleCPUTime: UInt64
   ) {
     self.time = time
     self.userTime = userTime
     self.systemTime = systemTime
-    self.totalCpuTime = totalCpuTime
-    self.idleCpuTime = idleCPuTime
+    self.totalCPUTime = totalCPUTime
+    self.idleCPUTime = idleCPUTime
   }
 
   init() async throws {
@@ -67,65 +69,67 @@ internal struct ServerStats: Sendable {
       self.systemTime = 0
     }
     if #available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *) {
-      let (totalCpuTime, idleCpuTime) = try await getTotalAndIdleCpuTime()
-      self.totalCpuTime = totalCpuTime
-      self.idleCpuTime = idleCpuTime
+      let (totalCPUTime, idleCPUTime) = try await ServerStats.getTotalAndIdleCPUTime()
+      self.totalCPUTime = totalCPUTime
+      self.idleCPUTime = idleCPUTime
     } else {
-      self.idleCpuTime = 0
-      self.totalCpuTime = 0
+      self.idleCPUTime = 0
+      self.totalCPUTime = 0
     }
   }
-}
 
-internal func changeInStats(initialStats: ServerStats, currentStats: ServerStats) -> ServerStats {
-  return ServerStats(
-    time: currentStats.time - initialStats.time,
-    userTime: currentStats.userTime - initialStats.userTime,
-    systemTime: currentStats.systemTime - initialStats.systemTime,
-    totalCpuTime: currentStats.totalCpuTime - initialStats.totalCpuTime,
-    idleCPuTime: currentStats.idleCpuTime - initialStats.idleCpuTime
-  )
-}
-
-/// Computes the total and idle CPU time after extracting stats from the first line of '/proc/stat'.
-///
-/// The first line in '/proc/stat' file looks as follows:
-/// cpu [user] [nice] [system] [idle] [iowait] [irq] [softirq]
-/// The totalCpuTime is computed as follows:
-/// total = user + nice + system + idle
-@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
-private func getTotalAndIdleCpuTime() async throws -> (UInt64, UInt64) {
-  #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Android)
-  do {
-    let contents = try await ByteBuffer(
-      contentsOf: "/proc/stat",
-      maximumSizeAllowed: .kilobytes(20)
+  internal func difference(to stats: ServerStats) -> ServerStats {
+    return ServerStats(
+      time: self.time - stats.time,
+      userTime: self.userTime - stats.userTime,
+      systemTime: self.systemTime - stats.systemTime,
+      totalCPUTime: self.totalCPUTime - stats.totalCPUTime,
+      idleCPUTime: self.idleCPUTime - stats.idleCPUTime
     )
+  }
 
-    guard let index = contents.readableBytesView.firstIndex(where: { $0 == UInt8("\n") }) else {
+  /// Computes the total and idle CPU time after extracting stats from the first line of '/proc/stat'.
+  ///
+  /// The first line in '/proc/stat' file looks as follows:
+  /// CPU [user] [nice] [system] [idle] [iowait] [irq] [softirq]
+  /// The totalCPUTime is computed as follows:
+  /// total = user + nice + system + idle
+  @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+  private static func getTotalAndIdleCPUTime() async throws -> (
+    totalCPUTime: UInt64, idleCPUTime: UInt64
+  ) {
+    #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(Linux) || os(Android)
+    let contents: ByteBuffer
+    do {
+      contents = try await ByteBuffer(
+        contentsOf: "/proc/stat",
+        maximumSizeAllowed: .kilobytes(20)
+      )
+    } catch {
       return (0, 0)
     }
 
-    guard let firstLine = contents.getString(at: 0, length: index) else {
+    let view = contents.readableBytesView
+    guard let firstNewLineIndex = view.firstIndex(of: UInt8(ascii: "\n")) else {
       return (0, 0)
     }
+    let firstLine = String(buffer: ByteBuffer(view[0 ... firstNewLineIndex]))
 
     let lineComponents = firstLine.components(separatedBy: " ")
-    if lineComponents.count < 5 || lineComponents[0] != "cpu" {
+    if lineComponents.count < 5 || lineComponents[0] != "CPU" {
       return (0, 0)
     }
 
-    let cpuTime: [UInt64] = lineComponents[1 ... 4].compactMap { UInt64($0) }
-    if cpuTime.count < 4 {
+    let CPUTime: [UInt64] = lineComponents[1 ... 4].compactMap { UInt64($0) }
+    if CPUTime.count < 4 {
       return (0, 0)
     }
 
-    let totalCpuTime = cpuTime.reduce(0, +)
-    return (totalCpuTime, cpuTime[3])
-  } catch {
+    let totalCPUTime = CPUTime.reduce(0, +)
+    return (totalCPUTime, CPUTime[3])
+
+    #else
     return (0, 0)
+    #endif
   }
-  #else
-  return (0, 0)
-  #endif
 }
