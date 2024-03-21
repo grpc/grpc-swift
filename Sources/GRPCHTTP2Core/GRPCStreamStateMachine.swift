@@ -571,9 +571,7 @@ extension GRPCStreamStateMachine {
     case .clientOpenServerClosed(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
     case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-      try self.invalidState(
-        "Client is closed, cannot send a message."
-      )
+      try self.invalidState("Client is already closed.")
     }
   }
 
