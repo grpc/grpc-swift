@@ -332,7 +332,7 @@ struct GRPCStreamStateMachine {
     case .server:
       if endStream {
         try self.invalidState(
-          "Can't end response stream by sending a message - send(status:metadata:trailersOnly:) must be called"
+          "Can't end response stream by sending a message - send(status:metadata:) must be called"
         )
       }
       try self.serverSend(message: message)
