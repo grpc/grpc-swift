@@ -64,24 +64,21 @@ extension GRPCServerStreamHandler {
       case .byteBuffer(let buffer):
         do {
           try self.stateMachine.receive(message: buffer, endStream: endStream)
-
-          var nextInboundMessage = self.stateMachine.nextInboundMessage()
-          while case .receiveMessage(let message) = nextInboundMessage {
-            context.fireChannelRead(self.wrapInboundOut(.message(message)))
-            nextInboundMessage = self.stateMachine.nextInboundMessage()
-          }
-
-          switch nextInboundMessage {
-          case .awaitMoreMessages:
-            ()
-          case .receiveMessage:
-            preconditionFailure("This isn't possible: we'd still be inside the while loop.")
-          case .noMoreMessages:
-            context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+          loop: while true {
+            switch self.stateMachine.nextInboundMessage() {
+            case .receiveMessage(let message):
+              context.fireChannelRead(self.wrapInboundOut(.message(message)))
+            case .awaitMoreMessages:
+              break loop
+            case .noMoreMessages:
+              context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+              break loop
+            }
           }
         } catch {
           context.fireErrorCaught(error)
         }
+
       case .fileRegion:
         preconditionFailure("Unexpected IOData.fileRegion")
       }
@@ -95,15 +92,18 @@ extension GRPCServerStreamHandler {
         switch action {
         case .receivedMetadata(let metadata):
           context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
+
         case .rejectRPC(let trailers):
+          self.flushPending = true
           let response = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
           context.write(self.wrapOutboundOut(response), promise: nil)
-          self.flushPending = true
+
         case .receivedStatusAndMetadata:
           throw RPCError(
             code: .internalError,
             message: "Server cannot get receivedStatusAndMetadata."
           )
+
         case .doNothing:
           throw RPCError(code: .internalError, message: "Server cannot receive doNothing.")
         }
@@ -140,9 +140,9 @@ extension GRPCServerStreamHandler {
     switch frame {
     case .metadata(let metadata):
       do {
+        self.flushPending = true
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: nil)
-        self.flushPending = true
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
@@ -178,38 +178,37 @@ extension GRPCServerStreamHandler {
   }
 
   func flush(context: ChannelHandlerContext) {
+    if self.isReading {
+      // We don't want to flush yet if we're still in a read loop.
+      return
+    }
+
     do {
-      if self.isReading {
-        // We don't want to flush yet if we're still in a read loop.
-        return
-      }
-
-      var nextOutboundMessage = try self.stateMachine.nextOutboundMessage()
-      while case .sendMessage(let byteBuffer) = nextOutboundMessage {
-        context.write(
-          self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
-          promise: nil
-        )
-        self.flushPending = true
-        nextOutboundMessage = try self.stateMachine.nextOutboundMessage()
-      }
-
-      switch nextOutboundMessage {
-      case .noMoreMessages:
-        if let pendingTrailers = self.pendingTrailers {
-          context.write(self.wrapOutboundOut(pendingTrailers), promise: nil)
+      loop: while true {
+        switch try self.stateMachine.nextOutboundMessage() {
+        case .sendMessage(let byteBuffer):
           self.flushPending = true
-          self.pendingTrailers = nil
+          context.write(
+            self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
+            promise: nil
+          )
+
+        case .noMoreMessages:
+          if let pendingTrailers = self.pendingTrailers {
+            self.flushPending = true
+            self.pendingTrailers = nil
+            context.write(self.wrapOutboundOut(pendingTrailers), promise: nil)
+          }
+          break loop
+
+        case .awaitMoreMessages:
+          break loop
         }
-      case .awaitMoreMessages:
-        ()
-      case .sendMessage:
-        preconditionFailure("This isn't possible: we'd still be inside the while loop.")
       }
 
       if self.flushPending {
-        context.flush()
         self.flushPending = false
+        context.flush()
       }
     } catch {
       context.fireErrorCaught(error)
