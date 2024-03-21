@@ -325,17 +325,21 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func send(message: [UInt8], endStream: Bool) throws {
+  mutating func send(message: [UInt8]) throws {
     switch self.configuration {
     case .client:
-      try self.clientSend(message: message, endStream: endStream)
+      try self.clientSend(message: message)
     case .server:
-      if endStream {
-        try self.invalidState(
-          "Can't end response stream by sending a message - send(status:metadata:) must be called"
-        )
-      }
       try self.serverSend(message: message)
+    }
+  }
+
+  mutating func closeOutbound() throws {
+    switch self.configuration {
+    case .client:
+      try self.clientCloseOutbound()
+    case .server:
+      try self.invalidState("Server cannot call close: it must send status and trailers.")
     }
   }
 
@@ -532,31 +536,36 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func clientSend(message: [UInt8], endStream: Bool) throws {
-    // Client sends message.
+  private mutating func clientSend(message: [UInt8]) throws {
     switch self.state {
     case .clientIdleServerIdle:
       try self.invalidState("Client not yet open.")
     case .clientOpenServerIdle(var state):
       state.framer.append(message)
-      if endStream {
-        self.state = .clientClosedServerIdle(.init(previousState: state))
-      } else {
-        self.state = .clientOpenServerIdle(state)
-      }
+      self.state = .clientOpenServerIdle(state)
     case .clientOpenServerOpen(var state):
       state.framer.append(message)
-      if endStream {
-        self.state = .clientClosedServerOpen(.init(previousState: state))
-      } else {
-        self.state = .clientOpenServerOpen(state)
-      }
-    case .clientOpenServerClosed(let state):
+      self.state = .clientOpenServerOpen(state)
+    case .clientOpenServerClosed:
       // The server has closed, so it makes no sense to send the rest of the request.
-      // However, do close if endStream is set.
-      if endStream {
-        self.state = .clientClosedServerClosed(.init(previousState: state))
-      }
+      ()
+    case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
+      try self.invalidState(
+        "Client is closed, cannot send a message."
+      )
+    }
+  }
+
+  private mutating func clientCloseOutbound() throws {
+    switch self.state {
+    case .clientIdleServerIdle:
+      try self.invalidState("Client not yet open.")
+    case .clientOpenServerIdle(let state):
+      self.state = .clientClosedServerIdle(.init(previousState: state))
+    case .clientOpenServerOpen(let state):
+      self.state = .clientClosedServerOpen(.init(previousState: state))
+    case .clientOpenServerClosed(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
     case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
       try self.invalidState(
         "Client is closed, cannot send a message."

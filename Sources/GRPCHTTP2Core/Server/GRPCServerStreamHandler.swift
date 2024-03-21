@@ -153,7 +153,7 @@ extension GRPCServerStreamHandler {
 
     case .message(let message):
       do {
-        try self.stateMachine.send(message: message, endStream: false)
+        try self.stateMachine.send(message: message)
         // TODO: move the promise handling into the state machine
         promise?.succeed()
       } catch {
