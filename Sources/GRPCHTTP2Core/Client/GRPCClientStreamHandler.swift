@@ -60,7 +60,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
       switch frameData.data {
       case .byteBuffer(let buffer):
         do {
-          try self.stateMachine.receive(message: buffer, endStream: endStream)
+          try self.stateMachine.receive(buffer: buffer, endStream: endStream)
           switch self.stateMachine.nextInboundMessage() {
           case .awaitMoreMessages:
             ()
@@ -79,7 +79,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
     case .headers(let headers):
       do {
         let action = try self.stateMachine.receive(
-          metadata: headers.headers,
+          headers: headers.headers,
           endStream: headers.endStream
         )
         switch action {
