@@ -166,13 +166,18 @@ extension GRPCClientStreamHandler {
   }
 
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
-    if case .output = mode {
+    switch mode {
+    case .output:
       do {
         try self.stateMachine.closeOutbound()
       } catch {
+        promise?.fail(error)
         context.fireErrorCaught(error)
       }
-    } else {
+
+    case .input, .all:
+      // Force a flush to make sure any pending messages are written before closing.
+      self._flush(context: context)
       context.close(mode: mode, promise: promise)
     }
   }
@@ -183,6 +188,10 @@ extension GRPCClientStreamHandler {
       return
     }
 
+    self._flush(context: context)
+  }
+
+  private func _flush(context: ChannelHandlerContext) {
     do {
       loop: while true {
         switch try self.stateMachine.nextOutboundMessage() {
