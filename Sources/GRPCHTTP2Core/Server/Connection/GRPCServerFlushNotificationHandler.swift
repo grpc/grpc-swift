@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import GRPCCore
 import NIOCore
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCServerFlushNotificationHandler: ChannelOutboundHandler {
-  typealias OutboundIn = ByteBuffer
-  typealias OutboundOut = ByteBuffer
+  typealias OutboundIn = Any
+  typealias OutboundOut = Any
 
   private let serverConnectionManagementHandler: ServerConnectionManagementHandler
 
