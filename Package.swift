@@ -32,7 +32,7 @@ let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == ni
 let packageDependencies: [Package.Dependency] = [
   .package(
     url: "https://github.com/apple/swift-nio.git",
-    from: "2.58.0"
+    from: "2.64.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
@@ -132,6 +132,7 @@ extension Target.Dependency {
     package: "swift-nio-transport-services"
   )
   static let nioTestUtils: Self = .product(name: "NIOTestUtils", package: "swift-nio")
+  static let nioFileSystem: Self = .product(name: "_NIOFileSystem", package: "swift-nio")
   static let logging: Self = .product(name: "Logging", package: "swift-log")
   static let protobuf: Self = .product(name: "SwiftProtobuf", package: "swift-protobuf")
   static let protobufPluginLibrary: Self = .product(
@@ -251,7 +252,8 @@ extension Target {
     dependencies: [
       .grpcCore,
       .grpcProtobuf,
-      .nioCore
+      .nioCore,
+      .nioFileSystem
     ]
   )
     
