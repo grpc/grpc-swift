@@ -35,6 +35,7 @@ private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
 #endif
 
 /// Current server stats.
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 internal struct ServerStats: Sendable {
   var time: Double
   var userTime: Double
@@ -68,14 +69,9 @@ internal struct ServerStats: Sendable {
       self.userTime = 0
       self.systemTime = 0
     }
-    if #available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *) {
-      let (totalCPUTime, idleCPUTime) = try await ServerStats.getTotalAndIdleCPUTime()
-      self.totalCPUTime = totalCPUTime
-      self.idleCPUTime = idleCPUTime
-    } else {
-      self.idleCPUTime = 0
-      self.totalCPUTime = 0
-    }
+    let (totalCPUTime, idleCPUTime) = try await ServerStats.getTotalAndIdleCPUTime()
+    self.totalCPUTime = totalCPUTime
+    self.idleCPUTime = idleCPUTime
   }
 
   internal func difference(to stats: ServerStats) -> ServerStats {
@@ -94,7 +90,6 @@ internal struct ServerStats: Sendable {
   /// CPU [user] [nice] [system] [idle] [iowait] [irq] [softirq]
   /// The totalCPUTime is computed as follows:
   /// total = user + nice + system + idle
-  @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
   private static func getTotalAndIdleCPUTime() async throws -> (
     totalCPUTime: UInt64, idleCPUTime: UInt64
   ) {
