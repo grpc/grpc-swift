@@ -37,7 +37,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
     init() {}
 
-    init(role: Role) async throws {
+    init(role: Role) {
       self.role = role
     }
 
