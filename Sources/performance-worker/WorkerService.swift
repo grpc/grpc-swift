@@ -45,7 +45,6 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
     init(server: GRPCServer) async throws {
       self.role = .server(server)
-      self.initialStats = try await ServerStats()
     }
 
     init(client: GRPCClient) {
@@ -94,21 +93,33 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       for try await message in request.messages {
         switch message.argtype {
         case let .some(.setup(serverConfig)):
-          try await self.serverSetup(serverConfig)
+          try await self.setupServer(serverConfig)
+          try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+              let role = self.state.withLockedValue({ $0.role })
+              switch role {
+              case let .server(server):
+                try await server.run()
+              default:
+                ()
+              }
+            }
+            try await group.next()
+            group.cancelAll()
+          }
         case let .some(.mark(mark)):
           let response = try await self.makeStatsResponse(for: mark)
           try await writer.write(response)
         case .none:
           ()
         }
-        throw RPCError(code: .unavailable, message: "This RPC has not been implemented yet.")
       }
-      try self.state.withLockedValue {
+      self.state.withLockedValue {
         switch $0.role {
         case .server(let server):
           server.stopListening()
         default:
-          throw RPCError(code: .unavailable, message: "There is no benchmark server.")
+          ()
         }
       }
       return [:]
@@ -126,7 +137,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension WorkerService {
-  private func serverSetup(_ config: Grpc_Testing_ServerConfig) async throws {
+  private func setupServer(_ config: Grpc_Testing_ServerConfig) async throws {
     try self.state.withLockedValue { state in
       switch state.role {
       case .server(_):
@@ -134,13 +145,14 @@ extension WorkerService {
       case .client(_):
         throw RPCError(code: .failedPrecondition, message: "This worker has a client set up.")
       default:
-        ()
+        let server = GRPCServer(transports: [], services: [BenchmarkService()])
+        state.role = .server(server)
       }
     }
-    // The asynchronous function 'run()' can't be called inside the synchronous
-    // closure passed to 'withLockedValue'.
-    let server = GRPCServer(transports: [], services: [BenchmarkService()])
-    try await server.run()
+    let initialStats = try await ServerStats()
+    self.state.withLockedValue {
+      $0.initialStats = initialStats
+    }
   }
 
   private func makeStatsResponse(
