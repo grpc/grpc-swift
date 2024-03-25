@@ -30,6 +30,14 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
 
   private var isReading = false
   private var flushPending = false
+  private var pendingOutboundCloseMode: CloseMode? {
+    didSet {
+      assert(
+        pendingOutboundCloseMode != .input,
+        "pendingOutboundCloseMode can only be nil, CloseMode.all or CloseMode.outbound"
+      )
+    }
+  }
 
   init(
     methodDescriptor: MethodDescriptor,
@@ -167,7 +175,8 @@ extension GRPCClientStreamHandler {
 
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     switch mode {
-    case .output:
+    case .output, .all:
+      self.pendingOutboundCloseMode = mode
       do {
         try self.stateMachine.closeOutbound()
       } catch {
@@ -175,10 +184,8 @@ extension GRPCClientStreamHandler {
         context.fireErrorCaught(error)
       }
 
-    case .input, .all:
-      // Force a flush to make sure any pending messages are written before closing.
-      self._flush(context: context)
-      context.close(mode: mode, promise: promise)
+    case .input:
+      context.close(mode: .input, promise: promise)
     }
   }
 
@@ -203,7 +210,17 @@ extension GRPCClientStreamHandler {
           )
 
         case .noMoreMessages:
-          self.flushPending = true
+          guard let closeMode = self.pendingOutboundCloseMode else {
+            // There's no pending outbound close. This means that we have
+            // already closed the outbound end and then tried to write (which
+            // will trigger an error in the state machine when flushing).
+            break loop
+          }
+
+          self.pendingOutboundCloseMode = nil
+
+          // Write an empty data frame with the EOS flag set, to signal the RPC
+          // request is now finished.
           context.write(
             self.wrapOutboundOut(
               HTTP2Frame.FramePayload.data(
@@ -215,17 +232,20 @@ extension GRPCClientStreamHandler {
             ),
             promise: nil
           )
-          context.close(mode: .output, promise: nil)
+
+          // Flush all written messages and then close with either `.output` or
+          // `.all`, depending on what CloseMode was used when calling `close(context:mode:promise:)`.
+          context.flush()
+          context.close(mode: closeMode, promise: nil)
           break loop
 
         case .awaitMoreMessages:
+          if self.flushPending {
+            self.flushPending = false
+            context.flush()
+          }
           break loop
         }
-      }
-
-      if self.flushPending {
-        self.flushPending = false
-        context.flush()
       }
     } catch {
       context.fireErrorCaught(error)
