@@ -29,26 +29,53 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
   private struct State {
     var role: Role?
-    var initialStats: ServerStats?
 
     enum Role {
       case client(GRPCClient)
-      case server(GRPCServer)
+      case server(GRPCServer, ServerStats)
     }
 
     init() {}
 
     init(role: Role) async throws {
       self.role = role
-      self.initialStats = try await ServerStats()
     }
 
     init(server: GRPCServer) async throws {
-      self.role = .server(server)
+      let initialState = try await ServerStats()
+      self.role = .server(server, initialState)
+
     }
 
     init(client: GRPCClient) {
       self.role = .client(client)
+    }
+
+    public func getServer() -> GRPCServer? {
+      switch self.role {
+      case let .server(server, _):
+        return server
+      default:
+        return nil
+      }
+    }
+
+    public func getInitialServerStats() -> ServerStats? {
+      switch self.role {
+      case let .server(_, initialServerStats):
+        return initialServerStats
+      default:
+        return nil
+      }
+    }
+
+    public mutating func setInitialServerStats(newStats: ServerStats) {
+      switch self.role {
+      case let .server(server, _):
+        self.role = .server(server, newStats)
+      default:
+        ()
+      }
     }
   }
 
@@ -65,7 +92,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       switch role {
       case .client(let client):
         client.close()
-      case .server(let server):
+      case .server(let server, _):
         server.stopListening()
       }
     }
@@ -90,38 +117,34 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunServer.Output>
   {
     return ServerResponse.Stream { writer in
-      for try await message in request.messages {
-        switch message.argtype {
-        case let .some(.setup(serverConfig)):
-          try await self.setupServer(serverConfig)
-          try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
-              let role = self.state.withLockedValue({ $0.role })
-              switch role {
-              case let .server(server):
-                try await server.run()
-              default:
-                ()
-              }
-            }
-            try await group.next()
-            group.cancelAll()
+      try await withThrowingTaskGroup(of: Void.self) { group in
+        for try await message in request.messages {
+          switch message.argtype {
+          case let .some(.setup(serverConfig)):
+            let server = try await self.setupServer(serverConfig)
+            group.addTask { try await server.run() }
+
+          case let .some(.mark(mark)):
+            let response = try await self.makeStatsResponse(reset: mark.reset)
+            try await writer.write(response)
+
+          case .none:
+            ()
           }
-        case let .some(.mark(mark)):
-          let response = try await self.makeStatsResponse(for: mark)
-          try await writer.write(response)
-        case .none:
-          ()
         }
+
+        try await group.next()
       }
-      self.state.withLockedValue {
-        switch $0.role {
-        case .server(let server):
-          server.stopListening()
-        default:
-          ()
-        }
+
+      let server = self.state.withLockedValue { state in
+        state.getServer()
       }
+
+      guard let server = server else {
+        return [:]
+      }
+
+      server.stopListening()
       return [:]
     }
   }
@@ -137,35 +160,35 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension WorkerService {
-  private func setupServer(_ config: Grpc_Testing_ServerConfig) async throws {
+  private func setupServer(_ config: Grpc_Testing_ServerConfig) async throws -> GRPCServer {
+    let server = GRPCServer(transports: [], services: [BenchmarkService()])
+    let initialStats = try await ServerStats()
     try self.state.withLockedValue { state in
       switch state.role {
-      case .server(_):
-        throw RPCError(code: .alreadyExists, message: "A server has been previously set up.")
+      case .server(_, _):
+        throw RPCError(code: .alreadyExists, message: "A server has already been set up.")
+
       case .client(_):
-        throw RPCError(code: .failedPrecondition, message: "This worker has a client set up.")
+        throw RPCError(code: .failedPrecondition, message: "This worker has a client setup.")
+
       default:
-        let server = GRPCServer(transports: [], services: [BenchmarkService()])
-        state.role = .server(server)
+        state.role = .server(server, initialStats)
       }
     }
-    let initialStats = try await ServerStats()
-    self.state.withLockedValue {
-      $0.initialStats = initialStats
-    }
+    return server
   }
 
   private func makeStatsResponse(
-    for mark: Grpc_Testing_Mark
+    reset: Bool
   ) async throws -> Grpc_Testing_WorkerService.Method.RunServer.Output {
     let currentStats = try await ServerStats()
     let initialStats = self.state.withLockedValue { state in
       defer {
-        if mark.reset {
-          state.initialStats = currentStats
+        if reset {
+          state.setInitialServerStats(newStats: currentStats)
         }
       }
-      return state.initialStats
+      return state.getInitialServerStats()
     }
 
     guard let initialStats = initialStats else {
