@@ -69,7 +69,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Receive server's initial metadata without :status
@@ -105,7 +105,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Receive server's initial metadata with 1xx status
@@ -136,7 +136,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Receive server's initial metadata with non-200 and non-1xx :status
@@ -173,7 +173,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Receive server's initial metadata without content-type
@@ -400,7 +400,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Make sure we have sent the corresponding frame, and that nothing has been written back.
@@ -518,7 +518,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Make sure we have sent the corresponding frame, and that nothing has been written back.
@@ -623,7 +623,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let channel = EmbeddedChannel(handler: handler)
 
     // Send client's initial metadata
-    let request = RPCRequestPart.metadata(Metadata(headers: [:]))
+    let request = RPCRequestPart.metadata([:])
     XCTAssertNoThrow(try channel.writeOutbound(request))
 
     // Make sure we have sent the corresponding frame, and that nothing has been written back.
