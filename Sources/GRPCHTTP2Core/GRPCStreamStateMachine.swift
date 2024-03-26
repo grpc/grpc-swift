@@ -373,8 +373,12 @@ struct GRPCStreamStateMachine {
 
   mutating func receive(headers: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
     switch self.configuration {
-    case .client:
-      return try self.clientReceive(headers: headers, endStream: endStream)
+    case .client(let clientConfiguration):
+      return try self.clientReceive(
+        headers: headers,
+        endStream: endStream,
+        configuration: clientConfiguration
+      )
     case .server(let serverConfiguration):
       return try self.serverReceive(
         headers: headers,
@@ -567,9 +571,7 @@ extension GRPCStreamStateMachine {
     case .clientOpenServerClosed(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
     case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-      try self.invalidState(
-        "Client is closed, cannot send a message."
-      )
+      try self.invalidState("Client is already closed.")
     }
   }
 
@@ -665,7 +667,7 @@ extension GRPCStreamStateMachine {
         .receivedStatusAndMetadata(
           status: .init(
             code: .internalError,
-            message: "Missing \(GRPCHTTP2Keys.contentType) header"
+            message: "Missing \(GRPCHTTP2Keys.contentType.rawValue) header"
           ),
           metadata: Metadata(headers: metadata)
         )
@@ -680,10 +682,15 @@ extension GRPCStreamStateMachine {
     case success(CompressionAlgorithm)
   }
 
-  private func processInboundEncoding(_ metadata: HPACKHeaders) -> ProcessInboundEncodingResult {
+  private func processInboundEncoding(
+    headers: HPACKHeaders,
+    configuration: GRPCStreamStateMachineConfiguration.ClientConfiguration
+  ) -> ProcessInboundEncodingResult {
     let inboundEncoding: CompressionAlgorithm
-    if let serverEncoding = metadata.first(name: GRPCHTTP2Keys.encoding.rawValue) {
-      guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding) else {
+    if let serverEncoding = headers.first(name: GRPCHTTP2Keys.encoding.rawValue) {
+      guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding),
+        configuration.acceptedEncodings.contains(parsedEncoding)
+      else {
         return .error(
           .receivedStatusAndMetadata(
             status: .init(
@@ -691,7 +698,7 @@ extension GRPCStreamStateMachine {
               message:
                 "The server picked a compression algorithm ('\(serverEncoding)') the client does not know about."
             ),
-            metadata: Metadata(headers: metadata)
+            metadata: Metadata(headers: headers)
           )
         )
       }
@@ -732,7 +739,8 @@ extension GRPCStreamStateMachine {
 
   private mutating func clientReceive(
     headers: HPACKHeaders,
-    endStream: Bool
+    endStream: Bool,
+    configuration: GRPCStreamStateMachineConfiguration.ClientConfiguration
   ) throws -> OnMetadataReceived {
     switch self.state {
     case .clientOpenServerIdle(let state):
@@ -750,7 +758,7 @@ extension GRPCStreamStateMachine {
         self.state = .clientOpenServerClosed(.init(previousState: state))
         return try self.validateAndReturnStatusAndMetadata(headers)
       case (.valid, false):
-        switch self.processInboundEncoding(headers) {
+        switch self.processInboundEncoding(headers: headers, configuration: configuration) {
         case .error(let failure):
           return failure
         case .success(let inboundEncoding):
@@ -798,7 +806,7 @@ extension GRPCStreamStateMachine {
         self.state = .clientClosedServerClosed(.init(previousState: state))
         return try self.validateAndReturnStatusAndMetadata(headers)
       case (.valid, false):
-        switch self.processInboundEncoding(headers) {
+        switch self.processInboundEncoding(headers: headers, configuration: configuration) {
         case .error(let failure):
           return failure
         case .success(let inboundEncoding):
