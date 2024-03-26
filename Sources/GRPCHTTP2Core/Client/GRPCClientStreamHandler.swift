@@ -123,7 +123,7 @@ extension GRPCClientStreamHandler {
     self.isReading = false
     if self.flushPending {
       self.flushPending = false
-      context.flush()
+      self.flush(context: context)
     }
     context.fireChannelReadComplete()
   }
