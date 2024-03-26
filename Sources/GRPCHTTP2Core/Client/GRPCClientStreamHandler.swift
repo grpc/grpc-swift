@@ -30,14 +30,6 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
 
   private var isReading = false
   private var flushPending = false
-  private var pendingOutboundCloseMode: CloseMode? {
-    didSet {
-      assert(
-        pendingOutboundCloseMode != .input,
-        "pendingOutboundCloseMode can only be nil, CloseMode.all or CloseMode.outbound"
-      )
-    }
-  }
 
   init(
     methodDescriptor: MethodDescriptor,
@@ -176,9 +168,12 @@ extension GRPCClientStreamHandler {
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     switch mode {
     case .output, .all:
-      self.pendingOutboundCloseMode = mode
       do {
         try self.stateMachine.closeOutbound()
+        // Force a flush by calling _flush
+        // (otherwise, we'd skip flushing if we're in a read loop)
+        self._flush(context: context)
+        context.close(mode: mode, promise: promise)
       } catch {
         promise?.fail(error)
         context.fireErrorCaught(error)
@@ -210,15 +205,6 @@ extension GRPCClientStreamHandler {
           )
 
         case .noMoreMessages:
-          guard let closeMode = self.pendingOutboundCloseMode else {
-            // There's no pending outbound close. This means that we have
-            // already closed the outbound end and then tried to write (which
-            // will trigger an error in the state machine when flushing).
-            break loop
-          }
-
-          self.pendingOutboundCloseMode = nil
-
           // Write an empty data frame with the EOS flag set, to signal the RPC
           // request is now finished.
           context.write(
@@ -233,10 +219,7 @@ extension GRPCClientStreamHandler {
             promise: nil
           )
 
-          // Flush all written messages and then close with either `.output` or
-          // `.all`, depending on what CloseMode was used when calling `close(context:mode:promise:)`.
           context.flush()
-          context.close(mode: closeMode, promise: nil)
           break loop
 
         case .awaitMoreMessages:
