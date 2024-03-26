@@ -187,6 +187,7 @@ extension GRPCClientStreamHandler {
   func flush(context: ChannelHandlerContext) {
     if self.isReading {
       // We don't want to flush yet if we're still in a read loop.
+      self.flushPending = true
       return
     }
 
