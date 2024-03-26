@@ -16,6 +16,7 @@
 
 import GRPCCore
 import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import XCTest
 
@@ -2194,18 +2195,35 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(deframedMessage))
 
     // Server sends response
+    let eventLoop = EmbeddedEventLoop()
+    let firstPromise = eventLoop.makePromise(of: Void.self)
+    let secondPromise = eventLoop.makePromise(of: Void.self)
+
     let firstResponse = [UInt8]([5, 6, 7])
     let secondResponse = [UInt8]([8, 9, 10])
     XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
-    try stateMachine.send(message: firstResponse, promise: nil)
-    try stateMachine.send(message: secondResponse, promise: nil)
+
+    try stateMachine.send(message: firstResponse, promise: firstPromise)
+    try stateMachine.send(message: secondResponse, promise: secondPromise)
 
     // Make sure messages are outbound
     let framedMessages = try self.frameMessages([firstResponse, secondResponse], compress: false)
-    XCTAssertEqual(
-      try stateMachine.nextOutboundMessage(),
-      .sendMessage(message: framedMessages, promise: nil)
-    )
+
+    guard
+      case .sendMessage(let nextOutboundByteBuffer, let nextOutboundPromise) =
+        try stateMachine.nextOutboundMessage()
+    else {
+      XCTFail("Should have received .sendMessage")
+      return
+    }
+    XCTAssertEqual(nextOutboundByteBuffer, framedMessages)
+    XCTAssertTrue(firstPromise.futureResult === nextOutboundPromise?.futureResult)
+
+    // Make sure that the promises associated with each sent message are chained
+    // together: when succeeding the one returned by the state machine on
+    // `nextOutboundMessage()`, the others should also be succeeded.
+    firstPromise.succeed()
+    try secondPromise.futureResult.assertSuccess().wait()
 
     // Client sends end
     try stateMachine.receive(buffer: ByteBuffer(), endStream: true)
