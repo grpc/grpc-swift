@@ -129,19 +129,19 @@ final class GRPCMessageDeframerTests: XCTestCase {
     }
 
     let firstMessage = try {
-      framer.append(Array(repeating: 42, count: 100))
+      framer.append(Array(repeating: 42, count: 100), promise: nil)
       return try framer.next(compressor: compressor)!
     }()
 
     let secondMessage = try {
-      framer.append(Array(repeating: 43, count: 110))
+      framer.append(Array(repeating: 43, count: 110), promise: nil)
       return try framer.next(compressor: compressor)!
     }()
 
     try ByteToMessageDecoderVerifier.verifyDecoder(
       inputOutputPairs: [
-        (firstMessage, [Array(repeating: 42, count: 100)]),
-        (secondMessage, [Array(repeating: 43, count: 110)]),
+        (firstMessage.bytes, [Array(repeating: 42, count: 100)]),
+        (secondMessage.bytes, [Array(repeating: 43, count: 110)]),
       ]) {
         GRPCMessageDeframer(maximumPayloadSize: 1000, decompressor: decompressor)
       }
@@ -164,12 +164,12 @@ final class GRPCMessageDeframerTests: XCTestCase {
       compressor.end()
     }
 
-    framer.append(Array(repeating: 42, count: 100))
+    framer.append(Array(repeating: 42, count: 100), promise: nil)
     let framedMessage = try framer.next(compressor: compressor)!
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try processor.process(buffer: framedMessage) { _ in
+      try processor.process(buffer: framedMessage.bytes) { _ in
         XCTFail("No message should be produced.")
       }
     ) { error in
@@ -178,7 +178,7 @@ final class GRPCMessageDeframerTests: XCTestCase {
         error.message,
         """
         Message has exceeded the configured maximum payload size \
-        (max: 1, actual: \(framedMessage.readableBytes - GRPCMessageDeframer.metadataLength))
+        (max: 1, actual: \(framedMessage.bytes.readableBytes - GRPCMessageDeframer.metadataLength))
         """
       )
     }
@@ -195,12 +195,12 @@ final class GRPCMessageDeframerTests: XCTestCase {
       compressor.end()
     }
 
-    framer.append(Array(repeating: 42, count: 101))
+    framer.append(Array(repeating: 42, count: 101), promise: nil)
     let framedMessage = try framer.next(compressor: compressor)!
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try processor.process(buffer: framedMessage) { _ in
+      try processor.process(buffer: framedMessage.bytes) { _ in
         XCTFail("No message should be produced.")
       }
     ) { error in

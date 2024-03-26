@@ -325,12 +325,12 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func send(message: [UInt8]) throws {
+  mutating func send(message: [UInt8], promise: EventLoopPromise<Void>?) throws {
     switch self.configuration {
     case .client:
-      try self.clientSend(message: message)
+      try self.clientSend(message: message, promise: promise)
     case .server:
-      try self.serverSend(message: message)
+      try self.serverSend(message: message, promise: promise)
     }
   }
 
@@ -398,14 +398,17 @@ struct GRPCStreamStateMachine {
   }
 
   /// The result of requesting the next outbound message.
-  enum OnNextOutboundMessage: Equatable {
+  enum OnNextOutboundMessage {
     /// Either the receiving party is closed, so we shouldn't send any more messages; or the sender is done
     /// writing messages (i.e. we are now closed).
     case noMoreMessages
     /// There isn't a message ready to be sent, but we could still receive more, so keep trying.
     case awaitMoreMessages
     /// A message is ready to be sent.
-    case sendMessage(ByteBuffer)
+    case sendMessage(
+      message: ByteBuffer,
+      promise: EventLoopPromise<Void>?
+    )
   }
 
   mutating func nextOutboundMessage() throws -> OnNextOutboundMessage {
@@ -540,15 +543,15 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func clientSend(message: [UInt8]) throws {
+  private mutating func clientSend(message: [UInt8], promise: EventLoopPromise<Void>?) throws {
     switch self.state {
     case .clientIdleServerIdle:
       try self.invalidState("Client not yet open.")
     case .clientOpenServerIdle(var state):
-      state.framer.append(message)
+      state.framer.append(message, promise: promise)
       self.state = .clientOpenServerIdle(state)
     case .clientOpenServerOpen(var state):
-      state.framer.append(message)
+      state.framer.append(message, promise: promise)
       self.state = .clientOpenServerOpen(state)
     case .clientOpenServerClosed:
       // The server has closed, so it makes no sense to send the rest of the request.
@@ -584,16 +587,18 @@ extension GRPCStreamStateMachine {
     case .clientOpenServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerIdle(state)
-      return request.map { .sendMessage($0) } ?? .awaitMoreMessages
+      return request.map { .sendMessage(message: $0.bytes, promise: $0.promise) }
+        ?? .awaitMoreMessages
     case .clientOpenServerOpen(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return request.map { .sendMessage($0) } ?? .awaitMoreMessages
+      return request.map { .sendMessage(message: $0.bytes, promise: $0.promise) }
+        ?? .awaitMoreMessages
     case .clientClosedServerIdle(var state):
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerIdle(state)
       if let request {
-        return .sendMessage(request)
+        return .sendMessage(message: request.bytes, promise: request.promise)
       } else {
         return .noMoreMessages
       }
@@ -601,7 +606,7 @@ extension GRPCStreamStateMachine {
       let request = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
       if let request {
-        return .sendMessage(request)
+        return .sendMessage(message: request.bytes, promise: request.promise)
       } else {
         return .noMoreMessages
       }
@@ -1003,17 +1008,17 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func serverSend(message: [UInt8]) throws {
+  private mutating func serverSend(message: [UInt8], promise: EventLoopPromise<Void>?) throws {
     switch self.state {
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
       try self.invalidState(
         "Server must have sent initial metadata before sending a message."
       )
     case .clientOpenServerOpen(var state):
-      state.framer.append(message)
+      state.framer.append(message, promise: promise)
       self.state = .clientOpenServerOpen(state)
     case .clientClosedServerOpen(var state):
-      state.framer.append(message)
+      state.framer.append(message, promise: promise)
       self.state = .clientClosedServerOpen(state)
     case .clientOpenServerClosed, .clientClosedServerClosed:
       try self.invalidState(
@@ -1358,16 +1363,18 @@ extension GRPCStreamStateMachine {
     case .clientOpenServerOpen(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return response.map { .sendMessage($0) } ?? .awaitMoreMessages
+      return response.map { .sendMessage(message: $0.bytes, promise: $0.promise) }
+        ?? .awaitMoreMessages
     case .clientClosedServerOpen(var state):
       let response = try state.framer.next(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      return response.map { .sendMessage($0) } ?? .awaitMoreMessages
+      return response.map { .sendMessage(message: $0.bytes, promise: $0.promise) }
+        ?? .awaitMoreMessages
     case .clientOpenServerClosed(var state):
       let response = try state.framer?.next(compressor: state.compressor)
       self.state = .clientOpenServerClosed(state)
       if let response {
-        return .sendMessage(response)
+        return .sendMessage(message: response.bytes, promise: response.promise)
       } else {
         return .noMoreMessages
       }
@@ -1375,7 +1382,7 @@ extension GRPCStreamStateMachine {
       let response = try state.framer?.next(compressor: state.compressor)
       self.state = .clientClosedServerClosed(state)
       if let response {
-        return .sendMessage(response)
+        return .sendMessage(message: response.bytes, promise: response.promise)
       } else {
         return .noMoreMessages
       }

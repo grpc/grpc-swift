@@ -35,6 +35,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   // if there are messages still not written into the channel because flush has
   // not been called, but the server sends back trailers).
   private var pendingTrailers: HTTP2Frame.FramePayload?
+  private var pendingTrailersPromise: EventLoopPromise<Void>?
 
   init(
     scheme: Scheme,
@@ -142,24 +143,17 @@ extension GRPCServerStreamHandler {
       do {
         self.flushPending = true
         let headers = try self.stateMachine.send(metadata: metadata)
-        context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: nil)
-        // TODO: move the promise handling into the state machine
-        promise?.succeed()
+        context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: promise)
       } catch {
         context.fireErrorCaught(error)
-        // TODO: move the promise handling into the state machine
         promise?.fail(error)
       }
 
     case .message(let message):
       do {
-        try self.stateMachine.send(message: message)
-        // TODO: move the promise handling into the state machine
-        promise?.succeed()
+        try self.stateMachine.send(message: message, promise: promise)
       } catch {
         context.fireErrorCaught(error)
-        // TODO: move the promise handling into the state machine
-        promise?.fail(error)
       }
 
     case .status(let status, let metadata):
@@ -167,12 +161,9 @@ extension GRPCServerStreamHandler {
         let headers = try self.stateMachine.send(status: status, metadata: metadata)
         let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
         self.pendingTrailers = response
-        // TODO: move the promise handling into the state machine
-        promise?.succeed()
+        self.pendingTrailersPromise = promise
       } catch {
         context.fireErrorCaught(error)
-        // TODO: move the promise handling into the state machine
-        promise?.fail(error)
       }
     }
   }
@@ -186,18 +177,21 @@ extension GRPCServerStreamHandler {
     do {
       loop: while true {
         switch try self.stateMachine.nextOutboundMessage() {
-        case .sendMessage(let byteBuffer):
+        case .sendMessage(let byteBuffer, let promise):
           self.flushPending = true
           context.write(
             self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
-            promise: nil
+            promise: promise
           )
 
         case .noMoreMessages:
-          if let pendingTrailers = self.pendingTrailers {
+          if let pendingTrailers = self.pendingTrailers,
+            let pendingTrailersPromise = self.pendingTrailersPromise
+          {
             self.flushPending = true
             self.pendingTrailers = nil
-            context.write(self.wrapOutboundOut(pendingTrailers), promise: nil)
+            self.pendingTrailersPromise = nil
+            context.write(self.wrapOutboundOut(pendingTrailers), promise: pendingTrailersPromise)
           }
           break loop
 

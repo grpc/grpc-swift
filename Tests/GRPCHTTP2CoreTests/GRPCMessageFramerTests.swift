@@ -22,9 +22,9 @@ import XCTest
 final class GRPCMessageFramerTests: XCTestCase {
   func testSingleWrite() throws {
     var framer = GRPCMessageFramer()
-    framer.append(Array(repeating: 42, count: 128))
+    framer.append(Array(repeating: 42, count: 128), promise: nil)
 
-    var buffer = try XCTUnwrap(framer.next())
+    var buffer = try XCTUnwrap(framer.next()).bytes
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
     XCTAssertFalse(compressed)
     XCTAssertEqual(length, 128)
@@ -43,7 +43,7 @@ final class GRPCMessageFramerTests: XCTestCase {
     var framer = GRPCMessageFramer()
 
     let message = [UInt8](repeating: 42, count: 128)
-    framer.append(message)
+    framer.append(message, promise: nil)
 
     var buffer = ByteBuffer()
     let testCompressor = Zlib.Compressor(method: compressionMethod)
@@ -53,7 +53,7 @@ final class GRPCMessageFramerTests: XCTestCase {
       testCompressor.end()
     }
 
-    buffer = try XCTUnwrap(framer.next(compressor: compressor))
+    buffer = try XCTUnwrap(framer.next(compressor: compressor)).bytes
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
     XCTAssertTrue(compressed)
     XCTAssertEqual(length, UInt32(compressedSize))
@@ -77,10 +77,10 @@ final class GRPCMessageFramerTests: XCTestCase {
 
     let messages = 100
     for _ in 0 ..< messages {
-      framer.append(Array(repeating: 42, count: 128))
+      framer.append(Array(repeating: 42, count: 128), promise: nil)
     }
 
-    var buffer = try XCTUnwrap(framer.next())
+    var buffer = try XCTUnwrap(framer.next()).bytes
     for _ in 0 ..< messages {
       let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
       XCTAssertFalse(compressed)
