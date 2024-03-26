@@ -41,12 +41,6 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       self.role = role
     }
 
-    init(server: GRPCServer) async throws {
-      let initialState = try await ServerStats()
-      self.role = .server(server, initialState)
-
-    }
-
     init(client: GRPCClient) {
       self.role = .client(client)
     }
@@ -69,7 +63,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       }
     }
 
-    public mutating func setInitialServerStats(newStats: ServerStats) {
+    public mutating func setInitialServerStats(_ newStats: ServerStats) {
       switch self.role {
       case let .server(server, _):
         self.role = .server(server, newStats)
@@ -137,14 +131,11 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       }
 
       let server = self.state.withLockedValue { state in
-        state.getServer()
+        defer { state.role = nil }
+        return state.getServer()
       }
 
-      guard let server = server else {
-        return [:]
-      }
-
-      server.stopListening()
+      server?.stopListening()
       return [:]
     }
   }
