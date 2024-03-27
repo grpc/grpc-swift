@@ -116,12 +116,14 @@ public struct NameResolverRegistry {
   /// Returns a new name resolver registry with the default factories registered.
   ///
   /// The default resolvers include:
+  /// - ``NameResolvers/DNS``,
   /// - ``NameResolvers/IPv4``,
   /// - ``NameResolvers/IPv6``,
   /// - ``NameResolvers/UnixDomainSocket``,
   /// - ``NameResolvers/VirtualSocket``.
   public static var defaults: Self {
     var resolvers = NameResolverRegistry()
+    resolvers.registerFactory(try! NameResolvers.DNS(fetchServiceConfiguration: false))
     resolvers.registerFactory(NameResolvers.IPv4())
     resolvers.registerFactory(NameResolvers.IPv6())
     resolvers.registerFactory(NameResolvers.UnixDomainSocket())
