@@ -69,10 +69,8 @@ extension GRPCClientStreamHandler {
         do {
           switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
           case .endRPCAndForwardErrorStatus(let status):
-            if let rpcError = RPCError(status: status) {
-              context.fireErrorCaught(rpcError)
-            }
-            return
+            context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
+            context.close(promise: nil)
 
           case .readInbound:
             loop: while true {
