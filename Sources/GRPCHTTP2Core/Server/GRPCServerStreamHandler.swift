@@ -34,8 +34,8 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   // We buffer the final status + trailers to avoid reordering issues (i.e.,
   // if there are messages still not written into the channel because flush has
   // not been called, but the server sends back trailers).
-  private var pendingTrailers: HTTP2Frame.FramePayload?
-  private var pendingTrailersPromise: EventLoopPromise<Void>?
+  private var pendingTrailers:
+    (trailers: HTTP2Frame.FramePayload, promise: EventLoopPromise<Void>?)?
 
   init(
     scheme: Scheme,
@@ -160,8 +160,7 @@ extension GRPCServerStreamHandler {
       do {
         let headers = try self.stateMachine.send(status: status, metadata: metadata)
         let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
-        self.pendingTrailers = response
-        self.pendingTrailersPromise = promise
+        self.pendingTrailers = (response, promise)
       } catch {
         context.fireErrorCaught(error)
         promise?.fail(error)
@@ -186,13 +185,13 @@ extension GRPCServerStreamHandler {
           )
 
         case .noMoreMessages:
-          if let pendingTrailers = self.pendingTrailers,
-            let pendingTrailersPromise = self.pendingTrailersPromise
-          {
+          if let pendingTrailers = self.pendingTrailers {
             self.flushPending = true
             self.pendingTrailers = nil
-            self.pendingTrailersPromise = nil
-            context.write(self.wrapOutboundOut(pendingTrailers), promise: pendingTrailersPromise)
+            context.write(
+              self.wrapOutboundOut(pendingTrailers.trailers),
+              promise: pendingTrailers.promise
+            )
           }
           break loop
 
