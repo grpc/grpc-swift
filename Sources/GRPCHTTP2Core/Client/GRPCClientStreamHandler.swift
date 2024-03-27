@@ -67,16 +67,27 @@ extension GRPCClientStreamHandler {
       switch frameData.data {
       case .byteBuffer(let buffer):
         do {
-          try self.stateMachine.receive(buffer: buffer, endStream: endStream)
-          loop: while true {
-            switch self.stateMachine.nextInboundMessage() {
-            case .receiveMessage(let message):
-              context.fireChannelRead(self.wrapInboundOut(.message(message)))
-            case .awaitMoreMessages:
-              break loop
-            case .noMoreMessages:
-              context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
-              break loop
+          switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
+          case .endRPCAndForwardErrorStatus(let status):
+            if let rpcError = RPCError(status: status) {
+              context.fireErrorCaught(rpcError)
+            }
+            return
+
+          case .readInbound:
+            loop: while true {
+              switch self.stateMachine.nextInboundMessage() {
+              case .receiveMessage(let message):
+                context.fireChannelRead(self.wrapInboundOut(.message(message)))
+              case .awaitMoreMessages:
+                break loop
+              case .noMoreMessages:
+                // This could only happen if the server sends a data frame with EOS
+                // set, without sending status and trailers.
+                // If this happens, we should have forwarded an error status above
+                // so we should never reach this point. Do nothing.
+                break loop
+              }
             }
           }
         } catch {
@@ -105,6 +116,7 @@ extension GRPCClientStreamHandler {
 
         case .receivedStatusAndMetadata(let status, let metadata):
           context.fireChannelRead(self.wrapInboundOut(.status(status, metadata)))
+          context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
 
         case .doNothing:
           ()

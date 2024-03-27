@@ -64,16 +64,22 @@ extension GRPCServerStreamHandler {
       switch frameData.data {
       case .byteBuffer(let buffer):
         do {
-          try self.stateMachine.receive(buffer: buffer, endStream: endStream)
-          loop: while true {
-            switch self.stateMachine.nextInboundMessage() {
-            case .receiveMessage(let message):
-              context.fireChannelRead(self.wrapInboundOut(.message(message)))
-            case .awaitMoreMessages:
-              break loop
-            case .noMoreMessages:
-              context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
-              break loop
+          switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
+          case .endRPCAndForwardErrorStatus:
+            preconditionFailure(
+              "OnBufferReceivedAction.endRPCAndForwardErrorStatus should never be returned for the server."
+            )
+          case .readInbound:
+            loop: while true {
+              switch self.stateMachine.nextInboundMessage() {
+              case .receiveMessage(let message):
+                context.fireChannelRead(self.wrapInboundOut(.message(message)))
+              case .awaitMoreMessages:
+                break loop
+              case .noMoreMessages:
+                context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+                break loop
+              }
             }
           }
         } catch {
