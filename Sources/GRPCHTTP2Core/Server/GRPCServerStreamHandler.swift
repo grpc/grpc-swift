@@ -177,8 +177,8 @@ extension GRPCServerStreamHandler {
 
     do {
       loop: while true {
-        switch try self.stateMachine.nextOutboundMessage() {
-        case .sendMessage(let byteBuffer, let promise):
+        switch try self.stateMachine.nextOutboundFrame() {
+        case .sendFrame(let byteBuffer, let promise):
           self.flushPending = true
           context.write(
             self.wrapOutboundOut(.data(.init(data: .byteBuffer(byteBuffer)))),
