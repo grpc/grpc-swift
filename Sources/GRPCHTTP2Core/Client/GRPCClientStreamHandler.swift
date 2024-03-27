@@ -186,6 +186,7 @@ extension GRPCClientStreamHandler {
         // Force a flush by calling _flush instead of flush
         // (otherwise, we'd skip flushing if we're in a read loop)
         self._flush(context: context)
+        promise?.succeed()
       } catch {
         promise?.fail(error)
         context.fireErrorCaught(error)
