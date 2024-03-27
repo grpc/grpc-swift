@@ -173,6 +173,7 @@ extension GRPCClientStreamHandler {
     switch mode {
     case .input:
       context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+      promise?.succeed()
 
     case .output:
       // We flush all pending messages and update the internal state machine's
