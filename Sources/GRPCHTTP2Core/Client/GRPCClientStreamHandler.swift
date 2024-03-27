@@ -67,16 +67,25 @@ extension GRPCClientStreamHandler {
       switch frameData.data {
       case .byteBuffer(let buffer):
         do {
-          try self.stateMachine.receive(buffer: buffer, endStream: endStream)
-          loop: while true {
-            switch self.stateMachine.nextInboundMessage() {
-            case .receiveMessage(let message):
-              context.fireChannelRead(self.wrapInboundOut(.message(message)))
-            case .awaitMoreMessages:
-              break loop
-            case .noMoreMessages:
-              context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
-              break loop
+          switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
+          case .endRPCAndForwardErrorStatus(let status):
+            context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
+            context.close(promise: nil)
+
+          case .readInbound:
+            loop: while true {
+              switch self.stateMachine.nextInboundMessage() {
+              case .receiveMessage(let message):
+                context.fireChannelRead(self.wrapInboundOut(.message(message)))
+              case .awaitMoreMessages:
+                break loop
+              case .noMoreMessages:
+                // This could only happen if the server sends a data frame with EOS
+                // set, without sending status and trailers.
+                // If this happens, we should have forwarded an error status above
+                // so we should never reach this point. Do nothing.
+                break loop
+              }
             }
           }
         } catch {
@@ -105,6 +114,7 @@ extension GRPCClientStreamHandler {
 
         case .receivedStatusAndMetadata(let status, let metadata):
           context.fireChannelRead(self.wrapInboundOut(.status(status, metadata)))
+          context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
 
         case .doNothing:
           ()
@@ -161,7 +171,29 @@ extension GRPCClientStreamHandler {
 
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     switch mode {
-    case .output, .all:
+    case .input:
+      context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+      promise?.succeed()
+
+    case .output:
+      // We flush all pending messages and update the internal state machine's
+      // state, but we don't close the outbound end of the channel, because
+      // forwarding the close in this case would cause the HTTP2 stream handler
+      // to close the whole channel (as the mode is ignored in its implementation).
+      do {
+        try self.stateMachine.closeOutbound()
+        // Force a flush by calling _flush instead of flush
+        // (otherwise, we'd skip flushing if we're in a read loop)
+        self._flush(context: context)
+        promise?.succeed()
+      } catch {
+        promise?.fail(error)
+        context.fireErrorCaught(error)
+      }
+
+    case .all:
+      // Since we're closing the whole channel here, we *do* forward the close
+      // down the pipeline.
       do {
         try self.stateMachine.closeOutbound()
         // Force a flush by calling _flush
@@ -172,9 +204,6 @@ extension GRPCClientStreamHandler {
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
-
-    case .input:
-      context.close(mode: .input, promise: promise)
     }
   }
 

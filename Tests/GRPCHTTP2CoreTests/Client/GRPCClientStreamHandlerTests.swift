@@ -305,7 +305,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     buffer.writeInteger(UInt8(0))  // not compressed
     buffer.writeInteger(UInt32(42))  // message length
     buffer.writeRepeatingByte(0, count: 42)  // message
-    let clientDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
+    let clientDataPayload = HTTP2Frame.FramePayload.Data(
+      data: .byteBuffer(buffer),
+      endStream: false
+    )
     XCTAssertThrowsError(
       ofType: RPCError.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
@@ -319,6 +322,74 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // Make sure we didn't read the received message
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
+  }
+
+  func testServerSendsEOSWhenSendingMessage_ResultsInErrorStatus() throws {
+    let handler = GRPCClientStreamHandler(
+      methodDescriptor: .init(service: "test", method: "test"),
+      scheme: .http,
+      outboundEncoding: .identity,
+      acceptedEncodings: [],
+      maximumPayloadSize: 100,
+      skipStateMachineAssertions: true
+    )
+
+    let channel = EmbeddedChannel(handler: handler)
+
+    // Send client's initial metadata
+    XCTAssertNoThrow(
+      try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
+    )
+
+    // Make sure we have sent right metadata.
+    let writtenMetadata = try channel.assertReadHeadersOutbound()
+
+    XCTAssertEqual(
+      writtenMetadata.headers,
+      [
+        GRPCHTTP2Keys.method.rawValue: "POST",
+        GRPCHTTP2Keys.scheme.rawValue: "http",
+        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+        GRPCHTTP2Keys.te.rawValue: "trailers",
+      ]
+    )
+
+    // Server sends initial metadata
+    let serverInitialMetadata: HPACKHeaders = [
+      GRPCHTTP2Keys.status.rawValue: "200",
+      GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
+    ]
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.headers(.init(headers: serverInitialMetadata))
+      )
+    )
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCResponsePart.self),
+      .metadata(Metadata(headers: serverInitialMetadata))
+    )
+
+    // Server sends message with EOS set.
+    var buffer = ByteBuffer()
+    buffer.writeInteger(UInt8(0))  // not compressed
+    buffer.writeInteger(UInt32(42))  // message length
+    buffer.writeRepeatingByte(0, count: 42)  // message
+    let clientDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
+    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload)))
+
+    // Make sure we got status + trailers with the right error.
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCResponsePart.self),
+      .status(
+        Status(
+          code: .internalError,
+          message:
+            "Server sent EOS alongside a data frame, but server is only allowed to close by sending status and trailers."
+        ),
+        [:]
+      )
+    )
   }
 
   func testServerEndsStream() throws {

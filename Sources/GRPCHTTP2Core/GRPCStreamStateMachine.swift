@@ -292,6 +292,12 @@ private enum GRPCStreamStateMachineState {
       self.inboundMessageBuffer = previousState.inboundMessageBuffer
     }
 
+    init(previousState: ClientOpenServerOpenState) {
+      self.framer = previousState.framer
+      self.compressor = previousState.compressor
+      self.inboundMessageBuffer = previousState.inboundMessageBuffer
+    }
+
     init(previousState: ClientOpenServerClosedState) {
       self.framer = previousState.framer
       self.compressor = previousState.compressor
@@ -388,12 +394,24 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func receive(buffer: ByteBuffer, endStream: Bool) throws {
+  enum OnBufferReceivedAction: Equatable {
+    case readInbound
+
+    // Client-specific actions
+
+    // This will be returned when the server sends a data frame with EOS set.
+    // This is invalid as per the protocol specification, because the server
+    // can only close by sending trailers, not by setting EOS when sending
+    // a message.
+    case endRPCAndForwardErrorStatus(Status)
+  }
+
+  mutating func receive(buffer: ByteBuffer, endStream: Bool) throws -> OnBufferReceivedAction {
     switch self.configuration {
     case .client:
-      try self.clientReceive(buffer: buffer, endStream: endStream)
+      return try self.clientReceive(buffer: buffer, endStream: endStream)
     case .server:
-      try self.serverReceive(buffer: buffer, endStream: endStream)
+      return try self.serverReceive(buffer: buffer, endStream: endStream)
     }
   }
 
@@ -729,7 +747,7 @@ extension GRPCStreamStateMachine {
     }
 
     let statusMessage =
-      metadata.firstString(forKey: .grpcStatusMessage)
+      metadata.firstString(forKey: .grpcStatusMessage, canonicalForm: false)
       .map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
 
     var convertedMetadata = Metadata(headers: metadata)
@@ -860,38 +878,68 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func clientReceive(buffer: ByteBuffer, endStream: Bool) throws {
+  private mutating func clientReceive(
+    buffer: ByteBuffer,
+    endStream: Bool
+  ) throws -> OnBufferReceivedAction {
     // This is a message received by the client, from the server.
     switch self.state {
     case .clientIdleServerIdle:
       try self.invalidState(
         "Cannot have received anything from server if client is not yet open."
       )
+
     case .clientOpenServerIdle, .clientClosedServerIdle:
       try self.invalidState(
         "Server cannot have sent a message before sending the initial metadata."
       )
+
     case .clientOpenServerOpen(var state):
+      if endStream {
+        // This is invalid as per the protocol specification, because the server
+        // can only close by sending trailers, not by setting EOS when sending
+        // a message.
+        self.state = .clientClosedServerClosed(.init(previousState: state))
+        return .endRPCAndForwardErrorStatus(
+          Status(
+            code: .internalError,
+            message: """
+              Server sent EOS alongside a data frame, but server is only allowed \
+              to close by sending status and trailers.
+              """
+          )
+        )
+      }
+
       try state.deframer.process(buffer: buffer) { deframedMessage in
         state.inboundMessageBuffer.append(deframedMessage)
       }
-      if endStream {
-        self.state = .clientOpenServerClosed(.init(previousState: state))
-      } else {
-        self.state = .clientOpenServerOpen(state)
-      }
+      self.state = .clientOpenServerOpen(state)
+      return .readInbound
+
     case .clientClosedServerOpen(var state):
+      if endStream {
+        self.state = .clientClosedServerClosed(.init(previousState: state))
+        return .endRPCAndForwardErrorStatus(
+          Status(
+            code: .internalError,
+            message: """
+              Server sent EOS alongside a data frame, but server is only allowed \
+              to close by sending status and trailers.
+              """
+          )
+        )
+      }
+
       // The client may have sent the end stream and thus it's closed,
       // but the server may still be responding.
       // The client must have a deframer set up, so force-unwrap is okay.
       try state.deframer!.process(buffer: buffer) { deframedMessage in
         state.inboundMessageBuffer.append(deframedMessage)
       }
-      if endStream {
-        self.state = .clientClosedServerClosed(.init(previousState: state))
-      } else {
-        self.state = .clientClosedServerOpen(state)
-      }
+      self.state = .clientClosedServerOpen(state)
+      return .readInbound
+
     case .clientOpenServerClosed, .clientClosedServerClosed:
       try self.invalidState(
         "Cannot have received anything from a closed server."
@@ -1314,7 +1362,10 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func serverReceive(buffer: ByteBuffer, endStream: Bool) throws {
+  private mutating func serverReceive(
+    buffer: ByteBuffer,
+    endStream: Bool
+  ) throws -> OnBufferReceivedAction {
     switch self.state {
     case .clientIdleServerIdle:
       try self.invalidState(
@@ -1354,6 +1405,7 @@ extension GRPCStreamStateMachine {
         "Client can't send a message if closed."
       )
     }
+    return .readInbound
   }
 
   private mutating func serverNextOutboundFrame() throws -> OnNextOutboundFrame {
@@ -1443,10 +1495,11 @@ internal enum GRPCHTTP2Keys: String {
 }
 
 extension HPACKHeaders {
-  internal func firstString(forKey key: GRPCHTTP2Keys) -> String? {
-    self.values(forHeader: key.rawValue, canonicalForm: true).first(where: { _ in true }).map {
-      String($0)
-    }
+  internal func firstString(forKey key: GRPCHTTP2Keys, canonicalForm: Bool = true) -> String? {
+    self.values(forHeader: key.rawValue, canonicalForm: canonicalForm).first(where: { _ in true })
+      .map {
+        String($0)
+      }
   }
 
   internal mutating func add(_ value: String, forKey key: GRPCHTTP2Keys) {
