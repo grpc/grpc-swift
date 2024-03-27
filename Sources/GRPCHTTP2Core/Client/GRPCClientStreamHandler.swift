@@ -173,7 +173,27 @@ extension GRPCClientStreamHandler {
 
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     switch mode {
-    case .output, .all:
+    case .input:
+      context.close(mode: .input, promise: promise)
+
+    case .output:
+      // We flush all pending messages and update the internal state machine's
+      // state, but we don't close the outbound end of the channel, because
+      // forwarding the close in this case would cause the HTTP2 stream handler
+      // to close the whole channel (as the mode is ignored in its implementation).
+      do {
+        try self.stateMachine.closeOutbound()
+        // Force a flush by calling _flush instead of flush
+        // (otherwise, we'd skip flushing if we're in a read loop)
+        self._flush(context: context)
+      } catch {
+        promise?.fail(error)
+        context.fireErrorCaught(error)
+      }
+
+    case .all:
+      // Since we're closing the whole channel here, we *do* forward the close
+      // down the pipeline.
       do {
         try self.stateMachine.closeOutbound()
         // Force a flush by calling _flush
@@ -184,9 +204,6 @@ extension GRPCClientStreamHandler {
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
-
-    case .input:
-      context.close(mode: .input, promise: promise)
     }
   }
 
