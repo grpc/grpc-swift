@@ -747,7 +747,7 @@ extension GRPCStreamStateMachine {
     }
 
     let statusMessage =
-      metadata.firstString(forKey: .grpcStatusMessage)
+      metadata.first(name: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
       .map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
 
     var convertedMetadata = Metadata(headers: metadata)

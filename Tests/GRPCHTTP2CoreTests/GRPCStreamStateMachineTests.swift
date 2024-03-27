@@ -456,14 +456,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
       GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.internalError.rawValue),
       GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall(
-        "Some status message"
+        "Some, status, message"
       )!,
       "custom-key": "custom-value",
     ]
     let trailers = try stateMachine.receive(headers: trailersOnlyResponse, endStream: true)
     switch trailers {
     case .receivedStatusAndMetadata(let status, let metadata):
-      XCTAssertEqual(status, Status(code: .internalError, message: "Some status message"))
+      XCTAssertEqual(status, Status(code: .internalError, message: "Some, status, message"))
       XCTAssertEqual(
         metadata,
         [
