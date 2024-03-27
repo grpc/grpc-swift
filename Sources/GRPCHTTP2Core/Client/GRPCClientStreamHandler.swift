@@ -172,7 +172,7 @@ extension GRPCClientStreamHandler {
   func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     switch mode {
     case .input:
-      context.close(mode: .input, promise: promise)
+      context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
 
     case .output:
       // We flush all pending messages and update the internal state machine's
