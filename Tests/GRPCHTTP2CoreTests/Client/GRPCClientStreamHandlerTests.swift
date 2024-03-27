@@ -324,7 +324,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
   }
 
-  func testServerEndsStreamWhenSendingMessage_ResultsInErrorStatus() throws {
+  func testServerSendsEOSWhenSendingMessage_ResultsInErrorStatus() throws {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
@@ -376,19 +376,20 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     buffer.writeInteger(UInt32(42))  // message length
     buffer.writeRepeatingByte(0, count: 42)  // message
     let clientDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(
-        error.message,
-        "Server sent EOS alongside a data frame, but server is only allowed to close by sending status and trailers."
-      )
-    }
+    XCTAssertNoThrow(try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload)))
 
-    // Make sure we didn't read the received message
-    XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
+    // Make sure we got status + trailers with the right error.
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCResponsePart.self),
+      .status(
+        Status(
+          code: .internalError,
+          message:
+            "Server sent EOS alongside a data frame, but server is only allowed to close by sending status and trailers."
+        ),
+        [:]
+      )
+    )
   }
 
   func testServerEndsStream() throws {
