@@ -78,10 +78,10 @@ struct GRPCMessageFramer {
     var pendingWritePromise: EventLoopPromise<Void>?
     while let message = self.pendingMessages.pop() {
       try self.encode(message.bytes, compressor: compressor)
-      if pendingWritePromise == nil {
-        pendingWritePromise = message.promise
+      if let existingPendingWritePromise = pendingWritePromise {
+        existingPendingWritePromise.futureResult.cascade(to: message.promise)
       } else {
-        pendingWritePromise?.futureResult.cascade(to: message.promise)
+        pendingWritePromise = message.promise
       }
     }
 
