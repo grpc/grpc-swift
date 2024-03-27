@@ -145,14 +145,15 @@ extension GRPCServerStreamHandler {
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: promise)
       } catch {
-        context.fireErrorCaught(error)
         promise?.fail(error)
+        context.fireErrorCaught(error)
       }
 
     case .message(let message):
       do {
         try self.stateMachine.send(message: message, promise: promise)
       } catch {
+        promise?.fail(error)
         context.fireErrorCaught(error)
       }
 
@@ -162,8 +163,8 @@ extension GRPCServerStreamHandler {
         let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
         self.pendingTrailers = (response, promise)
       } catch {
-        context.fireErrorCaught(error)
         promise?.fail(error)
+        context.fireErrorCaught(error)
       }
     }
   }

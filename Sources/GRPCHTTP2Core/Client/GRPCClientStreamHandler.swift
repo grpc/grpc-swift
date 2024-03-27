@@ -145,6 +145,7 @@ extension GRPCClientStreamHandler {
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: promise)
       } catch {
+        promise?.fail(error)
         context.fireErrorCaught(error)
       }
 
@@ -152,8 +153,8 @@ extension GRPCClientStreamHandler {
       do {
         try self.stateMachine.send(message: message, promise: promise)
       } catch {
-        context.fireErrorCaught(error)
         promise?.fail(error)
+        context.fireErrorCaught(error)
       }
     }
   }
