@@ -164,6 +164,7 @@ extension GRPCServerStreamHandler {
         self.pendingTrailersPromise = promise
       } catch {
         context.fireErrorCaught(error)
+        promise?.fail(error)
       }
     }
   }
