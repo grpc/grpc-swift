@@ -747,7 +747,7 @@ extension GRPCStreamStateMachine {
     }
 
     let statusMessage =
-      metadata.first(name: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
+      metadata.firstString(forKey: .grpcStatusMessage, canonicalForm: false)
       .map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
 
     var convertedMetadata = Metadata(headers: metadata)
@@ -1495,10 +1495,11 @@ internal enum GRPCHTTP2Keys: String {
 }
 
 extension HPACKHeaders {
-  internal func firstString(forKey key: GRPCHTTP2Keys) -> String? {
-    self.values(forHeader: key.rawValue, canonicalForm: true).first(where: { _ in true }).map {
-      String($0)
-    }
+  internal func firstString(forKey key: GRPCHTTP2Keys, canonicalForm: Bool = true) -> String? {
+    self.values(forHeader: key.rawValue, canonicalForm: canonicalForm).first(where: { _ in true })
+      .map {
+        String($0)
+      }
   }
 
   internal mutating func add(_ value: String, forKey key: GRPCHTTP2Keys) {
