@@ -48,17 +48,14 @@ struct GRPCMessageFramer {
     self.pendingMessages.append((bytes, promise))
   }
 
-  struct DataFrame {
-    let bytes: ByteBuffer
-    let promise: EventLoopPromise<Void>?
-  }
-
   /// If there are pending messages to be framed, a `ByteBuffer` will be returned with the framed data.
   /// Data may also be compressed (if configured) and multiple frames may be coalesced into the same `ByteBuffer`.
   /// - Parameter compressor: An optional compressor: if present, payloads will be compressed; otherwise
   /// they'll be framed as-is.
   /// - Throws: If an error is encountered, such as a compression failure, an error will be thrown.
-  mutating func next(compressor: Zlib.Compressor? = nil) throws -> DataFrame? {
+  mutating func next(
+    compressor: Zlib.Compressor? = nil
+  ) throws -> (bytes: ByteBuffer, promise: EventLoopPromise<Void>?)? {
     if self.pendingMessages.isEmpty {
       // Nothing pending: exit early.
       return nil
@@ -88,7 +85,7 @@ struct GRPCMessageFramer {
       }
     }
 
-    return DataFrame(bytes: self.writeBuffer, promise: pendingWritePromise)
+    return (bytes: self.writeBuffer, promise: pendingWritePromise)
   }
 
   private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws {
