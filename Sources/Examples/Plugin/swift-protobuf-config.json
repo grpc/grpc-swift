@@ -1,0 +1,16 @@
+{
+    "invocations": [
+        {
+            "protoFiles": [
+                "greeter.proto"
+            ],
+            "visibility": "public"
+        },
+        {
+            "protoFiles": [
+                "secret.proto"
+            ],
+            "visibility": "public"
+        }
+    ]
+}
