@@ -65,6 +65,8 @@ struct GRPCSwiftPlugin {
       var server: Bool?
       /// Whether client code is generated.
       var client: Bool?
+      /// Whether reflection data is generated.
+      var reflection: Bool?
       /// Determines whether the casing of generated function names is kept.
       var keepMethodCasing: Bool?
     }
@@ -184,6 +186,10 @@ struct GRPCSwiftPlugin {
 
     if let generateClientCode = invocation.client {
       protocArgs.append("--grpc-swift_opt=Client=\(generateClientCode)")
+    }
+
+    if let generateReflectionData = invocation.reflection {
+      protocArgs.append("--grpc-swift_opt=ReflectionData=\(generateReflectionData)")
     }
 
     if let keepMethodCasingOption = invocation.keepMethodCasing {
