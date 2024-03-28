@@ -65,6 +65,8 @@ struct GRPCSwiftPlugin {
       var server: Bool?
       /// Whether client code is generated.
       var client: Bool?
+      /// Whether reflection data is generated.
+      var reflection: Bool?
       /// Determines whether the casing of generated function names is kept.
       var keepMethodCasing: Bool?
     }
@@ -184,6 +186,10 @@ struct GRPCSwiftPlugin {
       protocArgs.append("--grpc-swift_opt=Client=\(generateClientCode)")
     }
 
+    if let generateReflectionData = invocation.reflection {
+      protocArgs.append("--grpc-swift_opt=ReflectionData=\(generateReflectionData)")
+    }
+
     if let keepMethodCasingOption = invocation.keepMethodCasing {
       protocArgs.append("--grpc-swift_opt=KeepMethodCasing=\(keepMethodCasingOption)")
     }
@@ -205,6 +211,12 @@ struct GRPCSwiftPlugin {
 
       // Add the outputPath as an output file
       outputFiles.append(protobufOutputPath)
+
+        if invocation.reflection == true {
+            let reflectionFile = file.replacingOccurrences(of: "grpc.swift", with: "grpc.reflection")
+            let reflectionOutputPath = outputDirectory.appending(reflectionFile)
+            outputFiles.append(reflectionOutputPath)
+        }
     }
 
     // Construct the command. Specifying the input and output paths lets the build
