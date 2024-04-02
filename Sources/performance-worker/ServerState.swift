@@ -15,6 +15,7 @@
  */
 
 import Dispatch
+import GRPCCore
 import NIOCore
 import NIOFileSystem
 
@@ -35,8 +36,9 @@ private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
 #endif
 
 /// Current server stats.
-@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
-internal struct ServerStats: Sendable {
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+internal struct ServerState: Sendable {
+  var server: GRPCServer
   var time: Double
   var userTime: Double
   var systemTime: Double
@@ -44,12 +46,14 @@ internal struct ServerStats: Sendable {
   var idleCPUTime: UInt64
 
   init(
+    server: GRPCServer,
     time: Double,
     userTime: Double,
     systemTime: Double,
     totalCPUTime: UInt64,
     idleCPUTime: UInt64
   ) {
+    self.server = server
     self.time = time
     self.userTime = userTime
     self.systemTime = systemTime
@@ -57,7 +61,8 @@ internal struct ServerStats: Sendable {
     self.idleCPUTime = idleCPUTime
   }
 
-  init() async throws {
+  init(server: GRPCServer) async throws {
+    self.server = server
     self.time = Double(DispatchTime.now().uptimeNanoseconds) * 1e-9
     var usage = rusage()
     if getrusage(OUR_RUSAGE_SELF, &usage) == 0 {
@@ -69,18 +74,19 @@ internal struct ServerStats: Sendable {
       self.userTime = 0
       self.systemTime = 0
     }
-    let (totalCPUTime, idleCPUTime) = try await ServerStats.getTotalAndIdleCPUTime()
+    let (totalCPUTime, idleCPUTime) = try await ServerState.getTotalAndIdleCPUTime()
     self.totalCPUTime = totalCPUTime
     self.idleCPUTime = idleCPUTime
   }
 
-  internal func difference(to stats: ServerStats) -> ServerStats {
-    return ServerStats(
-      time: self.time - stats.time,
-      userTime: self.userTime - stats.userTime,
-      systemTime: self.systemTime - stats.systemTime,
-      totalCPUTime: self.totalCPUTime - stats.totalCPUTime,
-      idleCPUTime: self.idleCPUTime - stats.idleCPUTime
+  internal func difference(to state: ServerState) throws -> ServerState {
+    return ServerState(
+      server: self.server,
+      time: self.time - state.time,
+      userTime: self.userTime - state.userTime,
+      systemTime: self.systemTime - state.systemTime,
+      totalCPUTime: self.totalCPUTime - state.totalCPUTime,
+      idleCPUTime: self.idleCPUTime - state.idleCPUTime
     )
   }
 
