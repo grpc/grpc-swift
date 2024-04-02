@@ -38,8 +38,6 @@ jobs:
       image: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@v3
-    - name: Install protoc
-      run: apt update && apt install protobuf-compiler -y 
     - name: 🔧 Build
       run: swift build ${{ matrix.swift-build-flags }}
       timeout-minutes: 20
@@ -127,8 +125,6 @@ jobs:
       image: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@v3
-    - name: Install protoc
-      run: apt update && apt install protobuf-compiler -y
     - name: Build without NIOSSL
       run: swift build
       env:
