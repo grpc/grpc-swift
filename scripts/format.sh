@@ -56,7 +56,7 @@ THIS_SCRIPT=$0
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO="$HERE/.."
 SWIFTFORMAT_DIR="$HERE/.swift-format-source"
-SWIFTFORMAT_VERSION=509.0.0
+SWIFTFORMAT_VERSION=510.0.0
 
 # Clone SwiftFormat if we don't already have it.
 if [ ! -d "$SWIFTFORMAT_DIR" ]; then
@@ -91,7 +91,9 @@ fi
 if "$lint"; then
   "${SWIFTFORMAT_BIN}" lint \
     --parallel --recursive --strict \
-    "${REPO}/Sources" "${REPO}/Tests" \
+    "${REPO}/Sources" \
+    "${REPO}/Tests" \
+    "${REPO}/Plugins" \
     && SWIFT_FORMAT_RC=$? || SWIFT_FORMAT_RC=$?
 
   if [[ "${SWIFT_FORMAT_RC}" -ne 0 ]]; then
@@ -108,7 +110,9 @@ if "$lint"; then
 elif "$format"; then
   "${SWIFTFORMAT_BIN}" format \
     --parallel --recursive --in-place \
-    "${REPO}/Sources" "${REPO}/Tests" \
+    "${REPO}/Sources" \
+    "${REPO}/Tests" \
+    "${REPO}/Plugins" \
     && SWIFT_FORMAT_RC=$? || SWIFT_FORMAT_RC=$?
 
   if [[ "${SWIFT_FORMAT_RC}" -ne 0 ]]; then
