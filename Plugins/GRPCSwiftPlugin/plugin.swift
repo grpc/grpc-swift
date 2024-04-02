@@ -214,11 +214,13 @@ struct GRPCSwiftPlugin {
       // Add the outputPath as an output file
       outputFiles.append(protobufOutputPath)
 
-        if invocation.reflection == true {
-            let reflectionFile = file.replacingOccurrences(of: "grpc.swift", with: "grpc.reflection")
-            let reflectionOutputPath = outputDirectory.appending(reflectionFile)
-            outputFiles.append(reflectionOutputPath)
-        }
+      if invocation.reflectionData == true {
+        // Remove .swift extension and add .reflection extension
+        file.removeLast(5)
+        file.append("reflection")
+        let reflectionOutputPath = outputDirectory.appending(file)
+        outputFiles.append(reflectionOutputPath)
+      }
     }
 
     // Construct the command. Specifying the input and output paths lets the build
