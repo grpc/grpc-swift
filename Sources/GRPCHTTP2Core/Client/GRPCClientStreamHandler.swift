@@ -19,11 +19,11 @@ import NIOCore
 import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class GRPCServerStreamHandler: ChannelDuplexHandler {
+final class GRPCClientStreamHandler: ChannelDuplexHandler {
   typealias InboundIn = HTTP2Frame.FramePayload
-  typealias InboundOut = RPCRequestPart
+  typealias InboundOut = RPCResponsePart
 
-  typealias OutboundIn = RPCResponsePart
+  typealias OutboundIn = RPCRequestPart
   typealias OutboundOut = HTTP2Frame.FramePayload
 
   private var stateMachine: GRPCStreamStateMachine
@@ -31,20 +31,23 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   private var isReading = false
   private var flushPending = false
 
-  // We buffer the final status + trailers to avoid reordering issues (i.e.,
-  // if there are messages still not written into the channel because flush has
-  // not been called, but the server sends back trailers).
-  private var pendingTrailers:
-    (trailers: HTTP2Frame.FramePayload, promise: EventLoopPromise<Void>?)?
-
   init(
+    methodDescriptor: MethodDescriptor,
     scheme: Scheme,
+    outboundEncoding: CompressionAlgorithm,
     acceptedEncodings: [CompressionAlgorithm],
     maximumPayloadSize: Int,
     skipStateMachineAssertions: Bool = false
   ) {
     self.stateMachine = .init(
-      configuration: .server(.init(scheme: scheme, acceptedEncodings: acceptedEncodings)),
+      configuration: .client(
+        .init(
+          methodDescriptor: methodDescriptor,
+          scheme: scheme,
+          outboundEncoding: outboundEncoding,
+          acceptedEncodings: acceptedEncodings
+        )
+      ),
       maximumPayloadSize: maximumPayloadSize,
       skipAssertions: skipStateMachineAssertions
     )
@@ -54,7 +57,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
 // - MARK: ChannelInboundHandler
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GRPCServerStreamHandler {
+extension GRPCClientStreamHandler {
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     self.isReading = true
     let frame = self.unwrapInboundIn(data)
@@ -65,10 +68,10 @@ extension GRPCServerStreamHandler {
       case .byteBuffer(let buffer):
         do {
           switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
-          case .endRPCAndForwardErrorStatus:
-            preconditionFailure(
-              "OnBufferReceivedAction.endRPCAndForwardErrorStatus should never be returned for the server."
-            )
+          case .endRPCAndForwardErrorStatus(let status):
+            context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
+            context.close(promise: nil)
+
           case .readInbound:
             loop: while true {
               switch self.stateMachine.nextInboundMessage() {
@@ -77,7 +80,10 @@ extension GRPCServerStreamHandler {
               case .awaitMoreMessages:
                 break loop
               case .noMoreMessages:
-                context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+                // This could only happen if the server sends a data frame with EOS
+                // set, without sending status and trailers.
+                // If this happens, we should have forwarded an error status above
+                // so we should never reach this point. Do nothing.
                 break loop
               }
             }
@@ -100,19 +106,18 @@ extension GRPCServerStreamHandler {
         case .receivedMetadata(let metadata):
           context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
 
-        case .rejectRPC(let trailers):
-          self.flushPending = true
-          let response = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
-          context.write(self.wrapOutboundOut(response), promise: nil)
-
-        case .receivedStatusAndMetadata:
+        case .rejectRPC:
           throw RPCError(
             code: .internalError,
-            message: "Server cannot get receivedStatusAndMetadata."
+            message: "Client cannot get rejectRPC."
           )
 
+        case .receivedStatusAndMetadata(let status, let metadata):
+          context.fireChannelRead(self.wrapInboundOut(.status(status, metadata)))
+          context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+
         case .doNothing:
-          throw RPCError(code: .internalError, message: "Server cannot receive doNothing.")
+          ()
         }
       } catch {
         context.fireErrorCaught(error)
@@ -128,7 +133,7 @@ extension GRPCServerStreamHandler {
     self.isReading = false
     if self.flushPending {
       self.flushPending = false
-      context.flush()
+      self.flush(context: context)
     }
     context.fireChannelReadComplete()
   }
@@ -141,10 +146,9 @@ extension GRPCServerStreamHandler {
 // - MARK: ChannelOutboundHandler
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GRPCServerStreamHandler {
+extension GRPCClientStreamHandler {
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-    let frame = self.unwrapOutboundIn(data)
-    switch frame {
+    switch self.unwrapOutboundIn(data) {
     case .metadata(let metadata):
       do {
         self.flushPending = true
@@ -162,12 +166,40 @@ extension GRPCServerStreamHandler {
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
+    }
+  }
 
-    case .status(let status, let metadata):
+  func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
+    switch mode {
+    case .input:
+      context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+      promise?.succeed()
+
+    case .output:
+      // We flush all pending messages and update the internal state machine's
+      // state, but we don't close the outbound end of the channel, because
+      // forwarding the close in this case would cause the HTTP2 stream handler
+      // to close the whole channel (as the mode is ignored in its implementation).
       do {
-        let headers = try self.stateMachine.send(status: status, metadata: metadata)
-        let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
-        self.pendingTrailers = (response, promise)
+        try self.stateMachine.closeOutbound()
+        // Force a flush by calling _flush instead of flush
+        // (otherwise, we'd skip flushing if we're in a read loop)
+        self._flush(context: context)
+        promise?.succeed()
+      } catch {
+        promise?.fail(error)
+        context.fireErrorCaught(error)
+      }
+
+    case .all:
+      // Since we're closing the whole channel here, we *do* forward the close
+      // down the pipeline.
+      do {
+        try self.stateMachine.closeOutbound()
+        // Force a flush by calling _flush
+        // (otherwise, we'd skip flushing if we're in a read loop)
+        self._flush(context: context)
+        context.close(mode: mode, promise: promise)
       } catch {
         promise?.fail(error)
         context.fireErrorCaught(error)
@@ -178,9 +210,14 @@ extension GRPCServerStreamHandler {
   func flush(context: ChannelHandlerContext) {
     if self.isReading {
       // We don't want to flush yet if we're still in a read loop.
+      self.flushPending = true
       return
     }
 
+    self._flush(context: context)
+  }
+
+  private func _flush(context: ChannelHandlerContext) {
     do {
       loop: while true {
         switch try self.stateMachine.nextOutboundFrame() {
@@ -192,24 +229,30 @@ extension GRPCServerStreamHandler {
           )
 
         case .noMoreMessages:
-          if let pendingTrailers = self.pendingTrailers {
-            self.flushPending = true
-            self.pendingTrailers = nil
-            context.write(
-              self.wrapOutboundOut(pendingTrailers.trailers),
-              promise: pendingTrailers.promise
-            )
-          }
+          // Write an empty data frame with the EOS flag set, to signal the RPC
+          // request is now finished.
+          context.write(
+            self.wrapOutboundOut(
+              HTTP2Frame.FramePayload.data(
+                .init(
+                  data: .byteBuffer(.init()),
+                  endStream: true
+                )
+              )
+            ),
+            promise: nil
+          )
+
+          context.flush()
           break loop
 
         case .awaitMoreMessages:
+          if self.flushPending {
+            self.flushPending = false
+            context.flush()
+          }
           break loop
         }
-      }
-
-      if self.flushPending {
-        self.flushPending = false
-        context.flush()
       }
     } catch {
       context.fireErrorCaught(error)

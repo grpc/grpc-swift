@@ -15,6 +15,7 @@
  */
 
 import NIOCore
+import NIOEmbedded
 import XCTest
 
 @testable import GRPCHTTP2Core
@@ -22,9 +23,9 @@ import XCTest
 final class GRPCMessageFramerTests: XCTestCase {
   func testSingleWrite() throws {
     var framer = GRPCMessageFramer()
-    framer.append(Array(repeating: 42, count: 128))
+    framer.append(Array(repeating: 42, count: 128), promise: nil)
 
-    var buffer = try XCTUnwrap(framer.next())
+    var buffer = try XCTUnwrap(framer.next()).bytes
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
     XCTAssertFalse(compressed)
     XCTAssertEqual(length, 128)
@@ -43,7 +44,7 @@ final class GRPCMessageFramerTests: XCTestCase {
     var framer = GRPCMessageFramer()
 
     let message = [UInt8](repeating: 42, count: 128)
-    framer.append(message)
+    framer.append(message, promise: nil)
 
     var buffer = ByteBuffer()
     let testCompressor = Zlib.Compressor(method: compressionMethod)
@@ -53,7 +54,7 @@ final class GRPCMessageFramerTests: XCTestCase {
       testCompressor.end()
     }
 
-    buffer = try XCTUnwrap(framer.next(compressor: compressor))
+    buffer = try XCTUnwrap(framer.next(compressor: compressor)).bytes
     let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
     XCTAssertTrue(compressed)
     XCTAssertEqual(length, UInt32(compressedSize))
@@ -74,26 +75,47 @@ final class GRPCMessageFramerTests: XCTestCase {
 
   func testMultipleWrites() throws {
     var framer = GRPCMessageFramer()
+    let eventLoop = EmbeddedEventLoop()
 
-    let messages = 100
-    for _ in 0 ..< messages {
-      framer.append(Array(repeating: 42, count: 128))
+    // Create 100 messages and link a different promise with each of them.
+    let messagesCount = 100
+    var promises = [EventLoopPromise<Void>]()
+    promises.reserveCapacity(messagesCount)
+    for _ in 0 ..< messagesCount {
+      let promise = eventLoop.makePromise(of: Void.self)
+      promises.append(promise)
+      framer.append(Array(repeating: 42, count: 128), promise: promise)
     }
 
-    var buffer = try XCTUnwrap(framer.next())
-    for _ in 0 ..< messages {
+    let nextFrame = try XCTUnwrap(framer.next())
+
+    // Assert the messages have been framed all together in the same frame.
+    var buffer = nextFrame.bytes
+    for _ in 0 ..< messagesCount {
       let (compressed, length) = try XCTUnwrap(buffer.readMessageHeader())
       XCTAssertFalse(compressed)
       XCTAssertEqual(length, 128)
       XCTAssertEqual(buffer.readSlice(length: Int(length)), ByteBuffer(repeating: 42, count: 128))
     }
-
     XCTAssertEqual(buffer.readableBytes, 0)
 
-    // No more bufers.
+    // Assert the promise returned from the framer is the promise linked to the
+    // first message appended to the framer.
+    let returnedPromise = nextFrame.promise
+    XCTAssertEqual(returnedPromise?.futureResult, promises.first?.futureResult)
+
+    // Succeed the returned promise to simulate a write into the channel
+    // succeeding, and assert that all other promises have been chained and are
+    // also succeeded as a result.
+    returnedPromise?.succeed()
+    XCTAssertEqual(promises.count, messagesCount)
+    for promise in promises {
+      try promise.futureResult.assertSuccess().wait()
+    }
+
+    // No more frames.
     XCTAssertNil(try framer.next())
   }
-
 }
 
 extension ByteBuffer {

@@ -16,6 +16,7 @@
 
 import GRPCCore
 import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import XCTest
 
@@ -170,21 +171,21 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       // Open client
       XCTAssertNoThrow(try stateMachine.send(metadata: []))
       // Close client
-      XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
+      XCTAssertNoThrow(try stateMachine.closeOutbound())
     case .clientClosedServerOpen:
       // Open client
       XCTAssertNoThrow(try stateMachine.send(metadata: []))
       // Open server
       XCTAssertNoThrow(try stateMachine.receive(headers: serverMetadata, endStream: false))
       // Close client
-      XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
+      XCTAssertNoThrow(try stateMachine.closeOutbound())
     case .clientClosedServerClosed:
       // Open client
       XCTAssertNoThrow(try stateMachine.send(metadata: []))
       // Open server
       XCTAssertNoThrow(try stateMachine.receive(headers: serverMetadata, endStream: false))
       // Close client
-      XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
+      XCTAssertNoThrow(try stateMachine.closeOutbound())
       // Close server
       XCTAssertNoThrow(try stateMachine.receive(headers: .serverTrailers, endStream: true))
     }
@@ -238,7 +239,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     // Try to send a message without opening (i.e. without sending initial metadata)
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Client not yet open.")
@@ -252,7 +253,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       var stateMachine = self.makeClientStateMachine(targetState: targetState)
 
       // Now send a message
-      XCTAssertNoThrow(try stateMachine.send(message: [], endStream: false))
+      XCTAssertNoThrow(try stateMachine.send(message: [], promise: nil))
     }
   }
 
@@ -266,7 +267,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       // Try sending another message: it should fail
       XCTAssertThrowsError(
         ofType: RPCError.self,
-        try stateMachine.send(message: [], endStream: false)
+        try stateMachine.send(message: [], promise: nil)
       ) { error in
         XCTAssertEqual(error.code, .internalError)
         XCTAssertEqual(error.message, "Client is closed, cannot send a message.")
@@ -455,14 +456,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
       GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.internalError.rawValue),
       GRPCHTTP2Keys.grpcStatusMessage.rawValue: GRPCStatusMessageMarshaller.marshall(
-        "Some status message"
+        "Some, status, message"
       )!,
       "custom-key": "custom-value",
     ]
     let trailers = try stateMachine.receive(headers: trailersOnlyResponse, endStream: true)
     switch trailers {
     case .receivedStatusAndMetadata(let status, let metadata):
-      XCTAssertEqual(status, Status(code: .internalError, message: "Some status message"))
+      XCTAssertEqual(status, Status(code: .internalError, message: "Some, status, message"))
       XCTAssertEqual(
         metadata,
         [
@@ -598,8 +599,22 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     for targetState in [TargetStateMachineState.clientOpenServerOpen, .clientClosedServerOpen] {
       var stateMachine = self.makeClientStateMachine(targetState: targetState)
 
-      XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: false))
-      XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: true))
+      XCTAssertEqual(
+        try stateMachine.receive(buffer: .init(), endStream: false),
+        .readInbound
+      )
+      XCTAssertEqual(
+        try stateMachine.receive(buffer: .init(), endStream: true),
+        .endRPCAndForwardErrorStatus(
+          Status(
+            code: .internalError,
+            message: """
+              Server sent EOS alongside a data frame, but server is only allowed \
+              to close by sending status and trailers.
+              """
+          )
+        )
+      )
     }
   }
 
@@ -624,7 +639,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.nextOutboundMessage()
+      try stateMachine.nextOutboundFrame()
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Client is not open yet.")
@@ -635,9 +650,9 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     for targetState in [TargetStateMachineState.clientOpenServerIdle, .clientOpenServerOpen] {
       var stateMachine = self.makeClientStateMachine(targetState: targetState)
 
-      XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+      XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
-      XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
+      XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
 
       let expectedBytes: [UInt8] = [
         0,  // compression flag: unset
@@ -645,12 +660,12 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         42, 42,  // original message
       ]
       XCTAssertEqual(
-        try stateMachine.nextOutboundMessage(),
-        .sendMessage(ByteBuffer(bytes: expectedBytes))
+        try stateMachine.nextOutboundFrame(),
+        .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil)
       )
 
       // And then make sure that nothing else is returned anymore
-      XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+      XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
     }
   }
 
@@ -660,14 +675,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       compressionEnabled: true
     )
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
-    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, promise: nil))
 
-    let request = try stateMachine.nextOutboundMessage()
+    let request = try stateMachine.nextOutboundFrame()
     let framedMessage = try self.frameMessage(originalMessage, compress: true)
-    XCTAssertEqual(request, .sendMessage(framedMessage))
+    XCTAssertEqual(request, .sendFrame(frame: framedMessage, promise: nil))
   }
 
   func testNextOutboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
@@ -676,82 +691,84 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       compressionEnabled: true
     )
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
-    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, promise: nil))
 
-    let request = try stateMachine.nextOutboundMessage()
+    let request = try stateMachine.nextOutboundFrame()
     let framedMessage = try self.frameMessage(originalMessage, compress: true)
-    XCTAssertEqual(request, .sendMessage(framedMessage))
+    XCTAssertEqual(request, .sendFrame(frame: framedMessage, promise: nil))
   }
 
   func testNextOutboundMessageWhenClientOpenAndServerClosed() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerClosed)
 
     // No more messages to send
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
 
     // Queue a message, but assert the action is .noMoreMessages nevertheless,
     // because the server is closed.
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerIdle() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerIdle)
 
     // Send a message and close client
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: true))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Make sure that getting the next outbound message _does_ return the message
     // we have enqueued.
-    let request = try stateMachine.nextOutboundMessage()
+    let request = try stateMachine.nextOutboundFrame()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ]
-    XCTAssertEqual(request, .sendMessage(ByteBuffer(bytes: expectedBytes)))
+    XCTAssertEqual(request, .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil))
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerOpen() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerOpen)
 
     // Send a message and close client
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: true))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Make sure that getting the next outbound message _does_ return the message
     // we have enqueued.
-    let request = try stateMachine.nextOutboundMessage()
+    let request = try stateMachine.nextOutboundFrame()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ]
-    XCTAssertEqual(request, .sendMessage(ByteBuffer(bytes: expectedBytes)))
+    XCTAssertEqual(request, .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil))
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerClosed() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientOpenServerOpen)
     // Send a message
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
 
     // Close server
     XCTAssertNoThrow(try stateMachine.receive(headers: .serverTrailers, endStream: true))
 
     // Close client
-    XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Even though we have enqueued a message, don't send it, because the server
     // is closed.
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
   }
 
   // - MARK: Next inbound message
@@ -773,7 +790,10 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
@@ -787,7 +807,10 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
     let receivedBytes = try self.frameMessage(originalMessage, compress: true)
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(originalMessage))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
@@ -801,7 +824,10 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     // Close server
     XCTAssertNoThrow(try stateMachine.receive(headers: .serverTrailers, endStream: true))
@@ -818,10 +844,13 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     // Close client
-    XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Even though the client is closed, because it received a message while open,
     // we must get the message now.
@@ -837,13 +866,16 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     // Close server
     XCTAssertNoThrow(try stateMachine.receive(headers: .serverTrailers, endStream: true))
 
     // Close client
-    XCTAssertNoThrow(try stateMachine.send(message: [], endStream: true))
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Even though the client is closed, because it received a message while open,
     // we must get the message now.
@@ -885,13 +917,16 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
 
     // Client sends messages
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     let message = [UInt8]([1, 2, 3, 4])
     let framedMessage = try self.frameMessage(message, compress: false)
-    try stateMachine.send(message: message, endStream: false)
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .sendMessage(framedMessage))
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    try stateMachine.send(message: message, promise: nil)
+    XCTAssertEqual(
+      try stateMachine.nextOutboundFrame(),
+      .sendFrame(frame: framedMessage, promise: nil)
+    )
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     // Server sends response
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
@@ -900,8 +935,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     let firstResponse = try self.frameMessage(firstResponseBytes, compress: false)
     let secondResponseBytes = [UInt8]([8, 9, 10])
     let secondResponse = try self.frameMessage(secondResponseBytes, compress: false)
-    try stateMachine.receive(buffer: firstResponse, endStream: false)
-    try stateMachine.receive(buffer: secondResponse, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: firstResponse, endStream: false),
+      .readInbound
+    )
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: secondResponse, endStream: false),
+      .readInbound
+    )
 
     // Make sure messages have arrived
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(firstResponseBytes))
@@ -909,7 +950,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
 
     // Client sends end
-    try stateMachine.send(message: [], endStream: true)
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Server ends
     let metadataReceivedAction = try stateMachine.receive(
@@ -927,7 +968,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       .receivedStatusAndMetadata(status: .init(code: .ok, message: ""), metadata: receivedMetadata)
     )
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
@@ -949,13 +990,17 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
 
     // Client sends messages and ends
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     let message = [UInt8]([1, 2, 3, 4])
     let framedMessage = try self.frameMessage(message, compress: false)
-    try stateMachine.send(message: message, endStream: true)
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .sendMessage(framedMessage))
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertNoThrow(try stateMachine.send(message: message, promise: nil))
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
+    XCTAssertEqual(
+      try stateMachine.nextOutboundFrame(),
+      .sendFrame(frame: framedMessage, promise: nil)
+    )
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
 
     // Server sends initial metadata
     let serverInitialHeadersAction = try stateMachine.receive(
@@ -978,8 +1023,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     let firstResponse = try self.frameMessage(firstResponseBytes, compress: false)
     let secondResponseBytes = [UInt8]([8, 9, 10])
     let secondResponse = try self.frameMessage(secondResponseBytes, compress: false)
-    try stateMachine.receive(buffer: firstResponse, endStream: false)
-    try stateMachine.receive(buffer: secondResponse, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: firstResponse, endStream: false),
+      .readInbound
+    )
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: secondResponse, endStream: false),
+      .readInbound
+    )
 
     // Make sure messages have arrived
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(firstResponseBytes))
@@ -1002,7 +1053,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       .receivedStatusAndMetadata(status: .init(code: .ok, message: ""), metadata: receivedMetadata)
     )
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
@@ -1024,13 +1075,16 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
 
     // Client sends messages
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     let message = [UInt8]([1, 2, 3, 4])
     let framedMessage = try self.frameMessage(message, compress: false)
-    try stateMachine.send(message: message, endStream: false)
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .sendMessage(framedMessage))
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    try stateMachine.send(message: message, promise: nil)
+    XCTAssertEqual(
+      try stateMachine.nextOutboundFrame(),
+      .sendFrame(frame: framedMessage, promise: nil)
+    )
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     // Server sends initial metadata
     let serverInitialHeadersAction = try stateMachine.receive(
@@ -1046,8 +1100,8 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       ])
     )
 
-    // Client sends end
-    try stateMachine.send(message: [], endStream: true)
+    // Client closes
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
 
     // Server sends response
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
@@ -1056,8 +1110,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     let firstResponse = try self.frameMessage(firstResponseBytes, compress: false)
     let secondResponseBytes = [UInt8]([8, 9, 10])
     let secondResponse = try self.frameMessage(secondResponseBytes, compress: false)
-    try stateMachine.receive(buffer: firstResponse, endStream: false)
-    try stateMachine.receive(buffer: secondResponse, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: firstResponse, endStream: false),
+      .readInbound
+    )
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: secondResponse, endStream: false),
+      .readInbound
+    )
 
     // Make sure messages have arrived
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(firstResponseBytes))
@@ -1080,7 +1140,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       .receivedStatusAndMetadata(status: .init(code: .ok, message: ""), metadata: receivedMetadata)
     )
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 }
@@ -1239,7 +1299,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(
@@ -1255,7 +1315,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Now send a message
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(
@@ -1269,7 +1329,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
     // Now send a message
-    XCTAssertNoThrow(try stateMachine.send(message: [], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [], promise: nil))
   }
 
   func testSendMessageWhenClientOpenAndServerClosed() {
@@ -1278,7 +1338,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Try sending another message: it should fail
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
@@ -1290,7 +1350,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(
@@ -1305,7 +1365,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     // Try sending a message: even though client is closed, we should send it
     // because it may be expecting a response.
-    XCTAssertNoThrow(try stateMachine.send(message: [], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [], promise: nil))
   }
 
   func testSendMessageWhenClientClosedAndServerClosed() {
@@ -1314,7 +1374,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Try sending another message: it should fail
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
@@ -1360,7 +1420,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
@@ -1382,7 +1442,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
@@ -1426,7 +1486,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
@@ -1448,7 +1508,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Try sending another message: it should fail because server is now closed.
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.send(message: [], endStream: false)
+      try stateMachine.send(message: [], promise: nil)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server can't send a message if it's closed.")
@@ -1870,7 +1930,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.nextOutboundMessage()
+      try stateMachine.nextOutboundFrame()
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server is not open yet.")
@@ -1882,7 +1942,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.nextOutboundMessage()
+      try stateMachine.nextOutboundFrame()
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server is not open yet.")
@@ -1894,7 +1954,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.nextOutboundMessage()
+      try stateMachine.nextOutboundFrame()
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server is not open yet.")
@@ -1904,20 +1964,20 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   func testNextOutboundMessageWhenClientOpenAndServerOpen() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
 
-    let response = try stateMachine.nextOutboundMessage()
+    let response = try stateMachine.nextOutboundFrame()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ]
-    XCTAssertEqual(response, .sendMessage(ByteBuffer(bytes: expectedBytes)))
+    XCTAssertEqual(response, .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil))
 
     // And then make sure that nothing else is returned
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
   }
 
   func testNextOutboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
@@ -1926,21 +1986,21 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       compressionEnabled: true
     )
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
-    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: originalMessage, promise: nil))
 
-    let response = try stateMachine.nextOutboundMessage()
+    let response = try stateMachine.nextOutboundFrame()
     let framedMessage = try self.frameMessage(originalMessage, compress: true)
-    XCTAssertEqual(response, .sendMessage(framedMessage))
+    XCTAssertEqual(response, .sendFrame(frame: framedMessage, promise: nil))
   }
 
   func testNextOutboundMessageWhenClientOpenAndServerClosed() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
     // Send message and close server
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
     XCTAssertNoThrow(
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
@@ -1948,16 +2008,16 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       )
     )
 
-    let response = try stateMachine.nextOutboundMessage()
+    let response = try stateMachine.nextOutboundFrame()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ]
-    XCTAssertEqual(response, .sendMessage(ByteBuffer(bytes: expectedBytes)))
+    XCTAssertEqual(response, .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil))
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerIdle() throws {
@@ -1965,7 +2025,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     XCTAssertThrowsError(
       ofType: RPCError.self,
-      try stateMachine.nextOutboundMessage()
+      try stateMachine.nextOutboundFrame()
     ) { error in
       XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Server is not open yet.")
@@ -1976,17 +2036,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
     // Send a message
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
 
     // Close client
     XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: true))
 
     // Send another message
-    XCTAssertNoThrow(try stateMachine.send(message: [43, 43], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [43, 43], promise: nil))
 
     // Make sure that getting the next outbound message _does_ return the message
     // we have enqueued.
-    let response = try stateMachine.nextOutboundMessage()
+    let response = try stateMachine.nextOutboundFrame()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
@@ -1996,17 +2056,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       43, 43,  // original message
     ]
-    XCTAssertEqual(response, .sendMessage(ByteBuffer(bytes: expectedBytes)))
+    XCTAssertEqual(response, .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil))
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
   }
 
   func testNextOutboundMessageWhenClientClosedAndServerClosed() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientClosedServerOpen)
 
     // Send a message and close server
-    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], endStream: false))
+    XCTAssertNoThrow(try stateMachine.send(message: [42, 42], promise: nil))
     XCTAssertNoThrow(
       try stateMachine.send(
         status: .init(code: .ok, message: ""),
@@ -2016,16 +2076,16 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
 
     // We have enqueued a message, make sure we return it even though server is closed,
     // because we haven't yet drained all of the pending messages.
-    let response = try stateMachine.nextOutboundMessage()
+    let response = try stateMachine.nextOutboundFrame()
     let expectedBytes: [UInt8] = [
       0,  // compression flag: unset
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ]
-    XCTAssertEqual(response, .sendMessage(ByteBuffer(bytes: expectedBytes)))
+    XCTAssertEqual(response, .sendFrame(frame: ByteBuffer(bytes: expectedBytes), promise: nil))
 
     // And then make sure that nothing else is returned anymore
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
   }
 
   // - MARK: Next inbound message
@@ -2048,7 +2108,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
@@ -2063,7 +2126,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let originalMessage = [UInt8]([42, 42, 43, 43])
     let receivedBytes = try self.frameMessage(originalMessage, compress: true)
 
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(originalMessage))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
@@ -2077,7 +2143,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     // Close server
     XCTAssertNoThrow(
@@ -2104,7 +2173,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     // Close client
     XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: true))
@@ -2123,7 +2195,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       0, 0, 0, 2,  // message length: 2 bytes
       42, 42,  // original message
     ])
-    try stateMachine.receive(buffer: receivedBytes, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: receivedBytes, endStream: false),
+      .readInbound
+    )
 
     // Close server
     XCTAssertNoThrow(
@@ -2176,24 +2251,53 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let firstMessage = completeMessage.getSlice(at: 0, length: 4)!
     let secondMessage = completeMessage.getSlice(at: 4, length: completeMessage.readableBytes - 4)!
 
-    try stateMachine.receive(buffer: firstMessage, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: firstMessage, endStream: false),
+      .readInbound
+    )
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
-    try stateMachine.receive(buffer: secondMessage, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: secondMessage, endStream: false),
+      .readInbound
+    )
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(deframedMessage))
 
     // Server sends response
+    let eventLoop = EmbeddedEventLoop()
+    let firstPromise = eventLoop.makePromise(of: Void.self)
+    let secondPromise = eventLoop.makePromise(of: Void.self)
+
     let firstResponse = [UInt8]([5, 6, 7])
     let secondResponse = [UInt8]([8, 9, 10])
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
-    try stateMachine.send(message: firstResponse, endStream: false)
-    try stateMachine.send(message: secondResponse, endStream: false)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
+
+    try stateMachine.send(message: firstResponse, promise: firstPromise)
+    try stateMachine.send(message: secondResponse, promise: secondPromise)
 
     // Make sure messages are outbound
     let framedMessages = try self.frameMessages([firstResponse, secondResponse], compress: false)
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .sendMessage(framedMessages))
+
+    guard
+      case .sendFrame(let nextOutboundByteBuffer, let nextOutboundPromise) =
+        try stateMachine.nextOutboundFrame()
+    else {
+      XCTFail("Should have received .sendMessage")
+      return
+    }
+    XCTAssertEqual(nextOutboundByteBuffer, framedMessages)
+    XCTAssertTrue(firstPromise.futureResult === nextOutboundPromise?.futureResult)
+
+    // Make sure that the promises associated with each sent message are chained
+    // together: when succeeding the one returned by the state machine on
+    // `nextOutboundMessage()`, the others should also be succeeded.
+    firstPromise.succeed()
+    try secondPromise.futureResult.assertSuccess().wait()
 
     // Client sends end
-    try stateMachine.receive(buffer: ByteBuffer(), endStream: true)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: ByteBuffer(), endStream: true),
+      .readInbound
+    )
 
     // Server ends
     let response = try stateMachine.send(
@@ -2202,7 +2306,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(response, ["grpc-status": "0"])
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
@@ -2226,13 +2330,22 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let firstMessage = completeMessage.getSlice(at: 0, length: 4)!
     let secondMessage = completeMessage.getSlice(at: 4, length: completeMessage.readableBytes - 4)!
 
-    try stateMachine.receive(buffer: firstMessage, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: firstMessage, endStream: false),
+      .readInbound
+    )
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
-    try stateMachine.receive(buffer: secondMessage, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: secondMessage, endStream: false),
+      .readInbound
+    )
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(deframedMessage))
 
     // Client sends end
-    try stateMachine.receive(buffer: ByteBuffer(), endStream: true)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: ByteBuffer(), endStream: true),
+      .readInbound
+    )
 
     // Server sends initial metadata
     let sentInitialHeaders = try stateMachine.send(metadata: Metadata(headers: ["custom": "value"]))
@@ -2249,13 +2362,16 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Server sends response
     let firstResponse = [UInt8]([5, 6, 7])
     let secondResponse = [UInt8]([8, 9, 10])
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
-    try stateMachine.send(message: firstResponse, endStream: false)
-    try stateMachine.send(message: secondResponse, endStream: false)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
+    try stateMachine.send(message: firstResponse, promise: nil)
+    try stateMachine.send(message: secondResponse, promise: nil)
 
     // Make sure messages are outbound
     let framedMessages = try self.frameMessages([firstResponse, secondResponse], compress: false)
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .sendMessage(framedMessages))
+    XCTAssertEqual(
+      try stateMachine.nextOutboundFrame(),
+      .sendFrame(frame: framedMessages, promise: nil)
+    )
 
     // Server ends
     let response = try stateMachine.send(
@@ -2264,7 +2380,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(response, ["grpc-status": "0"])
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
@@ -2288,9 +2404,15 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let firstMessage = completeMessage.getSlice(at: 0, length: 4)!
     let secondMessage = completeMessage.getSlice(at: 4, length: completeMessage.readableBytes - 4)!
 
-    try stateMachine.receive(buffer: firstMessage, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: firstMessage, endStream: false),
+      .readInbound
+    )
     XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
-    try stateMachine.receive(buffer: secondMessage, endStream: false)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: secondMessage, endStream: false),
+      .readInbound
+    )
     XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage(deframedMessage))
 
     // Server sends initial metadata
@@ -2306,18 +2428,24 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
 
     // Client sends end
-    try stateMachine.receive(buffer: ByteBuffer(), endStream: true)
+    XCTAssertEqual(
+      try stateMachine.receive(buffer: ByteBuffer(), endStream: true),
+      .readInbound
+    )
 
     // Server sends response
     let firstResponse = [UInt8]([5, 6, 7])
     let secondResponse = [UInt8]([8, 9, 10])
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .awaitMoreMessages)
-    try stateMachine.send(message: firstResponse, endStream: false)
-    try stateMachine.send(message: secondResponse, endStream: false)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
+    try stateMachine.send(message: firstResponse, promise: nil)
+    try stateMachine.send(message: secondResponse, promise: nil)
 
     // Make sure messages are outbound
     let framedMessages = try self.frameMessages([firstResponse, secondResponse], compress: false)
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .sendMessage(framedMessages))
+    XCTAssertEqual(
+      try stateMachine.nextOutboundFrame(),
+      .sendFrame(frame: framedMessages, promise: nil)
+    )
 
     // Server ends
     let response = try stateMachine.send(
@@ -2326,7 +2454,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(response, ["grpc-status": "0"])
 
-    XCTAssertEqual(try stateMachine.nextOutboundMessage(), .noMoreMessages)
+    XCTAssertEqual(try stateMachine.nextOutboundFrame(), .noMoreMessages)
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 }
@@ -2359,8 +2487,29 @@ extension XCTestCase {
     }()
     defer { compressor?.end() }
     for message in messages {
-      framer.append(message)
+      framer.append(message, promise: nil)
     }
-    return try XCTUnwrap(framer.next(compressor: compressor))
+    return try XCTUnwrap(framer.next(compressor: compressor)).bytes
+  }
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension GRPCStreamStateMachine.OnNextOutboundFrame: Equatable {
+  public static func == (
+    lhs: GRPCStreamStateMachine.OnNextOutboundFrame,
+    rhs: GRPCStreamStateMachine.OnNextOutboundFrame
+  ) -> Bool {
+    switch (lhs, rhs) {
+    case (.noMoreMessages, .noMoreMessages):
+      return true
+    case (.awaitMoreMessages, .awaitMoreMessages):
+      return true
+    case (.sendFrame(let lhsMessage, _), .sendFrame(let rhsMessage, _)):
+      // Note that we're not comparing the EventLoopPromises here, as they're
+      // not Equatable. This is fine though, since we only use this in tests.
+      return lhsMessage == rhsMessage
+    default:
+      return false
+    }
   }
 }

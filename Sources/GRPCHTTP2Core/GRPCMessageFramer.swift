@@ -32,7 +32,7 @@ struct GRPCMessageFramer {
   /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
   static let maximumWriteBufferLength = 65_536
 
-  private var pendingMessages: OneOrManyQueue<[UInt8]>
+  private var pendingMessages: OneOrManyQueue<(bytes: [UInt8], promise: EventLoopPromise<Void>?)>
 
   private var writeBuffer: ByteBuffer
 
@@ -44,8 +44,8 @@ struct GRPCMessageFramer {
 
   /// Queue the given bytes to be framed and potentially coalesced alongside other messages in a `ByteBuffer`.
   /// The resulting data will be returned when calling ``GRPCMessageFramer/next()``.
-  mutating func append(_ bytes: [UInt8]) {
-    self.pendingMessages.append(bytes)
+  mutating func append(_ bytes: [UInt8], promise: EventLoopPromise<Void>?) {
+    self.pendingMessages.append((bytes, promise))
   }
 
   /// If there are pending messages to be framed, a `ByteBuffer` will be returned with the framed data.
@@ -53,7 +53,9 @@ struct GRPCMessageFramer {
   /// - Parameter compressor: An optional compressor: if present, payloads will be compressed; otherwise
   /// they'll be framed as-is.
   /// - Throws: If an error is encountered, such as a compression failure, an error will be thrown.
-  mutating func next(compressor: Zlib.Compressor? = nil) throws -> ByteBuffer? {
+  mutating func next(
+    compressor: Zlib.Compressor? = nil
+  ) throws -> (bytes: ByteBuffer, promise: EventLoopPromise<Void>?)? {
     if self.pendingMessages.isEmpty {
       // Nothing pending: exit early.
       return nil
@@ -69,15 +71,21 @@ struct GRPCMessageFramer {
 
     var requiredCapacity = 0
     for message in self.pendingMessages {
-      requiredCapacity += message.count + Self.metadataLength
+      requiredCapacity += message.bytes.count + Self.metadataLength
     }
     self.writeBuffer.clear(minimumCapacity: requiredCapacity)
 
+    var pendingWritePromise: EventLoopPromise<Void>?
     while let message = self.pendingMessages.pop() {
-      try self.encode(message, compressor: compressor)
+      try self.encode(message.bytes, compressor: compressor)
+      if let existingPendingWritePromise = pendingWritePromise {
+        existingPendingWritePromise.futureResult.cascade(to: message.promise)
+      } else {
+        pendingWritePromise = message.promise
+      }
     }
 
-    return self.writeBuffer
+    return (bytes: self.writeBuffer, promise: pendingWritePromise)
   }
 
   private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws {
