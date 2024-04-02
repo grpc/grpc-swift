@@ -176,7 +176,7 @@ extension WorkerService {
     let initialStats = self.state.withLockedValue { state in
       defer {
         if reset {
-          state.setInitialServerStats(newStats: currentStats)
+          state.setInitialServerStats(currentStats)
         }
       }
       return state.getInitialServerStats()
