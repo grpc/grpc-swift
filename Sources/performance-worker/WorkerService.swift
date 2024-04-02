@@ -186,7 +186,7 @@ extension WorkerService {
     reset: Bool
   ) async throws -> Grpc_Testing_WorkerService.Method.RunServer.Output {
     let server = self.state.withLockedValue { state in state.getServer() }
-    guard let server = server else {
+    guard server != nil else {
       throw RPCError(code: .failedPrecondition, message: "This worker doesn't have a server setup.")
     }
     let currentStats = try await ServerStats()
