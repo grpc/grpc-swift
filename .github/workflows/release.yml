@@ -16,8 +16,10 @@ jobs:
 
       - name: Build the plugins
         run: |
-          swift build --build-path=./.build --configuration=release --product protoc-gen-swift
-          swift build --build-path=./.build --configuration=release --product protoc-gen-grpc-swift
+          swift build --configuration=release --product protoc-gen-swift
+          cp ./.build/release/protoc-gen-swift .
+          swift build --configuration=release --product protoc-gen-grpc-swift
+          cp ./.build/release/protoc-gen-grpc-swift .
 
       - name: Zip the plugins
         run: |
