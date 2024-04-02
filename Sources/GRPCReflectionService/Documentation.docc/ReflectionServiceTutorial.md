@@ -70,6 +70,25 @@ You can use Swift Package Manager [resources][swiftpm-resources] to add the gene
 In our example the reflection data is written into the "Generated" directory within the target
 so we include the `.copy("Generated")` rule in our target's resource list.
 
+#### SPM Plugin
+
+Reflection data can also be generated via the SPM plugin by including `"reflectionData": true` in `grpc-swift-config.json`. This will generate the same data as running `protoc` above. The generated data will be in your `.build` folder (or `DerivedData` if running from Xcode) and included in the build process. More about [spm-plugin][spm-plugin] can be found here.
+
+```json
+{
+    "invocations": [
+        {
+            "protoFiles": [
+                "helloworld.proto"
+            ],
+            "visibility": "public",
+            "server": true,
+            "reflectionData": true
+        }
+    ]
+}
+```
+
 ### Instantiating the Reflection service
 
 To instantiate the `ReflectionService` you need to pass the URLs of the files containing
@@ -192,3 +211,4 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [echo-proto]: ../../Examples/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
 [swiftpm-resources]: https://github.com/apple/swift-package-manager/blob/main/Documentation/PackageDescription.md#resource
+[spm-plugin]: ../../protoc-gen-grpc-swift/Docs.docc/spm-plugin.md

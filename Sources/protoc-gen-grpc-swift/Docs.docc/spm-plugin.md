@@ -81,7 +81,8 @@ Sources
             ],
             "visibility": "public",
             "client": false,
-            "keepMethodCasing": false
+            "keepMethodCasing": false,
+            "reflectionData": true
         }
     ]
 }
