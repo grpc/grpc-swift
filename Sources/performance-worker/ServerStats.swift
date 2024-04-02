@@ -15,7 +15,6 @@
  */
 
 import Dispatch
-import GRPCCore
 import NIOCore
 import NIOFileSystem
 
@@ -37,8 +36,7 @@ private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
 
 /// Current server stats.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-internal struct ServerState: Sendable {
-  var server: GRPCServer
+internal struct ServerStats: Sendable {
   var time: Double
   var userTime: Double
   var systemTime: Double
@@ -46,14 +44,12 @@ internal struct ServerState: Sendable {
   var idleCPUTime: UInt64
 
   init(
-    server: GRPCServer,
     time: Double,
     userTime: Double,
     systemTime: Double,
     totalCPUTime: UInt64,
     idleCPUTime: UInt64
   ) {
-    self.server = server
     self.time = time
     self.userTime = userTime
     self.systemTime = systemTime
@@ -61,8 +57,7 @@ internal struct ServerState: Sendable {
     self.idleCPUTime = idleCPUTime
   }
 
-  init(server: GRPCServer) async throws {
-    self.server = server
+  init() async throws {
     self.time = Double(DispatchTime.now().uptimeNanoseconds) * 1e-9
     var usage = rusage()
     if getrusage(OUR_RUSAGE_SELF, &usage) == 0 {
@@ -74,14 +69,13 @@ internal struct ServerState: Sendable {
       self.userTime = 0
       self.systemTime = 0
     }
-    let (totalCPUTime, idleCPUTime) = try await ServerState.getTotalAndIdleCPUTime()
+    let (totalCPUTime, idleCPUTime) = try await ServerStats.getTotalAndIdleCPUTime()
     self.totalCPUTime = totalCPUTime
     self.idleCPUTime = idleCPUTime
   }
 
-  internal func difference(to state: ServerState) throws -> ServerState {
-    return ServerState(
-      server: self.server,
+  internal func difference(to state: ServerStats) throws -> ServerStats {
+    return ServerStats(
       time: self.time - state.time,
       userTime: self.userTime - state.userTime,
       systemTime: self.systemTime - state.systemTime,

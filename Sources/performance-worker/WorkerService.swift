@@ -35,6 +35,20 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       case server(ServerState)
     }
 
+    struct ServerState {
+      var server: GRPCServer
+      var stats: ServerStats
+
+      init(server: GRPCServer, stats: ServerStats) {
+        self.server = server
+        self.stats = stats
+      }
+
+      init(server: GRPCServer) async throws {
+        try await self.init(server: server, stats: ServerStats())
+      }
+    }
+
     init() {}
 
     init(role: Role) {
@@ -50,21 +64,23 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       }
     }
 
-    mutating func initialServerState(set newValue: ServerState? = nil) -> ServerState? {
+    mutating func initialServerStats(set newValue: ServerStats? = nil) -> ServerStats? {
       switch self.role {
-      case let .server(initialServerStats):
+      case let .server(initialServerState):
         defer {
           if let newServerState = newValue {
-            self.role = .server(newServerState)
+            self.role = .server(
+              State.ServerState(server: initialServerState.server, stats: newServerState)
+            )
           }
         }
-        return initialServerStats
+        return initialServerState.stats
       default:
         return nil
       }
     }
 
-    mutating func setupServer(_ initialServerState: ServerState) throws {
+    mutating func setupServer(with initialState: ServerState) throws {
       switch self.role {
       case .server(_):
         throw RPCError(code: .alreadyExists, message: "A server has already been set up.")
@@ -73,7 +89,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
         throw RPCError(code: .failedPrecondition, message: "This worker has a client setup.")
 
       default:
-        self.role = .server(initialServerState)
+        self.role = .server(initialState)
       }
     }
   }
@@ -124,7 +140,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
             group.addTask { try await server.run() }
 
           case let .some(.mark(mark)):
-            let response = try await self.makeStatsResponse(reset: mark.reset)
+            let response = try await self.makeServerStatsResponse(reset: mark.reset)
             try await writer.write(response)
 
           case .none:
@@ -158,31 +174,31 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 extension WorkerService {
   private func setupServer(_ config: Grpc_Testing_ServerConfig) async throws -> GRPCServer {
     let server = GRPCServer(transports: [], services: [BenchmarkService()])
-    let initialServerState = try await ServerState(server: server)
+    let initialServerState = try await State.ServerState(server: server)
 
     try self.state.withLockedValue { state in
-      try state.setupServer(initialServerState)
+      try state.setupServer(with: initialServerState)
     }
     return server
   }
 
-  private func makeStatsResponse(
+  private func makeServerStatsResponse(
     reset: Bool
   ) async throws -> Grpc_Testing_WorkerService.Method.RunServer.Output {
     let server = self.state.withLockedValue { state in state.getServer() }
     guard let server = server else {
       throw RPCError(code: .failedPrecondition, message: "This worker doesn't have a server setup.")
     }
-    let currentState = try await ServerState(server: server)
-    let initialState = self.state.withLockedValue { state in
-      return state.initialServerState(set: currentState)
+    let currentStats = try await ServerStats()
+    let initialStats = self.state.withLockedValue { state in
+      return state.initialServerStats(set: currentStats)
     }
 
-    guard let initialState = initialState else {
+    guard let initialStats = initialStats else {
       throw RPCError(code: .notFound, message: "There are no initial server stats.")
     }
 
-    let differences = try currentState.difference(to: initialState)
+    let differences = try currentStats.difference(to: initialStats)
     return Grpc_Testing_WorkerService.Method.RunServer.Output.with {
       $0.stats = Grpc_Testing_ServerStats.with {
         $0.idleCpuTime = differences.idleCPUTime
