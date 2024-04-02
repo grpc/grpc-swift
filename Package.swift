@@ -604,20 +604,6 @@ extension Target {
     path: "Sources/GRPCReflectionService"
   )
 
-  static let pluginServer: Target = .executableTarget(
-    name: "PluginServer",
-    dependencies: [
-        .grpc,
-        .reflectionService,
-        .nioPosix,
-        .argumentParser
-    ],
-    path: "Sources/Examples/Plugin",
-    plugins: [
-        .plugin(name: "SwiftProtobufPlugin", package: "swift-protobuf"),
-        .plugin(name: "GRPCSwiftPlugin"),
-    ])
-
   static let reflectionServer: Target = .executableTarget(
     name: "ReflectionServer",
     dependencies: [
@@ -736,7 +722,6 @@ let package = Package(
     .routeGuideServer,
     .packetCapture,
     .reflectionServer,
-    .pluginServer,
 
     // v2
     .grpcCore,
