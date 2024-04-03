@@ -36,9 +36,9 @@ struct GRPCSwiftPlugin {
         return "The input file '\(path)' does not have a '.proto' extension."
       case let .noConfigFound(path):
         return """
-        No configuration file found named '\(path)'. The file must not be listed in the \
-        'exclude:' argument for the target in Package.swift.
-        """
+          No configuration file found named '\(path)'. The file must not be listed in the \
+          'exclude:' argument for the target in Package.swift.
+          """
       }
     }
   }
@@ -99,11 +99,13 @@ struct GRPCSwiftPlugin {
     sourceFiles: FileList,
     tool: (String) throws -> PackagePlugin.PluginContext.Tool
   ) throws -> [Command] {
-    guard let configurationFilePath = sourceFiles.first(
-      where: {
-        $0.path.lastComponent == Self.configurationFileName
-      }
-    )?.path else {
+    guard
+      let configurationFilePath = sourceFiles.first(
+        where: {
+          $0.path.lastComponent == Self.configurationFileName
+        }
+      )?.path
+    else {
       throw PluginError.noConfigFound(Self.configurationFileName)
     }
 
