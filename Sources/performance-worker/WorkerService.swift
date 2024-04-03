@@ -55,7 +55,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       switch self.role {
       case let .server(serverState):
         return serverState.server
-      default:
+      case .client, .none:
         return nil
       }
     }
@@ -69,7 +69,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
           self.role = .server(serverState)
         }
         return stats
-      default:
+      case .client, .none:
         return nil
       }
     }
@@ -83,7 +83,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       case .client(_):
         throw RPCError(code: .failedPrecondition, message: "This worker has a client setup.")
 
-      default:
+      case .none:
         self.role = .server(serverState)
       }
     }
@@ -181,17 +181,16 @@ extension WorkerService {
   private func makeServerStatsResponse(
     reset: Bool
   ) async throws -> Grpc_Testing_WorkerService.Method.RunServer.Output {
-    let server = self.state.withLockedValue { state in state.server }
-    guard server != nil else {
-      throw RPCError(code: .failedPrecondition, message: "This worker doesn't have a server setup.")
-    }
     let currentStats = try await ServerStats()
     let initialStats = self.state.withLockedValue { state in
-      return state.serverStats(replaceWith: currentStats)
+      return state.serverStats(replaceWith: reset ? currentStats : nil)
     }
 
     guard let initialStats = initialStats else {
-      throw RPCError(code: .notFound, message: "There are no initial server stats.")
+      throw RPCError(
+        code: .notFound,
+        message: "There are no initial server stats. A server must be setup before calling 'mark'."
+      )
     }
 
     let differences = currentStats.difference(to: initialStats)
