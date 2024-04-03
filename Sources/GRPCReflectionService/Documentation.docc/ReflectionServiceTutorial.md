@@ -70,25 +70,6 @@ You can use Swift Package Manager [resources][swiftpm-resources] to add the gene
 In our example the reflection data is written into the "Generated" directory within the target
 so we include the `.copy("Generated")` rule in our target's resource list.
 
-#### SPM Plugin
-
-Reflection data can also be generated via the SPM plugin by including `"reflectionData": true` in `grpc-swift-config.json`. This will generate the same data as running `protoc` above. The generated data will be in your `.build` folder (or `DerivedData` if running from Xcode) and included in the build process. More about [spm-plugin][spm-plugin] can be found here.
-
-```json
-{
-    "invocations": [
-        {
-            "protoFiles": [
-                "helloworld.proto"
-            ],
-            "visibility": "public",
-            "server": true,
-            "reflectionData": true
-        }
-    ]
-}
-```
-
 ### Instantiating the Reflection service
 
 To instantiate the `ReflectionService` you need to pass the URLs of the files containing
@@ -118,6 +99,38 @@ else {
 let reflectionService = try ReflectionService(
   reflectionDataFileURLs: [greeterURL, echoURL],
   version: .v1
+)
+```
+
+### Swift Package Manager Plugin
+
+Reflection data can also be generated via the SPM plugin by including `"reflectionData": true` in `grpc-swift-config.json`. This will generate the same reflection data as running `protoc` above. The generated reflection files are added to your module Bundle and can be accessed at runtime. More about [spm-plugin][spm-plugin] can be found here.
+
+```json
+{
+    "invocations": [
+        {
+            "protoFiles": [
+                "helloworld.proto"
+            ],
+            "visibility": "public",
+            "server": true,
+            "reflectionData": true
+        }
+    ]
+}
+```
+
+To instantiate the `ReflectionService` you can search for files with the extension `reflection` in your module Bundle.
+
+```swift
+let reflectionDataFilePaths = Bundle.module.paths(
+  forResourcesOfType: "reflection",
+  inDirectory: nil
+)
+let reflectionService = try ReflectionService(
+  reflectionDataFilePaths: reflectionDataFilePaths,
+  version: .v1Alpha
 )
 ```
 
