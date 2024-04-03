@@ -74,13 +74,13 @@ internal struct ServerStats: Sendable {
     self.idleCPUTime = idleCPUTime
   }
 
-  internal func difference(to state: ServerStats) throws -> ServerStats {
+  internal func difference(to stats: ServerStats) -> ServerStats {
     return ServerStats(
-      time: self.time - state.time,
-      userTime: self.userTime - state.userTime,
-      systemTime: self.systemTime - state.systemTime,
-      totalCPUTime: self.totalCPUTime - state.totalCPUTime,
-      idleCPUTime: self.idleCPUTime - state.idleCPUTime
+      time: self.time - stats.time,
+      userTime: self.userTime - stats.userTime,
+      systemTime: self.systemTime - stats.systemTime,
+      totalCPUTime: self.totalCPUTime - stats.totalCPUTime,
+      idleCPUTime: self.idleCPUTime - stats.idleCPUTime
     )
   }
 
