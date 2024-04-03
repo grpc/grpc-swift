@@ -5,14 +5,7 @@ compiler `protoc` to generate classes for clients and services.
 
 ## Building the Plugin
 
-The `protoc-gen-grpc-swift` plugin can be built by using the Makefile in the
-top-level directory:
-
-```sh
-$ make plugins
-```
-
-The Swift Package Manager may also be invoked directly to build the plugin:
+The `protoc-gen-grpc-swift` plugin can be built using the Swift Package Manager:
 
 ```sh
 $ swift build --product protoc-gen-grpc-swift
