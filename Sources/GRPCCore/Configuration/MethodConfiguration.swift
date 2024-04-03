@@ -64,6 +64,12 @@ public struct MethodConfiguration: Hashable, Sendable {
   /// The names of methods which this configuration applies to.
   public var names: [Name]
 
+  /// Whether RPCs for this method should wait until the connection is ready.
+  ///
+  /// If `false` the RPC will abort immediately if there is a transient failure connecting to
+  /// the server. Otherwise gRPC will attempt to connect until the deadline is exceeded.
+  public var waitForReady: Bool?
+
   /// The default timeout for the RPC.
   ///
   /// If no reply is received in the specified amount of time the request is aborted
@@ -112,18 +118,21 @@ public struct MethodConfiguration: Hashable, Sendable {
   ///
   /// - Parameters:
   ///   - names: The names of methods this configuration applies to.
+  ///   - waitForReady: Whether RPCs sent to this method should wait until the connection is ready.
   ///   - timeout: The default timeout for the RPC.
   ///   - maxRequestMessageBytes: The maximum allowed size of a request message in bytes.
   ///   - maxResponseMessageBytes: The maximum allowed size of a response message in bytes.
   ///   - executionPolicy: The execution policy to use for the RPC.
   public init(
     names: [Name],
+    waitForReady: Bool? = nil,
     timeout: Duration? = nil,
     maxRequestMessageBytes: Int? = nil,
     maxResponseMessageBytes: Int? = nil,
     executionPolicy: ExecutionPolicy? = nil
   ) {
     self.names = names
+    self.waitForReady = waitForReady
     self.timeout = timeout
     self.maxRequestMessageBytes = maxRequestMessageBytes
     self.maxResponseMessageBytes = maxResponseMessageBytes
@@ -367,6 +376,7 @@ extension Duration {
 extension MethodConfiguration: Codable {
   private enum CodingKeys: String, CodingKey {
     case name
+    case waitForReady
     case timeout
     case maxRequestMessageBytes
     case maxResponseMessageBytes
@@ -377,6 +387,9 @@ extension MethodConfiguration: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     self.names = try container.decode([Name].self, forKey: .name)
+
+    let waitForReady = try container.decodeIfPresent(Bool.self, forKey: .waitForReady)
+    self.waitForReady = waitForReady
 
     let timeout = try container.decodeIfPresent(GoogleProtobufDuration.self, forKey: .timeout)
     self.timeout = timeout?.duration

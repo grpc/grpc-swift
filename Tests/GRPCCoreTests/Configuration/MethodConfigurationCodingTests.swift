@@ -350,6 +350,8 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
         }
       ]
 
+      $0.waitForReady = true
+
       $0.timeout = .with {
         $0.seconds = 1
         $0.nanos = 0
@@ -364,6 +366,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
       let jsonConfig = try config.jsonUTF8Data()
       let decoded = try self.decoder.decode(MethodConfiguration.self, from: jsonConfig)
       XCTAssertEqual(decoded.names, [MethodConfiguration.Name(service: "echo.Echo", method: "Get")])
+      XCTAssertEqual(decoded.waitForReady, true)
       XCTAssertEqual(decoded.timeout, Duration(secondsComponent: 1, attosecondsComponent: 0))
       XCTAssertEqual(decoded.maxRequestMessageBytes, 1024)
       XCTAssertEqual(decoded.maxResponseMessageBytes, 2048)
