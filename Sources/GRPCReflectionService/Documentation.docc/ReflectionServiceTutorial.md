@@ -102,6 +102,38 @@ let reflectionService = try ReflectionService(
 )
 ```
 
+### Swift Package Manager Plugin
+
+Reflection data can also be generated via the SPM plugin by including `"reflectionData": true` in `grpc-swift-config.json`. This will generate the same reflection data as running `protoc` above. The generated reflection files are added to your module Bundle and can be accessed at runtime. More about [spm-plugin][spm-plugin] can be found here.
+
+```json
+{
+    "invocations": [
+        {
+            "protoFiles": [
+                "helloworld.proto"
+            ],
+            "visibility": "public",
+            "server": true,
+            "reflectionData": true
+        }
+    ]
+}
+```
+
+To instantiate the `ReflectionService` you can search for files with the extension `reflection` in your module Bundle.
+
+```swift
+let reflectionDataFilePaths = Bundle.module.paths(
+  forResourcesOfType: "reflection",
+  inDirectory: nil
+)
+let reflectionService = try ReflectionService(
+  reflectionDataFilePaths: reflectionDataFilePaths,
+  version: .v1Alpha
+)
+```
+
 ### Running the server
 
 In our example the server isn't configured with TLS and listens on localhost port 1234.
@@ -192,3 +224,4 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [echo-proto]: ../../Examples/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
 [swiftpm-resources]: https://github.com/apple/swift-package-manager/blob/main/Documentation/PackageDescription.md#resource
+[spm-plugin]: ../../protoc-gen-grpc-swift/Docs.docc/spm-plugin.md
