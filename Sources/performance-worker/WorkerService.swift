@@ -16,7 +16,6 @@
 
 import Atomics
 import GRPCCore
-import GRPCInProcessTransport
 import NIOConcurrencyHelpers
 import NIOCore
 
@@ -122,20 +121,6 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
         self.role = .server(serverState)
       }
     }
-
-    mutating func setupClients(benchmarkClients: [BenchmarkClient], stats: ClientStats) throws {
-      let clientState = State.ClientState(clients: benchmarkClients, stats: stats)
-      switch self.role {
-      case .server(_):
-        throw RPCError(code: .alreadyExists, message: "This worker has a server setup.")
-
-      case .client(_):
-        throw RPCError(code: .failedPrecondition, message: "Clients have already been set up.")
-
-      case .none:
-        self.role = .client(clientState)
-      }
-    }
   }
 
   func quitWorker(
@@ -210,29 +195,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
   ) async throws
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
   {
-    return ServerResponse.Stream { writer in
-      try await withThrowingTaskGroup(of: Void.self) { group in
-        for try await message in request.messages {
-          switch message.argtype {
-          case let .setup(config):
-            // Create the clients with the initial stats.
-            let clients = try await self.setupClients(config)
-
-            for client in clients {
-              group.addTask {
-                try await client.run()
-              }
-            }
-
-          case .mark, .none:
-            ()
-          }
-        }
-        for try await _ in group {}
-
-        return [:]
-      }
-    }
+    throw RPCError(code: .unimplemented, message: "This RPC has not been implemented yet.")
   }
 }
 
@@ -274,28 +237,5 @@ extension WorkerService {
         $0.totalCpuTime = differences.totalCPUTime
       }
     }
-  }
-
-  private func setupClients(_ config: Grpc_Testing_ClientConfig) async throws -> [BenchmarkClient] {
-    var clients = [BenchmarkClient]()
-    for _ in 0 ..< config.clientChannels {
-      let inProcessTransport = InProcessTransport.makePair()
-      let grpcClient = GRPCClient(transport: inProcessTransport.client)
-      clients.append(
-        BenchmarkClient(
-          client: grpcClient,
-          rpcNumber: config.outstandingRpcsPerChannel,
-          rpcType: config.rpcType,
-          histogramParams: config.histogramParams
-        )
-      )
-    }
-    let stats = try await ClientStats()
-
-    try self.state.withLockedValue { state in
-      try state.setupClients(benchmarkClients: clients, stats: stats)
-    }
-
-    return clients
   }
 }
