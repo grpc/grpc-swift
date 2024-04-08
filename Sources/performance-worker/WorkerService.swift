@@ -50,16 +50,13 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
     struct ClientState {
       var clients: [BenchmarkClient]
       var stats: ClientStats
-      var latencyHistogram: LatencyHistogram
 
       init(
         clients: [BenchmarkClient],
-        stats: ClientStats,
-        latencyHistogram: LatencyHistogram = LatencyHistogram()
+        stats: ClientStats
       ) {
         self.clients = clients
         self.stats = stats
-        self.latencyHistogram = latencyHistogram
       }
 
       func shutdownClients() throws {
@@ -107,18 +104,6 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
           self.role = .client(clientState)
         }
         return stats
-      case .server, .none:
-        return nil
-      }
-    }
-
-    func clientHistogram(mergeWith source: LatencyHistogram? = nil) throws -> LatencyHistogram? {
-      switch self.role {
-      case var .client(clientState):
-        if let source = source {
-          try clientState.latencyHistogram.merge(source: source)
-        }
-        return clientState.latencyHistogram
       case .server, .none:
         return nil
       }
@@ -235,20 +220,11 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
             for client in clients {
               group.addTask {
-                let histogram = try await client.run()
-                try self.state.withLockedValue { state in
-                  _ = try state.clientHistogram(mergeWith: histogram)
-                }
+                try await client.run()
               }
             }
 
-          case let .mark(mark):
-            group.addTask {
-              let response = try await self.makeClientStatsResponse(reset: mark.reset)
-              try await writer.write(response)
-            }
-
-          case .none:
+          case .mark, .none:
             ()
           }
         }
@@ -321,43 +297,5 @@ extension WorkerService {
     }
 
     return clients
-  }
-
-  private func makeClientStatsResponse(
-    reset: Bool
-  ) async throws -> Grpc_Testing_WorkerService.Method.RunClient.Output {
-    let currentStats = try await ClientStats()
-    let initialStats = self.state.withLockedValue { state in
-      return state.clientStats(replaceWith: reset ? currentStats : nil)
-    }
-
-    let histogram = try self.state.withLockedValue { state in
-      return try state.clientHistogram()
-    }
-
-    guard let initialStats = initialStats, let histogram = histogram else {
-      throw RPCError(
-        code: .notFound,
-        message: "There are no initial client stats. Clients must be setup before calling 'mark'."
-      )
-    }
-
-    let differences = currentStats.difference(to: initialStats)
-
-    return Grpc_Testing_WorkerService.Method.RunClient.Output.with {
-      $0.stats = Grpc_Testing_ClientStats.with {
-        $0.latencies = Grpc_Testing_HistogramData.with {
-          $0.bucket = histogram.buckets
-          $0.minSeen = histogram.minSeen
-          $0.maxSeen = histogram.maxSeen
-          $0.sum = histogram.sum
-          $0.sumOfSquares = histogram.sumOfSquares
-          $0.count = histogram.countOfValuesSeen
-        }
-        $0.timeElapsed = differences.time
-        $0.timeUser = differences.userTime
-        $0.timeSystem = differences.systemTime
-      }
-    }
   }
 }
