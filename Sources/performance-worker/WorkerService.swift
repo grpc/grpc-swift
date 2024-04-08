@@ -241,18 +241,17 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
                 }
               }
             }
-          // send response
 
           case let .mark(mark):
-            // writer. -> another task that does this?
-            let response = try await self.makeClientStatsResponse(reset: mark.reset)
-            try await writer.write(response)
+            group.addTask {
+              let response = try await self.makeClientStatsResponse(reset: mark.reset)
+              try await writer.write(response)
+            }
 
           case .none:
             ()
           }
         }
-        // when do we cancel the tasks
         for try await _ in group {}
 
         return [:]

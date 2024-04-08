@@ -83,8 +83,8 @@ struct BenchmarkClient {
     switch rpcType {
     case .unary, .streaming, .streamingFromClient, .streamingFromServer, .streamingBothWays,
       .UNRECOGNIZED:
-      var startTime = LatencyHistogram.grpcTimeNow()
-      var endTime = LatencyHistogram.grpcTimeNow()
+      let startTime = LatencyHistogram.grpcTimeNow()
+      let endTime = LatencyHistogram.grpcTimeNow()
       return Double((endTime - startTime).value)
     }
   }
