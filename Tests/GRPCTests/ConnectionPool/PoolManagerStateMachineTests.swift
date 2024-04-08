@@ -79,7 +79,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
     let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100, statsTask: nil))
     )
 
     for (index, loop) in group.loops.enumerated() {
@@ -99,7 +99,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
     let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100, statsTask: nil))
     )
 
     let anotherLoop = EmbeddedEventLoop()
@@ -118,7 +118,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
     let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(.inactive)
-    state.activatePools(keyedBy: keys, assumingPerPoolCapacity: 100)
+    state.activatePools(keyedBy: keys, assumingPerPoolCapacity: 100, statsTask: nil)
 
     // Reserve some streams.
     for (index, loop) in group.loops.enumerated() {
@@ -177,7 +177,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
     let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100, statsTask: nil))
     )
 
     let reservePreferredLoop = state.reserveStream(preferringPoolWithEventLoopID: nil)
@@ -230,7 +230,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
     let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100, statsTask: nil))
     )
 
     let promise = group.loops[0].makePromise(of: Void.self)

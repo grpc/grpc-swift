@@ -17,11 +17,11 @@
 @usableFromInline
 internal struct ConnectionManagerID: Hashable, CustomStringConvertible, Sendable {
   @usableFromInline
-  internal let _id: ObjectIdentifier
+  internal let _id: Int
 
   @usableFromInline
   internal init(_ manager: ConnectionManager) {
-    self._id = ObjectIdentifier(manager)
+    self._id = RawID.next()
   }
 
   @usableFromInline

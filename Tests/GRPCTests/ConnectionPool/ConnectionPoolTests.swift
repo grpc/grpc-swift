@@ -1046,8 +1046,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // Two connections must be removed.
     for _ in 0 ..< 2 {
       if let event = recorder.popFirst() {
-        let id = event.id
-        XCTAssertEqual(event, .connectionRemoved(id))
+        XCTAssertEqual(event, event.id.map { .connectionRemoved($0) })
       } else {
         XCTFail("Expected .connectionRemoved")
       }

@@ -101,7 +101,8 @@ internal final class PooledChannel: GRPCChannel {
         assumedMaxConcurrentStreams: 100,
         connectionBackoff: configuration.connectionBackoff,
         channelProvider: provider,
-        delegate: configuration.delegate
+        delegate: configuration.delegate,
+        statsPeriod: configuration.statsPeriod
       ),
       logger: configuration.backgroundActivityLogger.wrapped
     )
