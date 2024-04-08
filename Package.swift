@@ -253,7 +253,8 @@ extension Target {
       .grpcCore,
       .grpcProtobuf,
       .nioCore,
-      .nioFileSystem
+      .nioFileSystem,
+      .grpcInProcessTransport
     ]
   )
     
