@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+import Atomics
 import GRPCCore
+import GRPCInProcessTransport
 import NIOConcurrencyHelpers
 import NIOCore
 
@@ -31,7 +33,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
     var role: Role?
 
     enum Role {
-      case client(GRPCClient)
+      case client(ClientState)
       case server(ServerState)
     }
 
@@ -42,6 +44,28 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       init(server: GRPCServer, stats: ServerStats) {
         self.server = server
         self.stats = stats
+      }
+    }
+
+    struct ClientState {
+      var clients: [BenchmarkClient]
+      var stats: ClientStats
+      var latencyHistogram: LatencyHistogram
+
+      init(
+        clients: [BenchmarkClient],
+        stats: ClientStats,
+        latencyHistogram: LatencyHistogram = LatencyHistogram()
+      ) {
+        self.clients = clients
+        self.stats = stats
+        self.latencyHistogram = latencyHistogram
+      }
+
+      func shutdownClients() throws {
+        for benchmarkClient in self.clients {
+          benchmarkClient.client.close()
+        }
       }
     }
 
@@ -74,6 +98,32 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       }
     }
 
+    mutating func clientStats(replaceWith newStats: ClientStats? = nil) -> ClientStats? {
+      switch self.role {
+      case var .client(clientState):
+        let stats = clientState.stats
+        if let newStats = newStats {
+          clientState.stats = newStats
+          self.role = .client(clientState)
+        }
+        return stats
+      case .server, .none:
+        return nil
+      }
+    }
+
+    func clientHistogram(mergeWith source: LatencyHistogram? = nil) throws -> LatencyHistogram? {
+      switch self.role {
+      case var .client(clientState):
+        if let source = source {
+          try clientState.latencyHistogram.merge(source: source)
+        }
+        return clientState.latencyHistogram
+      case .server, .none:
+        return nil
+      }
+    }
+
     mutating func setupServer(server: GRPCServer, stats: ServerStats) throws {
       let serverState = State.ServerState(server: server, stats: stats)
       switch self.role {
@@ -85,6 +135,20 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
       case .none:
         self.role = .server(serverState)
+      }
+    }
+
+    mutating func setupClients(benchmarkClients: [BenchmarkClient], stats: ClientStats) throws {
+      let clientState = State.ClientState(clients: benchmarkClients, stats: stats)
+      switch self.role {
+      case .server(_):
+        throw RPCError(code: .alreadyExists, message: "This worker has a server setup.")
+
+      case .client(_):
+        throw RPCError(code: .failedPrecondition, message: "Clients have already been set up.")
+
+      case .none:
+        self.role = .client(clientState)
       }
     }
   }
@@ -100,8 +164,8 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
     if let role = role {
       switch role {
-      case .client(let client):
-        client.close()
+      case .client(let clientState):
+        try clientState.shutdownClients()
       case .server(let serverState):
         serverState.server.stopListening()
       }
@@ -161,7 +225,39 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
   ) async throws
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
   {
-    throw RPCError(code: .unimplemented, message: "This RPC has not been implemented yet.")
+    return ServerResponse.Stream { writer in
+      try await withThrowingTaskGroup(of: Void.self) { group in
+        for try await message in request.messages {
+          switch message.argtype {
+          case let .setup(config):
+            // Create the clients with the initial stats.
+            let clients = try await self.setupClients(config)
+
+            for client in clients {
+              group.addTask {
+                let histogram = try await client.run()
+                try self.state.withLockedValue { state in
+                  _ = try state.clientHistogram(mergeWith: histogram)
+                }
+              }
+            }
+          // send response
+
+          case let .mark(mark):
+            // writer. -> another task that does this?
+            let response = try await self.makeClientStatsResponse(reset: mark.reset)
+            try await writer.write(response)
+
+          case .none:
+            ()
+          }
+        }
+        // when do we cancel the tasks
+        for try await _ in group {}
+
+        return [:]
+      }
+    }
   }
 }
 
@@ -201,6 +297,67 @@ extension WorkerService {
         $0.timeSystem = differences.systemTime
         $0.timeUser = differences.userTime
         $0.totalCpuTime = differences.totalCPUTime
+      }
+    }
+  }
+
+  private func setupClients(_ config: Grpc_Testing_ClientConfig) async throws -> [BenchmarkClient] {
+    var clients = [BenchmarkClient]()
+    for _ in 0 ..< config.clientChannels {
+      let inProcessTransport = InProcessTransport.makePair()
+      let grpcClient = GRPCClient(transport: inProcessTransport.client)
+      clients.append(
+        BenchmarkClient(
+          client: grpcClient,
+          rpcNumber: config.outstandingRpcsPerChannel,
+          rpcType: config.rpcType,
+          histogramParams: config.histogramParams
+        )
+      )
+    }
+    let stats = try await ClientStats()
+
+    try self.state.withLockedValue { state in
+      try state.setupClients(benchmarkClients: clients, stats: stats)
+    }
+
+    return clients
+  }
+
+  private func makeClientStatsResponse(
+    reset: Bool
+  ) async throws -> Grpc_Testing_WorkerService.Method.RunClient.Output {
+    let currentStats = try await ClientStats()
+    let initialStats = self.state.withLockedValue { state in
+      return state.clientStats(replaceWith: reset ? currentStats : nil)
+    }
+
+    let histogram = try self.state.withLockedValue { state in
+      return try state.clientHistogram()
+    }
+
+    guard let initialStats = initialStats, let histogram = histogram else {
+      throw RPCError(
+        code: .notFound,
+        message: "There are no initial client stats. Clients must be setup before calling 'mark'."
+      )
+    }
+
+    let differences = currentStats.difference(to: initialStats)
+
+    return Grpc_Testing_WorkerService.Method.RunClient.Output.with {
+      $0.stats = Grpc_Testing_ClientStats.with {
+        $0.latencies = Grpc_Testing_HistogramData.with {
+          $0.bucket = histogram.buckets
+          $0.minSeen = histogram.minSeen
+          $0.maxSeen = histogram.maxSeen
+          $0.sum = histogram.sum
+          $0.sumOfSquares = histogram.sumOfSquares
+          $0.count = histogram.countOfValuesSeen
+        }
+        $0.timeElapsed = differences.time
+        $0.timeUser = differences.userTime
+        $0.timeSystem = differences.systemTime
       }
     }
   }
