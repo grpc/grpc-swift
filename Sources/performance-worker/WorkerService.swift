@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Atomics
 import GRPCCore
 import NIOConcurrencyHelpers
 import NIOCore
