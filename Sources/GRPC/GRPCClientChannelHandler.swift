@@ -284,7 +284,7 @@ public enum GRPCCallType: Hashable, Sendable {
 /// }
 /// ```
 internal final class GRPCClientChannelHandler {
-  private let logger: GRPCLogger
+  private let logger: Logger
   private var stateMachine: GRPCClientStateMachine
   private let maximumReceiveMessageLength: Int
 
@@ -297,7 +297,7 @@ internal final class GRPCClientChannelHandler {
   internal init(
     callType: GRPCCallType,
     maximumReceiveMessageLength: Int,
-    logger: GRPCLogger
+    logger: Logger
   ) {
     self.logger = logger
     self.maximumReceiveMessageLength = maximumReceiveMessageLength
