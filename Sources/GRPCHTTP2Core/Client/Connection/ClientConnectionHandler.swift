@@ -26,6 +26,8 @@ enum ClientConnectionEvent: Sendable, Hashable {
     case keepAliveExpired
     /// The connection became idle.
     case idle
+    /// The local peer initiated the close.
+    case initiatedLocally
   }
 
   /// The connection has started shutting down, no new streams should be created.
@@ -47,6 +49,11 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
 
   typealias OutboundIn = Never
   typealias OutboundOut = HTTP2Frame
+
+  enum OutboundEvent: Hashable, Sendable {
+    /// Close the connection gracefully
+    case closeGracefully
+  }
 
   /// The `EventLoop` of the `Channel` this handler exists in.
   private let eventLoop: EventLoop
@@ -120,7 +127,12 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   }
 
   func channelInactive(context: ChannelHandlerContext) {
-    self.state.closed()
+    switch self.state.closed() {
+    case .none:
+      ()
+    case .succeed(let promise):
+      promise.succeed()
+    }
     self.keepAliveTimer?.cancel()
     self.keepAliveTimeoutTimer.cancel()
   }
@@ -169,7 +181,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     case .goAway(_, let errorCode, let data):
       // Receiving a GOAWAY frame means we need to stop creating streams immediately and start
       // closing the connection.
-      switch self.state.beginGracefulShutdown() {
+      switch self.state.beginGracefulShutdown(promise: nil) {
       case .sendGoAway(let close):
         // gRPC servers may indicate why the GOAWAY was sent in the opaque data.
         let message = data.map { String(buffer: $0) } ?? ""
@@ -208,6 +220,32 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
 
     self.inReadLoop = false
     context.fireChannelReadComplete()
+  }
+
+  func triggerUserOutboundEvent(
+    context: ChannelHandlerContext,
+    event: Any,
+    promise: EventLoopPromise<Void>?
+  ) {
+    if let event = event as? OutboundEvent {
+      switch event {
+      case .closeGracefully:
+        switch self.state.beginGracefulShutdown(promise: promise) {
+        case .sendGoAway(let close):
+          context.fireChannelRead(self.wrapInboundOut(.closing(.initiatedLocally)))
+          // Clients should send GOAWAYs when closing a connection.
+          self.writeAndFlushGoAway(context: context, errorCode: .noError)
+          if close {
+            context.close(promise: nil)
+          }
+
+        case .none:
+          ()
+        }
+      }
+    } else {
+      context.triggerUserOutboundEvent(event, promise: promise)
+    }
   }
 }
 
@@ -294,10 +332,12 @@ extension ClientConnectionHandler {
       struct Closing {
         var allowKeepAliveWithoutCalls: Bool
         var openStreams: Set<HTTP2StreamID>
+        var closePromise: Optional<EventLoopPromise<Void>>
 
-        init(from state: Active) {
+        init(from state: Active, closePromise: EventLoopPromise<Void>?) {
           self.openStreams = state.openStreams
           self.allowKeepAliveWithoutCalls = state.allowKeepAliveWithoutCalls
+          self.closePromise = closePromise
         }
       }
     }
@@ -384,7 +424,7 @@ extension ClientConnectionHandler {
       case none
     }
 
-    mutating func beginGracefulShutdown() -> OnGracefulShutDown {
+    mutating func beginGracefulShutdown(promise: EventLoopPromise<Void>?) -> OnGracefulShutDown {
       let onGracefulShutdown: OnGracefulShutDown
 
       switch self.state {
@@ -393,9 +433,14 @@ extension ClientConnectionHandler {
         // ratchet down the last stream ID as only the client creates streams in gRPC.
         let close = state.openStreams.isEmpty
         onGracefulShutdown = .sendGoAway(close)
-        self.state = .closing(State.Closing(from: state))
+        self.state = .closing(State.Closing(from: state, closePromise: promise))
 
-      case .closing, .closed:
+      case .closing(var state):
+        state.closePromise.setOrCascade(to: promise)
+        self.state = .closing(state)
+        onGracefulShutdown = .none
+
+      case .closed:
         onGracefulShutdown = .none
       }
 
@@ -406,16 +451,44 @@ extension ClientConnectionHandler {
     mutating func beginClosing() -> Bool {
       switch self.state {
       case .active(let active):
-        self.state = .closing(State.Closing(from: active))
+        self.state = .closing(State.Closing(from: active, closePromise: nil))
         return true
       case .closing, .closed:
         return false
       }
     }
 
+    enum OnClosed {
+      case succeed(EventLoopPromise<Void>)
+      case none
+    }
+
     /// Marks the state as closed.
-    mutating func closed() {
-      self.state = .closed
+    mutating func closed() -> OnClosed {
+      switch self.state {
+      case .active, .closed:
+        self.state = .closed
+        return .none
+      case .closing(let closing):
+        self.state = .closed
+        return closing.closePromise.map { .succeed($0) } ?? .none
+      }
+    }
+  }
+}
+
+extension Optional {
+  // TODO: replace with https://github.com/apple/swift-nio/pull/2697
+  mutating func setOrCascade<Value>(
+    to promise: EventLoopPromise<Value>?
+  ) where Wrapped == EventLoopPromise<Value> {
+    guard let promise = promise else { return }
+
+    switch self {
+    case .none:
+      self = .some(promise)
+    case .some(let existing):
+      existing.futureResult.cascade(to: promise)
     }
   }
 }
