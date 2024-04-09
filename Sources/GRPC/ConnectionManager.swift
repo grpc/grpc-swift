@@ -338,12 +338,12 @@ internal final class ConnectionManager: @unchecked Sendable {
   /// A logger.
   internal var logger: Logger
 
-  private let connectionID: String
+  internal let id: ConnectionManagerID
   private var channelNumber: UInt64
   private var channelNumberLock = NIOLock()
 
   private var _connectionIDAndNumber: String {
-    return "\(self.connectionID)/\(self.channelNumber)"
+    return "\(self.id)/\(self.channelNumber)"
   }
 
   private var connectionIDAndNumber: String {
@@ -394,7 +394,7 @@ internal final class ConnectionManager: @unchecked Sendable {
   ) {
     // Setup the logger.
     var logger = logger
-    let connectionID = UUID().uuidString
+    let connectionID = ConnectionManagerID()
     let channelNumber: UInt64 = 0
     logger[metadataKey: MetadataKey.connectionID] = "\(connectionID)/\(channelNumber)"
 
@@ -408,7 +408,7 @@ internal final class ConnectionManager: @unchecked Sendable {
     self.http2Delegate = http2Delegate
     self.idleBehavior = idleBehavior
 
-    self.connectionID = connectionID
+    self.id = connectionID
     self.channelNumber = channelNumber
     self.logger = logger
   }

@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import Atomics
 import Logging
 import NIOConcurrencyHelpers
 import NIOCore
@@ -108,11 +110,15 @@ internal final class ConnectionPool {
 
   /// A logger which always sets "GRPC" as its source.
   @usableFromInline
-  private(set) var logger: GRPCLogger
+  internal let logger: GRPCLogger
 
   /// Returns `NIODeadline` representing 'now'. This is useful for testing.
   @usableFromInline
   internal let now: () -> NIODeadline
+
+  /// The ID of this sub-pool.
+  @usableFromInline
+  internal let id: GRPCSubPoolID
 
   /// Logging metadata keys.
   @usableFromInline
@@ -190,8 +196,14 @@ internal final class ConnectionPool {
     self.channelProvider = channelProvider
     self.streamLender = streamLender
     self.delegate = delegate
-    self.logger = logger
     self.now = now
+
+    let id = GRPCSubPoolID.next()
+    var logger = logger
+    logger[metadataKey: Metadata.id] = "\(id)"
+
+    self.id = id
+    self.logger = logger
   }
 
   /// Initialize the connection pool.
@@ -199,7 +211,6 @@ internal final class ConnectionPool {
   /// - Parameter connections: The number of connections to add to the pool.
   internal func initialize(connections: Int) {
     assert(self._connections.isEmpty)
-    self.logger.logger[metadataKey: Metadata.id] = "\(ObjectIdentifier(self))"
     self.logger.debug(
       "initializing new sub-pool",
       metadata: [
@@ -627,6 +638,46 @@ internal final class ConnectionPool {
       // Already shutdown, fine.
       promise.succeed(())
     }
+  }
+
+  internal func stats() -> EventLoopFuture<GRPCSubPoolStats> {
+    let promise = self.eventLoop.makePromise(of: GRPCSubPoolStats.self)
+
+    if self.eventLoop.inEventLoop {
+      self._stats(promise: promise)
+    } else {
+      self.eventLoop.execute {
+        self._stats(promise: promise)
+      }
+    }
+
+    return promise.futureResult
+  }
+
+  private func _stats(promise: EventLoopPromise<GRPCSubPoolStats>) {
+    self.eventLoop.assertInEventLoop()
+
+    var stats = GRPCSubPoolStats(id: self.id)
+
+    for connection in self._connections.values {
+      let sync = connection.manager.sync
+      if sync.isIdle {
+        stats.connectionStates.idle += 1
+      } else if sync.isConnecting {
+        stats.connectionStates.connecting += 1
+      } else if sync.isReady {
+        stats.connectionStates.ready += 1
+      } else if sync.isTransientFailure {
+        stats.connectionStates.transientFailure += 1
+      }
+
+      stats.streamsInUse += connection.reservedStreams
+      stats.streamsFreeToUse += connection.availableStreams
+    }
+
+    stats.rpcsWaiting += self.waiters.count
+
+    promise.succeed(stats)
   }
 }
 

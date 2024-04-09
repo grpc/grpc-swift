@@ -589,5 +589,34 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     }
     XCTAssertNoThrow(try EventLoopFuture.andAllSucceed(rpcs, on: self.group.any()).wait())
   }
+
+  func testDelegateGetsCalledWithStats() throws {
+    let recorder = EventRecordingConnectionPoolDelegate()
+
+    self.configureEventLoopGroup(threads: 4)
+    self.startServer(withTLS: false)
+    self.startChannel(withTLS: false) {
+      $0.statsPeriod = .milliseconds(1)
+      $0.delegate = recorder
+    }
+
+    let scheduled = self.group.next().scheduleTask(in: .milliseconds(100)) {
+      _ = self.channel?.close()
+    }
+
+    try scheduled.futureResult.wait()
+
+    let events = recorder.removeAll()
+    let statsEvents = events.compactMap { event in
+      switch event {
+      case .stats(let stats, _):
+        return stats
+      default:
+        return nil
+      }
+    }
+
+    XCTAssertGreaterThan(statsEvents.count, 0)
+  }
 }
 #endif  // canImport(NIOSSL)
