@@ -108,9 +108,9 @@ internal final class ConnectionPool {
   @usableFromInline
   internal var delegate: GRPCConnectionPoolDelegate?
 
-  /// A logger which always sets "GRPC" as its source.
+  /// A logger.
   @usableFromInline
-  internal let logger: GRPCLogger
+  internal let logger: Logger
 
   /// Returns `NIODeadline` representing 'now'. This is useful for testing.
   @usableFromInline
@@ -175,7 +175,7 @@ internal final class ConnectionPool {
     channelProvider: ConnectionManagerChannelProvider,
     streamLender: StreamLender,
     delegate: GRPCConnectionPoolDelegate?,
-    logger: GRPCLogger,
+    logger: Logger,
     now: @escaping () -> NIODeadline = NIODeadline.now
   ) {
     precondition(
@@ -241,7 +241,7 @@ internal final class ConnectionPool {
       connectionBackoff: self.connectionBackoff,
       connectivityDelegate: self,
       http2Delegate: self,
-      logger: self.logger.unwrapped
+      logger: self.logger
     )
     let id = manager.id
     self._connections[id] = PerConnectionState(manager: manager)
@@ -274,7 +274,7 @@ internal final class ConnectionPool {
   internal func makeStream(
     deadline: NIODeadline,
     promise: EventLoopPromise<Channel>,
-    logger: GRPCLogger,
+    logger: Logger,
     initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) {
     if self.eventLoop.inEventLoop {
@@ -300,7 +300,7 @@ internal final class ConnectionPool {
   @inlinable
   internal func makeStream(
     deadline: NIODeadline,
-    logger: GRPCLogger,
+    logger: Logger,
     initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) -> EventLoopFuture<Channel> {
     let promise = self.eventLoop.makePromise(of: Channel.self)
@@ -336,7 +336,7 @@ internal final class ConnectionPool {
   internal func _makeStream(
     deadline: NIODeadline,
     promise: EventLoopPromise<Channel>,
-    logger: GRPCLogger,
+    logger: Logger,
     initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) {
     self.eventLoop.assertInEventLoop()
@@ -403,7 +403,7 @@ internal final class ConnectionPool {
   internal func _enqueueWaiter(
     deadline: NIODeadline,
     promise: EventLoopPromise<Channel>,
-    logger: GRPCLogger,
+    logger: Logger,
     initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) {
     // Don't overwhelm the pool with too many waiters.

@@ -136,7 +136,7 @@ internal final class PoolManager {
   internal static func makeInitializedPoolManager(
     using group: EventLoopGroup,
     perPoolConfiguration: PerPoolConfiguration,
-    logger: GRPCLogger
+    logger: Logger
   ) -> PoolManager {
     let manager = PoolManager(privateButUsableFromInline_group: group)
     manager.initialize(perPoolConfiguration: perPoolConfiguration, logger: logger)
@@ -181,7 +181,7 @@ internal final class PoolManager {
   ///   - logger: A logger.
   private func initialize(
     perPoolConfiguration configuration: PerPoolConfiguration,
-    logger: GRPCLogger
+    logger: Logger
   ) {
     var logger = logger
     logger[metadataKey: Metadata.id] = "\(self.id)"
@@ -244,7 +244,7 @@ internal final class PoolManager {
   /// - Returns: An array of `ConnectionPool`s.
   private func makePools(
     perPoolConfiguration configuration: PerPoolConfiguration,
-    logger: GRPCLogger
+    logger: Logger
   ) -> [ConnectionPool] {
     let eventLoops = self.group.makeIterator()
     return eventLoops.map { eventLoop in
@@ -311,7 +311,7 @@ internal final class PoolManager {
   internal func makeStream(
     preferredEventLoop: EventLoop?,
     deadline: NIODeadline,
-    logger: GRPCLogger,
+    logger: Logger,
     streamInitializer initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) -> PooledStreamChannel {
     let preferredEventLoopID = preferredEventLoop.map { EventLoopID($0) }
