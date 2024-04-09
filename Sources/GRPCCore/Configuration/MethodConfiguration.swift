@@ -112,7 +112,7 @@ public struct MethodConfiguration: Hashable, Sendable {
   /// The hedging policy allows an RPC to be executed multiple times concurrently. Typically
   /// each execution will be staggered by some delay. The first successful response will be
   /// reported to the client. Hedging is only suitable for idempotent RPCs.
-  public var executionPolicy: ExecutionPolicy?
+  public var executionPolicy: RPCExecutionPolicy?
 
   /// Create an execution configuration.
   ///
@@ -129,7 +129,7 @@ public struct MethodConfiguration: Hashable, Sendable {
     timeout: Duration? = nil,
     maxRequestMessageBytes: Int? = nil,
     maxResponseMessageBytes: Int? = nil,
-    executionPolicy: ExecutionPolicy? = nil
+    executionPolicy: RPCExecutionPolicy? = nil
   ) {
     self.names = names
     self.waitForReady = waitForReady
@@ -141,9 +141,9 @@ public struct MethodConfiguration: Hashable, Sendable {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension MethodConfiguration {
-  /// The execution policy for an RPC.
-  public enum ExecutionPolicy: Hashable, Sendable {
+public struct RPCExecutionPolicy: Hashable, Sendable {
+  @usableFromInline
+  enum Wrapped: Hashable, Sendable {
     /// Policy for retrying an RPC.
     ///
     /// See ``RetryPolicy`` for more details.
@@ -153,6 +153,43 @@ extension MethodConfiguration {
     ///
     /// See ``HedgingPolicy`` for more details.
     case hedge(HedgingPolicy)
+  }
+
+  @usableFromInline
+  let wrapped: Wrapped
+
+  private init(_ wrapped: Wrapped) {
+    self.wrapped = wrapped
+  }
+
+  /// Returns the retry policy, if it was set.
+  public var retry: RetryPolicy? {
+    switch self.wrapped {
+    case .retry(let policy):
+      return policy
+    case .hedge:
+      return nil
+    }
+  }
+
+  /// Returns the hedging policy, if it was set.
+  public var hedge: HedgingPolicy? {
+    switch self.wrapped {
+    case .hedge(let policy):
+      return policy
+    case .retry:
+      return nil
+    }
+  }
+
+  /// Create a new retry policy.``
+  public static func retry(_ policy: RetryPolicy) -> Self {
+    Self(.retry(policy))
+  }
+
+  /// Create a new hedging policy.``
+  public static func hedge(_ policy: HedgingPolicy) -> Self {
+    Self(.hedge(policy))
   }
 }
 
@@ -419,7 +456,7 @@ extension MethodConfiguration: Codable {
     try container.encodeIfPresent(self.maxRequestMessageBytes, forKey: .maxRequestMessageBytes)
     try container.encodeIfPresent(self.maxResponseMessageBytes, forKey: .maxResponseMessageBytes)
 
-    switch self.executionPolicy {
+    switch self.executionPolicy?.wrapped {
     case .retry(let policy):
       try container.encode(policy, forKey: .retryPolicy)
     case .hedge(let policy):

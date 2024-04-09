@@ -69,6 +69,7 @@ extension ClientRPCExecutor.RetryExecutor {
   func execute<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
+    options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async throws -> R {
     // There's quite a lot going on here...
@@ -119,7 +120,10 @@ extension ClientRPCExecutor.RetryExecutor {
 
       for attempt in 1 ... self.policy.maximumAttempts {
         do {
-          let attemptResult = try await self.transport.withStream(descriptor: method) { stream in
+          let attemptResult = try await self.transport.withStream(
+            descriptor: method,
+            options: options
+          ) { stream in
             group.addTask {
               await withTaskGroup(
                 of: _RetryExecutorSubTask<R>.self,

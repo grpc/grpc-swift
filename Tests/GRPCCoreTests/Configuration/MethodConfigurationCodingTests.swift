@@ -388,7 +388,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
       let jsonConfig = try config.jsonUTF8Data()
       let decoded = try self.decoder.decode(MethodConfiguration.self, from: jsonConfig)
 
-      switch decoded.executionPolicy {
+      switch decoded.executionPolicy?.wrapped {
       case let .some(.hedge(policy)):
         XCTAssertEqual(policy.maximumAttempts, 3)
         XCTAssertEqual(policy.hedgingDelay, .seconds(42))
@@ -415,7 +415,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
       let jsonConfig = try config.jsonUTF8Data()
       let decoded = try self.decoder.decode(MethodConfiguration.self, from: jsonConfig)
 
-      switch decoded.executionPolicy {
+      switch decoded.executionPolicy?.wrapped {
       case let .some(.retry(policy)):
         XCTAssertEqual(policy.maximumAttempts, 3)
         XCTAssertEqual(policy.initialBackoff, .seconds(1))

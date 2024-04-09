@@ -53,10 +53,14 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
 
   func withStream<T>(
     descriptor: MethodDescriptor,
+    options: CallOptions,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
     do {
-      return try await self.transport.withStream(descriptor: descriptor) { stream in
+      return try await self.transport.withStream(
+        descriptor: descriptor,
+        options: options
+      ) { stream in
         self._streamsOpened.wrappingIncrement(ordering: .sequentiallyConsistent)
         return try await closure(stream)
       }

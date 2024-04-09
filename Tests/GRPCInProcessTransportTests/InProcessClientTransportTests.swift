@@ -111,7 +111,10 @@ final class InProcessClientTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in
+        try await client.withStream(
+          descriptor: .init(service: "test", method: "test"),
+          options: .defaults
+        ) { _ in
           // Once the pending stream is opened, close the client to new connections,
           // so that, once this closure is executed and this stream is closed,
           // the client will return from `connect(lazily:)`.
@@ -136,7 +139,10 @@ final class InProcessClientTransportTests: XCTestCase {
     client.close()
 
     await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
-      try await client.withStream(descriptor: .init(service: "test", method: "test")) { _ in }
+      try await client.withStream(
+        descriptor: .init(service: "test", method: "test"),
+        options: .defaults
+      ) { _ in }
     } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
     }
@@ -152,7 +158,10 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
+        try await client.withStream(
+          descriptor: .init(service: "test", method: "test"),
+          options: .defaults
+        ) { stream in
           try await stream.outbound.write(.message([1]))
           stream.outbound.finish()
           let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
@@ -249,13 +258,19 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
+        try await client.withStream(
+          descriptor: .init(service: "test", method: "test"),
+          options: .defaults
+        ) { stream in
           try await Task.sleep(for: .milliseconds(100))
         }
       }
 
       group.addTask {
-        try await client.withStream(descriptor: .init(service: "test", method: "test")) { stream in
+        try await client.withStream(
+          descriptor: .init(service: "test", method: "test"),
+          options: .defaults
+        ) { stream in
           try await Task.sleep(for: .milliseconds(100))
         }
       }
