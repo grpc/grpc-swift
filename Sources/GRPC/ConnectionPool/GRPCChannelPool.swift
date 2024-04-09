@@ -391,7 +391,7 @@ public struct GRPCSubPoolStats: Sendable, Hashable {
   public struct ConnectionStates: Sendable, Hashable {
     /// The number of idle connections.
     public var idle: Int
-    /// The number of connections try to establish a connection.
+    /// The number of connections trying to establish a connection.
     public var connecting: Int
     /// The number of connections which are ready to use.
     public var ready: Int
