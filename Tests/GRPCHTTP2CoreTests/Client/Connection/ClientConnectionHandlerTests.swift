@@ -195,6 +195,17 @@ final class ClientConnectionHandlerTests: XCTestCase {
     connection.streamClosed(3)
     try connection.waitUntilClosed()
   }
+
+  func testOutboundGracefulClose() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    connection.streamOpened(1)
+    let closed = connection.closeGracefully()
+    XCTAssertEqual(try connection.readEvent(), .closing(.initiatedLocally))
+    connection.streamClosed(1)
+    try closed.wait()
+  }
 }
 
 extension ClientConnectionHandlerTests {
@@ -269,6 +280,13 @@ extension ClientConnectionHandlerTests {
     func waitUntilClosed() throws {
       self.channel.embeddedEventLoop.run()
       try self.channel.closeFuture.wait()
+    }
+
+    func closeGracefully() -> EventLoopFuture<Void> {
+      let promise = self.channel.embeddedEventLoop.makePromise(of: Void.self)
+      let event = ClientConnectionHandler.OutboundEvent.closeGracefully
+      self.channel.pipeline.triggerUserOutboundEvent(event, promise: promise)
+      return promise.futureResult
     }
   }
 }
