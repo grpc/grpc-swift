@@ -312,6 +312,9 @@ extension CallOptions {
       retryableStatusCodes: codes
     )
 
-    return .retry(policy)
+    var options: CallOptions = .defaults
+    options.executionPolicy = .retry(policy)
+    options.timeout = timeout
+    return options
   }
 }

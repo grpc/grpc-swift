@@ -116,7 +116,7 @@ struct ClientRPCExecutorTestHarness {
     request: ClientRequest.Stream<Input>,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
-    options: CallOptions?,
+    options: CallOptions,
     handler: @escaping @Sendable (ClientResponse.Stream<Output>) async throws -> Void
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -139,7 +139,7 @@ struct ClientRPCExecutorTestHarness {
       try await ClientRPCExecutor.execute(
         request: request,
         method: MethodDescriptor(service: "foo", method: "bar"),
-        options: options ?? .defaults,
+        options: options,
         serializer: serializer,
         deserializer: deserializer,
         transport: self.clientTransport,
