@@ -34,7 +34,44 @@ private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF
 private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
 #endif
 
-/// Current server stats.
+/// Client resource usage stats.
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+internal struct ClientStats: Sendable {
+  var time: Double
+  var userTime: Double
+  var systemTime: Double
+
+  init(
+    time: Double,
+    userTime: Double,
+    systemTime: Double
+  ) {
+    self.time = time
+    self.userTime = userTime
+    self.systemTime = systemTime
+  }
+
+  init() {
+    self.time = Double(DispatchTime.now().uptimeNanoseconds) * 1e-9
+    if let usage = System.resourceUsage() {
+      self.userTime = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) * 1e-6
+      self.systemTime = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) * 1e-6
+    } else {
+      self.userTime = 0
+      self.systemTime = 0
+    }
+  }
+
+  internal func difference(to state: ClientStats) -> ClientStats {
+    return ClientStats(
+      time: self.time - state.time,
+      userTime: self.userTime - state.userTime,
+      systemTime: self.systemTime - state.systemTime
+    )
+  }
+}
+
+/// Server resource usage stats.
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 internal struct ServerStats: Sendable {
   var time: Double
@@ -59,10 +96,7 @@ internal struct ServerStats: Sendable {
 
   init() async throws {
     self.time = Double(DispatchTime.now().uptimeNanoseconds) * 1e-9
-    var usage = rusage()
-    if getrusage(OUR_RUSAGE_SELF, &usage) == 0 {
-      // Adding the seconds with the microseconds transformed into seconds to get the
-      // real number of seconds as a `Double`.
+    if let usage = System.resourceUsage() {
       self.userTime = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) * 1e-6
       self.systemTime = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) * 1e-6
     } else {
@@ -126,5 +160,17 @@ internal struct ServerStats: Sendable {
     #else
     return (0, 0)
     #endif
+  }
+}
+
+extension System {
+  fileprivate static func resourceUsage() -> rusage? {
+    var usage = rusage()
+
+    if getrusage(OUR_RUSAGE_SELF, &usage) == 0 {
+      return usage
+    } else {
+      return nil
+    }
   }
 }
