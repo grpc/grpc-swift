@@ -75,7 +75,7 @@ final class ConnectionPoolTests: GRPCTestCase {
         onUpdateMaxAvailableStreams: onMaximumReservationsChange
       ),
       delegate: delegate,
-      logger: self.logger.wrapped,
+      logger: self.logger,
       now: now
     )
   }
@@ -158,7 +158,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     }
     XCTAssertNoThrow(try pool.shutdown().wait())
 
-    let stream = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let stream = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -174,12 +174,12 @@ final class ConnectionPoolTests: GRPCTestCase {
     }
 
     let waiting = (0 ..< maxWaiters).map { _ in
-      return pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      return pool.makeStream(deadline: .distantFuture, logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
     }
 
-    let tooManyWaiters = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let tooManyWaiters = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -201,7 +201,7 @@ final class ConnectionPoolTests: GRPCTestCase {
       self.noChannelExpected($0, $1)
     }
 
-    let waiter = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertEqual(pool.sync.waiters, 1)
@@ -221,7 +221,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
 
-    let waiter = pool.makeStream(deadline: .uptimeNanoseconds(5), logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .uptimeNanoseconds(5), logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertEqual(pool.sync.waiters, 1)
@@ -242,7 +242,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // No channels yet.
     XCTAssertEqual(controller.count, 0)
 
-    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -277,7 +277,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     let (pool, controller) = self.setUpPoolAndController()
     pool.initialize(connections: 1)
 
-    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -297,7 +297,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // connection we won't have to wait.
     XCTAssertEqual(pool.sync.waiters, 0)
     XCTAssertEqual(pool.sync.reservedStreams, 1)
-    let notWaiting = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let notWaiting = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Still no waiters.
@@ -320,7 +320,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // Enqueue twice as many waiters as the connection will be able to handle.
     let maxConcurrentStreams = 10
     let waiters = (0 ..< maxConcurrentStreams * 2).map { _ in
-      return pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      return pool.makeStream(deadline: .distantFuture, logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
     }
@@ -373,7 +373,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     )
     pool.initialize(connections: 1)
 
-    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -392,7 +392,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // Create a handful of streams.
     XCTAssertEqual(pool.sync.availableStreams, 9)
     for _ in 0 ..< 5 {
-      let notWaiting = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      let notWaiting = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
       self.eventLoop.run()
@@ -422,7 +422,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     // Reserve a bunch of streams.
     let waiters = (0 ..< 10).map { _ in
-      return pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      return pool.makeStream(deadline: .distantFuture, logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
     }
@@ -443,7 +443,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     // Add a waiter.
     XCTAssertEqual(pool.sync.waiters, 0)
-    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertEqual(pool.sync.waiters, 1)
@@ -484,11 +484,11 @@ final class ConnectionPoolTests: GRPCTestCase {
     })
     pool.initialize(connections: 1)
 
-    let waiter1 = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger.wrapped) {
+    let waiter1 = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
-    let waiter2 = pool.makeStream(deadline: .uptimeNanoseconds(15), logger: self.logger.wrapped) {
+    let waiter2 = pool.makeStream(deadline: .uptimeNanoseconds(15), logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -533,7 +533,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // No demand so all three connections are idle.
     XCTAssertEqual(pool.sync.idleConnections, 3)
 
-    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -550,7 +550,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try w1.wait())
     controller.openStreamInChannel(atIndex: 0)
 
-    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -562,7 +562,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 1)
 
     // Add more demand before the second connection comes up.
-    let w3 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w3 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -586,7 +586,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     pool.initialize(connections: 1)
     XCTAssertEqual(pool.sync.connections, 1)
 
-    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -619,7 +619,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 1)
 
     // Ask for another stream: this will be on the new idle connection.
-    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     self.eventLoop.run()
@@ -664,7 +664,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     pool.initialize(connections: 1)
     XCTAssertEqual(pool.sync.connections, 1)
 
-    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -686,13 +686,13 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(pool.sync.idleConnections, 0)
 
     // Enqueue two waiters. One to time out before the reconnect happens.
-    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
     let w3 = pool.makeStream(
       deadline: .uptimeNanoseconds(UInt64(TimeAmount.milliseconds(500).nanoseconds)),
-      logger: self.logger.wrapped
+      logger: self.logger
     ) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
@@ -742,11 +742,11 @@ final class ConnectionPoolTests: GRPCTestCase {
     //   passed but no connection has previously failed)
     // - w2 will fail because of a timeout but after the underlying channel has failed to connect so
     //   should have that additional failure information.
-    let w1 = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger.wrapped) {
+    let w1 = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
-    let w2 = pool.makeStream(deadline: .uptimeNanoseconds(20), logger: self.logger.wrapped) {
+    let w2 = pool.makeStream(deadline: .uptimeNanoseconds(20), logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -803,7 +803,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // These streams should succeed when the new connection is up. We'll limit the connection to 10
     // streams when we bring it up.
     let streams = (0 ..< 10).map { _ in
-      pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      pool.makeStream(deadline: .distantFuture, logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
     }
@@ -832,14 +832,14 @@ final class ConnectionPoolTests: GRPCTestCase {
     let now = NIODeadline.now()
     self.eventLoop.advanceTime(to: now)
     let waiters = (0 ..< 10).map { _ in
-      pool.makeStream(deadline: now + .seconds(1), logger: self.logger.wrapped) {
+      pool.makeStream(deadline: now + .seconds(1), logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
     }
 
     // This is one waiter more than is allowed so it should hit too-many-waiters. We don't expect
     // an inner error though, the connection is just busy.
-    let tooManyWaiters = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let tooManyWaiters = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertThrowsError(try tooManyWaiters.wait()) { error in
@@ -893,7 +893,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     })
     pool.initialize(connections: 1)
 
-    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -950,7 +950,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     let connID1 = try assertConnectionAdded(recorder.popFirst())
     let connID2 = try assertConnectionAdded(recorder.popFirst())
 
-    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let waiter = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     // Start creating the channel.
@@ -984,7 +984,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     // Okay, more utilization!
     for n in 2 ... 8 {
-      let w = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      let w = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
         $0.eventLoop.makeSucceededVoidFuture()
       }
 
@@ -996,7 +996,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     // The utilisation threshold before bringing up a new connection is 0.9; we have 8 open streams
     // (out of 10) now so opening the next should trigger a connect on the other connection.
-    let w9 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w9 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
     XCTAssertEqual(recorder.popFirst(), .startedConnecting(secondConn))
@@ -1013,7 +1013,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(recorder.popFirst(), .connectSucceeded(secondConn, 10))
 
     // The next stream should be on the new connection.
-    let w10 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w10 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 
@@ -1107,10 +1107,10 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     // Open two streams, which, because the maxConcurrentStreams is 1, will
     // create two channels.
-    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
-    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger) {
       $0.eventLoop.makeSucceededVoidFuture()
     }
 

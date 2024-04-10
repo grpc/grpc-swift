@@ -39,7 +39,7 @@ class GRPCClientChannelHandlerTests: GRPCTestCase {
     let handler = GRPCClientChannelHandler(
       callType: .unary,
       maximumReceiveMessageLength: .max,
-      logger: GRPCLogger(wrapping: self.clientLogger)
+      logger: self.clientLogger
     )
 
     let channel = EmbeddedChannel(handler: handler)

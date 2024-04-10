@@ -15,6 +15,7 @@
  */
 import EchoImplementation
 import EchoModel
+import Logging
 import NIOCore
 import NIOPosix
 import XCTest
@@ -86,10 +87,10 @@ final class MagicRequiredServerInterceptor<
     switch part {
     case let .metadata(metadata):
       if metadata.contains(name: "magic") {
-        context.log.debug("metadata contains magic; accepting rpc")
+        context.logger.debug("metadata contains magic; accepting rpc")
         context.receive(part)
       } else {
-        context.log.debug("metadata does not contains magic; rejecting rpc")
+        context.logger.debug("metadata does not contains magic; rejecting rpc")
         let status = GRPCStatus(code: .permissionDenied, message: nil)
         context.send(.end(status, [:]), promise: nil)
       }
@@ -116,7 +117,7 @@ final class MagicAddingClientInterceptor<
     context: ClientInterceptorContext<Request, Response>
   ) {
     if let retry = self.retry {
-      context.log.debug("cancelling retry RPC")
+      context.logger.debug("cancelling retry RPC")
       retry.cancel(promise: promise)
     } else {
       context.cancel(promise: promise)
@@ -129,7 +130,7 @@ final class MagicAddingClientInterceptor<
     context: ClientInterceptorContext<Request, Response>
   ) {
     if let retry = self.retry {
-      context.log.debug("retrying part \(part)")
+      context.logger.debug("retrying part \(part)")
       retry.send(part, promise: promise)
     } else {
       switch part {
@@ -161,7 +162,7 @@ final class MagicAddingClientInterceptor<
 
       XCTAssertNil(self.retry)
 
-      context.log.debug("initial rpc failed, retrying")
+      context.logger.debug("initial rpc failed, retrying")
 
       self.retry = self.channel.makeCall(
         path: context.path,
@@ -171,33 +172,17 @@ final class MagicAddingClientInterceptor<
       )
 
       self.retry!.invoke {
-        context.log.debug("intercepting error from retried rpc")
+        context.logger.debug("intercepting error from retried rpc")
         context.errorCaught($0)
       } onResponsePart: { responsePart in
-        context.log.debug("intercepting response part from retried rpc")
+        context.logger.debug("intercepting response part from retried rpc")
         context.receive(responsePart)
       }
 
       while let requestPart = self.requestParts.popFirst() {
-        context.log.debug("replaying \(requestPart) on new rpc")
+        context.logger.debug("replaying \(requestPart) on new rpc")
         self.retry!.send(requestPart, promise: nil)
       }
     }
-  }
-}
-
-// MARK: - GRPC Logger
-
-// Our tests also check the "Source" of a logger is "GRPC". That assertion fails when we log from
-// tests so we'll use our internal logger instead.
-extension ClientInterceptorContext {
-  var log: GRPCLogger {
-    return GRPCLogger(wrapping: self.logger)
-  }
-}
-
-extension ServerInterceptorContext {
-  var log: GRPCLogger {
-    return GRPCLogger(wrapping: self.logger)
   }
 }

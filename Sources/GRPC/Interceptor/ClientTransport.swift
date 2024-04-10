@@ -68,7 +68,7 @@ internal final class ClientTransport<Request, Response> {
   internal let callDetails: CallDetails
 
   /// A logger.
-  internal var logger: GRPCLogger
+  internal var logger: Logger
 
   /// Is the call streaming requests?
   private var isStreamingRequests: Bool {
@@ -119,15 +119,14 @@ internal final class ClientTransport<Request, Response> {
     self.callEventLoop = eventLoop
     self.callDetails = details
     self.onStart = onStart
-    let logger = GRPCLogger(wrapping: details.options.logger)
-    self.logger = logger
+    self.logger = details.options.logger
     self.serializer = serializer
     self.deserializer = deserializer
     // The references to self held by the pipeline are dropped when it is closed.
     self._pipeline = ClientInterceptorPipeline(
       eventLoop: eventLoop,
       details: details,
-      logger: logger,
+      logger: details.options.logger,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onError: onError,
