@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+import Foundation
 import GRPCCore
 import NIOConcurrencyHelpers
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct BenchmarkClient {
-  var client: GRPCClient
-  var rpcNumber: Int32
-  var rpcType: Grpc_Testing_RpcType
+  private var client: GRPCClient
+  private var rpcNumber: Int32
+  private var rpcType: Grpc_Testing_RpcType
   private let rpcStats: NIOLockedValueBox<RPCStats>
 
   init(
@@ -34,7 +35,7 @@ struct BenchmarkClient {
     self.rpcNumber = rpcNumber
     self.rpcType = rpcType
 
-    var histogram: RPCStats.LatencyHistogram
+    let histogram: RPCStats.LatencyHistogram
     if let histogramParams = histogramParams {
       histogram = .init(
         resolution: histogramParams.resolution,
@@ -47,7 +48,7 @@ struct BenchmarkClient {
     self.rpcStats = NIOLockedValueBox(RPCStats(latencyHistogram: histogram))
   }
 
-  func run() async throws {
+  internal func run() async throws {
     let benchmarkClient = Grpc_Testing_BenchmarkServiceClient(client: client)
     return try await withThrowingTaskGroup(of: Void.self) { clientGroup in
       // Start the client.
@@ -59,9 +60,9 @@ struct BenchmarkClient {
           rpcsGroup.addTask {
             let (latency, errorCode) = self.makeRPC(client: benchmarkClient, rpcType: self.rpcType)
             self.rpcStats.withLockedValue {
-              $0.latencyHistogram.add(value: latency)
+              $0.latencyHistogram.record(latency)
               if errorCode != nil {
-                $0.requestResultCount[Int32(errorCode!.rawValue), default: 1] += 1
+                $0.requestResultCount[errorCode!, default: 1] += 1
               }
             }
           }
@@ -81,11 +82,15 @@ struct BenchmarkClient {
     switch rpcType {
     case .unary, .streaming, .streamingFromClient, .streamingFromServer, .streamingBothWays,
       .UNRECOGNIZED:
-      let startTime = RPCStats.LatencyHistogram.grpcTimeNow()
-      let endTime = RPCStats.LatencyHistogram.grpcTimeNow()
+      let startTime = DispatchTime.now().uptimeNanoseconds
+      let endTime = DispatchTime.now().uptimeNanoseconds
       return (
-        latency: Double((endTime - startTime).value), errorCode: RPCError.Code(.unimplemented)
+        latency: Double(endTime - startTime), errorCode: RPCError.Code(.unimplemented)
       )
     }
+  }
+
+  internal func shutdown() {
+    self.client.close()
   }
 }

@@ -15,6 +15,7 @@
  */
 
 import Foundation
+import GRPCCore
 import NIOConcurrencyHelpers
 
 /// Stores the real time latency histogram and error code count dictionary,
@@ -22,9 +23,9 @@ import NIOConcurrencyHelpers
 /// each finished RPC.
 struct RPCStats {
   var latencyHistogram: LatencyHistogram
-  var requestResultCount: [Int32: Int64]
+  var requestResultCount: [RPCError.Code: Int64]
 
-  init(latencyHistogram: LatencyHistogram, requestResultCount: [Int32: Int64] = [:]) {
+  init(latencyHistogram: LatencyHistogram, requestResultCount: [RPCError.Code: Int64] = [:]) {
     self.latencyHistogram = latencyHistogram
     self.requestResultCount = requestResultCount
   }
@@ -60,8 +61,8 @@ struct RPCStats {
       self.minSeen = maxBucketStart
       self.maxSeen = 0.0
       let numBuckets =
-        LatencyHistogram.bucketForUnchecked(
-          value: maxBucketStart,
+        LatencyHistogram.uncheckedBucket(
+          forValue: maxBucketStart,
           oneOnLogMultiplier: self.oneOnLogMultiplier
         ) + 1
       precondition(numBuckets > 1)
@@ -72,13 +73,13 @@ struct RPCStats {
     struct HistorgramShapeMismatch: Error {}
 
     /// Determine a bucket index given a value - does no bounds checking
-    private static func bucketForUnchecked(value: Double, oneOnLogMultiplier: Double) -> Int {
+    private static func uncheckedBucket(forValue value: Double, oneOnLogMultiplier: Double) -> Int {
       return Int(log(value) * oneOnLogMultiplier)
     }
 
-    private func bucketFor(value: Double) -> Int {
-      let bucket = LatencyHistogram.bucketForUnchecked(
-        value: min(self.maxPossible, max(0, value)),
+    private func bucket(forValue value: Double) -> Int {
+      let bucket = LatencyHistogram.uncheckedBucket(
+        forValue: min(self.maxPossible, max(0, value)),
         oneOnLogMultiplier: self.oneOnLogMultiplier
       )
       assert(bucket < self.buckets.count)
@@ -89,7 +90,7 @@ struct RPCStats {
     /// Add a value to this histogram, updating buckets and stats
     /// - parameters:
     ///     - value: The value to add.
-    public mutating func add(value: Double) {
+    public mutating func record(_ value: Double) {
       self.sum += value
       self.sumOfSquares += value * value
       self.countOfValuesSeen += 1
@@ -99,64 +100,31 @@ struct RPCStats {
       if value > self.maxSeen {
         self.maxSeen = value
       }
-      self.buckets[self.bucketFor(value: value)] += 1
+      self.buckets[self.bucket(forValue: value)] += 1
     }
 
     /// Merge two histograms together updating `self`
     /// - parameters:
     ///    - source: the other histogram to merge into this.
-    public mutating func merge(source: LatencyHistogram) throws {
-      guard (self.buckets.count == source.buckets.count) || (self.multiplier == source.multiplier)
+    public mutating func merge(_ other: LatencyHistogram) throws {
+      guard (self.buckets.count == other.buckets.count) || (self.multiplier == other.multiplier)
       else {
         // Fail because these histograms don't match.
         throw HistorgramShapeMismatch()
       }
 
-      self.sum += source.sum
-      self.sumOfSquares += source.sumOfSquares
-      self.countOfValuesSeen += source.countOfValuesSeen
-      if source.minSeen < self.minSeen {
-        self.minSeen = source.minSeen
+      self.sum += other.sum
+      self.sumOfSquares += other.sumOfSquares
+      self.countOfValuesSeen += other.countOfValuesSeen
+      if other.minSeen < self.minSeen {
+        self.minSeen = other.minSeen
       }
-      if source.maxSeen > self.maxSeen {
-        self.maxSeen = source.maxSeen
+      if other.maxSeen > self.maxSeen {
+        self.maxSeen = other.maxSeen
       }
       for bucket in 0 ..< self.buckets.count {
-        self.buckets[bucket] += source.buckets[bucket]
+        self.buckets[bucket] += other.buckets[bucket]
       }
     }
-
-    /// Get the current time.
-    /// - returns: The current time.
-    static func grpcTimeNow() -> DispatchTime {
-      return DispatchTime.now()
-    }
-  }
-}
-
-extension DispatchTime {
-  /// Subtraction between two DispatchTimes giving the result in Nanoseconds
-  static func - (_ a: DispatchTime, _ b: DispatchTime) -> Nanoseconds {
-    return Nanoseconds(value: a.uptimeNanoseconds - b.uptimeNanoseconds)
-  }
-}
-
-/// A number of nanoseconds
-struct Nanoseconds {
-  /// The actual number of nanoseconds
-  var value: UInt64
-}
-
-extension Nanoseconds {
-  /// Convert to a potentially fractional number of seconds.
-  func asSeconds() -> Double {
-    return Double(self.value) * 1e-9
-  }
-}
-
-extension Nanoseconds: CustomStringConvertible {
-  /// Description to aid debugging.
-  var description: String {
-    return "\(self.value) ns"
   }
 }

@@ -59,7 +59,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
       func shutdownClients() throws {
         for benchmarkClient in self.clients {
-          benchmarkClient.client.close()
+          benchmarkClient.shutdown()
         }
       }
     }
