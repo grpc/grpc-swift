@@ -104,8 +104,9 @@ final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
     case connectionUtilizationChanged(GRPCConnectionID, Int, Int)
     case connectionQuiescing(GRPCConnectionID)
     case connectionRemoved(GRPCConnectionID)
+    case stats([GRPCSubPoolStats], GRPCConnectionPoolID)
 
-    var id: GRPCConnectionID {
+    var id: GRPCConnectionID? {
       switch self {
       case let .connectionAdded(id),
         let .startedConnecting(id),
@@ -116,6 +117,8 @@ final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
         let .connectionQuiescing(id),
         let .connectionRemoved(id):
         return id
+      case .stats:
+        return nil
       }
     }
   }
@@ -136,6 +139,13 @@ final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
   func popFirst() -> Event? {
     return self.lock.withLock {
       self.events.popFirst()
+    }
+  }
+
+  func removeAll() -> CircularBuffer<Event> {
+    return self.lock.withLock {
+      defer { self.events.removeAll() }
+      return self.events
     }
   }
 
@@ -184,6 +194,12 @@ final class EventRecordingConnectionPoolDelegate: GRPCConnectionPoolDelegate {
   func connectionRemoved(id: GRPCConnectionID) {
     self.lock.withLock {
       self.events.append(.connectionRemoved(id))
+    }
+  }
+
+  func connectionPoolStats(_ stats: [GRPCSubPoolStats], id: GRPCConnectionPoolID) {
+    self.lock.withLock {
+      self.events.append(.stats(stats, id))
     }
   }
 }

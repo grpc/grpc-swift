@@ -101,9 +101,10 @@ internal final class PooledChannel: GRPCChannel {
         assumedMaxConcurrentStreams: 100,
         connectionBackoff: configuration.connectionBackoff,
         channelProvider: provider,
-        delegate: configuration.delegate
+        delegate: configuration.delegate,
+        statsPeriod: configuration.statsPeriod
       ),
-      logger: configuration.backgroundActivityLogger.wrapped
+      logger: configuration.backgroundActivityLogger
     )
   }
 
@@ -118,7 +119,7 @@ internal final class PooledChannel: GRPCChannel {
     let streamChannel = self._pool.makeStream(
       preferredEventLoop: preferredEventLoop,
       deadline: deadline,
-      logger: GRPCLogger(wrapping: callOptions.logger)
+      logger: callOptions.logger
     ) { channel in
       return channel.eventLoop.makeSucceededVoidFuture()
     }

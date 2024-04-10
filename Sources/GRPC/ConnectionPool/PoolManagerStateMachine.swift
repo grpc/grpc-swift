@@ -41,9 +41,13 @@ internal struct PoolManagerStateMachine {
     internal var pools: [EventLoopID: PerPoolState]
 
     @usableFromInline
+    internal var statsTask: RepeatedTask?
+
+    @usableFromInline
     internal init(
       poolKeys: [PoolManager.ConnectionPoolKey],
-      assumedMaxAvailableStreamsPerPool: Int
+      assumedMaxAvailableStreamsPerPool: Int,
+      statsTask: RepeatedTask?
     ) {
       self.pools = Dictionary(
         uniqueKeysWithValues: poolKeys.map { key in
@@ -54,6 +58,7 @@ internal struct PoolManagerStateMachine {
           return (key.eventLoopID, value)
         }
       )
+      self.statsTask = statsTask
     }
   }
 
@@ -92,12 +97,18 @@ internal struct PoolManagerStateMachine {
   @usableFromInline
   internal mutating func activatePools(
     keyedBy keys: [PoolManager.ConnectionPoolKey],
-    assumingPerPoolCapacity capacity: Int
+    assumingPerPoolCapacity capacity: Int,
+    statsTask: RepeatedTask?
   ) {
     self.modifyingState { state in
       switch state {
       case .inactive:
-        state = .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: capacity))
+        let active = ActiveState(
+          poolKeys: keys,
+          assumedMaxAvailableStreamsPerPool: capacity,
+          statsTask: statsTask
+        )
+        state = .active(active)
 
       case .active, .shuttingDown, .shutdown, ._modifying:
         preconditionFailure()
@@ -180,7 +191,7 @@ internal struct PoolManagerStateMachine {
   }
 
   enum ShutdownAction {
-    case shutdownPools
+    case shutdownPools(RepeatedTask?)
     case alreadyShutdown
     case alreadyShuttingDown(EventLoopFuture<Void>)
   }
@@ -192,9 +203,9 @@ internal struct PoolManagerStateMachine {
         state = .shutdown
         return .alreadyShutdown
 
-      case .active:
+      case .active(let active):
         state = .shuttingDown(promise.futureResult)
-        return .shutdownPools
+        return .shutdownPools(active.statsTask)
 
       case let .shuttingDown(future):
         return .alreadyShuttingDown(future)

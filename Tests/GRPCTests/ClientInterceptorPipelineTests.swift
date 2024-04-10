@@ -45,7 +45,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     return ClientInterceptorPipeline(
       eventLoop: self.embeddedEventLoop,
       details: callDetails,
-      logger: callDetails.options.logger.wrapped,
+      logger: callDetails.options.logger,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onError: onError,

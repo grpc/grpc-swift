@@ -179,6 +179,11 @@ extension GRPCChannelPool {
     /// pool.
     public var delegate: GRPCConnectionPoolDelegate?
 
+    /// The period at which connection pool stats are published to the ``delegate``.
+    ///
+    /// Ignored if either this value or ``delegate`` are `nil`.
+    public var statsPeriod: TimeAmount?
+
     /// A logger used for background activity, such as connection state changes.
     public var backgroundActivityLogger = Logger(
       label: "io.grpc",
@@ -354,7 +359,7 @@ public protocol GRPCConnectionPoolDelegate: Sendable {
   /// time and is reported via ``connectionUtilizationChanged(id:streamsUsed:streamCapacity:)``. The
   func connectSucceeded(id: GRPCConnectionID, streamCapacity: Int)
 
-  /// The utlization of the connection changed; a stream may have been used, returned or the
+  /// The utilization of the connection changed; a stream may have been used, returned or the
   /// maximum number of concurrent streams available on the connection changed.
   func connectionUtilizationChanged(id: GRPCConnectionID, streamsUsed: Int, streamCapacity: Int)
 
@@ -365,4 +370,66 @@ public protocol GRPCConnectionPoolDelegate: Sendable {
   /// The connection was closed. The connection may be established again in the future (notified
   /// via ``startedConnecting(id:)``).
   func connectionClosed(id: GRPCConnectionID, error: Error?)
+
+  /// Stats about the current state of the connection pool.
+  ///
+  /// Each ``GRPCConnectionPoolStats`` includes the stats for a sub-pool. Each sub-pool is tied
+  /// to an `EventLoop`.
+  ///
+  /// Unlike the other delegate methods, this is called periodically based on the value
+  /// of ``GRPCChannelPool/Configuration/statsPeriod``.
+  func connectionPoolStats(_ stats: [GRPCSubPoolStats], id: GRPCConnectionPoolID)
+}
+
+extension GRPCConnectionPoolDelegate {
+  public func connectionPoolStats(_ stats: [GRPCSubPoolStats], id: GRPCConnectionPoolID) {
+    // Default conformance to avoid breaking changes.
+  }
+}
+
+public struct GRPCSubPoolStats: Sendable, Hashable {
+  public struct ConnectionStates: Sendable, Hashable {
+    /// The number of idle connections.
+    public var idle: Int
+    /// The number of connections trying to establish a connection.
+    public var connecting: Int
+    /// The number of connections which are ready to use.
+    public var ready: Int
+    /// The number of connections which are backing off waiting to attempt to connect.
+    public var transientFailure: Int
+
+    public init() {
+      self.idle = 0
+      self.connecting = 0
+      self.ready = 0
+      self.transientFailure = 0
+    }
+  }
+
+  /// The ID of the subpool.
+  public var id: GRPCSubPoolID
+
+  /// Counts of connection states.
+  public var connectionStates: ConnectionStates
+
+  /// The number of streams currently being used.
+  public var streamsInUse: Int
+
+  /// The number of streams which are currently free to use.
+  ///
+  /// The sum of this value and `streamsInUse` gives the capacity of the pool.
+  public var streamsFreeToUse: Int
+
+  /// The number of RPCs currently waiting for a stream.
+  ///
+  /// RPCs waiting for a stream are also known as 'waiters'.
+  public var rpcsWaiting: Int
+
+  public init(id: GRPCSubPoolID) {
+    self.id = id
+    self.connectionStates = ConnectionStates()
+    self.streamsInUse = 0
+    self.streamsFreeToUse = 0
+    self.rpcsWaiting = 0
+  }
 }

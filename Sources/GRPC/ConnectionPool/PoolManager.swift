@@ -64,6 +64,9 @@ internal final class PoolManager {
     var delegate: GRPCConnectionPoolDelegate?
 
     @usableFromInline
+    var statsPeriod: TimeAmount?
+
+    @usableFromInline
     internal init(
       maxConnections: Int,
       maxWaiters: Int,
@@ -72,7 +75,8 @@ internal final class PoolManager {
       assumedMaxConcurrentStreams: Int = 100,
       connectionBackoff: ConnectionBackoff,
       channelProvider: DefaultChannelProvider,
-      delegate: GRPCConnectionPoolDelegate?
+      delegate: GRPCConnectionPoolDelegate?,
+      statsPeriod: TimeAmount?
     ) {
       self.maxConnections = maxConnections
       self.maxWaiters = maxWaiters
@@ -82,6 +86,7 @@ internal final class PoolManager {
       self.connectionBackoff = connectionBackoff
       self.channelProvider = channelProvider
       self.delegate = delegate
+      self.statsPeriod = statsPeriod
     }
   }
 
@@ -113,6 +118,9 @@ internal final class PoolManager {
   @usableFromInline
   internal let group: EventLoopGroup
 
+  @usableFromInline
+  internal let id: GRPCConnectionPoolID
+
   /// Make a new pool manager and initialize it.
   ///
   /// The pool manager manages one connection pool per event loop in the provided `EventLoopGroup`.
@@ -128,7 +136,7 @@ internal final class PoolManager {
   internal static func makeInitializedPoolManager(
     using group: EventLoopGroup,
     perPoolConfiguration: PerPoolConfiguration,
-    logger: GRPCLogger
+    logger: Logger
   ) -> PoolManager {
     let manager = PoolManager(privateButUsableFromInline_group: group)
     manager.initialize(perPoolConfiguration: perPoolConfiguration, logger: logger)
@@ -140,6 +148,7 @@ internal final class PoolManager {
     self._state = PoolManagerStateMachine(.inactive)
     self._pools = []
     self.group = group
+    self.id = .next()
 
     // The pool relies on the identity of each `EventLoop` in the `EventLoopGroup` being unique. In
     // practice this is unlikely to happen unless a custom `EventLoopGroup` is constructed, because
@@ -158,7 +167,7 @@ internal final class PoolManager {
     self.lock.withLock {
       assert(
         self._state.isShutdownOrShuttingDown,
-        "The pool manager (\(ObjectIdentifier(self))) must be shutdown before going out of scope."
+        "The pool manager (\(self.id)) must be shutdown before going out of scope."
       )
     }
   }
@@ -172,10 +181,10 @@ internal final class PoolManager {
   ///   - logger: A logger.
   private func initialize(
     perPoolConfiguration configuration: PerPoolConfiguration,
-    logger: GRPCLogger
+    logger: Logger
   ) {
     var logger = logger
-    logger[metadataKey: Metadata.id] = "\(ObjectIdentifier(self))"
+    logger[metadataKey: Metadata.id] = "\(self.id)"
 
     let pools = self.makePools(perPoolConfiguration: configuration, logger: logger)
 
@@ -200,13 +209,27 @@ internal final class PoolManager {
       )
     }
 
+    let statsTask: RepeatedTask?
+    if let period = configuration.statsPeriod, let delegate = configuration.delegate {
+      let loop = self.group.next()
+      statsTask = loop.scheduleRepeatedTask(initialDelay: period, delay: period) { _ in
+        self.emitStats(delegate: delegate)
+      }
+    } else {
+      statsTask = nil
+    }
+
     self.lock.withLock {
       assert(self._pools.isEmpty)
       self._pools = pools
 
       // We'll blow up if we've already been initialized, that's fine, we don't allow callers to
       // call `initialize` directly.
-      self._state.activatePools(keyedBy: poolKeys, assumingPerPoolCapacity: assumedCapacity)
+      self._state.activatePools(
+        keyedBy: poolKeys,
+        assumingPerPoolCapacity: assumedCapacity,
+        statsTask: statsTask
+      )
     }
 
     for pool in pools {
@@ -221,7 +244,7 @@ internal final class PoolManager {
   /// - Returns: An array of `ConnectionPool`s.
   private func makePools(
     perPoolConfiguration configuration: PerPoolConfiguration,
-    logger: GRPCLogger
+    logger: Logger
   ) -> [ConnectionPool] {
     let eventLoops = self.group.makeIterator()
     return eventLoops.map { eventLoop in
@@ -288,7 +311,7 @@ internal final class PoolManager {
   internal func makeStream(
     preferredEventLoop: EventLoop?,
     deadline: NIODeadline,
-    logger: GRPCLogger,
+    logger: Logger,
     streamInitializer initializer: @escaping @Sendable (Channel) -> EventLoopFuture<Void>
   ) -> PooledStreamChannel {
     let preferredEventLoopID = preferredEventLoop.map { EventLoopID($0) }
@@ -331,7 +354,8 @@ internal final class PoolManager {
       }
 
     switch (action, pools) {
-    case let (.shutdownPools, .some(pools)):
+    case let (.shutdownPools(statsTask), .some(pools)):
+      statsTask?.cancel(promise: nil)
       promise.futureResult.whenComplete { _ in self.shutdownComplete() }
       EventLoopFuture.andAllSucceed(pools.map { $0.shutdown(mode: mode) }, promise: promise)
 
@@ -351,6 +375,18 @@ internal final class PoolManager {
   private func shutdownComplete() {
     self.lock.withLock {
       self._state.shutdownComplete()
+    }
+  }
+
+  // MARK: - Stats
+
+  private func emitStats(delegate: GRPCConnectionPoolDelegate) {
+    let pools = self.lock.withLock { self._pools }
+    if pools.isEmpty { return }
+
+    let statsFutures = pools.map { $0.stats() }
+    EventLoopFuture.whenAllSucceed(statsFutures, on: self.group.any()).whenSuccess { stats in
+      delegate.connectionPoolStats(stats, id: self.id)
     }
   }
 }

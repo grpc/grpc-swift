@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
+import struct Foundation.UUID
+
 @usableFromInline
 internal struct ConnectionManagerID: Hashable, CustomStringConvertible, Sendable {
   @usableFromInline
-  internal let _id: ObjectIdentifier
+  internal let id: String
 
   @usableFromInline
-  internal init(_ manager: ConnectionManager) {
-    self._id = ObjectIdentifier(manager)
+  internal init() {
+    self.id = UUID().uuidString
   }
 
   @usableFromInline
   internal var description: String {
-    return String(describing: self._id)
-  }
-}
-
-extension ConnectionManager {
-  @usableFromInline
-  internal var id: ConnectionManagerID {
-    return ConnectionManagerID(self)
+    return String(describing: self.id)
   }
 }
