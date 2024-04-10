@@ -31,7 +31,7 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
     var role: Role?
 
     enum Role {
-      case client(GRPCClient)
+      case client(ClientState)
       case server(ServerState)
     }
 
@@ -42,6 +42,25 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       init(server: GRPCServer, stats: ServerStats) {
         self.server = server
         self.stats = stats
+      }
+    }
+
+    struct ClientState {
+      var clients: [BenchmarkClient]
+      var stats: ClientStats
+
+      init(
+        clients: [BenchmarkClient],
+        stats: ClientStats
+      ) {
+        self.clients = clients
+        self.stats = stats
+      }
+
+      func shutdownClients() throws {
+        for benchmarkClient in self.clients {
+          benchmarkClient.shutdown()
+        }
       }
     }
 
@@ -74,6 +93,20 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       }
     }
 
+    mutating func clientStats(replaceWith newStats: ClientStats? = nil) -> ClientStats? {
+      switch self.role {
+      case var .client(clientState):
+        let stats = clientState.stats
+        if let newStats = newStats {
+          clientState.stats = newStats
+          self.role = .client(clientState)
+        }
+        return stats
+      case .server, .none:
+        return nil
+      }
+    }
+
     mutating func setupServer(server: GRPCServer, stats: ServerStats) throws {
       let serverState = State.ServerState(server: server, stats: stats)
       switch self.role {
@@ -100,8 +133,8 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
     if let role = role {
       switch role {
-      case .client(let client):
-        client.close()
+      case .client(let clientState):
+        try clientState.shutdownClients()
       case .server(let serverState):
         serverState.server.stopListening()
       }

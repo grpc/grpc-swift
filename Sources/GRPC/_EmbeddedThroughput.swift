@@ -33,7 +33,7 @@ extension EmbeddedChannel {
       GRPCClientChannelHandler(
         callType: callType,
         maximumReceiveMessageLength: .max,
-        logger: GRPCLogger(wrapping: logger)
+        logger: logger
       ),
       GRPCClientCodecHandler(
         serializer: ProtobufSerializer<Request>(),
