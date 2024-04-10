@@ -61,8 +61,8 @@ struct BenchmarkClient {
             let (latency, errorCode) = self.makeRPC(client: benchmarkClient, rpcType: self.rpcType)
             self.rpcStats.withLockedValue {
               $0.latencyHistogram.record(latency)
-              if errorCode != nil {
-                $0.requestResultCount[errorCode!, default: 1] += 1
+              if let errorCode = errorCode {
+                $0.requestResultCount[errorCode, default: 1] += 1
               }
             }
           }

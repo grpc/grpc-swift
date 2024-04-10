@@ -29,9 +29,9 @@ let badOS = { fatalError("unsupported OS") }()
 #endif
 
 #if canImport(Darwin)
-let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF
+private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF
 #elseif canImport(Musl) || canImport(Glibc)
-let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
+private let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
 #endif
 
 /// Client resource usage stats.
@@ -53,11 +53,10 @@ internal struct ClientStats: Sendable {
 
   init() {
     self.time = Double(DispatchTime.now().uptimeNanoseconds) * 1e-9
-    do {
-      let usage = try System.resourceUsage()
+    if let usage = System.resourceUsage() {
       self.userTime = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) * 1e-6
       self.systemTime = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) * 1e-6
-    } catch {
+    } else {
       self.userTime = 0
       self.systemTime = 0
     }
@@ -97,11 +96,10 @@ internal struct ServerStats: Sendable {
 
   init() async throws {
     self.time = Double(DispatchTime.now().uptimeNanoseconds) * 1e-9
-    do {
-      let usage = try System.resourceUsage()
+    if let usage = System.resourceUsage() {
       self.userTime = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) * 1e-6
       self.systemTime = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) * 1e-6
-    } catch {
+    } else {
       self.userTime = 0
       self.systemTime = 0
     }
@@ -166,15 +164,13 @@ internal struct ServerStats: Sendable {
 }
 
 extension System {
-  fileprivate struct SystemError: Error {}
-
-  fileprivate static func resourceUsage() throws -> rusage {
+  fileprivate static func resourceUsage() -> rusage? {
     var usage = rusage()
 
     if getrusage(OUR_RUSAGE_SELF, &usage) == 0 {
       return usage
     } else {
-      throw SystemError()
+      return nil
     }
   }
 }

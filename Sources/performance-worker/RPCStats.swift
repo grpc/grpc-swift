@@ -21,6 +21,8 @@ import NIOConcurrencyHelpers
 /// Stores the real time latency histogram and error code count dictionary,
 /// for the RPCs made by a particular GRPCClient. It gets updated after
 /// each finished RPC.
+///
+/// The time latency is measured in nanoseconds.
 struct RPCStats {
   var latencyHistogram: LatencyHistogram
   var requestResultCount: [RPCError.Code: Int64]
