@@ -48,6 +48,8 @@ public struct CallOptions: Sendable {
   /// If a client attempts to send an object larger than this value, it will not be sent and the
   /// client will see an error. Note that 0 is a valid value, meaning that the request message
   /// must be empty.
+  ///
+  /// Note that if compression is used the uncompressed message size is validated.
   public var maxRequestMessageBytes: Int?
 
   /// The maximum allowed payload size in bytes for an individual response message.
@@ -55,6 +57,8 @@ public struct CallOptions: Sendable {
   /// If a server attempts to send an object larger than this value, it will not
   /// be sent, and an error will be sent to the client instead. Note that 0 is a valid value,
   /// meaning that the response message must be empty.
+  ///
+  /// Note that if compression is used the uncompressed message size is validated.
   public var maxResponseMessageBytes: Int?
 
   /// The policy determining how many times, and when, the RPC is executed.
@@ -147,16 +151,16 @@ extension CallOptions {
   mutating func formUnion(with methodConfig: MethodConfiguration?) {
     guard let methodConfig = methodConfig else { return }
 
-    self.timeout.setIfNil(to: methodConfig.timeout)
-    self.waitForReady.setIfNil(to: methodConfig.waitForReady)
-    self.maxRequestMessageBytes.setIfNil(to: methodConfig.maxRequestMessageBytes)
-    self.maxResponseMessageBytes.setIfNil(to: methodConfig.maxResponseMessageBytes)
-    self.executionPolicy.setIfNil(to: methodConfig.executionPolicy)
+    self.timeout.setIfNone(to: methodConfig.timeout)
+    self.waitForReady.setIfNone(to: methodConfig.waitForReady)
+    self.maxRequestMessageBytes.setIfNone(to: methodConfig.maxRequestMessageBytes)
+    self.maxResponseMessageBytes.setIfNone(to: methodConfig.maxResponseMessageBytes)
+    self.executionPolicy.setIfNone(to: methodConfig.executionPolicy)
   }
 }
 
 extension Optional {
-  fileprivate mutating func setIfNil(to value: Self) {
+  fileprivate mutating func setIfNone(to value: Self) {
     switch self {
     case .some:
       ()

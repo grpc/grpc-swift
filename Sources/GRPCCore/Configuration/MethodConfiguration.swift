@@ -89,6 +89,8 @@ public struct MethodConfiguration: Hashable, Sendable {
   /// If a client attempts to send an object larger than this value, it will not be sent and the
   /// client will see an error. Note that 0 is a valid value, meaning that the request message
   /// must be empty.
+  ///
+  /// Note that if compression is used the uncompressed message size is validated.
   public var maxRequestMessageBytes: Int?
 
   /// The maximum allowed payload size in bytes for an individual response message.
@@ -96,6 +98,8 @@ public struct MethodConfiguration: Hashable, Sendable {
   /// If a server attempts to send an object larger than this value, it will not
   /// be sent, and an error will be sent to the client instead. Note that 0 is a valid value,
   /// meaning that the response message must be empty.
+  ///
+  /// Note that if compression is used the uncompressed message size is validated.
   public var maxResponseMessageBytes: Int?
 
   /// The policy determining how many times, and when, the RPC is executed.
