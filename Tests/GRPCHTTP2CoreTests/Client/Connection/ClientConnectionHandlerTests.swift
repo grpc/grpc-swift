@@ -71,7 +71,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
   }
 
   func testKeepAliveWithOpenStreams() throws {
-    let connection = try Connection(keepAliveTime: .minutes(1), keepAliveTimeout: .seconds(10))
+    let connection = try Connection(keepaliveTime: .minutes(1), keepaliveTimeout: .seconds(10))
     try connection.activate()
 
     // Open a stream so keep-alive starts.
@@ -97,7 +97,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
   }
 
   func testKeepAliveWithNoOpenStreams() throws {
-    let connection = try Connection(keepAliveTime: .minutes(1), allowKeepAliveWithoutCalls: true)
+    let connection = try Connection(keepaliveTime: .minutes(1), allowKeepAliveWithoutCalls: true)
     try connection.activate()
 
     for _ in 0 ..< 10 {
@@ -115,7 +115,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
   }
 
   func testKeepAliveWithOpenStreamsTimingOut() throws {
-    let connection = try Connection(keepAliveTime: .minutes(1), keepAliveTimeout: .seconds(10))
+    let connection = try Connection(keepaliveTime: .minutes(1), keepaliveTimeout: .seconds(10))
     try connection.activate()
 
     // Open a stream so keep-alive starts.
@@ -135,7 +135,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
     // - be closed
     connection.loop.advanceTime(by: .seconds(10))
 
-    XCTAssertEqual(try connection.readEvent(), .closing(.keepAliveExpired))
+    XCTAssertEqual(try connection.readEvent(), .closing(.keepaliveExpired))
 
     let frame2 = try XCTUnwrap(connection.readFrame())
     XCTAssertEqual(frame2.streamID, .rootStream)
@@ -217,17 +217,17 @@ extension ClientConnectionHandlerTests {
 
     init(
       maxIdleTime: TimeAmount? = nil,
-      keepAliveTime: TimeAmount? = nil,
-      keepAliveTimeout: TimeAmount? = nil,
+      keepaliveTime: TimeAmount? = nil,
+      keepaliveTimeout: TimeAmount? = nil,
       allowKeepAliveWithoutCalls: Bool = false
     ) throws {
       let loop = EmbeddedEventLoop()
       let handler = ClientConnectionHandler(
         eventLoop: loop,
         maxIdleTime: maxIdleTime,
-        keepAliveTime: keepAliveTime,
-        keepAliveTimeout: keepAliveTimeout,
-        keepAliveWithoutCalls: allowKeepAliveWithoutCalls
+        keepaliveTime: keepaliveTime,
+        keepaliveTimeout: keepaliveTimeout,
+        keepaliveWithoutCalls: allowKeepAliveWithoutCalls
       )
 
       self.channel = EmbeddedChannel(handler: handler, loop: loop)

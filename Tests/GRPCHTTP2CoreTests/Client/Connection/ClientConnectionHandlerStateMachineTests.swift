@@ -22,9 +22,9 @@ import XCTest
 
 final class ClientConnectionHandlerStateMachineTests: XCTestCase {
   private func makeStateMachine(
-    keepAliveWithoutCalls: Bool = false
+    keepaliveWithoutCalls: Bool = false
   ) -> ClientConnectionHandler.StateMachine {
-    return ClientConnectionHandler.StateMachine(allowKeepAliveWithoutCalls: keepAliveWithoutCalls)
+    return ClientConnectionHandler.StateMachine(allowKeepAliveWithoutCalls: keepaliveWithoutCalls)
   }
 
   func testCloseSomeStreamsWhenActive() {
@@ -52,7 +52,7 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
   }
 
   func testSendKeepAlivePing() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: false)
+    var state = self.makeStateMachine(keepaliveWithoutCalls: false)
     // No streams open so ping isn't allowed.
     XCTAssertFalse(state.sendKeepAlivePing())
 
@@ -66,7 +66,7 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
   }
 
   func testSendKeepAlivePingWhenAllowedWithoutCalls() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: true)
+    var state = self.makeStateMachine(keepaliveWithoutCalls: true)
     // Keep alive is allowed when no streams are open, so pings are allowed.
     XCTAssertTrue(state.sendKeepAlivePing())
 
@@ -78,7 +78,7 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
   }
 
   func testSendKeepAlivePingWhenClosing() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: false)
+    var state = self.makeStateMachine(keepaliveWithoutCalls: false)
     state.streamOpened(1)
     XCTAssertTrue(state.beginClosing())
 
@@ -87,7 +87,7 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
   }
 
   func testSendKeepAlivePingWhenClosed() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: true)
+    var state = self.makeStateMachine(keepaliveWithoutCalls: true)
     _ = state.closed()
     XCTAssertFalse(state.sendKeepAlivePing())
   }

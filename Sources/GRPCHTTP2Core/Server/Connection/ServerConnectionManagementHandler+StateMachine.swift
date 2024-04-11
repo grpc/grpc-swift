@@ -44,12 +44,12 @@ extension ServerConnectionManagementHandler {
       minPingReceiveIntervalWithoutCalls: TimeAmount,
       goAwayPingData: HTTP2PingData = HTTP2PingData(withInteger: .random(in: .min ... .max))
     ) {
-      let keepAlive = KeepAlive(
+      let keepalive = KeepAlive(
         allowWithoutCalls: allowKeepAliveWithoutCalls,
         minPingReceiveIntervalWithoutCalls: minPingReceiveIntervalWithoutCalls
       )
 
-      self.state = .active(State.Active(keepAlive: keepAlive))
+      self.state = .active(State.Active(keepalive: keepalive))
       self.goAwayPingData = goAwayPingData
     }
 
@@ -128,7 +128,7 @@ extension ServerConnectionManagementHandler {
 
       switch self.state {
       case .active(var state):
-        let tooManyPings = state.keepAlive.receivedPing(
+        let tooManyPings = state.keepalive.receivedPing(
           atTime: time,
           hasOpenStreams: !state.openStreams.isEmpty
         )
@@ -142,7 +142,7 @@ extension ServerConnectionManagementHandler {
         }
 
       case .closing(var state):
-        let tooManyPings = state.keepAlive.receivedPing(
+        let tooManyPings = state.keepalive.receivedPing(
           atTime: time,
           hasOpenStreams: !state.openStreams.isEmpty
         )
@@ -229,11 +229,11 @@ extension ServerConnectionManagementHandler {
     mutating func resetKeepAliveState() {
       switch self.state {
       case .active(var state):
-        state.keepAlive.reset()
+        state.keepalive.reset()
         self.state = .active(state)
 
       case .closing(var state):
-        state.keepAlive.reset()
+        state.keepalive.reset()
         self.state = .closing(state)
 
       case .closed:
@@ -328,12 +328,12 @@ extension ServerConnectionManagementHandler.StateMachine {
       /// The ID of the most recently opened stream (zero indicates no streams have been opened yet).
       var lastStreamID: HTTP2StreamID
       /// The state of keep alive.
-      var keepAlive: KeepAlive
+      var keepalive: KeepAlive
 
-      init(keepAlive: KeepAlive) {
+      init(keepalive: KeepAlive) {
         self.openStreams = []
         self.lastStreamID = .rootStream
-        self.keepAlive = keepAlive
+        self.keepalive = keepalive
       }
     }
 
@@ -345,14 +345,14 @@ extension ServerConnectionManagementHandler.StateMachine {
       /// The ID of the most recently opened stream (zero indicates no streams have been opened yet).
       var lastStreamID: HTTP2StreamID
       /// The state of keep alive.
-      var keepAlive: KeepAlive
+      var keepalive: KeepAlive
       /// Whether the second GOAWAY frame has been sent with a lower stream ID.
       var sentSecondGoAway: Bool
 
       init(from state: Active) {
         self.openStreams = state.openStreams
         self.lastStreamID = state.lastStreamID
-        self.keepAlive = state.keepAlive
+        self.keepalive = state.keepalive
         self.sentSecondGoAway = false
       }
     }

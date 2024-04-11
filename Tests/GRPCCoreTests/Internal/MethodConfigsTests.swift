@@ -17,15 +17,15 @@ import GRPCCore
 import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class MethodConfigurationsTests: XCTestCase {
+final class MethodConfigsTests: XCTestCase {
   func testGetConfigurationForKnownMethod() async throws {
     let policy = HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
-    var configurations = _MethodConfigurations()
+    let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
+    var configurations = _MethodConfigs()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let descriptor = MethodDescriptor(service: "test", method: "first")
     let retryPolicy = RetryPolicy(
@@ -35,7 +35,7 @@ final class MethodConfigurationsTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
+    let overrideConfiguration = MethodConfig(names: [], executionPolicy: .retry(retryPolicy))
     configurations[descriptor] = overrideConfiguration
 
     XCTAssertEqual(configurations[descriptor], overrideConfiguration)
@@ -47,8 +47,8 @@ final class MethodConfigurationsTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
-    var configurations = _MethodConfigurations()
+    let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
+    var configurations = _MethodConfigs()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
     let retryPolicy = RetryPolicy(
@@ -58,7 +58,7 @@ final class MethodConfigurationsTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
+    let overrideConfiguration = MethodConfig(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
@@ -71,8 +71,8 @@ final class MethodConfigurationsTests: XCTestCase {
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
-    let defaultConfiguration = MethodConfiguration(names: [], executionPolicy: .hedge(policy))
-    var configurations = _MethodConfigurations()
+    let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
+    var configurations = _MethodConfigs()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
     let retryPolicy = RetryPolicy(
@@ -82,7 +82,7 @@ final class MethodConfigurationsTests: XCTestCase {
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
-    let overrideConfiguration = MethodConfiguration(names: [], executionPolicy: .retry(retryPolicy))
+    let overrideConfiguration = MethodConfig(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
 
     let secondDescriptor = MethodDescriptor(service: "test2", method: "second")

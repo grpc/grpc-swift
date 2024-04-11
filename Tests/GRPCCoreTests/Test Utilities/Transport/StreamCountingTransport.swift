@@ -72,7 +72,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
 
   func configuration(
     forMethod descriptor: MethodDescriptor
-  ) -> MethodConfiguration? {
+  ) -> MethodConfig? {
     self.transport.configuration(forMethod: descriptor)
   }
 }

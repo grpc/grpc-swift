@@ -22,16 +22,16 @@ public enum InProcessTransport {
   /// and a client using that server transport.
   ///
   /// - Parameters:
-  ///   - serviceConfiguration: Configuration describing how methods should be executed.
+  ///   - serviceConfig: Configuration describing how methods should be executed.
   /// - Returns: A tuple containing the connected server and client in-process transports.
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   public static func makePair(
-    serviceConfiguration: ServiceConfiguration = ServiceConfiguration()
+    serviceConfig: ServiceConfig = ServiceConfig()
   ) -> (server: InProcessServerTransport, client: InProcessClientTransport) {
     let server = InProcessServerTransport()
     let client = InProcessClientTransport(
       server: server,
-      serviceConfiguration: serviceConfiguration
+      serviceConfig: serviceConfig
     )
     return (server, client)
   }

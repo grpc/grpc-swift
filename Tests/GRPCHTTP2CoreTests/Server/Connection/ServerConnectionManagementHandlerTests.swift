@@ -130,8 +130,8 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
 
   func testKeepAliveOnNewConnection() throws {
     let connection = try Connection(
-      keepAliveTime: .minutes(5),
-      keepAliveTimeout: .seconds(5)
+      keepaliveTime: .minutes(5),
+      keepaliveTimeout: .seconds(5)
     )
     try connection.activate()
 
@@ -153,8 +153,8 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
 
   func testKeepAliveStartsAfterReadLoop() throws {
     let connection = try Connection(
-      keepAliveTime: .minutes(5),
-      keepAliveTimeout: .seconds(5)
+      keepaliveTime: .minutes(5),
+      keepaliveTimeout: .seconds(5)
     )
     try connection.activate()
 
@@ -181,8 +181,8 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
 
   func testKeepAliveOnNewConnectionWithoutResponse() throws {
     let connection = try Connection(
-      keepAliveTime: .minutes(5),
-      keepAliveTimeout: .seconds(5)
+      keepaliveTime: .minutes(5),
+      keepaliveTimeout: .seconds(5)
     )
     try connection.activate()
 
@@ -353,8 +353,8 @@ extension ServerConnectionManagementHandlerTests {
       maxIdleTime: TimeAmount? = nil,
       maxAge: TimeAmount? = nil,
       maxGraceTime: TimeAmount? = nil,
-      keepAliveTime: TimeAmount? = nil,
-      keepAliveTimeout: TimeAmount? = nil,
+      keepaliveTime: TimeAmount? = nil,
+      keepaliveTimeout: TimeAmount? = nil,
       allowKeepAliveWithoutCalls: Bool = false,
       minPingIntervalWithoutCalls: TimeAmount = .minutes(5),
       manualClock: Bool = false
@@ -371,8 +371,8 @@ extension ServerConnectionManagementHandlerTests {
         maxIdleTime: maxIdleTime,
         maxAge: maxAge,
         maxGraceTime: maxGraceTime,
-        keepAliveTime: keepAliveTime,
-        keepAliveTimeout: keepAliveTimeout,
+        keepaliveTime: keepaliveTime,
+        keepaliveTimeout: keepaliveTimeout,
         allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls,
         minPingIntervalWithoutCalls: minPingIntervalWithoutCalls,
         clock: self.clock
