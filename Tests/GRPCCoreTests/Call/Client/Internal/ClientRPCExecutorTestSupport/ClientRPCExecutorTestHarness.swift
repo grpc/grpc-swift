@@ -68,53 +68,46 @@ struct ClientRPCExecutorTestHarness {
 
   func unary(
     request: ClientRequest.Single<[UInt8]>,
-    configuration: MethodConfiguration? = nil,
+    options: CallOptions = .defaults,
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(
-      request: ClientRequest.Stream(single: request),
-      configuration: configuration
-    ) { response in
+    try await self.bidirectional(request: ClientRequest.Stream(single: request), options: options) {
+      response in
       try await handler(ClientResponse.Single(stream: response))
     }
   }
 
   func clientStreaming(
     request: ClientRequest.Stream<[UInt8]>,
-    configuration: MethodConfiguration? = nil,
+    options: CallOptions = .defaults,
     handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(
-      request: request,
-      configuration: configuration
-    ) { response in
+    try await self.bidirectional(request: request, options: options) { response in
       try await handler(ClientResponse.Single(stream: response))
     }
   }
 
   func serverStreaming(
     request: ClientRequest.Single<[UInt8]>,
-    configuration: MethodConfiguration? = nil,
+    options: CallOptions = .defaults,
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(
-      request: ClientRequest.Stream(single: request),
-      configuration: configuration
-    ) { response in
+    try await self.bidirectional(request: ClientRequest.Stream(single: request), options: options) {
+      response in
       try await handler(response)
     }
   }
 
   func bidirectional(
     request: ClientRequest.Stream<[UInt8]>,
-    configuration: MethodConfiguration? = nil,
+    options: CallOptions = .defaults,
     handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.execute(
       request: request,
       serializer: IdentitySerializer(),
       deserializer: IdentityDeserializer(),
-      configuration: configuration,
+      options: options,
       handler: handler
     )
   }
@@ -123,7 +116,7 @@ struct ClientRPCExecutorTestHarness {
     request: ClientRequest.Stream<Input>,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
-    configuration: MethodConfiguration?,
+    options: CallOptions,
     handler: @escaping @Sendable (ClientResponse.Stream<Output>) async throws -> Void
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -142,18 +135,11 @@ struct ClientRPCExecutorTestHarness {
         try await self.clientTransport.connect(lazily: false)
       }
 
-      let executionConfiguration: MethodConfiguration
-      if let configuration = configuration {
-        executionConfiguration = configuration
-      } else {
-        executionConfiguration = MethodConfiguration(names: [])
-      }
-
       // Execute the request.
       try await ClientRPCExecutor.execute(
         request: request,
         method: MethodDescriptor(service: "foo", method: "bar"),
-        configuration: executionConfiguration,
+        options: options,
         serializer: serializer,
         deserializer: deserializer,
         transport: self.clientTransport,

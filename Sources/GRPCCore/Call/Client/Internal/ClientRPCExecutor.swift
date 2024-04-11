@@ -35,18 +35,18 @@ enum ClientRPCExecutor {
   static func execute<Input: Sendable, Output: Sendable, Result: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
-    configuration: MethodConfiguration,
+    options: CallOptions,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     transport: some ClientTransport,
     interceptors: [any ClientInterceptor],
     handler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> Result
   ) async throws -> Result {
-    switch configuration.executionPolicy {
+    switch options.executionPolicy?.wrapped {
     case .none:
       let oneShotExecutor = OneShotExecutor(
         transport: transport,
-        timeout: configuration.timeout,
+        timeout: options.timeout,
         interceptors: interceptors,
         serializer: serializer,
         deserializer: deserializer
@@ -55,6 +55,7 @@ enum ClientRPCExecutor {
       return try await oneShotExecutor.execute(
         request: request,
         method: method,
+        options: options,
         responseHandler: handler
       )
 
@@ -62,7 +63,7 @@ enum ClientRPCExecutor {
       let retryExecutor = RetryExecutor(
         transport: transport,
         policy: policy,
-        timeout: configuration.timeout,
+        timeout: options.timeout,
         interceptors: interceptors,
         serializer: serializer,
         deserializer: deserializer,
@@ -72,6 +73,7 @@ enum ClientRPCExecutor {
       return try await retryExecutor.execute(
         request: request,
         method: method,
+        options: options,
         responseHandler: handler
       )
 
@@ -79,7 +81,7 @@ enum ClientRPCExecutor {
       let hedging = HedgingExecutor(
         transport: transport,
         policy: policy,
-        timeout: configuration.timeout,
+        timeout: options.timeout,
         interceptors: interceptors,
         serializer: serializer,
         deserializer: deserializer,
@@ -89,6 +91,7 @@ enum ClientRPCExecutor {
       return try await hedging.execute(
         request: request,
         method: method,
+        options: options,
         responseHandler: handler
       )
     }

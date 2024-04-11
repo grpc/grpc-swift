@@ -63,6 +63,7 @@ extension ClientRPCExecutor.OneShotExecutor {
   func execute<R>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
+    options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async throws -> R {
     let result = await withTaskGroup(
@@ -70,7 +71,7 @@ extension ClientRPCExecutor.OneShotExecutor {
       returning: Result<R, Error>.self
     ) { group in
       do {
-        return try await self.transport.withStream(descriptor: method) { stream in
+        return try await self.transport.withStream(descriptor: method, options: options) { stream in
           if let timeout = self.timeout {
             group.addTask {
               let result = await Result {

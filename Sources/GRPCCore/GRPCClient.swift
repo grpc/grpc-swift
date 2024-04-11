@@ -122,14 +122,6 @@ public struct GRPCClient: Sendable {
   /// the appropriate handler.
   private let interceptors: [any ClientInterceptor]
 
-  /// The configuration used by the client.
-  public let configuration: Configuration
-
-  /// A cache of method config overrides.
-  private let methodConfigurationOverrides: _MethodConfigurations
-  /// A cache of method config defaults.
-  private let methodConfigurationDefaults: _MethodConfigurations
-
   /// The current state of the client.
   private let state: ManagedAtomic<State>
 
@@ -156,23 +148,12 @@ public struct GRPCClient: Sendable {
   ///       are called. The first interceptor added will be the first interceptor to intercept each
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
-  ///   - configuration: Configuration for the client.
   public init(
     transport: some ClientTransport,
-    interceptors: [any ClientInterceptor] = [],
-    configuration: Configuration = Configuration()
+    interceptors: [any ClientInterceptor] = []
   ) {
     self.transport = transport
     self.interceptors = interceptors
-    self.configuration = configuration
-
-    self.methodConfigurationOverrides = _MethodConfigurations(
-      serviceConfiguration: self.configuration.service.overrides
-    )
-    self.methodConfigurationDefaults = _MethodConfigurations(
-      serviceConfiguration: self.configuration.service.defaults
-    )
-
     self.state = ManagedAtomic(.notStarted)
   }
 
@@ -284,6 +265,7 @@ public struct GRPCClient: Sendable {
   ///   - descriptor: The method descriptor for which to execute this request.
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
+  ///   - options: Call specific options.
   ///   - handler: A unary response handler.
   ///
   /// - Returns: The return value from the `handler`.
@@ -292,13 +274,15 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
+    options: CallOptions = .defaults,
     handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: ClientRequest.Stream(single: request),
       descriptor: descriptor,
       serializer: serializer,
-      deserializer: deserializer
+      deserializer: deserializer,
+      options: options
     ) { stream in
       let singleResponse = await ClientResponse.Single(stream: stream)
       return try await handler(singleResponse)
@@ -312,6 +296,7 @@ public struct GRPCClient: Sendable {
   ///   - descriptor: The method descriptor for which to execute this request.
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
+  ///   - options: Call specific options.
   ///   - handler: A unary response handler.
   ///
   /// - Returns: The return value from the `handler`.
@@ -320,13 +305,15 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
+    options: CallOptions = .defaults,
     handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: request,
       descriptor: descriptor,
       serializer: serializer,
-      deserializer: deserializer
+      deserializer: deserializer,
+      options: options
     ) { stream in
       let singleResponse = await ClientResponse.Single(stream: stream)
       return try await handler(singleResponse)
@@ -340,6 +327,7 @@ public struct GRPCClient: Sendable {
   ///   - descriptor: The method descriptor for which to execute this request.
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
+  ///   - options: Call specific options.
   ///   - handler: A response stream handler.
   ///
   /// - Returns: The return value from the `handler`.
@@ -348,6 +336,7 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
+    options: CallOptions = .defaults,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
@@ -355,6 +344,7 @@ public struct GRPCClient: Sendable {
       descriptor: descriptor,
       serializer: serializer,
       deserializer: deserializer,
+      options: options,
       handler: handler
     )
   }
@@ -369,6 +359,7 @@ public struct GRPCClient: Sendable {
   ///   - descriptor: The method descriptor for which to execute this request.
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
+  ///   - options: Call specific options.
   ///   - handler: A response stream handler.
   ///
   /// - Returns: The return value from the `handler`.
@@ -377,6 +368,7 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
+    options: CallOptions = .defaults,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     switch self.state.load(ordering: .sequentiallyConsistent) {
@@ -391,77 +383,19 @@ public struct GRPCClient: Sendable {
       )
     }
 
+    let methodConfig = self.transport.configuration(forMethod: descriptor)
+    var options = options
+    options.formUnion(with: methodConfig)
+
     return try await ClientRPCExecutor.execute(
       request: request,
       method: descriptor,
-      configuration: self.resolveMethodConfiguration(for: descriptor),
+      options: options,
       serializer: serializer,
       deserializer: deserializer,
       transport: self.transport,
       interceptors: self.interceptors,
       handler: handler
     )
-  }
-
-  private func resolveMethodConfiguration(for descriptor: MethodDescriptor) -> MethodConfiguration {
-    if let configuration = self.methodConfigurationOverrides[descriptor] {
-      return configuration
-    }
-
-    if let configuration = self.transport.configuration(forMethod: descriptor) {
-      return configuration
-    }
-
-    if let configuration = self.methodConfigurationDefaults[descriptor] {
-      return configuration
-    }
-
-    // No configuration found, return the "vanilla" configuration.
-    return MethodConfiguration(names: [], timeout: nil, executionPolicy: nil)
-  }
-}
-
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GRPCClient {
-  public struct Configuration: Sendable {
-    /// Configuration for how the client interacts with services.
-    ///
-    /// The configuration includes information about how the client should load balance requests,
-    /// how retries should be throttled and how methods should be executed. Some services and
-    /// transports provide this information to the client when the server name is resolved. However,
-    /// you can override this configuration and set default values should no override be set and the
-    /// transport doesn't provide a value.
-    ///
-    /// See also ``ServiceConfiguration``.
-    public var service: Service
-
-    /// Creates a new default configuration.
-    public init() {
-      self.service = Service()
-    }
-  }
-}
-
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GRPCClient.Configuration {
-  /// Configuration for how the client interacts with services.
-  ///
-  /// In most cases the client should defer to the configuration provided by the transport as this
-  /// can be provided to the transport as part of name resolution when establishing a connection.
-  ///
-  /// The client first checks ``overrides`` for a configuration, followed by the transport, followed
-  /// by ``defaults``.
-  public struct Service: Sendable, Hashable {
-    /// Configuration to use in precedence to that provided by the transport.
-    public var overrides: ServiceConfiguration
-
-    /// Configuration to use only if there are no overrides and the transport doesn't specify
-    /// any configuration.
-    public var defaults: ServiceConfiguration
-
-    public init() {
-      self.overrides = ServiceConfiguration()
-      self.defaults = ServiceConfiguration()
-    }
   }
 }

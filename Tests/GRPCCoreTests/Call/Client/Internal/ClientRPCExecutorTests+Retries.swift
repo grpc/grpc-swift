@@ -49,7 +49,7 @@ extension ClientRPCExecutorTests {
         try await $0.write([1])
         try await $0.write([2])
       },
-      configuration: .retry(codes: [.unavailable])
+      options: .retry(codes: [.unavailable])
     ) { response in
       XCTAssertEqual(
         response.metadata,
@@ -73,7 +73,7 @@ extension ClientRPCExecutorTests {
       request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
         try await $0.write([0, 1, 2])
       },
-      configuration: .retry(codes: [.aborted])
+      options: .retry(codes: [.aborted])
     ) { response in
       switch response.accepted {
       case .success:
@@ -94,7 +94,7 @@ extension ClientRPCExecutorTests {
       request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
         try await $0.write([0, 1, 2])
       },
-      configuration: .retry(maximumAttempts: 2, codes: [.unavailable])
+      options: .retry(maximumAttempts: 2, codes: [.unavailable])
     ) { response in
       switch response.accepted {
       case .success:
@@ -123,7 +123,7 @@ extension ClientRPCExecutorTests {
           try await $0.write([])
         }
       },
-      configuration: .retry(codes: [.unavailable])
+      options: .retry(codes: [.unavailable])
     ) { response in
       switch response.accepted {
       case .success:
@@ -153,7 +153,7 @@ extension ClientRPCExecutorTests {
           try await $0.write([1])
           try await $0.write([2])
         },
-        configuration: .retry(codes: [.unavailable], timeout: .zero)
+        options: .retry(codes: [.unavailable], timeout: .zero)
       ) { response in
         XCTFail("Response not expected to be handled")
       }
@@ -174,7 +174,7 @@ extension ClientRPCExecutorTests {
           try await $0.write([1])
           try await $0.write([2])
         },
-        configuration: .retry(codes: [.unavailable], timeout: .milliseconds(50))
+        options: .retry(codes: [.unavailable], timeout: .milliseconds(50))
       ) { response in
         XCTFail("Response not expected to be handled")
       }
@@ -198,7 +198,7 @@ extension ClientRPCExecutorTests {
           try await $0.write([1])
           try await $0.write([2])
         },
-        configuration: .retry(codes: [.unavailable], timeout: .milliseconds(150))
+        options: .retry(codes: [.unavailable], timeout: .milliseconds(150))
       ) { response in
         XCTFail("Response not expected to be handled")
       }
@@ -236,7 +236,7 @@ extension ClientRPCExecutorTests {
       request: ClientRequest.Stream {
         try await $0.write([0])
       },
-      configuration: .init(names: [], executionPolicy: .retry(retryPolicy))
+      options: .retry(retryPolicy)
     ) { response in
       let end = ContinuousClock.now
       let duration = end - start
@@ -272,7 +272,7 @@ extension ClientRPCExecutorTests {
         request: ClientRequest.Stream {
           try await $0.write([0])
         },
-        configuration: .init(names: [], executionPolicy: .retry(retryPolicy))
+        options: .retry(retryPolicy)
       ) { response in
         switch response.accepted {
         case .success:
@@ -290,7 +290,15 @@ extension ClientRPCExecutorTests {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension MethodConfiguration {
+extension CallOptions {
+  fileprivate static func retry(
+    _ policy: RetryPolicy
+  ) -> Self {
+    var options: CallOptions = .defaults
+    options.executionPolicy = .retry(policy)
+    return options
+  }
+
   fileprivate static func retry(
     maximumAttempts: Int = 5,
     codes: Set<Status.Code>,
@@ -304,6 +312,9 @@ extension MethodConfiguration {
       retryableStatusCodes: codes
     )
 
-    return Self(names: [], timeout: timeout, executionPolicy: .retry(policy))
+    var options: CallOptions = .defaults
+    options.executionPolicy = .retry(policy)
+    options.timeout = timeout
+    return options
   }
 }

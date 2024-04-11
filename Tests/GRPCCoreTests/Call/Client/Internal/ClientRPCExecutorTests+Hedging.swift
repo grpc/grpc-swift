@@ -29,7 +29,7 @@ extension ClientRPCExecutorTests {
         try await $0.write([1])
         try await $0.write([2])
       },
-      configuration: .hedge(nonFatalCodes: [.unavailable])
+      options: .hedge(nonFatalCodes: [.unavailable])
     ) { response in
       XCTAssertRejected(response) { error in
         XCTAssertEqual(error.code, .unavailable)
@@ -55,7 +55,7 @@ extension ClientRPCExecutorTests {
       },
       // Set a long delay to reduce the risk of racing the second attempt and checking the number
       // of streams being opened.
-      configuration: .hedge(delay: .seconds(5), nonFatalCodes: [])
+      options: .hedge(delay: .seconds(5), nonFatalCodes: [])
     ) { response in
       XCTAssertRejected(response) { error in
         XCTAssertEqual(error.code, .aborted)
@@ -89,7 +89,7 @@ extension ClientRPCExecutorTests {
         try await $0.write([1])
         try await $0.write([2])
       },
-      configuration: .hedge(
+      options: .hedge(
         maximumAttempts: 5,
         delay: .milliseconds(10),
         nonFatalCodes: [.unavailable]
@@ -133,7 +133,7 @@ extension ClientRPCExecutorTests {
         try await $0.write([1])
         try await $0.write([2])
       },
-      configuration: .hedge(
+      options: .hedge(
         maximumAttempts: 5,
         delay: .seconds(60),  // High delay, server pushback will override this.
         nonFatalCodes: [.unavailable]
@@ -172,7 +172,7 @@ extension ClientRPCExecutorTests {
         request: ClientRequest.Stream {
           try await $0.write([0])
         },
-        configuration: .hedge(delay: .seconds(60), nonFatalCodes: [.unavailable])
+        options: .hedge(delay: .seconds(60), nonFatalCodes: [.unavailable])
       ) { response in
         XCTAssertRejected(response) { error in
           XCTAssertEqual(error.code, .unavailable)
@@ -187,7 +187,7 @@ extension ClientRPCExecutorTests {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension MethodConfiguration {
+extension CallOptions {
   fileprivate static func hedge(
     maximumAttempts: Int = 5,
     delay: Duration = .milliseconds(25),
@@ -200,6 +200,8 @@ extension MethodConfiguration {
       nonFatalStatusCodes: nonFatalCodes
     )
 
-    return Self(names: [], timeout: timeout, executionPolicy: .hedge(policy))
+    var options = CallOptions.defaults
+    options.executionPolicy = .hedge(policy)
+    return options
   }
 }

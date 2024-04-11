@@ -69,6 +69,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   func execute<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
+    options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async throws -> R {
     // The high level approach is to have two levels of task group. In the outer level tasks are
@@ -109,6 +110,7 @@ extension ClientRPCExecutor.HedgingExecutor {
         let result = await self.executeAttempt(
           request: replayableRequest,
           method: method,
+          options: options,
           responseHandler: responseHandler
         )
 
@@ -149,6 +151,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   func executeAttempt<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
+    options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> Result<R, Error> {
     await withTaskGroup(
@@ -182,6 +185,7 @@ extension ClientRPCExecutor.HedgingExecutor {
         let result = await self._startAttempt(
           request: request,
           method: method,
+          options: options,
           attempt: attempt,
           state: state,
           picker: picker,
@@ -211,6 +215,7 @@ extension ClientRPCExecutor.HedgingExecutor {
                 let result = await self._startAttempt(
                   request: request,
                   method: method,
+                  options: options,
                   attempt: attempt,
                   state: state,
                   picker: picker,
@@ -259,6 +264,7 @@ extension ClientRPCExecutor.HedgingExecutor {
                   let result = await self._startAttempt(
                     request: request,
                     method: method,
+                    options: options,
                     attempt: attempt,
                     state: state,
                     picker: picker,
@@ -305,6 +311,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   func _startAttempt<R>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
+    options: CallOptions,
     attempt: Int,
     state: LockedValueBox<State>,
     picker: (stream: BroadcastAsyncSequence<Int>, continuation: BroadcastAsyncSequence<Int>.Source),
@@ -312,7 +319,8 @@ extension ClientRPCExecutor.HedgingExecutor {
   ) async -> _HedgingAttemptTaskResult<R, Output>.AttemptResult {
     do {
       return try await self.transport.withStream(
-        descriptor: method
+        descriptor: method,
+        options: options
       ) { stream -> _HedgingAttemptTaskResult<R, Output>.AttemptResult in
         return await withTaskGroup(of: _HedgingAttemptSubtaskResult<Output>.self) { group in
           group.addTask {

@@ -49,7 +49,10 @@ final class GRPCServerTests: XCTestCase {
 
   func testServerHandlesUnary() async throws {
     try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
-      try await client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+      try await client.withStream(
+        descriptor: BinaryEcho.Methods.get,
+        options: .defaults
+      ) { stream in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
         stream.outbound.finish()
@@ -73,7 +76,10 @@ final class GRPCServerTests: XCTestCase {
 
   func testServerHandlesClientStreaming() async throws {
     try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
-      try await client.withStream(descriptor: BinaryEcho.Methods.collect) { stream in
+      try await client.withStream(
+        descriptor: BinaryEcho.Methods.collect,
+        options: .defaults
+      ) { stream in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3]))
         try await stream.outbound.write(.message([1]))
@@ -101,7 +107,10 @@ final class GRPCServerTests: XCTestCase {
 
   func testServerHandlesServerStreaming() async throws {
     try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
-      try await client.withStream(descriptor: BinaryEcho.Methods.expand) { stream in
+      try await client.withStream(
+        descriptor: BinaryEcho.Methods.expand,
+        options: .defaults
+      ) { stream in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
         stream.outbound.finish()
@@ -127,7 +136,10 @@ final class GRPCServerTests: XCTestCase {
 
   func testServerHandlesBidirectionalStreaming() async throws {
     try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
-      try await client.withStream(descriptor: BinaryEcho.Methods.update) { stream in
+      try await client.withStream(
+        descriptor: BinaryEcho.Methods.update,
+        options: .defaults
+      ) { stream in
         try await stream.outbound.write(.metadata([:]))
         for byte in [3, 1, 4, 1, 5] as [UInt8] {
           try await stream.outbound.write(.message([byte]))
@@ -156,7 +168,8 @@ final class GRPCServerTests: XCTestCase {
   func testUnimplementedMethod() async throws {
     try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
       try await client.withStream(
-        descriptor: MethodDescriptor(service: "not", method: "implemented")
+        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
         stream.outbound.finish()
@@ -175,7 +188,10 @@ final class GRPCServerTests: XCTestCase {
       await withThrowingTaskGroup(of: Void.self) { group in
         for i in UInt8.min ..< UInt8.max {
           group.addTask {
-            try await client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+            try await client.withStream(
+              descriptor: BinaryEcho.Methods.get,
+              options: .defaults
+            ) { stream in
               try await stream.outbound.write(.metadata([:]))
               try await stream.outbound.write(.message([i]))
               stream.outbound.finish()
@@ -210,7 +226,10 @@ final class GRPCServerTests: XCTestCase {
         .requestCounter(counter2),
       ]
     ) { client, _ in
-      try await client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+      try await client.withStream(
+        descriptor: BinaryEcho.Methods.get,
+        options: .defaults
+      ) { stream in
         try await stream.outbound.write(.metadata([:]))
         stream.outbound.finish()
 
@@ -233,7 +252,8 @@ final class GRPCServerTests: XCTestCase {
       interceptors: [.requestCounter(counter)]
     ) { client, _ in
       try await client.withStream(
-        descriptor: MethodDescriptor(service: "not", method: "implemented")
+        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
         stream.outbound.finish()
@@ -258,7 +278,10 @@ final class GRPCServerTests: XCTestCase {
 
       // RPC should fail now.
       await XCTAssertThrowsRPCErrorAsync {
-        try await client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+        try await client.withStream(
+          descriptor: BinaryEcho.Methods.get,
+          options: .defaults
+        ) { stream in
           XCTFail("Stream shouldn't be opened")
         }
       } errorHandler: { error in
@@ -269,7 +292,10 @@ final class GRPCServerTests: XCTestCase {
 
   func testInFlightRPCsCanContinueAfterServerStopListening() async throws {
     try await withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, server in
-      try await client.withStream(descriptor: BinaryEcho.Methods.update) { stream in
+      try await client.withStream(
+        descriptor: BinaryEcho.Methods.update,
+        options: .defaults
+      ) { stream in
         try await stream.outbound.write(.metadata([:]))
         var iterator = stream.inbound.makeAsyncIterator()
         // Don't need to validate the response, just that the server is running.
@@ -366,7 +392,10 @@ final class GRPCServerTests: XCTestCase {
       }
 
       group.addTask {
-        try await inProcess.client.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+        try await inProcess.client.withStream(
+          descriptor: BinaryEcho.Methods.get,
+          options: .defaults
+        ) { stream in
           // The stream is open to the in-process transport. Let the other transport start.
           signal.continuation.finish()
           try await stream.outbound.write(.metadata([:]))
@@ -390,7 +419,10 @@ final class GRPCServerTests: XCTestCase {
   }
 
   private func doEchoGet(using transport: some ClientTransport) async throws {
-    try await transport.withStream(descriptor: BinaryEcho.Methods.get) { stream in
+    try await transport.withStream(
+      descriptor: BinaryEcho.Methods.get,
+      options: .defaults
+    ) { stream in
       try await stream.outbound.write(.metadata([:]))
       try await stream.outbound.write(.message([0]))
       stream.outbound.finish()

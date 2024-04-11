@@ -225,10 +225,12 @@ public struct InProcessClientTransport: ClientTransport {
   ///
   /// - Parameters:
   ///   - descriptor: A description of the method to open a stream for.
+  ///   - options: Options specific to the stream.
   ///   - closure: A closure that takes the opened stream as parameter.
   /// - Returns: Whatever value was returned from `closure`.
   public func withStream<T>(
     descriptor: MethodDescriptor,
+    options: CallOptions,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
     let request = RPCAsyncSequence<RPCRequestPart>._makeBackpressuredStream(watermarks: (16, 32))
