@@ -128,7 +128,7 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     try connection.waitUntilClosed()
   }
 
-  func testKeepAliveOnNewConnection() throws {
+  func testKeepaliveOnNewConnection() throws {
     let connection = try Connection(
       keepaliveTime: .minutes(5),
       keepaliveTimeout: .seconds(5)
@@ -151,7 +151,7 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     XCTAssertNil(try connection.readFrame())
   }
 
-  func testKeepAliveStartsAfterReadLoop() throws {
+  func testKeepaliveStartsAfterReadLoop() throws {
     let connection = try Connection(
       keepaliveTime: .minutes(5),
       keepaliveTimeout: .seconds(5)
@@ -179,7 +179,7 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     }
   }
 
-  func testKeepAliveOnNewConnectionWithoutResponse() throws {
+  func testKeepaliveOnNewConnectionWithoutResponse() throws {
     let connection = try Connection(
       keepaliveTime: .minutes(5),
       keepaliveTimeout: .seconds(5)
@@ -203,9 +203,9 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     try connection.waitUntilClosed()
   }
 
-  func testClientKeepAlivePolicing() throws {
+  func testClientKeepalivePolicing() throws {
     let connection = try Connection(
-      allowKeepAliveWithoutCalls: true,
+      allowKeepaliveWithoutCalls: true,
       minPingIntervalWithoutCalls: .minutes(1)
     )
     try connection.activate()
@@ -235,9 +235,9 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     try connection.waitUntilClosed()
   }
 
-  func testClientKeepAliveWithPermissibleIntervals() throws {
+  func testClientKeepaliveWithPermissibleIntervals() throws {
     let connection = try Connection(
-      allowKeepAliveWithoutCalls: true,
+      allowKeepaliveWithoutCalls: true,
       minPingIntervalWithoutCalls: .minutes(1),
       manualClock: true
     )
@@ -257,14 +257,14 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     }
   }
 
-  func testClientKeepAliveResetState() throws {
+  func testClientKeepaliveResetState() throws {
     let connection = try Connection(
-      allowKeepAliveWithoutCalls: true,
+      allowKeepaliveWithoutCalls: true,
       minPingIntervalWithoutCalls: .minutes(1)
     )
     try connection.activate()
 
-    func sendThreeKeepAlivePings() throws {
+    func sendThreeKeepalivePings() throws {
       // The first ping is valid, the second and third are strikes.
       for _ in 1 ... 3 {
         try connection.ping(data: HTTP2PingData(), ack: false)
@@ -277,14 +277,14 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
       }
     }
 
-    try sendThreeKeepAlivePings()
+    try sendThreeKeepalivePings()
 
     // "send" a HEADERS frame and flush to reset keep alive state.
     connection.syncView.wroteHeadersFrame()
     connection.syncView.connectionWillFlush()
 
     // As above, the first ping is valid, the next two are strikes.
-    try sendThreeKeepAlivePings()
+    try sendThreeKeepalivePings()
 
     // The next ping is the third strike and triggers a GOAWAY.
     try connection.ping(data: HTTP2PingData(), ack: false)
@@ -355,7 +355,7 @@ extension ServerConnectionManagementHandlerTests {
       maxGraceTime: TimeAmount? = nil,
       keepaliveTime: TimeAmount? = nil,
       keepaliveTimeout: TimeAmount? = nil,
-      allowKeepAliveWithoutCalls: Bool = false,
+      allowKeepaliveWithoutCalls: Bool = false,
       minPingIntervalWithoutCalls: TimeAmount = .minutes(5),
       manualClock: Bool = false
     ) throws {
@@ -373,7 +373,7 @@ extension ServerConnectionManagementHandlerTests {
         maxGraceTime: maxGraceTime,
         keepaliveTime: keepaliveTime,
         keepaliveTimeout: keepaliveTimeout,
-        allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls,
+        allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls,
         minPingIntervalWithoutCalls: minPingIntervalWithoutCalls,
         clock: self.clock
       )

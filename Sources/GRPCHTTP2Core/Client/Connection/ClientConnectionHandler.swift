@@ -106,7 +106,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     self.keepaliveTimer = keepaliveTime.map { Timer(delay: $0, repeat: true) }
     self.keepaliveTimeoutTimer = Timer(delay: keepaliveTimeout ?? .seconds(20))
     self.keepalivePingData = HTTP2PingData(withInteger: .random(in: .min ... .max))
-    self.state = StateMachine(allowKeepAliveWithoutCalls: keepaliveWithoutCalls)
+    self.state = StateMachine(allowKeepaliveWithoutCalls: keepaliveWithoutCalls)
 
     self.flushPending = false
     self.inReadLoop = false
@@ -146,14 +146,14 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
 
     case let event as StreamClosedEvent:
       switch self.state.streamClosed(event.streamID) {
-      case .startIdleTimer(let cancelKeepAlive):
+      case .startIdleTimer(let cancelKeepalive):
         // All streams are closed, restart the idle timer, and stop the keep-alive timer (it may
         // not stop if keep-alive is allowed when there are no active calls).
         self.maxIdleTimer?.schedule(on: context.eventLoop) {
           self.maxIdleTimerFired(context: context)
         }
 
-        if cancelKeepAlive {
+        if cancelKeepalive {
           self.keepaliveTimer?.cancel()
         }
 
@@ -259,7 +259,7 @@ extension ClientConnectionHandler {
   }
 
   private func keepaliveTimerFired(context: ChannelHandlerContext) {
-    guard self.state.sendKeepAlivePing() else { return }
+    guard self.state.sendKeepalivePing() else { return }
 
     // Cancel the keep alive timer when the client sends a ping. The timer is resumed when the ping
     // is acknowledged.
@@ -321,29 +321,29 @@ extension ClientConnectionHandler {
 
       struct Active {
         var openStreams: Set<HTTP2StreamID>
-        var allowKeepAliveWithoutCalls: Bool
+        var allowKeepaliveWithoutCalls: Bool
 
-        init(allowKeepAliveWithoutCalls: Bool) {
+        init(allowKeepaliveWithoutCalls: Bool) {
           self.openStreams = []
-          self.allowKeepAliveWithoutCalls = allowKeepAliveWithoutCalls
+          self.allowKeepaliveWithoutCalls = allowKeepaliveWithoutCalls
         }
       }
 
       struct Closing {
-        var allowKeepAliveWithoutCalls: Bool
+        var allowKeepaliveWithoutCalls: Bool
         var openStreams: Set<HTTP2StreamID>
         var closePromise: Optional<EventLoopPromise<Void>>
 
         init(from state: Active, closePromise: EventLoopPromise<Void>?) {
           self.openStreams = state.openStreams
-          self.allowKeepAliveWithoutCalls = state.allowKeepAliveWithoutCalls
+          self.allowKeepaliveWithoutCalls = state.allowKeepaliveWithoutCalls
           self.closePromise = closePromise
         }
       }
     }
 
-    init(allowKeepAliveWithoutCalls: Bool) {
-      self.state = .active(State.Active(allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls))
+    init(allowKeepaliveWithoutCalls: Bool) {
+      self.state = .active(State.Active(allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls))
     }
 
     /// Record that the stream with the given ID has been opened.
@@ -366,7 +366,7 @@ extension ClientConnectionHandler {
 
     enum OnStreamClosed: Equatable {
       /// Start the idle timer, after which the connection should be closed gracefully.
-      case startIdleTimer(cancelKeepAlive: Bool)
+      case startIdleTimer(cancelKeepalive: Bool)
       /// Close the connection.
       case close
       /// Do nothing.
@@ -382,7 +382,7 @@ extension ClientConnectionHandler {
         let removedID = state.openStreams.remove(id)
         assert(removedID != nil, "Can't close stream \(Int(id)), it wasn't open")
         if state.openStreams.isEmpty {
-          onStreamClosed = .startIdleTimer(cancelKeepAlive: !state.allowKeepAliveWithoutCalls)
+          onStreamClosed = .startIdleTimer(cancelKeepalive: !state.allowKeepaliveWithoutCalls)
         } else {
           onStreamClosed = .none
         }
@@ -402,21 +402,21 @@ extension ClientConnectionHandler {
     }
 
     /// Returns whether a keep alive ping should be sent to the server.
-    mutating func sendKeepAlivePing() -> Bool {
-      let sendKeepAlivePing: Bool
+    mutating func sendKeepalivePing() -> Bool {
+      let sendKeepalivePing: Bool
 
       // Only send a ping if there are open streams or there are no open streams and keep alive
       // is permitted when there are no active calls.
       switch self.state {
       case .active(let state):
-        sendKeepAlivePing = !state.openStreams.isEmpty || state.allowKeepAliveWithoutCalls
+        sendKeepalivePing = !state.openStreams.isEmpty || state.allowKeepaliveWithoutCalls
       case .closing(let state):
-        sendKeepAlivePing = !state.openStreams.isEmpty || state.allowKeepAliveWithoutCalls
+        sendKeepalivePing = !state.openStreams.isEmpty || state.allowKeepaliveWithoutCalls
       case .closed:
-        sendKeepAlivePing = false
+        sendKeepalivePing = false
       }
 
-      return sendKeepAlivePing
+      return sendKeepalivePing
     }
 
     enum OnGracefulShutDown: Equatable {

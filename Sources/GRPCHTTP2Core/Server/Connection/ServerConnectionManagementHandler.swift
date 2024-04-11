@@ -162,7 +162,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
       self.handler.eventLoop.assertInEventLoop()
       if self.handler.frameStats.didWriteHeadersOrData {
         self.handler.frameStats.reset()
-        self.handler.state.resetKeepAliveState()
+        self.handler.state.resetKeepaliveState()
       }
     }
 
@@ -191,7 +191,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   ///   - keepaliveTimeout: The amount of time the client has to reply after the server sends a
   ///       keep-alive ping to keep the connection open. The connection is closed if no reply
   ///       is received.
-  ///   - allowKeepAliveWithoutCalls: Whether the server allows the client to send keep-alive pings
+  ///   - allowKeepaliveWithoutCalls: Whether the server allows the client to send keep-alive pings
   ///       when there are no calls in progress.
   ///   - minPingIntervalWithoutCalls: The minimum allowed interval the client is allowed to send
   ///       keep-alive pings. Pings more frequent than this interval count as 'strikes' and the
@@ -204,7 +204,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     maxGraceTime: TimeAmount?,
     keepaliveTime: TimeAmount?,
     keepaliveTimeout: TimeAmount?,
-    allowKeepAliveWithoutCalls: Bool,
+    allowKeepaliveWithoutCalls: Bool,
     minPingIntervalWithoutCalls: TimeAmount,
     clock: Clock = .nio
   ) {
@@ -223,7 +223,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.keepalivePingData = HTTP2PingData(withInteger: pingData)
 
     self.state = StateMachine(
-      allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls,
+      allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls,
       minPingReceiveIntervalWithoutCalls: minPingIntervalWithoutCalls,
       goAwayPingData: HTTP2PingData(withInteger: ~pingData)
     )

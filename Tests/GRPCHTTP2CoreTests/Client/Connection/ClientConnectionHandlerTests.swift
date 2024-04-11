@@ -70,7 +70,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
     try connection.waitUntilClosed()
   }
 
-  func testKeepAliveWithOpenStreams() throws {
+  func testKeepaliveWithOpenStreams() throws {
     let connection = try Connection(keepaliveTime: .minutes(1), keepaliveTimeout: .seconds(10))
     try connection.activate()
 
@@ -96,8 +96,8 @@ final class ClientConnectionHandlerTests: XCTestCase {
     XCTAssertNil(try connection.readFrame())
   }
 
-  func testKeepAliveWithNoOpenStreams() throws {
-    let connection = try Connection(keepaliveTime: .minutes(1), allowKeepAliveWithoutCalls: true)
+  func testKeepaliveWithNoOpenStreams() throws {
+    let connection = try Connection(keepaliveTime: .minutes(1), allowKeepaliveWithoutCalls: true)
     try connection.activate()
 
     for _ in 0 ..< 10 {
@@ -114,7 +114,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
     }
   }
 
-  func testKeepAliveWithOpenStreamsTimingOut() throws {
+  func testKeepaliveWithOpenStreamsTimingOut() throws {
     let connection = try Connection(keepaliveTime: .minutes(1), keepaliveTimeout: .seconds(10))
     try connection.activate()
 
@@ -219,7 +219,7 @@ extension ClientConnectionHandlerTests {
       maxIdleTime: TimeAmount? = nil,
       keepaliveTime: TimeAmount? = nil,
       keepaliveTimeout: TimeAmount? = nil,
-      allowKeepAliveWithoutCalls: Bool = false
+      allowKeepaliveWithoutCalls: Bool = false
     ) throws {
       let loop = EmbeddedEventLoop()
       let handler = ClientConnectionHandler(
@@ -227,7 +227,7 @@ extension ClientConnectionHandlerTests {
         maxIdleTime: maxIdleTime,
         keepaliveTime: keepaliveTime,
         keepaliveTimeout: keepaliveTimeout,
-        keepaliveWithoutCalls: allowKeepAliveWithoutCalls
+        keepaliveWithoutCalls: allowKeepaliveWithoutCalls
       )
 
       self.channel = EmbeddedChannel(handler: handler, loop: loop)
