@@ -68,7 +68,7 @@ extension NameResolvers {
 
     public func resolver(for target: Target) -> NameResolver {
       let endpoints = target.addresses.map { Endpoint(addresses: [.ipv4($0)]) }
-      let resolutionResult = NameResolutionResult(endpoints: endpoints, serviceConfiguration: nil)
+      let resolutionResult = NameResolutionResult(endpoints: endpoints, serviceConfig: nil)
       return NameResolver(names: .constant(resolutionResult), updateMode: .pull)
     }
   }

@@ -148,7 +148,7 @@ extension CallOptions {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension CallOptions {
-  mutating func formUnion(with methodConfig: MethodConfiguration?) {
+  mutating func formUnion(with methodConfig: MethodConfig?) {
     guard let methodConfig = methodConfig else { return }
 
     self.timeout.setIfNone(to: methodConfig.timeout)

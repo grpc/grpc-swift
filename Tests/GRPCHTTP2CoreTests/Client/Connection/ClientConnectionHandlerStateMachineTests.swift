@@ -22,9 +22,9 @@ import XCTest
 
 final class ClientConnectionHandlerStateMachineTests: XCTestCase {
   private func makeStateMachine(
-    keepAliveWithoutCalls: Bool = false
+    keepaliveWithoutCalls: Bool = false
   ) -> ClientConnectionHandler.StateMachine {
-    return ClientConnectionHandler.StateMachine(allowKeepAliveWithoutCalls: keepAliveWithoutCalls)
+    return ClientConnectionHandler.StateMachine(allowKeepaliveWithoutCalls: keepaliveWithoutCalls)
   }
 
   func testCloseSomeStreamsWhenActive() {
@@ -32,7 +32,7 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
     state.streamOpened(1)
     state.streamOpened(2)
     XCTAssertEqual(state.streamClosed(2), .none)
-    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepAlive: true))
+    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepalive: true))
   }
 
   func testCloseSomeStreamsWhenClosing() {
@@ -51,45 +51,45 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
     XCTAssertEqual(state.streamClosed(1), .none)
   }
 
-  func testSendKeepAlivePing() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: false)
+  func testSendKeepalivePing() {
+    var state = self.makeStateMachine(keepaliveWithoutCalls: false)
     // No streams open so ping isn't allowed.
-    XCTAssertFalse(state.sendKeepAlivePing())
+    XCTAssertFalse(state.sendKeepalivePing())
 
     // Stream open, ping allowed.
     state.streamOpened(1)
-    XCTAssertTrue(state.sendKeepAlivePing())
+    XCTAssertTrue(state.sendKeepalivePing())
 
     // No stream, no ping.
-    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepAlive: true))
-    XCTAssertFalse(state.sendKeepAlivePing())
+    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepalive: true))
+    XCTAssertFalse(state.sendKeepalivePing())
   }
 
-  func testSendKeepAlivePingWhenAllowedWithoutCalls() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: true)
+  func testSendKeepalivePingWhenAllowedWithoutCalls() {
+    var state = self.makeStateMachine(keepaliveWithoutCalls: true)
     // Keep alive is allowed when no streams are open, so pings are allowed.
-    XCTAssertTrue(state.sendKeepAlivePing())
+    XCTAssertTrue(state.sendKeepalivePing())
 
     state.streamOpened(1)
-    XCTAssertTrue(state.sendKeepAlivePing())
+    XCTAssertTrue(state.sendKeepalivePing())
 
-    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepAlive: false))
-    XCTAssertTrue(state.sendKeepAlivePing())
+    XCTAssertEqual(state.streamClosed(1), .startIdleTimer(cancelKeepalive: false))
+    XCTAssertTrue(state.sendKeepalivePing())
   }
 
-  func testSendKeepAlivePingWhenClosing() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: false)
+  func testSendKeepalivePingWhenClosing() {
+    var state = self.makeStateMachine(keepaliveWithoutCalls: false)
     state.streamOpened(1)
     XCTAssertTrue(state.beginClosing())
 
     // Stream is opened and state is closing, ping is allowed.
-    XCTAssertTrue(state.sendKeepAlivePing())
+    XCTAssertTrue(state.sendKeepalivePing())
   }
 
-  func testSendKeepAlivePingWhenClosed() {
-    var state = self.makeStateMachine(keepAliveWithoutCalls: true)
+  func testSendKeepalivePingWhenClosed() {
+    var state = self.makeStateMachine(keepaliveWithoutCalls: true)
     _ = state.closed()
-    XCTAssertFalse(state.sendKeepAlivePing())
+    XCTAssertFalse(state.sendKeepalivePing())
   }
 
   func testBeginGracefulShutdownWhenStreamsAreOpen() {

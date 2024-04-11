@@ -60,14 +60,14 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   private var maxGraceTimer: Timer?
 
   /// The amount of time to wait before sending a keep alive ping.
-  private var keepAliveTimer: Timer?
+  private var keepaliveTimer: Timer?
 
   /// The amount of time the client has to reply after sending a keep alive ping. Only used if
-  /// `keepAliveTimer` is set.
-  private var keepAliveTimeoutTimer: Timer
+  /// `keepaliveTimer` is set.
+  private var keepaliveTimeoutTimer: Timer
 
   /// Opaque data sent in keep alive pings.
-  private let keepAlivePingData: HTTP2PingData
+  private let keepalivePingData: HTTP2PingData
 
   /// Whether a flush is pending.
   private var flushPending: Bool
@@ -162,7 +162,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
       self.handler.eventLoop.assertInEventLoop()
       if self.handler.frameStats.didWriteHeadersOrData {
         self.handler.frameStats.reset()
-        self.handler.state.resetKeepAliveState()
+        self.handler.state.resetKeepaliveState()
       }
     }
 
@@ -186,12 +186,12 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   ///   - maxIdleTime: The maximum amount time a connection may be idle for before being closed.
   ///   - maxAge: The maximum amount of time a connection may exist before being gracefully closed.
   ///   - maxGraceTime: The maximum amount of time that the connection has to close gracefully.
-  ///   - keepAliveTime: The amount of time to wait after reading data before sending a keep-alive
+  ///   - keepaliveTime: The amount of time to wait after reading data before sending a keep-alive
   ///       ping.
-  ///   - keepAliveTimeout: The amount of time the client has to reply after the server sends a
+  ///   - keepaliveTimeout: The amount of time the client has to reply after the server sends a
   ///       keep-alive ping to keep the connection open. The connection is closed if no reply
   ///       is received.
-  ///   - allowKeepAliveWithoutCalls: Whether the server allows the client to send keep-alive pings
+  ///   - allowKeepaliveWithoutCalls: Whether the server allows the client to send keep-alive pings
   ///       when there are no calls in progress.
   ///   - minPingIntervalWithoutCalls: The minimum allowed interval the client is allowed to send
   ///       keep-alive pings. Pings more frequent than this interval count as 'strikes' and the
@@ -202,9 +202,9 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     maxIdleTime: TimeAmount?,
     maxAge: TimeAmount?,
     maxGraceTime: TimeAmount?,
-    keepAliveTime: TimeAmount?,
-    keepAliveTimeout: TimeAmount?,
-    allowKeepAliveWithoutCalls: Bool,
+    keepaliveTime: TimeAmount?,
+    keepaliveTimeout: TimeAmount?,
+    allowKeepaliveWithoutCalls: Bool,
     minPingIntervalWithoutCalls: TimeAmount,
     clock: Clock = .nio
   ) {
@@ -214,16 +214,16 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.maxAgeTimer = maxAge.map { Timer(delay: $0) }
     self.maxGraceTimer = maxGraceTime.map { Timer(delay: $0) }
 
-    self.keepAliveTimer = keepAliveTime.map { Timer(delay: $0) }
+    self.keepaliveTimer = keepaliveTime.map { Timer(delay: $0) }
     // Always create a keep alive timeout timer, it's only used if there is a keep alive timer.
-    self.keepAliveTimeoutTimer = Timer(delay: keepAliveTimeout ?? .seconds(20))
+    self.keepaliveTimeoutTimer = Timer(delay: keepaliveTimeout ?? .seconds(20))
 
     // Generate a random value to be used as keep alive ping data.
     let pingData = UInt64.random(in: .min ... .max)
-    self.keepAlivePingData = HTTP2PingData(withInteger: pingData)
+    self.keepalivePingData = HTTP2PingData(withInteger: pingData)
 
     self.state = StateMachine(
-      allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls,
+      allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls,
       minPingReceiveIntervalWithoutCalls: minPingIntervalWithoutCalls,
       goAwayPingData: HTTP2PingData(withInteger: ~pingData)
     )
@@ -247,8 +247,8 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
       self.initiateGracefulShutdown(context: context)
     }
 
-    self.keepAliveTimer?.schedule(on: context.eventLoop) {
-      self.keepAliveTimerFired(context: context)
+    self.keepaliveTimer?.schedule(on: context.eventLoop) {
+      self.keepaliveTimerFired(context: context)
     }
 
     context.fireChannelActive()
@@ -258,8 +258,8 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.maxIdleTimer?.cancel()
     self.maxAgeTimer?.cancel()
     self.maxGraceTimer?.cancel()
-    self.keepAliveTimer?.cancel()
-    self.keepAliveTimeoutTimer.cancel()
+    self.keepaliveTimer?.cancel()
+    self.keepaliveTimeoutTimer.cancel()
     context.fireChannelInactive()
   }
 
@@ -295,8 +295,8 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.inReadLoop = true
 
     // Any read data indicates that the connection is alive so cancel the keep-alive timers.
-    self.keepAliveTimer?.cancel()
-    self.keepAliveTimeoutTimer.cancel()
+    self.keepaliveTimer?.cancel()
+    self.keepaliveTimeoutTimer.cancel()
 
     let frame = self.unwrapInboundIn(data)
     switch frame.payload {
@@ -323,8 +323,8 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.inReadLoop = false
 
     // Done reading: schedule the keep-alive timer.
-    self.keepAliveTimer?.schedule(on: context.eventLoop) {
-      self.keepAliveTimerFired(context: context)
+    self.keepaliveTimer?.schedule(on: context.eventLoop) {
+      self.keepaliveTimerFired(context: context)
     }
 
     context.fireChannelReadComplete()
@@ -350,8 +350,8 @@ extension ServerConnectionManagementHandler {
     // Cancel any timers if initiating shutdown.
     self.maxIdleTimer?.cancel()
     self.maxAgeTimer?.cancel()
-    self.keepAliveTimer?.cancel()
-    self.keepAliveTimeoutTimer.cancel()
+    self.keepaliveTimer?.cancel()
+    self.keepaliveTimeoutTimer.cancel()
 
     switch self.state.startGracefulShutdown() {
     case .sendGoAwayAndPing(let pingData):
@@ -436,13 +436,13 @@ extension ServerConnectionManagementHandler {
     }
   }
 
-  private func keepAliveTimerFired(context: ChannelHandlerContext) {
-    let ping = HTTP2Frame(streamID: .rootStream, payload: .ping(self.keepAlivePingData, ack: false))
+  private func keepaliveTimerFired(context: ChannelHandlerContext) {
+    let ping = HTTP2Frame(streamID: .rootStream, payload: .ping(self.keepalivePingData, ack: false))
     context.write(self.wrapInboundOut(ping), promise: nil)
     self.maybeFlush(context: context)
 
     // Schedule a timeout on waiting for the response.
-    self.keepAliveTimeoutTimer.schedule(on: context.eventLoop) {
+    self.keepaliveTimeoutTimer.schedule(on: context.eventLoop) {
       self.initiateGracefulShutdown(context: context)
     }
   }

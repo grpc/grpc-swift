@@ -16,7 +16,7 @@
 
 // TODO: when swift(>=5.9), use 'package' access level
 
-/// A collection of ``MethodConfiguration``s, mapped to specific methods or services.
+/// A collection of ``MethodConfig``s, mapped to specific methods or services.
 ///
 /// When creating a new instance, no overrides and no default will be set for using when getting
 /// a configuration for a method that has not been given a specific override.
@@ -25,23 +25,23 @@
 ///
 /// Use the subscript to get and set configurations for specific methods.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct _MethodConfigurations: Sendable, Hashable {
-  private var elements: [MethodConfiguration.Name: MethodConfiguration]
+public struct _MethodConfigs: Sendable, Hashable {
+  private var elements: [MethodConfig.Name: MethodConfig]
 
-  /// Create a new ``_MethodConfigurations``.
+  /// Create a new ``_MethodConfigs``.
   ///
-  /// - Parameter serviceConfiguration: The configuration to read ``MethodConfiguration`` from.
-  public init(serviceConfiguration: ServiceConfiguration = ServiceConfiguration()) {
+  /// - Parameter serviceConfig: The configuration to read ``MethodConfig`` from.
+  public init(serviceConfig: ServiceConfig = ServiceConfig()) {
     self.elements = [:]
 
-    for configuration in serviceConfiguration.methodConfiguration {
+    for configuration in serviceConfig.methodConfig {
       for name in configuration.names {
         self.elements[name] = configuration
       }
     }
   }
 
-  /// Get or set the corresponding ``MethodConfiguration`` for the given ``MethodDescriptor``.
+  /// Get or set the corresponding ``MethodConfig`` for the given ``MethodDescriptor``.
   ///
   /// Configuration is hierarchical and can be set per-method, per-service
   /// (``setDefaultConfiguration(_:forService:)``) and globally (``setDefaultConfiguration(_:)``).
@@ -51,10 +51,10 @@ public struct _MethodConfigurations: Sendable, Hashable {
   /// global configuration is returned, if present.
   ///
   /// - Parameters:
-  ///  - descriptor: The ``MethodDescriptor`` for which to get or set a ``MethodConfiguration``.
-  public subscript(_ descriptor: MethodDescriptor) -> MethodConfiguration? {
+  ///  - descriptor: The ``MethodDescriptor`` for which to get or set a ``MethodConfig``.
+  public subscript(_ descriptor: MethodDescriptor) -> MethodConfig? {
     get {
-      var name = MethodConfiguration.Name(service: descriptor.service, method: descriptor.method)
+      var name = MethodConfig.Name(service: descriptor.service, method: descriptor.method)
 
       if let configuration = self.elements[name] {
         return configuration
@@ -73,7 +73,7 @@ public struct _MethodConfigurations: Sendable, Hashable {
     }
 
     set {
-      let name = MethodConfiguration.Name(service: descriptor.service, method: descriptor.method)
+      let name = MethodConfig.Name(service: descriptor.service, method: descriptor.method)
       self.elements[name] = newValue
     }
   }
@@ -81,8 +81,8 @@ public struct _MethodConfigurations: Sendable, Hashable {
   /// Set a default configuration for all methods that have no overrides.
   ///
   /// - Parameter configuration: The default configuration.
-  public mutating func setDefaultConfiguration(_ configuration: MethodConfiguration?) {
-    let name = MethodConfiguration.Name(service: "", method: "")
+  public mutating func setDefaultConfiguration(_ configuration: MethodConfig?) {
+    let name = MethodConfig.Name(service: "", method: "")
     self.elements[name] = configuration
   }
 
@@ -90,16 +90,16 @@ public struct _MethodConfigurations: Sendable, Hashable {
   ///
   /// If getting a configuration for a method that's part of a service, and the method itself doesn't have an
   /// override, then this configuration will be used instead of the default configuration passed when creating
-  /// this instance of ``MethodConfigurations``.
+  /// this instance of ``MethodConfigs``.
   ///
   /// - Parameters:
   ///   - configuration: The default configuration for the service.
   ///   - service: The name of the service for which this override applies.
   public mutating func setDefaultConfiguration(
-    _ configuration: MethodConfiguration?,
+    _ configuration: MethodConfig?,
     forService service: String
   ) {
-    let name = MethodConfiguration.Name(service: "", method: "")
+    let name = MethodConfig.Name(service: "", method: "")
     self.elements[name] = configuration
   }
 }

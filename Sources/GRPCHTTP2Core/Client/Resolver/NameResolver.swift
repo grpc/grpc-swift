@@ -67,14 +67,14 @@ public struct NameResolutionResult: Hashable, Sendable {
 
   /// The service configuration reported by the resolver, or an error if it couldn't be parsed.
   /// This value may be `nil` if the resolver doesn't support fetching service configuration.
-  public var serviceConfiguration: Result<ServiceConfiguration, RPCError>?
+  public var serviceConfig: Result<ServiceConfig, RPCError>?
 
   public init(
     endpoints: [Endpoint],
-    serviceConfiguration: Result<ServiceConfiguration, RPCError>?
+    serviceConfig: Result<ServiceConfig, RPCError>?
   ) {
     self.endpoints = endpoints
-    self.serviceConfiguration = serviceConfiguration
+    self.serviceConfig = serviceConfig
   }
 }
 

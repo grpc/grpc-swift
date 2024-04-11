@@ -57,7 +57,7 @@ extension NameResolvers {
 
     public func resolver(for target: Target) -> NameResolver {
       let endpoint = Endpoint(addresses: [.vsock(target.address)])
-      let resolutionResult = NameResolutionResult(endpoints: [endpoint], serviceConfiguration: nil)
+      let resolutionResult = NameResolutionResult(endpoints: [endpoint], serviceConfig: nil)
       return NameResolver(names: .constant(resolutionResult), updateMode: .pull)
     }
   }

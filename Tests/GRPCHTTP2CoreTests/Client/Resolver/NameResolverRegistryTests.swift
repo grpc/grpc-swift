@@ -178,7 +178,7 @@ final class NameResolverRegistryTests: XCTestCase {
     for _ in 0 ..< 1000 {
       let result = try await XCTUnwrapAsync { try await iterator.next() }
       XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.ipv4(host: "foo", port: 1234)])])
-      XCTAssertNil(result.serviceConfiguration)
+      XCTAssertNil(result.serviceConfig)
     }
   }
 
@@ -199,7 +199,7 @@ final class NameResolverRegistryTests: XCTestCase {
           Endpoint(addresses: [.ipv4(host: "bar", port: 444)]),
         ]
       )
-      XCTAssertNil(result.serviceConfiguration)
+      XCTAssertNil(result.serviceConfig)
     }
   }
 
@@ -214,7 +214,7 @@ final class NameResolverRegistryTests: XCTestCase {
     for _ in 0 ..< 1000 {
       let result = try await XCTUnwrapAsync { try await iterator.next() }
       XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.ipv6(host: "foo", port: 1234)])])
-      XCTAssertNil(result.serviceConfiguration)
+      XCTAssertNil(result.serviceConfig)
     }
   }
 
@@ -235,7 +235,7 @@ final class NameResolverRegistryTests: XCTestCase {
           Endpoint(addresses: [.ipv6(host: "bar", port: 444)]),
         ]
       )
-      XCTAssertNil(result.serviceConfiguration)
+      XCTAssertNil(result.serviceConfig)
     }
   }
 
@@ -250,7 +250,7 @@ final class NameResolverRegistryTests: XCTestCase {
     for _ in 0 ..< 1000 {
       let result = try await XCTUnwrapAsync { try await iterator.next() }
       XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.unixDomainSocket(path: "/foo")])])
-      XCTAssertNil(result.serviceConfiguration)
+      XCTAssertNil(result.serviceConfig)
     }
   }
 
@@ -265,7 +265,7 @@ final class NameResolverRegistryTests: XCTestCase {
     for _ in 0 ..< 1000 {
       let result = try await XCTUnwrapAsync { try await iterator.next() }
       XCTAssertEqual(result.endpoints, [Endpoint(addresses: [.vsock(contextID: .any, port: .any)])])
-      XCTAssertNil(result.serviceConfiguration)
+      XCTAssertNil(result.serviceConfig)
     }
   }
 }
