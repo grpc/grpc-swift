@@ -32,12 +32,29 @@ enum GRPCStreamStateMachineConfiguration {
     var methodDescriptor: MethodDescriptor
     var scheme: Scheme
     var outboundEncoding: CompressionAlgorithm
-    var acceptedEncodings: [CompressionAlgorithm]
+    var acceptedEncodings: CompressionAlgorithmSet
+
+    init(
+      methodDescriptor: MethodDescriptor,
+      scheme: Scheme,
+      outboundEncoding: CompressionAlgorithm,
+      acceptedEncodings: CompressionAlgorithmSet
+    ) {
+      self.methodDescriptor = methodDescriptor
+      self.scheme = scheme
+      self.outboundEncoding = outboundEncoding
+      self.acceptedEncodings = acceptedEncodings.union(.none)
+    }
   }
 
   struct ServerConfiguration {
     var scheme: Scheme
-    var acceptedEncodings: [CompressionAlgorithm]
+    var acceptedEncodings: CompressionAlgorithmSet
+
+    init(scheme: Scheme, acceptedEncodings: CompressionAlgorithmSet) {
+      self.scheme = scheme
+      self.acceptedEncodings = acceptedEncodings.union(.none)
+    }
   }
 }
 
@@ -490,7 +507,7 @@ extension GRPCStreamStateMachine {
     methodDescriptor: MethodDescriptor,
     scheme: Scheme,
     outboundEncoding: CompressionAlgorithm?,
-    acceptedEncodings: [CompressionAlgorithm],
+    acceptedEncodings: CompressionAlgorithmSet,
     customMetadata: Metadata
   ) -> HPACKHeaders {
     var headers = HPACKHeaders()
@@ -509,12 +526,12 @@ extension GRPCStreamStateMachine {
     headers.add(ContentType.grpc.canonicalValue, forKey: .contentType)
     headers.add("trailers", forKey: .te)  // Used to detect incompatible proxies
 
-    if let encoding = outboundEncoding, encoding != .identity {
+    if let encoding = outboundEncoding, encoding != .none {
       headers.add(encoding.name, forKey: .encoding)
     }
 
-    for acceptedEncoding in acceptedEncodings {
-      headers.add(acceptedEncoding.name, forKey: .acceptEncoding)
+    for encoding in acceptedEncodings.elements.filter({ $0 != .none }) {
+      headers.add(encoding.name, forKey: .acceptEncoding)
     }
 
     for metadataPair in customMetadata {
@@ -711,7 +728,7 @@ extension GRPCStreamStateMachine {
   ) -> ProcessInboundEncodingResult {
     let inboundEncoding: CompressionAlgorithm
     if let serverEncoding = headers.first(name: GRPCHTTP2Keys.encoding.rawValue) {
-      guard let parsedEncoding = CompressionAlgorithm(rawValue: serverEncoding),
+      guard let parsedEncoding = CompressionAlgorithm(name: serverEncoding),
         configuration.acceptedEncodings.contains(parsedEncoding)
       else {
         return .error(
@@ -727,7 +744,7 @@ extension GRPCStreamStateMachine {
       }
       inboundEncoding = parsedEncoding
     } else {
-      inboundEncoding = .identity
+      inboundEncoding = .none
     }
     return .success(inboundEncoding)
   }
@@ -997,11 +1014,11 @@ extension GRPCStreamStateMachine {
     headers.add("200", forKey: .status)
     headers.add(ContentType.grpc.canonicalValue, forKey: .contentType)
 
-    if let outboundEncoding, outboundEncoding != .identity {
+    if let outboundEncoding, outboundEncoding != .none {
       headers.add(outboundEncoding.name, forKey: .encoding)
     }
 
-    for acceptedEncoding in configuration.acceptedEncodings {
+    for acceptedEncoding in configuration.acceptedEncodings.elements.filter({ $0 != .none }) {
       headers.add(acceptedEncoding.name, forKey: .acceptEncoding)
     }
 
@@ -1241,10 +1258,6 @@ extension GRPCStreamStateMachine {
         )
       }
 
-      func isIdentityOrCompatibleEncoding(_ clientEncoding: CompressionAlgorithm) -> Bool {
-        clientEncoding == .identity || configuration.acceptedEncodings.contains(clientEncoding)
-      }
-
       // Firstly, find out if we support the client's chosen encoding, and reject
       // the RPC if we don't.
       let inboundEncoding: CompressionAlgorithm
@@ -1263,30 +1276,21 @@ extension GRPCStreamStateMachine {
           return .rejectRPC(trailers: trailers)
         }
 
-        guard let clientEncoding = CompressionAlgorithm(rawValue: String(rawEncoding)),
-          isIdentityOrCompatibleEncoding(clientEncoding)
+        guard let clientEncoding = CompressionAlgorithm(name: rawEncoding),
+          configuration.acceptedEncodings.contains(clientEncoding)
         else {
-          let statusMessage: String
-          let customMetadata: Metadata?
-          if configuration.acceptedEncodings.isEmpty {
-            statusMessage = "Compression is not supported"
-            customMetadata = nil
-          } else {
-            statusMessage = """
-              \(rawEncoding) compression is not supported; \
-              supported algorithms are listed in grpc-accept-encoding
-              """
-            customMetadata = {
-              var trailers = Metadata()
-              trailers.reserveCapacity(configuration.acceptedEncodings.count)
-              for acceptedEncoding in configuration.acceptedEncodings {
-                trailers.addString(
-                  acceptedEncoding.name,
-                  forKey: GRPCHTTP2Keys.acceptEncoding.rawValue
-                )
-              }
-              return trailers
-            }()
+          let statusMessage = """
+            \(rawEncoding) compression is not supported; \
+            supported algorithms are listed in grpc-accept-encoding
+            """
+
+          var customMetadata = Metadata()
+          customMetadata.reserveCapacity(configuration.acceptedEncodings.count)
+          for acceptedEncoding in configuration.acceptedEncodings.elements {
+            customMetadata.addString(
+              acceptedEncoding.name,
+              forKey: GRPCHTTP2Keys.acceptEncoding.rawValue
+            )
           }
 
           let trailers = self.makeTrailers(
@@ -1300,12 +1304,12 @@ extension GRPCStreamStateMachine {
         // Server supports client's encoding.
         inboundEncoding = clientEncoding
       } else {
-        inboundEncoding = .identity
+        inboundEncoding = .none
       }
 
       // Secondly, find a compatible encoding the server can use to compress outbound messages,
       // based on the encodings the client has advertised.
-      var outboundEncoding: CompressionAlgorithm = .identity
+      var outboundEncoding: CompressionAlgorithm = .none
       let clientAdvertisedEncodings = headers.values(
         forHeader: GRPCHTTP2Keys.acceptEncoding.rawValue,
         canonicalForm: true
@@ -1314,8 +1318,8 @@ extension GRPCStreamStateMachine {
       // If it's identity, just skip it altogether, since we won't be
       // compressing.
       for clientAdvertisedEncoding in clientAdvertisedEncodings {
-        if let algorithm = CompressionAlgorithm(rawValue: String(clientAdvertisedEncoding)),
-          isIdentityOrCompatibleEncoding(algorithm)
+        if let algorithm = CompressionAlgorithm(name: clientAdvertisedEncoding),
+          configuration.acceptedEncodings.contains(algorithm)
         {
           outboundEncoding = algorithm
           break
@@ -1510,7 +1514,7 @@ extension HPACKHeaders {
 extension Zlib.Method {
   init?(encoding: CompressionAlgorithm) {
     switch encoding {
-    case .identity:
+    case .none:
       return nil
     case .deflate:
       self = .deflate

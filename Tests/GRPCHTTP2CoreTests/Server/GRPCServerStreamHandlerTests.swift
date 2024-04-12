@@ -266,7 +266,9 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         GRPCHTTP2Keys.status.rawValue: "200",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.unimplemented.rawValue),
-        GRPCHTTP2Keys.grpcStatusMessage.rawValue: "Compression is not supported",
+        GRPCHTTP2Keys.grpcStatusMessage.rawValue:
+          "deflate compression is not supported; supported algorithms are listed in grpc-accept-encoding",
+        GRPCHTTP2Keys.acceptEncoding.rawValue: "identity",
       ]
     )
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)

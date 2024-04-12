@@ -80,33 +80,33 @@ public struct CallOptions: Sendable {
   /// Whether compression is enabled or not for request and response messages.
   public var compression: Compression
 
+  /// Compression configuration.
+  ///
+  /// Note that this configuration is advisory: not all transports support compression and may
+  /// ignore this configuration. Transports which support compression will use this configuration
+  /// in preference to any compression configured at a transport level.
   public struct Compression: Sendable {
-    /// Whether request messages should be compressed.
+    /// The algorithm used for compressing outbound messages.
     ///
-    /// Note that this option is _advisory_: transports are not required to support compression.
-    public var requests: Bool
+    /// If `nil` the value configured on the transport will be used instead.
+    public var algorithm: CompressionAlgorithm?
 
-    /// Whether response messages are permitted to be compressed.
-    public var responses: Bool
+    /// The enabled compression algorithms.
+    ///
+    /// If `nil` the value configured on the transport will be used instead.
+    public var enabledAlgorithms: CompressionAlgorithmSet?
 
     /// Creates a new ``Compression`` configuration.
     ///
     /// - Parameters:
-    ///   - requests: Whether request messages should be compressed.
-    ///   - responses: Whether response messages may be compressed.
-    public init(requests: Bool, responses: Bool) {
-      self.requests = requests
-      self.responses = responses
-    }
-
-    /// Sets ``requests`` and ``responses`` to `true`.
-    public static var enabled: Self {
-      Self(requests: true, responses: true)
-    }
-
-    /// Sets ``requests`` and ``responses`` to `false`.
-    public static var disabled: Self {
-      Self(requests: false, responses: false)
+    ///   - algorithm: The algorithm used for compressing outbound messages.
+    ///   - enabledAlgorithms: The enabled compression algorithms.
+    public init(
+      algorithm: CompressionAlgorithm? = nil,
+      enabledAlgorithms: CompressionAlgorithmSet? = nil
+    ) {
+      self.algorithm = algorithm
+      self.enabledAlgorithms = enabledAlgorithms
     }
   }
 
@@ -131,9 +131,7 @@ public struct CallOptions: Sendable {
 extension CallOptions {
   /// Default call options.
   ///
-  /// The default values defer values to the underlying transport. In most cases this means values
-  /// are `nil`, with the exception of ``compression-swift.property`` which is set
-  /// to ``Compression-swift.struct/disabled``.
+  /// The default values (`nil`) defer values to the underlying transport.
   public static var defaults: Self {
     Self(
       timeout: nil,
@@ -141,7 +139,7 @@ extension CallOptions {
       maxRequestMessageBytes: nil,
       maxResponseMessageBytes: nil,
       executionPolicy: nil,
-      compression: .disabled
+      compression: Compression()
     )
   }
 }
