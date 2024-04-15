@@ -18,9 +18,9 @@
 ///
 /// See also: https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct ServiceConfiguration: Hashable, Sendable {
+public struct ServiceConfig: Hashable, Sendable {
   /// Per-method configuration.
-  public var methodConfiguration: [MethodConfiguration]
+  public var methodConfig: [MethodConfig]
 
   /// Load balancing policies.
   ///
@@ -44,26 +44,26 @@ public struct ServiceConfiguration: Hashable, Sendable {
   /// and hedged RPCs will not be sent.
   public var retryThrottlingPolicy: RetryThrottlingPolicy?
 
-  /// Creates a new ``ServiceConfiguration``.
+  /// Creates a new ``ServiceConfig``.
   ///
   /// - Parameters:
-  ///   - methodConfiguration: Per-method configuration.
+  ///   - methodConfig: Per-method configuration.
   ///   - loadBalancingConfiguration: Load balancing policies. Clients use the the first supported
   ///       policy when iterating the list in order.
   ///   - retryThrottlingPolicy: Policy for throttling retries.
   public init(
-    methodConfiguration: [MethodConfiguration] = [],
+    methodConfig: [MethodConfig] = [],
     loadBalancingConfiguration: [LoadBalancingConfiguration] = [],
     retryThrottlingPolicy: RetryThrottlingPolicy? = nil
   ) {
-    self.methodConfiguration = methodConfiguration
+    self.methodConfig = methodConfig
     self.loadBalancingConfiguration = loadBalancingConfiguration
     self.retryThrottlingPolicy = retryThrottlingPolicy
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfiguration: Codable {
+extension ServiceConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case methodConfig
     case loadBalancingConfig
@@ -73,11 +73,11 @@ extension ServiceConfiguration: Codable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
-    let methodConfiguration = try container.decodeIfPresent(
-      [MethodConfiguration].self,
+    let methodConfig = try container.decodeIfPresent(
+      [MethodConfig].self,
       forKey: .methodConfig
     )
-    self.methodConfiguration = methodConfiguration ?? []
+    self.methodConfig = methodConfig ?? []
 
     let loadBalancingConfiguration = try container.decodeIfPresent(
       [LoadBalancingConfiguration].self,
@@ -93,14 +93,14 @@ extension ServiceConfiguration: Codable {
 
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(self.methodConfiguration, forKey: .methodConfig)
+    try container.encode(self.methodConfig, forKey: .methodConfig)
     try container.encode(self.loadBalancingConfiguration, forKey: .loadBalancingConfig)
     try container.encodeIfPresent(self.retryThrottlingPolicy, forKey: .retryThrottling)
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfiguration {
+extension ServiceConfig {
   /// Configuration used by clients for load-balancing.
   public struct LoadBalancingConfiguration: Hashable, Sendable {
     private enum Value: Hashable, Sendable {
@@ -166,7 +166,7 @@ extension ServiceConfiguration {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfiguration.LoadBalancingConfiguration {
+extension ServiceConfig.LoadBalancingConfiguration {
   /// Configuration for the pick-first load balancing policy.
   public struct PickFirst: Hashable, Sendable, Codable {
     /// Whether the resolved addresses should be shuffled before attempting to connect to them.
@@ -194,7 +194,7 @@ extension ServiceConfiguration.LoadBalancingConfiguration {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfiguration.LoadBalancingConfiguration: Codable {
+extension ServiceConfig.LoadBalancingConfiguration: Codable {
   private enum CodingKeys: String, CodingKey {
     case roundRobin = "round_robin"
     case pickFirst = "pick_first"
@@ -225,7 +225,7 @@ extension ServiceConfiguration.LoadBalancingConfiguration: Codable {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfiguration {
+extension ServiceConfig {
   public struct RetryThrottlingPolicy: Hashable, Sendable, Codable {
     /// The initial, and maximum number of tokens.
     ///

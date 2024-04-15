@@ -19,7 +19,7 @@ import GRPCCore
 import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class ServiceConfigurationCodingTests: XCTestCase {
+final class ServiceConfigCodingTests: XCTestCase {
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()
 
@@ -46,9 +46,9 @@ final class ServiceConfigurationCodingTests: XCTestCase {
       }
       """
 
-    let expected = try ServiceConfiguration.RetryThrottlingPolicy(maxTokens: 10, tokenRatio: 0.5)
+    let expected = try ServiceConfig.RetryThrottlingPolicy(maxTokens: 10, tokenRatio: 0.5)
     let policy = try self.decoder.decode(
-      ServiceConfiguration.RetryThrottlingPolicy.self,
+      ServiceConfig.RetryThrottlingPolicy.self,
       from: Data(json.utf8)
     )
 
@@ -56,7 +56,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
   }
 
   func testEncodeDecodeRetryThrottlingPolicy() throws {
-    let policy = try ServiceConfiguration.RetryThrottlingPolicy(maxTokens: 10, tokenRatio: 0.5)
+    let policy = try ServiceConfig.RetryThrottlingPolicy(maxTokens: 10, tokenRatio: 0.5)
     try self.testRoundTripEncodeDecode(policy)
   }
 
@@ -72,7 +72,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
 
       try self.testDecodeThrowsRuntimeError(
         json: json,
-        as: ServiceConfiguration.RetryThrottlingPolicy.self
+        as: ServiceConfig.RetryThrottlingPolicy.self
       )
     }
   }
@@ -89,13 +89,13 @@ final class ServiceConfigurationCodingTests: XCTestCase {
 
       try self.testDecodeThrowsRuntimeError(
         json: json,
-        as: ServiceConfiguration.RetryThrottlingPolicy.self
+        as: ServiceConfig.RetryThrottlingPolicy.self
       )
     }
   }
 
   func testDecodePickFirstPolicy() throws {
-    let inputs: [(String, ServiceConfiguration.LoadBalancingConfiguration.PickFirst)] = [
+    let inputs: [(String, ServiceConfig.LoadBalancingConfiguration.PickFirst)] = [
       (#"{"shuffleAddressList": true}"#, .init(shuffleAddressList: true)),
       (#"{"shuffleAddressList": false}"#, .init(shuffleAddressList: false)),
       (#"{}"#, .init(shuffleAddressList: false)),
@@ -103,7 +103,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
 
     for (input, expected) in inputs {
       let pickFirst = try self.decoder.decode(
-        ServiceConfiguration.LoadBalancingConfiguration.PickFirst.self,
+        ServiceConfig.LoadBalancingConfiguration.PickFirst.self,
         from: Data(input.utf8)
       )
 
@@ -112,7 +112,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
   }
 
   func testEncodePickFirstPolicy() throws {
-    let inputs: [(ServiceConfiguration.LoadBalancingConfiguration.PickFirst, String)] = [
+    let inputs: [(ServiceConfig.LoadBalancingConfiguration.PickFirst, String)] = [
       (.init(shuffleAddressList: true), #"{"shuffleAddressList":true}"#),
       (.init(shuffleAddressList: false), #"{"shuffleAddressList":false}"#),
     ]
@@ -126,20 +126,20 @@ final class ServiceConfigurationCodingTests: XCTestCase {
   func testDecodeRoundRobinPolicy() throws {
     let json = "{}"
     let policy = try self.decoder.decode(
-      ServiceConfiguration.LoadBalancingConfiguration.RoundRobin.self,
+      ServiceConfig.LoadBalancingConfiguration.RoundRobin.self,
       from: Data(json.utf8)
     )
-    XCTAssertEqual(policy, ServiceConfiguration.LoadBalancingConfiguration.RoundRobin())
+    XCTAssertEqual(policy, ServiceConfig.LoadBalancingConfiguration.RoundRobin())
   }
 
   func testEncodeRoundRobinPolicy() throws {
-    let policy = ServiceConfiguration.LoadBalancingConfiguration.RoundRobin()
+    let policy = ServiceConfig.LoadBalancingConfiguration.RoundRobin()
     let encoded = try self.encoder.encode(policy)
     XCTAssertEqual(String(decoding: encoded, as: UTF8.self), "{}")
   }
 
   func testDecodeLoadBalancingConfiguration() throws {
-    let inputs: [(String, ServiceConfiguration.LoadBalancingConfiguration)] = [
+    let inputs: [(String, ServiceConfig.LoadBalancingConfiguration)] = [
       (#"{"round_robin": {}}"#, .roundRobin),
       (#"{"pick_first": {}}"#, .pickFirst(shuffleAddressList: false)),
       (#"{"pick_first": {"shuffleAddressList": false}}"#, .pickFirst(shuffleAddressList: false)),
@@ -147,7 +147,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
 
     for (input, expected) in inputs {
       let decoded = try self.decoder.decode(
-        ServiceConfiguration.LoadBalancingConfiguration.self,
+        ServiceConfig.LoadBalancingConfiguration.self,
         from: Data(input.utf8)
       )
       XCTAssertEqual(decoded, expected)
@@ -155,7 +155,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
   }
 
   func testEncodeLoadBalancingConfiguration() throws {
-    let inputs: [(ServiceConfiguration.LoadBalancingConfiguration, String)] = [
+    let inputs: [(ServiceConfig.LoadBalancingConfiguration, String)] = [
       (.roundRobin, #"{"round_robin":{}}"#),
       (.pickFirst(shuffleAddressList: false), #"{"pick_first":{"shuffleAddressList":false}}"#),
     ]
@@ -166,7 +166,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
     }
   }
 
-  func testDecodeServiceConfigurationFromProtoJSON() throws {
+  func testDecodeServiceConfigFromProtoJSON() throws {
     let serviceConfig = Grpc_ServiceConfig_ServiceConfig.with {
       $0.methodConfig = [
         Grpc_ServiceConfig_MethodConfig.with {
@@ -193,13 +193,13 @@ final class ServiceConfigurationCodingTests: XCTestCase {
     }
 
     let encoded = try serviceConfig.jsonUTF8Data()
-    let decoded = try self.decoder.decode(ServiceConfiguration.self, from: encoded)
+    let decoded = try self.decoder.decode(ServiceConfig.self, from: encoded)
 
-    let expected = ServiceConfiguration(
-      methodConfiguration: [
-        MethodConfiguration(
+    let expected = ServiceConfig(
+      methodConfig: [
+        MethodConfig(
           names: [
-            MethodConfiguration.Name(service: "foo.Foo", method: "Bar")
+            MethodConfig.Name(service: "foo.Foo", method: "Bar")
           ],
           timeout: .seconds(1),
           maxRequestMessageBytes: 123,
@@ -210,7 +210,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
         .roundRobin,
         .pickFirst(shuffleAddressList: true),
       ],
-      retryThrottlingPolicy: try ServiceConfiguration.RetryThrottlingPolicy(
+      retryThrottlingPolicy: try ServiceConfig.RetryThrottlingPolicy(
         maxTokens: 10,
         tokenRatio: 0.1
       )
@@ -219,13 +219,13 @@ final class ServiceConfigurationCodingTests: XCTestCase {
     XCTAssertEqual(decoded, expected)
   }
 
-  func testEncodeAndDecodeServiceConfiguration() throws {
-    let serviceConfig = ServiceConfiguration(
-      methodConfiguration: [
-        MethodConfiguration(
+  func testEncodeAndDecodeServiceConfig() throws {
+    let serviceConfig = ServiceConfig(
+      methodConfig: [
+        MethodConfig(
           names: [
-            MethodConfiguration.Name(service: "echo.Echo", method: "Get"),
-            MethodConfiguration.Name(service: "greeter.HelloWorld"),
+            MethodConfig.Name(service: "echo.Echo", method: "Get"),
+            MethodConfig.Name(service: "greeter.HelloWorld"),
           ],
           timeout: .seconds(42),
           maxRequestMessageBytes: 2048,
@@ -238,9 +238,9 @@ final class ServiceConfigurationCodingTests: XCTestCase {
             )
           )
         ),
-        MethodConfiguration(
+        MethodConfig(
           names: [
-            MethodConfiguration.Name(service: "echo.Echo", method: "Update")
+            MethodConfig.Name(service: "echo.Echo", method: "Update")
           ],
           timeout: .seconds(300),
           maxRequestMessageBytes: 10_000
@@ -250,7 +250,7 @@ final class ServiceConfigurationCodingTests: XCTestCase {
         .pickFirst(shuffleAddressList: true),
         .roundRobin,
       ],
-      retryThrottlingPolicy: try ServiceConfiguration.RetryThrottlingPolicy(
+      retryThrottlingPolicy: try ServiceConfig.RetryThrottlingPolicy(
         maxTokens: 10,
         tokenRatio: 3.141
       )

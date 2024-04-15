@@ -28,7 +28,7 @@ import Atomics
 ///
 /// However, in most cases you should prefer wrapping the ``GRPCClient`` with a generated stub.
 ///
-/// You can set ``ServiceConfiguration``s on this client to override whatever configurations have been
+/// You can set ``ServiceConfig``s on this client to override whatever configurations have been
 /// set on the given transport. You can also use ``ClientInterceptor``s to implement cross-cutting
 /// logic which apply to all RPCs. Example uses of interceptors include authentication and logging.
 ///
@@ -40,11 +40,11 @@ import Atomics
 /// // Create a configuration object for the client and override the timeout for the 'Get' method on
 /// // the 'echo.Echo' service. This configuration takes precedence over any set by the transport.
 /// var configuration = GRPCClient.Configuration()
-/// configuration.service.override = ServiceConfiguration(
-///   methodConfiguration: [
-///     MethodConfiguration(
+/// configuration.service.override = ServiceConfig(
+///   methodConfig: [
+///     MethodConfig(
 ///       names: [
-///         MethodConfiguration.Name(service: "echo.Echo", method: "Get")
+///         MethodConfig.Name(service: "echo.Echo", method: "Get")
 ///       ],
 ///       timeout: .seconds(5)
 ///     )
@@ -53,11 +53,11 @@ import Atomics
 ///
 /// // Configure a fallback timeout for all RPCs (indicated by an empty service and method name) if
 /// // no configuration is provided in the overrides or by the transport.
-/// configuration.service.defaults = ServiceConfiguration(
-///   methodConfiguration: [
-///     MethodConfiguration(
+/// configuration.service.defaults = ServiceConfig(
+///   methodConfig: [
+///     MethodConfig(
 ///       names: [
-///         MethodConfiguration.Name(service: "", method: "")
+///         MethodConfig.Name(service: "", method: "")
 ///       ],
 ///       timeout: .seconds(10)
 ///     )

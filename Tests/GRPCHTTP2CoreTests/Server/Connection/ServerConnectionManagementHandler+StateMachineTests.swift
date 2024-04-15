@@ -22,12 +22,12 @@ import XCTest
 
 final class ServerConnectionManagementHandlerStateMachineTests: XCTestCase {
   private func makeStateMachine(
-    allowKeepAliveWithoutCalls: Bool = false,
+    allowKeepaliveWithoutCalls: Bool = false,
     minPingReceiveIntervalWithoutCalls: TimeAmount = .minutes(5),
     goAwayPingData: HTTP2PingData = HTTP2PingData(withInteger: 42)
   ) -> ServerConnectionManagementHandler.StateMachine {
     return .init(
-      allowKeepAliveWithoutCalls: allowKeepAliveWithoutCalls,
+      allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls,
       minPingReceiveIntervalWithoutCalls: minPingReceiveIntervalWithoutCalls,
       goAwayPingData: goAwayPingData
     )
@@ -193,9 +193,9 @@ final class ServerConnectionManagementHandlerStateMachineTests: XCTestCase {
     XCTAssertEqual(state.receivedPing(atTime: time, data: data), .enhanceYourCalmThenClose(id))
   }
 
-  func testPingStrikesWhenKeepAliveIsNotPermittedWithoutCalls() {
+  func testPingStrikesWhenKeepaliveIsNotPermittedWithoutCalls() {
     let initialState = self.makeStateMachine(
-      allowKeepAliveWithoutCalls: false,
+      allowKeepaliveWithoutCalls: false,
       minPingReceiveIntervalWithoutCalls: .minutes(5)
     )
 
@@ -207,9 +207,9 @@ final class ServerConnectionManagementHandlerStateMachineTests: XCTestCase {
     self.testPingStrikeUsingMinReceiveInterval(state: &state, interval: .hours(2), expectedID: 0)
   }
 
-  func testPingStrikesWhenKeepAliveIsPermittedWithoutCalls() {
+  func testPingStrikesWhenKeepaliveIsPermittedWithoutCalls() {
     var state = self.makeStateMachine(
-      allowKeepAliveWithoutCalls: true,
+      allowKeepaliveWithoutCalls: true,
       minPingReceiveIntervalWithoutCalls: .minutes(5)
     )
 
@@ -218,7 +218,7 @@ final class ServerConnectionManagementHandlerStateMachineTests: XCTestCase {
 
   func testResetPingStrikeState() {
     var state = self.makeStateMachine(
-      allowKeepAliveWithoutCalls: true,
+      allowKeepaliveWithoutCalls: true,
       minPingReceiveIntervalWithoutCalls: .minutes(5)
     )
 
@@ -234,7 +234,7 @@ final class ServerConnectionManagementHandlerStateMachineTests: XCTestCase {
     XCTAssertEqual(state.receivedPing(atTime: time, data: data), .sendAck)
 
     // Reset the ping strike state and test ping strikes as normal.
-    state.resetKeepAliveState()
+    state.resetKeepaliveState()
     self.testPingStrikeUsingMinReceiveInterval(state: &state, interval: .minutes(5), expectedID: 0)
   }
 }

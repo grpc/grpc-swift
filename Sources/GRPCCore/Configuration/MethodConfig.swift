@@ -18,7 +18,7 @@
 ///
 /// See also: https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct MethodConfiguration: Hashable, Sendable {
+public struct MethodConfig: Hashable, Sendable {
   public struct Name: Sendable, Hashable {
     /// The name of the service, including the namespace.
     ///
@@ -414,7 +414,7 @@ extension Duration {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension MethodConfiguration: Codable {
+extension MethodConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case name
     case waitForReady
@@ -472,7 +472,7 @@ extension MethodConfiguration: Codable {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension MethodConfiguration.Name: Codable {
+extension MethodConfig.Name: Codable {
   private enum CodingKeys: String, CodingKey {
     case service
     case method

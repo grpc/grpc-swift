@@ -21,7 +21,7 @@ import XCTest
 @testable import GRPCCore
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-internal final class MethodConfigurationCodingTests: XCTestCase {
+internal final class MethodConfigCodingTests: XCTestCase {
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()
 
@@ -35,30 +35,30 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
   }
 
   func testDecodeMethodConfigName() throws {
-    let inputs: [(String, MethodConfiguration.Name)] = [
+    let inputs: [(String, MethodConfig.Name)] = [
       (#"{"service": "foo.bar", "method": "baz"}"#, .init(service: "foo.bar", method: "baz")),
       (#"{"service": "foo.bar"}"#, .init(service: "foo.bar", method: "")),
       (#"{}"#, .init(service: "", method: "")),
     ]
 
     for (json, expected) in inputs {
-      let decoded = try self.decoder.decode(MethodConfiguration.Name.self, from: Data(json.utf8))
+      let decoded = try self.decoder.decode(MethodConfig.Name.self, from: Data(json.utf8))
       XCTAssertEqual(decoded, expected)
     }
   }
 
   func testEncodeDecodeMethodConfigName() throws {
-    let inputs: [MethodConfiguration.Name] = [
-      MethodConfiguration.Name(service: "foo.bar", method: "baz"),
-      MethodConfiguration.Name(service: "foo.bar", method: ""),
-      MethodConfiguration.Name(service: "", method: ""),
+    let inputs: [MethodConfig.Name] = [
+      MethodConfig.Name(service: "foo.bar", method: "baz"),
+      MethodConfig.Name(service: "foo.bar", method: ""),
+      MethodConfig.Name(service: "", method: ""),
     ]
 
     // We can't do encode-only tests as the output is non-deterministic (the ordering of
     // service/method in the JSON object)
     for name in inputs {
       let encoded = try self.encoder.encode(name)
-      let decoded = try self.decoder.decode(MethodConfiguration.Name.self, from: encoded)
+      let decoded = try self.decoder.decode(MethodConfig.Name.self, from: encoded)
       XCTAssertEqual(decoded, name)
     }
   }
@@ -364,8 +364,8 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
     // Test the 'regular' config.
     do {
       let jsonConfig = try config.jsonUTF8Data()
-      let decoded = try self.decoder.decode(MethodConfiguration.self, from: jsonConfig)
-      XCTAssertEqual(decoded.names, [MethodConfiguration.Name(service: "echo.Echo", method: "Get")])
+      let decoded = try self.decoder.decode(MethodConfig.self, from: jsonConfig)
+      XCTAssertEqual(decoded.names, [MethodConfig.Name(service: "echo.Echo", method: "Get")])
       XCTAssertEqual(decoded.waitForReady, true)
       XCTAssertEqual(decoded.timeout, Duration(secondsComponent: 1, attosecondsComponent: 0))
       XCTAssertEqual(decoded.maxRequestMessageBytes, 1024)
@@ -386,7 +386,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
       }
 
       let jsonConfig = try config.jsonUTF8Data()
-      let decoded = try self.decoder.decode(MethodConfiguration.self, from: jsonConfig)
+      let decoded = try self.decoder.decode(MethodConfig.self, from: jsonConfig)
 
       switch decoded.executionPolicy?.wrapped {
       case let .some(.hedge(policy)):
@@ -413,7 +413,7 @@ internal final class MethodConfigurationCodingTests: XCTestCase {
       }
 
       let jsonConfig = try config.jsonUTF8Data()
-      let decoded = try self.decoder.decode(MethodConfiguration.self, from: jsonConfig)
+      let decoded = try self.decoder.decode(MethodConfig.self, from: jsonConfig)
 
       switch decoded.executionPolicy?.wrapped {
       case let .some(.retry(policy)):
