@@ -169,7 +169,10 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       case var .client(clientState):
         let benchmarkClients = clientState.clients
         var rpcStats = clientState.rpcStats
-        try rpcStats.update(withStatsFrom: benchmarkClients)
+        for benchmarkClient in benchmarkClients {
+          try rpcStats.merge(benchmarkClient.currentStats)
+        }
+
         clientState.rpcStats = rpcStats
         self.role = .client(clientState)
 
@@ -358,23 +361,22 @@ extension WorkerService {
   private func makeClientStatsResponse(
     reset: Bool
   ) async throws -> Grpc_Testing_WorkerService.Method.RunClient.Output {
-    let currentStats = ClientStats()
-    let initialStats = self.state.withLockedValue { state in
-      return state.clientStats(replaceWith: reset ? currentStats : nil)
-    }
-    let rpcStats = try self.state.withLockedValue { state in
+    let currentUsageStats = ClientStats()
+    let (initialUsageStats, rpcStats) = try self.state.withLockedValue { state in
+      let initialUsageStats = state.clientStats(replaceWith: reset ? currentUsageStats : nil)
       try state.updateRPCStats()
-      return state.clientRPCStats
+      let rpcStats = state.clientRPCStats
+      return (initialUsageStats, rpcStats)
     }
 
-    guard let initialStats = initialStats, let rpcStats = rpcStats else {
+    guard let initialUsageStats = initialUsageStats, let rpcStats = rpcStats else {
       throw RPCError(
         code: .notFound,
         message: "There are no initial client stats. Clients must be setup before calling 'mark'."
       )
     }
 
-    let differences = currentStats.difference(to: initialStats)
+    let differences = currentUsageStats.difference(to: initialUsageStats)
 
     let requestResults = rpcStats.requestResultCount.map { (key, value) in
       return Grpc_Testing_RequestResultCount.with {
