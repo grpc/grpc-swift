@@ -108,7 +108,7 @@ extension CompressionAlgorithmSet {
 
     public struct Iterator: IteratorProtocol {
       private let algorithmSet: CompressionAlgorithmSet
-      private var iterator: [CompressionAlgorithm.Value].Iterator
+      private var iterator: IndexingIterator<[CompressionAlgorithm.Value]>
 
       init(algorithmSet: CompressionAlgorithmSet) {
         self.algorithmSet = algorithmSet
