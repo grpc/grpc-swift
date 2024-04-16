@@ -188,7 +188,6 @@ struct Connection: Sendable {
       }
     }
 
-
     let compression: CompressionAlgorithm
     if let override = options.compression {
       compression = self.enabledCompression.contains(override) ? override : .none

@@ -87,7 +87,10 @@ extension ConnectionTest {
     func bind() async throws -> GRPCHTTP2Core.SocketAddress {
       precondition(self.listener == nil, "\(#function) must only be called once")
 
-      let hasAcceptedChannel = NIOLoopBoundBox(false, eventLoop: self.eventLoop)
+      let hasAcceptedChannel = try await self.eventLoop.submit {
+        NIOLoopBoundBox(false, eventLoop: self.eventLoop)
+      }.get()
+
       let bootstrap = ServerBootstrap(group: self.eventLoop).childChannelInitializer { channel in
         precondition(!hasAcceptedChannel.value, "already accepted a channel")
         hasAcceptedChannel.value = true
