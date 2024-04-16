@@ -139,7 +139,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         .init(
           methodDescriptor: .init(service: "test", method: "test"),
           scheme: .http,
-          outboundEncoding: compressionEnabled ? .deflate : .identity,
+          outboundEncoding: compressionEnabled ? .deflate : .none,
           acceptedEncodings: [.deflate]
         )
       ),
@@ -1751,6 +1751,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           "grpc-status": "12",
           "grpc-status-message":
             "gzip compression is not supported; supported algorithms are listed in grpc-accept-encoding",
+          "grpc-accept-encoding": "identity",
         ]
       )
     }

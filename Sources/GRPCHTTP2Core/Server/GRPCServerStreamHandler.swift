@@ -39,7 +39,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
 
   init(
     scheme: Scheme,
-    acceptedEncodings: [CompressionAlgorithm],
+    acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,
     skipStateMachineAssertions: Bool = false
   ) {

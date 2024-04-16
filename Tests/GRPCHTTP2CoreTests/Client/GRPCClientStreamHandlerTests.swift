@@ -30,7 +30,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1
     )
@@ -60,7 +60,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1,
       skipStateMachineAssertions: true
@@ -96,7 +96,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1,
       skipStateMachineAssertions: true
@@ -127,7 +127,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1,
       skipStateMachineAssertions: true
@@ -164,7 +164,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1,
       skipStateMachineAssertions: true
@@ -258,7 +258,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1,
       skipStateMachineAssertions: true
@@ -328,7 +328,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 100,
       skipStateMachineAssertions: true
@@ -396,7 +396,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 1,
       skipStateMachineAssertions: true
@@ -462,7 +462,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 100,
       skipStateMachineAssertions: true
@@ -580,7 +580,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 100,
       skipStateMachineAssertions: true
@@ -685,7 +685,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let handler = GRPCClientStreamHandler(
       methodDescriptor: .init(service: "test", method: "test"),
       scheme: .http,
-      outboundEncoding: .identity,
+      outboundEncoding: .none,
       acceptedEncodings: [],
       maximumPayloadSize: 100,
       skipStateMachineAssertions: true
