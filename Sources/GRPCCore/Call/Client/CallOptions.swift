@@ -77,38 +77,19 @@ public struct CallOptions: Sendable {
   /// reported to the client. Hedging is only suitable for idempotent RPCs.
   public var executionPolicy: RPCExecutionPolicy?
 
-  /// Whether compression is enabled or not for request and response messages.
-  public var compression: Compression
-
-  /// Compression configuration.
+  /// The compression used for the call.
+  ///
+  /// Compression in gRPC is asymmetrical: the server may compress response messages using a
+  /// different algorithm than the client used to compress request messages. This configuration
+  /// controls the compression used by the client for request messages.
   ///
   /// Note that this configuration is advisory: not all transports support compression and may
   /// ignore this configuration. Transports which support compression will use this configuration
-  /// in preference to any compression configured at a transport level.
-  public struct Compression: Sendable {
-    /// The algorithm used for compressing outbound messages.
-    ///
-    /// If `nil` the value configured on the transport will be used instead.
-    public var algorithm: CompressionAlgorithm?
-
-    /// The enabled compression algorithms.
-    ///
-    /// If `nil` the value configured on the transport will be used instead.
-    public var enabledAlgorithms: CompressionAlgorithmSet?
-
-    /// Creates a new ``Compression`` configuration.
-    ///
-    /// - Parameters:
-    ///   - algorithm: The algorithm used for compressing outbound messages.
-    ///   - enabledAlgorithms: The enabled compression algorithms.
-    public init(
-      algorithm: CompressionAlgorithm? = nil,
-      enabledAlgorithms: CompressionAlgorithmSet? = nil
-    ) {
-      self.algorithm = algorithm
-      self.enabledAlgorithms = enabledAlgorithms
-    }
-  }
+  /// in preference to the algorithm configured at a transport level. If the transport hasn't
+  /// enabled the use of the algorithm then compression won't be used for the call.
+  ///
+  /// If `nil` the value configured on the transport will be used instead.
+  public var compression: CompressionAlgorithm?
 
   internal init(
     timeout: Duration?,
@@ -116,7 +97,7 @@ public struct CallOptions: Sendable {
     maxRequestMessageBytes: Int?,
     maxResponseMessageBytes: Int?,
     executionPolicy: RPCExecutionPolicy?,
-    compression: Compression
+    compression: CompressionAlgorithm?
   ) {
     self.timeout = timeout
     self.waitForReady = waitForReady
@@ -139,7 +120,7 @@ extension CallOptions {
       maxRequestMessageBytes: nil,
       maxResponseMessageBytes: nil,
       executionPolicy: nil,
-      compression: Compression()
+      compression: nil
     )
   }
 }

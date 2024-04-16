@@ -87,7 +87,7 @@ public struct CompressionAlgorithmSet: OptionSet, Hashable, Sendable {
 }
 
 extension CompressionAlgorithmSet {
-  /// A sequence of ``CompressionAlgorithm`` values present in the set..
+  /// A sequence of ``CompressionAlgorithm`` values present in the set.
   public var elements: Elements {
     Elements(algorithmSet: self)
   }
