@@ -48,13 +48,16 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
     struct ClientState {
       var clients: [BenchmarkClient]
       var stats: ClientStats
+      var rpcStats: RPCStats
 
       init(
         clients: [BenchmarkClient],
-        stats: ClientStats
+        stats: ClientStats,
+        rpcStats: RPCStats
       ) {
         self.clients = clients
         self.stats = stats
+        self.rpcStats = rpcStats
       }
 
       func shutdownClients() throws {
@@ -75,6 +78,24 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       case let .server(serverState):
         return serverState.server
       case .client, .none:
+        return nil
+      }
+    }
+
+    var clients: [BenchmarkClient]? {
+      switch self.role {
+      case let .client(clientState):
+        return clientState.clients
+      case .server, .none:
+        return nil
+      }
+    }
+
+    var clientRPCStats: RPCStats? {
+      switch self.role {
+      case let .client(clientState):
+        return clientState.rpcStats
+      case .server, .none:
         return nil
       }
     }
@@ -118,6 +139,45 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
       case .none:
         self.role = .server(serverState)
+      }
+    }
+
+    mutating func setupClients(
+      benchmarkClients: [BenchmarkClient],
+      stats: ClientStats,
+      rpcStats: RPCStats
+    ) throws {
+      let clientState = State.ClientState(
+        clients: benchmarkClients,
+        stats: stats,
+        rpcStats: rpcStats
+      )
+      switch self.role {
+      case .server(_):
+        throw RPCError(code: .alreadyExists, message: "This worker has a server setup.")
+
+      case .client(_):
+        throw RPCError(code: .failedPrecondition, message: "Clients have already been set up.")
+
+      case .none:
+        self.role = .client(clientState)
+      }
+    }
+
+    mutating func updateRPCStats() throws {
+      switch self.role {
+      case var .client(clientState):
+        let benchmarkClients = clientState.clients
+        var rpcStats = clientState.rpcStats
+        for benchmarkClient in benchmarkClients {
+          try rpcStats.merge(benchmarkClient.currentStats)
+        }
+
+        clientState.rpcStats = rpcStats
+        self.role = .client(clientState)
+
+      case .server, .none:
+        ()
       }
     }
   }
@@ -194,7 +254,33 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
   ) async throws
     -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
   {
-    throw RPCError(code: .unimplemented, message: "This RPC has not been implemented yet.")
+    return ServerResponse.Stream { writer in
+      try await withThrowingTaskGroup(of: Void.self) { group in
+        for try await message in request.messages {
+          switch message.argtype {
+          case let .setup(config):
+            // Create the clients with the initial stats.
+            let clients = try await self.setupClients(config)
+
+            for client in clients {
+              group.addTask {
+                try await client.run()
+              }
+            }
+
+          case let .mark(mark):
+            let response = try await self.makeClientStatsResponse(reset: mark.reset)
+            try await writer.write(response)
+
+          case .none:
+            ()
+          }
+        }
+        try await group.waitForAll()
+
+        return [:]
+      }
+    }
   }
 }
 
@@ -234,6 +320,85 @@ extension WorkerService {
         $0.timeSystem = differences.systemTime
         $0.timeUser = differences.userTime
         $0.totalCpuTime = differences.totalCPUTime
+      }
+    }
+  }
+
+  private func setupClients(_ config: Grpc_Testing_ClientConfig) async throws -> [BenchmarkClient] {
+    var clients = [BenchmarkClient]()
+    for _ in 0 ..< config.clientChannels {
+      let grpcClient = self.makeGRPCClient()
+      clients.append(
+        BenchmarkClient(
+          client: grpcClient,
+          rpcNumber: config.outstandingRpcsPerChannel,
+          rpcType: config.rpcType,
+          histogramParams: config.histogramParams
+        )
+      )
+    }
+    let stats = ClientStats()
+    let histogram = RPCStats.LatencyHistogram(
+      resolution: config.histogramParams.resolution,
+      maxBucketStart: config.histogramParams.maxPossible
+    )
+
+    try self.state.withLockedValue { state in
+      try state.setupClients(
+        benchmarkClients: clients,
+        stats: stats,
+        rpcStats: RPCStats(latencyHistogram: histogram)
+      )
+    }
+
+    return clients
+  }
+
+  func makeGRPCClient() -> GRPCClient {
+    fatalError()
+  }
+
+  private func makeClientStatsResponse(
+    reset: Bool
+  ) async throws -> Grpc_Testing_WorkerService.Method.RunClient.Output {
+    let currentUsageStats = ClientStats()
+    let (initialUsageStats, rpcStats) = try self.state.withLockedValue { state in
+      let initialUsageStats = state.clientStats(replaceWith: reset ? currentUsageStats : nil)
+      try state.updateRPCStats()
+      let rpcStats = state.clientRPCStats
+      return (initialUsageStats, rpcStats)
+    }
+
+    guard let initialUsageStats = initialUsageStats, let rpcStats = rpcStats else {
+      throw RPCError(
+        code: .notFound,
+        message: "There are no initial client stats. Clients must be setup before calling 'mark'."
+      )
+    }
+
+    let differences = currentUsageStats.difference(to: initialUsageStats)
+
+    let requestResults = rpcStats.requestResultCount.map { (key, value) in
+      return Grpc_Testing_RequestResultCount.with {
+        $0.statusCode = Int32(key.rawValue)
+        $0.count = value
+      }
+    }
+
+    return Grpc_Testing_WorkerService.Method.RunClient.Output.with {
+      $0.stats = Grpc_Testing_ClientStats.with {
+        $0.timeElapsed = differences.time
+        $0.timeSystem = differences.systemTime
+        $0.timeUser = differences.userTime
+        $0.requestResults = requestResults
+        $0.latencies = Grpc_Testing_HistogramData.with {
+          $0.bucket = rpcStats.latencyHistogram.buckets
+          $0.minSeen = rpcStats.latencyHistogram.minSeen
+          $0.maxSeen = rpcStats.latencyHistogram.maxSeen
+          $0.sum = rpcStats.latencyHistogram.sum
+          $0.sumOfSquares = rpcStats.latencyHistogram.sumOfSquares
+          $0.count = rpcStats.latencyHistogram.countOfValuesSeen
+        }
       }
     }
   }

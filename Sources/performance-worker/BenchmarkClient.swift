@@ -48,6 +48,12 @@ struct BenchmarkClient {
     self.rpcStats = NIOLockedValueBox(RPCStats(latencyHistogram: histogram))
   }
 
+  internal var currentStats: RPCStats {
+    return self.rpcStats.withLockedValue { stats in
+      return stats
+    }
+  }
+
   internal func run() async throws {
     let benchmarkClient = Grpc_Testing_BenchmarkServiceClient(client: client)
     return try await withThrowingTaskGroup(of: Void.self) { clientGroup in

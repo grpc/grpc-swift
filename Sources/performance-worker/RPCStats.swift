@@ -107,7 +107,7 @@ struct RPCStats {
 
     /// Merge two histograms together updating `self`
     /// - parameters:
-    ///    - source: the other histogram to merge into this.
+    ///    - other: the other histogram to merge into this.
     public mutating func merge(_ other: LatencyHistogram) throws {
       guard (self.buckets.count == other.buckets.count) || (self.multiplier == other.multiplier)
       else {
@@ -127,6 +127,16 @@ struct RPCStats {
       for bucket in 0 ..< self.buckets.count {
         self.buckets[bucket] += other.buckets[bucket]
       }
+    }
+  }
+
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  mutating func merge(_ other: RPCStats) throws {
+    try self.latencyHistogram.merge(
+      other.latencyHistogram
+    )
+    self.requestResultCount.merge(other.requestResultCount) { (current, new) in
+      current + new
     }
   }
 }
