@@ -77,38 +77,19 @@ public struct CallOptions: Sendable {
   /// reported to the client. Hedging is only suitable for idempotent RPCs.
   public var executionPolicy: RPCExecutionPolicy?
 
-  /// Whether compression is enabled or not for request and response messages.
-  public var compression: Compression
-
-  public struct Compression: Sendable {
-    /// Whether request messages should be compressed.
-    ///
-    /// Note that this option is _advisory_: transports are not required to support compression.
-    public var requests: Bool
-
-    /// Whether response messages are permitted to be compressed.
-    public var responses: Bool
-
-    /// Creates a new ``Compression`` configuration.
-    ///
-    /// - Parameters:
-    ///   - requests: Whether request messages should be compressed.
-    ///   - responses: Whether response messages may be compressed.
-    public init(requests: Bool, responses: Bool) {
-      self.requests = requests
-      self.responses = responses
-    }
-
-    /// Sets ``requests`` and ``responses`` to `true`.
-    public static var enabled: Self {
-      Self(requests: true, responses: true)
-    }
-
-    /// Sets ``requests`` and ``responses`` to `false`.
-    public static var disabled: Self {
-      Self(requests: false, responses: false)
-    }
-  }
+  /// The compression used for the call.
+  ///
+  /// Compression in gRPC is asymmetrical: the server may compress response messages using a
+  /// different algorithm than the client used to compress request messages. This configuration
+  /// controls the compression used by the client for request messages.
+  ///
+  /// Note that this configuration is advisory: not all transports support compression and may
+  /// ignore this configuration. Transports which support compression will use this configuration
+  /// in preference to the algorithm configured at a transport level. If the transport hasn't
+  /// enabled the use of the algorithm then compression won't be used for the call.
+  ///
+  /// If `nil` the value configured on the transport will be used instead.
+  public var compression: CompressionAlgorithm?
 
   internal init(
     timeout: Duration?,
@@ -116,7 +97,7 @@ public struct CallOptions: Sendable {
     maxRequestMessageBytes: Int?,
     maxResponseMessageBytes: Int?,
     executionPolicy: RPCExecutionPolicy?,
-    compression: Compression
+    compression: CompressionAlgorithm?
   ) {
     self.timeout = timeout
     self.waitForReady = waitForReady
@@ -131,9 +112,7 @@ public struct CallOptions: Sendable {
 extension CallOptions {
   /// Default call options.
   ///
-  /// The default values defer values to the underlying transport. In most cases this means values
-  /// are `nil`, with the exception of ``compression-swift.property`` which is set
-  /// to ``Compression-swift.struct/disabled``.
+  /// The default values (`nil`) defer values to the underlying transport.
   public static var defaults: Self {
     Self(
       timeout: nil,
@@ -141,7 +120,7 @@ extension CallOptions {
       maxRequestMessageBytes: nil,
       maxResponseMessageBytes: nil,
       executionPolicy: nil,
-      compression: .disabled
+      compression: nil
     )
   }
 }

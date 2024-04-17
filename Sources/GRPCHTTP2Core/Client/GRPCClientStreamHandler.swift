@@ -35,7 +35,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
     methodDescriptor: MethodDescriptor,
     scheme: Scheme,
     outboundEncoding: CompressionAlgorithm,
-    acceptedEncodings: [CompressionAlgorithm],
+    acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,
     skipStateMachineAssertions: Bool = false
   ) {

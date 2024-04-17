@@ -14,39 +14,40 @@
  * limitations under the License.
  */
 
-/// Supported message compression algorithms.
-///
-/// These algorithms are indicated in the "grpc-encoding" header. As such, a lack of "grpc-encoding"
-/// header indicates that there is no message compression.
-public struct CompressionAlgorithm: Hashable, Sendable {
-  /// Identity compression; "no" compression but indicated via the "grpc-encoding" header.
-  public static let identity = CompressionAlgorithm(.identity)
-  public static let deflate = CompressionAlgorithm(.deflate)
-  public static let gzip = CompressionAlgorithm(.gzip)
+@_spi(Package) import GRPCCore
 
-  // The order here is important: most compression to least.
-  public static let all: [CompressionAlgorithm] = [.gzip, .deflate, .identity]
-
-  public var name: String {
-    return self.algorithm.rawValue
+extension CompressionAlgorithm {
+  init?(name: String) {
+    self.init(name: name[...])
   }
 
-  internal enum Algorithm: String {
-    case identity
-    case deflate
-    case gzip
-  }
-
-  internal let algorithm: Algorithm
-
-  private init(_ algorithm: Algorithm) {
-    self.algorithm = algorithm
-  }
-
-  internal init?(rawValue: String) {
-    guard let algorithm = Algorithm(rawValue: rawValue) else {
+  init?(name: Substring) {
+    switch name {
+    case "gzip":
+      self = .gzip
+    case "deflate":
+      self = .deflate
+    case "identity":
+      self = .none
+    default:
       return nil
     }
-    self.algorithm = algorithm
+  }
+
+  var name: String {
+    switch self.value {
+    case .gzip:
+      return "gzip"
+    case .deflate:
+      return "deflate"
+    case .none:
+      return "identity"
+    }
+  }
+}
+
+extension CompressionAlgorithmSet {
+  var count: Int {
+    self.rawValue.nonzeroBitCount
   }
 }
