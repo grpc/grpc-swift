@@ -333,6 +333,7 @@ extension WorkerService {
           client: grpcClient,
           rpcNumber: config.outstandingRpcsPerChannel,
           rpcType: config.rpcType,
+          messagesPerStream: config.messagesPerStream,
           histogramParams: config.histogramParams
         )
       )
