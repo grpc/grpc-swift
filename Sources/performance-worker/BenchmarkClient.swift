@@ -30,7 +30,7 @@ struct BenchmarkClient {
   init(
     client: GRPCClient,
     rpcNumber: Int32,
-    rpcType: Grpc_Testing_RpcType,
+    rpcType: RpcType,
     messagesPerStream: Int32,
     protoParams: Grpc_Testing_SimpleProtoParams,
     histogramParams: Grpc_Testing_HistogramParams?
@@ -39,13 +39,7 @@ struct BenchmarkClient {
     self.rpcNumber = rpcNumber
     self.messagesPerStream = messagesPerStream
     self.protoParams = protoParams
-
-    switch rpcType {
-    case .unary, .streaming, .streamingFromClient, .streamingFromServer, .streamingBothWays:
-      self.rpcType = RpcType(rawValue: rpcType.rawValue)!
-    case .UNRECOGNIZED:
-      throw RPCError(code: .unknown, message: "The RPC type is UNRECOGNIZED.")
-    }
+    self.rpcType = rpcType
 
     let histogram: RPCStats.LatencyHistogram
     if let histogramParams = histogramParams {
@@ -60,7 +54,7 @@ struct BenchmarkClient {
     self.rpcStats = NIOLockedValueBox(RPCStats(latencyHistogram: histogram))
   }
 
-  enum RpcType: Int {
+  enum RpcType {
     case unary
     case streaming
     case streamingFromClient
@@ -85,8 +79,7 @@ struct BenchmarkClient {
         for _ in 0 ..< self.rpcNumber {
           rpcsGroup.addTask {
             let (latency, errorCode) = try await self.makeRPC(
-              benchmarkClient: benchmarkClient,
-              rpcType: self.rpcType
+              benchmarkClient: benchmarkClient
             )
             self.rpcStats.withLockedValue {
               $0.latencyHistogram.record(latency)
@@ -114,21 +107,22 @@ struct BenchmarkClient {
 
   // The result is the number of nanoseconds for processing the RPC.
   private func makeRPC(
-    benchmarkClient: Grpc_Testing_BenchmarkServiceClient,
-    rpcType: RpcType
+    benchmarkClient: Grpc_Testing_BenchmarkServiceClient
   ) async throws -> (latency: Double, errorCode: RPCError.Code?) {
-    let request = Grpc_Testing_SimpleRequest.with {
+    let message = Grpc_Testing_SimpleRequest.with {
       $0.responseSize = self.protoParams.respSize
       $0.payload = Grpc_Testing_Payload.with {
         $0.body = Data(count: Int(self.protoParams.reqSize))
       }
     }
 
-    switch rpcType {
+    switch self.rpcType {
     case .unary:
       let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
         do {
-          try await benchmarkClient.unaryCall(request: ClientRequest.Single(message: request)) {
+          try await benchmarkClient.unaryCall(
+            request: ClientRequest.Single(message: message)
+          ) {
             response in
             _ = try response.message
           }
@@ -150,7 +144,7 @@ struct BenchmarkClient {
           let streamingRequest = ClientRequest.Stream { writer in
             for try await id in ids.stream {
               if id <= self.messagesPerStream {
-                try await writer.write(request)
+                try await writer.write(message)
               } else {
                 return
               }
@@ -180,7 +174,7 @@ struct BenchmarkClient {
         do {
           let streamingRequest = ClientRequest.Stream { writer in
             for _ in 1 ... self.messagesPerStream {
-              try await writer.write(request)
+              try await writer.write(message)
             }
           }
 
@@ -202,7 +196,7 @@ struct BenchmarkClient {
       let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
         do {
           try await benchmarkClient.streamingFromServer(
-            request: ClientRequest.Single(message: request)
+            request: ClientRequest.Single(message: message)
           ) { response in
             for try await _ in response.messages {}
           }
@@ -220,7 +214,7 @@ struct BenchmarkClient {
         do {
           let streamingRequest = ClientRequest.Stream { writer in
             for _ in 1 ... self.messagesPerStream {
-              try await writer.write(request)
+              try await writer.write(message)
             }
           }
 
