@@ -22,8 +22,9 @@ import NIOConcurrencyHelpers
 struct BenchmarkClient {
   private var client: GRPCClient
   private var rpcNumber: Int32
-  private var rpcType: Grpc_Testing_RpcType
+  private var rpcType: RpcType
   private var messagesPerStream: Int32
+  private var protoParams: Grpc_Testing_SimpleProtoParams
   private let rpcStats: NIOLockedValueBox<RPCStats>
 
   init(
@@ -31,12 +32,20 @@ struct BenchmarkClient {
     rpcNumber: Int32,
     rpcType: Grpc_Testing_RpcType,
     messagesPerStream: Int32,
+    protoParams: Grpc_Testing_SimpleProtoParams,
     histogramParams: Grpc_Testing_HistogramParams?
-  ) {
+  ) throws {
     self.client = client
     self.rpcNumber = rpcNumber
-    self.rpcType = rpcType
     self.messagesPerStream = messagesPerStream
+    self.protoParams = protoParams
+
+    switch rpcType {
+    case .unary, .streaming, .streamingFromClient, .streamingFromServer, .streamingBothWays:
+      self.rpcType = RpcType(rawValue: rpcType.rawValue)!
+    case .UNRECOGNIZED:
+      throw RPCError(code: .unknown, message: "The RPC type is UNRECOGNIZED.")
+    }
 
     let histogram: RPCStats.LatencyHistogram
     if let histogramParams = histogramParams {
@@ -49,6 +58,14 @@ struct BenchmarkClient {
     }
 
     self.rpcStats = NIOLockedValueBox(RPCStats(latencyHistogram: histogram))
+  }
+
+  enum RpcType: Int {
+    case unary
+    case streaming
+    case streamingFromClient
+    case streamingFromServer
+    case streamingBothWays
   }
 
   internal var currentStats: RPCStats {
@@ -71,9 +88,6 @@ struct BenchmarkClient {
               benchmarkClient: benchmarkClient,
               rpcType: self.rpcType
             )
-            guard errorCode != RPCError.Code.unknown else {
-              throw RPCError(code: .unknown, message: "The RPC type is UNRECOGNIZED.")
-            }
             self.rpcStats.withLockedValue {
               $0.latencyHistogram.record(latency)
               if let errorCode = errorCode {
@@ -89,124 +103,138 @@ struct BenchmarkClient {
     }
   }
 
-  private func computeTimeAndErrorCode<Contents>(
-    _ body: (Grpc_Testing_SimpleRequest) async throws -> Result<Contents, RPCError>
-  ) async throws -> (latency: Double, errorCode: RPCError.Code?) {
-    let request = Grpc_Testing_SimpleRequest.with {
-      $0.responseSize = 10
-    }
+  private func timeIt<R>(
+    _ body: () async throws -> R
+  ) async rethrows -> (R, nanoseconds: Double) {
     let startTime = DispatchTime.now().uptimeNanoseconds
-    let result = try await body(request)
+    let result = try await body()
     let endTime = DispatchTime.now().uptimeNanoseconds
-
-    var errorCode: RPCError.Code?
-    switch result {
-    case .success:
-      errorCode = nil
-    case let .failure(error):
-      errorCode = error.code
-    }
-    return (
-      latency: Double(endTime - startTime), errorCode: errorCode
-    )
+    return (result, nanoseconds: Double(endTime - startTime))
   }
 
   // The result is the number of nanoseconds for processing the RPC.
   private func makeRPC(
     benchmarkClient: Grpc_Testing_BenchmarkServiceClient,
-    rpcType: Grpc_Testing_RpcType
+    rpcType: RpcType
   ) async throws -> (latency: Double, errorCode: RPCError.Code?) {
+    let request = Grpc_Testing_SimpleRequest.with {
+      $0.responseSize = self.protoParams.respSize
+      $0.payload = Grpc_Testing_Payload.with {
+        $0.body = Data(count: Int(self.protoParams.reqSize))
+      }
+    }
+
     switch rpcType {
     case .unary:
-      return try await self.computeTimeAndErrorCode { request in
-        let responseStatus = try await benchmarkClient.unaryCall(
-          request: ClientRequest.Single(message: request)
-        ) {
-          response in
-          return response.accepted
+      let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
+        do {
+          try await benchmarkClient.unaryCall(request: ClientRequest.Single(message: request)) {
+            response in
+            _ = try response.message
+          }
+          return nil
+        } catch let error as RPCError {
+          return error.code
+        } catch {
+          return .unknown
         }
-
-        return responseStatus
       }
+      return (latency: nanoseconds, errorCode)
 
     // Repeated sequence of one request followed by one response.
     // It is a ping-pong of messages between the client and the server.
     case .streaming:
-      return try await self.computeTimeAndErrorCode { request in
-        let ids = AsyncStream.makeStream(of: Int.self)
-        let streamingRequest = ClientRequest.Stream { writer in
-          for try await id in ids.stream {
-            if id <= self.messagesPerStream {
-              try await writer.write(request)
-            } else {
-              return
+      let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
+        do {
+          let ids = AsyncStream.makeStream(of: Int.self)
+          let streamingRequest = ClientRequest.Stream { writer in
+            for try await id in ids.stream {
+              if id <= self.messagesPerStream {
+                try await writer.write(request)
+              } else {
+                return
+              }
             }
           }
-        }
 
-        ids.continuation.yield(1)
+          ids.continuation.yield(1)
 
-        let responseStatus = try await benchmarkClient.streamingCall(request: streamingRequest) {
-          response in
-          var id = 1
-          for try await _ in response.messages {
-            id += 1
-            ids.continuation.yield(id)
+          try await benchmarkClient.streamingCall(request: streamingRequest) { response in
+            var id = 1
+            for try await _ in response.messages {
+              id += 1
+              ids.continuation.yield(id)
+            }
           }
-          return response.accepted
+          return nil
+        } catch let error as RPCError {
+          return error.code
+        } catch {
+          return .unknown
         }
-
-        return responseStatus
       }
+      return (latency: nanoseconds, errorCode)
 
     case .streamingFromClient:
-      return try await self.computeTimeAndErrorCode { request in
-        let streamingRequest = ClientRequest.Stream { writer in
-          for _ in 1 ... self.messagesPerStream {
-            try await writer.write(request)
+      let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
+        do {
+          let streamingRequest = ClientRequest.Stream { writer in
+            for _ in 1 ... self.messagesPerStream {
+              try await writer.write(request)
+            }
           }
-        }
 
-        let responseStatus = try await benchmarkClient.streamingFromClient(
-          request: streamingRequest
-        ) { response in
-          return response.accepted
+          _ = try await benchmarkClient.streamingFromClient(
+            request: streamingRequest
+          ) { response in
+            _ = try response.message
+          }
+          return nil
+        } catch let error as RPCError {
+          return error.code
+        } catch {
+          return .unknown
         }
-
-        return responseStatus
       }
+      return (latency: nanoseconds, errorCode)
 
     case .streamingFromServer:
-      return try await self.computeTimeAndErrorCode { request in
-        let responseStatus = try await benchmarkClient.streamingFromServer(
-          request: ClientRequest.Single(message: request)
-        ) { response in
-          return response.accepted
+      let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
+        do {
+          try await benchmarkClient.streamingFromServer(
+            request: ClientRequest.Single(message: request)
+          ) { response in
+            for try await _ in response.messages {}
+          }
+          return nil
+        } catch let error as RPCError {
+          return error.code
+        } catch {
+          return .unknown
         }
-
-        return responseStatus
       }
+      return (latency: nanoseconds, errorCode)
 
     case .streamingBothWays:
-      return try await self.computeTimeAndErrorCode { request in
-        let streamingRequest = ClientRequest.Stream { writer in
-          for _ in 1 ... self.messagesPerStream {
-            try await writer.write(request)
+      let (errorCode, nanoseconds): (RPCError.Code?, Double) = await self.timeIt {
+        do {
+          let streamingRequest = ClientRequest.Stream { writer in
+            for _ in 1 ... self.messagesPerStream {
+              try await writer.write(request)
+            }
           }
-        }
 
-        let responseStatus = try await benchmarkClient.streamingBothWays(request: streamingRequest)
-        { response in
-          return response.accepted
+          try await benchmarkClient.streamingBothWays(request: streamingRequest) { response in
+            for try await _ in response.messages {}
+          }
+          return nil
+        } catch let error as RPCError {
+          return error.code
+        } catch {
+          return .unknown
         }
-
-        return responseStatus
       }
-
-    case .UNRECOGNIZED:
-      return (
-        latency: -1, errorCode: RPCError.Code(.unknown)
-      )
+      return (latency: nanoseconds, errorCode)
     }
   }
 

@@ -328,12 +328,13 @@ extension WorkerService {
     var clients = [BenchmarkClient]()
     for _ in 0 ..< config.clientChannels {
       let grpcClient = self.makeGRPCClient()
-      clients.append(
+      try clients.append(
         BenchmarkClient(
           client: grpcClient,
           rpcNumber: config.outstandingRpcsPerChannel,
           rpcType: config.rpcType,
           messagesPerStream: config.messagesPerStream,
+          protoParams: config.payloadConfig.simpleParams,
           histogramParams: config.histogramParams
         )
       )
