@@ -325,6 +325,22 @@ extension WorkerService {
   }
 
   private func setupClients(_ config: Grpc_Testing_ClientConfig) async throws -> [BenchmarkClient] {
+    let rpcType: BenchmarkClient.RPCType
+    switch config.rpcType {
+    case .unary:
+      rpcType = .unary
+    case .streaming:
+      rpcType = .streaming
+    case .streamingFromClient:
+      rpcType = .streamingFromClient
+    case .streamingFromServer:
+      rpcType = .streamingFromServer
+    case .streamingBothWays:
+      rpcType = .streamingBothWays
+    case .UNRECOGNIZED:
+      throw RPCError(code: .unknown, message: "The RPC type is UNRECOGNIZED.")
+    }
+
     var clients = [BenchmarkClient]()
     for _ in 0 ..< config.clientChannels {
       let grpcClient = self.makeGRPCClient()
@@ -332,7 +348,9 @@ extension WorkerService {
         BenchmarkClient(
           client: grpcClient,
           rpcNumber: config.outstandingRpcsPerChannel,
-          rpcType: config.rpcType,
+          rpcType: rpcType,
+          messagesPerStream: config.messagesPerStream,
+          protoParams: config.payloadConfig.simpleParams,
           histogramParams: config.histogramParams
         )
       )
