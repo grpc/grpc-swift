@@ -22,7 +22,7 @@ import NIOConcurrencyHelpers
 struct BenchmarkClient {
   private var client: GRPCClient
   private var rpcNumber: Int32
-  private var rpcType: RpcType
+  private var rpcType: RPCType
   private var messagesPerStream: Int32
   private var protoParams: Grpc_Testing_SimpleProtoParams
   private let rpcStats: NIOLockedValueBox<RPCStats>
@@ -30,11 +30,11 @@ struct BenchmarkClient {
   init(
     client: GRPCClient,
     rpcNumber: Int32,
-    rpcType: RpcType,
+    rpcType: RPCType,
     messagesPerStream: Int32,
     protoParams: Grpc_Testing_SimpleProtoParams,
     histogramParams: Grpc_Testing_HistogramParams?
-  ) throws {
+  ) {
     self.client = client
     self.rpcNumber = rpcNumber
     self.messagesPerStream = messagesPerStream
@@ -54,7 +54,7 @@ struct BenchmarkClient {
     self.rpcStats = NIOLockedValueBox(RPCStats(latencyHistogram: histogram))
   }
 
-  enum RpcType {
+  enum RPCType {
     case unary
     case streaming
     case streamingFromClient
@@ -122,8 +122,7 @@ struct BenchmarkClient {
         do {
           try await benchmarkClient.unaryCall(
             request: ClientRequest.Single(message: message)
-          ) {
-            response in
+          ) { response in
             _ = try response.message
           }
           return nil
@@ -178,7 +177,7 @@ struct BenchmarkClient {
             }
           }
 
-          _ = try await benchmarkClient.streamingFromClient(
+          try await benchmarkClient.streamingFromClient(
             request: streamingRequest
           ) { response in
             _ = try response.message

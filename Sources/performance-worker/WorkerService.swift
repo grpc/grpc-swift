@@ -325,7 +325,7 @@ extension WorkerService {
   }
 
   private func setupClients(_ config: Grpc_Testing_ClientConfig) async throws -> [BenchmarkClient] {
-    let rpcType: BenchmarkClient.RpcType
+    let rpcType: BenchmarkClient.RPCType
     switch config.rpcType {
     case .unary:
       rpcType = .unary
@@ -344,7 +344,7 @@ extension WorkerService {
     var clients = [BenchmarkClient]()
     for _ in 0 ..< config.clientChannels {
       let grpcClient = self.makeGRPCClient()
-      try clients.append(
+      clients.append(
         BenchmarkClient(
           client: grpcClient,
           rpcNumber: config.outstandingRpcsPerChannel,
