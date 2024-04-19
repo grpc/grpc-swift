@@ -203,23 +203,6 @@ extension ClientBootstrap {
 }
 
 extension Metadata {
-  func removingPseudoHeaders() -> Metadata {
-    var metadata = Metadata()
-    metadata.reserveCapacity(self.capacity)
-
-    for (key, value) in self {
-      if key.hasPrefix(":") { continue }
-      switch value {
-      case .string(let value):
-        metadata.addString(value, forKey: key)
-      case .binary(let value):
-        metadata.addBinary(value, forKey: key)
-      }
-    }
-
-    return metadata
-  }
-
   init(_ sequence: some Sequence<Element>) {
     var metadata = Metadata()
     for (key, value) in sequence {

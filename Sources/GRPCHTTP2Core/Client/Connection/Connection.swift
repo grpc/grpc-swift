@@ -163,7 +163,7 @@ struct Connection: Sendable {
       }
 
     case .failure(let error):
-      // Connect failed, this connection is finished with now.
+      // Connect failed, this connection is no longer useful.
       self.state.withLockedValue { $0.closed() }
       self.finishStreams(withEvent: .connectFailed(error))
     }
