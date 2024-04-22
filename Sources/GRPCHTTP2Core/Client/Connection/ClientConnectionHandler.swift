@@ -31,6 +31,9 @@ public enum ClientConnectionEvent: Sendable, Hashable {
     case initiatedLocally
   }
 
+  /// The connection is now ready.
+  case ready
+
   /// The connection has started shutting down, no new streams should be created.
   case closing(CloseReason)
 }
@@ -208,6 +211,16 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
         }
       }
 
+    case .settings(.settings(_)):
+      let isInitialSettings = self.state.receivedSettings()
+
+      // The first settings frame indicates that the connection is now ready to use. The channel
+      // becoming active is insufficient as, for example, a TLS handshake may fail after
+      // establishing the TCP connection, or the server isn't configured for gRPC (or HTTP/2).
+      if isInitialSettings {
+        context.fireChannelRead(self.wrapInboundOut(.ready))
+      }
+
     default:
       ()
     }
@@ -323,10 +336,18 @@ extension ClientConnectionHandler {
       struct Active {
         var openStreams: Set<HTTP2StreamID>
         var allowKeepaliveWithoutCalls: Bool
+        var receivedConnectionPreface: Bool
 
         init(allowKeepaliveWithoutCalls: Bool) {
           self.openStreams = []
           self.allowKeepaliveWithoutCalls = allowKeepaliveWithoutCalls
+          self.receivedConnectionPreface = false
+        }
+
+        mutating func receivedSettings() -> Bool {
+          let isFirstSettingsFrame = !self.receivedConnectionPreface
+          self.receivedConnectionPreface = true
+          return isFirstSettingsFrame
         }
       }
 
@@ -345,6 +366,21 @@ extension ClientConnectionHandler {
 
     init(allowKeepaliveWithoutCalls: Bool) {
       self.state = .active(State.Active(allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls))
+    }
+
+    /// Record that a SETTINGS frame was received from the remote peer.
+    ///
+    /// - Returns: `true` if this was the first SETTINGS frame received.
+    mutating func receivedSettings() -> Bool {
+      switch self.state {
+      case .active(var active):
+        let isFirstSettingsFrame = active.receivedSettings()
+        self.state = .active(active)
+        return isFirstSettingsFrame
+
+      case .closing, .closed:
+        return false
+      }
     }
 
     /// Record that the stream with the given ID has been opened.

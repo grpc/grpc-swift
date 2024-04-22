@@ -139,8 +139,6 @@ struct Connection: Sendable {
         state.connected(connected)
       }
 
-      self.event.continuation.yield(.connectSucceeded)
-
       await withDiscardingTaskGroup { group in
         // Add a task to run the connection and consume events.
         group.addTask {
@@ -229,11 +227,34 @@ struct Connection: Sendable {
   private func consumeConnectionEvents(
     _ connectionEvents: NIOAsyncChannelInboundStream<ClientConnectionEvent>
   ) async {
+    // The connection becomes 'ready' when the initial HTTP/2 SETTINGS frame is received.
+    // Establishing a TCP connection is insufficient as the TLS handshake may not complete or the
+    // server might not be configured for gRPC or HTTP/2.
+    //
+    // This state is tracked here so that if the connection events sequence finishes and the
+    // connection never became ready then the connection can report that the connect failed.
+    var isReady = false
+
+    func makeNeverReadyError(cause: (any Error)?) -> RPCError {
+      return RPCError(
+        code: .unavailable,
+        message: """
+          The server accepted the TCP connection but closed the connection before completing \
+          the HTTP/2 connection preface.
+          """,
+        cause: cause
+      )
+    }
+
     do {
       var channelCloseReason: ClientConnectionEvent.CloseReason?
 
       for try await connectionEvent in connectionEvents {
         switch connectionEvent {
+        case .ready:
+          isReady = true
+          self.event.continuation.yield(.connectSucceeded)
+
         case .closing(let reason):
           self.state.withLockedValue { $0.closing() }
 
@@ -256,33 +277,50 @@ struct Connection: Sendable {
         }
       }
 
-      let connectionCloseReason: Self.CloseReason
-      switch channelCloseReason {
-      case .keepaliveExpired:
-        connectionCloseReason = .keepaliveTimeout
+      let finalEvent: Event
+      if isReady {
+        let connectionCloseReason: Self.CloseReason
+        switch channelCloseReason {
+        case .keepaliveExpired:
+          connectionCloseReason = .keepaliveTimeout
 
-      case .idle:
-        // Connection became idle, that's fine.
-        connectionCloseReason = .idleTimeout
+        case .idle:
+          // Connection became idle, that's fine.
+          connectionCloseReason = .idleTimeout
 
-      case .goAway:
-        // Remote peer told us to GOAWAY.
-        connectionCloseReason = .remote
+        case .goAway:
+          // Remote peer told us to GOAWAY.
+          connectionCloseReason = .remote
 
-      case .initiatedLocally, .none:
-        // Shutdown was initiated locally.
-        connectionCloseReason = .initiatedLocally
+        case .initiatedLocally, .none:
+          // Shutdown was initiated locally.
+          connectionCloseReason = .initiatedLocally
+        }
+
+        finalEvent = .closed(connectionCloseReason)
+      } else {
+        // The connection never became ready, this therefore counts as a failed connect attempt.
+        finalEvent = .connectFailed(makeNeverReadyError(cause: nil))
       }
 
       // The connection events sequence has finished: the connection is now closed.
       self.state.withLockedValue { $0.closed() }
-      self.finishStreams(withEvent: .closed(connectionCloseReason))
+      self.finishStreams(withEvent: finalEvent)
     } catch {
-      // Any error must come from consuming the inbound channel meaning that the connection
-      // must be borked, wrap it up and close.
-      let rpcError = RPCError(code: .unavailable, message: "connection closed", cause: error)
+      let finalEvent: Event
+
+      if isReady {
+        // Any error must come from consuming the inbound channel meaning that the connection
+        // must be borked, wrap it up and close.
+        let rpcError = RPCError(code: .unavailable, message: "connection closed", cause: error)
+        finalEvent = .closed(.error(rpcError))
+      } else {
+        // The connection never became ready, this therefore counts as a failed connect attempt.
+        finalEvent = .connectFailed(makeNeverReadyError(cause: error))
+      }
+
       self.state.withLockedValue { $0.closed() }
-      self.finishStreams(withEvent: .closed(.error(rpcError)))
+      self.finishStreams(withEvent: finalEvent)
     }
   }
 
@@ -356,7 +394,8 @@ extension Connection {
   private enum State {
     /// The connection is idle or connecting.
     case notConnected
-    /// A connection has been established with the remote peer.
+    /// A TCP connection has been established with the remote peer. However, the connection may not
+    /// be ready to use yet.
     case connected(Connected)
     /// The connection has started to close. This may be initiated locally or by the remote.
     case closing

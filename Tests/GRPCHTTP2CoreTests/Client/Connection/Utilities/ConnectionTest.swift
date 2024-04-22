@@ -30,13 +30,14 @@ enum ConnectionTest {
 
   static func run(
     connector: HTTP2Connector,
+    server mode: Server.Mode = .regular,
     handlEvents: (
       _ context: Context,
       _ event: Connection.Event
     ) async throws -> Void = { _, _ in },
-    validateEvents: (_ context: Context, _ events: [Connection.Event]) -> Void
+    validateEvents: (_ context: Context, _ events: [Connection.Event]) throws -> Void
   ) async throws {
-    let server = Server()
+    let server = Server(mode: mode)
     let address = try await server.bind()
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -55,7 +56,7 @@ enum ConnectionTest {
         try await handlEvents(context, event)
       }
 
-      validateEvents(context, events)
+      try validateEvents(context, events)
     }
   }
 }
@@ -67,8 +68,15 @@ extension ConnectionTest {
     private let eventLoop: any EventLoop
     private var listener: (any Channel)?
     private let client: EventLoopPromise<Channel>
+    private let mode: Mode
 
-    init() {
+    enum Mode {
+      case regular
+      case closeOnAccept
+    }
+
+    init(mode: Mode) {
+      self.mode = mode
       self.eventLoop = .singletonMultiThreadedEventLoopGroup.next()
       self.client = self.eventLoop.next().makePromise()
     }
@@ -95,26 +103,32 @@ extension ConnectionTest {
         precondition(!hasAcceptedChannel.value, "already accepted a channel")
         hasAcceptedChannel.value = true
 
-        return channel.eventLoop.makeCompletedFuture {
-          let sync = channel.pipeline.syncOperations
-          let h2 = NIOHTTP2Handler(mode: .server)
-          let mux = HTTP2StreamMultiplexer(mode: .server, channel: channel) { stream in
-            let sync = stream.pipeline.syncOperations
-            let handler = GRPCServerStreamHandler(
-              scheme: .http,
-              acceptedEncodings: .none,
-              maximumPayloadSize: .max
-            )
+        switch self.mode {
+        case .closeOnAccept:
+          return channel.close()
 
-            return stream.eventLoop.makeCompletedFuture {
-              try sync.addHandler(handler)
-              try sync.addHandler(EchoHandler())
+        case .regular:
+          return channel.eventLoop.makeCompletedFuture {
+            let sync = channel.pipeline.syncOperations
+            let h2 = NIOHTTP2Handler(mode: .server)
+            let mux = HTTP2StreamMultiplexer(mode: .server, channel: channel) { stream in
+              let sync = stream.pipeline.syncOperations
+              let handler = GRPCServerStreamHandler(
+                scheme: .http,
+                acceptedEncodings: .none,
+                maximumPayloadSize: .max
+              )
+
+              return stream.eventLoop.makeCompletedFuture {
+                try sync.addHandler(handler)
+                try sync.addHandler(EchoHandler())
+              }
             }
-          }
 
-          try sync.addHandler(h2)
-          try sync.addHandler(mux)
-          try sync.addHandlers(SucceedOnSettingsAck(promise: self.client))
+            try sync.addHandler(h2)
+            try sync.addHandler(mux)
+            try sync.addHandlers(SucceedOnSettingsAck(promise: self.client))
+          }
         }
       }
 
