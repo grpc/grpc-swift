@@ -33,7 +33,7 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
-  
+
   public var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
     RPCAsyncSequence(wrapping: self.newStreams)
   }
@@ -63,7 +63,7 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   /// to this transport using the ``acceptStream(_:)`` method.
   ///
   /// - Returns: An ``RPCAsyncSequence`` of all published ``RPCStream``s.
-  public func listen() async { }
+  public func listen() async {}
 
   /// Stop listening to any new ``RPCStream`` publications.
   ///

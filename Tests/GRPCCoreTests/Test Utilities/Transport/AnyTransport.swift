@@ -88,8 +88,9 @@ struct AnyServerTransport: ServerTransport, Sendable {
 
   private let _listen: @Sendable () async -> Void
   private let _stopListening: @Sendable () -> Void
-  private let _acceptedStreams: @Sendable () async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>>
-  
+  private let _acceptedStreams:
+    @Sendable () async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>>
+
   var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
     get async throws {
       try await self._acceptedStreams()

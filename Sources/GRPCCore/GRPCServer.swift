@@ -212,7 +212,7 @@ public struct GRPCServer: Sendable {
         group.addTask {
           await transport.listen()
         }
-        
+
         do {
           // Wait to see if the transport starts-up successfully (providing the
           // sequence of streams) or if the start-up fails and throws an error.
@@ -233,7 +233,7 @@ public struct GRPCServer: Sendable {
           )
         }
       }
-      
+
       // May have been told to stop listening while starting the transports.
       let (wasStarting, _) = self.state.compareExchange(
         expected: .starting,

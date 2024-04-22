@@ -37,12 +37,12 @@ final class InProcessServerTransportTests: XCTestCase {
         )
       )
     )
-      
+
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         await transport.listen()
       }
-      
+
       var streamSequenceIterator = transport.acceptedStreams.makeAsyncIterator()
       try transport.acceptStream(stream)
 
@@ -72,17 +72,19 @@ final class InProcessServerTransportTests: XCTestCase {
         )
       )
     )
-    
+
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         await transport.listen()
       }
-      
+
       var streamSequenceIterator = transport.acceptedStreams.makeAsyncIterator()
       try transport.acceptStream(firstStream)
 
       let firstTestStream = try await streamSequenceIterator.next()
-      let firstStreamMessages = try await firstTestStream?.inbound.reduce(into: []) { $0.append($1) }
+      let firstStreamMessages = try await firstTestStream?.inbound.reduce(into: []) {
+        $0.append($1)
+      }
       XCTAssertEqual(firstStreamMessages, [.message([42])])
 
       transport.stopListening()
@@ -112,7 +114,7 @@ final class InProcessServerTransportTests: XCTestCase {
 
       let secondTestStream = try await streamSequenceIterator.next()
       XCTAssertNil(secondTestStream)
-      
+
       transport.stopListening()
     }
   }

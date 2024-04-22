@@ -88,7 +88,7 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
   var acceptedStreamsCount: Int {
     self._acceptedStreams.load(ordering: .sequentiallyConsistent)
   }
-  
+
   var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
     get async throws {
       let mapped = try await self.transport.acceptedStreams.map { stream in

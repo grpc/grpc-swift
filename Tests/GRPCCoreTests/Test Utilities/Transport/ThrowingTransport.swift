@@ -61,7 +61,7 @@ struct ThrowOnRunServerTransport: ServerTransport {
       )
     }
   }
-  
+
   func listen() async {
     // no-op
   }
@@ -74,7 +74,7 @@ struct ThrowOnRunServerTransport: ServerTransport {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   let signal: AsyncStream<Void>
-  
+
   var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
     get async throws {
       for await _ in self.signal {}
