@@ -127,7 +127,7 @@ final class TimeoutTests: XCTestCase {
   }
 
   func testEncodeValidTimeout_Seconds_TooLong_Hours() {
-    let duration = Duration.seconds(9_999_999_999)
+    let duration = Duration.seconds(9_999_999_999 as Int64)
     let timeout = Timeout(duration: duration)
     // The conversion from seconds to hours results in a loss of precision.
     // 9,999,999,999 seconds / 60 = 166,666,666.65 minutes -rounding up->
@@ -142,7 +142,7 @@ final class TimeoutTests: XCTestCase {
   }
 
   func testEncodeValidTimeout_Seconds_TooLong_MaxAmount() {
-    let duration = Duration.seconds(999_999_999_999)
+    let duration = Duration.seconds(999_999_999_999 as Int64)
     let timeout = Timeout(duration: duration)
     // The conversion from seconds to hours results in a number that still has
     // more than the maximum allowed 8 digits, so we must clamp it.
