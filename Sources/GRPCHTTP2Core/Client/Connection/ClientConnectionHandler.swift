@@ -18,8 +18,9 @@ import NIOCore
 import NIOHTTP2
 
 /// An event which happens on a client's HTTP/2 connection.
-enum ClientConnectionEvent: Sendable, Hashable {
-  enum CloseReason: Sendable, Hashable {
+@_spi(Package)
+public enum ClientConnectionEvent: Sendable, Hashable {
+  public enum CloseReason: Sendable, Hashable {
     /// The server sent a GOAWAY frame to the client.
     case goAway(HTTP2ErrorCode, String)
     /// The keep alive timer fired and subsequently timed out.

@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
+@_spi(Package) @testable import GRPCHTTP2Core
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2
 import XCTest
-
-@testable import GRPCHTTP2Core
 
 final class ClientConnectionHandlerTests: XCTestCase {
   func testMaxIdleTime() throws {
