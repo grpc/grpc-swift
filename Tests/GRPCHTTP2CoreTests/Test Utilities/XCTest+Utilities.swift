@@ -59,3 +59,11 @@ func XCTAssertThrowsErrorAsync<T, E: Error>(
     XCTFail("Error had unexpected type '\(type(of: error))'")
   }
 }
+
+func XCTAssert<T>(_ value: Any, as type: T.Type, _ verify: (T) throws -> Void) rethrows {
+  if let value = value as? T {
+    try verify(value)
+  } else {
+    XCTFail("\(value) couldn't be cast to \(T.self)")
+  }
+}

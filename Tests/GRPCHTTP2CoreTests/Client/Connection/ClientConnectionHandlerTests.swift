@@ -205,6 +205,22 @@ final class ClientConnectionHandlerTests: XCTestCase {
     connection.streamClosed(1)
     try closed.wait()
   }
+
+  func testReceiveInitialSettings() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    // Nothing yet.
+    XCTAssertNil(try connection.readEvent())
+
+    // Write the initial settings.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
+    // Receiving another settings frame should be a no-op.
+    try connection.settings([])
+    XCTAssertNil(try connection.readEvent())
+  }
 }
 
 extension ClientConnectionHandlerTests {
@@ -265,6 +281,11 @@ extension ClientConnectionHandlerTests {
 
     func ping(data: HTTP2PingData, ack: Bool) throws {
       let frame = HTTP2Frame(streamID: .rootStream, payload: .ping(data, ack: ack))
+      try self.channel.writeInbound(frame)
+    }
+
+    func settings(_ settings: [HTTP2Setting]) throws {
+      let frame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings(settings)))
       try self.channel.writeInbound(frame)
     }
 

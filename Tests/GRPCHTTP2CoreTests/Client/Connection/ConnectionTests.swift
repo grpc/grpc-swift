@@ -89,6 +89,21 @@ final class ConnectionTests: XCTestCase {
     }
   }
 
+  func testConnectFailsOnAcceptedThenClosedTCPConnection() async throws {
+    try await ConnectionTest.run(connector: .posix(), server: .closeOnAccept) { _, events in
+      XCTAssertEqual(events.count, 1)
+      let event = try XCTUnwrap(events.first)
+      switch event {
+      case .connectFailed(let error):
+        XCTAssert(error, as: RPCError.self) { rpcError in
+          XCTAssertEqual(rpcError.code, .unavailable)
+        }
+      default:
+        XCTFail("Expected '.connectFailed', got '\(event)'")
+      }
+    }
+  }
+
   func testMakeStreamOnActiveConnection() async throws {
     try await ConnectionTest.run(connector: .posix()) { context, event in
       switch event {
