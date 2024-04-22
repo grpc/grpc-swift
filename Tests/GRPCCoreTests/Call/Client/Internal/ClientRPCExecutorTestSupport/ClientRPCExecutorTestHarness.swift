@@ -40,7 +40,7 @@ struct ClientRPCExecutorTestHarness {
   }
 
   var serverStreamsAccepted: Int {
-    self.serverTransport.acceptedStreams
+    self.serverTransport.acceptedStreamsCount
   }
 
   init(transport: Transport = .inProcess, server: ServerStreamHandler) {
@@ -122,7 +122,10 @@ struct ClientRPCExecutorTestHarness {
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await withThrowingTaskGroup(of: Void.self) { serverGroup in
-          let streams = try await self.serverTransport.listen()
+          serverGroup.addTask {
+            await self.serverTransport.listen()
+          }
+          let streams = try await self.serverTransport.acceptedStreams
           for try await stream in streams {
             serverGroup.addTask {
               try await self.server.handle(stream: stream)

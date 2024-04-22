@@ -37,15 +37,21 @@ final class InProcessServerTransportTests: XCTestCase {
         )
       )
     )
+      
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        await transport.listen()
+      }
+      
+      var streamSequenceIterator = transport.acceptedStreams.makeAsyncIterator()
+      try transport.acceptStream(stream)
 
-    let streamSequence = try await transport.listen()
-    var streamSequenceInterator = streamSequence.makeAsyncIterator()
+      let testStream = try await streamSequenceIterator.next()
+      let messages = try await testStream?.inbound.reduce(into: []) { $0.append($1) }
+      XCTAssertEqual(messages, [.message([42])])
 
-    try transport.acceptStream(stream)
-
-    let testStream = try await streamSequenceInterator.next()
-    let messages = try await testStream?.inbound.reduce(into: []) { $0.append($1) }
-    XCTAssertEqual(messages, [.message([42])])
+      transport.stopListening()
+    }
   }
 
   func testStopListening() async throws {
@@ -66,42 +72,48 @@ final class InProcessServerTransportTests: XCTestCase {
         )
       )
     )
+    
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        await transport.listen()
+      }
+      
+      var streamSequenceIterator = transport.acceptedStreams.makeAsyncIterator()
+      try transport.acceptStream(firstStream)
 
-    let streamSequence = try await transport.listen()
-    var streamSequenceInterator = streamSequence.makeAsyncIterator()
+      let firstTestStream = try await streamSequenceIterator.next()
+      let firstStreamMessages = try await firstTestStream?.inbound.reduce(into: []) { $0.append($1) }
+      XCTAssertEqual(firstStreamMessages, [.message([42])])
 
-    try transport.acceptStream(firstStream)
+      transport.stopListening()
 
-    let firstTestStream = try await streamSequenceInterator.next()
-    let firstStreamMessages = try await firstTestStream?.inbound.reduce(into: []) { $0.append($1) }
-    XCTAssertEqual(firstStreamMessages, [.message([42])])
-
-    transport.stopListening()
-
-    let secondStream = RPCStream<
-      RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
-    >(
-      descriptor: .init(service: "testService1", method: "testMethod1"),
-      inbound: RPCAsyncSequence(
-        wrapping: AsyncStream {
-          $0.yield(.message([42]))
-          $0.finish()
-        }
-      ),
-      outbound: .init(
-        wrapping: BufferedStream.Source(
-          storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
+      let secondStream = RPCStream<
+        RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
+      >(
+        descriptor: .init(service: "testService1", method: "testMethod1"),
+        inbound: RPCAsyncSequence(
+          wrapping: AsyncStream {
+            $0.yield(.message([42]))
+            $0.finish()
+          }
+        ),
+        outbound: .init(
+          wrapping: BufferedStream.Source(
+            storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
+          )
         )
       )
-    )
 
-    XCTAssertThrowsError(ofType: RPCError.self) {
-      try transport.acceptStream(secondStream)
-    } errorHandler: { error in
-      XCTAssertEqual(error.code, .failedPrecondition)
+      XCTAssertThrowsError(ofType: RPCError.self) {
+        try transport.acceptStream(secondStream)
+      } errorHandler: { error in
+        XCTAssertEqual(error.code, .failedPrecondition)
+      }
+
+      let secondTestStream = try await streamSequenceIterator.next()
+      XCTAssertNil(secondTestStream)
+      
+      transport.stopListening()
     }
-
-    let secondTestStream = try await streamSequenceInterator.next()
-    XCTAssertNil(secondTestStream)
   }
 }

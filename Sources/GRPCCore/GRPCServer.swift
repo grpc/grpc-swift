@@ -207,40 +207,47 @@ public struct GRPCServer: Sendable {
     var listeners: [RPCAsyncSequence<Stream>] = []
     listeners.reserveCapacity(self.transports.count)
 
-    for transport in self.transports {
-      do {
-        let listener = try await transport.listen()
-        listeners.append(listener)
-      } catch let cause {
-        // Failed to start, so start stopping.
-        self.state.store(.stopping, ordering: .sequentiallyConsistent)
-        // Some listeners may have started and have streams which need closing.
-        await self.rejectRequests(listeners)
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      for transport in self.transports {
+        group.addTask {
+          await transport.listen()
+        }
+        
+        do {
+          // Wait to see if the transport starts-up successfully (providing the
+          // sequence of streams) or if the start-up fails and throws an error.
+          listeners.append(try await transport.acceptedStreams)
+        } catch let cause {
+          // Failed to start, so start stopping.
+          self.state.store(.stopping, ordering: .sequentiallyConsistent)
+          // Some listeners may have started and have streams which need closing.
+          await self.rejectRequests(listeners)
 
-        throw RuntimeError(
-          code: .failedToStartTransport,
-          message: """
-            Server didn't start because the '\(type(of: transport))' transport threw an error \
-            while starting.
-            """,
-          cause: cause
-        )
+          throw RuntimeError(
+            code: .failedToStartTransport,
+            message: """
+              Server didn't start because the '\(type(of: transport))' transport threw an error \
+              while starting.
+              """,
+            cause: cause
+          )
+        }
       }
-    }
+      
+      // May have been told to stop listening while starting the transports.
+      let (wasStarting, _) = self.state.compareExchange(
+        expected: .starting,
+        desired: .running,
+        ordering: .sequentiallyConsistent
+      )
 
-    // May have been told to stop listening while starting the transports.
-    let (wasStarting, _) = self.state.compareExchange(
-      expected: .starting,
-      desired: .running,
-      ordering: .sequentiallyConsistent
-    )
-
-    // If the server is stopping then notify the transport and then consume them: there may be
-    // streams opened at a lower level (e.g. HTTP/2) which are already open and need to be consumed.
-    if wasStarting {
-      await self.handleRequests(listeners)
-    } else {
-      await self.rejectRequests(listeners)
+      // If the server is stopping then notify the transport and then consume them: there may be
+      // streams opened at a lower level (e.g. HTTP/2) which are already open and need to be consumed.
+      if wasStarting {
+        await self.handleRequests(listeners)
+      } else {
+        await self.rejectRequests(listeners)
+      }
     }
   }
 
