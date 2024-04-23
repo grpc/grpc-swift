@@ -33,11 +33,11 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
-  private let eventStream: AsyncStream<ListenEvent>
-  private let eventStreamContinuation: AsyncStream<ListenEvent>.Continuation
+  private let eventStream: AsyncStream<TransportEvent>
+  private let eventStreamContinuation: AsyncStream<TransportEvent>.Continuation
 
-  public var listenEventStream: RPCAsyncSequence<ListenEvent> {
-    RPCAsyncSequence(wrapping: self.eventStream)
+  public var events: NoThrowRPCAsyncSequence<TransportEvent> {
+    NoThrowRPCAsyncSequence(wrapping: self.eventStream)
   }
 
   /// Creates a new instance of ``InProcessServerTransport``.
@@ -46,7 +46,7 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
     (self.eventStream, self.eventStreamContinuation) = AsyncStream.makeStream()
   }
 
-  /// Publish a new ``RPCStream``, which will be returned by the transport's ``listenEventStream``
+  /// Publish a new ``RPCStream``, which will be returned by the transport's ``events``
   /// successful case.
   ///
   /// - Parameter stream: The new ``RPCStream`` to publish.

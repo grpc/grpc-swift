@@ -171,7 +171,7 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        for try await event in server.listenEventStream {
+        for try await event in server.events {
           switch event.listenResult {
           case .success(let acceptedStreams):
             for try await stream in acceptedStreams {
@@ -181,7 +181,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
               XCTAssertEqual(receivedMessages, [.message([1])])
             }
-          case .failure(let failure):
+          case .failure:
             XCTFail("Should have listened successfully")
           }
         }

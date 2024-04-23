@@ -213,11 +213,8 @@ public struct GRPCServer: Sendable {
           await transport.listen()
         }
 
-        // Get the first event only: we don't care about any further events
-        // (we shouldn't even receive more than one)
-        var eventIterator = transport.listenEventStream.makeAsyncIterator()
-        if let listenEvent = try await eventIterator.next() {
-          switch listenEvent.listenResult {
+        for try await event in transport.events {
+          switch event.listenResult {
           case .success(let acceptedStreams):
             listeners.append(acceptedStreams)
 
@@ -236,13 +233,6 @@ public struct GRPCServer: Sendable {
               cause: cause
             )
           }
-        } else {
-          // This can only happen if the event stream has been finished without
-          // any event being yielded. This could be either because the transport
-          // was incorrectly implemented, or because Cancellation has kicked in.
-          // Either way, there's nothing we can do here, so finish the execution
-          // of `run()`.
-          return
         }
       }
 

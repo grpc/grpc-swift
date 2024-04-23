@@ -16,15 +16,11 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 /// A type representing the possible outcomes of calling ``ServerTransport/listen()``.
-public struct ListenEvent: Sendable {
+public struct TransportEvent: Sendable {
   public typealias AcceptedStreams = RPCAsyncSequence<RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>>
 
   private enum Event {
-    case startedListening(
-      acceptedStreams: RPCAsyncSequence<
-        RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
-      >
-    )
+    case startedListening(acceptedStreams: AcceptedStreams)
     case failedToStartListening(any Error)
   }
 
@@ -36,19 +32,19 @@ public struct ListenEvent: Sendable {
 
   /// The call to ``ServerTransport/listen()`` was successful and the transport was started successfully.
   /// - Parameter acceptedStreams: The sequence of accepted streams for this transport.
-  /// - Returns: An instance of ``ListenEvent``.
+  /// - Returns: An instance of ``TransportEvent``.
   public static func startedListening(acceptedStreams: AcceptedStreams) -> Self {
     Self.init(_event: .startedListening(acceptedStreams: acceptedStreams))
   }
   
   /// The call to ``ServerTransport/listen()`` was unsuccesful and the transport failed to start.
   /// - Parameter error: The error with which the transport failed to start.
-  /// - Returns: An instance of ``ListenEvent``.
+  /// - Returns: An instance of ``TransportEvent``.
   public static func failedToStartListening(_ error: any Error) -> Self {
     Self.init(_event: .failedToStartListening(error))
   }
   
-  /// A shorthand to make it easier to pattern-match on a given ``ListenEvent``.
+  /// A shorthand to make it easier to pattern-match on a given ``TransportEvent``.
   public var listenResult: Result<AcceptedStreams, any Error> {
     switch self._event {
     case .startedListening(let acceptedStreams):
@@ -65,24 +61,24 @@ public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
-  /// A sequence of ``ListenEvent``s, describing whether the transport was started successfully or not.
+  /// A sequence of ``TransportEvent``s, describing whether the transport was started successfully or not.
   ///
   /// This sequence should only return a single event. If multiple events are yielded into it, they may be ignored.
   /// Not yielding any events or finishing the sequence without yielding any events is considered a broken
   /// implementation of this protocol.
   ///
   /// Once ``listen()`` stops running, the sequence should be finished if it hasn't been finished already.
-  var listenEventStream: RPCAsyncSequence<ListenEvent> { get }
+  var events: NoThrowRPCAsyncSequence<TransportEvent> { get }
 
   /// Starts the transport.
   ///
   /// Implementations will typically bind to a listening port when this function is called
   /// and start accepting new connections. Each accepted inbound RPC stream should be published
-  /// to the async sequence returned by the ``listenEventStream`` property, in the successful
-  /// ``ListenEvent/startedListening(acceptedStreams:)`` case.
+  /// to the async sequence returned by the ``events`` property, in the successful
+  /// ``TransportEvent/startedListening(acceptedStreams:)`` case.
   ///
   /// If an implementation fails to start the transport, this error should be used to yield a
-  /// ``ListenEvent/failedToStartListening(_:)`` into the ``listenEventStream``.
+  /// ``TransportEvent/failedToStartListening(_:)`` into the ``events``.
   ///
   /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace

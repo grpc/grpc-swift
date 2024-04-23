@@ -88,17 +88,17 @@ struct AnyServerTransport: ServerTransport, Sendable {
 
   private let _listen: @Sendable () async -> Void
   private let _stopListening: @Sendable () -> Void
-  private let _listenEventStream: @Sendable () -> RPCAsyncSequence<ListenEvent>
+  private let _events: @Sendable () -> NoThrowRPCAsyncSequence<TransportEvent>
 
-  public var listenEventStream: RPCAsyncSequence<ListenEvent> {
-    self._listenEventStream()
+  public var events: NoThrowRPCAsyncSequence<TransportEvent> {
+    self._events()
   }
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
     self._listen = { await transport.listen() }
     self._stopListening = { transport.stopListening() }
-    self._listenEventStream = {
-      let mapped = transport.listenEventStream.map { event in
+    self._events = {
+      let mapped = transport.events.map { event in
         switch event.listenResult {
         case .success(let acceptedStreams):
           let mapped = acceptedStreams.map { stream in
@@ -109,13 +109,13 @@ struct AnyServerTransport: ServerTransport, Sendable {
             )
           }
 
-          return ListenEvent.startedListening(acceptedStreams: RPCAsyncSequence(wrapping: mapped))
+          return TransportEvent.startedListening(acceptedStreams: RPCAsyncSequence(wrapping: mapped))
         case .failure(let cause):
-          return ListenEvent.failedToStartListening(cause)
+          return TransportEvent.failedToStartListening(cause)
         }
       }
 
-      return RPCAsyncSequence(wrapping: mapped)
+      return NoThrowRPCAsyncSequence(wrapping: mapped)
     }
   }
 

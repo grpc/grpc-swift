@@ -53,16 +53,16 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
-  var listenEventStream: RPCAsyncSequence<ListenEvent> {
-    RPCAsyncSequence(
-      wrapping: AsyncStream(unfolding: {
+  var events: NoThrowRPCAsyncSequence<TransportEvent> {
+    NoThrowRPCAsyncSequence(
+      wrapping: AsyncStream {
         .failedToStartListening(
           RPCError(
             code: .unavailable,
             message: "The '\(type(of: self))' transport is never available."
           )
         )
-      })
+      }
     )
   }
 
@@ -78,11 +78,11 @@ struct ThrowOnRunServerTransport: ServerTransport {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   let signal: AsyncStream<Void>
-  private let eventStream: AsyncStream<ListenEvent>
-  private let eventStreamContinuation: AsyncStream<ListenEvent>.Continuation
+  private let eventStream: AsyncStream<TransportEvent>
+  private let eventStreamContinuation: AsyncStream<TransportEvent>.Continuation
 
-  var listenEventStream: RPCAsyncSequence<ListenEvent> {
-    RPCAsyncSequence(wrapping: self.eventStream)
+  var events: NoThrowRPCAsyncSequence<TransportEvent> {
+    NoThrowRPCAsyncSequence(wrapping: self.eventStream)
   }
 
   init(signal: AsyncStream<Void>) {
