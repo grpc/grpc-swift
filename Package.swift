@@ -76,6 +76,10 @@ let packageDependencies: [Package.Dependency] = [
     url: "https://github.com/apple/swift-distributed-tracing.git",
     from: "1.0.0"
   ),
+  .package(
+    url: "https://github.com/apple/swift-async-dns-resolver.git",
+    branch: "main"
+  )
 ].appending(
   .package(
     url: "https://github.com/apple/swift-nio-ssl.git",
@@ -208,7 +212,8 @@ extension Target {
       .nioCore,
       .nioHTTP2,
       .cgrpcZlib,
-      .dequeModule
+      .dequeModule,
+      .product(name: "AsyncDNSResolver", package: "swift-async-dns-resolver")
     ]
   )
 
