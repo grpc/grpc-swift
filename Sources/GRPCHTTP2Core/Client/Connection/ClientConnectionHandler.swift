@@ -513,19 +513,3 @@ extension ClientConnectionHandler {
     }
   }
 }
-
-extension Optional {
-  // TODO: replace with https://github.com/apple/swift-nio/pull/2697
-  mutating func setOrCascade<Value>(
-    to promise: EventLoopPromise<Value>?
-  ) where Wrapped == EventLoopPromise<Value> {
-    guard let promise = promise else { return }
-
-    switch self {
-    case .none:
-      self = .some(promise)
-    case .some(let existing):
-      existing.futureResult.cascade(to: promise)
-    }
-  }
-}
