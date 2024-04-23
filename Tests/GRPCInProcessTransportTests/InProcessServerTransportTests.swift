@@ -50,7 +50,7 @@ final class InProcessServerTransportTests: XCTestCase {
       var eventIterator = transport.listenEventStream.makeAsyncIterator()
       let listenEvent = try await eventIterator.next()
 
-      switch listenEvent?.listenResult {
+      switch listenEvent {
       case .success(let acceptedStreams):
         var streamSequenceIterator = acceptedStreams.makeAsyncIterator()
         let testStream = try await streamSequenceIterator.next()
@@ -93,7 +93,7 @@ final class InProcessServerTransportTests: XCTestCase {
       var eventIterator = transport.listenEventStream.makeAsyncIterator()
       let listenEvent = try await eventIterator.next()
 
-      switch listenEvent?.listenResult {
+      switch listenEvent {
       case .success(let acceptedStreams):
         var streamSequenceIterator = acceptedStreams.makeAsyncIterator()
         try transport.acceptStream(firstStream)
