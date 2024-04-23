@@ -32,7 +32,7 @@ let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == ni
 let packageDependencies: [Package.Dependency] = [
   .package(
     url: "https://github.com/apple/swift-nio.git",
-    from: "2.64.0"
+    from: "2.65.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
@@ -208,7 +208,8 @@ extension Target {
       .nioCore,
       .nioHTTP2,
       .cgrpcZlib,
-      .dequeModule
+      .dequeModule,
+      .atomics
     ]
   )
 
@@ -256,7 +257,7 @@ extension Target {
       .nioFileSystem
     ]
   )
-    
+
   static let grpcSwiftPlugin: Target = .plugin(
     name: "GRPCSwiftPlugin",
     capability: .buildTool(),
@@ -381,7 +382,7 @@ extension Target {
       .grpcCore
     ]
   )
-  
+
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
