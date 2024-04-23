@@ -370,7 +370,7 @@ extension Subchannel {
     struct Connecting {
       var connection: Connection
       let addresses: [SocketAddress]
-      var addressIterator: [SocketAddress].Iterator
+      var addressIterator: Array<SocketAddress>.Iterator
       var backoff: ConnectionBackoff.Iterator
     }
 
