@@ -182,6 +182,7 @@ final class ConnectionTests: XCTestCase {
 }
 
 extension ClientBootstrap {
+  @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
   func connect<T>(
     to address: GRPCHTTP2Core.SocketAddress,
     _ configure: @Sendable @escaping (Channel) -> EventLoopFuture<T>

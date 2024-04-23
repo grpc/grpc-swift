@@ -66,7 +66,7 @@ final class RetryDelaySequenceTests: XCTestCase {
       (.seconds(1), 1.0),
       (.milliseconds(1500), 1.5),
       (.nanoseconds(1_000_000_000), 1.0),
-      (.nanoseconds(3_141_592_653), 3.141592653),
+      (.nanoseconds(3_141_592_653 as Int64), 3.141592653),
     ]
 
     for (duration, expected) in testData {
@@ -80,7 +80,7 @@ final class RetryDelaySequenceTests: XCTestCase {
       (1.0, .seconds(1)),
       (1.5, .milliseconds(1500)),
       (1.0, .nanoseconds(1_000_000_000)),
-      (3.141592653, .nanoseconds(3_141_592_653)),
+      (3.141592653, .nanoseconds(3_141_592_653 as Int64)),
     ]
 
     for (seconds, expected) in testData {
