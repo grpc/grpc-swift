@@ -15,29 +15,74 @@
  */
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+/// A type representing the possible outcomes of calling ``ServerTransport/listen()``.
+public struct ListenEvent: Sendable {
+  public typealias AcceptedStreams = RPCAsyncSequence<RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>>
+
+  private enum Event {
+    case startedListening(
+      acceptedStreams: RPCAsyncSequence<
+        RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
+      >
+    )
+    case failedToStartListening(any Error)
+  }
+
+  private let _event: Event
+
+  private init(_event: Event) {
+    self._event = _event
+  }
+
+  /// The call to ``ServerTransport/listen()`` was successful and the transport was started successfully.
+  /// - Parameter acceptedStreams: The sequence of accepted streams for this transport.
+  /// - Returns: An instance of ``ListenEvent``.
+  public static func startedListening(acceptedStreams: AcceptedStreams) -> Self {
+    Self.init(_event: .startedListening(acceptedStreams: acceptedStreams))
+  }
+  
+  /// The call to ``ServerTransport/listen()`` was unsuccesful and the transport failed to start.
+  /// - Parameter error: The error with which the transport failed to start.
+  /// - Returns: An instance of ``ListenEvent``.
+  public static func failedToStartListening(_ error: any Error) -> Self {
+    Self.init(_event: .failedToStartListening(error))
+  }
+  
+  /// A shorthand to make it easier to pattern-match on a given ``ListenEvent``.
+  public var listenResult: Result<AcceptedStreams, any Error> {
+    switch self._event {
+    case .startedListening(let acceptedStreams):
+      return .success(acceptedStreams)
+    case .failedToStartListening(let error):
+      return .failure(error)
+    }
+  }
+}
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+/// A protocol server transport implementations must conform to.
 public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
-  /// A sequence of accepted streams to handle.
+  /// A sequence of ``ListenEvent``s, describing whether the transport was started successfully or not.
   ///
-  /// This property is `async` because implementations will typically require ``listen()`` to be called
-  /// (and for the startup to be succesful) before a stream sequence can be returned.
+  /// This sequence should only return a single event. If multiple events are yielded into it, they may be ignored.
+  /// Not yielding any events or finishing the sequence without yielding any events is considered a broken
+  /// implementation of this protocol.
   ///
-  /// If the call to ``listen()`` throws, meaning the transport failed to start, implementations of this transport
-  /// will typically throw upon getting this property.
-  ///
-  /// Once ``listen()`` stops running, the sequence will be finished.
-  var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> { get async throws }
+  /// Once ``listen()`` stops running, the sequence should be finished if it hasn't been finished already.
+  var listenEventStream: RPCAsyncSequence<ListenEvent> { get }
 
-  /// Starts the transport and returns a sequence of accepted streams to handle.
+  /// Starts the transport.
   ///
   /// Implementations will typically bind to a listening port when this function is called
   /// and start accepting new connections. Each accepted inbound RPC stream should be published
-  /// to the async sequence returned by the function.
+  /// to the async sequence returned by the ``listenEventStream`` property, in the successful
+  /// ``ListenEvent/startedListening(acceptedStreams:)`` case.
   ///
-  /// If an implementation throws when the transport fails to start, this error should be thrown when getting
-  /// the ``acceptedStreams`` property.
+  /// If an implementation fails to start the transport, this error should be used to yield a
+  /// ``ListenEvent/failedToStartListening(_:)`` into the ``listenEventStream``.
   ///
   /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace

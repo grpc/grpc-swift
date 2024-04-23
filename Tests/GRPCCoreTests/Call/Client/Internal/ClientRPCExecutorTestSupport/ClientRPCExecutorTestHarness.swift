@@ -125,10 +125,17 @@ struct ClientRPCExecutorTestHarness {
           serverGroup.addTask {
             await self.serverTransport.listen()
           }
-          let streams = try await self.serverTransport.acceptedStreams
-          for try await stream in streams {
-            serverGroup.addTask {
-              try await self.server.handle(stream: stream)
+
+          for try await listenEvent in self.serverTransport.listenEventStream {
+            switch listenEvent.listenResult {
+            case .success(let streams):
+              for try await stream in streams {
+                serverGroup.addTask {
+                  try await self.server.handle(stream: stream)
+                }
+              }
+            case .failure(let error):
+              throw error
             }
           }
         }

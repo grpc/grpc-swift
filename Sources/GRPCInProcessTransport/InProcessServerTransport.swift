@@ -33,18 +33,21 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
+  private let eventStream: AsyncStream<ListenEvent>
+  private let eventStreamContinuation: AsyncStream<ListenEvent>.Continuation
 
-  public var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
-    RPCAsyncSequence(wrapping: self.newStreams)
+  public var listenEventStream: RPCAsyncSequence<ListenEvent> {
+    RPCAsyncSequence(wrapping: self.eventStream)
   }
 
   /// Creates a new instance of ``InProcessServerTransport``.
   public init() {
     (self.newStreams, self.newStreamsContinuation) = AsyncStream.makeStream()
+    (self.eventStream, self.eventStreamContinuation) = AsyncStream.makeStream()
   }
 
-  /// Publish a new ``RPCStream``, which will be returned by the transport's ``RPCAsyncSequence``,
-  /// returned when calling ``listen()``.
+  /// Publish a new ``RPCStream``, which will be returned by the transport's ``listenEventStream``
+  /// successful case.
   ///
   /// - Parameter stream: The new ``RPCStream`` to publish.
   /// - Throws: ``RPCError`` with code ``RPCError/Code-swift.struct/failedPrecondition``
@@ -59,11 +62,12 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
     }
   }
 
-  /// Return a new ``RPCAsyncSequence`` that will contain all published ``RPCStream``s published
-  /// to this transport using the ``acceptStream(_:)`` method.
-  ///
-  /// - Returns: An ``RPCAsyncSequence`` of all published ``RPCStream``s.
-  public func listen() async {}
+  // Signal that the stream is up and running.
+  public func listen() async {
+    self.eventStreamContinuation.yield(
+      .startedListening(acceptedStreams: RPCAsyncSequence(wrapping: self.newStreams))
+    )
+  }
 
   /// Stop listening to any new ``RPCStream`` publications.
   ///

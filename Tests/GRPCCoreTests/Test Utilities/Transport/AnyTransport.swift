@@ -88,25 +88,31 @@ struct AnyServerTransport: ServerTransport, Sendable {
 
   private let _listen: @Sendable () async -> Void
   private let _stopListening: @Sendable () -> Void
-  private let _acceptedStreams:
-    @Sendable () async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>>
+  private let _listenEventStream: @Sendable () -> RPCAsyncSequence<ListenEvent>
 
-  var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
-    get async throws {
-      try await self._acceptedStreams()
-    }
+  public var listenEventStream: RPCAsyncSequence<ListenEvent> {
+    self._listenEventStream()
   }
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
     self._listen = { await transport.listen() }
     self._stopListening = { transport.stopListening() }
-    self._acceptedStreams = {
-      let mapped = try await transport.acceptedStreams.map { stream in
-        return RPCStream(
-          descriptor: stream.descriptor,
-          inbound: RPCAsyncSequence(wrapping: stream.inbound),
-          outbound: RPCWriter.Closable(wrapping: stream.outbound)
-        )
+    self._listenEventStream = {
+      let mapped = transport.listenEventStream.map { event in
+        switch event.listenResult {
+        case .success(let acceptedStreams):
+          let mapped = acceptedStreams.map { stream in
+            return RPCStream(
+              descriptor: stream.descriptor,
+              inbound: RPCAsyncSequence(wrapping: stream.inbound),
+              outbound: RPCWriter.Closable(wrapping: stream.outbound)
+            )
+          }
+
+          return ListenEvent.startedListening(acceptedStreams: RPCAsyncSequence(wrapping: mapped))
+        case .failure(let cause):
+          return ListenEvent.failedToStartListening(cause)
+        }
       }
 
       return RPCAsyncSequence(wrapping: mapped)

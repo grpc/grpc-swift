@@ -171,12 +171,19 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        for try await stream in server.acceptedStreams {
-          let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
-          try await stream.outbound.write(RPCResponsePart.message([42]))
-          stream.outbound.finish()
+        for try await event in server.listenEventStream {
+          switch event.listenResult {
+          case .success(let acceptedStreams):
+            for try await stream in acceptedStreams {
+              let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
+              try await stream.outbound.write(RPCResponsePart.message([42]))
+              stream.outbound.finish()
 
-          XCTAssertEqual(receivedMessages, [.message([1])])
+              XCTAssertEqual(receivedMessages, [.message([1])])
+            }
+          case .failure(let failure):
+            XCTFail("Should have listened successfully")
+          }
         }
       }
 

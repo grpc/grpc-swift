@@ -213,24 +213,36 @@ public struct GRPCServer: Sendable {
           await transport.listen()
         }
 
-        do {
-          // Wait to see if the transport starts-up successfully (providing the
-          // sequence of streams) or if the start-up fails and throws an error.
-          listeners.append(try await transport.acceptedStreams)
-        } catch let cause {
-          // Failed to start, so start stopping.
-          self.state.store(.stopping, ordering: .sequentiallyConsistent)
-          // Some listeners may have started and have streams which need closing.
-          await self.rejectRequests(listeners)
+        // Get the first event only: we don't care about any further events
+        // (we shouldn't even receive more than one)
+        var eventIterator = transport.listenEventStream.makeAsyncIterator()
+        if let listenEvent = try await eventIterator.next() {
+          switch listenEvent.listenResult {
+          case .success(let acceptedStreams):
+            listeners.append(acceptedStreams)
 
-          throw RuntimeError(
-            code: .failedToStartTransport,
-            message: """
-              Server didn't start because the '\(type(of: transport))' transport threw an error \
-              while starting.
-              """,
-            cause: cause
-          )
+          case .failure(let cause):
+            // Failed to start, so start stopping.
+            self.state.store(.stopping, ordering: .sequentiallyConsistent)
+            // Some listeners may have started and have streams which need closing.
+            await self.rejectRequests(listeners)
+
+            throw RuntimeError(
+              code: .failedToStartTransport,
+              message: """
+                Server didn't start because the '\(type(of: transport))' transport threw an error \
+                while starting.
+                """,
+              cause: cause
+            )
+          }
+        } else {
+          // This can only happen if the event stream has been finished without
+          // any event being yielded. This could be either because the transport
+          // was incorrectly implemented, or because Cancellation has kicked in.
+          // Either way, there's nothing we can do here, so finish the execution
+          // of `run()`.
+          return
         }
       }
 

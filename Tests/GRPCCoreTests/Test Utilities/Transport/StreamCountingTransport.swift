@@ -89,15 +89,22 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
     self._acceptedStreams.load(ordering: .sequentiallyConsistent)
   }
 
-  var acceptedStreams: RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
-    get async throws {
-      let mapped = try await self.transport.acceptedStreams.map { stream in
-        self._acceptedStreams.wrappingIncrement(ordering: .sequentiallyConsistent)
-        return stream
+  var listenEventStream: RPCAsyncSequence<ListenEvent> {
+    let mappedEvents = self.transport.listenEventStream.map { event in
+      switch event.listenResult {
+      case .success(let acceptedStreams):
+        let mappedStreams = acceptedStreams.map { stream in
+          self._acceptedStreams.wrappingIncrement(ordering: .sequentiallyConsistent)
+          return stream
+        }
+        return ListenEvent.startedListening(
+          acceptedStreams: RPCAsyncSequence(wrapping: mappedStreams)
+        )
+      case .failure(let error):
+        return ListenEvent.failedToStartListening(error)
       }
-
-      return RPCAsyncSequence(wrapping: mapped)
     }
+    return RPCAsyncSequence(wrapping: mappedEvents)
   }
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
