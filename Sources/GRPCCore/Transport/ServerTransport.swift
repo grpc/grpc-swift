@@ -17,7 +17,9 @@
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 /// A type representing the possible outcomes of calling ``ServerTransport/listen()``.
 public struct TransportEvent: Sendable {
-  public typealias AcceptedStreams = RPCAsyncSequence<RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>>
+  public typealias AcceptedStreams = RPCAsyncSequence<
+    RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
+  >
 
   private enum Event {
     case startedListening(acceptedStreams: AcceptedStreams)
@@ -36,14 +38,14 @@ public struct TransportEvent: Sendable {
   public static func startedListening(acceptedStreams: AcceptedStreams) -> Self {
     Self.init(_event: .startedListening(acceptedStreams: acceptedStreams))
   }
-  
+
   /// The call to ``ServerTransport/listen()`` was unsuccesful and the transport failed to start.
   /// - Parameter error: The error with which the transport failed to start.
   /// - Returns: An instance of ``TransportEvent``.
   public static func failedToStartListening(_ error: any Error) -> Self {
     Self.init(_event: .failedToStartListening(error))
   }
-  
+
   /// A shorthand to make it easier to pattern-match on a given ``TransportEvent``.
   public var listenResult: Result<AcceptedStreams, any Error> {
     switch self._event {

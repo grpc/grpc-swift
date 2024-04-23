@@ -109,7 +109,9 @@ struct AnyServerTransport: ServerTransport, Sendable {
             )
           }
 
-          return TransportEvent.startedListening(acceptedStreams: RPCAsyncSequence(wrapping: mapped))
+          return TransportEvent.startedListening(
+            acceptedStreams: RPCAsyncSequence(wrapping: mapped)
+          )
         case .failure(let cause):
           return TransportEvent.failedToStartListening(cause)
         }

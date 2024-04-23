@@ -42,9 +42,9 @@ final class InProcessServerTransportTests: XCTestCase {
       group.addTask {
         await transport.listen()
       }
-      
+
       try transport.acceptStream(stream)
-      
+
       for try await event in transport.events {
         switch event.listenResult {
         case .success(let acceptedStreams):
@@ -53,7 +53,7 @@ final class InProcessServerTransportTests: XCTestCase {
           let messages = try await testStream?.inbound.reduce(into: []) { $0.append($1) }
           XCTAssertEqual(messages, [.message([42])])
           transport.stopListening()
-          
+
         case .failure:
           XCTFail("Should have listened successfully")
         }
@@ -95,9 +95,9 @@ final class InProcessServerTransportTests: XCTestCase {
             $0.append($1)
           }
           XCTAssertEqual(firstStreamMessages, [.message([42])])
-          
+
           transport.stopListening()
-          
+
           let secondStream = RPCStream<
             RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
           >(
@@ -114,18 +114,18 @@ final class InProcessServerTransportTests: XCTestCase {
               )
             )
           )
-          
+
           XCTAssertThrowsError(ofType: RPCError.self) {
             try transport.acceptStream(secondStream)
           } errorHandler: { error in
             XCTAssertEqual(error.code, .failedPrecondition)
           }
-          
+
           let secondTestStream = try await streamSequenceIterator.next()
           XCTAssertNil(secondTestStream)
-          
+
           transport.stopListening()
-          
+
         case .failure:
           XCTFail("Should have listened successfully")
         }
