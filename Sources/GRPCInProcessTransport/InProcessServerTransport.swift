@@ -33,10 +33,10 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
-  private let eventStream: AsyncStream<ServerTransport.ListenEvent>
-  private let eventStreamContinuation: AsyncStream<ServerTransport.ListenEvent>.Continuation
+  private let eventStream: AsyncStream<ListenEvent>
+  private let eventStreamContinuation: AsyncStream<ListenEvent>.Continuation
 
-  public var listenEventStream: RPCAsyncSequence<ServerTransport.ListenEvent> {
+  public var listenEventStream: RPCAsyncSequence<ListenEvent> {
     RPCAsyncSequence(wrapping: self.eventStream)
   }
 
@@ -64,7 +64,9 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   // Signal that the stream is up and running.
   public func listen() async {
-    self.eventStreamContinuation.yield(.success(RPCAsyncSequence(wrapping: self.newStreams)))
+    self.eventStreamContinuation.yield(
+      .startedListening(acceptedStreams: RPCAsyncSequence(wrapping: self.newStreams))
+    )
   }
 
   /// Stop listening to any new ``RPCStream`` publications.

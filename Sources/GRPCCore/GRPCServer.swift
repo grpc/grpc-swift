@@ -217,7 +217,7 @@ public struct GRPCServer: Sendable {
         // (we shouldn't even receive more than one)
         var eventIterator = transport.listenEventStream.makeAsyncIterator()
         if let listenEvent = try await eventIterator.next() {
-          switch listenEvent {
+          switch listenEvent.listenResult {
           case .success(let acceptedStreams):
             listeners.append(acceptedStreams)
 

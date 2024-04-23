@@ -127,7 +127,7 @@ struct ClientRPCExecutorTestHarness {
           }
 
           for try await listenEvent in self.serverTransport.listenEventStream {
-            switch listenEvent {
+            switch listenEvent.listenResult {
             case .success(let streams):
               for try await stream in streams {
                 serverGroup.addTask {
