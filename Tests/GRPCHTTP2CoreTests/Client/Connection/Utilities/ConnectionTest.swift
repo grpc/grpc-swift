@@ -165,7 +165,7 @@ extension ConnectionTest {
     }
   }
 
-  private final class EchoHandler: ChannelInboundHandler {
+  final class EchoHandler: ChannelInboundHandler {
     typealias InboundIn = RPCRequestPart
     typealias OutboundOut = RPCResponsePart
 
