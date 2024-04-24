@@ -147,6 +147,12 @@ extension Subchannel {
         }
       }
     }
+
+    // Once the task group is done, the event stream must be also be finished. In normal operation
+    // this is handled via other paths. For cancellation it must be finished explicitly.
+    if Task.isCancelled {
+      self.event.continuation.finish()
+    }
   }
 
   /// Initiate a connection attempt, if possible.
@@ -259,9 +265,16 @@ extension Subchannel {
   }
 
   private func handleConnectSucceededEvent() {
-    if self.state.withLockedValue({ $0.connectSucceeded() }) {
+    switch self.state.withLockedValue({ $0.connectSucceeded() }) {
+    case .updateState:
       // Emit a connectivity state change: the load balancer can now use this subchannel.
       self.event.continuation.yield(.connectivityStateChanged(.ready))
+
+    case .close(let connection):
+      connection.close()
+
+    case .none:
+      ()
     }
   }
 
@@ -476,13 +489,22 @@ extension Subchannel {
       return onClose
     }
 
-    mutating func connectSucceeded() -> Bool {
+    enum OnConnectSucceeded {
+      case updateState
+      case close(Connection)
+      case none
+    }
+
+    mutating func connectSucceeded() -> OnConnectSucceeded {
       switch self {
       case .connecting(let state):
         self = .connected(Connected(from: state))
-        return true
-      case .notConnected, .closing, .connected, .closed:
-        return false
+        return .updateState
+      case .closing(let state):
+        self = .closing(state)
+        return .close(state.connection)
+      case .notConnected, .connected, .closed:
+        return .none
       }
     }
 

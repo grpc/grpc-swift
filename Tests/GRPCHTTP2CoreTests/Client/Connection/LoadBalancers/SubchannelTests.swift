@@ -277,6 +277,34 @@ final class SubchannelTests: XCTestCase {
     }
   }
 
+  func testCancelReadySubchannel() async throws {
+    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address = try await server.bind()
+    let subchannel = self.makeSubchannel(address: address, connector: .posix())
+
+    await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try await server.run { _, _ in
+          XCTFail("Unexpected stream")
+        }
+      }
+
+      group.addTask {
+        subchannel.connect()
+        await subchannel.run()
+      }
+
+      for await event in subchannel.events {
+        switch event {
+        case .connectivityStateChanged(.ready):
+          group.cancelAll()
+        default:
+          ()
+        }
+      }
+    }
+  }
+
   private func makeSubchannel(
     addresses: [GRPCHTTP2Core.SocketAddress],
     connector: any HTTP2Connector,
