@@ -213,12 +213,25 @@ public struct GRPCServer: Sendable {
           await transport.listen()
         }
 
+        var acceptedStreamsAlreadyPublished = false
         for try await event in transport.events {
           switch event.listenResult {
           case .success(let acceptedStreams):
+            assert(
+              !acceptedStreamsAlreadyPublished,
+              "Accepted streams can only be published once: there is an error in the server transport implementation."
+            )
+            acceptedStreamsAlreadyPublished = true
+
             listeners.append(acceptedStreams)
 
           case .failure(let cause):
+            assert(
+              !acceptedStreamsAlreadyPublished,
+              "A TransportEvent signalling that the transport was successfully started has already been fired: there is an error in the server transport implementation."
+            )
+            acceptedStreamsAlreadyPublished = true
+
             // Failed to start, so start stopping.
             self.state.store(.stopping, ordering: .sequentiallyConsistent)
             // Some listeners may have started and have streams which need closing.
