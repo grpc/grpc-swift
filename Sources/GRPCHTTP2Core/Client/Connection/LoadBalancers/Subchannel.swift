@@ -325,7 +325,7 @@ extension Subchannel {
     _ reason: Connection.CloseReason,
     in group: inout DiscardingTaskGroup
   ) {
-    let isClosed = self.state.withLockedValue { $0.closed() }
+    let isClosed = self.state.withLockedValue { $0.closed(reason: reason) }
     guard isClosed else { return }
 
     switch reason {
@@ -578,10 +578,16 @@ extension Subchannel {
       }
     }
 
-    mutating func closed() -> Bool {
+    mutating func closed(reason: Connection.CloseReason) -> Bool {
       switch self {
       case .connected, .closing:
-        self = .closed
+        switch reason {
+        case .idleTimeout, .keepaliveTimeout, .error:
+          self = .notConnected
+        case .initiatedLocally, .remote:
+          self = .closed
+        }
+
         return true
       case .notConnected, .connecting, .closed:
         return false
