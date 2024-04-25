@@ -37,3 +37,11 @@ struct SubchannelID: Hashable, Sendable, CustomStringConvertible {
     "subchan_\(self.id)"
   }
 }
+
+/// A process-unique ID for a load-balancer.
+struct LoadBalancerID: Hashable, Sendable, CustomStringConvertible {
+  private let id = ProcessUniqueID()
+  var description: String {
+    "lb_\(self.id)"
+  }
+}
