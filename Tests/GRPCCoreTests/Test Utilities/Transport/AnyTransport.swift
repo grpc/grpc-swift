@@ -27,7 +27,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
       _ options: CallOptions,
       _ body: (RPCStream<Inbound, Outbound>) async throws -> Any
     ) async throws -> Any
-  private let _connect: @Sendable (Bool) async throws -> Void
+  private let _connect: @Sendable () async throws -> Void
   private let _close: @Sendable () -> Void
   private let _configuration: @Sendable (MethodDescriptor) -> MethodConfig?
 
@@ -40,8 +40,8 @@ struct AnyClientTransport: ClientTransport, Sendable {
       }
     }
 
-    self._connect = { lazily in
-      try await transport.connect(lazily: lazily)
+    self._connect = {
+      try await transport.connect()
     }
 
     self._close = {
@@ -57,8 +57,8 @@ struct AnyClientTransport: ClientTransport, Sendable {
     self._retryThrottle()
   }
 
-  func connect(lazily: Bool) async throws {
-    try await self._connect(lazily)
+  func connect() async throws {
+    try await self._connect()
   }
 
   func close() {

@@ -43,8 +43,8 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     self.transport.retryThrottle
   }
 
-  func connect(lazily: Bool) async throws {
-    try await self.transport.connect(lazily: lazily)
+  func connect() async throws {
+    try await self.transport.connect()
   }
 
   func close() {

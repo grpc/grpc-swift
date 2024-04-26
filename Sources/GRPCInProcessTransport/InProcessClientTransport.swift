@@ -127,9 +127,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// maintains connections. The function exits when all open streams have been closed and new connections
   /// are no longer required by the caller who signals this by calling ``close()``, or by cancelling the
   /// task this function runs in.
-  ///
-  /// - Parameter lazily: This parameter is ignored in this implementation.
-  public func connect(lazily: Bool) async throws {
+  public func connect() async throws {
     let (stream, continuation) = AsyncStream<Void>.makeStream()
     try self.state.withLockedValue { state in
       switch state {

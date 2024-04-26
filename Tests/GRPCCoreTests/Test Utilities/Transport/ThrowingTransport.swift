@@ -28,7 +28,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
   let retryThrottle: RetryThrottle? = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
 
-  func connect(lazily: Bool) async throws {
+  func connect() async throws {
     // no-op
   }
 
