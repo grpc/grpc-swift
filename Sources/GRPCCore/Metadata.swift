@@ -226,6 +226,19 @@ public struct Metadata: Sendable, Hashable {
   public mutating func removeAll(keepingCapacity: Bool) {
     self.elements.removeAll(keepingCapacity: keepingCapacity)
   }
+
+  /// Removes all elements which match the given predicate.
+  ///
+  /// - Parameter predicate: Returns `true` if the element should be removed.
+  ///
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
+  public mutating func removeAll(
+    where predicate: (_ key: String, _ value: Value) throws -> Bool
+  ) rethrows {
+    try self.elements.removeAll { pair in
+      try predicate(pair.key, pair.value)
+    }
+  }
 }
 
 extension Metadata: RandomAccessCollection {
