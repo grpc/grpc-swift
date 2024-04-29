@@ -33,10 +33,10 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
-  private let eventStream: AsyncStream<TransportEvent>
-  private let eventStreamContinuation: AsyncStream<TransportEvent>.Continuation
+  private let eventStream: AsyncStream<ServerTransportEvent>
+  private let eventStreamContinuation: AsyncStream<ServerTransportEvent>.Continuation
 
-  public var events: NoThrowRPCAsyncSequence<TransportEvent> {
+  public var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
     NoThrowRPCAsyncSequence(wrapping: self.eventStream)
   }
 

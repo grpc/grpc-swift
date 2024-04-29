@@ -89,7 +89,7 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
     self._acceptedStreams.load(ordering: .sequentiallyConsistent)
   }
 
-  var events: NoThrowRPCAsyncSequence<TransportEvent> {
+  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
     let mappedEvents = self.transport.events.map { event in
       switch event.listenResult {
       case .success(let acceptedStreams):
@@ -97,11 +97,11 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
           self._acceptedStreams.wrappingIncrement(ordering: .sequentiallyConsistent)
           return stream
         }
-        return TransportEvent.startedListening(
+        return ServerTransportEvent.startedListening(
           acceptedStreams: RPCAsyncSequence(wrapping: mappedStreams)
         )
       case .failure(let error):
-        return TransportEvent.failedToStartListening(error)
+        return ServerTransportEvent.failedToStartListening(error)
       }
     }
     return NoThrowRPCAsyncSequence(wrapping: mappedEvents)

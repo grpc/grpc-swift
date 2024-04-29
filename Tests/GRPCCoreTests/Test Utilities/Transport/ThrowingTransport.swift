@@ -53,7 +53,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
-  var events: NoThrowRPCAsyncSequence<TransportEvent> {
+  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
     NoThrowRPCAsyncSequence(
       wrapping: AsyncStream {
         .failedToStartListening(
@@ -78,10 +78,10 @@ struct ThrowOnRunServerTransport: ServerTransport {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   let signal: AsyncStream<Void>
-  private let eventStream: AsyncStream<TransportEvent>
-  private let eventStreamContinuation: AsyncStream<TransportEvent>.Continuation
+  private let eventStream: AsyncStream<ServerTransportEvent>
+  private let eventStreamContinuation: AsyncStream<ServerTransportEvent>.Continuation
 
-  var events: NoThrowRPCAsyncSequence<TransportEvent> {
+  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
     NoThrowRPCAsyncSequence(wrapping: self.eventStream)
   }
 

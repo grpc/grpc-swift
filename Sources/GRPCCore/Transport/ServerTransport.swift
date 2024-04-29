@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+/// A type representing different possible server transport-related events.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-/// A type representing the possible outcomes of calling ``ServerTransport/listen()``.
-public struct TransportEvent: Sendable {
+public struct ServerTransportEvent: Sendable {
   public typealias AcceptedStreams = RPCAsyncSequence<
     RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
   >
@@ -34,14 +34,14 @@ public struct TransportEvent: Sendable {
 
   /// The call to ``ServerTransport/listen()`` was successful and the transport was started successfully.
   /// - Parameter acceptedStreams: The sequence of accepted streams for this transport.
-  /// - Returns: An instance of ``TransportEvent``.
+  /// - Returns: An instance of ``ServerTransportEvent``.
   public static func startedListening(acceptedStreams: AcceptedStreams) -> Self {
     Self.init(_event: .startedListening(acceptedStreams: acceptedStreams))
   }
 
   /// The call to ``ServerTransport/listen()`` was unsuccesful and the transport failed to start.
   /// - Parameter error: The error with which the transport failed to start.
-  /// - Returns: An instance of ``TransportEvent``.
+  /// - Returns: An instance of ``ServerTransportEvent``.
   public static func failedToStartListening(_ error: any Error) -> Self {
     Self.init(_event: .failedToStartListening(error))
   }
@@ -57,8 +57,8 @@ public struct TransportEvent: Sendable {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 /// A protocol server transport implementations must conform to.
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
@@ -70,17 +70,17 @@ public protocol ServerTransport: Sendable {
   /// implementation of this protocol.
   ///
   /// Once ``listen()`` stops running, the sequence should be finished if it hasn't been finished already.
-  var events: NoThrowRPCAsyncSequence<TransportEvent> { get }
+  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> { get }
 
   /// Starts the transport.
   ///
   /// Implementations will typically bind to a listening port when this function is called
   /// and start accepting new connections. Each accepted inbound RPC stream should be published
   /// to the async sequence returned by the ``events`` property, in the successful
-  /// ``TransportEvent/startedListening(acceptedStreams:)`` case.
+  /// ``ServerTransportEvent/startedListening(acceptedStreams:)`` case.
   ///
   /// If an implementation fails to start the transport, this error should be used to yield a
-  /// ``TransportEvent/failedToStartListening(_:)`` into the ``events``.
+  /// ``ServerTransportEvent/failedToStartListening(_:)`` into the ``events``.
   ///
   /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace

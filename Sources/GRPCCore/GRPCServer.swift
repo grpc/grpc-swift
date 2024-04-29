@@ -228,7 +228,7 @@ public struct GRPCServer: Sendable {
           case .failure(let cause):
             assert(
               !acceptedStreamsAlreadyPublished,
-              "A TransportEvent signalling that the transport was successfully started has already been fired: there is an error in the server transport implementation."
+              "A ServerTransportEvent signalling that the transport was successfully started has already been fired: there is an error in the server transport implementation."
             )
             acceptedStreamsAlreadyPublished = true
 
