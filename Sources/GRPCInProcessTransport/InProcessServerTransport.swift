@@ -77,5 +77,6 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   /// - SeeAlso: ``ServerTransport``
   public func stopListening() {
     self.newStreamsContinuation.finish()
+    self.eventStreamContinuation.finish()
   }
 }
