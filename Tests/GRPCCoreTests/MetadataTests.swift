@@ -17,7 +17,7 @@ import GRPCCore
 import XCTest
 
 final class MetadataTests: XCTestCase {
-  func testInitFrom() {
+  func testInitFromSequence() {
     let elements: [Metadata.Element] = [
       (key: "key1", value: "value1"),
       (key: "key2", value: "value2"),
