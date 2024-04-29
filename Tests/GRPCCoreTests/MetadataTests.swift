@@ -24,7 +24,7 @@ final class MetadataTests: XCTestCase {
       (key: "key3", value: "value3"),
     ]
 
-    let metadata = Metadata(from: elements)
+    let metadata = Metadata(elements)
     let expected: Metadata = ["key1": "value1", "key2": "value2", "key3": "value3"]
 
     XCTAssertEqual(metadata, expected)

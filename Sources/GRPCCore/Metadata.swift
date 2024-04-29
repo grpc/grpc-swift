@@ -131,7 +131,7 @@ public struct Metadata: Sendable, Hashable {
   }
 
   /// Initialize `Metadata` from a `Sequence` of `Element`s.
-  public init(from elements: some Sequence<Element>) {
+  public init(_ elements: some Sequence<Element>) {
     self.elements = elements.map { key, value in
       KeyValuePair(key: key, value: value)
     }
