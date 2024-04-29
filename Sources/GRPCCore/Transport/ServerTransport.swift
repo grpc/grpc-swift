@@ -46,8 +46,10 @@ public struct ServerTransportEvent: Sendable {
     Self.init(_event: .failedToStartListening(error))
   }
 
-  /// A shorthand to make it easier to pattern-match on a given ``TransportEvent``.
-  public var listenResult: Result<AcceptedStreams, any Error> {
+  /// If the ``ServerTransportEvent`` relates to the result of calling ``ServerTransport/listen()``,
+  /// this property will return either the ``AcceptedStreams`` if successful, or an error if it failed.
+  /// If the event does not relate to the transport's listening result, `nil` will be returned.
+  public var listenResult: Result<AcceptedStreams, any Error>? {
     switch self._event {
     case .startedListening(let acceptedStreams):
       return .success(acceptedStreams)
