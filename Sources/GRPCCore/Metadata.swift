@@ -130,6 +130,13 @@ public struct Metadata: Sendable, Hashable {
     self.elements = []
   }
 
+  /// Initialize `Metadata` from a `Sequence` of `Element`s.
+  public init(_ elements: some Sequence<Element>) {
+    self.elements = elements.map { key, value in
+      KeyValuePair(key: key, value: value)
+    }
+  }
+
   /// Reserve the specified minimum capacity in the collection.
   ///
   /// - Parameter minimumCapacity: The minimum capacity to reserve in the collection.
