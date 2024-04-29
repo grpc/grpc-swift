@@ -26,13 +26,13 @@ import GRPCCore
 /// ``ClientRPCExecutionConfiguration``s which are specific, per-method configurations for your
 /// transport.
 ///
-/// Once you have a client, you must keep a long-running task executing ``connect(lazily:)``, which
+/// Once you have a client, you must keep a long-running task executing ``connect()``, which
 /// will return only once all streams have been finished and ``close()`` has been called on this client; or
 /// when the containing task is cancelled.
 ///
 /// To execute requests using this client, use ``withStream(descriptor:_:)``. If this function is
-/// called before ``connect(lazily:)`` is called, then any streams will remain pending and the call will
-/// block until ``connect(lazily:)`` is called or the task is cancelled.
+/// called before ``connect()`` is called, then any streams will remain pending and the call will
+/// block until ``connect()`` is called or the task is cancelled.
 ///
 /// - SeeAlso: ``ClientTransport``
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -127,9 +127,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// maintains connections. The function exits when all open streams have been closed and new connections
   /// are no longer required by the caller who signals this by calling ``close()``, or by cancelling the
   /// task this function runs in.
-  ///
-  /// - Parameter lazily: This parameter is ignored in this implementation.
-  public func connect(lazily: Bool) async throws {
+  public func connect() async throws {
     let (stream, continuation) = AsyncStream<Void>.makeStream()
     try self.state.withLockedValue { state in
       switch state {
@@ -157,7 +155,7 @@ public struct InProcessClientTransport: ClientTransport {
     }
 
     for await _ in stream {
-      // This for-await loop will exit (and thus `connect(lazily:)` will return)
+      // This for-await loop will exit (and thus `connect()` will return)
       // only when the task is cancelled, or when the stream's continuation is
       // finished - whichever happens first.
       // The continuation will be finished when `close()` is called and there
@@ -190,7 +188,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// Existing streams may run to completion naturally but calling ``withStream(descriptor:_:)``
   /// will result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
-  /// If you want to forcefully cancel all active streams then cancel the task running ``connect(lazily:)``.
+  /// If you want to forcefully cancel all active streams then cancel the task running ``connect()``.
   public func close() {
     let maybeContinuation: AsyncStream<Void>.Continuation? = self.state.withLockedValue { state in
       switch state {
@@ -220,7 +218,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// is closing or has been closed.
   ///
   ///   This implementation will queue any streams (and thus block this call) if this function is called before
-  ///   ``connect(lazily:)``, until a connection is established - at which point all streams will be
+  ///   ``connect()``, until a connection is established - at which point all streams will be
   ///   created.
   ///
   /// - Parameters:

@@ -27,11 +27,11 @@ final class InProcessClientTransportTests: XCTestCase {
 
     await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
 
       group.addTask {
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
 
       await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
@@ -49,7 +49,7 @@ final class InProcessClientTransportTests: XCTestCase {
     client.close()
 
     await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
-      try await client.connect(lazily: false)
+      try await client.connect()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
     }
@@ -60,7 +60,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
       group.addTask {
         try await Task.sleep(for: .milliseconds(100))
@@ -70,7 +70,7 @@ final class InProcessClientTransportTests: XCTestCase {
       group.cancelAll()
 
       await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
-        try await client.connect(lazily: false)
+        try await client.connect()
       } errorHandler: { error in
         XCTAssertEqual(error.code, .failedPrecondition)
       }
@@ -95,7 +95,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
       group.addTask {
         try await Task.sleep(for: .milliseconds(100))
@@ -117,7 +117,7 @@ final class InProcessClientTransportTests: XCTestCase {
         ) { _ in
           // Once the pending stream is opened, close the client to new connections,
           // so that, once this closure is executed and this stream is closed,
-          // the client will return from `connect(lazily:)`.
+          // the client will return from `connect()`.
           client.close()
         }
       }
@@ -126,7 +126,7 @@ final class InProcessClientTransportTests: XCTestCase {
         // Add a sleep to make sure connection happens after `withStream` has been called,
         // to test pending streams are handled correctly.
         try await Task.sleep(for: .milliseconds(100))
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
 
       try await group.waitForAll()
@@ -154,7 +154,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
 
       group.addTask {
@@ -254,7 +254,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.connect(lazily: false)
+        try await client.connect()
       }
 
       group.addTask {

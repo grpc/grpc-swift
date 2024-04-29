@@ -36,13 +36,7 @@ public protocol ClientTransport: Sendable {
   /// maintains connections. The function exits when all open streams have been closed and new connections
   /// are no longer required by the caller who signals this by calling ``close()``, or by cancelling the
   /// task this function runs in.
-  ///
-  /// - Parameter lazily: Whether the transport should establish connections lazily, that is,
-  ///     when the first stream is opened or eagerly, when this function is called. If `false`
-  ///     then the transport should attempt to establish a connection immediately. Note that
-  ///     this is a _hint_: transports aren't required to respect this value and you should
-  ///     refer to the documentation of the transport you're using to check whether it's supported.
-  func connect(lazily: Bool) async throws
+  func connect() async throws
 
   /// Signal to the transport that no new streams may be created.
   ///
@@ -50,7 +44,7 @@ public protocol ClientTransport: Sendable {
   /// should result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
   /// If you want to forcefully cancel all active streams then cancel the task
-  /// running ``connect(lazily:)``.
+  /// running ``connect()``.
   func close()
 
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.

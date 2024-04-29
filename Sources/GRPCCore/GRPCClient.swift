@@ -195,7 +195,7 @@ public struct GRPCClient: Sendable {
     }
 
     do {
-      try await self.transport.connect(lazily: false)
+      try await self.transport.connect()
     } catch {
       throw RuntimeError(
         code: .transportError,
