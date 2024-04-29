@@ -132,7 +132,7 @@ struct ClientRPCExecutorTestHarness {
       }
 
       group.addTask {
-        try await self.clientTransport.connect(lazily: false)
+        try await self.clientTransport.connect()
       }
 
       // Execute the request.

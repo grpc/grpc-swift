@@ -117,7 +117,7 @@ final class InProcessClientTransportTests: XCTestCase {
         ) { _ in
           // Once the pending stream is opened, close the client to new connections,
           // so that, once this closure is executed and this stream is closed,
-          // the client will return from `connect(lazily:)`.
+          // the client will return from `connect()`.
           client.close()
         }
       }

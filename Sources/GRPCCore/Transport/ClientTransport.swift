@@ -44,7 +44,7 @@ public protocol ClientTransport: Sendable {
   /// should result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
   /// If you want to forcefully cancel all active streams then cancel the task
-  /// running ``connect(lazily:)``.
+  /// running ``connect()``.
   func close()
 
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.
