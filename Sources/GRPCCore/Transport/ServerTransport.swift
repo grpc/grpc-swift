@@ -21,7 +21,7 @@ public struct ServerTransportEvent: Sendable {
     RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
   >
 
-  private enum Event {
+  private enum Event: Sendable {
     case startedListening(acceptedStreams: AcceptedStreams)
     case failedToStartListening(any Error)
   }
