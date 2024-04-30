@@ -36,7 +36,6 @@ final class SubchannelTests: XCTestCase {
     }
 
     subchannel.close()
-    await subchannel.run()
   }
 
   func testMakeStreamOnShutdownSubchannel() async throws {
