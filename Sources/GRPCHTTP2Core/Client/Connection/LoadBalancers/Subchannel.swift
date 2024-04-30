@@ -148,7 +148,7 @@ extension Subchannel {
       }
     }
 
-    // Once the task group is done, the event stream must be also be finished. In normal operation
+    // Once the task group is done, the event stream must also be finished. In normal operation
     // this is handled via other paths. For cancellation it must be finished explicitly.
     if Task.isCancelled {
       self.event.continuation.finish()
