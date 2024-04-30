@@ -218,6 +218,59 @@ final class SubchannelTests: XCTestCase {
     }
   }
 
+  func testConnectIteratesThroughAddressesWithBackoff() async throws {
+    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let udsPath = "test-wrap-around-addrs"
+
+    let subchannel = self.makeSubchannel(
+      addresses: [
+        .unixDomainSocket(path: "not-listening-1"),
+        .unixDomainSocket(path: "not-listening-2"),
+        .unixDomainSocket(path: udsPath)
+      ],
+      connector: .posix(),
+      backoff: .fixed(at: .zero) // Skip the backoff period
+    )
+
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        await subchannel.run()
+      }
+
+      var isServerRunning = false
+
+      for await event in subchannel.events {
+        switch event {
+        case .connectivityStateChanged(.idle):
+          subchannel.connect()
+
+        case .connectivityStateChanged(.transientFailure):
+          // The subchannel enters the transient failure state when all addresses have been tried.
+          // Bind the server now so that the next attempts succeeds.
+          if isServerRunning { break }
+          isServerRunning = true
+
+          let address = try await server.bind(to: .uds(udsPath))
+          XCTAssertEqual(address, .unixDomainSocket(path: udsPath))
+          group.addTask {
+            try await server.run { _, _ in
+              XCTFail("Unexpected stream")
+            }
+          }
+
+        case .connectivityStateChanged(.ready):
+          subchannel.close()
+
+        case .connectivityStateChanged(.shutdown):
+          group.cancelAll()
+
+        default:
+          ()
+        }
+      }
+    }
+  }
+
   func testConnectedReceivesGoAway() async throws {
     let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
     let address = try await server.bind()
