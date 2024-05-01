@@ -17,6 +17,19 @@ import GRPCCore
 import XCTest
 
 final class MetadataTests: XCTestCase {
+  func testInitFromSequence() {
+    let elements: [Metadata.Element] = [
+      (key: "key1", value: "value1"),
+      (key: "key2", value: "value2"),
+      (key: "key3", value: "value3"),
+    ]
+
+    let metadata = Metadata(elements)
+    let expected: Metadata = ["key1": "value1", "key2": "value2", "key3": "value3"]
+
+    XCTAssertEqual(metadata, expected)
+  }
+
   func testAddStringValue() {
     var metadata = Metadata()
     XCTAssertTrue(metadata.isEmpty)
@@ -204,5 +217,27 @@ final class MetadataTests: XCTestCase {
     stringIterator = stringSequence.makeIterator()
     XCTAssertEqual(stringIterator.next(), "value2")
     XCTAssertNil(stringIterator.next())
+  }
+
+  func testRemoveAllWhere() {
+    let metadata: Metadata = [
+      "testKey1": "value1",
+      "testKey2": "value2",
+      "testKey3": "value1",
+    ]
+
+    var metadata1 = metadata
+    metadata1.removeAll { _, value in
+      value == "value1"
+    }
+
+    XCTAssertEqual(metadata1, ["testKey2": "value2"])
+
+    var metadata2 = metadata
+    metadata2.removeAll { key, _ in
+      key == "testKey2"
+    }
+
+    XCTAssertEqual(metadata2, ["testKey1": "value1", "testKey3": "value1"])
   }
 }

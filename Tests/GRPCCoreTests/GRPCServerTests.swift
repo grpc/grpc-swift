@@ -38,7 +38,7 @@ final class GRPCServerTests: XCTestCase {
       }
 
       group.addTask {
-        try await inProcess.client.connect(lazily: true)
+        try await inProcess.client.connect()
       }
 
       try await body(inProcess.client, server)
@@ -325,7 +325,7 @@ final class GRPCServerTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try? await inProcess.client.connect(lazily: true)
+        try? await inProcess.client.connect()
       }
 
       try await self.doEchoGet(using: inProcess.client)
@@ -388,7 +388,7 @@ final class GRPCServerTests: XCTestCase {
     // other transport to throw. This stream should be failed by the server.
     await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await inProcess.client.connect(lazily: true)
+        try await inProcess.client.connect()
       }
 
       group.addTask {

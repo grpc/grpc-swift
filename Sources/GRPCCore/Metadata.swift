@@ -130,6 +130,13 @@ public struct Metadata: Sendable, Hashable {
     self.elements = []
   }
 
+  /// Initialize `Metadata` from a `Sequence` of `Element`s.
+  public init(_ elements: some Sequence<Element>) {
+    self.elements = elements.map { key, value in
+      KeyValuePair(key: key, value: value)
+    }
+  }
+
   /// Reserve the specified minimum capacity in the collection.
   ///
   /// - Parameter minimumCapacity: The minimum capacity to reserve in the collection.
@@ -225,6 +232,19 @@ public struct Metadata: Sendable, Hashable {
   /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
   public mutating func removeAll(keepingCapacity: Bool) {
     self.elements.removeAll(keepingCapacity: keepingCapacity)
+  }
+
+  /// Removes all elements which match the given predicate.
+  ///
+  /// - Parameter predicate: Returns `true` if the element should be removed.
+  ///
+  /// - Complexity: O(*n*), where *n* is the number of entries in the metadata instance.
+  public mutating func removeAll(
+    where predicate: (_ key: String, _ value: Value) throws -> Bool
+  ) rethrows {
+    try self.elements.removeAll { pair in
+      try predicate(pair.key, pair.value)
+    }
   }
 }
 
