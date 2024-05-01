@@ -226,10 +226,10 @@ final class SubchannelTests: XCTestCase {
       addresses: [
         .unixDomainSocket(path: "not-listening-1"),
         .unixDomainSocket(path: "not-listening-2"),
-        .unixDomainSocket(path: udsPath)
+        .unixDomainSocket(path: udsPath),
       ],
       connector: .posix(),
-      backoff: .fixed(at: .zero) // Skip the backoff period
+      backoff: .fixed(at: .zero)  // Skip the backoff period
     )
 
     try await withThrowingTaskGroup(of: Void.self) { group in
