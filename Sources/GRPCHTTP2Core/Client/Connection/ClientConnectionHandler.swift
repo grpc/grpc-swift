@@ -86,6 +86,9 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   /// Resets once `channelReadComplete` returns.
   private var inReadLoop: Bool
 
+  /// The context of the channel this handler is in.
+  private var context: ChannelHandlerContext?
+
   /// Creates a new handler which manages the lifecycle of a connection.
   ///
   /// - Parameters:
@@ -118,6 +121,11 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
 
   func handlerAdded(context: ChannelHandlerContext) {
     assert(context.eventLoop === self.eventLoop)
+    self.context = context
+  }
+
+  func handlerRemoved(context: ChannelHandlerContext) {
+    self.context = nil
   }
 
   func channelActive(context: ChannelHandlerContext) {
@@ -144,31 +152,10 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     switch event {
     case let event as NIOHTTP2StreamCreatedEvent:
-      // Stream created, so the connection isn't idle.
-      self.maxIdleTimer?.cancel()
-      self.state.streamOpened(event.streamID)
+      self.streamCreated(event.streamID, channel: context.channel)
 
     case let event as StreamClosedEvent:
-      switch self.state.streamClosed(event.streamID) {
-      case .startIdleTimer(let cancelKeepalive):
-        // All streams are closed, restart the idle timer, and stop the keep-alive timer (it may
-        // not stop if keep-alive is allowed when there are no active calls).
-        self.maxIdleTimer?.schedule(on: context.eventLoop) {
-          self.maxIdleTimerFired(context: context)
-        }
-
-        if cancelKeepalive {
-          self.keepaliveTimer?.cancel()
-        }
-
-      case .close:
-        // Connection was closing but waiting for all streams to close. They must all be closed
-        // now so close the connection.
-        context.close(promise: nil)
-
-      case .none:
-        ()
-      }
+      self.streamClosed(event.streamID, channel: context.channel)
 
     default:
       ()
@@ -259,6 +246,42 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
       }
     } else {
       context.triggerUserOutboundEvent(event, promise: promise)
+    }
+  }
+}
+
+extension ClientConnectionHandler: NIOHTTP2StreamDelegate {
+  func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+    self.eventLoop.assertInEventLoop()
+
+    // Stream created, so the connection isn't idle.
+    self.maxIdleTimer?.cancel()
+    self.state.streamOpened(id)
+  }
+
+  func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+    guard let context = self.context else { return }
+    self.eventLoop.assertInEventLoop()
+
+    switch self.state.streamClosed(id) {
+    case .startIdleTimer(let cancelKeepalive):
+      // All streams are closed, restart the idle timer, and stop the keep-alive timer (it may
+      // not stop if keep-alive is allowed when there are no active calls).
+      self.maxIdleTimer?.schedule(on: context.eventLoop) {
+        self.maxIdleTimerFired(context: context)
+      }
+
+      if cancelKeepalive {
+        self.keepaliveTimer?.cancel()
+      }
+
+    case .close:
+      // Connection was closing but waiting for all streams to close. They must all be closed
+      // now so close the connection.
+      context.close(promise: nil)
+
+    case .none:
+      ()
     }
   }
 }
