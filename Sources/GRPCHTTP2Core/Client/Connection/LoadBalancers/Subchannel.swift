@@ -396,22 +396,14 @@ extension Subchannel {
     }
 
     struct Closing {
-      enum Reason: Sendable, Hashable {
-        case goAway
-        case user
-      }
-
-      var reason: Reason
       var connection: Connection
 
-      init(from state: Connecting, reason: Reason) {
+      init(from state: Connecting) {
         self.connection = state.connection
-        self.reason = reason
       }
 
-      init(from state: Connected, reason: Reason) {
+      init(from state: Connected) {
         self.connection = state.connection
-        self.reason = reason
       }
     }
 
@@ -463,26 +455,15 @@ extension Subchannel {
         onClose = .shutdown
 
       case .connecting(let state):
-        self = .closing(Closing(from: state, reason: .user))
+        self = .closing(Closing(from: state))
         // Do nothing; the connection hasn't been established yet so can't be closed.
         onClose = .none
 
       case .connected(let state):
-        self = .closing(Closing(from: state, reason: .user))
+        self = .closing(Closing(from: state))
         onClose = .close(state.connection)
 
-      case .closing(var state):
-        switch state.reason {
-        case .user:
-          onClose = .none
-        case .goAway:
-          // Override the reason: user closing takes precedence.
-          state.reason = .user
-          onClose = .close(state.connection)
-        }
-        self = .closing(state)
-
-      case .closed:
+      case .closing, .closed:
         onClose = .none
       }
 
@@ -571,7 +552,7 @@ extension Subchannel {
     mutating func goingAway() -> Bool {
       switch self {
       case .connected(let state):
-        self = .closing(Closing(from: state, reason: .goAway))
+        self = .closing(Closing(from: state))
         return true
       case .notConnected, .closing, .connecting, .closed:
         return false
