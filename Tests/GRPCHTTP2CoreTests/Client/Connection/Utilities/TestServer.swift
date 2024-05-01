@@ -22,6 +22,7 @@ import NIOPosix
 
 @testable import GRPCHTTP2Core
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class TestServer: Sendable {
   private let eventLoopGroup: any EventLoopGroup
   private typealias Stream = NIOAsyncChannel<RPCRequestPart, RPCResponsePart>
