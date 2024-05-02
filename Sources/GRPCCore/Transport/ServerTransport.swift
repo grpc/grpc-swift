@@ -14,65 +14,11 @@
  * limitations under the License.
  */
 
-/// A type representing different possible server transport-related events.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct ServerTransportEvent: Sendable {
-  public typealias AcceptedStreams = RPCAsyncSequence<
-    RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
-  >
-
-  private enum Event: Sendable {
-    case startedListening(acceptedStreams: AcceptedStreams)
-    case failedToStartListening(any Error)
-  }
-
-  private let _event: Event
-
-  private init(_event: Event) {
-    self._event = _event
-  }
-
-  /// The call to ``ServerTransport/listen()`` was successful and the transport was started successfully.
-  /// - Parameter acceptedStreams: The sequence of accepted streams for this transport.
-  /// - Returns: An instance of ``ServerTransportEvent``.
-  public static func startedListening(acceptedStreams: AcceptedStreams) -> Self {
-    Self.init(_event: .startedListening(acceptedStreams: acceptedStreams))
-  }
-
-  /// The call to ``ServerTransport/listen()`` was unsuccesful and the transport failed to start.
-  /// - Parameter error: The error with which the transport failed to start.
-  /// - Returns: An instance of ``ServerTransportEvent``.
-  public static func failedToStartListening(_ error: any Error) -> Self {
-    Self.init(_event: .failedToStartListening(error))
-  }
-
-  /// If the ``ServerTransportEvent`` relates to the result of calling ``ServerTransport/listen()``,
-  /// this property will return either the ``AcceptedStreams`` if successful, or an error if it failed.
-  /// If the event does not relate to the transport's listening result, `nil` will be returned.
-  public var listenResult: Result<AcceptedStreams, any Error>? {
-    switch self._event {
-    case .startedListening(let acceptedStreams):
-      return .success(acceptedStreams)
-    case .failedToStartListening(let error):
-      return .failure(error)
-    }
-  }
-}
-
 /// A protocol server transport implementations must conform to.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
-
-  /// A sequence of ``TransportEvent``s, describing whether the transport was started successfully or not.
-  ///
-  /// This sequence should only return a single event. If multiple events are yielded into it, they may be ignored.
-  /// Not yielding any events or finishing the sequence without yielding any events is considered a broken
-  /// implementation of this protocol.
-  ///
-  /// Once ``listen()`` stops running, the sequence should be finished if it hasn't been finished already.
-  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> { get }
 
   /// Starts the transport.
   ///
@@ -88,7 +34,7 @@ public protocol ServerTransport: Sendable {
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
   /// period after which any open streams may be cancelled. You can also cancel the task running
   /// ``listen()`` to abruptly close connections and streams.
-  func listen() async
+  func listen(_ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws
 
   /// Indicates to the transport that no new streams should be accepted.
   ///

@@ -53,23 +53,13 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
-  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
-    NoThrowRPCAsyncSequence(
-      wrapping: AsyncStream {
-        .failedToStartListening(
-          RPCError(
-            code: .unavailable,
-            message: "The '\(type(of: self))' transport is never available."
-          )
-        )
-      }
+  func listen(_ streamHandler: (RPCStream<Inbound, Outbound>) async throws -> Void) async throws {
+    throw RPCError(
+      code: .unavailable,
+      message: "The '\(type(of: self))' transport is never available."
     )
   }
-
-  func listen() async {
-    // no-op
-  }
-
+  
   func stopListening() {
     // no-op
   }
@@ -78,26 +68,18 @@ struct ThrowOnRunServerTransport: ServerTransport {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   let signal: AsyncStream<Void>
-  private let eventStream: AsyncStream<ServerTransportEvent>
-  private let eventStreamContinuation: AsyncStream<ServerTransportEvent>.Continuation
-
-  var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
-    NoThrowRPCAsyncSequence(wrapping: self.eventStream)
-  }
 
   init(signal: AsyncStream<Void>) {
     self.signal = signal
-    (self.eventStream, self.eventStreamContinuation) = AsyncStream.makeStream()
   }
-
-  func listen() async {
+  
+  func listen(_ streamHandler: (GRPCCore.RPCStream<Inbound, Outbound>) async throws -> Void) async throws {
     for await _ in self.signal {}
-    let error = RPCError(
+    
+    throw RPCError(
       code: .unavailable,
       message: "The '\(type(of: self))' transport is never available."
     )
-    self.eventStreamContinuation.yield(.failedToStartListening(error))
-    self.eventStreamContinuation.finish()
   }
 
   func stopListening() {

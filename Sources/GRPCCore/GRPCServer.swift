@@ -204,162 +204,42 @@ public struct GRPCServer: Sendable {
       )
     }
 
-    var listeners: [RPCAsyncSequence<Stream>] = []
-    listeners.reserveCapacity(self.transports.count)
-
     try await withThrowingTaskGroup(of: Void.self) { group in
       for transport in self.transports {
         group.addTask {
-          await transport.listen()
-        }
-
-        var acceptedStreamsAlreadyPublished = false
-        for try await event in transport.events {
-          switch event.listenResult {
-          case .success(let acceptedStreams):
-            assert(
-              !acceptedStreamsAlreadyPublished,
-              "Accepted streams can only be published once: there is an error in the server transport implementation."
-            )
-            acceptedStreamsAlreadyPublished = true
-
-            listeners.append(acceptedStreams)
-
-          case .failure(let cause):
-            assert(
-              !acceptedStreamsAlreadyPublished,
-              "A ServerTransportEvent signalling that the transport was successfully started has already been fired: there is an error in the server transport implementation."
-            )
-            acceptedStreamsAlreadyPublished = true
-
-            // Failed to start, so start stopping.
-            self.state.store(.stopping, ordering: .sequentiallyConsistent)
-            // Some listeners may have started and have streams which need closing.
-            await self.rejectRequests(listeners)
-
+          do {
+            try await transport.listen { stream in
+              await self.router.handle(stream: stream, interceptors: self.interceptors)
+            }
+          } catch {
             throw RuntimeError(
               code: .failedToStartTransport,
               message: """
                 Server didn't start because the '\(type(of: transport))' transport threw an error \
                 while starting.
                 """,
-              cause: cause
+              cause: error
             )
           }
         }
       }
 
-      // May have been told to stop listening while starting the transports.
-      let (wasStarting, _) = self.state.compareExchange(
-        expected: .starting,
-        desired: .running,
-        ordering: .sequentiallyConsistent
-      )
-
-      // If the server is stopping then notify the transport and then consume them: there may be
-      // streams opened at a lower level (e.g. HTTP/2) which are already open and need to be consumed.
-      if wasStarting {
-        await self.handleRequests(listeners)
-      } else {
-        await self.rejectRequests(listeners)
-      }
-    }
-  }
-
-  private func rejectRequests(_ listeners: [RPCAsyncSequence<Stream>]) async {
-    // Tell the active listeners to stop listening.
-    for transport in self.transports.prefix(listeners.count) {
-      transport.stopListening()
-    }
-
-    // Drain any open streams on active listeners.
-    await withTaskGroup(of: Void.self) { group in
-      let unavailable = Status(
-        code: .unavailable,
-        message: "The server isn't ready to accept requests."
-      )
-
-      for listener in listeners {
+      self.state.store(.running, ordering: .sequentiallyConsistent)
+      
+      while !group.isEmpty {
         do {
-          for try await stream in listener {
-            group.addTask {
-              try? await stream.outbound.write(.status(unavailable, [:]))
-              stream.outbound.finish()
-            }
-          }
+          try await group.next()
         } catch {
-          // Suppress any errors, the original error from the transport which failed to start
-          // should be thrown.
-        }
-      }
-    }
-  }
+          // Failed to start some transport, so start stopping.
+          self.state.store(.stopping, ordering: .sequentiallyConsistent)
 
-  private func handleRequests(_ listeners: [RPCAsyncSequence<Stream>]) async {
-    #if swift(>=5.9)
-    if #available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *) {
-      await self.handleRequestsInDiscardingTaskGroup(listeners)
-    } else {
-      await self.handleRequestsInTaskGroup(listeners)
-    }
-    #else
-    await self.handleRequestsInTaskGroup(listeners)
-    #endif
-  }
-
-  #if swift(>=5.9)
-  @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-  private func handleRequestsInDiscardingTaskGroup(_ listeners: [RPCAsyncSequence<Stream>]) async {
-    await withDiscardingTaskGroup { group in
-      for listener in listeners {
-        group.addTask {
-          await withDiscardingTaskGroup { subGroup in
-            do {
-              for try await stream in listener {
-                subGroup.addTask {
-                  await self.router.handle(stream: stream, interceptors: self.interceptors)
-                }
-              }
-            } catch {
-              // If the listener threw then the connection must be broken, cancel all work.
-              subGroup.cancelAll()
-            }
+          // Some transports may have started and have streams which need closing:
+          // tell them to stop listening.
+          for transport in self.transports {
+            transport.stopListening()
           }
-        }
-      }
-    }
-  }
-  #endif
 
-  private func handleRequestsInTaskGroup(_ listeners: [RPCAsyncSequence<Stream>]) async {
-    // If the discarding task group isn't available then fall back to using a regular task group
-    // with a limit on subtasks. Most servers will use an HTTP/2 based transport, most
-    // implementations limit connections to 100 concurrent streams. A limit of 4096 gives the server
-    // scope to handle nearly 41 completely saturated connections.
-    let maxConcurrentSubTasks = 4096
-    let tasks = ManagedAtomic(0)
-
-    await withTaskGroup(of: Void.self) { group in
-      for listener in listeners {
-        group.addTask {
-          await withTaskGroup(of: Void.self) { subGroup in
-            do {
-              for try await stream in listener {
-                let taskCount = tasks.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent)
-                if taskCount >= maxConcurrentSubTasks {
-                  _ = await subGroup.next()
-                  tasks.wrappingDecrement(ordering: .sequentiallyConsistent)
-                }
-
-                subGroup.addTask {
-                  await self.router.handle(stream: stream, interceptors: self.interceptors)
-                }
-              }
-            } catch {
-              // If the listener threw then the connection must be broken, cancel all work.
-              subGroup.cancelAll()
-            }
-          }
+          throw error
         }
       }
     }

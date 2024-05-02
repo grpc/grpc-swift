@@ -38,27 +38,20 @@ final class InProcessServerTransportTests: XCTestCase {
       )
     )
 
+    let messages = LockedValueBox<[RPCRequestPart]?>(nil)
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        await transport.listen()
+        try await transport.listen { stream in
+          let partValue = try? await stream.inbound.reduce(into: []) { $0.append($1) }
+          messages.withLockedValue { $0 = partValue }
+          transport.stopListening()
+        }
       }
 
       try transport.acceptStream(stream)
-
-      for try await event in transport.events {
-        switch event.listenResult {
-        case .success(let acceptedStreams):
-          var streamSequenceIterator = acceptedStreams.makeAsyncIterator()
-          let testStream = try await streamSequenceIterator.next()
-          let messages = try await testStream?.inbound.reduce(into: []) { $0.append($1) }
-          XCTAssertEqual(messages, [.message([42])])
-          transport.stopListening()
-
-        case .failure:
-          XCTFail("Should have listened successfully")
-        }
-      }
     }
+    
+    XCTAssertEqual(messages.withLockedValue { $0 }, [.message([42])])
   }
 
   func testStopListening() async throws {
@@ -79,56 +72,39 @@ final class InProcessServerTransportTests: XCTestCase {
         )
       )
     )
+    
+    try transport.acceptStream(firstStream)
 
-    try await withThrowingTaskGroup(of: Void.self) { group in
-      group.addTask {
-        await transport.listen()
+    try await transport.listen { stream in
+      let firstStreamMessages = try? await stream.inbound.reduce(into: []) {
+        $0.append($1)
       }
+      XCTAssertEqual(firstStreamMessages, [.message([42])])
 
-      for try await event in transport.events {
-        switch event.listenResult {
-        case .success(let acceptedStreams):
-          var streamSequenceIterator = acceptedStreams.makeAsyncIterator()
-          try transport.acceptStream(firstStream)
-          let firstTestStream = try await streamSequenceIterator.next()
-          let firstStreamMessages = try await firstTestStream?.inbound.reduce(into: []) {
-            $0.append($1)
+      transport.stopListening()
+
+      let secondStream = RPCStream<
+        RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
+      >(
+        descriptor: .init(service: "testService1", method: "testMethod1"),
+        inbound: RPCAsyncSequence(
+          wrapping: AsyncStream {
+            $0.yield(.message([42]))
+            $0.finish()
           }
-          XCTAssertEqual(firstStreamMessages, [.message([42])])
-
-          transport.stopListening()
-
-          let secondStream = RPCStream<
-            RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
-          >(
-            descriptor: .init(service: "testService1", method: "testMethod1"),
-            inbound: RPCAsyncSequence(
-              wrapping: AsyncStream {
-                $0.yield(.message([42]))
-                $0.finish()
-              }
-            ),
-            outbound: .init(
-              wrapping: BufferedStream.Source(
-                storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
-              )
-            )
+        ),
+        outbound: .init(
+          wrapping: BufferedStream.Source(
+            storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
           )
+        )
+      )
 
-          XCTAssertThrowsError(ofType: RPCError.self) {
-            try transport.acceptStream(secondStream)
-          } errorHandler: { error in
-            XCTAssertEqual(error.code, .failedPrecondition)
-          }
-
-          let secondTestStream = try await streamSequenceIterator.next()
-          XCTAssertNil(secondTestStream)
-
-          transport.stopListening()
-
-        case .failure:
-          XCTFail("Should have listened successfully")
-        }
+      XCTAssertThrowsError(ofType: RPCError.self) {
+        try transport.acceptStream(secondStream)
+      } errorHandler: { error in
+        XCTAssertEqual(error.code, .failedPrecondition)
+        XCTAssertEqual(error.message, "The server transport is closed.")
       }
     }
   }

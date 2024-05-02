@@ -33,17 +33,10 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
-  private let eventStream: AsyncStream<ServerTransportEvent>
-  private let eventStreamContinuation: AsyncStream<ServerTransportEvent>.Continuation
-
-  public var events: NoThrowRPCAsyncSequence<ServerTransportEvent> {
-    NoThrowRPCAsyncSequence(wrapping: self.eventStream)
-  }
 
   /// Creates a new instance of ``InProcessServerTransport``.
   public init() {
     (self.newStreams, self.newStreamsContinuation) = AsyncStream.makeStream()
-    (self.eventStream, self.eventStreamContinuation) = AsyncStream.makeStream()
   }
 
   /// Publish a new ``RPCStream``, which will be returned by the transport's ``events``
@@ -63,10 +56,15 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   }
 
   // Signal that the stream is up and running.
-  public func listen() async {
-    self.eventStreamContinuation.yield(
-      .startedListening(acceptedStreams: RPCAsyncSequence(wrapping: self.newStreams))
-    )
+  public func listen(_ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws {
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      for await stream in self.newStreams {
+        group.addTask {
+          try await streamHandler(stream)
+        }
+      }
+      try await group.waitForAll()
+    }
   }
 
   /// Stop listening to any new ``RPCStream`` publications.
@@ -77,6 +75,5 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   /// - SeeAlso: ``ServerTransport``
   public func stopListening() {
     self.newStreamsContinuation.finish()
-    self.eventStreamContinuation.finish()
   }
 }
