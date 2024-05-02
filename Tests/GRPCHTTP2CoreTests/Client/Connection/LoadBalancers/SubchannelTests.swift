@@ -381,6 +381,7 @@ final class SubchannelTests: XCTestCase {
   }
 }
 
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ConnectionBackoff {
   static func fixed(at interval: Duration, jitter: Double = 0.0) -> Self {
     return Self(initial: interval, max: interval, multiplier: 1.0, jitter: jitter)
