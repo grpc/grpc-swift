@@ -55,7 +55,6 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
     }
   }
 
-  // Signal that the stream is up and running.
   public func listen(_ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
       for await stream in self.newStreams {

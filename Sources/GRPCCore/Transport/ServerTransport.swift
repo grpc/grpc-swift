@@ -23,12 +23,10 @@ public protocol ServerTransport: Sendable {
   /// Starts the transport.
   ///
   /// Implementations will typically bind to a listening port when this function is called
-  /// and start accepting new connections. Each accepted inbound RPC stream should be published
-  /// to the async sequence returned by the ``events`` property, in the successful
-  /// ``ServerTransportEvent/startedListening(acceptedStreams:)`` case.
+  /// and start accepting new connections. Each accepted inbound RPC stream will be handed over to
+  /// the provided `streamHandler` to handle accordingly.
   ///
-  /// If an implementation fails to start the transport, this error should be used to yield a
-  /// ``ServerTransportEvent/failedToStartListening(_:)`` into the ``events``.
+  /// Implementations should throw if the transport fails to start.
   ///
   /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
