@@ -383,7 +383,7 @@ final class GRPCServerTests: XCTestCase {
       ],
       services: []
     )
-    
+
     let waitForThrowingTransportSignal = AsyncStream.makeStream(of: Void.self)
 
     // Connect the in process client and start an RPC. When the stream is opened signal the
@@ -400,7 +400,7 @@ final class GRPCServerTests: XCTestCase {
         ) { stream in
           // The stream is open to the in-process transport. Let the other transport start.
           signal.continuation.finish()
-          
+
           for await _ in waitForThrowingTransportSignal.stream {}
           try await stream.outbound.write(.metadata([:]))
           stream.outbound.finish()

@@ -85,16 +85,19 @@ struct AnyClientTransport: ClientTransport, Sendable {
 struct AnyServerTransport: ServerTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
-  
-  private let _listen: @Sendable (@escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws -> Void
+
+  private let _listen:
+    @Sendable (@escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws -> Void
   private let _stopListening: @Sendable () -> Void
-  
+
   init<Transport: ServerTransport>(wrapping transport: Transport) {
     self._listen = { streamHandler in try await transport.listen(streamHandler) }
     self._stopListening = { transport.stopListening() }
   }
 
-  func listen(_ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws {
+  func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void
+  ) async throws {
     try await self._listen(streamHandler)
   }
 

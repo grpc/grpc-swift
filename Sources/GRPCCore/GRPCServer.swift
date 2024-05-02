@@ -225,7 +225,7 @@ public struct GRPCServer: Sendable {
       }
 
       self.state.store(.running, ordering: .sequentiallyConsistent)
-      
+
       while !group.isEmpty {
         do {
           try await group.next()

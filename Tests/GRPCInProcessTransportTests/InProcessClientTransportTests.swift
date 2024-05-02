@@ -169,7 +169,7 @@ final class InProcessClientTransportTests: XCTestCase {
           XCTAssertEqual(receivedMessages, [.message([42])])
         }
       }
-        
+
       group.addTask {
         try await server.listen { stream in
           let receivedMessages = try? await stream.inbound.reduce(into: []) { $0.append($1) }

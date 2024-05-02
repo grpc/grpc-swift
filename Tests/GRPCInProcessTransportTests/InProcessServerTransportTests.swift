@@ -50,7 +50,7 @@ final class InProcessServerTransportTests: XCTestCase {
 
       try transport.acceptStream(stream)
     }
-    
+
     XCTAssertEqual(messages.withLockedValue { $0 }, [.message([42])])
   }
 
@@ -72,7 +72,7 @@ final class InProcessServerTransportTests: XCTestCase {
         )
       )
     )
-    
+
     try transport.acceptStream(firstStream)
 
     try await transport.listen { stream in

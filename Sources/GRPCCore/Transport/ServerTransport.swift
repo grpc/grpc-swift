@@ -32,7 +32,9 @@ public protocol ServerTransport: Sendable {
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
   /// period after which any open streams may be cancelled. You can also cancel the task running
   /// ``listen()`` to abruptly close connections and streams.
-  func listen(_ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void) async throws
+  func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void
+  ) async throws
 
   /// Indicates to the transport that no new streams should be accepted.
   ///
