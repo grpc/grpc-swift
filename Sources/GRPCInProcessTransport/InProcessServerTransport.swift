@@ -26,7 +26,7 @@ import GRPCCore
 /// To stop listening to new requests, call ``stopListening()``.
 ///
 /// - SeeAlso: ``ClientTransport``
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 public struct InProcessServerTransport: ServerTransport, Sendable {
   public typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
