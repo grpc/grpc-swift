@@ -73,7 +73,8 @@ final class TestServer: Sendable {
             let handler = GRPCServerStreamHandler(
               scheme: .http,
               acceptedEncodings: .all,
-              maximumPayloadSize: .max
+              maximumPayloadSize: .max,
+              methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
             )
 
             try stream.pipeline.syncOperations.addHandlers(handler)

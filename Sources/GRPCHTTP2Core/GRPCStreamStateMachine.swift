@@ -19,7 +19,7 @@ import NIOCore
 import NIOHPACK
 import NIOHTTP1
 
-enum Scheme: String {
+enum GRPCHTTP2StreamScheme: String {
   case http
   case https
 }
@@ -30,13 +30,13 @@ enum GRPCStreamStateMachineConfiguration {
 
   struct ClientConfiguration {
     var methodDescriptor: MethodDescriptor
-    var scheme: Scheme
+    var scheme: GRPCHTTP2StreamScheme
     var outboundEncoding: CompressionAlgorithm
     var acceptedEncodings: CompressionAlgorithmSet
 
     init(
       methodDescriptor: MethodDescriptor,
-      scheme: Scheme,
+      scheme: GRPCHTTP2StreamScheme,
       outboundEncoding: CompressionAlgorithm,
       acceptedEncodings: CompressionAlgorithmSet
     ) {
@@ -48,10 +48,10 @@ enum GRPCStreamStateMachineConfiguration {
   }
 
   struct ServerConfiguration {
-    var scheme: Scheme
+    var scheme: GRPCHTTP2StreamScheme
     var acceptedEncodings: CompressionAlgorithmSet
 
-    init(scheme: Scheme, acceptedEncodings: CompressionAlgorithmSet) {
+    init(scheme: GRPCHTTP2StreamScheme, acceptedEncodings: CompressionAlgorithmSet) {
       self.scheme = scheme
       self.acceptedEncodings = acceptedEncodings.union(.none)
     }
@@ -384,7 +384,7 @@ struct GRPCStreamStateMachine {
   }
 
   enum OnMetadataReceived: Equatable {
-    case receivedMetadata(Metadata)
+    case receivedMetadata(Metadata, MethodDescriptor?)
 
     // Client-specific actions
     case receivedStatusAndMetadata(status: Status, metadata: Metadata)
@@ -505,7 +505,7 @@ struct GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   private func makeClientHeaders(
     methodDescriptor: MethodDescriptor,
-    scheme: Scheme,
+    scheme: GRPCHTTP2StreamScheme,
     outboundEncoding: CompressionAlgorithm?,
     acceptedEncodings: CompressionAlgorithmSet,
     customMetadata: Metadata
@@ -817,7 +817,7 @@ extension GRPCStreamStateMachine {
               decompressor: decompressor
             )
           )
-          return .receivedMetadata(Metadata(headers: headers))
+          return .receivedMetadata(Metadata(headers: headers), nil)
         }
       }
 
@@ -857,7 +857,7 @@ extension GRPCStreamStateMachine {
               decompressionAlgorithm: inboundEncoding
             )
           )
-          return .receivedMetadata(Metadata(headers: headers))
+          return .receivedMetadata(Metadata(headers: headers), nil)
         }
       }
 
@@ -1211,9 +1211,7 @@ extension GRPCStreamStateMachine {
         return .rejectRPC(trailers: trailers)
       }
 
-      let path = headers.firstString(forKey: .path)
-        .flatMap { MethodDescriptor(fullyQualifiedMethod: $0) }
-      if path == nil {
+      guard let path = headers.firstString(forKey: .path).flatMap({ MethodDescriptor(fullyQualifiedMethod: $0) }) else {
         return self.closeServerAndBuildRejectRPCAction(
           currentState: state,
           endStream: endStream,
@@ -1225,7 +1223,7 @@ extension GRPCStreamStateMachine {
       }
 
       let scheme = headers.firstString(forKey: .scheme)
-        .flatMap { Scheme(rawValue: $0) }
+        .flatMap { GRPCHTTP2StreamScheme(rawValue: $0) }
       if scheme == nil {
         return self.closeServerAndBuildRejectRPCAction(
           currentState: state,
@@ -1355,7 +1353,7 @@ extension GRPCStreamStateMachine {
         )
       }
 
-      return .receivedMetadata(Metadata(headers: headers))
+      return .receivedMetadata(Metadata(headers: headers), path)
     case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
       try self.invalidState(
         "Client shouldn't have sent metadata twice."

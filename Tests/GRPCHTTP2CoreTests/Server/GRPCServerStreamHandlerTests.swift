@@ -26,13 +26,14 @@ import XCTest
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCServerStreamHandlerTests: XCTestCase {
   func testH2FramesAreIgnored() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     let framesToBeIgnored: [HTTP2Frame.FramePayload] = [
       .ping(.init(), ack: false),
@@ -54,13 +55,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testClientInitialMetadataWithoutContentTypeResultsInRejectedRPC() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata without content-type
     let clientInitialMetadata: HPACKHeaders = [
@@ -83,13 +85,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testClientInitialMetadataWithoutMethodResultsInRejectedRPC() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata without :method
     let clientInitialMetadata: HPACKHeaders = [
@@ -121,13 +124,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testClientInitialMetadataWithoutSchemeResultsInRejectedRPC() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata without :scheme
     let clientInitialMetadata: HPACKHeaders = [
@@ -159,13 +163,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testClientInitialMetadataWithoutPathResultsInRejectedRPC() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata without :path
     let clientInitialMetadata: HPACKHeaders = [
@@ -196,13 +201,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testClientInitialMetadataWithoutTEResultsInRejectedRPC() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1, 
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata without TE
     let clientInitialMetadata: HPACKHeaders = [
@@ -234,13 +240,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testNotAcceptedEncodingResultsInRejectedRPC() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100
+      maximumPayloadSize: 100,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
@@ -275,13 +282,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testOverMaximumPayloadSize() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
@@ -346,14 +354,15 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testClientEndsStream() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maximumPayloadSize: 1,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self),
       skipStateMachineAssertions: true
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata with end stream set
     let clientInitialMetadata: HPACKHeaders = [
@@ -411,14 +420,15 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testNormalFlow() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maximumPayloadSize: 42,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self),
       skipStateMachineAssertions: true
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
@@ -520,13 +530,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testReceiveMessageSplitAcrossMultipleBuffers() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100
+      maximumPayloadSize: 100,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
@@ -615,13 +626,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testSendMultipleMessagesInSingleBuffer() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100
+      maximumPayloadSize: 100,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
@@ -692,13 +704,14 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
   }
 
   func testMessageAndStatusAreNotReordered() throws {
+    let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100
+      maximumPayloadSize: 100,
+      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
-
-    let channel = EmbeddedChannel(handler: handler)
+    try channel.pipeline.syncOperations.addHandler(handler)
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [

@@ -103,7 +103,7 @@ extension GRPCClientStreamHandler {
           endStream: headers.endStream
         )
         switch action {
-        case .receivedMetadata(let metadata):
+        case .receivedMetadata(let metadata, _):
           context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
 
         case .rejectRPC:
