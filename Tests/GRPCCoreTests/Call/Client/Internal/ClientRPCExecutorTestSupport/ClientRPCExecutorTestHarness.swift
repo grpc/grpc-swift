@@ -122,7 +122,7 @@ struct ClientRPCExecutorTestHarness {
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await self.serverTransport.listen { stream in
-          try await self.server.handle(stream: stream)
+          try? await self.server.handle(stream: stream)
         }
       }
 

@@ -56,15 +56,14 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   }
 
   public func listen(
-    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
   ) async throws {
-    try await withThrowingTaskGroup(of: Void.self) { group in
+    await withDiscardingTaskGroup { group in
       for await stream in self.newStreams {
         group.addTask {
-          try await streamHandler(stream)
+          await streamHandler(stream)
         }
       }
-      try await group.waitForAll()
     }
   }
 

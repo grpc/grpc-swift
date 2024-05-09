@@ -94,11 +94,11 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
   }
 
   func listen(
-    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async throws -> Void
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
   ) async throws {
     try await self.transport.listen { stream in
       self._acceptedStreams.wrappingIncrement(ordering: .sequentiallyConsistent)
-      try await streamHandler(stream)
+      await streamHandler(stream)
     }
   }
 
