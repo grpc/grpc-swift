@@ -35,7 +35,7 @@ import NIOConcurrencyHelpers
 /// To use this load-balancer you must run it in a task:
 ///
 /// ```swift
-/// await withTaskGroup(of: Void.self) { group in
+/// await withDiscardingTaskGroup { group in
 ///   // Run the load-balancer
 ///   group.addTask { await roundRobin.run() }
 ///
