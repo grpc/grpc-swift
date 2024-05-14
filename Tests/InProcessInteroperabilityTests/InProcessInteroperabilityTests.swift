@@ -53,7 +53,7 @@ final class InProcessInteroperabilityTests: XCTestCase {
     }
   }
 
-  func testEmtyUnary() async throws {
+  func testEmptyUnary() async throws {
     try await self.runInProcessTransport(interopTestCase: .emptyUnary)
   }
 
