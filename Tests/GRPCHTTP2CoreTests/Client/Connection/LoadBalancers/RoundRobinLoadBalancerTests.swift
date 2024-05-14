@@ -247,6 +247,18 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
           context.servers.allSatisfy { $0.server.clients.count == 1 }
         }
 
+        // The above only checks whether each server has a client, the test relies on all three
+        // subchannels being ready, poll until we get three distinct IDs.
+        var ids = Set<SubchannelID>()
+        try await XCTPoll(every: .milliseconds(10)) {
+          for _ in 1...3 {
+            if let subchannel = context.loadBalancer.pickSubchannel() {
+              ids.insert(subchannel.id)
+            }
+          }
+          return ids.count == 3
+        }
+
         // Pick the first server and send a GOAWAY to the client.
         let client = context.servers[0].server.clients[0]
         let goAway = HTTP2Frame(
