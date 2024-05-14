@@ -168,6 +168,39 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
     }
   }
 
+  func testSameAddressUpdatesAreIgnored() async throws {
+    try await RoundRobinLoadBalancerTest.run(servers: 3, connector: .posix()) { context, event in
+      switch event {
+      case .connectivityStateChanged(.idle):
+        let endpoints = context.servers.map { _, address in Endpoint(addresses: [address]) }
+        context.loadBalancer.updateAddresses(endpoints)
+
+      case .connectivityStateChanged(.ready):
+        // Update with the same addresses, these should be ignored.
+        let endpoints = context.servers.map { _, address in Endpoint(addresses: [address]) }
+        context.loadBalancer.updateAddresses(endpoints)
+
+        // We should still have three connections.
+        try await XCTPoll(every: .milliseconds(10)) {
+          context.servers.allSatisfy { $0.server.clients.count == 1 }
+        }
+
+        context.loadBalancer.close()
+
+      default:
+        ()
+      }
+    } verifyEvents: { events in
+      let expected: [LoadBalancerEvent] = [
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
+        .connectivityStateChanged(.shutdown),
+      ]
+      XCTAssertEqual(events, expected)
+    }
+  }
+
   func testEmptyAddressUpdatesAreIgnored() async throws {
     try await RoundRobinLoadBalancerTest.run(servers: 3, connector: .posix()) { context, event in
       switch event {
