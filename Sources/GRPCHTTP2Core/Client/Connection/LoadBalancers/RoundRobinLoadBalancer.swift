@@ -380,8 +380,7 @@ extension RoundRobinLoadBalancer {
             subchannelToClose = nil
           }
 
-          self.refreshPicker()
-          let aggregateState = self.recomputeAggregateState()
+          let aggregateState = self.refreshPickerAndAggregateState()
 
           switch (subchannelToClose, aggregateState) {
           case (.some(let subchannel), .some(let state)):
@@ -405,23 +404,17 @@ extension RoundRobinLoadBalancer {
         }
       }
 
-      mutating func refreshPicker() {
-        let readySubchannels = self.subchannels.values.compactMap {
-          $0.state == .ready ? $0.subchannel : nil
-        }
+      mutating func refreshPickerAndAggregateState() -> ConnectivityState? {
+        let ready = self.subchannels.values.compactMap { $0.state == .ready ? $0.subchannel : nil }
+        self.picker = Picker(subchannels: ready)
 
-        self.picker = Picker(subchannels: readySubchannels)
-      }
-
-      mutating func recomputeAggregateState() -> ConnectivityState? {
         let aggregate = ConnectivityState.aggregate(self.subchannels.values.map { $0.state })
         if aggregate == self.aggregateConnectivityState {
           return nil
+        } else {
+          self.aggregateConnectivityState = aggregate
+          return aggregate
         }
-
-        // Update the current state.
-        self.aggregateConnectivityState = aggregate
-        return aggregate
       }
 
       mutating func pick() -> Subchannel? {
@@ -560,8 +553,7 @@ extension RoundRobinLoadBalancer {
         let removed = state.markForRemoval(keysToRemove, numberToRemoveNow: numberToRemoveNow)
         let added = state.registerSubchannels(withKeys: keysToAdd, makeSubchannel)
 
-        state.refreshPicker()
-        let newState = state.recomputeAggregateState()
+        let newState = state.refreshPickerAndAggregateState()
         self = .active(state)
         return (run: added, close: removed, newState: newState)
 
@@ -586,8 +578,7 @@ extension RoundRobinLoadBalancer {
 
         // Parking the subchannel may invalidate the picker and the aggregate state, refresh both.
         state.parkedSubchannels[key] = subchannelState.subchannel
-        state.refreshPicker()
-        let newState = state.recomputeAggregateState()
+        let newState = state.refreshPickerAndAggregateState()
         self = .active(state)
         return .closeAndUpdateState(subchannelState.subchannel, newState)
 
@@ -615,31 +606,6 @@ extension RoundRobinLoadBalancer {
 
       case .closing, .closed:
         return []
-      }
-    }
-
-    mutating func refreshPickerAndAggregateState() -> ConnectivityState? {
-      switch self {
-      case .active(var state):
-        state.refreshPicker()
-        let aggregate = state.recomputeAggregateState()
-        self = .active(state)
-        return aggregate
-
-      case .closing, .closed:
-        return nil
-      }
-    }
-
-    mutating func parkSoon(_ keys: [EndpointKey]) {
-      switch self {
-      case .active(var state):
-        for key in keys {
-          state.subchannels[key]?.markForRemoval()
-        }
-        self = .active(state)
-      case .closing, .closed:
-        ()
       }
     }
 
