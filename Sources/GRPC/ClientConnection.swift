@@ -270,8 +270,8 @@ extension ClientConnection: GRPCChannel {
 // MARK: - Configuration structures
 
 /// A target to connect to.
-public struct ConnectionTarget: Sendable {
-  internal enum Wrapped {
+public struct ConnectionTarget: Sendable, Hashable {
+  internal enum Wrapped: Hashable {
     case hostAndPort(String, Int)
     case unixDomainSocket(String)
     case socketAddress(SocketAddress)
