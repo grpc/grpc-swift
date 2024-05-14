@@ -201,9 +201,7 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
   }
 
   func testSubchannelReceivesGoAway() async throws {
-    try await RoundRobinLoadBalancerTest.run(servers: 3, connector: .posix()) {
-      context,
-      event in
+    try await RoundRobinLoadBalancerTest.run(servers: 3, connector: .posix()) { context, event in
       switch event {
       case .connectivityStateChanged(.idle):
         // Trigger the connect.
