@@ -15,7 +15,6 @@
  */
 
 import GRPCCore
-import NIOConcurrencyHelpers
 
 /// A load-balancer which maintains to a set of subchannels and uses round-robin to pick a
 /// subchannel when picking a subchannel to use.
@@ -104,7 +103,7 @@ struct RoundRobinLoadBalancer {
   private let input: (stream: AsyncStream<Input>, continuation: AsyncStream<Input>.Continuation)
 
   /// The state of the load balancer.
-  private let state: NIOLockedValueBox<State>
+  private let state: _LockedValueBox<State>
 
   /// A connector, capable of creating connections.
   private let connector: any HTTP2Connector
@@ -131,7 +130,7 @@ struct RoundRobinLoadBalancer {
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
-    self.state = NIOLockedValueBox(.active(State.Active()))
+    self.state = _LockedValueBox(.active(State.Active()))
 
     // The load balancer starts in the idle state.
     self.event.continuation.yield(.connectivityStateChanged(.idle))
