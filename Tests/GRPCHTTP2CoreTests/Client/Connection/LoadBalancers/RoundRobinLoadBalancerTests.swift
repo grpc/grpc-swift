@@ -263,7 +263,7 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
     XCTAssertNil(loadBalancer.pickSubchannel())
   }
 
-  func testPickSubchannelWhenNotClosed() async {
+  func testPickSubchannelWhenClosed() async {
     let loadBalancer = RoundRobinLoadBalancer(
       connector: .never,
       backoff: .defaults,
