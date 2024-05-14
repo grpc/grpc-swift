@@ -251,7 +251,7 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
         // subchannels being ready, poll until we get three distinct IDs.
         var ids = Set<SubchannelID>()
         try await XCTPoll(every: .milliseconds(10)) {
-          for _ in 1...3 {
+          for _ in 1 ... 3 {
             if let subchannel = context.loadBalancer.pickSubchannel() {
               ids.insert(subchannel.id)
             }
