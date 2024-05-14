@@ -544,8 +544,8 @@ extension RoundRobinLoadBalancer {
           return (run: [], close: [], newState: nil)
         }
 
-        // The load balancer should keep subchannels to remove in service until they a new subchannel
-        // can replace it so that requests can continue to be served.
+        // The load balancer should keep subchannels to remove in service until new subchannels
+        // can replace each of them so that requests can continue to be served.
         //
         // If there are more keys to remove than to add, remove some now.
         let numberToRemoveNow = max(keysToRemove.count - keysToAdd.count, 0)
