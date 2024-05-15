@@ -192,9 +192,9 @@ public struct GRPCServer: Sendable {
     defer {
       self.state.store(.stopped, ordering: .sequentiallyConsistent)
     }
-    
+
     self.state.store(.running, ordering: .sequentiallyConsistent)
-    
+
     do {
       try await transport.listen { stream in
         await self.router.handle(stream: stream, interceptors: self.interceptors)
