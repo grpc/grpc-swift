@@ -42,4 +42,10 @@ final class ProcessUniqueIDTests: XCTestCase {
     let description = String(describing: id)
     XCTAssert(description.hasPrefix("subchan_"))
   }
+
+  func testLoadBalancerIDDescription() {
+    let id = LoadBalancerID()
+    let description = String(describing: id)
+    XCTAssert(description.hasPrefix("lb_"))
+  }
 }
