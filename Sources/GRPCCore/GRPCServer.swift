@@ -23,8 +23,8 @@ import Atomics
 /// streams to a service to handle the RPC or rejects them with an appropriate error if no service
 /// can handle the RPC.
 ///
-/// A ``GRPCServer`` may listen with multiple transports (for example, HTTP/2 and in-process) and route
-/// requests from each transport to the same service instance. You can also use "interceptors",
+/// A ``GRPCServer`` listens with a specific transport implementation (for example, HTTP/2 or in-process),
+/// and routes requests from the transport to the service instance. You can also use "interceptors",
 /// to implement cross-cutting logic which apply to all accepted RPCs. Example uses of interceptors
 /// include request filtering, authentication, and logging. Once requests have been intercepted
 /// they are passed to a handler which in turn returns a response to send back to the client.
@@ -46,7 +46,7 @@ import Atomics
 ///
 /// // Finally create the server.
 /// let server = GRPCServer(
-///   transports: [inProcessTransport],
+///   transport: inProcessTransport,
 ///   services: [greeter, echo],
 ///   interceptors: [statsRecorder]
 /// )
@@ -54,9 +54,9 @@ import Atomics
 ///
 /// ## Starting and stopping the server
 ///
-/// Once you have configured the server call ``run()`` to start it. Calling ``run()`` starts each
-/// of the server's transports. A ``RuntimeError`` is thrown if any of the transports can't be
-/// started.
+/// Once you have configured the server call ``run()`` to start it. Calling ``run()`` starts the server's
+/// transport too. A ``RuntimeError`` is thrown if the transport can't be started or encounters some other
+/// runtime error.
 ///
 /// ```swift
 /// // Start running the server.
@@ -73,9 +73,8 @@ import Atomics
 public struct GRPCServer: Sendable {
   typealias Stream = RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
 
-  /// A collection of ``ServerTransport`` implementations that the server uses to listen
-  /// for new requests.
-  private let transports: [any ServerTransport]
+  /// The ``ServerTransport`` implementation that the server uses to listen for new requests.
+  private let transport: any ServerTransport
 
   /// The services registered which the server is serving.
   private let router: RPCRouter
@@ -110,7 +109,7 @@ public struct GRPCServer: Sendable {
   /// Creates a new server with no resources.
   ///
   /// - Parameters:
-  ///   - transports: The transports the server should listen on.
+  ///   - transport: The transport the server should listen on.
   ///   - services: Services offered by the server.
   ///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
   ///       accepted RPC. The order in which interceptors are added reflects the order in which they
@@ -118,7 +117,7 @@ public struct GRPCServer: Sendable {
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
   public init(
-    transports: [any ServerTransport],
+    transport: any ServerTransport,
     services: [any RegistrableRPCService],
     interceptors: [any ServerInterceptor] = []
   ) {
@@ -127,13 +126,13 @@ public struct GRPCServer: Sendable {
       service.registerMethods(with: &router)
     }
 
-    self.init(transports: transports, router: router, interceptors: interceptors)
+    self.init(transport: transport, router: router, interceptors: interceptors)
   }
 
   /// Creates a new server with no resources.
   ///
   /// - Parameters:
-  ///   - transports: The transports the server should listen on.
+  ///   - transport: The transport the server should listen on.
   ///   - router: A ``RPCRouter`` used by the server to route accepted streams to method handlers.
   ///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
   ///       accepted RPC. The order in which interceptors are added reflects the order in which they
@@ -141,23 +140,23 @@ public struct GRPCServer: Sendable {
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
   public init(
-    transports: [any ServerTransport],
+    transport: any ServerTransport,
     router: RPCRouter,
     interceptors: [any ServerInterceptor] = []
   ) {
     self.state = ManagedAtomic(.notStarted)
-    self.transports = transports
+    self.transport = transport
     self.router = router
     self.interceptors = interceptors
   }
 
-  /// Starts the server and runs until all registered transports have closed.
+  /// Starts the server and runs until the registered transport has closed.
   ///
-  /// No RPCs are processed until all transports are listening. If a transport fails to start
-  /// listening then all open transports are closed and a ``RuntimeError`` is thrown.
+  /// No RPCs are processed until the configured transport is listening. If the transport fails to start
+  /// listening, or if it encounters a runtime error, then ``RuntimeError`` is thrown.
   ///
-  /// This function returns when all transports have stopped listening and all requests have been
-  /// handled. You can signal to transports that they should stop listening by calling
+  /// This function returns when the configured transport has stopped listening and all requests have been
+  /// handled. You can signal to the transport that it should stop listening by calling
   /// ``stopListening()``. The server will continue to process existing requests.
   ///
   /// To stop the server more abruptly you can cancel the task that this function is running in.
@@ -193,55 +192,19 @@ public struct GRPCServer: Sendable {
     defer {
       self.state.store(.stopped, ordering: .sequentiallyConsistent)
     }
-
-    if self.transports.isEmpty {
+    
+    self.state.store(.running, ordering: .sequentiallyConsistent)
+    
+    do {
+      try await transport.listen { stream in
+        await self.router.handle(stream: stream, interceptors: self.interceptors)
+      }
+    } catch {
       throw RuntimeError(
-        code: .noTransportsConfigured,
-        message: """
-          Can't start server, no transports are configured. You must add at least one transport \
-          to the server before calling 'run()'.
-          """
+        code: .transportError,
+        message: "Server transport threw an error.",
+        cause: error
       )
-    }
-
-    try await withThrowingTaskGroup(of: Void.self) { group in
-      for transport in self.transports {
-        group.addTask {
-          do {
-            try await transport.listen { stream in
-              await self.router.handle(stream: stream, interceptors: self.interceptors)
-            }
-          } catch {
-            throw RuntimeError(
-              code: .failedToStartTransport,
-              message: """
-                Server didn't start because the '\(type(of: transport))' transport threw an error \
-                while starting.
-                """,
-              cause: error
-            )
-          }
-        }
-      }
-
-      self.state.store(.running, ordering: .sequentiallyConsistent)
-
-      while !group.isEmpty {
-        do {
-          try await group.next()
-        } catch {
-          // Failed to start some transport, so start stopping.
-          self.state.store(.stopping, ordering: .sequentiallyConsistent)
-
-          // Some transports may have started and have streams which need closing:
-          // tell them to stop listening.
-          for transport in self.transports {
-            transport.stopListening()
-          }
-
-          throw error
-        }
-      }
     }
   }
 
@@ -259,9 +222,7 @@ public struct GRPCServer: Sendable {
     )
 
     if wasRunning {
-      for transport in self.transports {
-        transport.stopListening()
-      }
+      self.transport.stopListening()
     } else {
       switch actual {
       case .notStarted:

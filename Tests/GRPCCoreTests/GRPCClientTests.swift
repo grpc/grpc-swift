@@ -27,7 +27,7 @@ final class GRPCClientTests: XCTestCase {
   ) async throws {
     let inProcess = InProcessTransport.makePair()
     let client = GRPCClient(transport: inProcess.client, interceptors: interceptors)
-    let server = GRPCServer(transports: [inProcess.server], services: services)
+    let server = GRPCServer(transport: inProcess.server, services: services)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -320,7 +320,7 @@ final class GRPCClientTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        let server = GRPCServer(transports: [inProcess.server], services: [BinaryEcho()])
+        let server = GRPCServer(transport: inProcess.server, services: [BinaryEcho()])
         try await server.run()
       }
 

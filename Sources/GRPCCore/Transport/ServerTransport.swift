@@ -26,8 +26,6 @@ public protocol ServerTransport: Sendable {
   /// and start accepting new connections. Each accepted inbound RPC stream will be handed over to
   /// the provided `streamHandler` to handle accordingly.
   ///
-  /// Implementations should throw if the transport fails to start.
-  ///
   /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
   /// period after which any open streams may be cancelled. You can also cancel the task running

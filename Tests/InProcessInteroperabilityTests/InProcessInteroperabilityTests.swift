@@ -29,7 +29,7 @@ final class InProcessInteroperabilityTests: XCTestCase {
       let inProcess = InProcessTransport.makePair()
       try await withThrowingTaskGroup(of: Void.self) { group in
         group.addTask {
-          let server = GRPCServer(transports: [inProcess.server], services: [TestService()])
+          let server = GRPCServer(transport: inProcess.server, services: [TestService()])
           try await server.run()
         }
 

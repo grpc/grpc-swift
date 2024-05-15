@@ -20,10 +20,10 @@ import XCTest
 final class RuntimeErrorTests: XCTestCase {
   func testCopyOnWrite() {
     // RuntimeError has a heap based storage, so check CoW semantics are correctly implemented.
-    let error1 = RuntimeError(code: .failedToStartTransport, message: "Failed to start transport")
+    let error1 = RuntimeError(code: .transportError, message: "Failed to start transport")
     var error2 = error1
     error2.code = .serverIsAlreadyRunning
-    XCTAssertEqual(error1.code, .failedToStartTransport)
+    XCTAssertEqual(error1.code, .transportError)
     XCTAssertEqual(error2.code, .serverIsAlreadyRunning)
 
     var error3 = error1
@@ -38,17 +38,17 @@ final class RuntimeErrorTests: XCTestCase {
   }
 
   func testCustomStringConvertible() {
-    let error1 = RuntimeError(code: .failedToStartTransport, message: "Failed to start transport")
-    XCTAssertDescription(error1, #"failedToStartTransport: "Failed to start transport""#)
+    let error1 = RuntimeError(code: .transportError, message: "Failed to start transport")
+    XCTAssertDescription(error1, #"transportError: "Failed to start transport""#)
 
     let error2 = RuntimeError(
-      code: .failedToStartTransport,
+      code: .transportError,
       message: "Failed to start transport",
       cause: CancellationError()
     )
     XCTAssertDescription(
       error2,
-      #"failedToStartTransport: "Failed to start transport" (cause: "CancellationError()")"#
+      #"transportError: "Failed to start transport" (cause: "CancellationError()")"#
     )
   }
 }
