@@ -91,11 +91,8 @@ public struct GRPCServer: Sendable {
   private let state: ManagedAtomic<State>
 
   private enum State: UInt8, AtomicValue {
-    /// The server hasn't been started yet. Can transition to `starting` or `stopped`.
+    /// The server hasn't been started yet. Can transition to `running` or `stopped`.
     case notStarted
-    /// The server is starting but isn't accepting requests yet. Can transition to `running`
-    /// and `stopping`.
-    case starting
     /// The server is running and accepting RPCs. Can transition to `stopping`.
     case running
     /// The server is stopping and no new RPCs will be accepted. Existing RPCs may run to
@@ -166,7 +163,7 @@ public struct GRPCServer: Sendable {
   public func run() async throws {
     let (wasNotStarted, actualState) = self.state.compareExchange(
       expected: .notStarted,
-      desired: .starting,
+      desired: .running,
       ordering: .sequentiallyConsistent
     )
 
@@ -174,7 +171,7 @@ public struct GRPCServer: Sendable {
       switch actualState {
       case .notStarted:
         fatalError()
-      case .starting, .running:
+      case .running:
         throw RuntimeError(
           code: .serverIsAlreadyRunning,
           message: "The server is already running and can only be started once."
@@ -192,8 +189,6 @@ public struct GRPCServer: Sendable {
     defer {
       self.state.store(.stopped, ordering: .sequentiallyConsistent)
     }
-
-    self.state.store(.running, ordering: .sequentiallyConsistent)
 
     do {
       try await transport.listen { stream in
@@ -229,18 +224,6 @@ public struct GRPCServer: Sendable {
         let (exchanged, _) = self.state.compareExchange(
           expected: .notStarted,
           desired: .stopped,
-          ordering: .sequentiallyConsistent
-        )
-
-        // Lost a race with 'run()', try again.
-        if !exchanged {
-          self.stopListening()
-        }
-
-      case .starting:
-        let (exchanged, _) = self.state.compareExchange(
-          expected: .starting,
-          desired: .stopping,
           ordering: .sequentiallyConsistent
         )
 

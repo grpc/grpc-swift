@@ -424,8 +424,9 @@ extension WorkerService {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 struct NoOpServerTransport: ServerTransport {
-  func listen(_ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void) async throws
-  {}
+  func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+  ) async throws {}
 
   func stopListening() {}
 }
