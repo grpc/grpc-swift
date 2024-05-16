@@ -25,7 +25,7 @@ import XCTest
 /// of the server to allow for flexible testing scenarios with minimal boilerplate. The harness
 /// also tracks how many streams the client has opened, how many streams the server accepted, and
 /// how many streams the client failed to open.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 struct ClientRPCExecutorTestHarness {
   private let server: ServerStreamHandler
   private let clientTransport: StreamCountingClientTransport
@@ -40,7 +40,7 @@ struct ClientRPCExecutorTestHarness {
   }
 
   var serverStreamsAccepted: Int {
-    self.serverTransport.acceptedStreams
+    self.serverTransport.acceptedStreamsCount
   }
 
   init(transport: Transport = .inProcess, server: ServerStreamHandler) {
@@ -121,13 +121,8 @@ struct ClientRPCExecutorTestHarness {
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await withThrowingTaskGroup(of: Void.self) { serverGroup in
-          let streams = try await self.serverTransport.listen()
-          for try await stream in streams {
-            serverGroup.addTask {
-              try await self.server.handle(stream: stream)
-            }
-          }
+        try await self.serverTransport.listen { stream in
+          try? await self.server.handle(stream: stream)
         }
       }
 

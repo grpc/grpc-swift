@@ -18,7 +18,7 @@ import GRPCCore
 import GRPCInProcessTransport
 import XCTest
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
@@ -27,7 +27,7 @@ final class GRPCServerTests: XCTestCase {
   ) async throws {
     let inProcess = InProcessTransport.makePair()
     let server = GRPCServer(
-      transports: [inProcess.server],
+      transport: inProcess.server,
       services: services,
       interceptors: interceptors
     )
@@ -319,7 +319,7 @@ final class GRPCServerTests: XCTestCase {
   func testCancelRunningServer() async throws {
     let inProcess = InProcessTransport.makePair()
     let task = Task {
-      let server = GRPCServer(transports: [inProcess.server], services: [BinaryEcho()])
+      let server = GRPCServer(transport: inProcess.server, services: [BinaryEcho()])
       try await server.run()
     }
 
@@ -337,17 +337,8 @@ final class GRPCServerTests: XCTestCase {
     }
   }
 
-  func testTestRunServerWithNoTransport() async throws {
-    let server = GRPCServer(transports: [], services: [])
-    await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await server.run()
-    } errorHandler: { error in
-      XCTAssertEqual(error.code, .noTransportsConfigured)
-    }
-  }
-
   func testTestRunStoppedServer() async throws {
-    let server = GRPCServer(transports: [InProcessServerTransport()], services: [])
+    let server = GRPCServer(transport: InProcessServerTransport(), services: [])
     // Run the server.
     let task = Task { try await server.run() }
     task.cancel()
@@ -362,59 +353,11 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testRunServerWhenTransportThrows() async throws {
-    let server = GRPCServer(transports: [ThrowOnRunServerTransport()], services: [])
+    let server = GRPCServer(transport: ThrowOnRunServerTransport(), services: [])
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
       try await server.run()
     } errorHandler: { error in
-      XCTAssertEqual(error.code, .failedToStartTransport)
-    }
-  }
-
-  func testRunServerDrainsRunningTransportsWhenOneFailsToStart() async throws {
-    // Register the in process transport first and allow it to come up.
-    let inProcess = InProcessTransport.makePair()
-
-    // Register a transport waits for a signal before throwing.
-    let signal = AsyncStream.makeStream(of: Void.self)
-    let server = GRPCServer(
-      transports: [
-        inProcess.server,
-        ThrowOnSignalServerTransport(signal: signal.stream),
-      ],
-      services: []
-    )
-
-    // Connect the in process client and start an RPC. When the stream is opened signal the
-    // other transport to throw. This stream should be failed by the server.
-    await withThrowingTaskGroup(of: Void.self) { group in
-      group.addTask {
-        try await inProcess.client.connect()
-      }
-
-      group.addTask {
-        try await inProcess.client.withStream(
-          descriptor: BinaryEcho.Methods.get,
-          options: .defaults
-        ) { stream in
-          // The stream is open to the in-process transport. Let the other transport start.
-          signal.continuation.finish()
-          try await stream.outbound.write(.metadata([:]))
-          stream.outbound.finish()
-
-          let parts = try await stream.inbound.collect()
-          XCTAssertStatus(parts.first) { status, _ in
-            XCTAssertEqual(status.code, .unavailable)
-          }
-        }
-      }
-
-      await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-        try await server.run()
-      } errorHandler: { error in
-        XCTAssertEqual(error.code, .failedToStartTransport)
-      }
-
-      group.cancelAll()
+      XCTAssertEqual(error.code, .transportError)
     }
   }
 
