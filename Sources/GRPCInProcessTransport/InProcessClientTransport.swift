@@ -110,9 +110,7 @@ public struct InProcessClientTransport: ClientTransport {
     server: InProcessServerTransport,
     serviceConfig: ServiceConfig = ServiceConfig()
   ) {
-    self.retryThrottle = serviceConfig.retryThrottlingPolicy.map {
-      RetryThrottle(policy: $0)
-    }
+    self.retryThrottle = serviceConfig.retryThrottling.map { RetryThrottle(policy: $0) }
     self.methodConfig = _MethodConfigs(serviceConfig: serviceConfig)
     self.state = _LockedValueBox(.unconnected(.init(serverTransport: server)))
   }
