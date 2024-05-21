@@ -26,7 +26,7 @@ import GRPCCore
 /// To stop listening to new requests, call ``stopListening()``.
 ///
 /// - SeeAlso: ``ClientTransport``
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 public struct InProcessServerTransport: ServerTransport, Sendable {
   public typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
@@ -39,8 +39,8 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
     (self.newStreams, self.newStreamsContinuation) = AsyncStream.makeStream()
   }
 
-  /// Publish a new ``RPCStream``, which will be returned by the transport's ``RPCAsyncSequence``,
-  /// returned when calling ``listen()``.
+  /// Publish a new ``RPCStream``, which will be returned by the transport's ``events``
+  /// successful case.
   ///
   /// - Parameter stream: The new ``RPCStream`` to publish.
   /// - Throws: ``RPCError`` with code ``RPCError/Code-swift.struct/failedPrecondition``
@@ -55,12 +55,16 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
     }
   }
 
-  /// Return a new ``RPCAsyncSequence`` that will contain all published ``RPCStream``s published
-  /// to this transport using the ``acceptStream(_:)`` method.
-  ///
-  /// - Returns: An ``RPCAsyncSequence`` of all published ``RPCStream``s.
-  public func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
-    RPCAsyncSequence(wrapping: self.newStreams)
+  public func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+  ) async throws {
+    await withDiscardingTaskGroup { group in
+      for await stream in self.newStreams {
+        group.addTask {
+          await streamHandler(stream)
+        }
+      }
+    }
   }
 
   /// Stop listening to any new ``RPCStream`` publications.

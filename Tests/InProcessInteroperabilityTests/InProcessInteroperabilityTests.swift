@@ -20,7 +20,7 @@ import XCTest
 
 @testable import InteroperabilityTests
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class InProcessInteroperabilityTests: XCTestCase {
   func runInProcessTransport(
     interopTestCase: InteroperabilityTestCase
@@ -29,7 +29,7 @@ final class InProcessInteroperabilityTests: XCTestCase {
       let inProcess = InProcessTransport.makePair()
       try await withThrowingTaskGroup(of: Void.self) { group in
         group.addTask {
-          let server = GRPCServer(transports: [inProcess.server], services: [TestService()])
+          let server = GRPCServer(transport: inProcess.server, services: [TestService()])
           try await server.run()
         }
 

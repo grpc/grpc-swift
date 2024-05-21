@@ -85,7 +85,7 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
   private let transport: AnyServerTransport
   private let _acceptedStreams = ManagedAtomic(0)
 
-  var acceptedStreams: Int {
+  var acceptedStreamsCount: Int {
     self._acceptedStreams.load(ordering: .sequentiallyConsistent)
   }
 
@@ -93,13 +93,13 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
     self.transport = AnyServerTransport(wrapping: transport)
   }
 
-  func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
-    let mapped = try await self.transport.listen().map { stream in
+  func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+  ) async throws {
+    try await self.transport.listen { stream in
       self._acceptedStreams.wrappingIncrement(ordering: .sequentiallyConsistent)
-      return stream
+      await streamHandler(stream)
     }
-
-    return RPCAsyncSequence(wrapping: mapped)
   }
 
   func stopListening() {

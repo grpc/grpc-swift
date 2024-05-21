@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
+/// A protocol server transport implementations must conform to.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
-  /// Starts the transport and returns a sequence of accepted streams to handle.
+  /// Starts the transport.
   ///
   /// Implementations will typically bind to a listening port when this function is called
-  /// and start accepting new connections. Each accepted inbound RPC stream should be published
-  /// to the async sequence returned by the function.
+  /// and start accepting new connections. Each accepted inbound RPC stream will be handed over to
+  /// the provided `streamHandler` to handle accordingly.
   ///
   /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
   /// period after which any open streams may be cancelled. You can also cancel the task running
   /// ``listen()`` to abruptly close connections and streams.
-  func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>>
+  func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+  ) async throws
 
   /// Indicates to the transport that no new streams should be accepted.
   ///
