@@ -18,43 +18,16 @@
 ///
 /// In contrast to ``RPCError``, the ``RuntimeError`` represents errors which happen at a scope
 /// wider than an individual RPC. For example, passing invalid configuration values.
-public struct RuntimeError: Error, Hashable, @unchecked Sendable {
-  private var storage: Storage
-
-  // Ensures the underlying storage is unique.
-  private mutating func ensureUniqueStorage() {
-    if !isKnownUniquelyReferenced(&self.storage) {
-      self.storage = self.storage.copy()
-    }
-  }
-
+public struct RuntimeError: Error, Hashable, Sendable {
   /// The code indicating the domain of the error.
-  public var code: Code {
-    get { self.storage.code }
-    set {
-      self.ensureUniqueStorage()
-      self.storage.code = newValue
-    }
-  }
+  public var code: Code
 
   /// A message providing more details about the error which may include details specific to this
   /// instance of the error.
-  public var message: String {
-    get { self.storage.message }
-    set {
-      self.ensureUniqueStorage()
-      self.storage.message = newValue
-    }
-  }
+  public var message: String
 
   /// The original error which led to this error being thrown.
-  public var cause: Error? {
-    get { self.storage.cause }
-    set {
-      self.ensureUniqueStorage()
-      self.storage.cause = newValue
-    }
-  }
+  public var cause: Error?
 
   /// Creates a new error.
   ///
@@ -63,7 +36,18 @@ public struct RuntimeError: Error, Hashable, @unchecked Sendable {
   ///   - message: A description of the error.
   ///   - cause: The original error which led to this error being thrown.
   public init(code: Code, message: String, cause: Error? = nil) {
-    self.storage = Storage(code: code, message: message, cause: cause)
+    self.code = code
+    self.message = message
+    self.cause = cause
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(self.code)
+    hasher.combine(self.message)
+  }
+
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    return lhs.code == rhs.code && lhs.message == rhs.message
   }
 }
 
@@ -73,33 +57,6 @@ extension RuntimeError: CustomStringConvertible {
       return "\(self.code): \"\(self.message)\" (cause: \"\(cause)\")"
     } else {
       return "\(self.code): \"\(self.message)\""
-    }
-  }
-}
-
-extension RuntimeError {
-  private final class Storage: Hashable {
-    var code: Code
-    var message: String
-    var cause: Error?
-
-    init(code: Code, message: String, cause: Error?) {
-      self.code = code
-      self.message = message
-      self.cause = cause
-    }
-
-    func copy() -> Storage {
-      return Storage(code: self.code, message: self.message, cause: self.cause)
-    }
-
-    func hash(into hasher: inout Hasher) {
-      hasher.combine(self.code)
-      hasher.combine(self.message)
-    }
-
-    static func == (lhs: Storage, rhs: Storage) -> Bool {
-      return lhs.code == rhs.code && lhs.message == rhs.message
     }
   }
 }
