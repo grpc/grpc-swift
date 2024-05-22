@@ -35,7 +35,7 @@ extension LoadBalancer {
   var events: AsyncStream<LoadBalancerEvent> {
     switch self {
     case .roundRobin(let loadBalancer):
-      loadBalancer.events
+      return loadBalancer.events
     }
   }
 
@@ -63,7 +63,7 @@ extension LoadBalancer {
   func pickSubchannel() -> Subchannel? {
     switch self {
     case .roundRobin(let loadBalancer):
-      loadBalancer.pickSubchannel()
+      return loadBalancer.pickSubchannel()
     }
   }
 }
