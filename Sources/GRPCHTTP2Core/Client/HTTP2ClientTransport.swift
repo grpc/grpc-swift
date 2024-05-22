@@ -33,12 +33,12 @@ extension HTTP2ClientTransport.Config {
 
     /// Compression algorithms enabled for inbound messages.
     ///
-    /// Note that ``CompressionAlgorithm/none`` is always supported, even if it isn't set here.
+    /// - Note: ``CompressionAlgorithm/none`` is always supported, even if it isn't set here.
     public var enabledAlgorithms: CompressionAlgorithmSet
 
     /// Creates a new compression configuration.
     ///
-    /// See also ``defaults``.
+    /// - SeeAlso: ``defaults``.
     public init(algorithm: CompressionAlgorithm, enabledAlgorithms: CompressionAlgorithmSet) {
       self.algorithm = algorithm
       self.enabledAlgorithms = enabledAlgorithms
@@ -54,14 +54,14 @@ extension HTTP2ClientTransport.Config {
   public struct Keepalive: Sendable {
     /// The amount of time to wait after reading data before sending a keepalive ping.
     ///
-    /// Note that the transport may choose to increase this value if it is less than 10 seconds.
+    /// - Note: The transport may choose to increase this value if it is less than 10 seconds.
     public var time: Duration
 
     /// The amount of time the server has to respond to a keepalive ping before the connection
     /// is closed.
     public var timeout: Duration
 
-    /// Whether the client sends keepalive pings when if there are no calls in progress.
+    /// Whether the client sends keepalive pings when there are no calls in progress.
     public var permitWithoutCalls: Bool
 
     /// Creates a new keepalive configuration.
@@ -77,7 +77,7 @@ extension HTTP2ClientTransport.Config {
     /// The maximum amount of time a connection may be idle before it's closed.
     public var maxTime: Duration
 
-    /// Creates a idle configuration.
+    /// Creates an idle configuration.
     public init(maxTime: Duration) {
       self.maxTime = maxTime
     }
