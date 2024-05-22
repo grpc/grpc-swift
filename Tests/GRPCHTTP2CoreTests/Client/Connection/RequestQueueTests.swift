@@ -66,7 +66,7 @@ final class RequestQueueTests: XCTestCase {
       var waitForReadyIDs = [QueueEntryID]()
       var failFastIDs = [QueueEntryID]()
 
-      for i in 0 ..< 50 {
+      for _ in 0 ..< 50 {
         waitForReadyIDs.append(QueueEntryID())
         failFastIDs.append(QueueEntryID())
       }
