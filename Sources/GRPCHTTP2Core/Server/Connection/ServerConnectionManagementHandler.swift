@@ -75,6 +75,9 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   /// Resets once `channelReadComplete` returns.
   private var inReadLoop: Bool
 
+  /// The context of the channel this handler is in.
+  private var context: ChannelHandlerContext?
+
   /// The current state of the connection.
   private var state: StateMachine
 
@@ -236,6 +239,11 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
 
   func handlerAdded(context: ChannelHandlerContext) {
     assert(context.eventLoop === self.eventLoop)
+    self.context = context
+  }
+
+  func handlerRemoved(context: ChannelHandlerContext) {
+    self.context = nil
   }
 
   func channelActive(context: ChannelHandlerContext) {
@@ -266,23 +274,10 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     switch event {
     case let event as NIOHTTP2StreamCreatedEvent:
-      // The connection isn't idle if a stream is open.
-      self.maxIdleTimer?.cancel()
-      self.state.streamOpened(event.streamID)
+      self.streamCreated(event.streamID, channel: context.channel)
 
     case let event as StreamClosedEvent:
-      switch self.state.streamClosed(event.streamID) {
-      case .startIdleTimer:
-        self.maxIdleTimer?.schedule(on: context.eventLoop) {
-          self.initiateGracefulShutdown(context: context)
-        }
-
-      case .close:
-        context.close(mode: .all, promise: nil)
-
-      case .none:
-        ()
-      }
+      self.streamClosed(event.streamID, channel: context.channel)
 
     default:
       ()
@@ -332,6 +327,31 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
 
   func flush(context: ChannelHandlerContext) {
     self.maybeFlush(context: context)
+  }
+}
+
+extension ServerConnectionManagementHandler: NIOHTTP2StreamDelegate {
+  func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+    // The connection isn't idle if a stream is open.
+    self.maxIdleTimer?.cancel()
+    self.state.streamOpened(id)
+  }
+
+  func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+    guard let context = self.context else { return }
+
+    switch self.state.streamClosed(id) {
+    case .startIdleTimer:
+      self.maxIdleTimer?.schedule(on: context.eventLoop) {
+        self.initiateGracefulShutdown(context: context)
+      }
+
+    case .close:
+      context.close(mode: .all, promise: nil)
+
+    case .none:
+      ()
+    }
   }
 }
 
