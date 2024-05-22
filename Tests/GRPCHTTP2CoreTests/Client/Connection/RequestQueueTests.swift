@@ -43,6 +43,56 @@ final class RequestQueueTests: XCTestCase {
     }
   }
 
+  func testPopFirstMultiple() async {
+    await withTaskGroup(of: QueueEntryID.self) { group in
+      let queue = _LockedValueBox(RequestQueue())
+      let signal1 = AsyncStream.makeStream(of: Void.self)
+      let signal2 = AsyncStream.makeStream(of: Void.self)
+
+      let id1 = QueueEntryID()
+      let id2 = QueueEntryID()
+
+      group.addTask {
+        _ = try? await withCheckedThrowingContinuation { continuation in
+          queue.withLockedValue {
+            $0.append(continuation: continuation, waitForReady: false, id: id1)
+          }
+
+          signal1.continuation.yield()
+          signal1.continuation.finish()
+        }
+
+        return id1
+      }
+
+      group.addTask {
+        // Wait until instructed to append.
+        for await _ in signal1.stream {}
+
+        _ = try? await withCheckedThrowingContinuation { continuation in
+          queue.withLockedValue {
+            $0.append(continuation: continuation, waitForReady: false, id: id2)
+          }
+
+          signal2.continuation.yield()
+          signal2.continuation.finish()
+        }
+
+        return id2
+      }
+
+      // Wait for both continuations to be enqueued.
+      for await _ in signal2.stream {}
+
+      for id in [id1, id2] {
+        let continuation = queue.withLockedValue { $0.popFirst() }
+        continuation?.resume(throwing: AnErrorToAvoidALeak())
+        let actual = await group.next()
+        XCTAssertEqual(id, actual)
+      }
+    }
+  }
+
   func testRemoveEntryByID() async {
     _ = try? await withCheckedThrowingContinuation { continuation in
       var queue = RequestQueue()
@@ -55,6 +105,56 @@ final class RequestQueueTests: XCTestCase {
       XCTAssertNil(queue.removeEntry(withID: id))
 
       popped.resume(throwing: AnErrorToAvoidALeak())
+    }
+  }
+
+  func testRemoveEntryByIDMultiple() async {
+    await withTaskGroup(of: QueueEntryID.self) { group in
+      let queue = _LockedValueBox(RequestQueue())
+      let signal1 = AsyncStream.makeStream(of: Void.self)
+      let signal2 = AsyncStream.makeStream(of: Void.self)
+
+      let id1 = QueueEntryID()
+      let id2 = QueueEntryID()
+
+      group.addTask {
+        _ = try? await withCheckedThrowingContinuation { continuation in
+          queue.withLockedValue {
+            $0.append(continuation: continuation, waitForReady: false, id: id1)
+          }
+
+          signal1.continuation.yield()
+          signal1.continuation.finish()
+        }
+
+        return id1
+      }
+
+      group.addTask {
+        // Wait until instructed to append.
+        for await _ in signal1.stream {}
+
+        _ = try? await withCheckedThrowingContinuation { continuation in
+          queue.withLockedValue {
+            $0.append(continuation: continuation, waitForReady: false, id: id2)
+          }
+
+          signal2.continuation.yield()
+          signal2.continuation.finish()
+        }
+
+        return id2
+      }
+
+      // Wait for both continuations to be enqueued.
+      for await _ in signal2.stream {}
+
+      for id in [id1, id2] {
+        let continuation = queue.withLockedValue { $0.removeEntry(withID: id) }
+        continuation?.resume(throwing: AnErrorToAvoidALeak())
+        let actual = await group.next()
+        XCTAssertEqual(id, actual)
+      }
     }
   }
 
