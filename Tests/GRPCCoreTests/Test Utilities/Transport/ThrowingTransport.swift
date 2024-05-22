@@ -53,7 +53,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
-  func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
+  func listen(_ streamHandler: (RPCStream<Inbound, Outbound>) async -> Void) async throws {
     throw RPCError(
       code: .unavailable,
       message: "The '\(type(of: self))' transport is never available."
@@ -73,8 +73,11 @@ struct ThrowOnSignalServerTransport: ServerTransport {
     self.signal = signal
   }
 
-  func listen() async throws -> RPCAsyncSequence<RPCStream<Inbound, Outbound>> {
+  func listen(
+    _ streamHandler: (GRPCCore.RPCStream<Inbound, Outbound>) async -> Void
+  ) async throws {
     for await _ in self.signal {}
+
     throw RPCError(
       code: .unavailable,
       message: "The '\(type(of: self))' transport is never available."

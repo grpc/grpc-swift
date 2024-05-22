@@ -110,8 +110,6 @@ extension RuntimeError {
       case invalidArgument
       case serverIsAlreadyRunning
       case serverIsStopped
-      case failedToStartTransport
-      case noTransportsConfigured
       case clientIsAlreadyRunning
       case clientIsStopped
       case transportError
@@ -135,16 +133,6 @@ extension RuntimeError {
     /// At attempt to start the server was made but it has already stopped.
     public static var serverIsStopped: Self {
       Self(.serverIsStopped)
-    }
-
-    /// The server couldn't be started because a transport failed to start.
-    public static var failedToStartTransport: Self {
-      Self(.failedToStartTransport)
-    }
-
-    /// The server couldn't be started because no transports were configured.
-    public static var noTransportsConfigured: Self {
-      Self(.noTransportsConfigured)
     }
 
     /// At attempt to start the client was made but it is already running.

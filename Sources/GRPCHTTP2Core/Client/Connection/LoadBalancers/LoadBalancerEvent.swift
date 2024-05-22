@@ -13,3 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/// Events emitted by load-balancers.
+enum LoadBalancerEvent: Sendable, Hashable {
+  /// The connectivity state of the subchannel changed.
+  case connectivityStateChanged(ConnectivityState)
+  /// The subchannel requests that the load balancer re-resolves names.
+  case requiresNameResolution
+}

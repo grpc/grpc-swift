@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, gRPC Authors All rights reserved.
+ * Copyright 2024, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
-import GRPCCore
-import GRPCInProcessTransport
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-extension InProcessServerTransport {
-  func spawnClientTransport(
-    throttle: RetryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
-  ) -> InProcessClientTransport {
-    return InProcessClientTransport(server: self)
-  }
+import GRPCCore
+
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+public struct GRPCHTTP2TransportNIOTransportServices {
 }

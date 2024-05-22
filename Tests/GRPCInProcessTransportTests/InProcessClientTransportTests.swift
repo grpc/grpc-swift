@@ -18,7 +18,7 @@ import GRPCCore
 import GRPCInProcessTransport
 import XCTest
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class InProcessClientTransportTests: XCTestCase {
   struct FailTest: Error {}
 
@@ -171,9 +171,9 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        for try await stream in try await server.listen() {
-          let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
-          try await stream.outbound.write(RPCResponsePart.message([42]))
+        try await server.listen { stream in
+          let receivedMessages = try? await stream.inbound.reduce(into: []) { $0.append($1) }
+          try? await stream.outbound.write(RPCResponsePart.message([42]))
           stream.outbound.finish()
 
           XCTAssertEqual(receivedMessages, [.message([1])])

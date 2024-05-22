@@ -18,7 +18,7 @@ import GRPCCore
 import NIOConcurrencyHelpers
 import NIOCore
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable {
   private let state: NIOLockedValueBox<State>
 
@@ -284,10 +284,10 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension WorkerService {
   private func setupServer(_ config: Grpc_Testing_ServerConfig) async throws -> GRPCServer {
-    let server = GRPCServer(transports: [], services: [BenchmarkService()])
+    let server = GRPCServer(transport: NoOpServerTransport(), services: [BenchmarkService()])
     let stats = try await ServerStats()
 
     try self.state.withLockedValue { state in
@@ -420,4 +420,13 @@ extension WorkerService {
       }
     }
   }
+}
+
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+struct NoOpServerTransport: ServerTransport {
+  func listen(
+    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+  ) async throws {}
+
+  func stopListening() {}
 }

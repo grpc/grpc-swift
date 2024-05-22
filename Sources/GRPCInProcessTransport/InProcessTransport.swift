@@ -24,7 +24,7 @@ public enum InProcessTransport {
   /// - Parameters:
   ///   - serviceConfig: Configuration describing how methods should be executed.
   /// - Returns: A tuple containing the connected server and client in-process transports.
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public static func makePair(
     serviceConfig: ServiceConfig = ServiceConfig()
   ) -> (server: InProcessServerTransport, client: InProcessClientTransport) {

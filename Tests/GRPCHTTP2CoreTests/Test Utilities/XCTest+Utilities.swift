@@ -67,3 +67,13 @@ func XCTAssert<T>(_ value: Any, as type: T.Type, _ verify: (T) throws -> Void) r
     XCTFail("\(value) couldn't be cast to \(T.self)")
   }
 }
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+func XCTPoll(
+  every interval: Duration,
+  timeLimit: Duration = .seconds(5),
+  until predicate: () async throws -> Bool
+) async throws {
+  let becameTrue = try await Task.poll(every: interval, timeLimit: timeLimit, until: predicate)
+  XCTAssertTrue(becameTrue, "Predicate didn't return true within \(timeLimit)")
+}
