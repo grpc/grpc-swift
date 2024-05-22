@@ -341,6 +341,7 @@ extension ServerConnectionManagementHandlerTests {
 extension ServerConnectionManagementHandlerTests {
   struct Connection {
     let channel: EmbeddedChannel
+    let streamDelegate: any NIOHTTP2StreamDelegate
     let syncView: ServerConnectionManagementHandler.SyncView
 
     var loop: EmbeddedEventLoop {
@@ -378,6 +379,7 @@ extension ServerConnectionManagementHandlerTests {
         clock: self.clock
       )
 
+      self.streamDelegate = handler
       self.syncView = handler.syncView
       self.channel = EmbeddedChannel(handler: handler, loop: loop)
     }
@@ -398,17 +400,11 @@ extension ServerConnectionManagementHandlerTests {
     }
 
     func streamOpened(_ id: HTTP2StreamID) {
-      let event = NIOHTTP2StreamCreatedEvent(
-        streamID: id,
-        localInitialWindowSize: nil,
-        remoteInitialWindowSize: nil
-      )
-      self.channel.pipeline.fireUserInboundEventTriggered(event)
+      self.streamDelegate.streamCreated(id, channel: self.channel)
     }
 
     func streamClosed(_ id: HTTP2StreamID) {
-      let event = StreamClosedEvent(streamID: id, reason: nil)
-      self.channel.pipeline.fireUserInboundEventTriggered(event)
+      self.streamDelegate.streamClosed(id, channel: self.channel)
     }
 
     func ping(data: HTTP2PingData, ack: Bool) throws {
