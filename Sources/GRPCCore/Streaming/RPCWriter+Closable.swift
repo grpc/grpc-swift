@@ -24,7 +24,7 @@ extension RPCWriter {
     ///
     /// - Parameter other: The writer to wrap.
     @inlinable
-    init(wrapping other: some ClosableRPCWriterProtocol<Element>) {
+    public init(wrapping other: some ClosableRPCWriterProtocol<Element>) {
       self.writer = other
     }
 
