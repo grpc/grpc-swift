@@ -102,6 +102,10 @@ check_copyright_headers() {
     ! -name '*.grpc.swift' \
     ! -name 'LinuxMain.swift' \
     ! -name 'XCTestManifests.swift' \
+    ! -path './FuzzTesting/.build/*' \
+    ! -path './Performance/QPSBenchmark/.build/*' \
+    ! -path './Performance/Benchmarks/.build/*' \
+    ! -path './scripts/.swift-format-source/*' \
     ! -path './.build/*')
 }
 
