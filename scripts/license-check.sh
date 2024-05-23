@@ -105,7 +105,7 @@ check_copyright_headers() {
     ! -path './FuzzTesting/.build/*' \
     ! -path './Performance/QPSBenchmark/.build/*' \
     ! -path './Performance/Benchmarks/.build/*' \
-    ! -path './.scripts/.swift-format-source/*' \
+    ! -path './scripts/.swift-format-source/*' \
     ! -path './.build/*')
 }
 
