@@ -226,6 +226,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
 extension ClientConnectionHandlerTests {
   struct Connection {
     let channel: EmbeddedChannel
+    let streamDelegate: any NIOHTTP2StreamDelegate
     var loop: EmbeddedEventLoop {
       self.channel.embeddedEventLoop
     }
@@ -245,6 +246,7 @@ extension ClientConnectionHandlerTests {
         keepaliveWithoutCalls: allowKeepaliveWithoutCalls
       )
 
+      self.streamDelegate = handler
       self.channel = EmbeddedChannel(handler: handler, loop: loop)
     }
 
@@ -253,17 +255,11 @@ extension ClientConnectionHandlerTests {
     }
 
     func streamOpened(_ id: HTTP2StreamID) {
-      let event = NIOHTTP2StreamCreatedEvent(
-        streamID: id,
-        localInitialWindowSize: nil,
-        remoteInitialWindowSize: nil
-      )
-      self.channel.pipeline.fireUserInboundEventTriggered(event)
+      self.streamDelegate.streamCreated(id, channel: self.channel)
     }
 
     func streamClosed(_ id: HTTP2StreamID) {
-      let event = StreamClosedEvent(streamID: id, reason: nil)
-      self.channel.pipeline.fireUserInboundEventTriggered(event)
+      self.streamDelegate.streamClosed(id, channel: self.channel)
     }
 
     func goAway(
