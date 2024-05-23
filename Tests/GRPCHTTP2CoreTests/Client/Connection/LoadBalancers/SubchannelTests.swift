@@ -39,6 +39,10 @@ final class SubchannelTests: XCTestCase {
   }
 
   func testMakeStreamOnShutdownSubchannel() async throws {
+    #if compiler(<5.9)
+    throw XCTSkip("Occasionally crashes due to a Swift 5.8 concurrency runtime bug")
+    #endif
+
     let subchannel = self.makeSubchannel(
       address: .unixDomainSocket(path: "ignored"),
       connector: .never
