@@ -48,4 +48,10 @@ final class ProcessUniqueIDTests: XCTestCase {
     let description = String(describing: id)
     XCTAssert(description.hasPrefix("lb_"))
   }
+
+  func testQueueEntryDescription() {
+    let id = QueueEntryID()
+    let description = String(describing: id)
+    XCTAssert(description.hasPrefix("q_entry_"))
+  }
 }

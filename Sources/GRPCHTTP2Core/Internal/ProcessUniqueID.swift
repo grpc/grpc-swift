@@ -45,3 +45,11 @@ struct LoadBalancerID: Hashable, Sendable, CustomStringConvertible {
     "lb_\(self.id)"
   }
 }
+
+/// A process-unique ID for an entry in a queue.
+struct QueueEntryID: Hashable, Sendable, CustomStringConvertible {
+  private let id = ProcessUniqueID()
+  var description: String {
+    "q_entry_\(self.id)"
+  }
+}

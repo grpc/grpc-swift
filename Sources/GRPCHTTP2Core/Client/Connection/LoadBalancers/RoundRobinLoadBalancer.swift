@@ -117,6 +117,9 @@ struct RoundRobinLoadBalancer {
   /// The set of enabled compression algorithms.
   private let enabledCompression: CompressionAlgorithmSet
 
+  /// The ID of this load balancer.
+  internal let id: LoadBalancerID
+
   init(
     connector: any HTTP2Connector,
     backoff: ConnectionBackoff,
@@ -127,6 +130,7 @@ struct RoundRobinLoadBalancer {
     self.backoff = backoff
     self.defaultCompression = defaultCompression
     self.enabledCompression = enabledCompression
+    self.id = LoadBalancerID()
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
