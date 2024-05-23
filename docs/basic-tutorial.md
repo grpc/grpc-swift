@@ -55,7 +55,7 @@ $ cd grpc-swift/Sources/Examples/RouteGuide
 Our first step (as you'll know from the [Overview][grpc-docs]) is to
 define the gRPC *service* and the method *request* and *response* types using
 [protocol buffers][protocol-buffers]. You can see the complete .proto file in
-[`grpc-swift/Sources/Examples/RouteGuide/Model/route_guide.proto`][routeguide-proto].
+[`grpc-swift/Protos/examples/route_guide/route_guide.proto`][routeguide-proto].
 
 To define a service, we specify a named `service` in the .proto file:
 
@@ -142,12 +142,12 @@ Protobuf][swift-protobuf]) and the other for gRPC. You need to use the
 [proto3][protobuf-releases] compiler (which supports both proto2 and proto3
 syntax) in order to generate gRPC services.
 
-For simplicity, we've provided a Makefile in the `grpc-swift` directory that
+For simplicity, we've provided a shell script ([grpc-swift/Protos/generate.sh][run-protoc]) that
 runs protoc for you with the appropriate plugin, input, and output (if you want
 to run this yourself, make sure you've installed protoc first):
 
 ```sh
-$ make generate-route-guide
+$ Protos/generate.sh
 ```
 
 Running this command generates the following files in the
@@ -161,8 +161,8 @@ Running this command generates the following files in the
 Let's look at how to run the same command manually:
 
 ```sh
-$ protoc Sources/Examples/RouteGuide/Model/route_guide.proto \
-    --proto_path=Sources/Examples/RouteGuide/Model \
+$ protoc Protos/examples/route_guide/route_guide.proto \
+    --proto_path=Protos/examples/route_guide \
     --plugin=./.build/debug/protoc-gen-swift \
     --swift_opt=Visibility=Public \
     --swift_out=Sources/Examples/RouteGuide/Model \
@@ -455,7 +455,7 @@ program from exiting (since `close()` is never called on the server).
 
 In this section, we'll look at creating a Swift client for our `RouteGuide`
 service. You can see our complete example client code in
-[grpc-swift/Sources/Examples/RouteGuide/Client/main.swift][routeguide-client].
+[grpc-swift/Sources/Examples/RouteGuide/Client/RouteGuideClient.swift][routeguide-client].
 
 #### Creating a stub
 
@@ -604,10 +604,11 @@ Follow the instructions in the Route Guide example directory
 [protobuf-docs]: https://developers.google.com/protocol-buffers/docs/proto3
 [protobuf-releases]: https://github.com/google/protobuf/releases
 [protocol-buffers]: https://developers.google.com/protocol-buffers/docs/overview
-[routeguide-client]: ../Sources/Examples/RouteGuide/Client/main.swift
-[routeguide-proto]: ../Sources/Examples/RouteGuide/Model/route_guide.proto
+[routeguide-client]: ../Sources/Examples/RouteGuide/Client/RouteGuideClient.swift
+[routeguide-proto]: ../Protos/examples/route_guide/route_guide.proto
 [routeguide-provider]: ../Sources/Examples/RouteGuide/Server/RouteGuideProvider.swift
 [routeguide-readme]: ../Sources/Examples/RouteGuide/README.md
 [routeguide-source]: ../Sources/Examples/RouteGuide
+[run-protoc]: ../Protos/generate.sh
 [swift-protobuf-guide]: https://github.com/apple/swift-protobuf/blob/main/Documentation/API.md
 [swift-protobuf]: https://github.com/apple/swift-protobuf
