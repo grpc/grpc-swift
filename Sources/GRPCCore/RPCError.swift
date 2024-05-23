@@ -17,33 +17,12 @@
 /// An error representing the outcome of an RPC.
 ///
 /// See also ``Status``.
-public struct RPCError: @unchecked Sendable, Hashable, Error {
-  // @unchecked because it relies on heap allocated storage and 'isKnownUniquelyReferenced'
-
-  private var storage: Storage
-  private mutating func ensureStorageIsUnique() {
-    if !isKnownUniquelyReferenced(&self.storage) {
-      self.storage = self.storage.copy()
-    }
-  }
-
+public struct RPCError: Sendable, Hashable, Error {
   /// A code representing the high-level domain of the error.
-  public var code: Code {
-    get { self.storage.code }
-    set {
-      self.ensureStorageIsUnique()
-      self.storage.code = newValue
-    }
-  }
+  public var code: Code
 
   /// A message providing additional context about the error.
-  public var message: String {
-    get { self.storage.message }
-    set {
-      self.ensureStorageIsUnique()
-      self.storage.message = newValue
-    }
-  }
+  public var message: String
 
   /// Metadata associated with the error.
   ///
@@ -51,22 +30,10 @@ public struct RPCError: @unchecked Sendable, Hashable, Error {
   /// conversely any ``RPCError`` received by the client may include metadata sent by a service.
   ///
   /// Note that clients and servers may synthesise errors which may not include metadata.
-  public var metadata: Metadata {
-    get { self.storage.metadata }
-    set {
-      self.ensureStorageIsUnique()
-      self.storage.metadata = newValue
-    }
-  }
+  public var metadata: Metadata
 
   /// The original error which led to this error being thrown.
-  public var cause: Error? {
-    get { self.storage.cause }
-    set {
-      self.ensureStorageIsUnique()
-      self.storage.cause = newValue
-    }
-  }
+  public var cause: Error?
 
   /// Create a new RPC error.
   ///
@@ -76,7 +43,10 @@ public struct RPCError: @unchecked Sendable, Hashable, Error {
   ///   - metadata: Any metadata to attach to the error.
   ///   - cause: An underlying error which led to this error being thrown.
   public init(code: Code, message: String, metadata: Metadata = [:], cause: Error? = nil) {
-    self.storage = Storage(code: code, message: message, metadata: metadata, cause: cause)
+    self.code = code
+    self.message = message
+    self.metadata = metadata
+    self.cause = cause
   }
 
   /// Create a new RPC error from the provided ``Status``.
@@ -90,41 +60,21 @@ public struct RPCError: @unchecked Sendable, Hashable, Error {
     guard let code = Code(status.code) else { return nil }
     self.init(code: code, message: status.message, metadata: metadata)
   }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(self.code)
+    hasher.combine(self.message)
+    hasher.combine(self.metadata)
+  }
+
+  public static func == (lhs: RPCError, rhs: RPCError) -> Bool {
+    return lhs.code == rhs.code && lhs.message == rhs.message && lhs.metadata == rhs.metadata
+  }
 }
 
 extension RPCError: CustomStringConvertible {
   public var description: String {
     "\(self.code): \"\(self.message)\""
-  }
-}
-
-extension RPCError {
-  private final class Storage: Hashable {
-    var code: RPCError.Code
-    var message: String
-    var metadata: Metadata
-    var cause: Error?
-
-    init(code: RPCError.Code, message: String, metadata: Metadata, cause: Error?) {
-      self.code = code
-      self.message = message
-      self.metadata = metadata
-      self.cause = cause
-    }
-
-    func copy() -> Self {
-      Self(code: self.code, message: self.message, metadata: self.metadata, cause: self.cause)
-    }
-
-    func hash(into hasher: inout Hasher) {
-      hasher.combine(self.code)
-      hasher.combine(self.message)
-      hasher.combine(self.metadata)
-    }
-
-    static func == (lhs: RPCError.Storage, rhs: RPCError.Storage) -> Bool {
-      return lhs.code == rhs.code && lhs.message == rhs.message && lhs.metadata == rhs.metadata
-    }
   }
 }
 
