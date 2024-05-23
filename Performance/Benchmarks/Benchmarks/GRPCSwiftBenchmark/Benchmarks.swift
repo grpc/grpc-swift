@@ -18,65 +18,67 @@ import GRPCCore
 
 let benchmarks = {
   Benchmark.defaultConfiguration = .init(
-      metrics: [
-          .mallocCountTotal,
-          .syscalls,
-          .readSyscalls,
-          .writeSyscalls,
-          .memoryLeaked,
-          .retainCount,
-          .releaseCount,
-      ]
+    metrics: [
+      .mallocCountTotal,
+      .syscalls,
+      .readSyscalls,
+      .writeSyscalls,
+      .memoryLeaked,
+      .retainCount,
+      .releaseCount,
+    ]
   )
-  
+
   // async code is currently still quite flaky in the number of retain/release it does so we don't measure them today
-  var configWithoutRetainRelease = Benchmark.defaultConfiguration
-  configWithoutRetainRelease.metrics.removeAll(where: { $0 == .retainCount || $0 == .releaseCount })
-  
-  Benchmark("Metadata_Add_string") { benchmark in
+  var config = Benchmark.defaultConfiguration
+  config.metrics.removeAll(where: { $0 == .retainCount || $0 == .releaseCount })
+  // Let p90 be off by 50. Benchmarks should do 1000s of iterations so this is small enough.
+  config.thresholds = [.mallocCountTotal: BenchmarkThresholds(absolute: [.p90: 50])]
+
+  Benchmark("Metadata_Add_string", configuration: config) { benchmark in
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      for i in 0..<1000 {
-          metadata.addString("\(i)", forKey: "\(i)")
+      for i in 0 ..< 1000 {
+        metadata.addString("\(i)", forKey: "\(i)")
       }
     }
   }
-  
-  Benchmark("Metadata_Add_binary") { benchmark in
+
+  Benchmark("Metadata_Add_binary", configuration: config) { benchmark in
     let value: [UInt8] = [1, 2, 3]
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      
+
       benchmark.startMeasurement()
-      for i in 0..<1000 {
-          metadata.addBinary(value, forKey: "\(i)")
+      for i in 0 ..< 1000 {
+        metadata.addBinary(value, forKey: "\(i)")
       }
       benchmark.stopMeasurement()
     }
   }
-  
-  Benchmark("Metadata_Remove_values_for_key") { benchmark in
+
+  Benchmark("Metadata_Remove_values_for_key", configuration: config) { benchmark in
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      for i in 0..<1000 {
-          metadata.addString("value", forKey: "\(i)")
+      for i in 0 ..< 1000 {
+        metadata.addString("value", forKey: "\(i)")
       }
-      
+
       benchmark.startMeasurement()
-      for i in 0..<1000 {
-          metadata.removeAllValues(forKey: "\(i)")
+      for i in 0 ..< 1000 {
+        metadata.removeAllValues(forKey: "\(i)")
       }
       benchmark.stopMeasurement()
     }
   }
-  
-  Benchmark("Metadata_Iterate_all_values") { benchmark in
+
+  Benchmark("Metadata_Iterate_all_values", configuration: config) { benchmark in
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      for i in 0..<1000 {
+      for i in 0 ..< 1000 {
         metadata.addString("value", forKey: "key")
       }
-      
+
       benchmark.startMeasurement()
       for value in metadata["key"] {
         blackHole(value)
@@ -84,14 +86,14 @@ let benchmarks = {
       benchmark.stopMeasurement()
     }
   }
-  
-  Benchmark("Metadata_Iterate_string_values") { benchmark in
+
+  Benchmark("Metadata_Iterate_string_values", configuration: config) { benchmark in
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      for i in 0..<1000 {
-          metadata.addString("\(i)", forKey: "key")
+      for i in 0 ..< 1000 {
+        metadata.addString("\(i)", forKey: "key")
       }
-      
+
       benchmark.startMeasurement()
       for value in metadata[stringValues: "key"] {
         blackHole(value)
@@ -99,14 +101,17 @@ let benchmarks = {
       benchmark.stopMeasurement()
     }
   }
-  
-  Benchmark("Metadata_Iterate_binary_values_when_only_binary_values_stored") { benchmark in
+
+  Benchmark(
+    "Metadata_Iterate_binary_values_when_only_binary_values_stored",
+    configuration: config
+  ) { benchmark in
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      for i in 0..<1000 {
+      for i in 0 ..< 1000 {
         metadata.addBinary([1], forKey: "key")
       }
-      
+
       benchmark.startMeasurement()
       for value in metadata[binaryValues: "key"] {
         blackHole(value)
@@ -114,14 +119,17 @@ let benchmarks = {
       benchmark.stopMeasurement()
     }
   }
-  
-  Benchmark("Metadata_Iterate_binary_values_when_only_strings_stored") { benchmark in
+
+  Benchmark(
+    "Metadata_Iterate_binary_values_when_only_strings_stored",
+    configuration: config
+  ) { benchmark in
     for _ in benchmark.scaledIterations {
       var metadata = Metadata()
-      for i in 0..<1000 {
-          metadata.addString("\(i)", forKey: "key")
+      for i in 0 ..< 1000 {
+        metadata.addString("\(i)", forKey: "key")
       }
-      
+
       benchmark.startMeasurement()
       for value in metadata[binaryValues: "key"] {
         blackHole(value)
