@@ -11,7 +11,7 @@ jobs:
     container:
       image: swift
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: "Formatting and License Headers check"
       run: |
         ./scripts/sanity.sh
@@ -37,7 +37,7 @@ jobs:
     container:
       image: ${{ matrix.image }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: 🔧 Build
       run: swift build ${{ matrix.swift-build-flags }}
       timeout-minutes: 20
@@ -98,7 +98,7 @@ jobs:
     container:
       image: ${{ matrix.image }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: 🧮 Allocation Counting Tests
       run: ./Performance/allocations/test-allocation-counts.sh
       env: ${{ matrix.env }}
@@ -124,7 +124,7 @@ jobs:
     container:
       image: ${{ matrix.image }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build without NIOSSL
       run: swift build
       env:
