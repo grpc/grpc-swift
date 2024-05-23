@@ -12,9 +12,17 @@ jobs:
       image: swift
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/cache/restore@v4
+      with:
+        path: scripts/.swift-format-source
+        key: ${{ runner.os }}-swift-format
     - name: "Formatting and License Headers check"
       run: |
         ./scripts/sanity.sh
+    - uses: actions/cache/save@v4
+      with:
+        path: scripts/.swift-format-source
+        key: ${{ runner.os }}-swift-format
   unit-tests:
     strategy:
       fail-fast: false
