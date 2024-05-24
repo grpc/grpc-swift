@@ -216,9 +216,7 @@ extension Target {
   static let grpcHTTP2TransportNIOPosix: Target = .target(
     name: "GRPCHTTP2TransportNIOPosix",
     dependencies: [
-      .grpcHTTP2Core,
-      .nioExtras,
-      .nioSSL
+      .grpcHTTP2Core
     ]
   )
 

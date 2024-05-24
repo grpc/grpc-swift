@@ -33,7 +33,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
 
   init(
     methodDescriptor: MethodDescriptor,
-    scheme: Scheme,
+    scheme: GRPCHTTP2StreamScheme,
     outboundEncoding: CompressionAlgorithm,
     acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,

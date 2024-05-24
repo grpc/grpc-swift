@@ -205,7 +205,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1, 
+      maximumPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)

@@ -1002,11 +1002,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       serverInitialHeadersAction,
-      .receivedMetadata([
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-      ], nil)
+      .receivedMetadata(
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+        ],
+        nil
+      )
     )
 
     // Client sends messages
@@ -1102,11 +1105,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       serverInitialHeadersAction,
-      .receivedMetadata([
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-      ], nil)
+      .receivedMetadata(
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+        ],
+        nil
+      )
     )
 
     // Server sends response
@@ -1186,11 +1192,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       serverInitialHeadersAction,
-      .receivedMetadata([
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-      ], nil)
+      .receivedMetadata(
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+        ],
+        nil
+      )
     )
 
     // Client closes
@@ -1631,7 +1640,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
     XCTAssertEqual(
       action,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata), MethodDescriptor(fullyQualifiedMethod: "test/test"))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
   }
 
@@ -1641,7 +1653,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: true)
     XCTAssertEqual(
       action,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata), MethodDescriptor(fullyQualifiedMethod: "test/test"))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
   }
 
@@ -2376,7 +2391,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       receiveMetadataAction,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata), MethodDescriptor(fullyQualifiedMethod: "test/test"))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
 
     // Server sends initial metadata
@@ -2470,7 +2488,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       receiveMetadataAction,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata), MethodDescriptor(fullyQualifiedMethod: "test/test"))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
 
     // Client sends messages
@@ -2547,7 +2568,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       receiveMetadataAction,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata), MethodDescriptor(fullyQualifiedMethod: "test/test"))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
 
     // Client sends messages

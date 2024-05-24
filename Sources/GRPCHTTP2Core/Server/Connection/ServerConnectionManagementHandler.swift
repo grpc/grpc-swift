@@ -279,6 +279,9 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     case let event as StreamClosedEvent:
       self.streamClosed(event.streamID, channel: context.channel)
 
+    case is ChannelShouldQuiesceEvent:
+      self.initiateGracefulShutdown(context: context)
+
     default:
       ()
     }

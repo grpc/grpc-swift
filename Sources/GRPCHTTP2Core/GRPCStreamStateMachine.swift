@@ -1211,7 +1211,11 @@ extension GRPCStreamStateMachine {
         return .rejectRPC(trailers: trailers)
       }
 
-      guard let path = headers.firstString(forKey: .path).flatMap({ MethodDescriptor(fullyQualifiedMethod: $0) }) else {
+      guard
+        let path = headers.firstString(forKey: .path).flatMap({
+          MethodDescriptor(fullyQualifiedMethod: $0)
+        })
+      else {
         return self.closeServerAndBuildRejectRPCAction(
           currentState: state,
           endStream: endStream,
