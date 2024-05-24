@@ -391,7 +391,7 @@ extension Connection {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection {
-  private enum State {
+  private enum State: Sendable {
     /// The connection is idle or connecting.
     case notConnected
     /// A TCP connection has been established with the remote peer. However, the connection may not
@@ -402,7 +402,7 @@ extension Connection {
     /// The connection has closed. This is a terminal state.
     case closed
 
-    struct Connected {
+    struct Connected: Sendable {
       /// The connection channel.
       var channel: NIOAsyncChannel<ClientConnectionEvent, Void>
       /// Multiplexer for creating HTTP/2 streams.
