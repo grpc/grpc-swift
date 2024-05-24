@@ -22,8 +22,8 @@ $ swift run RouteGuideClient
 
 ## Regenerating client and server code
 
-For simplicity, a shell script ([grpc-swift/Protos/generate.sh][run-protoc]) is provided,
-with a target to generate client and server code:
+For simplicity, a shell script ([grpc-swift/Protos/generate.sh][run-protoc]) is provided
+to generate client and server code:
 
 ```sh
 $ Protos/generate.sh
