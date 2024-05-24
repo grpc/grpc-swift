@@ -22,11 +22,12 @@ $ swift run RouteGuideClient
 
 ## Regenerating client and server code
 
-For simplicity, a Makefile is provided in the root of this package with a target
+For simplicity, a shell script ([grpc-swift/Protos/generate.sh][run-protoc]) is provided
 to generate client and server code:
 
 ```sh
-$ make generate-route-guide
+$ Protos/generate.sh
 ```
 
 [basic-tutorial]: ../../../docs/basic-tutorial.md
+[run-protoc]: ../../../Protos/generate.sh

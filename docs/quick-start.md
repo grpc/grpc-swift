@@ -6,9 +6,9 @@
 
 #### Swift Version
 
-gRPC requires Swift 5.0 or higher.
+gRPC requires Swift 5.8 or higher.
 
-#### Install Protocol Buffers v3
+#### Install Protocol Buffers
 
 Install the protoc compiler that is used to generate gRPC service code. The
 simplest way to do this is to download pre-compiled binaries for your
@@ -27,8 +27,8 @@ clones the entire repository, but you just need the examples for this quickstart
 and other tutorials):
 
 ```sh
-$ # Clone the repository at the latest release to get the example code:
-$ git clone -b 1.13.0 https://github.com/grpc/grpc-swift
+$ # Clone the repository at the latest release to get the example code (replacing x.y.z with the latest release, for example 1.13.0):
+$ git clone -b x.y.z https://github.com/grpc/grpc-swift
 $ # Navigate to the repository
 $ cd grpc-swift/
 ```
@@ -81,7 +81,7 @@ message HelloReply {
 ```
 
 Let's update this so that the `Greeter` service has two methods. Edit
-`Sources/Examples/HelloWorld/Model/helloworld.proto` and update it with a new
+`Protos/upstream/grpc/examples/helloworld.proto` and update it with a new
 `SayHelloAgain` method, with the same request and response types:
 
 ```proto
@@ -115,7 +115,7 @@ contains our generated gRPC client and server classes.
 From the `grpc-swift` directory run
 
 ```sh
-make generate-helloworld
+$ Protos/generate.sh
 ```
 
 This also regenerates classes for populating, serializing, and retrieving our
