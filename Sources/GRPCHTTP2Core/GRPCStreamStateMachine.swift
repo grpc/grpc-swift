@@ -19,24 +19,24 @@ import NIOCore
 import NIOHPACK
 import NIOHTTP1
 
-enum GRPCHTTP2StreamScheme: String {
-  case http
-  case https
-}
-
 enum GRPCStreamStateMachineConfiguration {
   case client(ClientConfiguration)
   case server(ServerConfiguration)
 
+  enum Scheme: String {
+    case http
+    case https
+  }
+
   struct ClientConfiguration {
     var methodDescriptor: MethodDescriptor
-    var scheme: GRPCHTTP2StreamScheme
+    var scheme: Scheme
     var outboundEncoding: CompressionAlgorithm
     var acceptedEncodings: CompressionAlgorithmSet
 
     init(
       methodDescriptor: MethodDescriptor,
-      scheme: GRPCHTTP2StreamScheme,
+      scheme: Scheme,
       outboundEncoding: CompressionAlgorithm,
       acceptedEncodings: CompressionAlgorithmSet
     ) {
@@ -48,10 +48,10 @@ enum GRPCStreamStateMachineConfiguration {
   }
 
   struct ServerConfiguration {
-    var scheme: GRPCHTTP2StreamScheme
+    var scheme: Scheme
     var acceptedEncodings: CompressionAlgorithmSet
 
-    init(scheme: GRPCHTTP2StreamScheme, acceptedEncodings: CompressionAlgorithmSet) {
+    init(scheme: Scheme, acceptedEncodings: CompressionAlgorithmSet) {
       self.scheme = scheme
       self.acceptedEncodings = acceptedEncodings.union(.none)
     }
@@ -505,7 +505,7 @@ struct GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   private func makeClientHeaders(
     methodDescriptor: MethodDescriptor,
-    scheme: GRPCHTTP2StreamScheme,
+    scheme: GRPCStreamStateMachineConfiguration.Scheme,
     outboundEncoding: CompressionAlgorithm?,
     acceptedEncodings: CompressionAlgorithmSet,
     customMetadata: Metadata
@@ -1211,23 +1211,31 @@ extension GRPCStreamStateMachine {
         return .rejectRPC(trailers: trailers)
       }
 
-      guard
-        let path = headers.firstString(forKey: .path).flatMap({
-          MethodDescriptor(fullyQualifiedMethod: $0)
-        })
-      else {
+      guard let pathHeader = headers.firstString(forKey: .path) else {
         return self.closeServerAndBuildRejectRPCAction(
           currentState: state,
           endStream: endStream,
           rejectWithStatus: Status(
-            code: .unimplemented,
+            code: .invalidArgument,
             message: "No \(GRPCHTTP2Keys.path.rawValue) header has been set."
           )
         )
       }
 
+      guard let path = MethodDescriptor(fullyQualifiedMethod: pathHeader) else {
+        return self.closeServerAndBuildRejectRPCAction(
+          currentState: state,
+          endStream: endStream,
+          rejectWithStatus: Status(
+            code: .unimplemented,
+            message:
+              "The given \(GRPCHTTP2Keys.path.rawValue) (\(pathHeader)) does not correspond to a valid method."
+          )
+        )
+      }
+
       let scheme = headers.firstString(forKey: .scheme)
-        .flatMap { GRPCHTTP2StreamScheme(rawValue: $0) }
+        .flatMap { GRPCStreamStateMachineConfiguration.Scheme(rawValue: $0) }
       if scheme == nil {
         return self.closeServerAndBuildRejectRPCAction(
           currentState: state,

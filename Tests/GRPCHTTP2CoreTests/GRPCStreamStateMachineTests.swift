@@ -66,6 +66,10 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid",
   ]
+  fileprivate static let receivedWithInvalidPath: Self = [
+    GRPCHTTP2Keys.path.rawValue: "someinvalidpath",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+  ]
   fileprivate static let receivedWithoutEndpoint: Self = [
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
   ]
@@ -1702,8 +1706,30 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         [
           ":status": "200",
           "content-type": "application/grpc",
-          "grpc-status": "12",
+          "grpc-status": String(Status.Code.invalidArgument.rawValue),
           "grpc-status-message": "No :path header has been set.",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_InvalidPath() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      headers: .receivedWithInvalidPath,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": String(Status.Code.unimplemented.rawValue),
+          "grpc-status-message":
+            "The given :path (someinvalidpath) does not correspond to a valid method.",
         ]
       )
     }

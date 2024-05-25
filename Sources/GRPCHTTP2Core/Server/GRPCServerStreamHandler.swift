@@ -37,10 +37,10 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   private var pendingTrailers:
     (trailers: HTTP2Frame.FramePayload, promise: EventLoopPromise<Void>?)?
 
-  var methodDescriptorPromise: EventLoopPromise<MethodDescriptor>
+  private let methodDescriptorPromise: EventLoopPromise<MethodDescriptor>
 
   init(
-    scheme: GRPCHTTP2StreamScheme,
+    scheme: GRPCStreamStateMachineConfiguration.Scheme,
     acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,
     methodDescriptorPromise: EventLoopPromise<MethodDescriptor>,
@@ -106,12 +106,7 @@ extension GRPCServerStreamHandler {
             self.methodDescriptorPromise.succeed(methodDescriptor)
             context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
           } else {
-            self.methodDescriptorPromise.fail(
-              RPCError(
-                code: .internalError,
-                message: "Method descriptor should have been present if we received metadata."
-              )
-            )
+            assertionFailure("Method descriptor should have been present if we received metadata.")
           }
 
         case .rejectRPC(let trailers):
