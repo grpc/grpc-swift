@@ -246,7 +246,7 @@ extension ClientConnectionHandlerTests {
         keepaliveWithoutCalls: allowKeepaliveWithoutCalls
       )
 
-      self.streamDelegate = handler
+      self.streamDelegate = handler.http2StreamDelegate
       self.channel = EmbeddedChannel(handler: handler, loop: loop)
     }
 
