@@ -379,7 +379,7 @@ extension ServerConnectionManagementHandlerTests {
         clock: self.clock
       )
 
-      self.streamDelegate = handler
+      self.streamDelegate = handler.http2StreamDelegate
       self.syncView = handler.syncView
       self.channel = EmbeddedChannel(handler: handler, loop: loop)
     }
