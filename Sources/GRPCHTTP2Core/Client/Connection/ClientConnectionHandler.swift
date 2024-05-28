@@ -152,10 +152,10 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     switch event {
     case let event as NIOHTTP2StreamCreatedEvent:
-      self.streamCreated(event.streamID, channel: context.channel)
+      self._streamCreated(event.streamID, channel: context.channel)
 
     case let event as StreamClosedEvent:
-      self.streamClosed(event.streamID, channel: context.channel)
+      self._streamClosed(event.streamID, channel: context.channel)
 
     default:
       ()
@@ -250,8 +250,42 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   }
 }
 
-extension ClientConnectionHandler: NIOHTTP2StreamDelegate {
-  func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+extension ClientConnectionHandler {
+  struct HTTP2StreamDelegate: @unchecked Sendable, NIOHTTP2StreamDelegate {
+    // @unchecked is okay: the only methods do the appropriate event-loop dance.
+
+    private let handler: ClientConnectionHandler
+
+    init(_ handler: ClientConnectionHandler) {
+      self.handler = handler
+    }
+
+    func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+      if self.handler.eventLoop.inEventLoop {
+        self.handler._streamCreated(id, channel: channel)
+      } else {
+        self.handler.eventLoop.execute {
+          self.handler._streamCreated(id, channel: channel)
+        }
+      }
+    }
+
+    func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+      if self.handler.eventLoop.inEventLoop {
+        self.handler._streamClosed(id, channel: channel)
+      } else {
+        self.handler.eventLoop.execute {
+          self.handler._streamClosed(id, channel: channel)
+        }
+      }
+    }
+  }
+
+  var http2StreamDelegate: HTTP2StreamDelegate {
+    return HTTP2StreamDelegate(self)
+  }
+
+  private func _streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
     self.eventLoop.assertInEventLoop()
 
     // Stream created, so the connection isn't idle.
@@ -259,7 +293,7 @@ extension ClientConnectionHandler: NIOHTTP2StreamDelegate {
     self.state.streamOpened(id)
   }
 
-  func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+  private func _streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
     guard let context = self.context else { return }
     self.eventLoop.assertInEventLoop()
 

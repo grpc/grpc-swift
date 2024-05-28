@@ -274,10 +274,10 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     switch event {
     case let event as NIOHTTP2StreamCreatedEvent:
-      self.streamCreated(event.streamID, channel: context.channel)
+      self._streamCreated(event.streamID, channel: context.channel)
 
     case let event as StreamClosedEvent:
-      self.streamClosed(event.streamID, channel: context.channel)
+      self._streamClosed(event.streamID, channel: context.channel)
 
     case is ChannelShouldQuiesceEvent:
       self.initiateGracefulShutdown(context: context)
@@ -333,14 +333,48 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   }
 }
 
-extension ServerConnectionManagementHandler: NIOHTTP2StreamDelegate {
-  func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+extension ServerConnectionManagementHandler {
+  struct HTTP2StreamDelegate: @unchecked Sendable, NIOHTTP2StreamDelegate {
+    // @unchecked is okay: the only methods do the appropriate event-loop dance.
+
+    private let handler: ServerConnectionManagementHandler
+
+    init(_ handler: ServerConnectionManagementHandler) {
+      self.handler = handler
+    }
+
+    func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+      if self.handler.eventLoop.inEventLoop {
+        self.handler._streamCreated(id, channel: channel)
+      } else {
+        self.handler.eventLoop.execute {
+          self.handler._streamCreated(id, channel: channel)
+        }
+      }
+    }
+
+    func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+      if self.handler.eventLoop.inEventLoop {
+        self.handler._streamClosed(id, channel: channel)
+      } else {
+        self.handler.eventLoop.execute {
+          self.handler._streamClosed(id, channel: channel)
+        }
+      }
+    }
+  }
+
+  var http2StreamDelegate: HTTP2StreamDelegate {
+    return HTTP2StreamDelegate(self)
+  }
+
+  private func _streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
     // The connection isn't idle if a stream is open.
     self.maxIdleTimer?.cancel()
     self.state.streamOpened(id)
   }
 
-  func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+  private func _streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
     guard let context = self.context else { return }
 
     switch self.state.streamClosed(id) {
