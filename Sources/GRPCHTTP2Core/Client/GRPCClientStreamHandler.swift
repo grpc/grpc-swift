@@ -33,7 +33,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
 
   init(
     methodDescriptor: MethodDescriptor,
-    scheme: Scheme,
+    scheme: GRPCStreamStateMachineConfiguration.Scheme,
     outboundEncoding: CompressionAlgorithm,
     acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,
@@ -103,7 +103,7 @@ extension GRPCClientStreamHandler {
           endStream: headers.endStream
         )
         switch action {
-        case .receivedMetadata(let metadata):
+        case .receivedMetadata(let metadata, _):
           context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
 
         case .rejectRPC:

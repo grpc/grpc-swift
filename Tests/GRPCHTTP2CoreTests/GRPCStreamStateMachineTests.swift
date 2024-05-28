@@ -66,6 +66,10 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.path.rawValue: "test/test",
     GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid",
   ]
+  fileprivate static let receivedWithInvalidPath: Self = [
+    GRPCHTTP2Keys.path.rawValue: "someinvalidpath",
+    GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+  ]
   fileprivate static let receivedWithoutEndpoint: Self = [
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
   ]
@@ -449,7 +453,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         "custom": "123",
       ]
       expectedMetadata.addBinary([42, 43, 44], forKey: "custom-bin")
-      XCTAssertEqual(action, .receivedMetadata(expectedMetadata))
+      XCTAssertEqual(action, .receivedMetadata(expectedMetadata, nil))
     }
   }
 
@@ -1002,11 +1006,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       serverInitialHeadersAction,
-      .receivedMetadata([
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-      ])
+      .receivedMetadata(
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+        ],
+        nil
+      )
     )
 
     // Client sends messages
@@ -1102,11 +1109,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       serverInitialHeadersAction,
-      .receivedMetadata([
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-      ])
+      .receivedMetadata(
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+        ],
+        nil
+      )
     )
 
     // Server sends response
@@ -1186,11 +1196,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       serverInitialHeadersAction,
-      .receivedMetadata([
-        ":status": "200",
-        "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
-      ])
+      .receivedMetadata(
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-accept-encoding": "deflate",
+        ],
+        nil
+      )
     )
 
     // Client closes
@@ -1631,7 +1644,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
     XCTAssertEqual(
       action,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
   }
 
@@ -1641,7 +1657,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: true)
     XCTAssertEqual(
       action,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
   }
 
@@ -1687,8 +1706,30 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         [
           ":status": "200",
           "content-type": "application/grpc",
-          "grpc-status": "12",
+          "grpc-status": String(Status.Code.invalidArgument.rawValue),
           "grpc-status-message": "No :path header has been set.",
+        ]
+      )
+    }
+  }
+
+  func testReceiveMetadataWhenClientIdleAndServerIdle_InvalidPath() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+
+    let action = try stateMachine.receive(
+      headers: .receivedWithInvalidPath,
+      endStream: false
+    )
+
+    self.assertRejectedRPC(action) { trailers in
+      XCTAssertEqual(
+        trailers,
+        [
+          ":status": "200",
+          "content-type": "application/grpc",
+          "grpc-status": String(Status.Code.unimplemented.rawValue),
+          "grpc-status-message":
+            "The given :path (someinvalidpath) does not correspond to a valid method.",
         ]
       )
     }
@@ -2376,7 +2417,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       receiveMetadataAction,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
 
     // Server sends initial metadata
@@ -2470,7 +2514,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       receiveMetadataAction,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
 
     // Client sends messages
@@ -2547,7 +2594,10 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
     XCTAssertEqual(
       receiveMetadataAction,
-      .receivedMetadata(Metadata(headers: .clientInitialMetadata))
+      .receivedMetadata(
+        Metadata(headers: .clientInitialMetadata),
+        MethodDescriptor(fullyQualifiedMethod: "test/test")
+      )
     )
 
     // Client sends messages
