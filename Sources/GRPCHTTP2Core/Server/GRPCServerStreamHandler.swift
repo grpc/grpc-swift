@@ -37,10 +37,13 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   private var pendingTrailers:
     (trailers: HTTP2Frame.FramePayload, promise: EventLoopPromise<Void>?)?
 
+  private let methodDescriptorPromise: EventLoopPromise<MethodDescriptor>
+
   init(
-    scheme: Scheme,
+    scheme: GRPCStreamStateMachineConfiguration.Scheme,
     acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,
+    methodDescriptorPromise: EventLoopPromise<MethodDescriptor>,
     skipStateMachineAssertions: Bool = false
   ) {
     self.stateMachine = .init(
@@ -48,6 +51,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
       maximumPayloadSize: maximumPayloadSize,
       skipAssertions: skipStateMachineAssertions
     )
+    self.methodDescriptorPromise = methodDescriptorPromise
   }
 }
 
@@ -97,11 +101,22 @@ extension GRPCServerStreamHandler {
           endStream: headers.endStream
         )
         switch action {
-        case .receivedMetadata(let metadata):
-          context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
+        case .receivedMetadata(let metadata, let methodDescriptor):
+          if let methodDescriptor = methodDescriptor {
+            self.methodDescriptorPromise.succeed(methodDescriptor)
+            context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
+          } else {
+            assertionFailure("Method descriptor should have been present if we received metadata.")
+          }
 
         case .rejectRPC(let trailers):
           self.flushPending = true
+          self.methodDescriptorPromise.fail(
+            RPCError(
+              code: .unavailable,
+              message: "RPC was rejected."
+            )
+          )
           let response = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
           context.write(self.wrapOutboundOut(response), promise: nil)
 
@@ -135,6 +150,12 @@ extension GRPCServerStreamHandler {
 
   func handlerRemoved(context: ChannelHandlerContext) {
     self.stateMachine.tearDown()
+    self.methodDescriptorPromise.fail(
+      RPCError(
+        code: .unavailable,
+        message: "RPC stream was closed before we got any Metadata."
+      )
+    )
   }
 }
 

@@ -408,7 +408,7 @@ extension Connection {
       /// Multiplexer for creating HTTP/2 streams.
       var multiplexer: NIOHTTP2Handler.AsyncStreamMultiplexer<Void>
       /// Whether the connection is plaintext, `false` implies TLS is being used.
-      var scheme: Scheme
+      var scheme: GRPCStreamStateMachineConfiguration.Scheme
 
       init(_ connection: HTTP2Connection) {
         self.channel = connection.channel
