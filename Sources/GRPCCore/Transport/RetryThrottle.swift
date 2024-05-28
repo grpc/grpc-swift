@@ -107,7 +107,7 @@ public struct RetryThrottle: Sendable {
   ///
   /// - Parameter policy: The policy to use to configure the throttle.
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public init(policy: ServiceConfig.RetryThrottlingPolicy) {
+  public init(policy: ServiceConfig.RetryThrottling) {
     self.init(maximumTokens: policy.maxTokens, tokenRatio: policy.tokenRatio)
   }
 

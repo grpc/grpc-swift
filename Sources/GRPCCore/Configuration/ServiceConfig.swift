@@ -26,11 +26,11 @@ public struct ServiceConfig: Hashable, Sendable {
   ///
   /// The client iterates through the list in order and picks the first configuration it supports.
   /// If no policies are supported then the configuration is considered to be invalid.
-  public var loadBalancingConfiguration: [LoadBalancingConfiguration]
+  public var loadBalancingConfig: [LoadBalancingConfig]
 
   /// The policy for throttling retries.
   ///
-  /// If a ``RetryThrottlingPolicy`` is provided, gRPC will automatically throttle retry attempts
+  /// If ``RetryThrottling`` is provided, gRPC will automatically throttle retry attempts
   /// and hedged RPCs when the client's ratio of failures to successes exceeds a threshold.
   ///
   /// For each server name, the gRPC client will maintain a `token_count` which is initially set
@@ -42,23 +42,23 @@ public struct ServiceConfig: Hashable, Sendable {
   ///
   /// If `token_count` is less than or equal to `max_tokens / 2`, then RPCs will not be retried
   /// and hedged RPCs will not be sent.
-  public var retryThrottlingPolicy: RetryThrottlingPolicy?
+  public var retryThrottling: RetryThrottling?
 
   /// Creates a new ``ServiceConfig``.
   ///
   /// - Parameters:
   ///   - methodConfig: Per-method configuration.
-  ///   - loadBalancingConfiguration: Load balancing policies. Clients use the the first supported
+  ///   - loadBalancingConfig: Load balancing policies. Clients use the the first supported
   ///       policy when iterating the list in order.
-  ///   - retryThrottlingPolicy: Policy for throttling retries.
+  ///   - retryThrottling: Policy for throttling retries.
   public init(
     methodConfig: [MethodConfig] = [],
-    loadBalancingConfiguration: [LoadBalancingConfiguration] = [],
-    retryThrottlingPolicy: RetryThrottlingPolicy? = nil
+    loadBalancingConfig: [LoadBalancingConfig] = [],
+    retryThrottling: RetryThrottling? = nil
   ) {
     self.methodConfig = methodConfig
-    self.loadBalancingConfiguration = loadBalancingConfiguration
-    self.retryThrottlingPolicy = retryThrottlingPolicy
+    self.loadBalancingConfig = loadBalancingConfig
+    self.retryThrottling = retryThrottling
   }
 }
 
@@ -80,13 +80,13 @@ extension ServiceConfig: Codable {
     self.methodConfig = methodConfig ?? []
 
     let loadBalancingConfiguration = try container.decodeIfPresent(
-      [LoadBalancingConfiguration].self,
+      [LoadBalancingConfig].self,
       forKey: .loadBalancingConfig
     )
-    self.loadBalancingConfiguration = loadBalancingConfiguration ?? []
+    self.loadBalancingConfig = loadBalancingConfiguration ?? []
 
-    self.retryThrottlingPolicy = try container.decodeIfPresent(
-      RetryThrottlingPolicy.self,
+    self.retryThrottling = try container.decodeIfPresent(
+      RetryThrottling.self,
       forKey: .retryThrottling
     )
   }
@@ -94,15 +94,15 @@ extension ServiceConfig: Codable {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(self.methodConfig, forKey: .methodConfig)
-    try container.encode(self.loadBalancingConfiguration, forKey: .loadBalancingConfig)
-    try container.encodeIfPresent(self.retryThrottlingPolicy, forKey: .retryThrottling)
+    try container.encode(self.loadBalancingConfig, forKey: .loadBalancingConfig)
+    try container.encodeIfPresent(self.retryThrottling, forKey: .retryThrottling)
   }
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig {
   /// Configuration used by clients for load-balancing.
-  public struct LoadBalancingConfiguration: Hashable, Sendable {
+  public struct LoadBalancingConfig: Hashable, Sendable {
     private enum Value: Hashable, Sendable {
       case pickFirst(PickFirst)
       case roundRobin(RoundRobin)
@@ -166,7 +166,7 @@ extension ServiceConfig {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfig.LoadBalancingConfiguration {
+extension ServiceConfig.LoadBalancingConfig {
   /// Configuration for the pick-first load balancing policy.
   public struct PickFirst: Hashable, Sendable, Codable {
     /// Whether the resolved addresses should be shuffled before attempting to connect to them.
@@ -194,7 +194,7 @@ extension ServiceConfig.LoadBalancingConfiguration {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ServiceConfig.LoadBalancingConfiguration: Codable {
+extension ServiceConfig.LoadBalancingConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case roundRobin = "round_robin"
     case pickFirst = "pick_first"
@@ -226,7 +226,7 @@ extension ServiceConfig.LoadBalancingConfiguration: Codable {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig {
-  public struct RetryThrottlingPolicy: Hashable, Sendable, Codable {
+  public struct RetryThrottling: Hashable, Sendable, Codable {
     /// The initial, and maximum number of tokens.
     ///
     /// - Precondition: Must be greater than zero.

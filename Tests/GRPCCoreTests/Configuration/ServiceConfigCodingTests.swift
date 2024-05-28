@@ -46,9 +46,9 @@ final class ServiceConfigCodingTests: XCTestCase {
       }
       """
 
-    let expected = try ServiceConfig.RetryThrottlingPolicy(maxTokens: 10, tokenRatio: 0.5)
+    let expected = try ServiceConfig.RetryThrottling(maxTokens: 10, tokenRatio: 0.5)
     let policy = try self.decoder.decode(
-      ServiceConfig.RetryThrottlingPolicy.self,
+      ServiceConfig.RetryThrottling.self,
       from: Data(json.utf8)
     )
 
@@ -56,7 +56,7 @@ final class ServiceConfigCodingTests: XCTestCase {
   }
 
   func testEncodeDecodeRetryThrottlingPolicy() throws {
-    let policy = try ServiceConfig.RetryThrottlingPolicy(maxTokens: 10, tokenRatio: 0.5)
+    let policy = try ServiceConfig.RetryThrottling(maxTokens: 10, tokenRatio: 0.5)
     try self.testRoundTripEncodeDecode(policy)
   }
 
@@ -72,7 +72,7 @@ final class ServiceConfigCodingTests: XCTestCase {
 
       try self.testDecodeThrowsRuntimeError(
         json: json,
-        as: ServiceConfig.RetryThrottlingPolicy.self
+        as: ServiceConfig.RetryThrottling.self
       )
     }
   }
@@ -89,13 +89,13 @@ final class ServiceConfigCodingTests: XCTestCase {
 
       try self.testDecodeThrowsRuntimeError(
         json: json,
-        as: ServiceConfig.RetryThrottlingPolicy.self
+        as: ServiceConfig.RetryThrottling.self
       )
     }
   }
 
   func testDecodePickFirstPolicy() throws {
-    let inputs: [(String, ServiceConfig.LoadBalancingConfiguration.PickFirst)] = [
+    let inputs: [(String, ServiceConfig.LoadBalancingConfig.PickFirst)] = [
       (#"{"shuffleAddressList": true}"#, .init(shuffleAddressList: true)),
       (#"{"shuffleAddressList": false}"#, .init(shuffleAddressList: false)),
       (#"{}"#, .init(shuffleAddressList: false)),
@@ -103,7 +103,7 @@ final class ServiceConfigCodingTests: XCTestCase {
 
     for (input, expected) in inputs {
       let pickFirst = try self.decoder.decode(
-        ServiceConfig.LoadBalancingConfiguration.PickFirst.self,
+        ServiceConfig.LoadBalancingConfig.PickFirst.self,
         from: Data(input.utf8)
       )
 
@@ -112,7 +112,7 @@ final class ServiceConfigCodingTests: XCTestCase {
   }
 
   func testEncodePickFirstPolicy() throws {
-    let inputs: [(ServiceConfig.LoadBalancingConfiguration.PickFirst, String)] = [
+    let inputs: [(ServiceConfig.LoadBalancingConfig.PickFirst, String)] = [
       (.init(shuffleAddressList: true), #"{"shuffleAddressList":true}"#),
       (.init(shuffleAddressList: false), #"{"shuffleAddressList":false}"#),
     ]
@@ -126,20 +126,20 @@ final class ServiceConfigCodingTests: XCTestCase {
   func testDecodeRoundRobinPolicy() throws {
     let json = "{}"
     let policy = try self.decoder.decode(
-      ServiceConfig.LoadBalancingConfiguration.RoundRobin.self,
+      ServiceConfig.LoadBalancingConfig.RoundRobin.self,
       from: Data(json.utf8)
     )
-    XCTAssertEqual(policy, ServiceConfig.LoadBalancingConfiguration.RoundRobin())
+    XCTAssertEqual(policy, ServiceConfig.LoadBalancingConfig.RoundRobin())
   }
 
   func testEncodeRoundRobinPolicy() throws {
-    let policy = ServiceConfig.LoadBalancingConfiguration.RoundRobin()
+    let policy = ServiceConfig.LoadBalancingConfig.RoundRobin()
     let encoded = try self.encoder.encode(policy)
     XCTAssertEqual(String(decoding: encoded, as: UTF8.self), "{}")
   }
 
   func testDecodeLoadBalancingConfiguration() throws {
-    let inputs: [(String, ServiceConfig.LoadBalancingConfiguration)] = [
+    let inputs: [(String, ServiceConfig.LoadBalancingConfig)] = [
       (#"{"round_robin": {}}"#, .roundRobin),
       (#"{"pick_first": {}}"#, .pickFirst(shuffleAddressList: false)),
       (#"{"pick_first": {"shuffleAddressList": false}}"#, .pickFirst(shuffleAddressList: false)),
@@ -147,7 +147,7 @@ final class ServiceConfigCodingTests: XCTestCase {
 
     for (input, expected) in inputs {
       let decoded = try self.decoder.decode(
-        ServiceConfig.LoadBalancingConfiguration.self,
+        ServiceConfig.LoadBalancingConfig.self,
         from: Data(input.utf8)
       )
       XCTAssertEqual(decoded, expected)
@@ -155,7 +155,7 @@ final class ServiceConfigCodingTests: XCTestCase {
   }
 
   func testEncodeLoadBalancingConfiguration() throws {
-    let inputs: [(ServiceConfig.LoadBalancingConfiguration, String)] = [
+    let inputs: [(ServiceConfig.LoadBalancingConfig, String)] = [
       (.roundRobin, #"{"round_robin":{}}"#),
       (.pickFirst(shuffleAddressList: false), #"{"pick_first":{"shuffleAddressList":false}}"#),
     ]
@@ -206,14 +206,11 @@ final class ServiceConfigCodingTests: XCTestCase {
           maxResponseMessageBytes: 456
         )
       ],
-      loadBalancingConfiguration: [
+      loadBalancingConfig: [
         .roundRobin,
         .pickFirst(shuffleAddressList: true),
       ],
-      retryThrottlingPolicy: try ServiceConfig.RetryThrottlingPolicy(
-        maxTokens: 10,
-        tokenRatio: 0.1
-      )
+      retryThrottling: try ServiceConfig.RetryThrottling(maxTokens: 10, tokenRatio: 0.1)
     )
 
     XCTAssertEqual(decoded, expected)
@@ -246,14 +243,11 @@ final class ServiceConfigCodingTests: XCTestCase {
           maxRequestMessageBytes: 10_000
         ),
       ],
-      loadBalancingConfiguration: [
+      loadBalancingConfig: [
         .pickFirst(shuffleAddressList: true),
         .roundRobin,
       ],
-      retryThrottlingPolicy: try ServiceConfig.RetryThrottlingPolicy(
-        maxTokens: 10,
-        tokenRatio: 3.141
-      )
+      retryThrottling: try ServiceConfig.RetryThrottling(maxTokens: 10, tokenRatio: 3.141)
     )
 
     try self.testRoundTripEncodeDecode(serviceConfig)
