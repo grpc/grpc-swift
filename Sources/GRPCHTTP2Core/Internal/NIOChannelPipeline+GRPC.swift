@@ -75,7 +75,7 @@ extension ChannelPipeline.SynchronousOperations {
       )
     ) { streamChannel in
       return streamChannel.eventLoop.makeCompletedFuture {
-        let methodDescriptorPromise: EventLoopPromise<MethodDescriptor> = streamChannel.eventLoop.makePromise()
+        let methodDescriptorPromise = streamChannel.eventLoop.makePromise(of: MethodDescriptor.self)
         let streamHandler = GRPCServerStreamHandler(
           scheme: useTLS ? .https : .http,
           acceptedEncodings: compressionConfig.enabledAlgorithms,

@@ -67,37 +67,38 @@ extension HTTP2ServerTransport {
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
           for try await (connectionChannel, streamMultiplexer) in inbound {
             serverTaskGroup.addTask {
-              try await connectionChannel.executeThenClose { connectionInbound, connectionOutbound in
-                try await withThrowingDiscardingTaskGroup { connectionTaskGroup in
-                  connectionTaskGroup.addTask {
-                    for try await _ in connectionInbound {}
-                  }
+              try await connectionChannel
+                .executeThenClose { connectionInbound, connectionOutbound in
+                  try await withThrowingDiscardingTaskGroup { connectionTaskGroup in
+                    connectionTaskGroup.addTask {
+                      for try await _ in connectionInbound {}
+                    }
 
-                  connectionTaskGroup.addTask {
-                    try await withThrowingDiscardingTaskGroup { streamTaskGroup in
-                      for try await (http2Stream, methodDescriptor) in streamMultiplexer.inbound {
-                        streamTaskGroup.addTask {
-                          try await http2Stream.executeThenClose { inbound, outbound in
-                            let descriptor = try await methodDescriptor.get()
-                            let rpcStream = RPCStream(
-                              descriptor: descriptor,
-                              inbound: RPCAsyncSequence(wrapping: inbound),
-                              outbound: RPCWriter.Closable(
-                                wrapping: ServerConnection.Stream.Outbound(
-                                  responseWriter: outbound,
-                                  http2Stream: http2Stream
+                    connectionTaskGroup.addTask {
+                      try await withThrowingDiscardingTaskGroup { streamTaskGroup in
+                        for try await (http2Stream, methodDescriptor) in streamMultiplexer.inbound {
+                          streamTaskGroup.addTask {
+                            try await http2Stream.executeThenClose { inbound, outbound in
+                              let descriptor = try await methodDescriptor.get()
+                              let rpcStream = RPCStream(
+                                descriptor: descriptor,
+                                inbound: RPCAsyncSequence(wrapping: inbound),
+                                outbound: RPCWriter.Closable(
+                                  wrapping: ServerConnection.Stream.Outbound(
+                                    responseWriter: outbound,
+                                    http2Stream: http2Stream
+                                  )
                                 )
                               )
-                            )
 
-                            await streamHandler(rpcStream)
+                              await streamHandler(rpcStream)
+                            }
                           }
                         }
                       }
                     }
                   }
                 }
-              }
             }
           }
         }
