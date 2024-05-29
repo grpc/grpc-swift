@@ -200,29 +200,6 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   ///       keep-alive pings. Pings more frequent than this interval count as 'strikes' and the
   ///       connection is closed if there are too many strikes.
   ///   - clock: A clock providing the current time.
-  public convenience init(
-    eventLoop: EventLoop,
-    maxIdleTime: TimeAmount?,
-    maxAge: TimeAmount?,
-    maxGraceTime: TimeAmount?,
-    keepaliveTime: TimeAmount?,
-    keepaliveTimeout: TimeAmount?,
-    allowKeepaliveWithoutCalls: Bool,
-    minPingIntervalWithoutCalls: TimeAmount
-  ) {
-    self.init(
-      eventLoop: eventLoop,
-      maxIdleTime: maxIdleTime,
-      maxAge: maxAge,
-      maxGraceTime: maxGraceTime,
-      keepaliveTime: keepaliveTime,
-      keepaliveTimeout: keepaliveTimeout,
-      allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls,
-      minPingIntervalWithoutCalls: minPingIntervalWithoutCalls,
-      clock: .nio
-    )
-  }
-
   init(
     eventLoop: EventLoop,
     maxIdleTime: TimeAmount?,

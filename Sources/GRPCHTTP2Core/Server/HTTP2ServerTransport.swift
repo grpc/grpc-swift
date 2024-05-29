@@ -15,7 +15,6 @@
  */
 
 import GRPCCore
-import NIOCore
 import NIOHTTP2
 
 /// A namespace for the HTTP/2 server transport.
@@ -46,12 +45,13 @@ extension HTTP2ServerTransport.Config {
     }
   }
 
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   public struct Keepalive: Sendable {
     /// The amount of time to wait after reading data before sending a keepalive ping.
-    public var time: TimeAmount
+    public var time: Duration
 
     /// The amount of time the server has to respond to a keepalive ping before the connection is closed.
-    public var timeout: TimeAmount
+    public var timeout: Duration
 
     /// Whether the server allows the client to send keepalive pings when there are no calls in progress.
     public var permitWithoutCalls: Bool
@@ -59,55 +59,75 @@ extension HTTP2ServerTransport.Config {
     /// The minimum allowed interval the client is allowed to send keep-alive pings.
     /// Pings more frequent than this interval count as 'strikes' and the connection is closed if there are
     /// too many strikes.
-    public var minPingIntervalWithoutCalls: TimeAmount
+    public var minPingIntervalWithoutCalls: Duration
 
     /// Creates a new keepalive configuration.
     public init(
-      time: TimeAmount,
-      timeout: TimeAmount,
+      time: Duration,
+      timeout: Duration,
       permitWithoutCalls: Bool,
-      minPingIntervalWithoutCalls: TimeAmount
+      minPingIntervalWithoutCalls: Duration
     ) {
       self.time = time
       self.timeout = timeout
       self.permitWithoutCalls = permitWithoutCalls
       self.minPingIntervalWithoutCalls = minPingIntervalWithoutCalls
     }
+
+    /// Default values. The time after reading data a ping should be sent defaults to 2 hours, the timeout for
+    /// keepalive pings defaults to 20 seconds, pings are not permitted when no calls are in progress, and
+    /// the minimum allowed interval for clients to send pings defaults to 5 minutes.
+    public static var defaults: Self {
+      Self(
+        time: .seconds(2 * 60 * 60), // 2 hours
+        timeout: .seconds(20),
+        permitWithoutCalls: false,
+        minPingIntervalWithoutCalls: .seconds(5 * 60) // 5 minutes
+      )
+    }
   }
 
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   public struct Idle: Sendable {
     /// The maximum amount of time a connection may be idle before it's closed.
-    public var maxTime: TimeAmount
+    public var maxTime: Duration?
 
     /// Creates an idle configuration.
-    public init(maxTime: TimeAmount) {
+    public init(maxTime: Duration?) {
       self.maxTime = maxTime
     }
 
-    /// Default values, a 30 minute max idle time.
+    /// Default values. Max time a connection may be idle before it's closed defaults to infinite.
     public static var defaults: Self {
-      Self(maxTime: .seconds(30 * 60))
+      Self(maxTime: nil)
     }
   }
 
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   public struct Connection: Sendable {
-    /// The socket address to bind on.
-    public var socketAddress: NIOCore.SocketAddress
-
     /// The maximum amount of time a connection may exist before being gracefully closed.
-    public var maxAge: TimeAmount?
+    public var maxAge: Duration?
 
     /// The maximum amount of time that the connection has to close gracefully.
-    public var maxGraceTime: TimeAmount
+    public var maxGraceTime: Duration?
+
+    public init(
+      maxAge: Duration?,
+      maxGraceTime: Duration?
+    ) {
+      self.maxAge = maxAge
+      self.maxGraceTime = maxGraceTime
+    }
+
+    /// Default values. Both the max connection age and max grace time default to infinite.
+    public static var defaults: Self {
+      Self(maxAge: nil, maxGraceTime: nil)
+    }
   }
 
   public struct HTTP2: Sendable {
-
     /// The maximum frame size to be used in an HTTP/2 connection.
     public var maxFrameSize: Int
-
-    /// Whether TLS is being used or not in the connection.
-    public var useTLS: Bool
 
     /// The target window size for this connection.
     ///
@@ -115,80 +135,40 @@ extension HTTP2ServerTransport.Config {
     public var targetWindowSize: Int
 
     /// The number of concurrent streams on the HTTP/2 connection.
-    public var maxConcurrentStreams: Int
-  }
-}
+    public var maxConcurrentStreams: Int?
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension ChannelPipeline.SynchronousOperations {
-  public typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
-  public typealias HTTP2StreamMultiplexer = NIOHTTP2Handler.AsyncStreamMultiplexer<
-    (NIOAsyncChannel<RPCRequestPart, RPCResponsePart>, EventLoopFuture<MethodDescriptor>)
-  >
-
-  @_spi(Package)
-  public func configureGRPCHTTP2ServerTransportPipeline(
-    channel: any Channel,
-    compressionConfiguration: HTTP2ServerTransport.Config.Compression,
-    keepaliveConfiguration: HTTP2ServerTransport.Config.Keepalive,
-    idleConfiguration: HTTP2ServerTransport.Config.Idle,
-    connectionConfiguration: HTTP2ServerTransport.Config.Connection,
-    http2Configuration: HTTP2ServerTransport.Config.HTTP2
-  ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
-    let serverConnectionHandler = ServerConnectionManagementHandler(
-      eventLoop: self.eventLoop,
-      maxIdleTime: idleConfiguration.maxTime,
-      maxAge: connectionConfiguration.maxAge,
-      maxGraceTime: connectionConfiguration.maxGraceTime,
-      keepaliveTime: keepaliveConfiguration.time,
-      keepaliveTimeout: keepaliveConfiguration.timeout,
-      allowKeepaliveWithoutCalls: keepaliveConfiguration.permitWithoutCalls,
-      minPingIntervalWithoutCalls: keepaliveConfiguration.minPingIntervalWithoutCalls
-    )
-    let flushNotificationHandler = GRPCServerFlushNotificationHandler(
-      serverConnectionManagementHandler: serverConnectionHandler
-    )
-    try self.addHandler(flushNotificationHandler)
-
-    var http2HandlerConnectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
-    let http2HandlerHTTP2Settings = HTTP2Settings([
-      HTTP2Setting(parameter: .initialWindowSize, value: http2Configuration.targetWindowSize),
-      HTTP2Setting(parameter: .maxConcurrentStreams, value: http2Configuration.maxConcurrentStreams)
-    ])
-    http2HandlerConnectionConfiguration.initialSettings = http2HandlerHTTP2Settings
-
-    var http2HandlerStreamConfiguration = NIOHTTP2Handler.StreamConfiguration()
-    http2HandlerStreamConfiguration.targetWindowSize = http2Configuration.targetWindowSize
-
-    let streamMultiplexer = try self.configureAsyncHTTP2Pipeline(
-      mode: .server,
-      configuration: NIOHTTP2Handler.Configuration(
-        connection: http2HandlerConnectionConfiguration,
-        stream: http2HandlerStreamConfiguration
-      )
-    ) { [eventLoop] streamChannel in
-      return streamChannel.eventLoop.makeCompletedFuture {
-        let streamHandler = GRPCServerStreamHandler(
-          scheme: http2Configuration.useTLS ? .https : .http,
-          acceptedEncodings: compressionConfiguration.enabledAlgorithms,
-          maximumPayloadSize: http2Configuration.maxFrameSize,
-          methodDescriptorPromise: eventLoop.makePromise()
-        )
-        try streamChannel.pipeline.syncOperations.addHandler(streamHandler)
-
-        let asyncStreamChannel = try NIOAsyncChannel<RPCRequestPart, RPCResponsePart>(
-          wrappingChannelSynchronously: streamChannel
-        )
-        return (asyncStreamChannel, streamHandler.methodDescriptorPromise.futureResult)
-      }
+    public init(
+      maxFrameSize: Int,
+      targetWindowSize: Int,
+      maxConcurrentStreams: Int?
+    ) {
+      self.maxFrameSize = maxFrameSize
+      self.targetWindowSize = targetWindowSize
+      self.maxConcurrentStreams = maxConcurrentStreams
     }
+    
+    /// Default values. The max frame size defaults to 2^14, the target window size defaults to 2^16-1, and
+    /// the max concurrent streams default to infinite.
+    public static var defaults: Self {
+      Self(
+        maxFrameSize: 2^14,
+        targetWindowSize: (2^16) - 1,
+        maxConcurrentStreams: nil
+      )
+    }
+  }
 
-    try self.addHandler(serverConnectionHandler)
+  public struct RPC: Sendable {
+    /// The maximum request payload size.
+    public var maximumRequestPayloadSize: Int
 
-    let connectionChannel = try NIOAsyncChannel<HTTP2Frame, HTTP2Frame>(
-      wrappingChannelSynchronously: channel
-    )
-
-    return (connectionChannel, streamMultiplexer)
+    public init(maximumRequestPayloadSize: Int) {
+      self.maximumRequestPayloadSize = maximumRequestPayloadSize
+    }
+    
+    /// Default values. Maximum request payload size defaults to 4MB.
+    public static var defaults: Self {
+      Self(maximumRequestPayloadSize: 4 * 1024 * 1024)
+    }
   }
 }

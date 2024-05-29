@@ -24,15 +24,19 @@ import NIOSSL
 extension HTTP2ServerTransport {
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public struct Posix: ServerTransport {
+    private let address: GRPCHTTP2Core.SocketAddress
     private let configuration: Config
     private let eventLoopGroup: MultiThreadedEventLoopGroup
     private let serverQuiescingHelper: ServerQuiescingHelper
 
-    init(configuration: Config) {
-      self.configuration = configuration
-      self.eventLoopGroup = MultiThreadedEventLoopGroup(
-        numberOfThreads: self.configuration.http2.maxConcurrentStreams // TODO: not sure this is the right value to use, or if we should maybe just get the EL from the caller in the init
-      )
+    public init(
+      address: GRPCHTTP2Core.SocketAddress,
+      config: Config,
+      eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
+    ) {
+      self.address = address
+      self.configuration = config
+      self.eventLoopGroup = eventLoopGroup
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
     }
 
@@ -44,27 +48,24 @@ extension HTTP2ServerTransport {
           let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(channel: channel)
           return channel.pipeline.addHandler(quiescingHandler)
         }
-        .bind(
-          to: self.configuration.connection.socketAddress,
-          childChannelInitializer: { channel in
-            channel.eventLoop.makeCompletedFuture {
-              if self.configuration.http2.useTLS, let tlsConfiguration = configuration.tlsConfiguration {
-                let nioSSLContext = try NIOSSLContext(configuration: tlsConfiguration)
-                let nioSSLHandler = NIOSSLServerHandler(context: nioSSLContext)
-                try channel.pipeline.syncOperations.addHandler(nioSSLHandler)
-              }
-
-              return try channel.pipeline.syncOperations.configureGRPCHTTP2ServerTransportPipeline(
-                channel: channel,
-                compressionConfiguration: self.configuration.compression,
-                keepaliveConfiguration: self.configuration.keepalive,
-                idleConfiguration: self.configuration.idle,
-                connectionConfiguration: self.configuration.connection,
-                http2Configuration: self.configuration.http2
-              )
+        .bind(to: NIOCore.SocketAddress(self.address)) { channel in
+          channel.eventLoop.makeCompletedFuture {
+            if let tlsConfiguration = self.configuration.tlsConfiguration {
+              // TODO: set up TLS
             }
+
+            return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
+              channel: channel,
+              compressionConfig: self.configuration.compression,
+              keepaliveConfig: self.configuration.keepalive,
+              idleConfig: self.configuration.idle,
+              connectionConfig: self.configuration.connection,
+              http2Config: self.configuration.http2,
+              rpcConfig: self.configuration.rpc,
+              useTLS: self.configuration.tlsConfiguration != nil
+            )
           }
-        )
+        }
 
       try await serverChannel.executeThenClose { inbound in
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
@@ -116,7 +117,6 @@ extension HTTP2ServerTransport {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension HTTP2ServerTransport.Posix {
-
   /// Configuration for the ``GRPCHTTP2TransportNIOPosix/GRPCHTTP2Core/HTTP2ServerTransport/Posix``.
   public struct Config: Sendable {
     public var compression: HTTP2ServerTransport.Config.Compression
@@ -124,10 +124,60 @@ extension HTTP2ServerTransport.Posix {
     public var idle: HTTP2ServerTransport.Config.Idle
     public var connection: HTTP2ServerTransport.Config.Connection
     public var http2: HTTP2ServerTransport.Config.HTTP2
-    
-    /// An optional configuration for TLS.
-    ///
-    /// - Note: ``http2``'s `useTLS` property must be set as well for TLS to be set up.
+    public var rpc: HTTP2ServerTransport.Config.RPC
     public var tlsConfiguration: TLSConfiguration?
+
+    /// Construct a new `Config`.
+    /// - Parameters:
+    ///   - compression: Compression configuration.
+    ///   - keepalive: Keepalive configuration.
+    ///   - idle: Idle configuration.
+    ///   - connection: Connection configuration.
+    ///   - http2: HTTP2 configuration.
+    ///   - rpc: RPC configuration.
+    ///   - tlsConfiguration: Optional TLS configuration. If not present, will default to plaintext.
+    public init(
+      compression: HTTP2ServerTransport.Config.Compression = .defaults,
+      keepalive: HTTP2ServerTransport.Config.Keepalive = .defaults,
+      idle: HTTP2ServerTransport.Config.Idle = .defaults,
+      connection: HTTP2ServerTransport.Config.Connection = .defaults,
+      http2: HTTP2ServerTransport.Config.HTTP2 = .defaults,
+      rpc: HTTP2ServerTransport.Config.RPC = .defaults,
+      tlsConfiguration: TLSConfiguration? = nil
+    ) {
+      self.compression = compression
+      self.keepalive = keepalive
+      self.idle = idle
+      self.connection = connection
+      self.http2 = http2
+      self.rpc = rpc
+      self.tlsConfiguration = tlsConfiguration
+    }
+    
+    /// Default values for the different configurations.
+    public static var defaults: Self {
+      Self(
+        compression: .defaults,
+        keepalive: .defaults, 
+        idle: .defaults,
+        connection: .defaults,
+        http2: .defaults,
+        rpc: .defaults
+      )
+    }
+  }
+}
+
+extension NIOCore.SocketAddress {
+  fileprivate init(_ socketAddress: GRPCHTTP2Core.SocketAddress) throws {
+    if let ipv4 = socketAddress.ipv4 {
+      self = try Self(ipAddress: ipv4.host, port: ipv4.port)
+    } else if let ipv6 = socketAddress.ipv6 {
+      self = try Self(ipAddress: ipv6.host, port: ipv6.port)
+    } else if let unixDomainSocket = socketAddress.unixDomainSocket {
+      self = try Self(unixDomainSocketPath: unixDomainSocket.path)
+    } else {
+      throw RPCError(code: .internalError, message: "Unsupported socket address.")
+    }
   }
 }
