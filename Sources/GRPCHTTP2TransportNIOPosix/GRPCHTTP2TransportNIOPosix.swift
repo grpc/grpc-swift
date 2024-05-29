@@ -69,31 +69,48 @@ extension HTTP2ServerTransport {
             serverTaskGroup.addTask {
               try await connectionChannel
                 .executeThenClose { connectionInbound, connectionOutbound in
-                  try await withThrowingDiscardingTaskGroup { connectionTaskGroup in
+                  await withDiscardingTaskGroup { connectionTaskGroup in
                     connectionTaskGroup.addTask {
-                      for try await _ in connectionInbound {}
+                      do {
+                        for try await _ in connectionInbound {}
+                      } catch {
+                        // We don't want to close the channel if one connection throws.
+                        return
+                      }
                     }
 
                     connectionTaskGroup.addTask {
-                      try await withThrowingDiscardingTaskGroup { streamTaskGroup in
-                        for try await (http2Stream, methodDescriptor) in streamMultiplexer.inbound {
-                          streamTaskGroup.addTask {
-                            try await http2Stream.executeThenClose { inbound, outbound in
-                              let descriptor = try await methodDescriptor.get()
-                              let rpcStream = RPCStream(
-                                descriptor: descriptor,
-                                inbound: RPCAsyncSequence(wrapping: inbound),
-                                outbound: RPCWriter.Closable(
-                                  wrapping: ServerConnection.Stream.Outbound(
-                                    responseWriter: outbound,
-                                    http2Stream: http2Stream
+                      await withDiscardingTaskGroup { streamTaskGroup in
+                        do {
+                          for try await (http2Stream, methodDescriptor) in streamMultiplexer.inbound
+                          {
+                            streamTaskGroup.addTask {
+                              // It's okay to ignore these errors:
+                              // - If we get an error because the http2Stream failed to close, then there's nothing we can do
+                              // - If we get an error because the inner closure threw, then the only possible scenario in which
+                              // that could happen is if methodDescriptor.get() throws - in which case, it means we never got
+                              // the RPC metadata, which means we can't do anything either and it's okay to just kill the stream.
+                              try? await http2Stream.executeThenClose { inbound, outbound in
+                                guard let descriptor = try? await methodDescriptor.get() else {
+                                  return
+                                }
+                                let rpcStream = RPCStream(
+                                  descriptor: descriptor,
+                                  inbound: RPCAsyncSequence(wrapping: inbound),
+                                  outbound: RPCWriter.Closable(
+                                    wrapping: ServerConnection.Stream.Outbound(
+                                      responseWriter: outbound,
+                                      http2Stream: http2Stream
+                                    )
                                   )
                                 )
-                              )
-
-                              await streamHandler(rpcStream)
+                                await streamHandler(rpcStream)
+                              }
                             }
                           }
+                        } catch {
+                          // We don't want to close the whole connection if one stream throws.
+                          return
                         }
                       }
                     }
@@ -181,7 +198,7 @@ extension NIOCore.SocketAddress {
 
 extension ServerBootstrap {
   @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-  public func bind<Output: Sendable>(
+  fileprivate func bind<Output: Sendable>(
     to address: GRPCHTTP2Core.SocketAddress,
     childChannelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Output>
   ) async throws -> NIOAsyncChannel<Output, Never> {
