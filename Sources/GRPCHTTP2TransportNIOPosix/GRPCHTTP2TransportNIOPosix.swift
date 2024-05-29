@@ -24,7 +24,7 @@ extension HTTP2ServerTransport {
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public struct Posix: ServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
-    private let configuration: Config
+    private let config: Config
     private let eventLoopGroup: MultiThreadedEventLoopGroup
     private let serverQuiescingHelper: ServerQuiescingHelper
 
@@ -34,7 +34,7 @@ extension HTTP2ServerTransport {
       eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) {
       self.address = address
-      self.configuration = config
+      self.config = config
       self.eventLoopGroup = eventLoopGroup
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
     }
@@ -49,16 +49,15 @@ extension HTTP2ServerTransport {
           )
           return channel.pipeline.addHandler(quiescingHandler)
         }
-        .bind(to: NIOCore.SocketAddress(self.address)) { channel in
+        .bind(to: self.address) { channel in
           channel.eventLoop.makeCompletedFuture {
             return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
-              compressionConfig: self.configuration.compression,
-              keepaliveConfig: self.configuration.keepalive,
-              idleConfig: self.configuration.idle,
-              connectionConfig: self.configuration.connection,
-              http2Config: self.configuration.http2,
-              rpcConfig: self.configuration.rpc,
+              compressionConfig: self.config.compression,
+              keepaliveConfig: self.config.keepalive,
+              connectionConfig: self.config.connection,
+              http2Config: self.config.http2,
+              rpcConfig: self.config.rpc,
               useTLS: false
             )
           }
@@ -68,9 +67,7 @@ extension HTTP2ServerTransport {
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
           for try await (connectionChannel, streamMultiplexer) in inbound {
             serverTaskGroup.addTask {
-              try await connectionChannel.executeThenClose {
-                connectionInbound,
-                connectionOutbound in
+              try await connectionChannel.executeThenClose { connectionInbound, connectionOutbound in
                 try await withThrowingDiscardingTaskGroup { connectionTaskGroup in
                   connectionTaskGroup.addTask {
                     for try await _ in connectionInbound {}
@@ -79,20 +76,20 @@ extension HTTP2ServerTransport {
                   connectionTaskGroup.addTask {
                     try await withThrowingDiscardingTaskGroup { streamTaskGroup in
                       for try await (http2Stream, methodDescriptor) in streamMultiplexer.inbound {
-                        try await http2Stream.executeThenClose { inbound, outbound in
-                          let descriptor = try await methodDescriptor.get()
-                          let rpcStream = RPCStream(
-                            descriptor: descriptor,
-                            inbound: RPCAsyncSequence(wrapping: inbound),
-                            outbound: RPCWriter.Closable(
-                              wrapping: ServerConnection.Stream.Outbound(
-                                responseWriter: outbound,
-                                http2Stream: http2Stream
+                        streamTaskGroup.addTask {
+                          try await http2Stream.executeThenClose { inbound, outbound in
+                            let descriptor = try await methodDescriptor.get()
+                            let rpcStream = RPCStream(
+                              descriptor: descriptor,
+                              inbound: RPCAsyncSequence(wrapping: inbound),
+                              outbound: RPCWriter.Closable(
+                                wrapping: ServerConnection.Stream.Outbound(
+                                  responseWriter: outbound,
+                                  http2Stream: http2Stream
+                                )
                               )
                             )
-                          )
-
-                          streamTaskGroup.addTask {
+                            
                             await streamHandler(rpcStream)
                           }
                         }
@@ -118,32 +115,33 @@ extension HTTP2ServerTransport {
 extension HTTP2ServerTransport.Posix {
   /// Configuration for the ``GRPCHTTP2TransportNIOPosix/GRPCHTTP2Core/HTTP2ServerTransport/Posix``.
   public struct Config: Sendable {
+    /// Compression configuration.
     public var compression: HTTP2ServerTransport.Config.Compression
+    /// Keepalive configuration.
     public var keepalive: HTTP2ServerTransport.Config.Keepalive
-    public var idle: HTTP2ServerTransport.Config.Idle
+    /// Connection configuration.
     public var connection: HTTP2ServerTransport.Config.Connection
+    /// HTTP2 configuration.
     public var http2: HTTP2ServerTransport.Config.HTTP2
+    /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
 
     /// Construct a new `Config`.
     /// - Parameters:
     ///   - compression: Compression configuration.
     ///   - keepalive: Keepalive configuration.
-    ///   - idle: Idle configuration.
     ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
     public init(
-      compression: HTTP2ServerTransport.Config.Compression = .defaults,
-      keepalive: HTTP2ServerTransport.Config.Keepalive = .defaults,
-      idle: HTTP2ServerTransport.Config.Idle = .defaults,
-      connection: HTTP2ServerTransport.Config.Connection = .defaults,
-      http2: HTTP2ServerTransport.Config.HTTP2 = .defaults,
-      rpc: HTTP2ServerTransport.Config.RPC = .defaults
+      compression: HTTP2ServerTransport.Config.Compression,
+      keepalive: HTTP2ServerTransport.Config.Keepalive,
+      connection: HTTP2ServerTransport.Config.Connection,
+      http2: HTTP2ServerTransport.Config.HTTP2,
+      rpc: HTTP2ServerTransport.Config.RPC
     ) {
       self.compression = compression
       self.keepalive = keepalive
-      self.idle = idle
       self.connection = connection
       self.http2 = http2
       self.rpc = rpc
@@ -154,7 +152,6 @@ extension HTTP2ServerTransport.Posix {
       Self(
         compression: .defaults,
         keepalive: .defaults,
-        idle: .defaults,
         connection: .defaults,
         http2: .defaults,
         rpc: .defaults
@@ -172,7 +169,30 @@ extension NIOCore.SocketAddress {
     } else if let unixDomainSocket = socketAddress.unixDomainSocket {
       self = try Self(unixDomainSocketPath: unixDomainSocket.path)
     } else {
-      throw RPCError(code: .internalError, message: "Unsupported socket address.")
+      throw RPCError(
+        code: .internalError,
+        message: "Unsupported mapping to NIOCore/SocketAddress for GRPCHTTP2Core/SocketAddress: \(socketAddress)."
+      )
+    }
+  }
+}
+
+extension ServerBootstrap {
+  @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+  public func bind<Output: Sendable>(
+    to address: GRPCHTTP2Core.SocketAddress,
+    childChannelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Output>
+  ) async throws -> NIOAsyncChannel<Output, Never> {
+    if let virtualSocket = address.virtualSocket {
+      return try await self.bind(
+        to: VsockAddress(
+          cid: VsockAddress.ContextID(rawValue: virtualSocket.contextID.rawValue),
+          port: VsockAddress.Port(rawValue: virtualSocket.port.rawValue)
+        ),
+        childChannelInitializer: childChannelInitializer
+      )
+    } else {
+      return try await self.bind(to: NIOCore.SocketAddress(address), childChannelInitializer: childChannelInitializer)
     }
   }
 }

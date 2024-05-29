@@ -88,22 +88,6 @@ extension HTTP2ServerTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Idle: Sendable {
-    /// The maximum amount of time a connection may be idle before it's closed.
-    public var maxTime: Duration?
-
-    /// Creates an idle configuration.
-    public init(maxTime: Duration?) {
-      self.maxTime = maxTime
-    }
-
-    /// Default values. Max time a connection may be idle before it's closed defaults to infinite.
-    public static var defaults: Self {
-      Self(maxTime: nil)
-    }
-  }
-
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   public struct Connection: Sendable {
     /// The maximum amount of time a connection may exist before being gracefully closed.
     public var maxAge: Duration?
@@ -111,17 +95,22 @@ extension HTTP2ServerTransport.Config {
     /// The maximum amount of time that the connection has to close gracefully.
     public var maxGraceTime: Duration?
 
+    /// The maximum amount of time a connection may be idle before it's closed.
+    public var maxIdleTime: Duration?
+
     public init(
       maxAge: Duration?,
-      maxGraceTime: Duration?
+      maxGraceTime: Duration?,
+      maxIdleTime: Duration?
     ) {
       self.maxAge = maxAge
       self.maxGraceTime = maxGraceTime
+      self.maxIdleTime = maxIdleTime
     }
 
-    /// Default values. Both the max connection age and max grace time default to infinite.
+    /// Default values. All the max connection age, max grace time, and max idle time default to infinite.
     public static var defaults: Self {
-      Self(maxAge: nil, maxGraceTime: nil)
+      Self(maxAge: nil, maxGraceTime: nil, maxIdleTime: nil)
     }
   }
 
@@ -151,8 +140,8 @@ extension HTTP2ServerTransport.Config {
     /// the max concurrent streams default to infinite.
     public static var defaults: Self {
       Self(
-        maxFrameSize: 2 ^ 14,
-        targetWindowSize: (2 ^ 16) - 1,
+        maxFrameSize: 1 << 14,
+        targetWindowSize: (1 << 16) - 1,
         maxConcurrentStreams: nil
       )
     }
@@ -160,15 +149,15 @@ extension HTTP2ServerTransport.Config {
 
   public struct RPC: Sendable {
     /// The maximum request payload size.
-    public var maximumRequestPayloadSize: Int
+    public var maxRequestPayloadSize: Int
 
-    public init(maximumRequestPayloadSize: Int) {
-      self.maximumRequestPayloadSize = maximumRequestPayloadSize
+    public init(maxRequestPayloadSize: Int) {
+      self.maxRequestPayloadSize = maxRequestPayloadSize
     }
 
-    /// Default values. Maximum request payload size defaults to 4MB.
+    /// Default values. Maximum request payload size defaults to 4MiB.
     public static var defaults: Self {
-      Self(maximumRequestPayloadSize: 4 * 1024 * 1024)
+      Self(maxRequestPayloadSize: 4 * 1024 * 1024)
     }
   }
 }

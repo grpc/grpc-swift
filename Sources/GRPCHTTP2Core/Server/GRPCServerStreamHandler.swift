@@ -37,7 +37,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler {
   private var pendingTrailers:
     (trailers: HTTP2Frame.FramePayload, promise: EventLoopPromise<Void>?)?
 
-  internal let methodDescriptorPromise: EventLoopPromise<MethodDescriptor>
+  private let methodDescriptorPromise: EventLoopPromise<MethodDescriptor>
 
   init(
     scheme: GRPCStreamStateMachineConfiguration.Scheme,

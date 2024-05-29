@@ -21,8 +21,8 @@ import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ChannelPipeline.SynchronousOperations {
-  public typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
-  public typealias HTTP2StreamMultiplexer = NIOHTTP2Handler.AsyncStreamMultiplexer<
+  @_spi(Package) public typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
+  @_spi(Package) public typealias HTTP2StreamMultiplexer = NIOHTTP2Handler.AsyncStreamMultiplexer<
     (NIOAsyncChannel<RPCRequestPart, RPCResponsePart>, EventLoopFuture<MethodDescriptor>)
   >
 
@@ -31,7 +31,6 @@ extension ChannelPipeline.SynchronousOperations {
     channel: any Channel,
     compressionConfig: HTTP2ServerTransport.Config.Compression,
     keepaliveConfig: HTTP2ServerTransport.Config.Keepalive,
-    idleConfig: HTTP2ServerTransport.Config.Idle,
     connectionConfig: HTTP2ServerTransport.Config.Connection,
     http2Config: HTTP2ServerTransport.Config.HTTP2,
     rpcConfig: HTTP2ServerTransport.Config.RPC,
@@ -39,7 +38,7 @@ extension ChannelPipeline.SynchronousOperations {
   ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
     let serverConnectionHandler = ServerConnectionManagementHandler(
       eventLoop: self.eventLoop,
-      maxIdleTime: idleConfig.maxTime.map { TimeAmount($0) },
+      maxIdleTime: connectionConfig.maxIdleTime.map { TimeAmount($0) },
       maxAge: connectionConfig.maxAge.map { TimeAmount($0) },
       maxGraceTime: connectionConfig.maxGraceTime.map { TimeAmount($0) },
       keepaliveTime: TimeAmount(keepaliveConfig.time),
@@ -76,18 +75,19 @@ extension ChannelPipeline.SynchronousOperations {
       )
     ) { streamChannel in
       return streamChannel.eventLoop.makeCompletedFuture {
+        let methodDescriptorPromise: EventLoopPromise<MethodDescriptor> = streamChannel.eventLoop.makePromise()
         let streamHandler = GRPCServerStreamHandler(
           scheme: useTLS ? .https : .http,
           acceptedEncodings: compressionConfig.enabledAlgorithms,
-          maximumPayloadSize: rpcConfig.maximumRequestPayloadSize,
-          methodDescriptorPromise: streamChannel.eventLoop.makePromise()
+          maximumPayloadSize: rpcConfig.maxRequestPayloadSize,
+          methodDescriptorPromise: methodDescriptorPromise
         )
         try streamChannel.pipeline.syncOperations.addHandler(streamHandler)
 
         let asyncStreamChannel = try NIOAsyncChannel<RPCRequestPart, RPCResponsePart>(
           wrappingChannelSynchronously: streamChannel
         )
-        return (asyncStreamChannel, streamHandler.methodDescriptorPromise.futureResult)
+        return (asyncStreamChannel, methodDescriptorPromise.futureResult)
       }
     }
 
