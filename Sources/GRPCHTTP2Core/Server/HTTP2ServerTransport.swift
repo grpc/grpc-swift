@@ -79,10 +79,10 @@ extension HTTP2ServerTransport.Config {
     /// the minimum allowed interval for clients to send pings defaults to 5 minutes.
     public static var defaults: Self {
       Self(
-        time: .seconds(2 * 60 * 60), // 2 hours
+        time: .seconds(2 * 60 * 60),  // 2 hours
         timeout: .seconds(20),
         permitWithoutCalls: false,
-        minPingIntervalWithoutCalls: .seconds(5 * 60) // 5 minutes
+        minPingIntervalWithoutCalls: .seconds(5 * 60)  // 5 minutes
       )
     }
   }
@@ -146,13 +146,13 @@ extension HTTP2ServerTransport.Config {
       self.targetWindowSize = targetWindowSize
       self.maxConcurrentStreams = maxConcurrentStreams
     }
-    
+
     /// Default values. The max frame size defaults to 2^14, the target window size defaults to 2^16-1, and
     /// the max concurrent streams default to infinite.
     public static var defaults: Self {
       Self(
-        maxFrameSize: 2^14,
-        targetWindowSize: (2^16) - 1,
+        maxFrameSize: 2 ^ 14,
+        targetWindowSize: (2 ^ 16) - 1,
         maxConcurrentStreams: nil
       )
     }
@@ -165,7 +165,7 @@ extension HTTP2ServerTransport.Config {
     public init(maximumRequestPayloadSize: Int) {
       self.maximumRequestPayloadSize = maximumRequestPayloadSize
     }
-    
+
     /// Default values. Maximum request payload size defaults to 4MB.
     public static var defaults: Self {
       Self(maximumRequestPayloadSize: 4 * 1024 * 1024)

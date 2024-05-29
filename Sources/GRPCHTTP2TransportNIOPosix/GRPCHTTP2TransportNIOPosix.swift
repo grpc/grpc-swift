@@ -45,7 +45,9 @@ extension HTTP2ServerTransport {
     ) async throws {
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
         .serverChannelInitializer { channel in
-          let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(channel: channel)
+          let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(
+            channel: channel
+          )
           return channel.pipeline.addHandler(quiescingHandler)
         }
         .bind(to: NIOCore.SocketAddress(self.address)) { channel in
@@ -71,7 +73,9 @@ extension HTTP2ServerTransport {
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
           for try await (connectionChannel, streamMultiplexer) in inbound {
             serverTaskGroup.addTask {
-              try await connectionChannel.executeThenClose { connectionInbound, connectionOutbound in
+              try await connectionChannel.executeThenClose {
+                connectionInbound,
+                connectionOutbound in
                 try await withThrowingDiscardingTaskGroup { connectionTaskGroup in
                   connectionTaskGroup.addTask {
                     for try await _ in connectionInbound {}
@@ -153,12 +157,12 @@ extension HTTP2ServerTransport.Posix {
       self.rpc = rpc
       self.tlsConfiguration = tlsConfiguration
     }
-    
+
     /// Default values for the different configurations.
     public static var defaults: Self {
       Self(
         compression: .defaults,
-        keepalive: .defaults, 
+        keepalive: .defaults,
         idle: .defaults,
         connection: .defaults,
         http2: .defaults,
