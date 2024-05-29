@@ -19,7 +19,6 @@ import GRPCCore
 import NIOCore
 import NIOExtras
 import NIOPosix
-import NIOSSL
 
 extension HTTP2ServerTransport {
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
@@ -52,10 +51,6 @@ extension HTTP2ServerTransport {
         }
         .bind(to: NIOCore.SocketAddress(self.address)) { channel in
           channel.eventLoop.makeCompletedFuture {
-            if let tlsConfiguration = self.configuration.tlsConfiguration {
-              // TODO: set up TLS
-            }
-
             return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.configuration.compression,
@@ -64,7 +59,7 @@ extension HTTP2ServerTransport {
               connectionConfig: self.configuration.connection,
               http2Config: self.configuration.http2,
               rpcConfig: self.configuration.rpc,
-              useTLS: self.configuration.tlsConfiguration != nil
+              useTLS: false
             )
           }
         }
@@ -129,7 +124,6 @@ extension HTTP2ServerTransport.Posix {
     public var connection: HTTP2ServerTransport.Config.Connection
     public var http2: HTTP2ServerTransport.Config.HTTP2
     public var rpc: HTTP2ServerTransport.Config.RPC
-    public var tlsConfiguration: TLSConfiguration?
 
     /// Construct a new `Config`.
     /// - Parameters:
@@ -139,15 +133,13 @@ extension HTTP2ServerTransport.Posix {
     ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
-    ///   - tlsConfiguration: Optional TLS configuration. If not present, will default to plaintext.
     public init(
       compression: HTTP2ServerTransport.Config.Compression = .defaults,
       keepalive: HTTP2ServerTransport.Config.Keepalive = .defaults,
       idle: HTTP2ServerTransport.Config.Idle = .defaults,
       connection: HTTP2ServerTransport.Config.Connection = .defaults,
       http2: HTTP2ServerTransport.Config.HTTP2 = .defaults,
-      rpc: HTTP2ServerTransport.Config.RPC = .defaults,
-      tlsConfiguration: TLSConfiguration? = nil
+      rpc: HTTP2ServerTransport.Config.RPC = .defaults
     ) {
       self.compression = compression
       self.keepalive = keepalive
@@ -155,7 +147,6 @@ extension HTTP2ServerTransport.Posix {
       self.connection = connection
       self.http2 = http2
       self.rpc = rpc
-      self.tlsConfiguration = tlsConfiguration
     }
 
     /// Default values for the different configurations.
