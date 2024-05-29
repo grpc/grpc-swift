@@ -19,35 +19,35 @@ import XCTest
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class HTTP2ServerTransportConfigTests: XCTestCase {
-    func testCompressionDefaults() {
-        let config = HTTP2ServerTransport.Config.Compression.defaults
-        XCTAssertEqual(config.enabledAlgorithms, .none)
-    }
+  func testCompressionDefaults() {
+    let config = HTTP2ServerTransport.Config.Compression.defaults
+    XCTAssertEqual(config.enabledAlgorithms, .none)
+  }
 
-    func testKeepaliveDefaults() {
-        let config = HTTP2ServerTransport.Config.Keepalive.defaults
-        XCTAssertEqual(config.time, .seconds(7200))
-        XCTAssertEqual(config.timeout, .seconds(20))
-        XCTAssertEqual(config.permitWithoutCalls, false)
-        XCTAssertEqual(config.minPingIntervalWithoutCalls, .seconds(300))
-    }
+  func testKeepaliveDefaults() {
+    let config = HTTP2ServerTransport.Config.Keepalive.defaults
+    XCTAssertEqual(config.time, .seconds(7200))
+    XCTAssertEqual(config.timeout, .seconds(20))
+    XCTAssertEqual(config.permitWithoutCalls, false)
+    XCTAssertEqual(config.minPingIntervalWithoutCalls, .seconds(300))
+  }
 
-    func testConnectionDefaults() {
-        let config = HTTP2ServerTransport.Config.Connection.defaults
-        XCTAssertNil(config.maxAge)
-        XCTAssertNil(config.maxGraceTime)
-        XCTAssertNil(config.maxIdleTime)
-    }
+  func testConnectionDefaults() {
+    let config = HTTP2ServerTransport.Config.Connection.defaults
+    XCTAssertNil(config.maxAge)
+    XCTAssertNil(config.maxGraceTime)
+    XCTAssertNil(config.maxIdleTime)
+  }
 
-    func testHTTP2Defaults() {
-        let config = HTTP2ServerTransport.Config.HTTP2.defaults
-        XCTAssertEqual(config.maxFrameSize, 16_384)
-        XCTAssertEqual(config.targetWindowSize, 65_535)
-        XCTAssertNil(config.maxConcurrentStreams)
-    }
+  func testHTTP2Defaults() {
+    let config = HTTP2ServerTransport.Config.HTTP2.defaults
+    XCTAssertEqual(config.maxFrameSize, 16_384)
+    XCTAssertEqual(config.targetWindowSize, 65_535)
+    XCTAssertNil(config.maxConcurrentStreams)
+  }
 
-    func testRPCDefaults() {
-        let config = HTTP2ServerTransport.Config.RPC.defaults
-        XCTAssertEqual(config.maxRequestPayloadSize, 4_194_304)
-    }
+  func testRPCDefaults() {
+    let config = HTTP2ServerTransport.Config.RPC.defaults
+    XCTAssertEqual(config.maxRequestPayloadSize, 4_194_304)
+  }
 }

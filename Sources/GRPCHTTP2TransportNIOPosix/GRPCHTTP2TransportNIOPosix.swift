@@ -89,7 +89,7 @@ extension HTTP2ServerTransport {
                                 )
                               )
                             )
-                            
+
                             await streamHandler(rpcStream)
                           }
                         }
@@ -171,7 +171,8 @@ extension NIOCore.SocketAddress {
     } else {
       throw RPCError(
         code: .internalError,
-        message: "Unsupported mapping to NIOCore/SocketAddress for GRPCHTTP2Core/SocketAddress: \(socketAddress)."
+        message:
+          "Unsupported mapping to NIOCore/SocketAddress for GRPCHTTP2Core/SocketAddress: \(socketAddress)."
       )
     }
   }
@@ -192,7 +193,10 @@ extension ServerBootstrap {
         childChannelInitializer: childChannelInitializer
       )
     } else {
-      return try await self.bind(to: NIOCore.SocketAddress(address), childChannelInitializer: childChannelInitializer)
+      return try await self.bind(
+        to: NIOCore.SocketAddress(address),
+        childChannelInitializer: childChannelInitializer
+      )
     }
   }
 }
