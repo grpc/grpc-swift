@@ -221,6 +221,66 @@ final class ClientConnectionHandlerTests: XCTestCase {
     try connection.settings([])
     XCTAssertNil(try connection.readEvent())
   }
+
+  func testReceiveErrorWhenIdle() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    // Write the initial settings.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
+    // Write an error and close.
+    let error = CancellationError()
+    connection.channel.pipeline.fireErrorCaught(error)
+    connection.channel.close(mode: .all, promise: nil)
+
+    XCTAssertEqual(try connection.readEvent(), .closing(.unexpected(error, isIdle: true)))
+  }
+
+  func testReceiveErrorWhenStreamsAreOpen() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    // Write the initial settings.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
+    // Open a stream.
+    connection.streamOpened(1)
+
+    // Write an error and close.
+    let error = CancellationError()
+    connection.channel.pipeline.fireErrorCaught(error)
+    connection.channel.close(mode: .all, promise: nil)
+
+    XCTAssertEqual(try connection.readEvent(), .closing(.unexpected(error, isIdle: false)))
+  }
+
+  func testUnexpectedCloseWhenIdle() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    // Write the initial settings.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
+    connection.channel.close(mode: .all, promise: nil)
+    XCTAssertEqual(try connection.readEvent(), .closing(.unexpected(nil, isIdle: true)))
+  }
+
+  func testUnexpectedCloseWhenStreamsAreOpen() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    // Write the initial settings.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
+    connection.streamOpened(1)
+    connection.channel.close(mode: .all, promise: nil)
+    XCTAssertEqual(try connection.readEvent(), .closing(.unexpected(nil, isIdle: false)))
+  }
 }
 
 extension ClientConnectionHandlerTests {

@@ -82,6 +82,27 @@ final class ConnectionTests: XCTestCase {
     }
   }
 
+  func testConnectionDropWhenConnected() async throws {
+    try await ConnectionTest.run(connector: .posix()) { context, event in
+      switch event {
+      case .connectSucceeded:
+        let accepted = try context.server.acceptedChannel
+        accepted.close(mode: .all, promise: nil)
+
+      default:
+        ()
+      }
+    } validateEvents: { _, events in
+      let error = RPCError(
+        code: .unavailable,
+        message: "The TCP connection was dropped unexpectedly."
+      )
+
+      let expected: [Connection.Event] = [.connectSucceeded, .closed(.error(error, wasIdle: true))]
+      XCTAssertEqual(events, expected)
+    }
+  }
+
   func testConnectFails() async throws {
     let error = RPCError(code: .unimplemented, message: "")
     try await ConnectionTest.run(connector: .throwing(error)) { _, events in

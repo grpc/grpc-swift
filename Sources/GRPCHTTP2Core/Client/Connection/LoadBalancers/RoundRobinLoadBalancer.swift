@@ -305,8 +305,8 @@ extension RoundRobinLoadBalancer {
 
   private func handleSubchannelGoingAway(key: EndpointKey) {
     switch self.state.withLockedValue({ $0.parkSubchannel(withKey: key) }) {
-    case .closeAndUpdateState(_, let connectivityState):
-      // No need to close the subchannel, it's already going away and will close itself.
+    case .closeAndUpdateState(let subchannel, let connectivityState):
+      subchannel.close()
       if let connectivityState = connectivityState {
         self.event.continuation.yield(.connectivityStateChanged(connectivityState))
       }
@@ -398,10 +398,18 @@ extension RoundRobinLoadBalancer {
           }
         } else {
           switch state {
-          case .idle, .connecting, .ready, .transientFailure:
-            ()
+          case .idle:
+            // The subchannel can be parked before it's shutdown. If there are no active RPCs then
+            // it will enter the idle state instead. If that happens, close it.
+            if let parked = self.parkedSubchannels[key] {
+              return .close(parked)
+            } else {
+              return .none
+            }
           case .shutdown:
             self.parkedSubchannels.removeValue(forKey: key)
+          case .connecting, .ready, .transientFailure:
+            ()
           }
 
           return .none
@@ -473,15 +481,38 @@ extension RoundRobinLoadBalancer {
       var reason: Reason
       var parkedSubchannels: [EndpointKey: Subchannel]
 
-      mutating func updateConnectivityState(_ state: ConnectivityState, key: EndpointKey) -> Bool {
+      mutating func updateConnectivityState(
+        _ state: ConnectivityState,
+        key: EndpointKey
+      ) -> (OnSubchannelConnectivityStateUpdate, RoundRobinLoadBalancer.State) {
+        let result: OnSubchannelConnectivityStateUpdate
+        let nextState: RoundRobinLoadBalancer.State
+
         switch state {
-        case .idle, .connecting, .ready, .transientFailure:
-          ()
+        case .idle:
+          if let parked = self.parkedSubchannels[key] {
+            result = .close(parked)
+          } else {
+            result = .none
+          }
+          nextState = .closing(self)
+
         case .shutdown:
           self.parkedSubchannels.removeValue(forKey: key)
+          if self.parkedSubchannels.isEmpty {
+            nextState = .closed
+            result = .closed
+          } else {
+            nextState = .closing(self)
+            result = .none
+          }
+
+        case .connecting, .ready, .transientFailure:
+          result = .none
+          nextState = .closing(self)
         }
 
-        return self.parkedSubchannels.isEmpty
+        return (result, nextState)
       }
     }
 
@@ -632,13 +663,9 @@ extension RoundRobinLoadBalancer {
         return result
 
       case .closing(var state):
-        if state.updateConnectivityState(connectivityState, key: key) {
-          self = .closed
-          return .closed
-        } else {
-          self = .closing(state)
-          return .none
-        }
+        let (result, nextState) = state.updateConnectivityState(connectivityState, key: key)
+        self = nextState
+        return result
 
       case .closed:
         return .none

@@ -329,11 +329,12 @@ extension Subchannel {
     guard isClosed else { return }
 
     switch reason {
-    case .idleTimeout:
-      // Connection closed due to an idle timeout; notify the load balancer about this.
+    case .idleTimeout, .remote, .error(_, wasIdle: true):
+      // Connection closed due to an idle timeout or the remote telling it to GOAWAY; notify the
+      // load balancer about this.
       self.event.continuation.yield(.connectivityStateChanged(.idle))
 
-    case .keepaliveTimeout, .error:
+    case .keepaliveTimeout, .error(_, wasIdle: false):
       // Unclean closes trigger a transient failure state change and a name resolution.
       self.event.continuation.yield(.connectivityStateChanged(.transientFailure))
       self.event.continuation.yield(.requiresNameResolution)
@@ -341,10 +342,8 @@ extension Subchannel {
       // Attempt to reconnect.
       self.handleConnectInput(in: &group)
 
-    case .initiatedLocally, .remote:
-      // Connection closed because the load balancer (or remote peer) asked it to, so notify the
-      // load balancer. In the case of 'remote' (i.e. a GOAWAY), the load balancer will have
-      // already reacted to a separate 'goingAway' event.
+    case .initiatedLocally:
+      // Connection closed because the load balancer asked it to, so notify the load balancer.
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
 
       // At this point there are no more events: close the event streams.
@@ -563,9 +562,9 @@ extension Subchannel {
       switch self {
       case .connected, .closing:
         switch reason {
-        case .idleTimeout, .keepaliveTimeout, .error:
+        case .idleTimeout, .keepaliveTimeout, .error, .remote:
           self = .notConnected
-        case .initiatedLocally, .remote:
+        case .initiatedLocally:
           self = .closed
         }
 

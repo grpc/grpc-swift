@@ -275,6 +275,177 @@ final class SubchannelTests: XCTestCase {
     }
   }
 
+  func testIdleTimeout() async throws {
+    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address = try await server.bind()
+    let subchannel = self.makeSubchannel(
+      address: address,
+      connector: .posix(maxIdleTime: .milliseconds(1))  // Aggressively idle
+    )
+
+    await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        await subchannel.run()
+      }
+
+      group.addTask {
+        try await server.run { _, _ in
+          XCTFail("Unexpected stream")
+        }
+      }
+
+      var idleCount = 0
+      var events = [Subchannel.Event]()
+      for await event in subchannel.events {
+        events.append(event)
+        switch event {
+        case .connectivityStateChanged(.idle):
+          idleCount += 1
+          if idleCount == 1 {
+            subchannel.connect()
+          } else {
+            subchannel.close()
+          }
+
+        case .connectivityStateChanged(.shutdown):
+          group.cancelAll()
+
+        default:
+          ()
+        }
+      }
+
+      let expected: [Subchannel.Event] = [
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.shutdown),
+      ]
+
+      XCTAssertEqual(events, expected)
+    }
+  }
+
+  func testConnectionDropWhenIdle() async throws {
+    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address = try await server.bind()
+    let subchannel = self.makeSubchannel(address: address, connector: .posix())
+
+    await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        await subchannel.run()
+      }
+
+      group.addTask {
+        try await server.run { _, _ in
+          XCTFail("Unexpected RPC")
+        }
+      }
+
+      var events = [Subchannel.Event]()
+      var idleCount = 0
+
+      for await event in subchannel.events {
+        events.append(event)
+
+        switch event {
+        case .connectivityStateChanged(.idle):
+          idleCount += 1
+          switch idleCount {
+          case 1:
+            subchannel.connect()
+          case 2:
+            subchannel.close()
+          default:
+            XCTFail("Unexpected idle")
+          }
+
+        case .connectivityStateChanged(.ready):
+          // Close the connection without a GOAWAY.
+          server.clients.first?.close(mode: .all, promise: nil)
+
+        case .connectivityStateChanged(.shutdown):
+          group.cancelAll()
+
+        default:
+          ()
+        }
+      }
+
+      let expected: [Subchannel.Event] = [
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.shutdown),
+      ]
+
+      XCTAssertEqual(events, expected)
+    }
+  }
+
+  func testConnectionDropWithOpenStreams() async throws {
+    try XCTSkipIf(true, "HTTP/2 stream delegate API isn't currently exposed")
+
+    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address = try await server.bind()
+    let subchannel = self.makeSubchannel(address: address, connector: .posix())
+
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        await subchannel.run()
+      }
+
+      group.addTask {
+        try await server.run { inbound, outbound in
+          // Sleep, the RPC will be cancelled at the end of the test because the connection
+          // will be purposefully dropped.
+          try await Task.sleep(for: .seconds(300))
+        }
+      }
+
+      var events = [Subchannel.Event]()
+      for await event in subchannel.events {
+        events.append(event)
+        switch event {
+        case .connectivityStateChanged(.idle):
+          subchannel.connect()
+
+        case .connectivityStateChanged(.ready):
+          let stream = try await subchannel.makeStream(descriptor: .echoGet, options: .defaults)
+          try await stream.execute { inbound, outbound in
+            try await outbound.write(.metadata([:]))
+            // Stream is definitely open. Bork the connection.
+            server.clients.first?.close(mode: .all, promise: nil)
+            for try await _ in inbound {
+              ()
+            }
+          }
+
+        case .connectivityStateChanged(.transientFailure):
+          subchannel.close()
+
+        case .connectivityStateChanged(.shutdown):
+          group.cancelAll()
+
+        default:
+          ()
+        }
+      }
+
+      let expected: [Subchannel.Event] = [
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
+        .connectivityStateChanged(.transientFailure),
+        .connectivityStateChanged(.shutdown),
+      ]
+
+      XCTAssertEqual(events, expected)
+    }
+  }
+
   func testConnectedReceivesGoAway() async throws {
     let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
     let address = try await server.bind()
@@ -293,12 +464,18 @@ final class SubchannelTests: XCTestCase {
 
       var events = [Subchannel.Event]()
 
+      var idleCount = 0
       for await event in subchannel.events {
         events.append(event)
 
         switch event {
         case .connectivityStateChanged(.idle):
-          subchannel.connect()
+          idleCount += 1
+          if idleCount == 1 {
+            subchannel.connect()
+          } else if idleCount == 2 {
+            subchannel.close()
+          }
 
         case .connectivityStateChanged(.ready):
           // Now the subchannel is ready, send a GOAWAY from the server.
@@ -322,10 +499,11 @@ final class SubchannelTests: XCTestCase {
         .connectivityStateChanged(.idle),
         .connectivityStateChanged(.connecting),
         .connectivityStateChanged(.ready),
-        // GOAWAY triggers name resolution too.
+        // GOAWAY triggers name resolution and idling.
         .goingAway,
         .requiresNameResolution,
-        // Finally, shutdown.
+        .connectivityStateChanged(.idle),
+        // The second idle triggers a close.
         .connectivityStateChanged(.shutdown),
       ]
 
