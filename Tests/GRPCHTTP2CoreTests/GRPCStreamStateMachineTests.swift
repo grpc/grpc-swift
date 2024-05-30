@@ -1519,7 +1519,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         ":status": "200",
         "content-type": "application/grpc",
         "grpc-status": "2",
-        "grpc-status-message": "RPC unknown",
+        "grpc-message": "RPC unknown",
       ]
     )
 
@@ -1585,7 +1585,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         ":status": "200",
         "content-type": "application/grpc",
         "grpc-status": "2",
-        "grpc-status-message": "RPC unknown",
+        "grpc-message": "RPC unknown",
       ]
     )
 
@@ -1707,7 +1707,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": String(Status.Code.invalidArgument.rawValue),
-          "grpc-status-message": "No :path header has been set.",
+          "grpc-message": "No :path header has been set.",
         ]
       )
     }
@@ -1728,7 +1728,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": String(Status.Code.unimplemented.rawValue),
-          "grpc-status-message":
+          "grpc-message":
             "The given :path (someinvalidpath) does not correspond to a valid method.",
         ]
       )
@@ -1750,7 +1750,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             "\"te\" header is expected to be present and have a value of \"trailers\".",
         ]
       )
@@ -1772,7 +1772,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             "\"te\" header is expected to be present and have a value of \"trailers\".",
         ]
       )
@@ -1794,7 +1794,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             ":method header is expected to be present and have a value of \"POST\".",
         ]
       )
@@ -1816,7 +1816,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             ":method header is expected to be present and have a value of \"POST\".",
         ]
       )
@@ -1838,7 +1838,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message": ":scheme header must be present and one of \"http\" or \"https\".",
+          "grpc-message": ":scheme header must be present and one of \"http\" or \"https\".",
         ]
       )
     }
@@ -1859,7 +1859,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message": ":scheme header must be present and one of \"http\" or \"https\".",
+          "grpc-message": ":scheme header must be present and one of \"http\" or \"https\".",
         ]
       )
     }
@@ -1883,7 +1883,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           "content-type": "application/grpc",
           "grpc-accept-encoding": "deflate",
           "grpc-status": "12",
-          "grpc-status-message":
+          "grpc-message":
             "gzip compression is not supported; supported algorithms are listed in grpc-accept-encoding",
           "grpc-accept-encoding": "identity",
         ]
