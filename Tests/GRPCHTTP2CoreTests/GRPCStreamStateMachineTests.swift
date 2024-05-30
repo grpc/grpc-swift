@@ -1343,8 +1343,36 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   }
 
   func testSendMetadataWhenClientOpenAndServerIdle() throws {
-    var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
-    XCTAssertNoThrow(try stateMachine.send(metadata: .init()))
+    var stateMachine = self.makeServerStateMachine(
+      targetState: .clientOpenServerIdle,
+      compressionEnabled: false
+    )
+    XCTAssertEqual(
+      try stateMachine.send(metadata: .init()),
+      [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-accept-encoding": "deflate",
+      ]
+    )
+  }
+
+  func testSendMetadataWhenClientOpenAndServerIdle_AndCompressionEnabled() {
+    // Enable deflate compression on server
+    var stateMachine = self.makeServerStateMachine(
+      targetState: .clientOpenServerIdle,
+      compressionEnabled: true
+    )
+
+    XCTAssertEqual(
+      try stateMachine.send(metadata: .init()),
+      [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-encoding": "deflate",
+        "grpc-accept-encoding": "deflate",
+      ]
+    )
   }
 
   func testSendMetadataWhenClientOpenAndServerOpen() throws {
