@@ -18,29 +18,12 @@ import ArgumentParser
 import GRPCCore
 import GRPCHTTP2Core
 import GRPCHTTP2TransportNIOPosix
+import InteroperabilityTests
 import NIOPosix
-
-@testable import InteroperabilityTests
 
 @main
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-struct InteroperabilityTestsExecutable {
-  public static func main(_ arguments: [String]?) async {
-    do {
-      var command = try parseAsRoot()
-      if var asyncCommand = command as? AsyncParsableCommand {
-        try await asyncCommand.run()
-      } else {
-        try command.run()
-      }
-    } catch {
-      exit(withError: error)
-    }
-  }
-}
-
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-extension InteroperabilityTestsExecutable: AsyncParsableCommand {
+struct InteroperabilityTestsExecutable: AsyncParsableCommand {
   static var configuration = CommandConfiguration(
     abstract: "gRPC Swift Interoperability Runner",
     subcommands: [StartServer.self, ListTests.self]
@@ -72,8 +55,8 @@ extension InteroperabilityTestsExecutable: AsyncParsableCommand {
     )
 
     func run() throws {
-      InteroperabilityTestCase.allCases.forEach {
-        print($0.name)
+      for testCase in InteroperabilityTestCase.allCases {
+        print(testCase.name)
       }
     }
   }

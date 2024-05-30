@@ -404,7 +404,7 @@ extension Target {
   )
 
   static let interoperabilityTestsExecutable: Target = .executableTarget(
-    name: "InteroperabilityTestsExecutable",
+    name: "interoperability-tests",
     dependencies: [
       .grpcCore,
       .grpcHTTP2Core,
