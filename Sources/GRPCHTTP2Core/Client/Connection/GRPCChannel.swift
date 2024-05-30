@@ -443,10 +443,17 @@ extension GRPCChannel {
     endpoints: [Endpoint],
     in group: inout DiscardingTaskGroup
   ) {
+    assert(!endpoints.isEmpty, "endpoints must be non-empty")
+
     switch update {
     case .runLoadBalancer(let new, let old):
       old?.close()
-      new.updateAddresses(endpoints)
+      switch new {
+      case .roundRobin(let loadBalancer):
+        loadBalancer.updateAddresses(endpoints)
+      case .pickFirst(let loadBalancer):
+        loadBalancer.updateEndpoint(endpoints.first!)
+      }
 
       group.addTask {
         await new.run()
@@ -459,7 +466,12 @@ extension GRPCChannel {
       }
 
     case .updateLoadBalancer(let existing):
-      existing.updateAddresses(endpoints)
+      switch existing {
+      case .roundRobin(let loadBalancer):
+        loadBalancer.updateAddresses(endpoints)
+      case .pickFirst(let loadBalancer):
+        loadBalancer.updateEndpoint(endpoints.first!)
+      }
 
     case .none:
       ()
@@ -615,11 +627,17 @@ extension GRPCChannel.StateMachine {
 
   enum LoadBalancerKind {
     case roundRobin
+    case pickFirst
 
     func matches(loadBalancer: LoadBalancer) -> Bool {
       switch (self, loadBalancer) {
       case (.roundRobin, .roundRobin):
         return true
+      case (.pickFirst, .pickFirst):
+        return true
+      case (.roundRobin, .pickFirst),
+        (.pickFirst, .roundRobin):
+        return false
       }
     }
   }

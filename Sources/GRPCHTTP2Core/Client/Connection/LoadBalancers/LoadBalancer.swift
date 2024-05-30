@@ -17,6 +17,7 @@
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 enum LoadBalancer: Sendable {
   case roundRobin(RoundRobinLoadBalancer)
+  case pickFirst(PickFirstLoadBalancer)
 }
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
@@ -29,12 +30,16 @@ extension LoadBalancer {
     switch self {
     case .roundRobin(let loadBalancer):
       return loadBalancer.id
+    case .pickFirst(let loadBalancer):
+      return loadBalancer.id
     }
   }
 
   var events: AsyncStream<LoadBalancerEvent> {
     switch self {
     case .roundRobin(let loadBalancer):
+      return loadBalancer.events
+    case .pickFirst(let loadBalancer):
       return loadBalancer.events
     }
   }
@@ -43,13 +48,8 @@ extension LoadBalancer {
     switch self {
     case .roundRobin(let loadBalancer):
       await loadBalancer.run()
-    }
-  }
-
-  func updateAddresses(_ endpoints: [Endpoint]) {
-    switch self {
-    case .roundRobin(let loadBalancer):
-      loadBalancer.updateAddresses(endpoints)
+    case .pickFirst(let loadBalancer):
+      await loadBalancer.run()
     }
   }
 
@@ -57,12 +57,16 @@ extension LoadBalancer {
     switch self {
     case .roundRobin(let loadBalancer):
       loadBalancer.close()
+    case .pickFirst(let loadBalancer):
+      loadBalancer.close()
     }
   }
 
   func pickSubchannel() -> Subchannel? {
     switch self {
     case .roundRobin(let loadBalancer):
+      return loadBalancer.pickSubchannel()
+    case .pickFirst(let loadBalancer):
       return loadBalancer.pickSubchannel()
     }
   }
