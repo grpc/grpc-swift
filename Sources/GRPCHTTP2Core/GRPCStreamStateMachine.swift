@@ -1039,10 +1039,6 @@ extension GRPCStreamStateMachine {
       headers.add(outboundEncoding.name, forKey: .encoding)
     }
 
-    for acceptedEncoding in configuration.acceptedEncodings.elements.filter({ $0 != .none }) {
-      headers.add(acceptedEncoding.name, forKey: .acceptEncoding)
-    }
-
     for metadataPair in customMetadata {
       headers.add(name: metadataPair.key, value: metadataPair.value.encoded())
     }

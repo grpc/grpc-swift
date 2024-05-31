@@ -1352,7 +1352,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       [
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
       ]
     )
   }
@@ -1370,7 +1369,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         ":status": "200",
         "content-type": "application/grpc",
         "grpc-encoding": "deflate",
-        "grpc-accept-encoding": "deflate",
       ]
     )
   }
@@ -2458,7 +2456,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       [
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
         "custom": "value",
       ]
     )
@@ -2580,7 +2577,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         "custom": "value",
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
       ]
     )
 
@@ -2654,7 +2650,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         "custom": "value",
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
       ]
     )
 
