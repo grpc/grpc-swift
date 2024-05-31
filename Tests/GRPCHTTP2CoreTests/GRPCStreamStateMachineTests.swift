@@ -116,8 +116,7 @@ extension HPACKHeaders {
   // Server
   fileprivate static let serverInitialMetadata: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
-    GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
-    GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
+    GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue
   ]
   fileprivate static let serverInitialMetadataWithDeflateCompression: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
@@ -129,7 +128,7 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     GRPCHTTP2Keys.encoding.rawValue: "gzip",
-    GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
+    GRPCHTTP2Keys.acceptEncoding.rawValue: "gzip",
   ]
   fileprivate static let serverTrailers: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
@@ -366,7 +365,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-encoding": "gzip",
-          "grpc-accept-encoding": "deflate",
+          "grpc-accept-encoding": "gzip",
         ]
       )
     )
@@ -1009,8 +1008,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       .receivedMetadata(
         [
           ":status": "200",
-          "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
+          "content-type": "application/grpc"
         ],
         nil
       )
@@ -1112,8 +1110,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       .receivedMetadata(
         [
           ":status": "200",
-          "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
+          "content-type": "application/grpc"
         ],
         nil
       )
@@ -1199,8 +1196,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
       .receivedMetadata(
         [
           ":status": "200",
-          "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
+          "content-type": "application/grpc"
         ],
         nil
       )
