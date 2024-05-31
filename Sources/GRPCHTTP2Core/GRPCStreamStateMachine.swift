@@ -75,7 +75,7 @@ private enum GRPCStreamStateMachineState {
     let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
-    var outboundCompression: CompressionAlgorithm?
+    var outboundCompression: CompressionAlgorithm
 
     // The deframer must be optional because the client will not have one configured
     // until the server opens and sends a grpc-encoding header.
@@ -89,7 +89,7 @@ private enum GRPCStreamStateMachineState {
     init(
       previousState: ClientIdleServerIdleState,
       compressor: Zlib.Compressor?,
-      outboundCompression: CompressionAlgorithm?,
+      outboundCompression: CompressionAlgorithm,
       framer: GRPCMessageFramer,
       decompressor: Zlib.Decompressor?,
       deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
@@ -107,7 +107,7 @@ private enum GRPCStreamStateMachineState {
   struct ClientOpenServerOpenState {
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
-    var outboundCompression: CompressionAlgorithm?
+    var outboundCompression: CompressionAlgorithm
 
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>
     var decompressor: Zlib.Decompressor?
@@ -133,7 +133,7 @@ private enum GRPCStreamStateMachineState {
   struct ClientOpenServerClosedState {
     var framer: GRPCMessageFramer?
     var compressor: Zlib.Compressor?
-    var outboundCompression: CompressionAlgorithm?
+    var outboundCompression: CompressionAlgorithm
 
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
@@ -150,7 +150,7 @@ private enum GRPCStreamStateMachineState {
     init(previousState: ClientIdleServerIdleState) {
       self.framer = nil
       self.compressor = nil
-      self.outboundCompression = nil
+      self.outboundCompression = .none
       self.deframer = nil
       self.decompressor = nil
       self.inboundMessageBuffer = .init()
@@ -185,7 +185,7 @@ private enum GRPCStreamStateMachineState {
     let maximumPayloadSize: Int
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
-    var outboundCompression: CompressionAlgorithm?
+    var outboundCompression: CompressionAlgorithm
 
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
@@ -204,6 +204,9 @@ private enum GRPCStreamStateMachineState {
       if let zlibMethod = Zlib.Method(encoding: compressionAlgorithm) {
         self.compressor = Zlib.Compressor(method: zlibMethod)
         self.outboundCompression = compressionAlgorithm
+      } else {
+        self.compressor = nil
+        self.outboundCompression = .none
       }
       self.framer = GRPCMessageFramer()
       // We don't need a deframer since we won't receive any messages from the
@@ -226,7 +229,7 @@ private enum GRPCStreamStateMachineState {
   struct ClientClosedServerOpenState {
     var framer: GRPCMessageFramer
     var compressor: Zlib.Compressor?
-    var outboundCompression: CompressionAlgorithm?
+    var outboundCompression: CompressionAlgorithm
 
     let deframer: NIOSingleStepByteToMessageProcessor<GRPCMessageDeframer>?
     var decompressor: Zlib.Decompressor?
@@ -286,7 +289,7 @@ private enum GRPCStreamStateMachineState {
     // the client.
     var framer: GRPCMessageFramer?
     var compressor: Zlib.Compressor?
-    var outboundCompression: CompressionAlgorithm?
+    var outboundCompression: CompressionAlgorithm
 
     // These are already deframed, so we don't need the deframer anymore.
     var inboundMessageBuffer: OneOrManyQueue<[UInt8]>
@@ -301,7 +304,7 @@ private enum GRPCStreamStateMachineState {
     init(previousState: ClientIdleServerIdleState) {
       self.framer = nil
       self.compressor = nil
-      self.outboundCompression = nil
+      self.outboundCompression = .none
       self.inboundMessageBuffer = .init()
     }
 
