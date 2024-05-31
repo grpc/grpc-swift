@@ -1099,7 +1099,7 @@ extension GRPCStreamStateMachine {
     trailersOnly: Bool
   ) -> HPACKHeaders {
     // Trailers always contain the grpc-status header, and optionally,
-    // grpc-status-message, and custom metadata.
+    // grpc-message, and custom metadata.
     // If it's a trailers-only response, they will also contain :status and
     // content-type.
     var headers = HPACKHeaders()
@@ -1506,7 +1506,7 @@ internal enum GRPCHTTP2Keys: String {
   case te = "te"
   case status = ":status"
   case grpcStatus = "grpc-status"
-  case grpcStatusMessage = "grpc-status-message"
+  case grpcStatusMessage = "grpc-message"
 }
 
 extension HPACKHeaders {
