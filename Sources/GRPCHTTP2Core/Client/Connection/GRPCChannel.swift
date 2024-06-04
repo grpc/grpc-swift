@@ -63,7 +63,7 @@ public struct GRPCChannel: ClientTransport {
 
   /// The default service config to use.
   ///
-  /// Used when the resolve doesn't provide one.
+  /// Used when the resolver doesn't provide one.
   private let defaultServiceConfig: ServiceConfig
 
   // These are both read frequently and updated infrequently so may be a bottleneck.
