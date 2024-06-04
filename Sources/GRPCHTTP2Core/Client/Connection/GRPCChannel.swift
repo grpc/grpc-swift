@@ -199,7 +199,7 @@ public struct GRPCChannel: ClientTransport {
     var options = options
     options.formUnion(with: methodConfig)
 
-    loop: for attempt in 1 ... Self.maxStreamCreationAttempts {
+    for attempt in 1 ... Self.maxStreamCreationAttempts {
       switch await self.makeStream(descriptor: descriptor, options: options) {
       case .created(let stream):
         return try await stream.execute { inbound, outbound in
