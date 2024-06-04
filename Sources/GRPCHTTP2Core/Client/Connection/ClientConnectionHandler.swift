@@ -247,6 +247,8 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
         switch self.state.beginGracefulShutdown(promise: promise) {
         case .sendGoAway(let close):
           context.fireChannelRead(self.wrapInboundOut(.closing(.initiatedLocally)))
+          // The client could send a GOAWAY at this point but it's not really necessary, the server
+          // can't open streams anyway, the client will just close the connection when it's done.
           if close {
             context.close(promise: nil)
           }
