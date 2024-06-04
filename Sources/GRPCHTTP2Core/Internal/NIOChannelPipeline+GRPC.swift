@@ -69,6 +69,7 @@ extension ChannelPipeline.SynchronousOperations {
 
     let streamMultiplexer = try self.configureAsyncHTTP2Pipeline(
       mode: .server,
+      streamDelegate: serverConnectionHandler.http2StreamDelegate,
       configuration: NIOHTTP2Handler.Configuration(
         connection: http2HandlerConnectionConfiguration,
         stream: http2HandlerStreamConfiguration
@@ -137,15 +138,6 @@ extension ChannelPipeline.SynchronousOperations {
       HTTP2Setting(parameter: .maxHeaderListSize, value: HPACKDecoder.defaultMaxHeaderListSize),
     ]
 
-    let multiplexer = try self.configureAsyncHTTP2Pipeline(
-      mode: .client,
-      configuration: http2
-    ) { stream in
-      // Shouldn't happen, push-promises are disabled so the server shouldn't be able to
-      // open streams.
-      stream.close()
-    }
-
     let connectionHandler = ClientConnectionHandler(
       eventLoop: self.eventLoop,
       maxIdleTime: config.idle.map { TimeAmount($0.maxTime) },
@@ -153,6 +145,16 @@ extension ChannelPipeline.SynchronousOperations {
       keepaliveTimeout: config.keepalive.map { TimeAmount($0.timeout) },
       keepaliveWithoutCalls: config.keepalive?.permitWithoutCalls ?? false
     )
+
+    let multiplexer = try self.configureAsyncHTTP2Pipeline(
+      mode: .client,
+      streamDelegate: connectionHandler.http2StreamDelegate,
+      configuration: http2
+    ) { stream in
+      // Shouldn't happen, push-promises are disabled so the server shouldn't be able to
+      // open streams.
+      stream.close()
+    }
 
     try self.addHandler(connectionHandler)
 

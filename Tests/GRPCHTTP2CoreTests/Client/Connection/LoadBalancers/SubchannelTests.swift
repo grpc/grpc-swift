@@ -386,8 +386,6 @@ final class SubchannelTests: XCTestCase {
   }
 
   func testConnectionDropWithOpenStreams() async throws {
-    try XCTSkipIf(true, "HTTP/2 stream delegate API isn't currently exposed")
-
     let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
     let address = try await server.bind()
     let subchannel = self.makeSubchannel(address: address, connector: .posix())
@@ -439,6 +437,8 @@ final class SubchannelTests: XCTestCase {
         .connectivityStateChanged(.connecting),
         .connectivityStateChanged(.ready),
         .connectivityStateChanged(.transientFailure),
+        .requiresNameResolution,
+        .connectivityStateChanged(.connecting),
         .connectivityStateChanged(.shutdown),
       ]
 

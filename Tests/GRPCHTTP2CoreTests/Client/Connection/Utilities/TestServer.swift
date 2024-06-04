@@ -164,6 +164,7 @@ extension TestServer {
             try await outbound.write(.message(bytes))
           }
         }
+        try await outbound.write(.status(Status(code: .ok, message: ""), [:]))
       }
 
     case .never:

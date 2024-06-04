@@ -115,15 +115,6 @@ struct NIOPosixConnector: HTTP2Connector {
       channel.eventLoop.makeCompletedFuture {
         let sync = channel.pipeline.syncOperations
 
-        let multiplexer = try sync.configureAsyncHTTP2Pipeline(mode: .client) { stream in
-          // Server shouldn't be opening streams.
-          stream.close()
-        }
-
-        if self.dropPingAcks {
-          try sync.addHandler(PingAckDropper())
-        }
-
         let connectionHandler = ClientConnectionHandler(
           eventLoop: channel.eventLoop,
           maxIdleTime: self.maxIdleTime,
@@ -131,6 +122,18 @@ struct NIOPosixConnector: HTTP2Connector {
           keepaliveTimeout: self.keepaliveTimeout,
           keepaliveWithoutCalls: self.keepaliveWithoutCalls
         )
+
+        let multiplexer = try sync.configureAsyncHTTP2Pipeline(
+          mode: .client,
+          streamDelegate: connectionHandler.http2StreamDelegate
+        ) { stream in
+          // Server shouldn't be opening streams.
+          stream.close()
+        }
+
+        if self.dropPingAcks {
+          try sync.addHandler(PingAckDropper())
+        }
 
         try sync.addHandler(connectionHandler)
 
