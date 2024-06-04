@@ -126,7 +126,7 @@ public struct GRPCChannel: ClientTransport {
     await withDiscardingTaskGroup { group in
       var iterator: Optional<RPCAsyncSequence<NameResolutionResult>.AsyncIterator>
 
-      // The resolve can either push or pull values. If it pushes values the channel should
+      // The resolver can either push or pull values. If it pushes values the channel should
       // listen for new results. Otherwise the channel will pull values as and when necessary.
       switch self.resolver.updateMode.value {
       case .push:
