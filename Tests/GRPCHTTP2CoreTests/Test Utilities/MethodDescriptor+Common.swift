@@ -20,4 +20,15 @@ extension MethodDescriptor {
   static var echoGet: Self {
     MethodDescriptor(service: "echo.Echo", method: "Get")
   }
+
+  static var echoUpdate: Self {
+    MethodDescriptor(service: "echo.Echo", method: "Update")
+  }
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension MethodConfig.Name {
+  init(_ descriptor: MethodDescriptor) {
+    self = MethodConfig.Name(service: descriptor.service, method: descriptor.method)
+  }
 }

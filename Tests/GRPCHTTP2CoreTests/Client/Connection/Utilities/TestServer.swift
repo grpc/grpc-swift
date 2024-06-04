@@ -19,6 +19,7 @@ import NIOConcurrencyHelpers
 import NIOCore
 import NIOHTTP2
 import NIOPosix
+import XCTest
 
 @testable import GRPCHTTP2Core
 
@@ -120,21 +121,56 @@ final class TestServer: Sendable {
       fatalError("bind() must be called first")
     }
 
-    try await server.executeThenClose { inbound, _ in
-      try await withThrowingTaskGroup(of: Void.self) { multiplexerGroup in
-        for try await multiplexer in inbound {
-          multiplexerGroup.addTask {
-            try await withThrowingTaskGroup(of: Void.self) { streamGroup in
-              for try await stream in multiplexer {
-                streamGroup.addTask {
-                  try await stream.executeThenClose { inbound, outbound in
-                    try await handle(inbound, outbound)
+    do {
+      try await server.executeThenClose { inbound, _ in
+        try await withThrowingTaskGroup(of: Void.self) { multiplexerGroup in
+          for try await multiplexer in inbound {
+            multiplexerGroup.addTask {
+              try await withThrowingTaskGroup(of: Void.self) { streamGroup in
+                for try await stream in multiplexer {
+                  streamGroup.addTask {
+                    try await stream.executeThenClose { inbound, outbound in
+                      try await handle(inbound, outbound)
+                    }
                   }
                 }
               }
             }
           }
         }
+      }
+    } catch is CancellationError {
+      ()
+    }
+  }
+}
+
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension TestServer {
+  enum RunHandler {
+    case echo
+    case never
+  }
+
+  func run(_ handler: RunHandler) async throws {
+    switch handler {
+    case .echo:
+      try await self.run { inbound, outbound in
+        for try await part in inbound {
+          switch part {
+          case .metadata:
+            try await outbound.write(.metadata([:]))
+          case .message(let bytes):
+            try await outbound.write(.message(bytes))
+          }
+        }
+      }
+
+    case .never:
+      try await self.run { inbound, outbound in
+        XCTFail("Unexpected stream")
+        try await outbound.write(.status(Status(code: .unavailable, message: ""), [:]))
+        outbound.finish()
       }
     }
   }
