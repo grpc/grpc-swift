@@ -15,8 +15,7 @@
  */
 
 import GRPCCore
-
-@testable import GRPCHTTP2Core
+@_spi(Package) @testable import GRPCHTTP2Core
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection.Event: Equatable {
@@ -48,13 +47,47 @@ extension Connection.CloseReason: Equatable {
       (.remote, .remote):
       return true
 
-    case (.error(let lhsError), .error(let rhsError)):
+    case (.error(let lhsError, let lhsStreams), .error(let rhsError, let rhsStreams)):
       if let lhs = lhsError as? RPCError, let rhs = rhsError as? RPCError {
-        return lhs == rhs
+        return lhs == rhs && lhsStreams == rhsStreams
       } else {
-        return true
+        return lhsStreams == rhsStreams
       }
 
+    default:
+      return false
+    }
+  }
+}
+
+extension ClientConnectionEvent: Equatable {
+  public static func == (lhs: ClientConnectionEvent, rhs: ClientConnectionEvent) -> Bool {
+    switch (lhs, rhs) {
+    case (.ready, .ready):
+      return true
+    case (.closing(let lhsReason), .closing(let rhsReason)):
+      return lhsReason == rhsReason
+    default:
+      return false
+    }
+  }
+}
+
+extension ClientConnectionEvent.CloseReason: Equatable {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    switch (lhs, rhs) {
+    case (.goAway(let lhsCode, let lhsMessage), .goAway(let rhsCode, let rhsMessage)):
+      return lhsCode == rhsCode && lhsMessage == rhsMessage
+    case (.unexpected(let lhsError, let lhsIsIdle), .unexpected(let rhsError, let rhsIsIdle)):
+      if let lhs = lhsError as? RPCError, let rhs = rhsError as? RPCError {
+        return lhs == rhs && lhsIsIdle == rhsIsIdle
+      } else {
+        return lhsIsIdle == rhsIsIdle
+      }
+    case (.keepaliveExpired, .keepaliveExpired),
+      (.idle, .idle),
+      (.initiatedLocally, .initiatedLocally):
+      return true
     default:
       return false
     }

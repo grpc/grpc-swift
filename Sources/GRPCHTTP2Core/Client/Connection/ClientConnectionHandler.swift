@@ -19,8 +19,8 @@ import NIOHTTP2
 
 /// An event which happens on a client's HTTP/2 connection.
 @_spi(Package)
-public enum ClientConnectionEvent: Sendable, Hashable {
-  public enum CloseReason: Sendable, Hashable {
+public enum ClientConnectionEvent: Sendable {
+  public enum CloseReason: Sendable {
     /// The server sent a GOAWAY frame to the client.
     case goAway(HTTP2ErrorCode, String)
     /// The keep alive timer fired and subsequently timed out.
@@ -29,6 +29,8 @@ public enum ClientConnectionEvent: Sendable, Hashable {
     case idle
     /// The local peer initiated the close.
     case initiatedLocally
+    /// The connection was closed unexpectedly
+    case unexpected(Error?, isIdle: Bool)
   }
 
   /// The connection is now ready.
@@ -142,9 +144,15 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     switch self.state.closed() {
     case .none:
       ()
+
+    case .unexpectedClose(let error, let isIdle):
+      let event = self.wrapInboundOut(.closing(.unexpected(error, isIdle: isIdle)))
+      context.fireChannelRead(event)
+
     case .succeed(let promise):
       promise.succeed()
     }
+
     self.keepaliveTimer?.cancel()
     self.keepaliveTimeoutTimer.cancel()
   }
@@ -162,6 +170,11 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     }
 
     context.fireUserInboundEventTriggered(event)
+  }
+
+  func errorCaught(context: ChannelHandlerContext, error: any Error) {
+    self.state.receivedError(error)
+    context.fireErrorCaught(error)
   }
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -394,11 +407,13 @@ extension ClientConnectionHandler {
         var openStreams: Set<HTTP2StreamID>
         var allowKeepaliveWithoutCalls: Bool
         var receivedConnectionPreface: Bool
+        var error: (any Error)?
 
         init(allowKeepaliveWithoutCalls: Bool) {
           self.openStreams = []
           self.allowKeepaliveWithoutCalls = allowKeepaliveWithoutCalls
           self.receivedConnectionPreface = false
+          self.error = nil
         }
 
         mutating func receivedSettings() -> Bool {
@@ -437,6 +452,17 @@ extension ClientConnectionHandler {
 
       case .closing, .closed:
         return false
+      }
+    }
+
+    /// Record that an error was received.
+    mutating func receivedError(_ error: any Error) {
+      switch self.state {
+      case .active(var active):
+        active.error = error
+        self.state = .active(active)
+      case .closing, .closed:
+        ()
       }
     }
 
@@ -554,18 +580,22 @@ extension ClientConnectionHandler {
 
     enum OnClosed {
       case succeed(EventLoopPromise<Void>)
+      case unexpectedClose(Error?, isIdle: Bool)
       case none
     }
 
     /// Marks the state as closed.
     mutating func closed() -> OnClosed {
       switch self.state {
-      case .active, .closed:
+      case .active(let state):
         self.state = .closed
-        return .none
+        return .unexpectedClose(state.error, isIdle: state.openStreams.isEmpty)
       case .closing(let closing):
         self.state = .closed
         return closing.closePromise.map { .succeed($0) } ?? .none
+      case .closed:
+        self.state = .closed
+        return .none
       }
     }
   }

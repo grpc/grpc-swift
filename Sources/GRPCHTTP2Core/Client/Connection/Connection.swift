@@ -69,7 +69,7 @@ struct Connection: Sendable {
     /// Closed because the remote peer initiate shutdown (i.e. sent a GOAWAY frame).
     case remote
     /// Closed because the connection encountered an unexpected error.
-    case error(Error)
+    case error(Error, wasIdle: Bool)
   }
 
   /// Inputs to the 'run' method.
@@ -263,7 +263,7 @@ struct Connection: Sendable {
             // The connection will close at some point soon, yield a notification for this
             // because the close might not be imminent and this could result in address resolution.
             self.event.continuation.yield(.goingAway(errorCode, reason))
-          case .idle, .keepaliveExpired, .initiatedLocally:
+          case .idle, .keepaliveExpired, .initiatedLocally, .unexpected:
             // The connection will be closed imminently in these cases there's no need to do
             // anything.
             ()
@@ -292,9 +292,25 @@ struct Connection: Sendable {
           // Remote peer told us to GOAWAY.
           connectionCloseReason = .remote
 
-        case .initiatedLocally, .none:
+        case .initiatedLocally:
           // Shutdown was initiated locally.
           connectionCloseReason = .initiatedLocally
+
+        case .unexpected(let error, let isIdle):
+          let error = RPCError(
+            code: .unavailable,
+            message: "The TCP connection was dropped unexpectedly.",
+            cause: error
+          )
+          connectionCloseReason = .error(error, wasIdle: isIdle)
+
+        case .none:
+          let error = RPCError(
+            code: .unavailable,
+            message: "The TCP connection was dropped unexpectedly.",
+            cause: nil
+          )
+          connectionCloseReason = .error(error, wasIdle: true)
         }
 
         finalEvent = .closed(connectionCloseReason)
@@ -313,7 +329,7 @@ struct Connection: Sendable {
         // Any error must come from consuming the inbound channel meaning that the connection
         // must be borked, wrap it up and close.
         let rpcError = RPCError(code: .unavailable, message: "connection closed", cause: error)
-        finalEvent = .closed(.error(rpcError))
+        finalEvent = .closed(.error(rpcError, wasIdle: true))
       } else {
         // The connection never became ready, this therefore counts as a failed connect attempt.
         finalEvent = .connectFailed(makeNeverReadyError(cause: error))
@@ -460,6 +476,8 @@ extension Connection {
 extension ClientConnectionEvent.CloseReason {
   fileprivate var precedence: Int {
     switch self {
+    case .unexpected:
+      return -1
     case .goAway:
       return 0
     case .idle:
