@@ -18,8 +18,10 @@ import Foundation
 import GRPCCore
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
-  internal func unimplementedCall(
+public struct TestService: Grpc_Testing_TestService.ServiceProtocol {
+  public init() {}
+
+  public func unimplementedCall(
     request: ServerRequest.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Input>
   ) async throws
     -> ServerResponse.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Output>
@@ -28,7 +30,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   }
 
   /// Server implements `emptyCall` which immediately returns the empty message.
-  internal func emptyCall(
+  public func emptyCall(
     request: ServerRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>
   ) async throws -> ServerResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output> {
     let message = Grpc_Testing_TestService.Method.EmptyCall.Output()
@@ -46,7 +48,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   ///
   /// If the server does not support the `responseType`, then it should fail the RPC with
   /// `INVALID_ARGUMENT`.
-  internal func unaryCall(
+  public func unaryCall(
     request: ServerRequest.Single<Grpc_Testing_TestService.Method.UnaryCall.Input>
   ) async throws -> ServerResponse.Single<Grpc_Testing_TestService.Method.UnaryCall.Output> {
     // If the request has a responseStatus set, the server should return that status.
@@ -93,7 +95,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   /// long as the response payload is different for each request. In addition it adds cache control
   /// headers such that the response can be cached by proxies in the response path. Server should
   /// be behind a caching proxy for this test to pass. Currently we set the max-age to 60 seconds.
-  internal func cacheableUnaryCall(
+  public func cacheableUnaryCall(
     request: ServerRequest.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>
   ) async throws
     -> ServerResponse.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>
@@ -106,7 +108,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   /// Each `StreamingOutputCallResponse` should have a payload body of size `ResponseParameter.size`
   /// bytes, as specified by its respective `ResponseParameter`. After sending all responses, it
   /// closes with OK.
-  internal func streamingOutputCall(
+  public func streamingOutputCall(
     request: ServerRequest.Single<
       Grpc_Testing_TestService.Method.StreamingOutputCall.Input
     >
@@ -132,7 +134,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   /// Server implements `streamingInputCall` which upon half close immediately returns a
   /// `StreamingInputCallResponse` where `aggregatedPayloadSize` is the sum of all request payload
   /// bodies received.
-  internal func streamingInputCall(
+  public func streamingInputCall(
     request: ServerRequest.Stream<Grpc_Testing_TestService.Method.StreamingInputCall.Input>
   ) async throws
     -> ServerResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>
@@ -160,7 +162,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   /// `StreamingOutputCallRequest`. Each `StreamingOutputCallResponse` should have a payload body
   /// of size `ResponseParameter.size` bytes, as specified by its respective `ResponseParameter`s.
   /// After receiving half close and sending all responses, it closes with OK.
-  internal func fullDuplexCall(
+  public func fullDuplexCall(
     request: ServerRequest.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Input>
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>
@@ -199,7 +201,7 @@ internal struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   /// This is not implemented as it is not described in the specification.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md
-  internal func halfDuplexCall(
+  public func halfDuplexCall(
     request: ServerRequest.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>
   ) async throws
     -> ServerResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>

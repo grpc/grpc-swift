@@ -216,7 +216,8 @@ extension Target {
   static let grpcHTTP2TransportNIOPosix: Target = .target(
     name: "GRPCHTTP2TransportNIOPosix",
     dependencies: [
-      .grpcHTTP2Core
+      .grpcHTTP2Core,
+      .nioExtras
     ]
   )
 
@@ -334,13 +335,6 @@ extension Target {
     ]
   )
 
-  static let grpcHTTP2TransportNIOPosixTests: Target = .testTarget(
-    name: "GRPCHTTP2TransportNIOPosixTests",
-    dependencies: [
-      .grpcHTTP2TransportNIOPosix
-    ]
-  )
-
   static let grpcHTTP2TransportNIOTransportServicesTests: Target = .testTarget(
     name: "GRPCHTTP2TransportNIOTransportServicesTests",
     dependencies: [
@@ -406,6 +400,17 @@ extension Target {
     dependencies: [
       .grpcCore,
       .grpcProtobuf
+    ]
+  )
+
+  static let interoperabilityTestsExecutable: Target = .executableTarget(
+    name: "interoperability-tests",
+    dependencies: [
+      .grpcCore,
+      .grpcHTTP2Core,
+      .grpcHTTP2TransportNIOPosix,
+      .interoperabilityTests,
+      .argumentParser
     ]
   )
 
@@ -735,6 +740,7 @@ let package = Package(
     .grpcProtobuf,
     .grpcProtobufCodeGen,
     .interoperabilityTestImplementation,
+    .interoperabilityTestsExecutable,
     .performanceWorker,
 
     // v2 tests
@@ -743,7 +749,6 @@ let package = Package(
     .grpcCodeGenTests,
     .grpcInterceptorsTests,
     .grpcHTTP2CoreTests,
-    .grpcHTTP2TransportNIOPosixTests,
     .grpcHTTP2TransportNIOTransportServicesTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,

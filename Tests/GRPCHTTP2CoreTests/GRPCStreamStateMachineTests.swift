@@ -117,19 +117,16 @@ extension HPACKHeaders {
   fileprivate static let serverInitialMetadata: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
-    GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
   ]
   fileprivate static let serverInitialMetadataWithDeflateCompression: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     GRPCHTTP2Keys.encoding.rawValue: "deflate",
-    GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
   ]
   fileprivate static let serverInitialMetadataWithGZIPCompression: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
     GRPCHTTP2Keys.contentType.rawValue: ContentType.grpc.canonicalValue,
     GRPCHTTP2Keys.encoding.rawValue: "gzip",
-    GRPCHTTP2Keys.acceptEncoding.rawValue: "deflate",
   ]
   fileprivate static let serverTrailers: Self = [
     GRPCHTTP2Keys.status.rawValue: "200",
@@ -366,7 +363,6 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-encoding": "gzip",
-          "grpc-accept-encoding": "deflate",
         ]
       )
     )
@@ -1010,7 +1006,6 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         [
           ":status": "200",
           "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
         ],
         nil
       )
@@ -1113,7 +1108,6 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         [
           ":status": "200",
           "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
         ],
         nil
       )
@@ -1200,7 +1194,6 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         [
           ":status": "200",
           "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
         ],
         nil
       )
@@ -1255,14 +1248,14 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
 final class GRPCStreamServerStateMachineTests: XCTestCase {
   private func makeServerStateMachine(
     targetState: TargetStateMachineState,
-    compressionEnabled: Bool = false
+    deflateCompressionEnabled: Bool = false
   ) -> GRPCStreamStateMachine {
 
     var stateMachine = GRPCStreamStateMachine(
       configuration: .server(
         .init(
           scheme: .http,
-          acceptedEncodings: [.deflate]
+          acceptedEncodings: deflateCompressionEnabled ? [.deflate] : []
         )
       ),
       maximumPayloadSize: 100,
@@ -1270,7 +1263,8 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
 
     let clientMetadata: HPACKHeaders =
-      compressionEnabled ? .clientInitialMetadataWithDeflateCompression : .clientInitialMetadata
+      deflateCompressionEnabled
+      ? .clientInitialMetadataWithDeflateCompression : .clientInitialMetadata
     switch targetState {
     case .clientIdleServerIdle:
       break
@@ -1343,8 +1337,34 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   }
 
   func testSendMetadataWhenClientOpenAndServerIdle() throws {
-    var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
-    XCTAssertNoThrow(try stateMachine.send(metadata: .init()))
+    var stateMachine = self.makeServerStateMachine(
+      targetState: .clientOpenServerIdle,
+      deflateCompressionEnabled: false
+    )
+    XCTAssertEqual(
+      try stateMachine.send(metadata: .init()),
+      [
+        ":status": "200",
+        "content-type": "application/grpc",
+      ]
+    )
+  }
+
+  func testSendMetadataWhenClientOpenAndServerIdle_AndCompressionEnabled() {
+    // Enable deflate compression on server
+    var stateMachine = self.makeServerStateMachine(
+      targetState: .clientOpenServerIdle,
+      deflateCompressionEnabled: true
+    )
+
+    XCTAssertEqual(
+      try stateMachine.send(metadata: .init()),
+      [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-encoding": "deflate",
+      ]
+    )
   }
 
   func testSendMetadataWhenClientOpenAndServerOpen() throws {
@@ -1519,7 +1539,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         ":status": "200",
         "content-type": "application/grpc",
         "grpc-status": "2",
-        "grpc-status-message": "RPC unknown",
+        "grpc-message": "RPC unknown",
       ]
     )
 
@@ -1585,7 +1605,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         ":status": "200",
         "content-type": "application/grpc",
         "grpc-status": "2",
-        "grpc-status-message": "RPC unknown",
+        "grpc-message": "RPC unknown",
       ]
     )
 
@@ -1707,7 +1727,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": String(Status.Code.invalidArgument.rawValue),
-          "grpc-status-message": "No :path header has been set.",
+          "grpc-message": "No :path header has been set.",
         ]
       )
     }
@@ -1728,7 +1748,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": String(Status.Code.unimplemented.rawValue),
-          "grpc-status-message":
+          "grpc-message":
             "The given :path (someinvalidpath) does not correspond to a valid method.",
         ]
       )
@@ -1750,7 +1770,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             "\"te\" header is expected to be present and have a value of \"trailers\".",
         ]
       )
@@ -1772,7 +1792,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             "\"te\" header is expected to be present and have a value of \"trailers\".",
         ]
       )
@@ -1794,7 +1814,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             ":method header is expected to be present and have a value of \"POST\".",
         ]
       )
@@ -1816,7 +1836,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message":
+          "grpc-message":
             ":method header is expected to be present and have a value of \"POST\".",
         ]
       )
@@ -1838,7 +1858,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message": ":scheme header must be present and one of \"http\" or \"https\".",
+          "grpc-message": ":scheme header must be present and one of \"http\" or \"https\".",
         ]
       )
     }
@@ -1859,14 +1879,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
           ":status": "200",
           "content-type": "application/grpc",
           "grpc-status": "3",
-          "grpc-status-message": ":scheme header must be present and one of \"http\" or \"https\".",
+          "grpc-message": ":scheme header must be present and one of \"http\" or \"https\".",
         ]
       )
     }
   }
 
   func testReceiveMetadataWhenClientIdleAndServerIdle_ServerUnsupportedEncoding() throws {
-    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
+    var stateMachine = self.makeServerStateMachine(
+      targetState: .clientIdleServerIdle,
+      deflateCompressionEnabled: true
+    )
 
     // Try opening client with a compression algorithm that is not accepted
     // by the server.
@@ -1876,18 +1899,23 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     )
 
     self.assertRejectedRPC(action) { trailers in
-      XCTAssertEqual(
-        trailers,
-        [
-          ":status": "200",
-          "content-type": "application/grpc",
-          "grpc-accept-encoding": "deflate",
-          "grpc-status": "12",
-          "grpc-status-message":
-            "gzip compression is not supported; supported algorithms are listed in grpc-accept-encoding",
-          "grpc-accept-encoding": "identity",
-        ]
-      )
+      let expected: HPACKHeaders = [
+        ":status": "200",
+        "content-type": "application/grpc",
+        "grpc-status": "12",
+        "grpc-message":
+          "gzip compression is not supported; supported algorithms are listed in grpc-accept-encoding",
+        "grpc-accept-encoding": "deflate",
+        "grpc-accept-encoding": "identity",
+      ]
+      XCTAssertEqual(expected.count, trailers.count, "Expected \(expected) but got \(trailers)")
+      for header in trailers {
+        XCTAssertTrue(
+          expected.contains { name, value, _ in
+            header.name == name && header.value == header.value
+          }
+        )
+      }
     }
   }
 
@@ -2016,7 +2044,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Enable deflate compression on server
     var stateMachine = self.makeServerStateMachine(
       targetState: .clientOpenServerOpen,
-      compressionEnabled: true
+      deflateCompressionEnabled: true
     )
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
@@ -2171,7 +2199,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   func testNextOutboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
     var stateMachine = self.makeServerStateMachine(
       targetState: .clientOpenServerOpen,
-      compressionEnabled: true
+      deflateCompressionEnabled: true
     )
 
     XCTAssertEqual(try stateMachine.nextOutboundFrame(), .awaitMoreMessages)
@@ -2308,7 +2336,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   func testNextInboundMessageWhenClientOpenAndServerOpen_WithCompression() throws {
     var stateMachine = self.makeServerStateMachine(
       targetState: .clientOpenServerOpen,
-      compressionEnabled: true
+      deflateCompressionEnabled: true
     )
 
     let originalMessage = [UInt8]([42, 42, 43, 43])
@@ -2430,7 +2458,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       [
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
         "custom": "value",
       ]
     )
@@ -2552,7 +2579,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         "custom": "value",
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
       ]
     )
 
@@ -2626,7 +2652,6 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
         "custom": "value",
         ":status": "200",
         "content-type": "application/grpc",
-        "grpc-accept-encoding": "deflate",
       ]
     )
 

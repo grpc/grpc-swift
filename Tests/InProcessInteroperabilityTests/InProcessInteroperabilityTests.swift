@@ -16,9 +16,8 @@
 
 import GRPCCore
 import GRPCInProcessTransport
+import InteroperabilityTests
 import XCTest
-
-@testable import InteroperabilityTests
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class InProcessInteroperabilityTests: XCTestCase {
