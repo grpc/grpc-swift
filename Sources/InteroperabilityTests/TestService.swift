@@ -54,9 +54,9 @@ public struct TestService: Grpc_Testing_TestService.ServiceProtocol {
     // We can't validate messages at the wire-encoding layer (i.e. where the compression byte is
     // set), so we have to check via the encoding header. Note that it is possible for the header
     // to be set and for the message to not be compressed.
-    if request.message.expectCompressed.value,
-      !request.metadata.contains(where: { $0.key == "grpc-encoding" })
-    {
+    let isRequestCompressed =
+      request.metadata["grpc-encoding"].filter({ $0 != "identity" }).count > 0
+    if request.message.expectCompressed.value, !isRequestCompressed {
       throw RPCError(
         code: .invalidArgument,
         message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -151,15 +151,15 @@ public struct TestService: Grpc_Testing_TestService.ServiceProtocol {
   ) async throws
     -> ServerResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>
   {
+    let isRequestCompressed =
+      request.metadata["grpc-encoding"].filter({ $0 != "identity" }).count > 0
     var aggregatedPayloadSize = 0
 
     for try await message in request.messages {
       // We can't validate messages at the wire-encoding layer (i.e. where the compression byte is
       // set), so we have to check via the encoding header. Note that it is possible for the header
       // to be set and for the message to not be compressed.
-      if message.expectCompressed.value,
-        !request.metadata.contains(where: { $0.key == "grpc-encoding" })
-      {
+      if message.expectCompressed.value, !isRequestCompressed {
         throw RPCError(
           code: .invalidArgument,
           message: "Expected compressed request, but 'grpc-encoding' was missing"
