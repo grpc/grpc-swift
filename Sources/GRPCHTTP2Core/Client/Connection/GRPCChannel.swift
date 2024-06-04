@@ -47,6 +47,8 @@ public struct GRPCChannel: ClientTransport {
   private let state: _LockedValueBox<StateMachine>
 
   /// The maximum number of times to attempt to create a stream per RPC.
+  ///
+  /// This is the value used by other gRPC implementations.
   private static let maxStreamCreationAttempts = 5
 
   /// A factory for connections.
