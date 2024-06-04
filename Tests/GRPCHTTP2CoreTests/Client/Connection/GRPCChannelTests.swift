@@ -329,8 +329,6 @@ final class GRPCChannelTests: XCTestCase {
   }
 
   func testCloseWhenRPCsAreInProgress() async throws {
-    try XCTSkipIf(true, "https://github.com/apple/swift-nio-http2/pull/439")
-
     // Verify that closing the channel while there are RPCs in progress allows the RPCs to finish
     // gracefully.
 
