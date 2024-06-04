@@ -78,8 +78,12 @@ extension ClientConnectionEvent.CloseReason: Equatable {
     switch (lhs, rhs) {
     case (.goAway(let lhsCode, let lhsMessage), .goAway(let rhsCode, let rhsMessage)):
       return lhsCode == rhsCode && lhsMessage == rhsMessage
-    case (.unexpected(_, let lhsIsIdle), .unexpected(_, let rhsIsIdle)):
-      return lhsIsIdle == rhsIsIdle
+    case (.unexpected(let lhsError, let lhsIsIdle), .unexpected(let rhsError, let rhsIsIdle)):
+      if let lhs = lhsError as? RPCError, let rhs = rhsError as? RPCError {
+        return lhs == rhs && lhsIsIdle == rhsIsIdle
+      } else {
+        return lhsIsIdle == rhsIsIdle
+      }
     case (.keepaliveExpired, .keepaliveExpired),
       (.idle, .idle),
       (.initiatedLocally, .initiatedLocally):
