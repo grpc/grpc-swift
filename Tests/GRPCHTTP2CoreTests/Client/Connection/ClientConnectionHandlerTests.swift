@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import GRPCCore
 @_spi(Package) @testable import GRPCHTTP2Core
 import NIOCore
 import NIOEmbedded
@@ -231,7 +232,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
     XCTAssertEqual(try connection.readEvent(), .ready)
 
     // Write an error and close.
-    let error = CancellationError()
+    let error = RPCError(code: .aborted, message: "")
     connection.channel.pipeline.fireErrorCaught(error)
     connection.channel.close(mode: .all, promise: nil)
 
@@ -250,7 +251,7 @@ final class ClientConnectionHandlerTests: XCTestCase {
     connection.streamOpened(1)
 
     // Write an error and close.
-    let error = CancellationError()
+    let error = RPCError(code: .aborted, message: "")
     connection.channel.pipeline.fireErrorCaught(error)
     connection.channel.close(mode: .all, promise: nil)
 
