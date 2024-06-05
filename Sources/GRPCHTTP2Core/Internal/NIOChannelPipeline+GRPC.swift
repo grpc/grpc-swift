@@ -30,7 +30,6 @@ extension ChannelPipeline.SynchronousOperations {
   public func configureGRPCServerPipeline(
     channel: any Channel,
     compressionConfig: HTTP2ServerTransport.Config.Compression,
-    keepaliveConfig: HTTP2ServerTransport.Config.Keepalive,
     connectionConfig: HTTP2ServerTransport.Config.Connection,
     http2Config: HTTP2ServerTransport.Config.HTTP2,
     rpcConfig: HTTP2ServerTransport.Config.RPC,
@@ -41,10 +40,12 @@ extension ChannelPipeline.SynchronousOperations {
       maxIdleTime: connectionConfig.maxIdleTime.map { TimeAmount($0) },
       maxAge: connectionConfig.maxAge.map { TimeAmount($0) },
       maxGraceTime: connectionConfig.maxGraceTime.map { TimeAmount($0) },
-      keepaliveTime: TimeAmount(keepaliveConfig.time),
-      keepaliveTimeout: TimeAmount(keepaliveConfig.timeout),
-      allowKeepaliveWithoutCalls: keepaliveConfig.permitWithoutCalls,
-      minPingIntervalWithoutCalls: TimeAmount(keepaliveConfig.minPingIntervalWithoutCalls)
+      keepaliveTime: TimeAmount(connectionConfig.keepalive.time),
+      keepaliveTimeout: TimeAmount(connectionConfig.keepalive.timeout),
+      allowKeepaliveWithoutCalls: connectionConfig.keepalive.clientBehavior.allowWithoutCalls,
+      minPingIntervalWithoutCalls: TimeAmount(
+        connectionConfig.keepalive.clientBehavior.minPingIntervalWithoutCalls
+      )
     )
     let flushNotificationHandler = GRPCServerFlushNotificationHandler(
       serverConnectionManagementHandler: serverConnectionHandler
@@ -140,10 +141,10 @@ extension ChannelPipeline.SynchronousOperations {
 
     let connectionHandler = ClientConnectionHandler(
       eventLoop: self.eventLoop,
-      maxIdleTime: config.idle.map { TimeAmount($0.maxTime) },
-      keepaliveTime: config.keepalive.map { TimeAmount($0.time) },
-      keepaliveTimeout: config.keepalive.map { TimeAmount($0.timeout) },
-      keepaliveWithoutCalls: config.keepalive?.permitWithoutCalls ?? false
+      maxIdleTime: config.connection.maxIdleTime.map { TimeAmount($0) },
+      keepaliveTime: config.connection.keepalive.map { TimeAmount($0.time) },
+      keepaliveTimeout: config.connection.keepalive.map { TimeAmount($0.timeout) },
+      keepaliveWithoutCalls: config.connection.keepalive?.allowWithoutCalls ?? false
     )
 
     let multiplexer = try self.configureAsyncHTTP2Pipeline(
