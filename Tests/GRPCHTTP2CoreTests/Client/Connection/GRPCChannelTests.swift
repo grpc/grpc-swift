@@ -555,8 +555,7 @@ extension GRPCChannel.Config {
     Self(
       http2: .defaults,
       backoff: .defaults,
-      idle: .defaults,
-      keepalive: nil,
+      connection: .defaults,
       compression: .defaults
     )
   }

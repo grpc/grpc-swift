@@ -62,29 +62,43 @@ extension HTTP2ClientTransport.Config {
     public var timeout: Duration
 
     /// Whether the client sends keepalive pings when there are no calls in progress.
-    public var permitWithoutCalls: Bool
+    public var allowWithoutCalls: Bool
 
     /// Creates a new keepalive configuration.
-    public init(time: Duration, timeout: Duration, permitWithoutCalls: Bool) {
+    public init(time: Duration, timeout: Duration, allowWithoutCalls: Bool) {
       self.time = time
       self.timeout = timeout
-      self.permitWithoutCalls = permitWithoutCalls
+      self.allowWithoutCalls = allowWithoutCalls
     }
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Idle: Sendable {
+  public struct Connection: Sendable {
     /// The maximum amount of time a connection may be idle before it's closed.
-    public var maxTime: Duration
+    ///
+    /// Connections are considered idle when there are no open streams on them. Idle connections
+    /// can be closed after a configured amount of time to free resources. Note that servers may
+    /// separately monitor and close idle connections.
+    public var maxIdleTime: Duration?
 
-    /// Creates an idle configuration.
-    public init(maxTime: Duration) {
-      self.maxTime = maxTime
+    /// Configuration for keepalive.
+    ///
+    /// Keepalive is typically applied to connection which have open streams. It can be useful to
+    /// detect dropped connections, particularly if the streams running on a connection don't have
+    /// much activity.
+    ///
+    /// See also: gRFC A8: Client-side Keepalive.
+    public var keepalive: Keepalive?
+
+    /// Creates a connection configuration.
+    public init(maxIdleTime: Duration, keepalive: Keepalive?) {
+      self.maxIdleTime = maxIdleTime
+      self.keepalive = keepalive
     }
 
-    /// Default values, a 30 minute max idle time.
+    /// Default values, a 30 minute max idle time and no keepalive.
     public static var defaults: Self {
-      Self(maxTime: .seconds(30 * 60))
+      Self(maxIdleTime: .seconds(30 * 60), keepalive: nil)
     }
   }
 

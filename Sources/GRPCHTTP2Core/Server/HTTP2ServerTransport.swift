@@ -53,25 +53,18 @@ extension HTTP2ServerTransport.Config {
     /// The amount of time the server has to respond to a keepalive ping before the connection is closed.
     public var timeout: Duration
 
-    /// Whether the server allows the client to send keepalive pings when there are no calls in progress.
-    public var permitWithoutCalls: Bool
-
-    /// The minimum allowed interval the client is allowed to send keep-alive pings.
-    /// Pings more frequent than this interval count as 'strikes' and the connection is closed if there are
-    /// too many strikes.
-    public var minPingIntervalWithoutCalls: Duration
+    /// Configuration for how the server enforces client keepalive.
+    public var clientBehavior: ClientKeepaliveBehavior
 
     /// Creates a new keepalive configuration.
     public init(
       time: Duration,
       timeout: Duration,
-      permitWithoutCalls: Bool,
-      minPingIntervalWithoutCalls: Duration
+      clientBehavior: ClientKeepaliveBehavior
     ) {
       self.time = time
       self.timeout = timeout
-      self.permitWithoutCalls = permitWithoutCalls
-      self.minPingIntervalWithoutCalls = minPingIntervalWithoutCalls
+      self.clientBehavior = clientBehavior
     }
 
     /// Default values. The time after reading data a ping should be sent defaults to 2 hours, the timeout for
@@ -81,9 +74,35 @@ extension HTTP2ServerTransport.Config {
       Self(
         time: .seconds(2 * 60 * 60),  // 2 hours
         timeout: .seconds(20),
-        permitWithoutCalls: false,
-        minPingIntervalWithoutCalls: .seconds(5 * 60)  // 5 minutes
+        clientBehavior: .defaults
       )
+    }
+  }
+
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  public struct ClientKeepaliveBehavior: Sendable {
+    /// The minimum allowed interval the client is allowed to send keep-alive pings.
+    /// Pings more frequent than this interval count as 'strikes' and the connection is closed if there are
+    /// too many strikes.
+    public var minPingIntervalWithoutCalls: Duration
+
+    /// Whether the server allows the client to send keepalive pings when there are no calls in progress.
+    public var allowWithoutCalls: Bool
+
+    /// Creates a new configuration for permitted client keepalive behavior.
+    public init(
+      minPingIntervalWithoutCalls: Duration,
+      allowWithoutCalls: Bool
+    ) {
+      self.minPingIntervalWithoutCalls = minPingIntervalWithoutCalls
+      self.allowWithoutCalls = allowWithoutCalls
+    }
+
+    /// Default values. The time after reading data a ping should be sent defaults to 2 hours, the timeout for
+    /// keepalive pings defaults to 20 seconds, pings are not permitted when no calls are in progress, and
+    /// the minimum allowed interval for clients to send pings defaults to 5 minutes.
+    public static var defaults: Self {
+      Self(minPingIntervalWithoutCalls: .seconds(5 * 60), allowWithoutCalls: false)
     }
   }
 
@@ -98,19 +117,28 @@ extension HTTP2ServerTransport.Config {
     /// The maximum amount of time a connection may be idle before it's closed.
     public var maxIdleTime: Duration?
 
+    /// Configuration for keepalive used to detect broken connections.
+    ///
+    /// - SeeAlso: gRFC A8 for client side keepalive, and gRFC A9 for server connection management.
+    public var keepalive: Keepalive
+
     public init(
       maxAge: Duration?,
       maxGraceTime: Duration?,
-      maxIdleTime: Duration?
+      maxIdleTime: Duration?,
+      keepalive: Keepalive
     ) {
       self.maxAge = maxAge
       self.maxGraceTime = maxGraceTime
       self.maxIdleTime = maxIdleTime
+      self.keepalive = keepalive
     }
 
-    /// Default values. All the max connection age, max grace time, and max idle time default to infinite.
+    /// Default values. The max connection age, max grace time, and max idle time default to
+    /// `nil` (i.e. infinite). See ``HTTP2ServerTransport/Config/Keepalive/defaults`` for keepalive
+    /// defaults.
     public static var defaults: Self {
-      Self(maxAge: nil, maxGraceTime: nil, maxIdleTime: nil)
+      Self(maxAge: nil, maxGraceTime: nil, maxIdleTime: nil, keepalive: .defaults)
     }
   }
 

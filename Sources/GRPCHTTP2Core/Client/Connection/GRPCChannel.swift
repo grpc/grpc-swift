@@ -237,11 +237,8 @@ extension GRPCChannel {
     /// Configuration for backoff used when establishing a connection.
     var backoff: HTTP2ClientTransport.Config.Backoff
 
-    /// Configuration for dealing with idle connections.
-    var idle: HTTP2ClientTransport.Config.Idle?
-
-    /// Configuration for keepalive.
-    var keepalive: HTTP2ClientTransport.Config.Keepalive?
+    /// Configuration for connection management.
+    var connection: HTTP2ClientTransport.Config.Connection
 
     /// Compression configuration.
     var compression: HTTP2ClientTransport.Config.Compression
@@ -250,14 +247,12 @@ extension GRPCChannel {
     public init(
       http2: HTTP2ClientTransport.Config.HTTP2,
       backoff: HTTP2ClientTransport.Config.Backoff,
-      idle: HTTP2ClientTransport.Config.Idle?,
-      keepalive: HTTP2ClientTransport.Config.Keepalive?,
+      connection: HTTP2ClientTransport.Config.Connection,
       compression: HTTP2ClientTransport.Config.Compression
     ) {
       self.http2 = http2
       self.backoff = backoff
-      self.idle = idle
-      self.keepalive = keepalive
+      self.connection = connection
       self.compression = compression
     }
   }
