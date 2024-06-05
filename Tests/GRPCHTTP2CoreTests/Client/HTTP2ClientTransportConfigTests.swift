@@ -25,9 +25,10 @@ final class HTTP2ClientTransportConfigTests: XCTestCase {
     XCTAssertEqual(config.enabledAlgorithms, .none)
   }
 
-  func testIdleDefaults() {
-    let config = HTTP2ClientTransport.Config.Idle.defaults
-    XCTAssertEqual(config.maxTime, .seconds(30 * 60))
+  func testConnectionDefaults() {
+    let config = HTTP2ClientTransport.Config.Connection.defaults
+    XCTAssertEqual(config.maxIdleTime, .seconds(30 * 60))
+    XCTAssertNil(config.keepalive)
   }
 
   func testBackoffDefaults() {

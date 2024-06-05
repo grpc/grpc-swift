@@ -28,8 +28,8 @@ final class HTTP2ServerTransportConfigTests: XCTestCase {
     let config = HTTP2ServerTransport.Config.Keepalive.defaults
     XCTAssertEqual(config.time, .seconds(7200))
     XCTAssertEqual(config.timeout, .seconds(20))
-    XCTAssertEqual(config.permitWithoutCalls, false)
-    XCTAssertEqual(config.minPingIntervalWithoutCalls, .seconds(300))
+    XCTAssertEqual(config.clientBehavior.allowWithoutCalls, false)
+    XCTAssertEqual(config.clientBehavior.minPingIntervalWithoutCalls, .seconds(300))
   }
 
   func testConnectionDefaults() {

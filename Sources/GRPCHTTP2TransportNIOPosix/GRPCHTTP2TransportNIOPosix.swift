@@ -54,7 +54,6 @@ extension HTTP2ServerTransport {
             return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.config.compression,
-              keepaliveConfig: self.config.keepalive,
               connectionConfig: self.config.connection,
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
@@ -135,8 +134,6 @@ extension HTTP2ServerTransport.Posix {
   public struct Config: Sendable {
     /// Compression configuration.
     public var compression: HTTP2ServerTransport.Config.Compression
-    /// Keepalive configuration.
-    public var keepalive: HTTP2ServerTransport.Config.Keepalive
     /// Connection configuration.
     public var connection: HTTP2ServerTransport.Config.Connection
     /// HTTP2 configuration.
@@ -147,19 +144,16 @@ extension HTTP2ServerTransport.Posix {
     /// Construct a new `Config`.
     /// - Parameters:
     ///   - compression: Compression configuration.
-    ///   - keepalive: Keepalive configuration.
     ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
     public init(
       compression: HTTP2ServerTransport.Config.Compression,
-      keepalive: HTTP2ServerTransport.Config.Keepalive,
       connection: HTTP2ServerTransport.Config.Connection,
       http2: HTTP2ServerTransport.Config.HTTP2,
       rpc: HTTP2ServerTransport.Config.RPC
     ) {
       self.compression = compression
-      self.keepalive = keepalive
       self.connection = connection
       self.http2 = http2
       self.rpc = rpc
@@ -169,7 +163,6 @@ extension HTTP2ServerTransport.Posix {
     public static var defaults: Self {
       Self(
         compression: .defaults,
-        keepalive: .defaults,
         connection: .defaults,
         http2: .defaults,
         rpc: .defaults
