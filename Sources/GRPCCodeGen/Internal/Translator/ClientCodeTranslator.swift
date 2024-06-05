@@ -111,7 +111,8 @@ extension ClientCodeTranslator {
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        generateSerializerDeserializer: false
+        shouldBeImplemented: false,
+        callOptionsShouldDefault: false
       )
     }
 
@@ -135,8 +136,9 @@ extension ClientCodeTranslator {
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        generateSerializerDeserializer: true,
-        accessModifier: self.accessModifier
+        shouldBeImplemented: true,
+        accessModifier: self.accessModifier,
+        callOptionsShouldDefault: true
       )
     }
     let clientProtocolExtension = Declaration.extension(
@@ -155,14 +157,18 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    generateSerializerDeserializer: Bool,
-    accessModifier: AccessModifier? = nil
+    shouldBeImplemented: Bool,
+    accessModifier: AccessModifier? = nil,
+    callOptionsShouldDefault: Bool
   ) -> Declaration {
+    // If method "should be implemented", serializer/deserializer will be auto-generated.
+    let isProtocolExtension = shouldBeImplemented
     let methodParameters = self.makeParameters(
       for: method,
       in: service,
       from: codeGenerationRequest,
-      generateSerializerDeserializer: generateSerializerDeserializer
+      includeSerDesParameters: !isProtocolExtension,
+      callOptionsShouldDefault: callOptionsShouldDefault
     )
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
@@ -177,8 +183,8 @@ extension ClientCodeTranslator {
       whereClause: WhereClause(requirements: [.conformance("R", "Sendable")])
     )
 
-    if generateSerializerDeserializer {
-      let body = self.makeSerializerDeserializerCall(
+    if shouldBeImplemented {
+      let body = self.makeClientProtocolMethodCall(
         for: method,
         in: service,
         from: codeGenerationRequest
@@ -192,7 +198,7 @@ extension ClientCodeTranslator {
     }
   }
 
-  private func makeSerializerDeserializerCall(
+  private func makeClientProtocolMethodCall(
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest
@@ -222,6 +228,7 @@ extension ClientCodeTranslator {
             )
           )
         ),
+        FunctionArgumentDescription(label: "options", expression: .identifierPattern("options")),
         FunctionArgumentDescription(expression: .identifierPattern("body")),
       ]
     )
@@ -235,15 +242,19 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    generateSerializerDeserializer: Bool
+    includeSerDesParameters: Bool,
+    callOptionsShouldDefault: Bool
   ) -> [ParameterDescription] {
     var parameters = [ParameterDescription]()
 
     parameters.append(self.clientRequestParameter(for: method, in: service))
-    if !generateSerializerDeserializer {
+    if includeSerDesParameters {
       parameters.append(self.serializerParameter(for: method, in: service))
       parameters.append(self.deserializerParameter(for: method, in: service))
     }
+    parameters.append(
+      self.callOptionsParameter(for: method, in: service, shouldDefault: callOptionsShouldDefault)
+    )
     parameters.append(self.bodyParameter(for: method, in: service))
     return parameters
   }
@@ -261,6 +272,18 @@ extension ClientCodeTranslator {
           self.methodInputOutputTypealias(for: method, service: service, type: .input)
         )
       )
+    )
+  }
+
+  private func callOptionsParameter(
+    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
+    in service: CodeGenerationRequest.ServiceDescriptor,
+    shouldDefault: Bool
+  ) -> ParameterDescription {
+    return ParameterDescription(
+      label: "options",
+      type: .member("CallOptions"),
+      defaultValue: shouldDefault ? .memberAccess(MemberAccessDescription(right: "defaults")) : nil
     )
   }
 
@@ -393,7 +416,8 @@ extension ClientCodeTranslator {
       for: method,
       in: service,
       from: codeGenerationRequest,
-      generateSerializerDeserializer: false
+      includeSerDesParameters: true,
+      callOptionsShouldDefault: true
     )
     let grpcMethodName = self.clientMethod(
       isInputStreaming: method.isInputStreaming,
@@ -413,6 +437,7 @@ extension ClientCodeTranslator {
         ),
         .init(label: "serializer", expression: .identifierPattern("serializer")),
         .init(label: "deserializer", expression: .identifierPattern("deserializer")),
+        .init(label: "options", expression: .identifierPattern("options")),
         .init(label: "handler", expression: .identifierPattern("body")),
       ]
     )
