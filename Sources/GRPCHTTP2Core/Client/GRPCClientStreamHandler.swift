@@ -85,8 +85,12 @@ extension GRPCClientStreamHandler {
                 // If this happens, we should have forwarded an error status above
                 // so we should never reach this point. Do nothing.
                 break loop
+              case .doNothing:
+                break loop
               }
             }
+          case .doNothing:
+            ()
           }
         } catch {
           context.fireErrorCaught(error)

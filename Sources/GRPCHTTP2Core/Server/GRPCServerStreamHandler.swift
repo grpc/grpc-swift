@@ -83,8 +83,12 @@ extension GRPCServerStreamHandler {
               case .noMoreMessages:
                 context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
                 break loop
+              case .doNothing:
+                break loop
               }
             }
+          case .doNothing:
+            ()
           }
         } catch {
           context.fireErrorCaught(error)
