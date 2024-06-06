@@ -27,7 +27,7 @@ extension HTTP2ClientTransport {
     public init(
       target: any ResolvableTarget,
       resolverRegistry: NameResolverRegistry = .defaults,
-      config: Config.Posix = .defaults,
+      config: Config = .defaults,
       serviceConfig: ServiceConfig = ServiceConfig()
     ) throws {
       guard let resolver = resolverRegistry.makeResolver(for: target) else {
@@ -78,10 +78,10 @@ extension HTTP2ClientTransport {
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension HTTP2ClientTransport.Posix {
   struct Connector: HTTP2Connector {
-    private let config: HTTP2ClientTransport.Config.Posix
+    private let config: HTTP2ClientTransport.Posix.Config
     private let eventLoopGroup: any EventLoopGroup
 
-    init(eventLoopGroup: any EventLoopGroup, config: HTTP2ClientTransport.Config.Posix) {
+    init(eventLoopGroup: any EventLoopGroup, config: HTTP2ClientTransport.Posix.Config) {
       self.eventLoopGroup = eventLoopGroup
       self.config = config
     }
@@ -105,25 +105,30 @@ extension HTTP2ClientTransport.Posix {
   }
 }
 
-extension HTTP2ClientTransport.Config {
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Posix: Sendable {
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+extension HTTP2ClientTransport.Posix {
+  public struct Config: Sendable {
     /// Configuration for HTTP/2 connections.
-    public var http2: HTTP2
+    public var http2: HTTP2ClientTransport.Config.HTTP2
 
     /// Configuration for backoff used when establishing a connection.
-    public var backoff: Backoff
+    public var backoff: HTTP2ClientTransport.Config.Backoff
 
     /// Configuration for connection management.
-    public var connection: Connection
+    public var connection: HTTP2ClientTransport.Config.Connection
 
     /// Compression configuration.
-    public var compression: Compression
+    public var compression: HTTP2ClientTransport.Config.Compression
 
     /// Creates a new connection configuration.
     ///
     /// See also ``defaults``.
-    public init(http2: HTTP2, backoff: Backoff, connection: Connection, compression: Compression) {
+    public init(
+      http2: HTTP2ClientTransport.Config.HTTP2,
+      backoff: HTTP2ClientTransport.Config.Backoff,
+      connection: HTTP2ClientTransport.Config.Connection,
+      compression: HTTP2ClientTransport.Config.Compression
+    ) {
       self.http2 = http2
       self.connection = connection
       self.backoff = backoff
@@ -132,7 +137,7 @@ extension HTTP2ClientTransport.Config {
 
     /// Default values.
     public static var defaults: Self {
-      Posix(
+      Self(
         http2: .defaults,
         backoff: .defaults,
         connection: .defaults,
@@ -144,7 +149,7 @@ extension HTTP2ClientTransport.Config {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension GRPCChannel.Config {
-  init(posix: HTTP2ClientTransport.Config.Posix) {
+  init(posix: HTTP2ClientTransport.Posix.Config) {
     self.init(
       http2: posix.http2,
       backoff: posix.backoff,
