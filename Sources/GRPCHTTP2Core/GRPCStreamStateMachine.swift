@@ -1508,11 +1508,17 @@ extension GRPCStreamStateMachine {
 
 extension MethodDescriptor {
   init?(path: String) {
-    let split = path.split(separator: "/")
-    guard split.count == 2 else {
-      return nil
-    }
-    self.init(service: String(split[0]), method: String(split[1]))
+    var view = path[...]
+    guard view.popFirst() == "/" else { return nil }
+
+    // Find the index of the "/" separating the service and method names.
+    guard var index = view.firstIndex(of: "/") else { return nil }
+
+    let service = String(view[..<index])
+    view.formIndex(after: &index)
+    let method = String(view[index...])
+
+    self.init(service: service, method: method)
   }
 }
 
