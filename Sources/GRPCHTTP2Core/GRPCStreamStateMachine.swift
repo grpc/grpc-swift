@@ -542,7 +542,7 @@ extension GRPCStreamStateMachine {
     // must come before all other headers.
     headers.add("POST", forKey: .method)
     headers.add(scheme.rawValue, forKey: .scheme)
-    headers.add(methodDescriptor.fullyQualifiedMethod, forKey: .path)
+    headers.add(methodDescriptor.path, forKey: .path)
 
     // Add required gRPC headers.
     headers.add(ContentType.grpc.canonicalValue, forKey: .contentType)
@@ -1243,7 +1243,7 @@ extension GRPCStreamStateMachine {
         )
       }
 
-      guard let path = MethodDescriptor(fullyQualifiedMethod: pathHeader) else {
+      guard let path = MethodDescriptor(path: pathHeader) else {
         return self.closeServerAndBuildRejectRPCAction(
           currentState: state,
           endStream: endStream,
@@ -1507,8 +1507,8 @@ extension GRPCStreamStateMachine {
 }
 
 extension MethodDescriptor {
-  init?(fullyQualifiedMethod: String) {
-    let split = fullyQualifiedMethod.split(separator: "/")
+  init?(path: String) {
+    let split = path.split(separator: "/")
     guard split.count == 2 else {
       return nil
     }
@@ -1594,5 +1594,11 @@ extension Status.Code {
     default:
       self = .unknown
     }
+  }
+}
+
+extension MethodDescriptor {
+  var path: String {
+    return "/\(self.service)/\(self.method)"
   }
 }
