@@ -275,4 +275,59 @@ final class PickFirstLoadBalancerTests: XCTestCase {
       XCTAssertEqual(events, expected)
     }
   }
+
+  func testPickFirstReceivesGoAway() async throws {
+    let idleCount = ManagedAtomic(0)
+    try await LoadBalancerTest.pickFirst(servers: 2, connector: .posix()) { context, event in
+      switch event {
+      case .connectivityStateChanged(.idle):
+        switch idleCount.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent) {
+        case 1:
+          // Provide the address of the first server.
+          context.pickFirst!.updateEndpoint(Endpoint(context.servers[0].address))
+        case 2:
+          // Provide the address of the second server.
+          context.pickFirst!.updateEndpoint(Endpoint(context.servers[1].address))
+        default:
+          ()
+        }
+
+      case .connectivityStateChanged(.ready):
+        switch idleCount.load(ordering: .sequentiallyConsistent) {
+        case 1:
+          // Must be connected to server 1, send a GOAWAY frame.
+          let channel = context.servers[0].server.clients.first!
+          let goAway = HTTP2Frame(
+            streamID: .rootStream,
+            payload: .goAway(lastStreamID: 0, errorCode: .noError, opaqueData: nil)
+          )
+          channel.writeAndFlush(goAway, promise: nil)
+
+        case 2:
+          // Must only be connected to server 2 now.
+          XCTAssertEqual(context.servers[0].server.clients.count, 0)
+          XCTAssertEqual(context.servers[1].server.clients.count, 1)
+          context.loadBalancer.close()
+
+        default:
+          ()
+        }
+
+      default:
+        ()
+      }
+    } verifyEvents: { events in
+      let expected: [LoadBalancerEvent] = [
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
+        .requiresNameResolution,
+        .connectivityStateChanged(.idle),
+        .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
+        .connectivityStateChanged(.shutdown),
+      ]
+      XCTAssertEqual(events, expected)
+    }
+  }
 }

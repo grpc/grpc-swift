@@ -208,7 +208,7 @@ extension PickFirstLoadBalancer {
         case .connectivityStateChanged(let state):
           self.handleSubchannelConnectivityStateChange(state, id: subchannel.id)
         case .goingAway:
-          ()  // self.handleSubchannelGoingAway(key: key)
+          self.handleGoAway(id: subchannel.id)
         case .requiresNameResolution:
           self.event.continuation.yield(.requiresNameResolution)
         }
@@ -240,11 +240,16 @@ extension PickFirstLoadBalancer {
     }
   }
 
+  private func handleGoAway(id: SubchannelID) {
+    self.state.withLockedValue { state in
+      state.receivedGoAway(id: id)
+    }
+  }
+
   private func handleCloseInput() {
     let onClose = self.state.withLockedValue { $0.close() }
     switch onClose {
     case .closeSubchannels(let subchannel1, let subchannel2):
-      // TODO: when does this finish?
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
       subchannel1.close()
       subchannel2?.close()
@@ -281,6 +286,7 @@ extension PickFirstLoadBalancer.State {
     var current: Subchannel?
     var next: Subchannel?
     var parked: [SubchannelID: Subchannel]
+    var isCurrentGoingAway: Bool
 
     init() {
       self.endpoint = nil
@@ -288,6 +294,7 @@ extension PickFirstLoadBalancer.State {
       self.current = nil
       self.next = nil
       self.parked = [:]
+      self.isCurrentGoingAway = false
     }
   }
 
@@ -313,16 +320,36 @@ extension PickFirstLoadBalancer.State.Active {
     let id = SubchannelID()
     let newSubchannel = makeSubchannel(endpoint, id)
 
-    // Next gets promoted when it becomes 'ready'.
-    if self.current == nil {
+    switch (self.current, self.next) {
+    case (.some(let current), .none):
+      if self.connectivityState == .idle {
+        // Current subchannel is idle and we have a new endpoint, move straight to the new
+        // subchannel.
+        self.current = newSubchannel
+        self.parked[current.id] = current
+        onUpdateEndpoint = .connect(newSubchannel, close: current)
+      } else {
+        // Current subchannel is in a non-idle state, set it as the next subchannel and promote
+        // it when it becomes ready.
+        self.next = newSubchannel
+        onUpdateEndpoint = .connect(newSubchannel, close: nil)
+      }
+
+    case (.some, .some(let next)):
+      // Current and next subchannel exist. Replace the next subchannel.
+      self.next = newSubchannel
+      self.parked[next.id] = next
+      onUpdateEndpoint = .connect(newSubchannel, close: next)
+
+    case (.none, .none):
       self.current = newSubchannel
       onUpdateEndpoint = .connect(newSubchannel, close: nil)
-    } else if let next = self.next {
-      self.next = newSubchannel
+
+    case (.none, .some(let next)):
+      self.current = newSubchannel
+      self.next = nil
+      self.parked[next.id] = next
       onUpdateEndpoint = .connect(newSubchannel, close: next)
-    } else {
-      self.next = newSubchannel
-      onUpdateEndpoint = .connect(newSubchannel, close: nil)
     }
 
     return onUpdateEndpoint
@@ -355,10 +382,12 @@ extension PickFirstLoadBalancer.State.Active {
           }
 
           self.current = next
+          self.isCurrentGoingAway = false
         } else {
           // No state change to publish, just roll over.
           onUpdate = self.current.map { .close($0) } ?? .none
           self.current = next
+          self.isCurrentGoingAway = false
         }
 
       case .idle, .connecting, .transientFailure, .shutdown:
@@ -366,13 +395,38 @@ extension PickFirstLoadBalancer.State.Active {
       }
 
     } else {
-      if connectivityState == .shutdown {
+      switch connectivityState {
+      case .idle:
+        if let subchannel = self.parked[id] {
+          onUpdate = .close(subchannel)
+        } else {
+          onUpdate = .none
+        }
+
+      case .shutdown:
         self.parked.removeValue(forKey: id)
+        onUpdate = .none
+
+      case .connecting, .ready, .transientFailure:
+        onUpdate = .none
       }
-      onUpdate = .none
     }
 
     return (onUpdate, .active(self))
+  }
+
+  mutating func receivedGoAway(id: SubchannelID) {
+    if let current = self.current, current.id == id {
+      // When receiving a GOAWAY the subchannel will ask for an address to be re-resolved and the
+      // connection will eventually become idle. At this point we wait: the connection remains
+      // in its current state.
+      self.isCurrentGoingAway = true
+    } else if let next = self.next, next.id == id {
+      // The next connection is going away, park it.
+      // connection.
+      self.next = nil
+      self.parked[next.id] = next
+    }
   }
 
   mutating func close() -> (PickFirstLoadBalancer.State.OnClose, PickFirstLoadBalancer.State) {
@@ -399,7 +453,7 @@ extension PickFirstLoadBalancer.State.Active {
   func pickSubchannel() -> PickFirstLoadBalancer.State.OnPickSubchannel {
     let onPick: PickFirstLoadBalancer.State.OnPickSubchannel
 
-    if let current = self.current {
+    if let current = self.current, !self.isCurrentGoingAway {
       switch self.connectivityState {
       case .idle:
         onPick = .notAvailable(current)
@@ -425,15 +479,30 @@ extension PickFirstLoadBalancer.State.Closing {
     let onUpdate: PickFirstLoadBalancer.State.OnConnectivityStateUpdate
     let nextState: PickFirstLoadBalancer.State
 
-    if connectivityState == .shutdown, self.parked.removeValue(forKey: id) != nil {
-      if self.parked.isEmpty {
-        onUpdate = .closed
-        nextState = .closed
+    switch connectivityState {
+    case .idle:
+      if let subchannel = self.parked[id] {
+        onUpdate = .close(subchannel)
+      } else {
+        onUpdate = .none
+      }
+      nextState = .closing(self)
+
+    case .shutdown:
+      if self.parked.removeValue(forKey: id) != nil {
+        if self.parked.isEmpty {
+          onUpdate = .closed
+          nextState = .closed
+        } else {
+          onUpdate = .none
+          nextState = .closing(self)
+        }
       } else {
         onUpdate = .none
         nextState = .closing(self)
       }
-    } else {
+
+    case .connecting, .ready, .transientFailure:
       onUpdate = .none
       nextState = .closing(self)
     }
@@ -493,6 +562,16 @@ extension PickFirstLoadBalancer.State {
     }
 
     return onUpdateState
+  }
+
+  mutating func receivedGoAway(id: SubchannelID) {
+    switch self {
+    case .active(var state):
+      state.receivedGoAway(id: id)
+      self = .active(state)
+    case .closing, .closed:
+      ()
+    }
   }
 
   enum OnClose {
