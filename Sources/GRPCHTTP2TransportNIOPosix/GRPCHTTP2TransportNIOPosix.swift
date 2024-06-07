@@ -174,11 +174,11 @@ extension HTTP2ServerTransport.Posix {
 extension NIOCore.SocketAddress {
   fileprivate init(_ socketAddress: GRPCHTTP2Core.SocketAddress) throws {
     if let ipv4 = socketAddress.ipv4 {
-      self = try Self(ipAddress: ipv4.host, port: ipv4.port)
+      self = try Self(ipv4)
     } else if let ipv6 = socketAddress.ipv6 {
-      self = try Self(ipAddress: ipv6.host, port: ipv6.port)
+      self = try Self(ipv6)
     } else if let unixDomainSocket = socketAddress.unixDomainSocket {
-      self = try Self(unixDomainSocketPath: unixDomainSocket.path)
+      self = try Self(unixDomainSocket)
     } else {
       throw RPCError(
         code: .internalError,
@@ -197,10 +197,7 @@ extension ServerBootstrap {
   ) async throws -> NIOAsyncChannel<Output, Never> {
     if let virtualSocket = address.virtualSocket {
       return try await self.bind(
-        to: VsockAddress(
-          cid: VsockAddress.ContextID(rawValue: virtualSocket.contextID.rawValue),
-          port: VsockAddress.Port(rawValue: virtualSocket.port.rawValue)
-        ),
+        to: VsockAddress(virtualSocket),
         childChannelInitializer: childChannelInitializer
       )
     } else {
