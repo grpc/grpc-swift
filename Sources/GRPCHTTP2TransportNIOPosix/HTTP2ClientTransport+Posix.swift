@@ -35,7 +35,7 @@ extension HTTP2ClientTransport {
           code: .transportError,
           message: """
             No suitable resolvers to resolve '\(target)'. You must make sure that the resolver \
-            registry has a suitable name resolve factory registered for the given target.
+            registry has a suitable name resolver factory registered for the given target.
             """
         )
       }
