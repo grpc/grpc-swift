@@ -68,7 +68,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: BinaryEcho.Methods.collect,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         let message = try response.message
         XCTAssertEqual(message, [3, 1, 4, 1, 5])
@@ -86,7 +87,8 @@ final class GRPCClientTests: XCTestCase {
         }),
         descriptor: BinaryEcho.Methods.collect,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         let message = try response.message
         XCTAssertEqual(message, [3, 1, 4, 1, 5])
@@ -100,7 +102,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: BinaryEcho.Methods.expand,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         var responseParts = response.messages.makeAsyncIterator()
         for byte in [3, 1, 4, 1, 5] as [UInt8] {
@@ -121,7 +124,8 @@ final class GRPCClientTests: XCTestCase {
         }),
         descriptor: BinaryEcho.Methods.update,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         var responseParts = response.messages.makeAsyncIterator()
         for byte in [3, 1, 4, 1, 5] as [UInt8] {
@@ -138,7 +142,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: MethodDescriptor(service: "not", method: "implemented"),
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         XCTAssertThrowsRPCError(try response.accepted.get()) { error in
           XCTAssertEqual(error.code, .unimplemented)
@@ -157,7 +162,8 @@ final class GRPCClientTests: XCTestCase {
         }),
         descriptor: MethodDescriptor(service: "not", method: "implemented"),
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         XCTAssertThrowsRPCError(try response.accepted.get()) { error in
           XCTAssertEqual(error.code, .unimplemented)
@@ -172,7 +178,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: MethodDescriptor(service: "not", method: "implemented"),
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         XCTAssertThrowsRPCError(try response.accepted.get()) { error in
           XCTAssertEqual(error.code, .unimplemented)
@@ -191,7 +198,8 @@ final class GRPCClientTests: XCTestCase {
         }),
         descriptor: MethodDescriptor(service: "not", method: "implemented"),
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         XCTAssertThrowsRPCError(try response.accepted.get()) { error in
           XCTAssertEqual(error.code, .unimplemented)
@@ -209,7 +217,8 @@ final class GRPCClientTests: XCTestCase {
               request: .init(message: [i]),
               descriptor: BinaryEcho.Methods.collect,
               serializer: IdentitySerializer(),
-              deserializer: IdentityDeserializer()
+              deserializer: IdentityDeserializer(),
+              options: .defaults
             ) { response in
               let message = try response.message
               XCTAssertEqual(message, [i])
@@ -236,7 +245,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: BinaryEcho.Methods.collect,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         XCTAssertRejected(response) { error in
           XCTAssertEqual(error.code, .unavailable)
@@ -255,7 +265,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: BinaryEcho.Methods.collect,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         let message = try response.message
         XCTAssertEqual(message, [3, 1, 4, 1, 5])
@@ -270,7 +281,8 @@ final class GRPCClientTests: XCTestCase {
           request: .init(message: [3, 1, 4, 1, 5]),
           descriptor: BinaryEcho.Methods.collect,
           serializer: IdentitySerializer(),
-          deserializer: IdentityDeserializer()
+          deserializer: IdentityDeserializer(),
+          options: .defaults
         ) { _ in }
       } errorHandler: { error in
         XCTAssertEqual(error.code, .clientIsStopped)
@@ -292,7 +304,8 @@ final class GRPCClientTests: XCTestCase {
               request: .init(message: [3, 1, 4, 1, 5]),
               descriptor: BinaryEcho.Methods.collect,
               serializer: IdentitySerializer(),
-              deserializer: IdentityDeserializer()
+              deserializer: IdentityDeserializer(),
+              options: .defaults
             ) { _ in }
           } errorHandler: { error in
             XCTAssertEqual(error.code, .clientIsStopped)
@@ -306,7 +319,8 @@ final class GRPCClientTests: XCTestCase {
         }),
         descriptor: BinaryEcho.Methods.collect,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         let message = try response.message
         XCTAssertEqual(message, [3, 1, 4, 1, 5])
@@ -338,7 +352,8 @@ final class GRPCClientTests: XCTestCase {
           }),
           descriptor: BinaryEcho.Methods.collect,
           serializer: IdentitySerializer(),
-          deserializer: IdentityDeserializer()
+          deserializer: IdentityDeserializer(),
+          options: .defaults
         ) { response in
           XCTAssertRejected(response) { error in
             XCTAssertEqual(error.code, .unknown)
@@ -351,7 +366,8 @@ final class GRPCClientTests: XCTestCase {
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: BinaryEcho.Methods.collect,
         serializer: IdentitySerializer(),
-        deserializer: IdentityDeserializer()
+        deserializer: IdentityDeserializer(),
+        options: .defaults
       ) { response in
         let message = try response.message
         XCTAssertEqual(message, [3, 1, 4, 1, 5])

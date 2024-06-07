@@ -459,6 +459,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.EmptyCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.EmptyCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -467,6 +468,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.UnaryCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.UnaryCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.UnaryCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.UnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -477,6 +479,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -486,6 +489,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.StreamingOutputCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.StreamingOutputCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -495,6 +499,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.StreamingInputCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.StreamingInputCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.StreamingInputCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -505,6 +510,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.FullDuplexCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.FullDuplexCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -516,6 +522,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -525,6 +532,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.UnimplementedCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.UnimplementedCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 }
@@ -533,96 +541,112 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
 extension Grpc_Testing_TestService.ClientProtocol {
     public func emptyCall<R>(
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.emptyCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.EmptyCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.EmptyCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.UnaryCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.UnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.unaryCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.UnaryCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.UnaryCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func cacheableUnaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.cacheableUnaryCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func streamingOutputCall<R>(
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.StreamingOutputCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.streamingOutputCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.StreamingOutputCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func streamingInputCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.StreamingInputCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.streamingInputCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.StreamingInputCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.StreamingInputCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func fullDuplexCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.fullDuplexCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.FullDuplexCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.FullDuplexCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func halfDuplexCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.halfDuplexCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>(),
+            options: options,
             body
         )
     }
 
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.unimplementedCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_TestService.Method.UnimplementedCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_TestService.Method.UnimplementedCall.Output>(),
+            options: options,
             body
         )
     }
@@ -643,6 +667,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.EmptyCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.EmptyCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.EmptyCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.EmptyCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -650,6 +675,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.EmptyCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -659,6 +685,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.UnaryCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.UnaryCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.UnaryCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.UnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -666,6 +693,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.UnaryCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -677,6 +705,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.CacheableUnaryCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.CacheableUnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -684,6 +713,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.CacheableUnaryCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -694,6 +724,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.StreamingOutputCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.StreamingOutputCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.StreamingOutputCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.serverStreaming(
@@ -701,6 +732,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.StreamingOutputCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -711,6 +743,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.StreamingInputCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.StreamingInputCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.StreamingInputCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.StreamingInputCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
@@ -718,6 +751,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.StreamingInputCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -729,6 +763,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.FullDuplexCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.FullDuplexCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.FullDuplexCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
@@ -736,6 +771,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.FullDuplexCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -748,6 +784,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.HalfDuplexCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_TestService.Method.HalfDuplexCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
@@ -755,6 +792,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.HalfDuplexCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -765,6 +803,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         request: ClientRequest.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_TestService.Method.UnimplementedCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_TestService.Method.UnimplementedCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_TestService.Method.UnimplementedCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -772,6 +811,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             descriptor: Grpc_Testing_TestService.Method.UnimplementedCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -786,6 +826,7 @@ public protocol Grpc_Testing_UnimplementedServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 }
@@ -794,12 +835,14 @@ public protocol Grpc_Testing_UnimplementedServiceClientProtocol: Sendable {
 extension Grpc_Testing_UnimplementedService.ClientProtocol {
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.unimplementedCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Output>(),
+            options: options,
             body
         )
     }
@@ -820,6 +863,7 @@ public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimplemente
         request: ClientRequest.Single<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_UnimplementedService.Method.UnimplementedCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -827,6 +871,7 @@ public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimplemente
             descriptor: Grpc_Testing_UnimplementedService.Method.UnimplementedCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -839,6 +884,7 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_ReconnectService.Method.Start.Input>,
         serializer: some MessageSerializer<Grpc_Testing_ReconnectService.Method.Start.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_ReconnectService.Method.Start.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectService.Method.Start.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -846,6 +892,7 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_ReconnectService.Method.Stop.Input>,
         serializer: some MessageSerializer<Grpc_Testing_ReconnectService.Method.Stop.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_ReconnectService.Method.Stop.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectService.Method.Stop.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 }
@@ -854,24 +901,28 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: Sendable {
 extension Grpc_Testing_ReconnectService.ClientProtocol {
     public func start<R>(
         request: ClientRequest.Single<Grpc_Testing_ReconnectService.Method.Start.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectService.Method.Start.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.start(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_ReconnectService.Method.Start.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_ReconnectService.Method.Start.Output>(),
+            options: options,
             body
         )
     }
 
     public func stop<R>(
         request: ClientRequest.Single<Grpc_Testing_ReconnectService.Method.Stop.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectService.Method.Stop.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.stop(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_ReconnectService.Method.Stop.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_ReconnectService.Method.Stop.Output>(),
+            options: options,
             body
         )
     }
@@ -890,6 +941,7 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
         request: ClientRequest.Single<Grpc_Testing_ReconnectService.Method.Start.Input>,
         serializer: some MessageSerializer<Grpc_Testing_ReconnectService.Method.Start.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_ReconnectService.Method.Start.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectService.Method.Start.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -897,6 +949,7 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
             descriptor: Grpc_Testing_ReconnectService.Method.Start.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -905,6 +958,7 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
         request: ClientRequest.Single<Grpc_Testing_ReconnectService.Method.Stop.Input>,
         serializer: some MessageSerializer<Grpc_Testing_ReconnectService.Method.Stop.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_ReconnectService.Method.Stop.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectService.Method.Stop.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -912,6 +966,7 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
             descriptor: Grpc_Testing_ReconnectService.Method.Stop.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }

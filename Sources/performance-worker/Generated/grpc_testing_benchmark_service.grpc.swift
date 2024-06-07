@@ -210,6 +210,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -220,6 +221,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingCall.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -229,6 +231,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -238,6 +241,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         request: ClientRequest.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 
@@ -247,6 +251,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>,
+        options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>) async throws -> R
     ) async throws -> R where R: Sendable
 }
@@ -255,60 +260,70 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
 extension Grpc_Testing_BenchmarkService.ClientProtocol {
     internal func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.unaryCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>(),
+            options: options,
             body
         )
     }
 
     internal func streamingCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.streamingCall(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingCall.Output>(),
+            options: options,
             body
         )
     }
 
     internal func streamingFromClient<R>(
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.streamingFromClient(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>(),
+            options: options,
             body
         )
     }
 
     internal func streamingFromServer<R>(
         request: ClientRequest.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.streamingFromServer(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>(),
+            options: options,
             body
         )
     }
 
     internal func streamingBothWays<R>(
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.streamingBothWays(
             request: request,
             serializer: ProtobufSerializer<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input>(),
             deserializer: ProtobufDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>(),
+            options: options,
             body
         )
     }
@@ -328,6 +343,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         request: ClientRequest.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.UnaryCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_BenchmarkService.Method.UnaryCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
@@ -335,6 +351,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             descriptor: Grpc_Testing_BenchmarkService.Method.UnaryCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -346,6 +363,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingCall.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingCall.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingCall.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
@@ -353,6 +371,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             descriptor: Grpc_Testing_BenchmarkService.Method.StreamingCall.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -363,6 +382,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromClient.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
@@ -370,6 +390,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             descriptor: Grpc_Testing_BenchmarkService.Method.StreamingFromClient.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -380,6 +401,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         request: ClientRequest.Single<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingFromServer.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.serverStreaming(
@@ -387,6 +409,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             descriptor: Grpc_Testing_BenchmarkService.Method.StreamingFromServer.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }
@@ -397,6 +420,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         request: ClientRequest.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input>,
         serializer: some MessageSerializer<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Input>,
         deserializer: some MessageDeserializer<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>,
+        options: CallOptions = .defaults,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_BenchmarkService.Method.StreamingBothWays.Output>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
@@ -404,6 +428,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             descriptor: Grpc_Testing_BenchmarkService.Method.StreamingBothWays.descriptor,
             serializer: serializer,
             deserializer: deserializer,
+            options: options,
             handler: body
         )
     }

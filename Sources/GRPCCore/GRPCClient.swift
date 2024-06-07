@@ -274,7 +274,7 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
-    options: CallOptions = .defaults,
+    options: CallOptions,
     handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
@@ -305,7 +305,7 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
-    options: CallOptions = .defaults,
+    options: CallOptions,
     handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
@@ -336,7 +336,7 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
-    options: CallOptions = .defaults,
+    options: CallOptions,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
@@ -368,7 +368,7 @@ public struct GRPCClient: Sendable {
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
-    options: CallOptions = .defaults,
+    options: CallOptions,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     switch self.state.load(ordering: .sequentiallyConsistent) {
