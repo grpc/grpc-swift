@@ -54,16 +54,16 @@ extension HTTP2ClientTransport {
   /// ```
   public struct Posix: ClientTransport {
     private let channel: GRPCChannel
-    
+
     /// Creates a new Posix based HTTP/2 client transport.
-    /// 
+    ///
     /// - Parameters:
     ///   - target: A target to resolve.
     ///   - resolverRegistry: A registry of resolver factories.
     ///   - config: Configuration for the transport.
     ///   - serviceConfig: Service config controlling how the transport should establish and
     ///       load-balance connections.
-    ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to run connections on. This must 
+    ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to run connections on. This must
     ///       be a `MultiThreadedEventLoopGroup` or an `EventLoop` from
     ///       a `MultiThreadedEventLoopGroup`.
     /// - Throws: When no suitable resolver could be found for the `target`.
