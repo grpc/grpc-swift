@@ -91,7 +91,7 @@ public struct CallOptions: Sendable {
   /// If `nil` the value configured on the transport will be used instead.
   public var compression: CompressionAlgorithm?
 
-  public init(
+  internal init(
     timeout: Duration?,
     waitForReady: Bool?,
     maxRequestMessageBytes: Int?,

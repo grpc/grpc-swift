@@ -111,8 +111,8 @@ extension ClientCodeTranslator {
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        shouldBeImplemented: false,
-        callOptionsShouldDefault: false
+        includeBody: false,
+        includeDefaultCallOptions: false
       )
     }
 
@@ -136,9 +136,9 @@ extension ClientCodeTranslator {
         for: $0,
         in: service,
         from: codeGenerationRequest,
-        shouldBeImplemented: true,
+        includeBody: true,
         accessModifier: self.accessModifier,
-        callOptionsShouldDefault: true
+        includeDefaultCallOptions: true
       )
     }
     let clientProtocolExtension = Declaration.extension(
@@ -157,18 +157,18 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    shouldBeImplemented: Bool,
+    includeBody: Bool,
     accessModifier: AccessModifier? = nil,
-    callOptionsShouldDefault: Bool
+    includeDefaultCallOptions: Bool
   ) -> Declaration {
-    // If method "should be implemented", serializer/deserializer will be auto-generated.
-    let isProtocolExtension = shouldBeImplemented
+    let isProtocolExtension = includeBody
     let methodParameters = self.makeParameters(
       for: method,
       in: service,
       from: codeGenerationRequest,
-      includeSerDesParameters: !isProtocolExtension,
-      callOptionsShouldDefault: callOptionsShouldDefault
+      // The serializer/deserializer for the protocol extension method will be auto-generated.
+      includeSerializationParameters: !isProtocolExtension,
+      includeDefaultCallOptions: includeDefaultCallOptions
     )
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
@@ -183,7 +183,7 @@ extension ClientCodeTranslator {
       whereClause: WhereClause(requirements: [.conformance("R", "Sendable")])
     )
 
-    if shouldBeImplemented {
+    if includeBody {
       let body = self.makeClientProtocolMethodCall(
         for: method,
         in: service,
@@ -242,18 +242,23 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
-    includeSerDesParameters: Bool,
-    callOptionsShouldDefault: Bool
+    includeSerializationParameters: Bool,
+    includeDefaultCallOptions: Bool
   ) -> [ParameterDescription] {
     var parameters = [ParameterDescription]()
 
     parameters.append(self.clientRequestParameter(for: method, in: service))
-    if includeSerDesParameters {
+    if includeSerializationParameters {
       parameters.append(self.serializerParameter(for: method, in: service))
       parameters.append(self.deserializerParameter(for: method, in: service))
     }
     parameters.append(
-      self.callOptionsParameter(for: method, in: service, shouldDefault: callOptionsShouldDefault)
+      ParameterDescription(
+        label: "options",
+        type: .member("CallOptions"),
+        defaultValue: includeDefaultCallOptions
+          ? .memberAccess(MemberAccessDescription(right: "defaults")) : nil
+      )
     )
     parameters.append(self.bodyParameter(for: method, in: service))
     return parameters
@@ -272,18 +277,6 @@ extension ClientCodeTranslator {
           self.methodInputOutputTypealias(for: method, service: service, type: .input)
         )
       )
-    )
-  }
-
-  private func callOptionsParameter(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
-    shouldDefault: Bool
-  ) -> ParameterDescription {
-    return ParameterDescription(
-      label: "options",
-      type: .member("CallOptions"),
-      defaultValue: shouldDefault ? .memberAccess(MemberAccessDescription(right: "defaults")) : nil
     )
   }
 
@@ -416,8 +409,8 @@ extension ClientCodeTranslator {
       for: method,
       in: service,
       from: codeGenerationRequest,
-      includeSerDesParameters: true,
-      callOptionsShouldDefault: true
+      includeSerializationParameters: true,
+      includeDefaultCallOptions: true
     )
     let grpcMethodName = self.clientMethod(
       isInputStreaming: method.isInputStreaming,
