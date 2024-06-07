@@ -798,7 +798,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "SomeService/SomeMethod",
+      GRPCHTTP2Keys.path.rawValue: "/SomeService/SomeMethod",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -819,7 +819,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     XCTAssertEqual(
       try promise.futureResult.wait(),
-      MethodDescriptor(fullyQualifiedMethod: "SomeService/SomeMethod")
+      MethodDescriptor(path: "/SomeService/SomeMethod")
     )
   }
 
