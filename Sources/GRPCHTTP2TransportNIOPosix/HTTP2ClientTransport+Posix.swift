@@ -21,14 +21,58 @@ import NIOPosix
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension HTTP2ClientTransport {
+  /// A `ClientTransport` using HTTP/2 built on top of `NIOPosix`.
+  ///
+  /// This transport builds on top of SwiftNIO's Posix networking layer and is suitable for use
+  /// on Linux and Darwin based platform (macOS, iOS, etc.) However, it's *strongly* recommended
+  /// that if you are targeting Darwin platforms then you should use the `NIOTS` variant of
+  /// the `HTTP2ClientTransport`.
+  ///
+  /// To use this transport you need to provide a 'target' to connect to which will be resolved
+  /// by an appropriate resolver from the resolver registry. By default the resolver registry can
+  /// resolve DNS targets, IPv4 and IPv6 targets, Unix domain socket targets, and Virtual Socket
+  /// targets. If you use a custom target you must also provide an appropriately configured
+  /// registry.
+  ///
+  /// You can control various aspects of connection creation, management and RPC behavior via the
+  /// ``Config``. Load balancing policies and other RPC specific behavior can be configured via
+  /// the ``ServiceConfig`` (if it isn't provided by a resolver).
+  ///
+  /// Beyond creating the transport you don't need to interact with it directly, instead, pass it
+  /// to a `GRPCClient`:
+  ///
+  /// ```swift
+  /// try await withThrowingDiscardingTaskGroup {
+  ///   let transport = try HTTP2ClientTransport.Posix(target: .dns(host: "example.com"))
+  ///   let client = GRPCClient(transport: transport)
+  ///   group.addTask {
+  ///     try await client.run()
+  ///   }
+  ///
+  ///   // ...
+  /// }
+  /// ```
   public struct Posix: ClientTransport {
     private let channel: GRPCChannel
-
+    
+    /// Creates a new Posix based HTTP/2 client transport.
+    /// 
+    /// - Parameters:
+    ///   - target: A target to resolve.
+    ///   - resolverRegistry: A registry of resolver factories.
+    ///   - config: Configuration for the transport.
+    ///   - serviceConfig: Service config controlling how the transport should establish and
+    ///       load-balance connections.
+    ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to run connections on. This must 
+    ///       be a `MultiThreadedEventLoopGroup` or an `EventLoop` from
+    ///       a `MultiThreadedEventLoopGroup`.
+    /// - Throws: When no suitable resolver could be found for the `target`.
     public init(
       target: any ResolvableTarget,
       resolverRegistry: NameResolverRegistry = .defaults,
       config: Config = .defaults,
-      serviceConfig: ServiceConfig = ServiceConfig()
+      serviceConfig: ServiceConfig = ServiceConfig(),
+      eventLoopGroup: any EventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) throws {
       guard let resolver = resolverRegistry.makeResolver(for: target) else {
         throw RuntimeError(
@@ -43,7 +87,7 @@ extension HTTP2ClientTransport {
       // Configure a connector.
       self.channel = GRPCChannel(
         resolver: resolver,
-        connector: Connector(eventLoopGroup: .singletonMultiThreadedEventLoopGroup, config: config),
+        connector: Connector(eventLoopGroup: eventLoopGroup, config: config),
         config: GRPCChannel.Config(posix: config),
         defaultServiceConfig: serviceConfig
       )
