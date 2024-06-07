@@ -87,6 +87,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 request: ClientRequest.Single<Hello_World_Greeter.Method.SayHello.Input>,
                 serializer: some MessageSerializer<Hello_World_Greeter.Method.SayHello.Input>,
                 deserializer: some MessageDeserializer<Hello_World_Greeter.Method.SayHello.Output>,
+                options: CallOptions,
                 _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_Greeter.Method.SayHello.Output>) async throws -> R
             ) async throws -> R where R: Sendable
         }
@@ -95,12 +96,14 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         extension Hello_World_Greeter.ClientProtocol {
             internal func sayHello<R>(
                 request: ClientRequest.Single<Hello_World_Greeter.Method.SayHello.Input>,
+                options: CallOptions = .defaults,
                 _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_Greeter.Method.SayHello.Output>) async throws -> R
             ) async throws -> R where R: Sendable {
                 try await self.sayHello(
                     request: request,
                     serializer: ProtobufSerializer<Hello_World_Greeter.Method.SayHello.Input>(),
                     deserializer: ProtobufDeserializer<Hello_World_Greeter.Method.SayHello.Output>(),
+                    options: options,
                     body
                 )
             }
@@ -120,6 +123,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 request: ClientRequest.Single<Hello_World_Greeter.Method.SayHello.Input>,
                 serializer: some MessageSerializer<Hello_World_Greeter.Method.SayHello.Input>,
                 deserializer: some MessageDeserializer<Hello_World_Greeter.Method.SayHello.Output>,
+                options: CallOptions = .defaults,
                 _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_Greeter.Method.SayHello.Output>) async throws -> R
             ) async throws -> R where R: Sendable {
                 try await self.client.unary(
@@ -127,6 +131,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                     descriptor: Hello_World_Greeter.Method.SayHello.descriptor,
                     serializer: serializer,
                     deserializer: deserializer,
+                    options: options,
                     handler: body
                 )
             }
@@ -335,6 +340,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             request: ClientRequest.Single<Greeter.Method.SayHello.Input>,
             serializer: some MessageSerializer<Greeter.Method.SayHello.Input>,
             deserializer: some MessageDeserializer<Greeter.Method.SayHello.Output>,
+            options: CallOptions,
             _ body: @Sendable @escaping (ClientResponse.Single<Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable
         }
@@ -343,12 +349,14 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         extension Greeter.ClientProtocol {
           package func sayHello<R>(
             request: ClientRequest.Single<Greeter.Method.SayHello.Input>,
+            options: CallOptions = .defaults,
             _ body: @Sendable @escaping (ClientResponse.Single<Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
             try await self.sayHello(
               request: request,
               serializer: ProtobufSerializer<Greeter.Method.SayHello.Input>(),
               deserializer: ProtobufDeserializer<Greeter.Method.SayHello.Output>(),
+              options: options,
               body
             )
           }
@@ -368,6 +376,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             request: ClientRequest.Single<Greeter.Method.SayHello.Input>,
             serializer: some MessageSerializer<Greeter.Method.SayHello.Input>,
             deserializer: some MessageDeserializer<Greeter.Method.SayHello.Output>,
+            options: CallOptions = .defaults,
             _ body: @Sendable @escaping (ClientResponse.Single<Greeter.Method.SayHello.Output>) async throws -> R
           ) async throws -> R where R: Sendable {
             try await self.client.unary(
@@ -375,6 +384,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
               descriptor: Greeter.Method.SayHello.descriptor,
               serializer: serializer,
               deserializer: deserializer,
+              options: options,
               handler: body
             )
           }
