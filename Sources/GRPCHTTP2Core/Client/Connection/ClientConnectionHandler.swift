@@ -173,8 +173,11 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   }
 
   func errorCaught(context: ChannelHandlerContext, error: any Error) {
+    // Store the error and close, this will result in the final close event being fired down
+    // the pipeline with an appropriate close reason and appropriate error. (This avoids
+    // the async channel just throwing the error.)
     self.state.receivedError(error)
-    context.fireErrorCaught(error)
+    context.close(mode: .all, promise: nil)
   }
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {

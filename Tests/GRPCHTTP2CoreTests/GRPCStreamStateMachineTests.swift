@@ -35,14 +35,14 @@ private enum TargetStateMachineState: CaseIterable {
 extension HPACKHeaders {
   // Client
   fileprivate static let clientInitialMetadata: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.scheme.rawValue: "http",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.te.rawValue: "trailers",
   ]
   fileprivate static let clientInitialMetadataWithDeflateCompression: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.scheme.rawValue: "https",
@@ -51,7 +51,7 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.encoding.rawValue: "deflate",
   ]
   fileprivate static let clientInitialMetadataWithGzipCompression: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.scheme.rawValue: "https",
@@ -60,10 +60,10 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.encoding.rawValue: "gzip",
   ]
   fileprivate static let receivedWithoutContentType: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test"
+    GRPCHTTP2Keys.path.rawValue: "/test/test"
   ]
   fileprivate static let receivedWithInvalidContentType: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.contentType.rawValue: "invalid/invalid",
   ]
   fileprivate static let receivedWithInvalidPath: Self = [
@@ -74,39 +74,39 @@ extension HPACKHeaders {
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc"
   ]
   fileprivate static let receivedWithoutTE: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.scheme.rawValue: "http",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
   ]
   fileprivate static let receivedWithInvalidTE: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.scheme.rawValue: "http",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.te.rawValue: "invalidte",
   ]
   fileprivate static let receivedWithoutMethod: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.scheme.rawValue: "http",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.te.rawValue: "trailers",
   ]
   fileprivate static let receivedWithInvalidMethod: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.scheme.rawValue: "http",
     GRPCHTTP2Keys.method.rawValue: "GET",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.te.rawValue: "trailers",
   ]
   fileprivate static let receivedWithoutScheme: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
     GRPCHTTP2Keys.te.rawValue: "trailers",
   ]
   fileprivate static let receivedWithInvalidScheme: Self = [
-    GRPCHTTP2Keys.path.rawValue: "test/test",
+    GRPCHTTP2Keys.path.rawValue: "/test/test",
     GRPCHTTP2Keys.scheme.rawValue: "invalidscheme",
     GRPCHTTP2Keys.method.rawValue: "POST",
     GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -986,7 +986,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(
       clientInitialMetadata,
       [
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -1075,7 +1075,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(
       clientInitialMetadata,
       [
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -1162,7 +1162,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(
       clientInitialMetadata,
       [
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.scheme.rawValue: "http",
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -1666,7 +1666,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       action,
       .receivedMetadata(
         Metadata(headers: .clientInitialMetadata),
-        MethodDescriptor(fullyQualifiedMethod: "test/test")
+        MethodDescriptor(path: "/test/test")
       )
     )
   }
@@ -1679,7 +1679,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       action,
       .receivedMetadata(
         Metadata(headers: .clientInitialMetadata),
-        MethodDescriptor(fullyQualifiedMethod: "test/test")
+        MethodDescriptor(path: "/test/test")
       )
     )
   }
@@ -2447,7 +2447,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       receiveMetadataAction,
       .receivedMetadata(
         Metadata(headers: .clientInitialMetadata),
-        MethodDescriptor(fullyQualifiedMethod: "test/test")
+        MethodDescriptor(path: "/test/test")
       )
     )
 
@@ -2543,7 +2543,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       receiveMetadataAction,
       .receivedMetadata(
         Metadata(headers: .clientInitialMetadata),
-        MethodDescriptor(fullyQualifiedMethod: "test/test")
+        MethodDescriptor(path: "/test/test")
       )
     )
 
@@ -2622,7 +2622,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       receiveMetadataAction,
       .receivedMetadata(
         Metadata(headers: .clientInitialMetadata),
-        MethodDescriptor(fullyQualifiedMethod: "test/test")
+        MethodDescriptor(path: "/test/test")
       )
     )
 
