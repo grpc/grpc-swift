@@ -404,6 +404,8 @@ final class SubchannelTests: XCTestCase {
       }
 
       var events = [Subchannel.Event]()
+      var readyCount = 0
+
       for await event in subchannel.events {
         events.append(event)
         switch event {
@@ -411,18 +413,23 @@ final class SubchannelTests: XCTestCase {
           subchannel.connect()
 
         case .connectivityStateChanged(.ready):
-          let stream = try await subchannel.makeStream(descriptor: .echoGet, options: .defaults)
-          try await stream.execute { inbound, outbound in
-            try await outbound.write(.metadata([:]))
-            // Stream is definitely open. Bork the connection.
-            server.clients.first?.close(mode: .all, promise: nil)
-            for try await _ in inbound {
-              ()
+          readyCount += 1
+          // When the connection becomes ready the first time, open a stream and forcibly close the
+          // channel. This will result in an automatic reconnect. Close the subchannel when that
+          // happens.
+          if readyCount == 1 {
+            let stream = try await subchannel.makeStream(descriptor: .echoGet, options: .defaults)
+            try await stream.execute { inbound, outbound in
+              try await outbound.write(.metadata([:]))
+              // Stream is definitely open. Bork the connection.
+              server.clients.first?.close(mode: .all, promise: nil)
+              for try await _ in inbound {
+                ()
+              }
             }
+          } else if readyCount == 2 {
+            subchannel.close()
           }
-
-        case .connectivityStateChanged(.transientFailure):
-          subchannel.close()
 
         case .connectivityStateChanged(.shutdown):
           group.cancelAll()
@@ -439,6 +446,7 @@ final class SubchannelTests: XCTestCase {
         .connectivityStateChanged(.transientFailure),
         .requiresNameResolution,
         .connectivityStateChanged(.connecting),
+        .connectivityStateChanged(.ready),
         .connectivityStateChanged(.shutdown),
       ]
 

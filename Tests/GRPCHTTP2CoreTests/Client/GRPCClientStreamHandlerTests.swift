@@ -220,7 +220,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
         GRPCHTTP2Keys.encoding.rawValue: "deflate",
@@ -279,7 +279,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
       ]
@@ -349,7 +349,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
       ]
@@ -407,7 +407,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     // Write client's initial metadata
     XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.metadata(Metadata())))
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -481,7 +481,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
 
@@ -599,7 +599,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
 
@@ -704,7 +704,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       [
         GRPCHTTP2Keys.method.rawValue: "POST",
         GRPCHTTP2Keys.scheme.rawValue: "http",
-        GRPCHTTP2Keys.path.rawValue: "test/test",
+        GRPCHTTP2Keys.path.rawValue: "/test/test",
         GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
         GRPCHTTP2Keys.te.rawValue: "trailers",
 
