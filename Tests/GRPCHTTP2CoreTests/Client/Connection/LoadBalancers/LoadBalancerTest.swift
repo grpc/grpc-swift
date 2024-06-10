@@ -24,6 +24,32 @@ enum LoadBalancerTest {
     let loadBalancer: LoadBalancer
   }
 
+  static func pickFirst(
+    servers serverCount: Int,
+    connector: any HTTP2Connector,
+    backoff: ConnectionBackoff = .defaults,
+    timeout: Duration = .seconds(10),
+    function: String = #function,
+    handleEvent: @escaping @Sendable (Context, LoadBalancerEvent) async throws -> Void,
+    verifyEvents: @escaping @Sendable ([LoadBalancerEvent]) -> Void = { _ in }
+  ) async throws {
+    try await Self.run(
+      servers: serverCount,
+      timeout: timeout,
+      function: function,
+      handleEvent: handleEvent,
+      verifyEvents: verifyEvents
+    ) {
+      let pickFirst = PickFirstLoadBalancer(
+        connector: connector,
+        backoff: backoff,
+        defaultCompression: .none,
+        enabledCompression: .none
+      )
+      return .pickFirst(pickFirst)
+    }
+  }
+
   static func roundRobin(
     servers serverCount: Int,
     connector: any HTTP2Connector,
@@ -142,6 +168,17 @@ extension LoadBalancerTest.Context {
   var roundRobin: RoundRobinLoadBalancer? {
     switch self.loadBalancer {
     case .roundRobin(let loadBalancer):
+      return loadBalancer
+    case .pickFirst:
+      return nil
+    }
+  }
+
+  var pickFirst: PickFirstLoadBalancer? {
+    switch self.loadBalancer {
+    case .roundRobin:
+      return nil
+    case .pickFirst(let loadBalancer):
       return loadBalancer
     }
   }
