@@ -130,16 +130,6 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     self.context = nil
   }
 
-  func channelActive(context: ChannelHandlerContext) {
-    self.keepaliveTimer?.schedule(on: context.eventLoop) {
-      self.keepaliveTimerFired(context: context)
-    }
-
-    self.maxIdleTimer?.schedule(on: context.eventLoop) {
-      self.maxIdleTimerFired(context: context)
-    }
-  }
-
   func channelInactive(context: ChannelHandlerContext) {
     switch self.state.closed() {
     case .none:
@@ -221,6 +211,14 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
       // becoming active is insufficient as, for example, a TLS handshake may fail after
       // establishing the TCP connection, or the server isn't configured for gRPC (or HTTP/2).
       if isInitialSettings {
+        self.keepaliveTimer?.schedule(on: context.eventLoop) {
+          self.keepaliveTimerFired(context: context)
+        }
+
+        self.maxIdleTimer?.schedule(on: context.eventLoop) {
+          self.maxIdleTimerFired(context: context)
+        }
+
         context.fireChannelRead(self.wrapInboundOut(.ready))
       }
 
