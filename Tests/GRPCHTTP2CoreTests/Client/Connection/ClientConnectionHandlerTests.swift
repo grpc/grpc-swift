@@ -26,6 +26,10 @@ final class ClientConnectionHandlerTests: XCTestCase {
     let connection = try Connection(maxIdleTime: .minutes(5))
     try connection.activate()
 
+    // Write the initial settings to ready the connection.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
     // Idle with no streams open we should:
     // - read out a closing event,
     // - write a GOAWAY frame,
@@ -74,6 +78,10 @@ final class ClientConnectionHandlerTests: XCTestCase {
     let connection = try Connection(keepaliveTime: .minutes(1), keepaliveTimeout: .seconds(10))
     try connection.activate()
 
+    // Write the initial settings to ready the connection.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
     // Open a stream so keep-alive starts.
     connection.streamOpened(1)
 
@@ -100,6 +108,10 @@ final class ClientConnectionHandlerTests: XCTestCase {
     let connection = try Connection(keepaliveTime: .minutes(1), allowKeepaliveWithoutCalls: true)
     try connection.activate()
 
+    // Write the initial settings to ready the connection.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
+
     for _ in 0 ..< 10 {
       // Advance time, a PING should be sent, ACK it.
       connection.loop.advanceTime(by: .minutes(1))
@@ -117,6 +129,10 @@ final class ClientConnectionHandlerTests: XCTestCase {
   func testKeepaliveWithOpenStreamsTimingOut() throws {
     let connection = try Connection(keepaliveTime: .minutes(1), keepaliveTimeout: .seconds(10))
     try connection.activate()
+
+    // Write the initial settings to ready the connection.
+    try connection.settings([])
+    XCTAssertEqual(try connection.readEvent(), .ready)
 
     // Open a stream so keep-alive starts.
     connection.streamOpened(1)
