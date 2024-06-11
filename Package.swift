@@ -335,6 +335,16 @@ extension Target {
     ]
   )
 
+  static let grpcHTTP2TransportTests: Target = .testTarget(
+    name: "GRPCHTTP2TransportTests",
+    dependencies: [
+      .grpcHTTP2Core,
+      .grpcHTTP2TransportNIOPosix,
+      .grpcHTTP2TransportNIOTransportServices,
+      .grpcProtobuf
+    ]
+  )
+
   static let grpcCodeGenTests: Target = .testTarget(
     name: "GRPCCodeGenTests",
     dependencies: [
@@ -742,6 +752,7 @@ let package = Package(
     .grpcCodeGenTests,
     .grpcInterceptorsTests,
     .grpcHTTP2CoreTests,
+    .grpcHTTP2TransportTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
     .inProcessInteroperabilityTests
