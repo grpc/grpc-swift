@@ -34,7 +34,7 @@ jobs:
           - image: swiftlang/swift:nightly-6.0-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.10-jammy
+          - image: swift:5.10.1-noble
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
           - image: swift:5.9-jammy
@@ -82,7 +82,7 @@ jobs:
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
               MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.10-jammy
+          - image: swift:5.10.1-noble
             swift-version: '5.10'
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
@@ -139,7 +139,7 @@ jobs:
         include:
           - image: swiftlang/swift:nightly-jammy
           - image: swiftlang/swift:nightly-6.0-jammy
-          - image: swift:5.10-jammy
+          - image: swift:5.10.1-noble
           - image: swift:5.9-jammy
           - image: swift:5.8-focal
     name: Integration Tests on ${{ matrix.image }}
