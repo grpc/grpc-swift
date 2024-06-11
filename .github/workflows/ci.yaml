@@ -31,6 +31,9 @@ jobs:
           - image: swiftlang/swift:nightly-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
+          - image: swiftlang/swift:nightly-6.0-jammy
+            # No TSAN because of: https://github.com/apple/swift/issues/59068
+            # swift-test-flags: "--sanitize=thread"
           - image: swift:5.10-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
@@ -58,6 +61,17 @@ jobs:
       matrix:
         include:
           - image: swiftlang/swift:nightly-jammy
+            swift-version: main
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
+          - image: swiftlang/swift:nightly-6.0-jammy
             swift-version: main
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
@@ -124,6 +138,7 @@ jobs:
       matrix:
         include:
           - image: swiftlang/swift:nightly-jammy
+          - image: swiftlang/swift:nightly-6.0-jammy
           - image: swift:5.10-jammy
           - image: swift:5.9-jammy
           - image: swift:5.8-focal
