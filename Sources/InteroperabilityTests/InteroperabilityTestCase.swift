@@ -66,6 +66,27 @@ public enum InteroperabilityTestCase: String, CaseIterable {
   }
 }
 
+public struct InteroperabilityTestError: Error {
+  private enum _Error {
+    case testNotFound(name: String)
+    case testFailed(cause: any Error)
+  }
+
+  private let _error: _Error
+
+  private init(_error: _Error) {
+    self._error = _error
+  }
+
+  public static func testNotFound(name: String) -> Self {
+    Self(_error: .testNotFound(name: name))
+  }
+
+  public static func testFailed(cause error: any Error) -> Self {
+    Self(_error: .testFailed(cause: error))
+  }
+}
+
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension InteroperabilityTestCase {
   /// Return a new instance of the test case.
