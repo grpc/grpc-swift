@@ -26,7 +26,7 @@ import NIOPosix
 struct InteroperabilityTestsExecutable: AsyncParsableCommand {
   static var configuration = CommandConfiguration(
     abstract: "gRPC Swift Interoperability Runner",
-    subcommands: [StartServer.self, ListTests.self, RunTest.self, RunAllTests.self]
+    subcommands: [StartServer.self, ListTests.self, RunTests.self]
   )
 
   struct StartServer: AsyncParsableCommand {
@@ -61,9 +61,13 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
     }
   }
 
-  struct RunTest: AsyncParsableCommand {
+  struct RunTests: AsyncParsableCommand {
     static var configuration = CommandConfiguration(
-      abstract: "Runs a gRPC interoperability test using a gRPC Swift client."
+      abstract: """
+          Run gRPC interoperability tests using a gRPC Swift client.
+          You can specify a test name as an argument to run a single test.
+          If no test name is given, all interoperability tests will be run.
+        """
     )
 
     @Option(help: "The host the server is running on")
@@ -72,19 +76,35 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
     @Option(help: "The port to connect to")
     var port: Int
 
-    @Argument(help: "The name of the test to run")
-    var testName: String
+    @Argument(help: "The name of the test to run. If absent, all tests will be run.")
+    var testName: String?
 
     func run() async throws {
-      guard let testCase = InteroperabilityTestCase(rawValue: self.testName) else {
-        throw InteroperabilityTestError.testNotFound(name: self.testName)
-      }
+      if let testName = self.testName {
+        guard let testCase = InteroperabilityTestCase(rawValue: testName) else {
+          throw InteroperabilityTestError.testNotFound(name: testName)
+        }
 
-      try await Self.runTest(
-        testCase: testCase,
-        host: self.host,
-        port: self.port
-      )
+        try await Self.runTest(
+          testCase: testCase,
+          host: self.host,
+          port: self.port
+        )
+      } else {
+        print("Running all tests...")
+        var errors = [any Error]()
+        for testCase in InteroperabilityTestCase.allCases {
+          do {
+            try await Self.runTest(
+              testCase: testCase,
+              host: self.host,
+              port: self.port
+            )
+          } catch {
+            errors.append(error)
+          }
+        }
+      }
     }
 
     internal static func runTest(
@@ -92,11 +112,6 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
       host: String,
       port: Int
     ) async throws {
-      let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-      defer {
-        try! group.syncShutdownGracefully()
-      }
-
       var transportConfig = HTTP2ClientTransport.Posix.Config.defaults
       transportConfig.compression.enabledAlgorithms = .all
       let serviceConfig = ServiceConfig(loadBalancingConfig: [.roundRobin])
@@ -104,51 +119,39 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
         target: .ipv4(host: "0.0.0.0", port: port),
         config: transportConfig,
         serviceConfig: serviceConfig,
-        eventLoopGroup: group
+        eventLoopGroup: .singletonMultiThreadedEventLoopGroup
       )
       let client = GRPCClient(transport: transport)
 
-      try await withThrowingTaskGroup(of: Void.self) { group in
+      try await withThrowingDiscardingTaskGroup { group in
         group.addTask {
           try await client.run()
         }
 
-        group.addTask {
-          print("Running '\(testCase.name)' ... ", terminator: "")
-          do {
-            try await testCase.makeTest().run(client: client)
-            print("PASSED")
-          } catch {
-            print("FAILED")
-            throw InteroperabilityTestError.testFailed(cause: error)
-          }
+        print("Running '\(testCase.name)' ... ", terminator: "")
+        do {
+          try await testCase.makeTest().run(client: client)
+          print("PASSED")
+        } catch {
+          print("FAILED\n" + String(describing: InteroperabilityTestError.testFailed(cause: error)))
         }
 
-        try await group.next()
-        group.cancelAll()
+        client.close()
       }
     }
   }
+}
 
-  struct RunAllTests: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
-      abstract: "Runs all gRPC interoperability tests using a gRPC Swift client."
-    )
+enum InteroperabilityTestError: Error, CustomStringConvertible {
+  case testNotFound(name: String)
+  case testFailed(cause: any Error)
 
-    @Option(help: "The host the server is running on")
-    var host: String
-
-    @Option(help: "The port to connect to")
-    var port: Int
-
-    func run() async throws {
-      for testCase in InteroperabilityTestCase.allCases {
-        try await RunTest.runTest(
-          testCase: testCase,
-          host: self.host,
-          port: self.port
-        )
-      }
+  var description: String {
+    switch self {
+    case .testNotFound(let name):
+      return "Test \"\(name)\" not found."
+    case .testFailed(let cause):
+      return "Test failed with error: \(String(describing: cause))"
     }
   }
 }
