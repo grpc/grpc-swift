@@ -116,6 +116,10 @@ extension GRPCClientStreamHandler {
           context.fireChannelRead(self.wrapInboundOut(.status(status, metadata)))
           context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
 
+        case .protocolViolation:
+          // Should only happen for servers
+          assertionFailure("Unexpected protocol violation")
+
         case .doNothing:
           ()
         }

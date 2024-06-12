@@ -414,6 +414,7 @@ struct GRPCStreamStateMachine {
 
     // Server-specific actions
     case rejectRPC(trailers: HPACKHeaders)
+    case protocolViolation
   }
 
   mutating func receive(headers: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
@@ -1316,14 +1317,13 @@ extension GRPCStreamStateMachine {
       }
 
       return .receivedMetadata(Metadata(headers: headers), path)
+
     case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
-      try self.invalidState(
-        "Client shouldn't have sent metadata twice."
-      )
+      // Metadata has already been received, should only be sent once by clients.
+      return .protocolViolation
+
     case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-      try self.invalidState(
-        "Client can't have sent metadata if closed."
-      )
+      try self.invalidState("Client can't have sent metadata if closed.")
     }
   }
 

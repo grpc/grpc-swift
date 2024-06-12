@@ -18,12 +18,14 @@ import XCTest
 
 func XCTAssertThrowsError<T, E: Error>(
   ofType: E.Type,
+  file: StaticString = #filePath,
+  line: UInt = #line,
   _ expression: @autoclosure () throws -> T,
   _ errorHandler: (E) -> Void
 ) {
-  XCTAssertThrowsError(try expression()) { error in
+  XCTAssertThrowsError(try expression(), file: file, line: line) { error in
     guard let error = error as? E else {
-      return XCTFail("Error had unexpected type '\(type(of: error))'")
+      return XCTFail("Error had unexpected type '\(type(of: error))'", file: file, line: line)
     }
     errorHandler(error)
   }

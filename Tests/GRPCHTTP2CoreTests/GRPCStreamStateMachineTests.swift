@@ -565,7 +565,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           "custom-key": "custom-value",
         ]
       )
-    case .receivedMetadata, .doNothing, .rejectRPC:
+    case .receivedMetadata, .doNothing, .rejectRPC, .protocolViolation:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
   }
@@ -640,7 +640,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           "custom-key": "custom-value",
         ]
       )
-    case .receivedMetadata, .doNothing, .rejectRPC:
+    case .receivedMetadata, .doNothing, .rejectRPC, .protocolViolation:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
   }
@@ -1922,38 +1922,23 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   func testReceiveMetadataWhenClientOpenAndServerIdle() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
 
-    // Try receiving initial metadata again - should fail
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client shouldn't have sent metadata twice.")
-    }
+    // Try receiving initial metadata again - should be a protocol violation
+    let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
+    XCTAssertEqual(action, .protocolViolation)
   }
 
   func testReceiveMetadataWhenClientOpenAndServerOpen() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client shouldn't have sent metadata twice.")
-    }
+    let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
+    XCTAssertEqual(action, .protocolViolation)
   }
 
-  func testReceiveMetadataWhenClientOpenAndServerClosed() {
+  func testReceiveMetadataWhenClientOpenAndServerClosed() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerClosed)
 
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client shouldn't have sent metadata twice.")
-    }
+    let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
+    XCTAssertEqual(action, .protocolViolation)
   }
 
   func testReceiveMetadataWhenClientClosedAndServerIdle() {
