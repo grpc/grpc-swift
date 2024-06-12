@@ -27,23 +27,20 @@ public protocol InteroperabilityTest {
   func run(client: GRPCClient) async throws
 }
 
-/// Test cases as listed by the [gRPC interoperability test description
-/// specification](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md).
+/// Test cases as listed by the [gRPC interoperability test description specification]
+/// (https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md).
 ///
 /// This is not a complete list, the following tests have not been implemented:
-/// - cacheable_unary
-/// - client-compressed-unary
-/// - server-compressed-unary
-/// - client_compressed_streaming
-/// - server_compressed_streaming
+/// - cacheable_unary (caching not supported)
+/// - cancel_after_begin (if the client cancels the task running the request, there's no response to be
+/// received, so we can't check we got back a Cancelled status code)
+/// - cancel_after_first_response (same reason as above)
 /// - compute_engine_creds
 /// - jwt_token_creds
 /// - oauth2_auth_token
 /// - per_rpc_creds
 /// - google_default_credentials
 /// - compute_engine_channel_credentials
-/// - cancel_after_begin
-/// - cancel_after_first_response
 ///
 /// Note: Tests for compression have not been implemented yet as compression is
 /// not supported. Once the API which allows for compression will be implemented
@@ -51,8 +48,12 @@ public protocol InteroperabilityTest {
 public enum InteroperabilityTestCase: String, CaseIterable {
   case emptyUnary = "empty_unary"
   case largeUnary = "large_unary"
+  case clientCompressedUnary = "client_compressed_unary"
+  case serverCompressedUnary = "server_compressed_unary"
   case clientStreaming = "client_streaming"
   case serverStreaming = "server_streaming"
+  case clientCompressedStreaming = "client_compressed_streaming"
+  case serverCompressedStreaming = "server_compressed_streaming"
   case pingPong = "ping_pong"
   case emptyStream = "empty_stream"
   case customMetadata = "custom_metadata"
@@ -60,6 +61,7 @@ public enum InteroperabilityTestCase: String, CaseIterable {
   case specialStatusMessage = "special_status_message"
   case unimplementedMethod = "unimplemented_method"
   case unimplementedService = "unimplemented_service"
+  case timeoutOnSleepingServer = "timeout_on_sleeping_server"
 
   public var name: String {
     return self.rawValue
@@ -75,10 +77,18 @@ extension InteroperabilityTestCase {
       return EmptyUnary()
     case .largeUnary:
       return LargeUnary()
+    case .clientCompressedUnary:
+      return ClientCompressedUnary()
+    case .serverCompressedUnary:
+      return ServerCompressedUnary()
     case .clientStreaming:
       return ClientStreaming()
     case .serverStreaming:
       return ServerStreaming()
+    case .clientCompressedStreaming:
+      return ClientCompressedStreaming()
+    case .serverCompressedStreaming:
+      return ServerCompressedStreaming()
     case .pingPong:
       return PingPong()
     case .emptyStream:
@@ -93,6 +103,8 @@ extension InteroperabilityTestCase {
       return UnimplementedMethod()
     case .unimplementedService:
       return UnimplementedService()
+    case .timeoutOnSleepingServer:
+      return TimeoutOnSleepingServer()
     }
   }
 }
