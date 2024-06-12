@@ -2085,7 +2085,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerClosed)
 
     // Client is not done sending request, don't fail.
-    XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: false))
+    XCTAssertEqual(try stateMachine.receive(buffer: ByteBuffer(), endStream: false), .doNothing)
   }
 
   func testReceiveMessageWhenClientClosedAndServerIdle() {

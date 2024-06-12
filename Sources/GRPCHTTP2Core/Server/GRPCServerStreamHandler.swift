@@ -85,6 +85,8 @@ extension GRPCServerStreamHandler {
                 break loop
               }
             }
+          case .doNothing:
+            ()
           }
         } catch {
           context.fireErrorCaught(error)

@@ -436,6 +436,7 @@ struct GRPCStreamStateMachine {
 
   enum OnBufferReceivedAction: Equatable {
     case readInbound
+    case doNothing
 
     // Client-specific actions
 
@@ -1331,11 +1332,12 @@ extension GRPCStreamStateMachine {
     buffer: ByteBuffer,
     endStream: Bool
   ) throws -> OnBufferReceivedAction {
+    let action: OnBufferReceivedAction
+
     switch self.state {
     case .clientIdleServerIdle:
-      try self.invalidState(
-        "Can't have received a message if client is idle."
-      )
+      try self.invalidState("Can't have received a message if client is idle.")
+
     case .clientOpenServerIdle(var state):
       // Deframer must be present on the server side, as we know the decompression
       // algorithm from the moment the client opens.
@@ -1348,6 +1350,9 @@ extension GRPCStreamStateMachine {
       } else {
         self.state = .clientOpenServerIdle(state)
       }
+
+      action = .readInbound
+
     case .clientOpenServerOpen(var state):
       try state.deframer.process(buffer: buffer) { deframedMessage in
         state.inboundMessageBuffer.append(deframedMessage)
@@ -1358,6 +1363,9 @@ extension GRPCStreamStateMachine {
       } else {
         self.state = .clientOpenServerOpen(state)
       }
+
+      action = .readInbound
+
     case .clientOpenServerClosed(let state):
       // Client is not done sending request, but server has already closed.
       // Ignore the rest of the request: do nothing, unless endStream is set,
@@ -1365,12 +1373,14 @@ extension GRPCStreamStateMachine {
       if endStream {
         self.state = .clientClosedServerClosed(.init(previousState: state))
       }
+
+      action = .doNothing
+
     case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
-      try self.invalidState(
-        "Client can't send a message if closed."
-      )
+      try self.invalidState("Client can't send a message if closed.")
     }
-    return .readInbound
+
+    return action
   }
 
   private mutating func serverNextOutboundFrame() throws -> OnNextOutboundFrame {
