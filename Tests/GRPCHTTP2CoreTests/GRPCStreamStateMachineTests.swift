@@ -2357,12 +2357,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       )
     )
 
-    XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
-    XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
-  func testNextInboundMessageWhenClientClosedAndServerIdle() {
-    var stateMachine = self.makeServerStateMachine(targetState: .clientClosedServerIdle)
+  func testNextInboundMessageWhenClientClosedAndServerIdle() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
+    let action = try stateMachine.receive(
+      buffer: ByteBuffer(repeating: 0, count: 5),
+      endStream: true
+    )
+    XCTAssertEqual(action, .readInbound)
+    XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([]))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
@@ -2412,9 +2417,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Close client
     XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: true))
 
-    // Even though the client and server are closed, because the server received
-    // a message while the client was still open, we must get the message now.
-    XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
+    // The server is closed, the message should be dropped.
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 

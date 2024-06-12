@@ -1422,24 +1422,26 @@ extension GRPCStreamStateMachine {
       let request = state.inboundMessageBuffer.pop()
       self.state = .clientOpenServerIdle(state)
       return request.map { .receiveMessage($0) } ?? .awaitMoreMessages
+
     case .clientOpenServerOpen(var state):
       let request = state.inboundMessageBuffer.pop()
       self.state = .clientOpenServerOpen(state)
       return request.map { .receiveMessage($0) } ?? .awaitMoreMessages
-    case .clientOpenServerClosed(var state):
+
+    case .clientClosedServerIdle(var state):
       let request = state.inboundMessageBuffer.pop()
-      self.state = .clientOpenServerClosed(state)
-      return request.map { .receiveMessage($0) } ?? .awaitMoreMessages
+      self.state = .clientClosedServerIdle(state)
+      return request.map { .receiveMessage($0) } ?? .noMoreMessages
+
     case .clientClosedServerOpen(var state):
       let request = state.inboundMessageBuffer.pop()
       self.state = .clientClosedServerOpen(state)
       return request.map { .receiveMessage($0) } ?? .noMoreMessages
-    case .clientClosedServerClosed(var state):
-      let request = state.inboundMessageBuffer.pop()
-      self.state = .clientClosedServerClosed(state)
-      return request.map { .receiveMessage($0) } ?? .noMoreMessages
-    case .clientClosedServerIdle:
+
+    case .clientOpenServerClosed, .clientClosedServerClosed:
+      // Server has closed, no need to read.
       return .noMoreMessages
+
     case .clientIdleServerIdle:
       return .awaitMoreMessages
     }
