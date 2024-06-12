@@ -66,7 +66,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata without content-type
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.te.rawValue: "trailers",
@@ -96,7 +96,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata without :method
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
       GRPCHTTP2Keys.te.rawValue: "trailers",
@@ -135,7 +135,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata without :scheme
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
       GRPCHTTP2Keys.te.rawValue: "trailers",
@@ -212,7 +212,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata without TE
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -251,7 +251,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -293,7 +293,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -366,7 +366,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata with end stream set
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -432,7 +432,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -541,7 +541,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -637,7 +637,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -715,7 +715,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // Receive client's initial metadata
     let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "test/test",
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
       GRPCHTTP2Keys.scheme.rawValue: "http",
       GRPCHTTP2Keys.method.rawValue: "POST",
       GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
@@ -819,7 +819,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     XCTAssertEqual(
       try promise.futureResult.wait(),
-      MethodDescriptor(path: "/SomeService/SomeMethod")
+      MethodDescriptor(service: "SomeService", method: "SomeMethod")
     )
   }
 
