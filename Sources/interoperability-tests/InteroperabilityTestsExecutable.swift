@@ -76,67 +76,51 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
     @Option(help: "The port to connect to")
     var port: Int
 
-    @Argument(help: "The name of the test to run. If absent, all tests will be run.")
-    var testName: String?
+    @Argument(help: "The name of the tests to run. If none, all tests will be run.")
+    var testNames: [String] = InteroperabilityTestCase.allCases.map { $0.name }
 
     func run() async throws {
-      if let testName = self.testName {
-        guard let testCase = InteroperabilityTestCase(rawValue: testName) else {
-          throw InteroperabilityTestError.testNotFound(name: testName)
-        }
-
-        try await Self.runTest(
-          testCase: testCase,
-          host: self.host,
-          port: self.port
-        )
-      } else {
-        print("Running all tests...")
-        var errors = [any Error]()
-        for testCase in InteroperabilityTestCase.allCases {
-          do {
-            try await Self.runTest(
-              testCase: testCase,
-              host: self.host,
-              port: self.port
-            )
-          } catch {
-            errors.append(error)
-          }
-        }
-      }
-    }
-
-    internal static func runTest(
-      testCase: InteroperabilityTestCase,
-      host: String,
-      port: Int
-    ) async throws {
-      var transportConfig = HTTP2ClientTransport.Posix.Config.defaults
-      transportConfig.compression.enabledAlgorithms = .all
-      let serviceConfig = ServiceConfig(loadBalancingConfig: [.roundRobin])
-      let transport = try HTTP2ClientTransport.Posix(
-        target: .ipv4(host: "0.0.0.0", port: port),
-        config: transportConfig,
-        serviceConfig: serviceConfig,
-        eventLoopGroup: .singletonMultiThreadedEventLoopGroup
-      )
-      let client = GRPCClient(transport: transport)
+      let client = try self.buildClient(host: self.host, port: self.port)
 
       try await withThrowingDiscardingTaskGroup { group in
         group.addTask {
           try await client.run()
         }
 
-        print("Running '\(testCase.name)' ... ", terminator: "")
-        do {
-          try await testCase.makeTest().run(client: client)
-          print("PASSED")
-        } catch {
-          print("FAILED\n" + String(describing: InteroperabilityTestError.testFailed(cause: error)))
+        for testName in testNames {
+          guard let testCase = InteroperabilityTestCase(rawValue: testName) else {
+            print(InteroperabilityTestError.testNotFound(name: testName))
+            continue
+          }
+          await self.runTest(testCase, using: client)
         }
 
         client.close()
+      }
+    }
+
+    private func buildClient(host: String, port: Int) throws -> GRPCClient {
+      var transportConfig = HTTP2ClientTransport.Posix.Config.defaults
+      transportConfig.compression.enabledAlgorithms = .all
+      let serviceConfig = ServiceConfig(loadBalancingConfig: [.roundRobin])
+      let transport = try HTTP2ClientTransport.Posix(
+        target: .ipv4(host: host, port: port),
+        config: transportConfig,
+        serviceConfig: serviceConfig
+      )
+      return GRPCClient(transport: transport)
+    }
+
+    private func runTest(
+      _ testCase: InteroperabilityTestCase,
+      using client: GRPCClient
+    ) async {
+      print("Running '\(testCase.name)' ... ", terminator: "")
+      do {
+        try await testCase.makeTest().run(client: client)
+        print("PASSED")
+      } catch {
+        print("FAILED\n" + String(describing: InteroperabilityTestError.testFailed(cause: error)))
       }
     }
   }
