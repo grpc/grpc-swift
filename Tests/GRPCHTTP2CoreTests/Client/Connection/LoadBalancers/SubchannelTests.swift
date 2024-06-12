@@ -396,11 +396,7 @@ final class SubchannelTests: XCTestCase {
       }
 
       group.addTask {
-        try await server.run { inbound, outbound in
-          // Sleep, the RPC will be cancelled at the end of the test because the connection
-          // will be purposefully dropped.
-          try await Task.sleep(for: .seconds(300))
-        }
+        try await server.run(.echo)
       }
 
       var events = [Subchannel.Event]()
@@ -421,11 +417,17 @@ final class SubchannelTests: XCTestCase {
             let stream = try await subchannel.makeStream(descriptor: .echoGet, options: .defaults)
             try await stream.execute { inbound, outbound in
               try await outbound.write(.metadata([:]))
+
+              // Wait for the metadata to be echo'd back.
+              var iterator = inbound.makeAsyncIterator()
+              let _ = try await iterator.next()
+
               // Stream is definitely open. Bork the connection.
               server.clients.first?.close(mode: .all, promise: nil)
-              for try await _ in inbound {
-                ()
-              }
+
+              // Wait for the next message which won't arrive, client won't send a message. The
+              // stream should fail
+              let _ = try await iterator.next()
             }
           } else if readyCount == 2 {
             subchannel.close()
