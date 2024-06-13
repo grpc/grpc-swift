@@ -148,9 +148,7 @@ extension ServerCodeTranslator {
           label: "request",
           type: .generic(
             wrapper: .member(["ServerRequest", "Stream"]),
-            wrapped: .member(
-              self.methodInputOutputTypealias(for: method, service: service, type: .input)
-            )
+            wrapped: .member(method.inputType)
           )
         )
       ],
@@ -158,9 +156,7 @@ extension ServerCodeTranslator {
       returnType: .identifierType(
         .generic(
           wrapper: .member(["ServerResponse", "Stream"]),
-          wrapped: .member(
-            self.methodInputOutputTypealias(for: method, service: service, type: .output)
-          )
+          wrapped: .member(method.outputType)
         )
       )
     )
@@ -244,11 +240,7 @@ extension ServerCodeTranslator {
     arguments.append(
       .init(
         label: "deserializer",
-        expression: .identifierPattern(
-          codeGenerationRequest.lookupDeserializer(
-            self.methodInputOutputTypealias(for: method, service: service, type: .input)
-          )
-        )
+        expression: .identifierPattern(codeGenerationRequest.lookupDeserializer(method.inputType))
       )
     )
 
@@ -256,11 +248,7 @@ extension ServerCodeTranslator {
       .init(
         label: "serializer",
         expression:
-          .identifierPattern(
-            codeGenerationRequest.lookupSerializer(
-              self.methodInputOutputTypealias(for: method, service: service, type: .output)
-            )
-          )
+          .identifierPattern(codeGenerationRequest.lookupSerializer(method.outputType))
       )
     )
 
@@ -326,17 +314,6 @@ extension ServerCodeTranslator {
     let inputStreaming = method.isInputStreaming ? "Stream" : "Single"
     let outputStreaming = method.isOutputStreaming ? "Stream" : "Single"
 
-    let inputTypealiasComponents = self.methodInputOutputTypealias(
-      for: method,
-      service: service,
-      type: .input
-    )
-    let outputTypealiasComponents = self.methodInputOutputTypealias(
-      for: method,
-      service: service,
-      type: .output
-    )
-
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
       kind: .function(name: method.name.generatedLowerCase),
@@ -346,7 +323,7 @@ extension ServerCodeTranslator {
           type:
             .generic(
               wrapper: .member(["ServerRequest", inputStreaming]),
-              wrapped: .member(inputTypealiasComponents)
+              wrapped: .member(method.inputType)
             )
         )
       ],
@@ -354,7 +331,7 @@ extension ServerCodeTranslator {
       returnType: .identifierType(
         .generic(
           wrapper: .member(["ServerResponse", outputStreaming]),
-          wrapped: .member(outputTypealiasComponents)
+          wrapped: .member(method.outputType)
         )
       )
     )
@@ -470,25 +447,6 @@ extension ServerCodeTranslator {
   fileprivate enum InputOutputType {
     case input
     case output
-  }
-
-  /// Generates the fully qualified name of the typealias for the input or output type of a method.
-  private func methodInputOutputTypealias(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    service: CodeGenerationRequest.ServiceDescriptor,
-    type: InputOutputType
-  ) -> String {
-    var components: String =
-      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase)"
-
-    switch type {
-    case .input:
-      components.append(".Input")
-    case .output:
-      components.append(".Output")
-    }
-
-    return components
   }
 
   /// Generates the fully qualified name of a method descriptor.

@@ -214,18 +214,12 @@ extension ClientCodeTranslator {
         FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
         FunctionArgumentDescription(
           label: "serializer",
-          expression: .identifierPattern(
-            codeGenerationRequest.lookupSerializer(
-              self.methodInputOutputTypealias(for: method, service: service, type: .input)
-            )
-          )
+          expression: .identifierPattern(codeGenerationRequest.lookupSerializer(method.inputType))
         ),
         FunctionArgumentDescription(
           label: "deserializer",
           expression: .identifierPattern(
-            codeGenerationRequest.lookupDeserializer(
-              self.methodInputOutputTypealias(for: method, service: service, type: .output)
-            )
+            codeGenerationRequest.lookupDeserializer(method.outputType)
           )
         ),
         FunctionArgumentDescription(label: "options", expression: .identifierPattern("options")),
@@ -273,9 +267,7 @@ extension ClientCodeTranslator {
       label: "request",
       type: .generic(
         wrapper: clientRequestType,
-        wrapped: .member(
-          self.methodInputOutputTypealias(for: method, service: service, type: .input)
-        )
+        wrapped: .member(method.inputType)
       )
     )
   }
@@ -289,9 +281,7 @@ extension ClientCodeTranslator {
       type: ExistingTypeDescription.some(
         .generic(
           wrapper: .member("MessageSerializer"),
-          wrapped: .member(
-            self.methodInputOutputTypealias(for: method, service: service, type: .input)
-          )
+          wrapped: .member(method.inputType)
         )
       )
     )
@@ -306,9 +296,7 @@ extension ClientCodeTranslator {
       type: ExistingTypeDescription.some(
         .generic(
           wrapper: .member("MessageDeserializer"),
-          wrapped: .member(
-            self.methodInputOutputTypealias(for: method, service: service, type: .output)
-          )
+          wrapped: .member(method.outputType)
         )
       )
     )
@@ -321,9 +309,7 @@ extension ClientCodeTranslator {
     let clientStreaming = method.isOutputStreaming ? "Stream" : "Single"
     let closureParameterType = ExistingTypeDescription.generic(
       wrapper: .member(["ClientResponse", clientStreaming]),
-      wrapped: .member(
-        self.methodInputOutputTypealias(for: method, service: service, type: .output)
-      )
+      wrapped: .member(method.outputType)
     )
 
     let bodyClosure = ClosureSignatureDescription(
@@ -457,24 +443,5 @@ extension ClientCodeTranslator {
   fileprivate enum InputOutputType {
     case input
     case output
-  }
-
-  /// Generates the fully qualified name of the typealias for the input or output type of a method.
-  private func methodInputOutputTypealias(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    service: CodeGenerationRequest.ServiceDescriptor,
-    type: InputOutputType
-  ) -> String {
-    var components: String =
-      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase)"
-
-    switch type {
-    case .input:
-      components.append(".Input")
-    case .output:
-      components.append(".Output")
-    }
-
-    return components
   }
 }
