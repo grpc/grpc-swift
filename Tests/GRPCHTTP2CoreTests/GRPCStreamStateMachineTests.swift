@@ -565,7 +565,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           "custom-key": "custom-value",
         ]
       )
-    case .receivedMetadata, .doNothing, .rejectRPC:
+    case .receivedMetadata, .doNothing, .rejectRPC, .protocolViolation:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
   }
@@ -640,7 +640,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
           "custom-key": "custom-value",
         ]
       )
-    case .receivedMetadata, .doNothing, .rejectRPC:
+    case .receivedMetadata, .doNothing, .rejectRPC, .protocolViolation:
       XCTFail("Expected .receivedStatusAndMetadata")
     }
   }
@@ -1922,38 +1922,23 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
   func testReceiveMetadataWhenClientOpenAndServerIdle() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
 
-    // Try receiving initial metadata again - should fail
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client shouldn't have sent metadata twice.")
-    }
+    // Try receiving initial metadata again - should be a protocol violation
+    let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
+    XCTAssertEqual(action, .protocolViolation)
   }
 
   func testReceiveMetadataWhenClientOpenAndServerOpen() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerOpen)
 
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client shouldn't have sent metadata twice.")
-    }
+    let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
+    XCTAssertEqual(action, .protocolViolation)
   }
 
-  func testReceiveMetadataWhenClientOpenAndServerClosed() {
+  func testReceiveMetadataWhenClientOpenAndServerClosed() throws {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerClosed)
 
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
-    ) { error in
-      XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client shouldn't have sent metadata twice.")
-    }
+    let action = try stateMachine.receive(headers: .clientInitialMetadata, endStream: false)
+    XCTAssertEqual(action, .protocolViolation)
   }
 
   func testReceiveMetadataWhenClientClosedAndServerIdle() {
@@ -2100,7 +2085,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerClosed)
 
     // Client is not done sending request, don't fail.
-    XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: false))
+    XCTAssertEqual(try stateMachine.receive(buffer: ByteBuffer(), endStream: false), .doNothing)
   }
 
   func testReceiveMessageWhenClientClosedAndServerIdle() {
@@ -2372,12 +2357,17 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       )
     )
 
-    XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
-    XCTAssertEqual(stateMachine.nextInboundMessage(), .awaitMoreMessages)
+    XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
-  func testNextInboundMessageWhenClientClosedAndServerIdle() {
-    var stateMachine = self.makeServerStateMachine(targetState: .clientClosedServerIdle)
+  func testNextInboundMessageWhenClientClosedAndServerIdle() throws {
+    var stateMachine = self.makeServerStateMachine(targetState: .clientOpenServerIdle)
+    let action = try stateMachine.receive(
+      buffer: ByteBuffer(repeating: 0, count: 5),
+      endStream: true
+    )
+    XCTAssertEqual(action, .readInbound)
+    XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([]))
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
@@ -2427,9 +2417,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     // Close client
     XCTAssertNoThrow(try stateMachine.receive(buffer: .init(), endStream: true))
 
-    // Even though the client and server are closed, because the server received
-    // a message while the client was still open, we must get the message now.
-    XCTAssertEqual(stateMachine.nextInboundMessage(), .receiveMessage([42, 42]))
+    // The server is closed, the message should be dropped.
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 

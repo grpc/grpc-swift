@@ -85,6 +85,8 @@ extension GRPCServerStreamHandler {
                 break loop
               }
             }
+          case .doNothing:
+            ()
           }
         } catch {
           context.fireErrorCaught(error)
@@ -125,6 +127,10 @@ extension GRPCServerStreamHandler {
             code: .internalError,
             message: "Server cannot get receivedStatusAndMetadata."
           )
+
+        case .protocolViolation:
+          context.writeAndFlush(self.wrapOutboundOut(.rstStream(.protocolError)), promise: nil)
+          context.close(promise: nil)
 
         case .doNothing:
           throw RPCError(code: .internalError, message: "Server cannot receive doNothing.")
