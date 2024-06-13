@@ -43,6 +43,17 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertEqual(response.trailingMetadata, ["bar": "baz"])
   }
 
+  func testAcceptedButFailedSingleResponseConvenienceMethods() {
+    let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
+    let response = ClientResponse.Single(of: String.self, metadata: ["foo": "bar"], error: error)
+
+    XCTAssertEqual(response.metadata, ["foo": "bar"])
+    XCTAssertThrowsRPCError(try response.message) {
+      XCTAssertEqual($0, error)
+    }
+    XCTAssertEqual(response.trailingMetadata, ["bar": "baz"])
+  }
+
   func testAcceptedStreamResponseConvenienceMethods() async throws {
     let response = ClientResponse.Stream(
       of: String.self,
