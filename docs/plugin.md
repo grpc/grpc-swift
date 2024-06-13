@@ -119,6 +119,6 @@ protoc <your proto> --grpc-swift_opt=Client=true,Server=false --grpc-swift_out=.
 ```
 
 [protocol-buffers]: https://developers.google.com/protocol-buffers/docs/overview
-[swift-protobuf-filenaming]: https://github.com/apple/swift-protobuf/blob/master/Documentation/PLUGIN.md#generation-option-filenaming---naming-of-generated-sources
-[swift-protobuf-module-mappings]: https://github.com/apple/swift-protobuf/blob/master/Documentation/PLUGIN.md#generation-option-protopathmodulemappings---swift-module-names-for-proto-paths
+[swift-protobuf-filenaming]: https://github.com/apple/swift-protobuf/blob/main/Documentation/PLUGIN.md#generation-option-filenaming---naming-of-generated-sources
+[swift-protobuf-module-mappings]: https://github.com/apple/swift-protobuf/blob/main/Documentation/PLUGIN.md#generation-option-protopathmodulemappings---swift-module-names-for-proto-paths
 [swift-protobuf-module-name]: https://github.com/apple/swift-protobuf/commit/9df381f72ff22062080d434e9c2f68e71ee44298#diff-1b08f0a80bd568509049d851b8d8af90d1f2db3cd8711eaba974b5380cd59bf3
