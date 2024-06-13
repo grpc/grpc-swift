@@ -59,7 +59,7 @@ extension ClientResponse {
   /// // The explicit API:
   /// switch response {
   /// case .success(let contents):
-  ///   print("Received response with message '\(contents.message)'")
+  ///   print("Received response with message '\(try contents.message.get())'")
   /// case .failure(let error):
   ///   print("RPC failed with code '\(error.code)'")
   /// }
@@ -80,8 +80,9 @@ extension ClientResponse {
       /// level metadata provided by the service.
       public var metadata: Metadata
 
-      /// The response message received from the server.
-      public var message: Message
+      /// The response message received from the server, or an error of the RPC failed with a
+      /// non-ok status.
+      public var message: Result<Message, RPCError>
 
       /// Metadata received from the server at the end of the response.
       ///
@@ -101,8 +102,22 @@ extension ClientResponse {
         trailingMetadata: Metadata
       ) {
         self.metadata = metadata
-        self.message = message
+        self.message = .success(message)
         self.trailingMetadata = trailingMetadata
+      }
+
+      /// Creates a `Contents`.
+      ///
+      /// - Parameters:
+      ///   - metadata: Metadata received from the server at the beginning of the response.
+      ///   - error: Error received from the server.
+      public init(
+        metadata: Metadata,
+        error: RPCError
+      ) {
+        self.metadata = metadata
+        self.message = .failure(error)
+        self.trailingMetadata = error.metadata
       }
     }
 
@@ -263,6 +278,17 @@ extension ClientResponse.Single {
     self.accepted = .success(contents)
   }
 
+  /// Creates a new accepted response with a failed outcome.
+  ///
+  /// - Parameters:
+  ///   - messageType: The type of message.
+  ///   - metadata: Metadata received from the server at the beginning of the response.
+  ///   - error: An error describing why the RPC failed.
+  public init(of messageType: Message.Type = Message.self, metadata: Metadata, error: RPCError) {
+    let contents = Contents(metadata: metadata, error: error)
+    self.accepted = .success(contents)
+  }
+
   /// Creates a new failed response.
   ///
   /// - Parameters:
@@ -289,7 +315,7 @@ extension ClientResponse.Single {
   /// - Throws: ``RPCError`` if the request failed.
   public var message: Message {
     get throws {
-      try self.accepted.map { $0.message }.get()
+      try self.accepted.flatMap { $0.message }.get()
     }
   }
 
