@@ -1302,7 +1302,7 @@ final class HTTP2TransportTests: XCTestCase {
 extension [HTTP2TransportTests.Transport] {
   static let supported = [
     HTTP2TransportTests.Transport(server: .posix, client: .posix),
-    HTTP2TransportTests.Transport(server: .niots, client: .posix)
+    HTTP2TransportTests.Transport(server: .niots, client: .posix),
   ]
 }
 
