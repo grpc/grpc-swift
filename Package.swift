@@ -263,7 +263,8 @@ extension Target {
       .grpcHTTP2TransportNIOPosix,
       .grpcProtobuf,
       .nioCore,
-      .nioFileSystem
+      .nioFileSystem,
+      .argumentParser
     ]
   )
 
