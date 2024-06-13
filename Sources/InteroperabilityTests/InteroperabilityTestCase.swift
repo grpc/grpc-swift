@@ -35,12 +35,15 @@ public protocol InteroperabilityTest {
 /// - cancel_after_begin (if the client cancels the task running the request, there's no response to be
 /// received, so we can't check we got back a Cancelled status code)
 /// - cancel_after_first_response (same reason as above)
+/// - client_compressed_streaming (we don't support per-message compression, so we can't implement this)
 /// - compute_engine_creds
 /// - jwt_token_creds
 /// - oauth2_auth_token
 /// - per_rpc_creds
 /// - google_default_credentials
 /// - compute_engine_channel_credentials
+/// - timeout_on_sleeping_server (timeouts end up being surfaced as `CancellationError`s, so we
+/// can't really implement this test)
 ///
 /// Note: Tests for compression have not been implemented yet as compression is
 /// not supported. Once the API which allows for compression will be implemented
@@ -52,7 +55,6 @@ public enum InteroperabilityTestCase: String, CaseIterable {
   case serverCompressedUnary = "server_compressed_unary"
   case clientStreaming = "client_streaming"
   case serverStreaming = "server_streaming"
-  case clientCompressedStreaming = "client_compressed_streaming"
   case serverCompressedStreaming = "server_compressed_streaming"
   case pingPong = "ping_pong"
   case emptyStream = "empty_stream"
@@ -61,7 +63,6 @@ public enum InteroperabilityTestCase: String, CaseIterable {
   case specialStatusMessage = "special_status_message"
   case unimplementedMethod = "unimplemented_method"
   case unimplementedService = "unimplemented_service"
-  case timeoutOnSleepingServer = "timeout_on_sleeping_server"
 
   public var name: String {
     return self.rawValue
@@ -85,8 +86,6 @@ extension InteroperabilityTestCase {
       return ClientStreaming()
     case .serverStreaming:
       return ServerStreaming()
-    case .clientCompressedStreaming:
-      return ClientCompressedStreaming()
     case .serverCompressedStreaming:
       return ServerCompressedStreaming()
     case .pingPong:
@@ -103,8 +102,6 @@ extension InteroperabilityTestCase {
       return UnimplementedMethod()
     case .unimplementedService:
       return UnimplementedService()
-    case .timeoutOnSleepingServer:
-      return TimeoutOnSleepingServer()
     }
   }
 }

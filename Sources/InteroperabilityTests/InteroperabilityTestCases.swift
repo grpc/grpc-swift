@@ -180,7 +180,7 @@ class ClientCompressedUnary: InteroperabilityTest {
     ) { response in
       switch response.accepted {
       case .success(let success):
-        try assertEqual(success.message.payload.body, Data(repeating: 0, count: 314_159))
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
       case .failure:
         throw AssertionFailure(message: "Response should have been accepted.")
       }
@@ -194,7 +194,7 @@ class ClientCompressedUnary: InteroperabilityTest {
     ) { response in
       switch response.accepted {
       case .success(let success):
-        try assertEqual(success.message.payload.body, Data(repeating: 0, count: 314_159))
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
       case .failure:
         throw AssertionFailure(message: "Response should have been accepted.")
       }
@@ -267,11 +267,11 @@ class ServerCompressedUnary: InteroperabilityTest {
       // We can't verify that the compression bit was set, instead we verify that the encoding header
       // was sent by the server. This isn't quite the same since as it can still be set but the
       // compression may _not_ be set.
-      try assertTrue(response.metadata.firstIndex(where: { $0.key == "grpc-encoding" }) != nil)
+      try assertTrue(response.metadata["grpc-encoding"].contains { $0 != "identity" })
 
       switch response.accepted {
       case .success(let success):
-        try assertEqual(success.message.payload.body, Data(repeating: 0, count: 314_159))
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
       case .failure:
         throw AssertionFailure(message: "Response should have been accepted.")
       }
@@ -286,7 +286,7 @@ class ServerCompressedUnary: InteroperabilityTest {
       // compression bit on the message not set.
       switch response.accepted {
       case .success(let success):
-        try assertEqual(success.message.payload.body, Data(repeating: 0, count: 314_159))
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
       case .failure:
         throw AssertionFailure(
           message: "Response should have been accepted."
@@ -425,119 +425,6 @@ struct ServerStreaming: InteroperabilityTest {
   }
 }
 
-/// This test verifies the client can compress requests on per-message basis by performing a
-/// two-request streaming call. It also sends an initial probing request to verify whether the
-/// server supports the `CompressedRequest` feature by checking if the probing call fails with
-/// an `INVALID_ARGUMENT` status.
-///
-/// Procedure:
-///  1. Client calls `StreamingInputCall` and sends the following feature-probing
-///     *uncompressed* `StreamingInputCallRequest` message
-///
-///     ```
-///     {
-///       expect_compressed:{
-///         value: true
-///       }
-///       payload:{
-///         body: 27182 bytes of zeros
-///       }
-///     }
-///     ```
-///     If the call does not fail with `INVALID_ARGUMENT`, the test fails.
-///     Otherwise, we continue.
-///
-///  2. Client calls `StreamingInputCall` again, sending the *compressed* message
-///
-///     ```
-///     {
-///       expect_compressed:{
-///         value: true
-///       }
-///       payload:{
-///         body: 27182 bytes of zeros
-///       }
-///     }
-///     ```
-///
-///  3. And finally, the *uncompressed* message
-///     ```
-///     {
-///       expect_compressed:{
-///         value: false
-///       }
-///       payload:{
-///         body: 45904 bytes of zeros
-///       }
-///     }
-///     ```
-///
-///  4. Client half-closes
-///
-/// Client asserts:
-/// - First call fails with `INVALID_ARGUMENT`.
-/// - Next calls succeeds.
-/// - Response aggregated payload size is 73086.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-class ClientCompressedStreaming: InteroperabilityTest {
-  func run(client: GRPCClient) async throws {
-    let testServiceClient = Grpc_Testing_TestService.Client(client: client)
-
-    // Does the server support this test? To find out we need to send an uncompressed probe. However
-    // we need to disable compression at the RPC level as we don't have access to whether the
-    // compression byte is set on messages. As such the corresponding code in the service
-    // implementation checks against the 'grpc-encoding' header as a best guess. Disabling
-    // compression here will stop that header from being sent.
-    let probeRequest: Grpc_Testing_StreamingInputCallRequest = .with {
-      $0.expectCompressed = .with { $0.value = true }
-      $0.payload = .with { $0.body = Data(repeating: 0, count: 27_182) }
-    }
-
-    var options = CallOptions.defaults
-    options.compression = CompressionAlgorithm.none
-
-    try await testServiceClient.streamingInputCall(
-      request: ClientRequest.Stream { writer in
-        try await writer.write(probeRequest)
-      },
-      options: options
-    ) { response in
-      switch response.accepted {
-      case .success:
-        throw AssertionFailure(message: "The result should be an error.")
-      case .failure(let error):
-        try assertEqual(error.code, .invalidArgument)
-      }
-    }
-
-    // Now for the actual test.
-
-    // The first message is identical to the probe message, we'll reuse that.
-    // The second should not be compressed.
-    let secondMessage: Grpc_Testing_StreamingInputCallRequest = .with { request in
-      request.expectCompressed = .with { $0.value = false }
-      request.payload = .with { $0.body = Data(repeating: 0, count: 45_904) }
-    }
-
-    options.compression = .gzip
-
-    try await testServiceClient.streamingInputCall(
-      request: ClientRequest.Stream { writer in
-        try await writer.write(probeRequest)
-        try await writer.write(secondMessage)
-      },
-      options: options
-    ) { response in
-      switch response.accepted {
-      case .success(let success):
-        try assertEqual(success.message.aggregatedPayloadSize, 73_086)
-      case .failure:
-        throw AssertionFailure(message: "Response should have been accepted.")
-      }
-    }
-  }
-}
-
 /// This test verifies that the server can compress streaming messages and disable compression on
 /// individual messages, expecting the server's response to be compressed or not according to the
 /// `response_compressed` boolean.
@@ -597,23 +484,23 @@ class ServerCompressedStreaming: InteroperabilityTest {
       ]
     }
     let responseSizes = [31415, 92653]
-    let payloads = _LockedValueBox([Grpc_Testing_Payload]())
 
     try await testServiceClient.streamingOutputCall(
       request: ClientRequest.Single(message: request)
     ) { response in
-      // We can't verify that the compression bit was set, instead we verify that the encoding header
-      // was sent by the server. This isn't quite the same since as it can still be set but the
-      // compression may be not set.
-      try assertTrue(response.metadata.firstIndex(where: { $0.key == "grpc-encoding" }) != nil)
+      var payloads = [Grpc_Testing_Payload]()
 
       switch response.accepted {
       case .success(let success):
-        try assertTrue(success.metadata.firstIndex(where: { $0.key == "grpc-encoding" }) != nil)
+        // We can't verify that the compression bit was set, instead we verify that the encoding header
+        // was sent by the server. This isn't quite the same since as it can still be set but the
+        // compression may be not set.
+        try assertTrue(success.metadata["grpc-encoding"].contains { $0 != "identity" })
+
         for try await part in success.bodyParts {
           switch part {
           case .message(let message):
-            payloads.withLockedValue { $0.append(message.payload) }
+            payloads.append(message.payload)
           case .trailingMetadata:
             ()
           }
@@ -622,16 +509,16 @@ class ServerCompressedStreaming: InteroperabilityTest {
       case .failure:
         throw AssertionFailure(message: "Response should have been accepted.")
       }
-    }
 
-    try assertEqual(
-      payloads.withLockedValue { $0 },
-      responseSizes.map { size in
-        Grpc_Testing_Payload.with {
-          $0.body = Data(repeating: 0, count: size)
+      try assertEqual(
+        payloads,
+        responseSizes.map { size in
+          Grpc_Testing_Payload.with {
+            $0.body = Data(repeating: 0, count: size)
+          }
         }
-      }
-    )
+      )
+    }
   }
 }
 
@@ -1103,47 +990,6 @@ struct UnimplementedService: InteroperabilityTest {
         throw AssertionFailure(message: "The result should be an error.")
       case .failure(let error):
         try assertEqual(error.code, .unimplemented)
-      }
-    }
-  }
-}
-
-/// This test verifies that an RPC request whose lifetime exceeds its configured timeout value
-/// will end with the DeadlineExceeded status.
-///
-/// Server features:
-/// - FullDuplexCall
-///
-/// Procedure:
-/// 1. Client calls FullDuplexCall with the following request and sets its timeout to 1ms
-///    ```
-///    {
-///        payload:{
-///            body: 27182 bytes of zeros
-///        }
-///    }
-///    ```
-/// 2. Client waits
-///
-/// Client asserts:
-/// - Call completed with status DEADLINE_EXCEEDED.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-class TimeoutOnSleepingServer: InteroperabilityTest {
-  func run(client: GRPCClient) async throws {
-    let testServiceClient = Grpc_Testing_TestService.Client(client: client)
-
-    var callOptions = CallOptions.defaults
-    callOptions.timeout = .nanoseconds(1)
-
-    try await testServiceClient.fullDuplexCall(
-      request: ClientRequest.Stream { _ in },
-      options: callOptions
-    ) { response in
-      switch response.accepted {
-      case .success:
-        throw AssertionFailure(message: "The result should be an error.")
-      case .failure(let error):
-        try assertEqual(error.code, .deadlineExceeded)
       }
     }
   }

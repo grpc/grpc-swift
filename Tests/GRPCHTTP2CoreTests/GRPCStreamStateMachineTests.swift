@@ -1067,6 +1067,11 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
+  func testClientClosesBeforeItCanOpen() throws {
+    var stateMachine = self.makeClientStateMachine(targetState: .clientIdleServerIdle)
+    XCTAssertNoThrow(try stateMachine.closeOutbound())
+  }
+
   func testClientClosesBeforeServerOpens() throws {
     var stateMachine = self.makeClientStateMachine(targetState: .clientIdleServerIdle)
 
