@@ -74,7 +74,11 @@ public struct RPCError: Sendable, Hashable, Error {
 
 extension RPCError: CustomStringConvertible {
   public var description: String {
-    "\(self.code): \"\(self.message)\""
+    if let cause = self.cause {
+      return "\(self.code): \"\(self.message)\" (cause: \"\(cause)\")"
+    } else {
+      return "\(self.code): \"\(self.message)\""
+    }
   }
 }
 

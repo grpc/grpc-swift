@@ -40,6 +40,10 @@ final class RPCErrorTests: XCTestCase {
     XCTAssertDescription(RPCError(code: .dataLoss, message: ""), #"dataLoss: """#)
     XCTAssertDescription(RPCError(code: .unknown, message: "message"), #"unknown: "message""#)
     XCTAssertDescription(RPCError(code: .aborted, message: "message"), #"aborted: "message""#)
+    XCTAssertDescription(
+      RPCError(code: .aborted, message: "message", cause: CancellationError()),
+      #"aborted: "message" (cause: "CancellationError()")"#
+    )
   }
 
   func testErrorFromStatus() throws {
