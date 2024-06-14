@@ -630,9 +630,9 @@ final class GRPCChannelTests: XCTestCase {
 
   func testPickFirstShufflingAddressList() async throws {
     // This test checks that the pick first load-balancer has its address list shuffled. We can't
-    // this deterministically, so instead we'll run an experiment a number of times. Each round
-    // will create N servers and provide them as endpoints to the pick-first load balancer. The
-    // channel will establish a connection to one of the servers and its identity will be noted.
+    // assert this deterministically, so instead we'll run an experiment a number of times. Each
+    // round will create N servers and provide them as endpoints to the pick-first load balancer.
+    // The channel will establish a connection to one of the servers and its identity will be noted.
     let numberOfRounds = 100
     let numberOfServers = 2
 
