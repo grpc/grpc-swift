@@ -186,6 +186,14 @@ function generate_rpc_code_for_tests {
   done
 }
 
+function generate_http2_transport_tests_service {
+  local proto="$here/tests/control/control.proto"
+  local output="$root/Tests/GRPCHTTP2TransportTests/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "Client=true" "Server=true" "_V2=true"
+}
+
 function generate_service_messages_interop_tests {
   local protos=(
     "$here/tests/interoperability/src/proto/grpc/testing/empty_service.proto"
@@ -194,7 +202,7 @@ function generate_service_messages_interop_tests {
     "$here/tests/interoperability/src/proto/grpc/testing/test.proto"
   )
   local output="$root/Sources/InteroperabilityTests/Generated"
-  
+
   for proto in "${protos[@]}"; do
     generate_message "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "FileNaming=DropPath"
     generate_grpc "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "Server=true" "_V2=true" "FileNaming=DropPath"
@@ -211,7 +219,7 @@ function generate_worker_service {
     "$here/upstream/grpc/testing/worker_service.proto"
   )
   local output="$root/Sources/performance-worker/Generated"
-  
+
   generate_message "$here/upstream/grpc/core/stats.proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
 
   for proto in "${protos[@]}"; do
@@ -243,6 +251,7 @@ generate_service_messages_interop_tests
 # Misc. tests
 generate_normalization_for_tests
 generate_rpc_code_for_tests
+generate_http2_transport_tests_service
 
 # Performance worker service
 generate_worker_service
