@@ -30,7 +30,7 @@ extension HTTP2ServerTransport {
 
     public init(
       address: GRPCHTTP2Core.SocketAddress,
-      config: Config,
+      config: Config = .defaults,
       eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) {
       self.address = address
