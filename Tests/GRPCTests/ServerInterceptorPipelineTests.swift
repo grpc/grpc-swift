@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import NIOCore
 import NIOConcurrencyHelpers
+import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
