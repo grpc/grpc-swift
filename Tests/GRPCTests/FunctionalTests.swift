@@ -371,7 +371,7 @@ class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
 // Unfortunately `swift test --generate-linuxmain` uses the macOS test discovery. Because of this
 // it's difficult to avoid tests which run on Linux. To get around this shortcoming we can just
 // run no-op tests on Linux.
-@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+@available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
   override var networkPreference: NetworkPreference {
     #if canImport(Network)
@@ -457,7 +457,7 @@ class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
 }
 
 #if canImport(NIOSSL)
-@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+@available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 class FunctionalTestsAnonymousClientNIOTS: FunctionalTestsInsecureTransportNIOTS {
   override var transportSecurity: TransportSecurity {
     return .anonymousClient
@@ -512,7 +512,7 @@ class FunctionalTestsAnonymousClientNIOTS: FunctionalTestsInsecureTransportNIOTS
   }
 }
 
-@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+@available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 class FunctionalTestsMutualAuthenticationNIOTS: FunctionalTestsInsecureTransportNIOTS {
   override var transportSecurity: TransportSecurity {
     return .mutualAuthentication

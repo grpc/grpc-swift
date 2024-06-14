@@ -134,7 +134,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   ) {
     // We can only run this test on platforms where the zero-length write workaround _could_ be added.
     #if canImport(Network)
-    guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
     let group = PlatformSupport.makeEventLoopGroup(
       loopCount: 1,
       networkPreference: networkPreference
@@ -171,7 +171,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func testZeroLengthWriteTestPosixSecure() throws {
     // We can only run this test on platforms where the zero-length write workaround _could_ be added.
     #if canImport(Network)
-    guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
     let serverExpectation = self.noZeroLengthWriteExpectation()
     let clientExpectation = self.noZeroLengthWriteExpectation()
@@ -195,7 +195,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func testZeroLengthWriteTestPosixInsecure() throws {
     // We can only run this test on platforms where the zero-length write workaround _could_ be added.
     #if canImport(Network)
-    guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
     let serverExpectation = self.noZeroLengthWriteExpectation()
     let clientExpectation = self.noZeroLengthWriteExpectation()
@@ -219,7 +219,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func testZeroLengthWriteTestNetworkFrameworkSecure() throws {
     // We can only run this test on platforms where the zero-length write workaround _could_ be added.
     #if canImport(Network)
-    guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
     let serverExpectation = self.noZeroLengthWriteExpectation()
     let clientExpectation = self.noZeroLengthWriteExpectation()
@@ -243,7 +243,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
   func testZeroLengthWriteTestNetworkFrameworkInsecure() throws {
     // We can only run this test on platforms where the zero-length write workaround _could_ be added.
     #if canImport(Network)
-    guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
     let serverExpectation = self.zeroLengthWriteExpectation()
     let clientExpectation = self.zeroLengthWriteExpectation()
