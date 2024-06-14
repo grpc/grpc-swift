@@ -18,41 +18,41 @@
 /// specifications, using types from ``StructuredSwiftRepresentation``.
 ///
 /// For example, in the case of a service called "Bar", in the "foo" namespace which has
-/// one method "baz", the ``ServerCodeTranslator`` will create
+/// one method "baz" with input type "Input" and output type "Output", the ``ServerCodeTranslator`` will create
 /// a representation for the following generated code:
 ///
 /// ```swift
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-/// public protocol foo_BarServiceStreamingProtocol: GRPCCore.RegistrableRPCService {
+/// public protocol Foo_BarStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
 ///   func baz(
-///     request: ServerRequest.Stream<foo.Method.baz.Input>
-///   ) async throws -> ServerResponse.Stream<foo.Method.baz.Output>
+///     request: ServerRequest.Stream<Foo_Bar_Input>
+///   ) async throws -> ServerResponse.Stream<Foo_Bar_Output>
 /// }
-/// // Generated conformance to `RegistrableRPCService`.
+/// // Conformance to `GRPCCore.RegistrableRPCService`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-/// extension foo.Bar.StreamingServiceProtocol {
-///   public func registerRPCs(with router: inout RPCRouter) {
+/// extension Foo_Bar.StreamingServiceProtocol {
+///   public func registerMethods(with router: inout GRPCCore.RPCRouter) {
 ///     router.registerHandler(
-///       forMethod: foo.Method.baz.descriptor,
-///       deserializer: ProtobufDeserializer<foo.Method.baz.Input>(),
-///       serializer: ProtobufSerializer<foo.Method.baz.Output>(),
+///       forMethod: Foo_Bar.Method.baz.descriptor,
+///       deserializer: ProtobufDeserializer<Foo_Bar_Input>(),
+///       serializer: ProtobufSerializer<Foo_Bar_Output>(),
 ///       handler: { request in try await self.baz(request: request) }
 ///     )
 ///   }
 /// }
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-/// public protocol foo_BarServiceProtocol: foo.Bar.StreamingServiceProtocol {
+/// public protocol Foo_BarServiceProtocol: Foo_Bar.StreamingServiceProtocol {
 ///   func baz(
-///     request: ServerRequest.Single<foo.Bar.Method.baz.Input>
-///   ) async throws -> ServerResponse.Single<foo.Bar.Method.baz.Output>
+///     request: ServerRequest.Single<Foo_Bar_Input>
+///   ) async throws -> ServerResponse.Single<Foo_Bar_Output>
 /// }
-/// // Generated partial conformance to `foo_BarStreamingServiceProtocol`.
+/// // Partial conformance to `Foo_BarStreamingServiceProtocol`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-/// extension foo.Bar.ServiceProtocol {
+/// extension Foo_Bar.ServiceProtocol {
 ///   public func baz(
-///     request: ServerRequest.Stream<foo.Bar.Method.baz.Input>
-///   ) async throws -> ServerResponse.Stream<foo.Bar.Method.baz.Output> {
-///     let response = try await self.baz(request: ServerRequest.Single(stream: request)
+///     request: ServerRequest.Stream<Foo_Bar_Input>
+///   ) async throws -> ServerResponse.Stream<Foo_Bar_Output> {
+///     let response = try await self.baz(request: ServerRequest.Single(stream: request))
 ///     return ServerResponse.Stream(single: response)
 ///   }
 /// }
