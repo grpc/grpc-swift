@@ -2722,7 +2722,7 @@ extension XCTestCase {
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GRPCStreamStateMachine.OnNextOutboundFrame: Equatable {
+extension GRPCStreamStateMachine.OnNextOutboundFrame {
   public static func == (
     lhs: GRPCStreamStateMachine.OnNextOutboundFrame,
     rhs: GRPCStreamStateMachine.OnNextOutboundFrame
@@ -2741,3 +2741,11 @@ extension GRPCStreamStateMachine.OnNextOutboundFrame: Equatable {
     }
   }
 }
+
+#if compiler(>=6.0)
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension GRPCStreamStateMachine.OnNextOutboundFrame: @retroactive Equatable {}
+#else
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension GRPCStreamStateMachine.OnNextOutboundFrame: Equatable {}
+#endif

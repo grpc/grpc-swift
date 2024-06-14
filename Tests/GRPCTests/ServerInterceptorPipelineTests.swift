@@ -15,6 +15,7 @@
  */
 
 import NIOCore
+import NIOConcurrencyHelpers
 import NIOEmbedded
 import NIOHPACK
 import XCTest
@@ -125,16 +126,25 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
 }
 
 internal class RecordingServerInterceptor<Request, Response>:
-  ServerInterceptor<Request, Response>
+  ServerInterceptor<Request, Response>, @unchecked Sendable
 {
-  var requestParts: [GRPCServerRequestPart<Request>] = []
-  var responseParts: [GRPCServerResponsePart<Response>] = []
+  private let lock = NIOLock()
+  private var _requestParts: [GRPCServerRequestPart<Request>] = []
+  private var _responseParts: [GRPCServerResponsePart<Response>] = []
+
+  var requestParts: [GRPCServerRequestPart<Request>] {
+    self.lock.withLock { self._requestParts }
+  }
+
+  var responseParts: [GRPCServerResponsePart<Response>] {
+    self.lock.withLock { self._responseParts }
+  }
 
   override func receive(
     _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
-    self.requestParts.append(part)
+    self.lock.withLock { self._requestParts.append(part) }
     context.receive(part)
   }
 
@@ -143,7 +153,7 @@ internal class RecordingServerInterceptor<Request, Response>:
     promise: EventLoopPromise<Void>?,
     context: ServerInterceptorContext<Request, Response>
   ) {
-    self.responseParts.append(part)
+    self.lock.withLock { self._responseParts.append(part) }
     context.send(part, promise: promise)
   }
 }

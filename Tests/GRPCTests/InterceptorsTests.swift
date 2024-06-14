@@ -176,7 +176,9 @@ private class HelloWorldClientInterceptorFactory:
   }
 }
 
-class RemoteAddressExistsInterceptor<Request, Response>: ServerInterceptor<Request, Response> {
+class RemoteAddressExistsInterceptor<Request, Response>:
+  ServerInterceptor<Request, Response>, @unchecked Sendable
+{
   override func receive(
     _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
@@ -187,7 +189,8 @@ class RemoteAddressExistsInterceptor<Request, Response>: ServerInterceptor<Reque
 }
 
 class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
-  ServerInterceptor<Request, Response>
+  ServerInterceptor<Request, Response>,
+  @unchecked Sendable
 {
   override func receive(
     _ part: GRPCServerRequestPart<Request>,
@@ -220,7 +223,7 @@ final class HelloWorldServerInterceptorFactory: Helloworld_GreeterServerIntercep
 }
 
 class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
-  ClientInterceptor<Request, Response>
+  ClientInterceptor<Request, Response>, @unchecked Sendable
 {
   private let client: Helloworld_GreeterNIOClient
 
@@ -323,7 +326,9 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
   }
 }
 
-final class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+final class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>,
+  @unchecked Sendable
+{
   override func send(
     _ part: GRPCClientRequestPart<Echo_EchoRequest>,
     promise: EventLoopPromise<Void>?,
@@ -398,7 +403,9 @@ final class CountOnCloseInterceptors: Echo_EchoServerInterceptorFactoryProtocol 
   }
 }
 
-final class CountOnCloseServerInterceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+final class CountOnCloseServerInterceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>,
+  @unchecked Sendable
+{
   private let counter: ManagedAtomic<Int>
 
   init(counter: ManagedAtomic<Int>) {

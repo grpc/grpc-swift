@@ -360,7 +360,13 @@ class GRPCPingHandlerTests: GRPCTestCase {
   }
 }
 
-extension PingHandler.Action: Equatable {
+#if compiler(>=6.0)
+extension PingHandler.Action: @retroactive Equatable {}
+#else
+extension PingHandler.Action: Equatable {}
+#endif
+
+extension PingHandler.Action {
   public static func == (lhs: PingHandler.Action, rhs: PingHandler.Action) -> Bool {
     switch (lhs, rhs) {
     case (.none, .none):

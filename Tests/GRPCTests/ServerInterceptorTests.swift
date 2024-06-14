@@ -204,7 +204,10 @@ final class EchoInterceptorFactory: Echo_EchoServerInterceptorFactoryProtocol {
   }
 }
 
-class ExtraRequestPartEmitter: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+class ExtraRequestPartEmitter:
+  ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>,
+  @unchecked Sendable
+{
   enum Part {
     case metadata
     case message
@@ -293,7 +296,7 @@ class EchoFromInterceptor: Echo_EchoProvider {
 
   // Since all methods use the same request/response types, we can use a single interceptor to
   // respond to all of them.
-  class Interceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+  class Interceptor: ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>, @unchecked Sendable {
     private var collectedRequests: [Echo_EchoRequest] = []
 
     override func receive(
