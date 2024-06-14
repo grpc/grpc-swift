@@ -57,7 +57,7 @@ public struct NetworkImplementation: Hashable {
 
   #if canImport(Network)
   /// Network.framework (NIOTransportServices).
-  @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+  @available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
   public static let networkFramework = NetworkImplementation(.networkFramework)
   #endif
 
@@ -66,7 +66,7 @@ public struct NetworkImplementation: Hashable {
 
   internal static func matchingEventLoopGroup(_ group: EventLoopGroup) -> NetworkImplementation {
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if PlatformSupport.isTransportServicesEventLoopGroup(group) {
         return .networkFramework
       }
@@ -84,13 +84,13 @@ extension NetworkPreference {
   /// This isn't directly useful when implementing code which branches on the network preference
   /// since that code will still need the appropriate availability check:
   ///
-  /// - `@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)`, or
-  /// - `#available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)`.
+  /// - `@available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)`, or
+  /// - `#available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)`.
   public var implementation: NetworkImplementation {
     switch self.wrapped {
     case .best:
       #if canImport(Network)
-      if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
         return .networkFramework
       } else {
         // Older platforms must use the POSIX loop.
@@ -136,7 +136,7 @@ extension ClientBootstrapProtocol {
 extension ClientBootstrap: ClientBootstrapProtocol {}
 
 #if canImport(Network)
-@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+@available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 extension NIOTSConnectionBootstrap: ClientBootstrapProtocol {
   public func withConnectedSocket(_ socket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
     preconditionFailure("NIOTSConnectionBootstrap does not support withConnectedSocket(_:)")
@@ -182,7 +182,7 @@ extension ServerBootstrapProtocol {
 extension ServerBootstrap: ServerBootstrapProtocol {}
 
 #if canImport(Network)
-@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+@available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 extension NIOTSListenerBootstrap: ServerBootstrapProtocol {
   public func withBoundSocket(_ connectedSocket: NIOBSDSocket.Handle) -> EventLoopFuture<Channel> {
     preconditionFailure("NIOTSListenerBootstrap does not support withBoundSocket(_:)")
@@ -213,7 +213,7 @@ public enum PlatformSupport {
     switch networkPreference.implementation.wrapped {
     case .networkFramework:
       #if canImport(Network)
-      guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
+      guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
         logger.critical("Network.framework can be imported but is not supported on this platform")
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
@@ -241,7 +241,7 @@ public enum PlatformSupport {
   ) -> ClientBootstrapProtocol {
     logger.debug("making client bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if isTransportServicesEventLoopGroup(group) {
         logger.debug(
           "Network.framework is available and the EventLoopGroup is compatible with NIOTS, creating a NIOTSConnectionBootstrap"
@@ -260,7 +260,7 @@ public enum PlatformSupport {
 
   internal static func isTransportServicesEventLoopGroup(_ group: EventLoopGroup) -> Bool {
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       return group is NIOTSEventLoopGroup || group is QoSEventLoop
     }
     #endif
@@ -279,7 +279,7 @@ public enum PlatformSupport {
     }
 
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
       let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap
     {
       return transportServicesBootstrap.tlsOptions(from: tlsConfigruation)
@@ -301,7 +301,7 @@ public enum PlatformSupport {
   ) -> ServerBootstrapProtocol {
     logger.debug("making server bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
         logger
           .debug(
@@ -330,7 +330,7 @@ public enum PlatformSupport {
   /// See https://github.com/apple/swift-nio-transport-services/pull/72 for more.
   static func requiresZeroLengthWriteWorkaround(group: EventLoopGroup, hasTLS: Bool) -> Bool {
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if group is NIOTSEventLoopGroup || group is QoSEventLoop {
         // We need the zero-length write workaround on NIOTS when not using TLS.
         return !hasTLS
@@ -358,7 +358,7 @@ extension PlatformSupport {
     loopCount: Int
   ) -> EventLoopGroup {
     #if canImport(Network)
-    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+    if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if configuration.isNetworkFrameworkTLSBackend {
         return NIOTSEventLoopGroup(loopCount: loopCount)
       }
@@ -384,7 +384,7 @@ extension GRPCTLSConfiguration {
     switch networkPreference.implementation.wrapped {
     case .networkFramework:
       #if canImport(Network)
-      guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
+      guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }

@@ -121,7 +121,7 @@ public final class Server: @unchecked Sendable {
 
     #if canImport(Network)
     if let tlsConfiguration = configuration.tlsConfiguration {
-      if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
+      if #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
         let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
       {
         _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
@@ -172,7 +172,7 @@ public final class Server: @unchecked Sendable {
             hasTLS: configuration.tlsConfiguration != nil
           )
           if requiresZeroLengthWorkaround,
-            #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+            #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
           {
             try sync.addHandler(NIOFilterEmptyWritesHandler())
           }
