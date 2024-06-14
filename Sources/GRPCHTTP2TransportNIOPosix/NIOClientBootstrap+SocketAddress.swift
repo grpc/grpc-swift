@@ -45,20 +45,6 @@ extension ClientBootstrap {
   }
 }
 
-extension NIOCore.SocketAddress {
-  init(_ address: GRPCHTTP2Core.SocketAddress.IPv4) throws {
-    try self.init(ipAddress: address.host, port: address.port)
-  }
-
-  init(_ address: GRPCHTTP2Core.SocketAddress.IPv6) throws {
-    try self.init(ipAddress: address.host, port: address.port)
-  }
-
-  init(_ address: GRPCHTTP2Core.SocketAddress.UnixDomainSocket) throws {
-    try self.init(unixDomainSocketPath: address.path)
-  }
-}
-
 extension NIOPosix.VsockAddress {
   init(_ address: GRPCHTTP2Core.SocketAddress.VirtualSocket) {
     self.init(
