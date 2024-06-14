@@ -87,6 +87,9 @@ extension GRPCClientStreamHandler {
                 break loop
               }
             }
+
+          case .doNothing:
+            ()
           }
         } catch {
           context.fireErrorCaught(error)
@@ -115,6 +118,10 @@ extension GRPCClientStreamHandler {
         case .receivedStatusAndMetadata(let status, let metadata):
           context.fireChannelRead(self.wrapInboundOut(.status(status, metadata)))
           context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
+
+        case .protocolViolation:
+          // Should only happen for servers
+          assertionFailure("Unexpected protocol violation")
 
         case .doNothing:
           ()

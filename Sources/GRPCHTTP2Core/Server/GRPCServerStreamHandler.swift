@@ -19,7 +19,7 @@ import NIOCore
 import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class GRPCServerStreamHandler: ChannelDuplexHandler {
+final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandler {
   typealias InboundIn = HTTP2Frame.FramePayload
   typealias InboundOut = RPCRequestPart
 
@@ -85,6 +85,8 @@ extension GRPCServerStreamHandler {
                 break loop
               }
             }
+          case .doNothing:
+            ()
           }
         } catch {
           context.fireErrorCaught(error)
@@ -125,6 +127,10 @@ extension GRPCServerStreamHandler {
             code: .internalError,
             message: "Server cannot get receivedStatusAndMetadata."
           )
+
+        case .protocolViolation:
+          context.writeAndFlush(self.wrapOutboundOut(.rstStream(.protocolError)), promise: nil)
+          context.close(promise: nil)
 
         case .doNothing:
           throw RPCError(code: .internalError, message: "Server cannot receive doNothing.")
