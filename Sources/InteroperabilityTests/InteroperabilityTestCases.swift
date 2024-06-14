@@ -88,6 +88,214 @@ struct LargeUnary: InteroperabilityTest {
   }
 }
 
+/// This test verifies the client can compress unary messages by sending two unary calls, for
+/// compressed and uncompressed payloads. It also sends an initial probing request to verify
+/// whether the server supports the CompressedRequest feature by checking if the probing call
+/// fails with an `INVALID_ARGUMENT` status.
+///
+/// Server features:
+/// - UnaryCall
+/// - CompressedRequest
+///
+/// Procedure:
+/// 1. Client calls UnaryCall with the feature probe, an *uncompressed* message:
+///    ```
+///    {
+///      expect_compressed:{
+///        value: true
+///      }
+///      response_size: 314159
+///      payload:{
+///        body: 271828 bytes of zeros
+///      }
+///    }
+///    ```
+/// 2. Client calls UnaryCall with the *compressed* message:
+///    ```
+///    {
+///      expect_compressed:{
+///        value: true
+///      }
+///      response_size: 314159
+///      payload:{
+///        body: 271828 bytes of zeros
+///      }
+///    }
+///    ```
+/// 3. Client calls UnaryCall with the *uncompressed* message:
+///    ```
+///    {
+///      expect_compressed:{
+///        value: false
+///      }
+///      response_size: 314159
+///      payload:{
+///        body: 271828 bytes of zeros
+///      }
+///    }
+///    ```
+///
+/// Client asserts:
+/// - First call failed with `INVALID_ARGUMENT` status.
+/// - Subsequent calls were successful.
+/// - Response payload body is 314159 bytes in size.
+/// - Clients are free to assert that the response payload body contents are zeros and comparing the
+///   entire response message against a golden response.
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+class ClientCompressedUnary: InteroperabilityTest {
+  func run(client: GRPCClient) async throws {
+    let testServiceClient = Grpc_Testing_TestService.Client(client: client)
+    let compressedRequest = Grpc_Testing_SimpleRequest.with { request in
+      request.expectCompressed = .with { $0.value = true }
+      request.responseSize = 314_159
+      request.payload = .with { $0.body = Data(repeating: 0, count: 271_828) }
+    }
+
+    var uncompressedRequest = compressedRequest
+    uncompressedRequest.expectCompressed = .with { $0.value = false }
+
+    // For unary RPCs we disable compression at the call level.
+    var options = CallOptions.defaults
+
+    // With compression expected but *disabled*.
+    options.compression = CompressionAlgorithm.none
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: compressedRequest),
+      options: options
+    ) { response in
+      switch response.accepted {
+      case .success:
+        throw AssertionFailure(message: "The result should be an error.")
+      case .failure(let error):
+        try assertEqual(error.code, .invalidArgument)
+      }
+    }
+
+    // With compression expected and enabled.
+    options.compression = .gzip
+
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: compressedRequest),
+      options: options
+    ) { response in
+      switch response.accepted {
+      case .success(let success):
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
+      case .failure:
+        throw AssertionFailure(message: "Response should have been accepted.")
+      }
+    }
+
+    // With compression not expected and disabled.
+    options.compression = CompressionAlgorithm.none
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: uncompressedRequest),
+      options: options
+    ) { response in
+      switch response.accepted {
+      case .success(let success):
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
+      case .failure:
+        throw AssertionFailure(message: "Response should have been accepted.")
+      }
+    }
+  }
+}
+
+/// This test verifies the server can compress unary messages. It sends two unary
+/// requests, expecting the server's response to be compressed or not according to
+/// the `response_compressed` boolean.
+///
+/// Whether compression was actually performed is determined by the compression bit
+/// in the response's message flags. *Note that some languages may not have access
+/// to the message flags, in which case the client will be unable to verify that
+/// the `response_compressed` boolean is obeyed by the server*.
+///
+///
+/// Server features:
+/// - UnaryCall
+/// - CompressedResponse
+///
+/// Procedure:
+/// 1. Client calls UnaryCall with `SimpleRequest`:
+///    ```
+///    {
+///      response_compressed:{
+///        value: true
+///      }
+///      response_size: 314159
+///      payload:{
+///        body: 271828 bytes of zeros
+///      }
+///    }
+///    ```
+///    ```
+///    {
+///      response_compressed:{
+///        value: false
+///      }
+///      response_size: 314159
+///      payload:{
+///        body: 271828 bytes of zeros
+///      }
+///    }
+///    ```
+///
+/// Client asserts:
+/// - call was successful
+/// - if supported by the implementation, when `response_compressed` is true, the response MUST have
+///   the compressed message flag set.
+/// - if supported by the implementation, when `response_compressed` is false, the response MUST NOT
+///   have the compressed message flag set.
+/// - response payload body is 314159 bytes in size in both cases.
+/// - clients are free to assert that the response payload body contents are zero and comparing the
+///   entire response message against a golden response
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+class ServerCompressedUnary: InteroperabilityTest {
+  func run(client: GRPCClient) async throws {
+    let testServiceClient = Grpc_Testing_TestService.Client(client: client)
+
+    let compressedRequest = Grpc_Testing_SimpleRequest.with { request in
+      request.responseCompressed = .with { $0.value = true }
+      request.responseSize = 314_159
+      request.payload = .with { $0.body = Data(repeating: 0, count: 271_828) }
+    }
+
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: compressedRequest)
+    ) { response in
+      // We can't verify that the compression bit was set, instead we verify that the encoding header
+      // was sent by the server. This isn't quite the same since as it can still be set but the
+      // compression may _not_ be set.
+      try assertTrue(response.metadata["grpc-encoding"].contains { $0 != "identity" })
+
+      switch response.accepted {
+      case .success(let success):
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
+      case .failure:
+        throw AssertionFailure(message: "Response should have been accepted.")
+      }
+    }
+
+    var uncompressedRequest = compressedRequest
+    uncompressedRequest.responseCompressed.value = false
+    try await testServiceClient.unaryCall(
+      request: ClientRequest.Single(message: compressedRequest)
+    ) { response in
+      // We can't even check for the 'grpc-encoding' header here since it could be set with the
+      // compression bit on the message not set.
+      switch response.accepted {
+      case .success(let success):
+        try assertEqual(success.message.get().payload.body, Data(repeating: 0, count: 314_159))
+      case .failure:
+        throw AssertionFailure(
+          message: "Response should have been accepted."
+        )
+      }
+    }
+  }
+}
+
 /// This test verifies that client-only streaming succeeds.
 ///
 /// Server features:
@@ -213,6 +421,103 @@ struct ServerStreaming: InteroperabilityTest {
       }
       // Check that there were not more than 4 responses from the server.
       try assertEqual(try await responseParts.next(), nil)
+    }
+  }
+}
+
+/// This test verifies that the server can compress streaming messages and disable compression on
+/// individual messages, expecting the server's response to be compressed or not according to the
+/// `response_compressed` boolean.
+///
+/// Whether compression was actually performed is determined by the compression bit in the
+/// response's message flags. *Note that some languages may not have access to the message flags, in
+/// which case the client will be unable to verify that the `response_compressed` boolean is obeyed
+/// by the server*.
+///
+/// Server features:
+/// - StreamingOutputCall
+/// - CompressedResponse
+///
+/// Procedure:
+///  1. Client calls StreamingOutputCall with `StreamingOutputCallRequest`:
+///     ```
+///     {
+///       response_parameters:{
+///         compressed: {
+///           value: true
+///         }
+///         size: 31415
+///       }
+///       response_parameters:{
+///         compressed: {
+///           value: false
+///         }
+///         size: 92653
+///       }
+///     }
+///     ```
+///
+/// Client asserts:
+/// - call was successful
+/// - exactly two responses
+/// - if supported by the implementation, when `response_compressed` is false, the response's
+///   messages MUST NOT have the compressed message flag set.
+/// - if supported by the implementation, when `response_compressed` is true, the response's
+///   messages MUST have the compressed message flag set.
+/// - response payload bodies are sized (in order): 31415, 92653
+/// - clients are free to assert that the response payload body contents are zero and comparing the
+///   entire response messages against golden responses
+class ServerCompressedStreaming: InteroperabilityTest {
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  func run(client: GRPCClient) async throws {
+    let testServiceClient = Grpc_Testing_TestService.Client(client: client)
+    let request: Grpc_Testing_StreamingOutputCallRequest = .with { request in
+      request.responseParameters = [
+        .with {
+          $0.compressed = .with { $0.value = true }
+          $0.size = 31415
+        },
+        .with {
+          $0.compressed = .with { $0.value = false }
+          $0.size = 92653
+        },
+      ]
+    }
+    let responseSizes = [31415, 92653]
+
+    try await testServiceClient.streamingOutputCall(
+      request: ClientRequest.Single(message: request)
+    ) { response in
+      var payloads = [Grpc_Testing_Payload]()
+
+      switch response.accepted {
+      case .success(let success):
+        // We can't verify that the compression bit was set, instead we verify that the encoding header
+        // was sent by the server. This isn't quite the same since as it can still be set but the
+        // compression may be not set.
+        try assertTrue(success.metadata["grpc-encoding"].contains { $0 != "identity" })
+
+        for try await part in success.bodyParts {
+          switch part {
+          case .message(let message):
+            payloads.append(message.payload)
+          case .trailingMetadata:
+            ()
+          }
+        }
+
+      case .failure:
+        throw AssertionFailure(message: "Response should have been accepted.")
+      }
+
+      try assertEqual(
+        payloads,
+        responseSizes.map { size in
+          Grpc_Testing_Payload.with {
+            $0.body = Data(repeating: 0, count: size)
+          }
+        }
+      )
     }
   }
 }
@@ -478,7 +783,7 @@ struct CustomMetadata: InteroperabilityTest {
             try self.checkTrailingMetadata(receivedTrailingMetadata)
           }
         }
-      case .failure(_):
+      case .failure:
         throw AssertionFailure(
           message: "The client should have received a response from the server."
         )
@@ -541,7 +846,7 @@ struct StatusCodeAndMessage: InteroperabilityTest {
       case .failure(let error):
         try assertEqual(error.code.rawValue, self.expectedCode)
         try assertEqual(error.message, self.expectedMessage)
-      case .success(_):
+      case .success:
         throw AssertionFailure(
           message:
             "The client should receive an error with the status code and message sent by the client."
@@ -613,7 +918,7 @@ struct SpecialStatusMessage: InteroperabilityTest {
       request: ClientRequest.Single(message: message)
     ) { response in
       switch response.accepted {
-      case .success(_):
+      case .success:
         throw AssertionFailure(
           message: "The response should be an error with the error code 2."
         )
@@ -647,9 +952,8 @@ struct UnimplementedMethod: InteroperabilityTest {
     try await testServiceClient.unimplementedCall(
       request: ClientRequest.Single(message: Grpc_Testing_Empty())
     ) { response in
-      let result = response.accepted
-      switch result {
-      case .success(_):
+      switch response.accepted {
+      case .success:
         throw AssertionFailure(
           message: "The result should be an error."
         )
@@ -681,12 +985,9 @@ struct UnimplementedService: InteroperabilityTest {
     try await unimplementedServiceClient.unimplementedCall(
       request: ClientRequest.Single(message: Grpc_Testing_Empty())
     ) { response in
-      let result = response.accepted
-      switch result {
-      case .success(_):
-        throw AssertionFailure(
-          message: "The result should be an error."
-        )
+      switch response.accepted {
+      case .success:
+        throw AssertionFailure(message: "The result should be an error.")
       case .failure(let error):
         try assertEqual(error.code, .unimplemented)
       }

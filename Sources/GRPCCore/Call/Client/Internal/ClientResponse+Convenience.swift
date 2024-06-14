@@ -70,7 +70,7 @@ extension ClientResponse.Single {
         }
       } catch let error as RPCError {
         // Known error type.
-        self.accepted = .failure(error)
+        self.accepted = .success(Contents(metadata: contents.metadata, error: error))
       } catch {
         // Unexpected, but should be handled nonetheless.
         self.accepted = .failure(RPCError(code: .unknown, message: String(describing: error)))
