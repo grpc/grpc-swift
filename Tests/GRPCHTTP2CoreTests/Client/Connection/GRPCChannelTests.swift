@@ -700,6 +700,53 @@ final class GRPCChannelTests: XCTestCase {
     let minimum = expected * 0.1
     XCTAssert(counts.allSatisfy({ Double($0) >= minimum }), "\(counts)")
   }
+
+  func testPickFirstIsFallbackPolicy() async throws {
+    // Start a few servers.
+    let server1 = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address1 = try await server1.bind()
+
+    let server2 = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address2 = try await server2.bind()
+
+    // Prepare a channel with an empty service config.
+    let channel = GRPCChannel(
+      resolver: .static(endpoints: [Endpoint(address1, address2)]),
+      connector: .posix(),
+      config: .defaults,
+      defaultServiceConfig: ServiceConfig()
+    )
+
+    try await withThrowingDiscardingTaskGroup { group in
+      // Run the servers.
+      for server in [server1, server2] {
+        group.addTask {
+          try await server.run(.never)
+        }
+      }
+
+      group.addTask {
+        await channel.connect()
+      }
+
+      for try await state in channel.connectivityState {
+        switch state {
+        case .ready:
+          // Only server 1 should have a connection.
+          try await XCTPoll(every: .milliseconds(10)) {
+            server1.clients.count == 1 && server2.clients.count == 0
+          }
+
+          channel.close()
+
+        default:
+          ()
+        }
+      }
+
+      group.cancelAll()
+    }
+  }
 }
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
