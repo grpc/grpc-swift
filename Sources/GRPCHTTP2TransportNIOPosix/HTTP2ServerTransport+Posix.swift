@@ -21,6 +21,7 @@ import NIOExtras
 import NIOPosix
 
 extension HTTP2ServerTransport {
+  /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public struct Posix: ServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
@@ -28,6 +29,27 @@ extension HTTP2ServerTransport {
     private let eventLoopGroup: MultiThreadedEventLoopGroup
     private let serverQuiescingHelper: ServerQuiescingHelper
 
+    private let listeningAddressPromise:
+      _LockedValueBox<EventLoopPromise<GRPCHTTP2Core.SocketAddress>>
+
+    /// The listening address for this server transport.
+    ///
+    /// It is an `async` property because it will only return once the address has been successfully bound.
+    ///
+    /// - Throws: ``GRPCHTTP2TransportError/addressNotBound`` will be thrown if the address
+    /// could not be bound or is not bound any longer, because the transport isn't listening anymore.
+    public var listeningAddress: GRPCHTTP2Core.SocketAddress {
+      get async throws {
+        try await self.listeningAddressPromise.withLockedValue({ $0 }).futureResult.get()
+      }
+    }
+
+    /// Create a new `Posix` transport.
+    ///
+    /// - Parameters:
+    ///   - address: The address to which the server should be bound.
+    ///   - config: The transport configuration.
+    ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
     public init(
       address: GRPCHTTP2Core.SocketAddress,
       config: Config = .defaults,
@@ -37,11 +59,18 @@ extension HTTP2ServerTransport {
       self.config = config
       self.eventLoopGroup = eventLoopGroup
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
+      self.listeningAddressPromise = _LockedValueBox(eventLoopGroup.any().makePromise())
     }
 
     public func listen(
       _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
+      defer {
+        let failedPromise = eventLoopGroup.any().makePromise(of: GRPCHTTP2Core.SocketAddress.self)
+        failedPromise.fail(GRPCHTTP2TransportError.addressNotBound)
+        self.listeningAddressPromise.withLockedValue { $0 = failedPromise }
+      }
+
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
         .serverChannelInitializer { channel in
           let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(
@@ -61,6 +90,8 @@ extension HTTP2ServerTransport {
             )
           }
         }
+
+      self.listeningAddressPromise.withLockedValue({ $0 }).succeed(self.address)
 
       try await serverChannel.executeThenClose { inbound in
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
@@ -205,6 +236,37 @@ extension ServerBootstrap {
         to: NIOCore.SocketAddress(address),
         childChannelInitializer: childChannelInitializer
       )
+    }
+  }
+}
+
+/// Errors specific to HTTP2 Transport implementations.
+public struct GRPCHTTP2TransportError: Error, Sendable {
+  private enum Value: Sendable {
+    case addressNotBound
+  }
+
+  private let _value: Value
+
+  private init(_ value: Value) {
+    self._value = value
+  }
+
+  /// There is no listening address bound for this server: there may have been an error which caused the
+  /// transport to close, or it may have shut down.
+  public static var addressNotBound: Self {
+    Self(.addressNotBound)
+  }
+}
+
+extension GRPCHTTP2TransportError: CustomStringConvertible {
+  public var description: String {
+    switch self._value {
+    case .addressNotBound:
+      return """
+        There is no listening address bound for this server: there may have been
+        an error which caused the transport to close, or it may have shut down.
+        """
     }
   }
 }
