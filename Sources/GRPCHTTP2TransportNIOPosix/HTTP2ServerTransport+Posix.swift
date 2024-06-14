@@ -29,18 +29,56 @@ extension HTTP2ServerTransport {
     private let eventLoopGroup: MultiThreadedEventLoopGroup
     private let serverQuiescingHelper: ServerQuiescingHelper
 
-    private let listeningAddressPromise:
-      _LockedValueBox<EventLoopPromise<GRPCHTTP2Core.SocketAddress>>
+    private enum State {
+      case idle(IdleState)
+      case listening(ListeningState)
+      case closed(ClosedState)
+
+      struct IdleState {
+        var listeningAddressPromise: EventLoopPromise<NIOCore.SocketAddress>
+        var noLongerListeningPromise: EventLoopPromise<NIOCore.SocketAddress>
+      }
+
+      struct ListeningState {
+        var listeningAddressFuture: EventLoopFuture<NIOCore.SocketAddress>
+        var noLongerListeningPromise: EventLoopPromise<NIOCore.SocketAddress>
+
+        init(idleState: IdleState) {
+          self.listeningAddressFuture = idleState.listeningAddressPromise.futureResult
+          self.noLongerListeningPromise = idleState.noLongerListeningPromise
+        }
+      }
+
+      struct ClosedState {
+        var noLongerListeningFuture: EventLoopFuture<NIOCore.SocketAddress>
+
+        init(idleState: IdleState) {
+          self.noLongerListeningFuture = idleState.noLongerListeningPromise.futureResult
+        }
+
+        init(listeningState: ListeningState) {
+          self.noLongerListeningFuture = listeningState.noLongerListeningPromise.futureResult
+        }
+      }
+    }
+    private let listeningAddressState: _LockedValueBox<State>
 
     /// The listening address for this server transport.
     ///
     /// It is an `async` property because it will only return once the address has been successfully bound.
     ///
-    /// - Throws: ``GRPCHTTP2TransportError/addressNotBound`` will be thrown if the address
-    /// could not be bound or is not bound any longer, because the transport isn't listening anymore.
-    public var listeningAddress: GRPCHTTP2Core.SocketAddress {
+    /// - Throws: A runtime error will be thrown if the address could not be bound or is not bound any
+    /// longer, because the transport isn't listening anymore.
+    public var listeningAddress: NIOCore.SocketAddress {
       get async throws {
-        try await self.listeningAddressPromise.withLockedValue({ $0 }).futureResult.get()
+        switch self.listeningAddressState.withLockedValue({ $0 }) {
+        case .idle(let state):
+          return try await state.listeningAddressPromise.futureResult.get()
+        case .listening(let state):
+          return try await state.listeningAddressFuture.get()
+        case .closed(let state):
+          return try await state.noLongerListeningFuture.get()
+        }
       }
     }
 
@@ -59,16 +97,45 @@ extension HTTP2ServerTransport {
       self.config = config
       self.eventLoopGroup = eventLoopGroup
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
-      self.listeningAddressPromise = _LockedValueBox(eventLoopGroup.any().makePromise())
+
+      let eventLoop = eventLoopGroup.any()
+      self.listeningAddressState = _LockedValueBox(
+        .idle(
+          State.IdleState(
+            listeningAddressPromise: eventLoop.makePromise(),
+            noLongerListeningPromise: eventLoop.makePromise()
+          )
+        )
+      )
     }
 
     public func listen(
       _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
       defer {
-        let failedPromise = eventLoopGroup.any().makePromise(of: GRPCHTTP2Core.SocketAddress.self)
-        failedPromise.fail(GRPCHTTP2TransportError.addressNotBound)
-        self.listeningAddressPromise.withLockedValue { $0 = failedPromise }
+        let failedPromiseError = RuntimeError(
+          code: .serverIsStopped,
+          message: """
+            There is no listening address bound for this server: there may have been
+            an error which caused the transport to close, or it may have shut down.
+            """
+        )
+
+        self.listeningAddressState.withLockedValue { state in
+          switch state {
+          case .idle(let idleState):
+            idleState.listeningAddressPromise.fail(failedPromiseError)
+            idleState.noLongerListeningPromise.fail(failedPromiseError)
+            state = .closed(State.ClosedState(idleState: idleState))
+
+          case .listening(let listeningState):
+            listeningState.noLongerListeningPromise.fail(failedPromiseError)
+            state = .closed(State.ClosedState(listeningState: listeningState))
+
+          case .closed(let closedState):
+            ()
+          }
+        }
       }
 
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
@@ -91,7 +158,24 @@ extension HTTP2ServerTransport {
           }
         }
 
-      self.listeningAddressPromise.withLockedValue({ $0 }).succeed(self.address)
+      self.listeningAddressState.withLockedValue { state in
+        switch state {
+        case .idle(let idleState):
+          if let address = serverChannel.channel.localAddress {
+            idleState.listeningAddressPromise.succeed(address)
+          } else {
+            let failedToGetAddressError = RuntimeError(
+              code: .transportError,
+              message: "An address is not available."
+            )
+            idleState.listeningAddressPromise.fail(failedToGetAddressError)
+          }
+          state = .listening(State.ListeningState(idleState: idleState))
+
+        case .listening, .closed:
+          fatalError("Invalid state")
+        }
+      }
 
       try await serverChannel.executeThenClose { inbound in
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
@@ -236,37 +320,6 @@ extension ServerBootstrap {
         to: NIOCore.SocketAddress(address),
         childChannelInitializer: childChannelInitializer
       )
-    }
-  }
-}
-
-/// Errors specific to HTTP2 Transport implementations.
-public struct GRPCHTTP2TransportError: Error, Sendable {
-  private enum Value: Sendable {
-    case addressNotBound
-  }
-
-  private let _value: Value
-
-  private init(_ value: Value) {
-    self._value = value
-  }
-
-  /// There is no listening address bound for this server: there may have been an error which caused the
-  /// transport to close, or it may have shut down.
-  public static var addressNotBound: Self {
-    Self(.addressNotBound)
-  }
-}
-
-extension GRPCHTTP2TransportError: CustomStringConvertible {
-  public var description: String {
-    switch self._value {
-    case .addressNotBound:
-      return """
-        There is no listening address bound for this server: there may have been
-        an error which caused the transport to close, or it may have shut down.
-        """
     }
   }
 }
