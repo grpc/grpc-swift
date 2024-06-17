@@ -30,37 +30,106 @@ extension HTTP2ServerTransport {
     private let serverQuiescingHelper: ServerQuiescingHelper
 
     private enum State {
-      case idle(IdleState)
-      case listening(ListeningState)
-      case closed(ClosedState)
+      case idle(EventLoopPromise<GRPCHTTP2Core.SocketAddress>)
+      case listening(EventLoopPromise<GRPCHTTP2Core.SocketAddress>)
+      case closedOrInvalidAddress(RuntimeError)
 
-      struct IdleState {
-        var listeningAddressPromise: EventLoopPromise<NIOCore.SocketAddress>
-        var noLongerListeningPromise: EventLoopPromise<NIOCore.SocketAddress>
-      }
-
-      struct ListeningState {
-        var listeningAddressFuture: EventLoopFuture<NIOCore.SocketAddress>
-        var noLongerListeningPromise: EventLoopPromise<NIOCore.SocketAddress>
-
-        init(idleState: IdleState) {
-          self.listeningAddressFuture = idleState.listeningAddressPromise.futureResult
-          self.noLongerListeningPromise = idleState.noLongerListeningPromise
+      public var listeningAddressFuture: EventLoopFuture<GRPCHTTP2Core.SocketAddress> {
+        get throws {
+          switch self {
+          case .idle(let eventLoopPromise):
+            return eventLoopPromise.futureResult
+          case .listening(let eventLoopPromise):
+            return eventLoopPromise.futureResult
+          case .closedOrInvalidAddress(let runtimeError):
+            throw runtimeError
+          }
         }
       }
 
-      struct ClosedState {
-        var noLongerListeningFuture: EventLoopFuture<NIOCore.SocketAddress>
+      enum OnBound {
+        case succeedPromise(
+          _ promise: EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
+          address: GRPCHTTP2Core.SocketAddress
+        )
+        case failPromise(
+          _ promise: EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
+          error: RuntimeError
+        )
+      }
 
-        init(idleState: IdleState) {
-          self.noLongerListeningFuture = idleState.noLongerListeningPromise.futureResult
+      mutating func addressBound(
+        _ address: NIOCore.SocketAddress?,
+        userProvidedAddress: GRPCHTTP2Core.SocketAddress
+      ) -> OnBound {
+        switch self {
+        case .idle(let listeningAddressPromise):
+          if let address {
+            guard let validAddress = GRPCHTTP2Core.SocketAddress(address) else {
+              let invalidAddressError = RuntimeError(
+                code: .transportError,
+                message: "Invalid address returned by transport."
+              )
+              self = .closedOrInvalidAddress(invalidAddressError)
+              return .failPromise(listeningAddressPromise, error: invalidAddressError)
+            }
+
+            self = .listening(listeningAddressPromise)
+            return .succeedPromise(listeningAddressPromise, address: validAddress)
+
+          } else if userProvidedAddress.unixDomainSocket != nil {
+            self = .listening(listeningAddressPromise)
+            return .succeedPromise(listeningAddressPromise, address: userProvidedAddress)
+
+          } else {
+            assertionFailure("Unknown address type")
+            let invalidAddressError = RuntimeError(
+              code: .transportError,
+              message: "Invalid address returned by transport."
+            )
+            self = .closedOrInvalidAddress(invalidAddressError)
+            return .failPromise(listeningAddressPromise, error: invalidAddressError)
+          }
+
+        case .listening, .closedOrInvalidAddress:
+          fatalError(
+            "Invalid state: addressBound should only be called once and when in idle state"
+          )
         }
+      }
 
-        init(listeningState: ListeningState) {
-          self.noLongerListeningFuture = listeningState.noLongerListeningPromise.futureResult
+      enum OnClose {
+        case failPromise(
+          EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
+          error: RuntimeError
+        )
+        case doNothing
+      }
+
+      mutating func close() -> OnClose {
+        let serverStoppedError = RuntimeError(
+          code: .serverIsStopped,
+          message: """
+            There is no listening address bound for this server: there may have been \
+            an error which caused the transport to close, or it may have shut down.
+            """
+        )
+
+        switch self {
+        case .idle(let listeningAddressPromise):
+          self = .closedOrInvalidAddress(serverStoppedError)
+          return .failPromise(listeningAddressPromise, error: serverStoppedError)
+
+        case .listening(let listeningAddressPromise):
+          self = .closedOrInvalidAddress(serverStoppedError)
+          return .failPromise(listeningAddressPromise, error: serverStoppedError)
+
+        case .closedOrInvalidAddress:
+          return .doNothing
         }
       }
     }
+
     private let listeningAddressState: _LockedValueBox<State>
 
     /// The listening address for this server transport.
@@ -68,17 +137,13 @@ extension HTTP2ServerTransport {
     /// It is an `async` property because it will only return once the address has been successfully bound.
     ///
     /// - Throws: A runtime error will be thrown if the address could not be bound or is not bound any
-    /// longer, because the transport isn't listening anymore.
-    public var listeningAddress: NIOCore.SocketAddress {
+    /// longer, because the transport isn't listening anymore. It can also throw if the transport returned an
+    /// invalid address.
+    public var listeningAddress: GRPCHTTP2Core.SocketAddress {
       get async throws {
-        switch self.listeningAddressState.withLockedValue({ $0 }) {
-        case .idle(let state):
-          return try await state.listeningAddressPromise.futureResult.get()
-        case .listening(let state):
-          return try await state.listeningAddressFuture.get()
-        case .closed(let state):
-          return try await state.noLongerListeningFuture.get()
-        }
+        try await self.listeningAddressState
+          .withLockedValue { try $0.listeningAddressFuture }
+          .get()
       }
     }
 
@@ -99,42 +164,18 @@ extension HTTP2ServerTransport {
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
 
       let eventLoop = eventLoopGroup.any()
-      self.listeningAddressState = _LockedValueBox(
-        .idle(
-          State.IdleState(
-            listeningAddressPromise: eventLoop.makePromise(),
-            noLongerListeningPromise: eventLoop.makePromise()
-          )
-        )
-      )
+      self.listeningAddressState = _LockedValueBox(.idle(eventLoop.makePromise()))
     }
 
     public func listen(
       _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
       defer {
-        let failedPromiseError = RuntimeError(
-          code: .serverIsStopped,
-          message: """
-            There is no listening address bound for this server: there may have been
-            an error which caused the transport to close, or it may have shut down.
-            """
-        )
-
-        self.listeningAddressState.withLockedValue { state in
-          switch state {
-          case .idle(let idleState):
-            idleState.listeningAddressPromise.fail(failedPromiseError)
-            idleState.noLongerListeningPromise.fail(failedPromiseError)
-            state = .closed(State.ClosedState(idleState: idleState))
-
-          case .listening(let listeningState):
-            listeningState.noLongerListeningPromise.fail(failedPromiseError)
-            state = .closed(State.ClosedState(listeningState: listeningState))
-
-          case .closed(let closedState):
-            ()
-          }
+        switch self.listeningAddressState.withLockedValue({ $0.close() }) {
+        case .failPromise(let promise, let error):
+          promise.fail(error)
+        case .doNothing:
+          ()
         }
       }
 
@@ -158,23 +199,17 @@ extension HTTP2ServerTransport {
           }
         }
 
-      self.listeningAddressState.withLockedValue { state in
-        switch state {
-        case .idle(let idleState):
-          if let address = serverChannel.channel.localAddress {
-            idleState.listeningAddressPromise.succeed(address)
-          } else {
-            let failedToGetAddressError = RuntimeError(
-              code: .transportError,
-              message: "An address is not available."
-            )
-            idleState.listeningAddressPromise.fail(failedToGetAddressError)
-          }
-          state = .listening(State.ListeningState(idleState: idleState))
-
-        case .listening, .closed:
-          fatalError("Invalid state")
-        }
+      let action = self.listeningAddressState.withLockedValue {
+        $0.addressBound(
+          serverChannel.channel.localAddress,
+          userProvidedAddress: self.address
+        )
+      }
+      switch action {
+      case .succeedPromise(let promise, let address):
+        promise.succeed(address)
+      case .failPromise(let promise, let error):
+        promise.fail(error)
       }
 
       try await serverChannel.executeThenClose { inbound in
