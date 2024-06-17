@@ -16,6 +16,7 @@
 
 import NIOCore
 
+@_spi(Package)
 extension NIOCore.SocketAddress {
   public init(_ address: GRPCHTTP2Core.SocketAddress.IPv4) throws {
     try self.init(ipAddress: address.host, port: address.port)

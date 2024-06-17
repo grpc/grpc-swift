@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#if canImport(Network)
 import GRPCCore
 @_spi(Package) import GRPCHTTP2Core
 import NIOCore
@@ -21,12 +22,20 @@ import NIOExtras
 import NIOTransportServices
 
 extension HTTP2ServerTransport {
+  /// A NIO Transport Services-backed implementation of a server transport.
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public struct TransportServices: ServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
     private let config: Config
     private let eventLoopGroup: NIOTSEventLoopGroup
     private let serverQuiescingHelper: ServerQuiescingHelper
+
+    /// Create a new `TransportServices` transport.
+    ///
+    /// - Parameters:
+    ///   - address: The address to which the server should be bound.
+    ///   - config: The transport configuration.
+    ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
 
     public init(
       address: GRPCHTTP2Core.SocketAddress,
@@ -199,8 +208,8 @@ extension NIOTSListenerBootstrap {
       throw RuntimeError(
         code: .transportError,
         message: """
-            Virtual sockets are not supported when using a NIOTransportServices
-            transport. Please bind to a different address, or use a different transport.
+            Virtual sockets are not supported by 'HTTP2ServerTransport.TransportServices'. \
+            Please use the 'HTTP2ServerTransport.Posix' transport.
           """
       )
     } else {
@@ -211,3 +220,4 @@ extension NIOTSListenerBootstrap {
     }
   }
 }
+#endif
