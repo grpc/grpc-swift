@@ -85,6 +85,9 @@ struct GRPCSwiftPlugin {
 
     /// A list of invocations of `protoc` with the `GRPCSwiftPlugin`.
     var invocations: [Invocation]
+
+    /// Whether this configuration is for `grpc-swift` v2.
+    var _V2: Bool?
   }
 
   static let configurationFileName = "grpc-swift-config.json"
@@ -142,7 +145,8 @@ struct GRPCSwiftPlugin {
         protocPath: protocPath,
         protocGenGRPCSwiftPath: protocGenGRPCSwiftPath,
         outputDirectory: pluginWorkDirectory,
-        importPaths: importPaths
+        importPaths: importPaths,
+        v2: configuration._V2
       )
     }
   }
@@ -155,7 +159,8 @@ struct GRPCSwiftPlugin {
   ///   - protocPath: The path to the `protoc` binary.
   ///   - protocGenSwiftPath: The path to the `protoc-gen-swift` binary.
   ///   - outputDirectory: The output directory for the generated files.
-  ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`
+  ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`.
+  ///   - v2: Whether the invocation is for `grpc-swift` v2.
   /// - Returns: The build command configured based on the arguments
   private func invokeProtoc(
     directory: Path,
@@ -163,7 +168,8 @@ struct GRPCSwiftPlugin {
     protocPath: Path,
     protocGenGRPCSwiftPath: Path,
     outputDirectory: Path,
-    importPaths: [Path]
+    importPaths: [Path],
+    v2: Bool?
   ) -> Command {
     // Construct the `protoc` arguments.
     var protocArgs = [
@@ -221,6 +227,10 @@ struct GRPCSwiftPlugin {
         let reflectionOutputPath = outputDirectory.appending(file)
         outputFiles.append(reflectionOutputPath)
       }
+    }
+
+    if let v2 {
+      protocArgs.append("--grpc-swift_opt=_V2=\(v2)")
     }
 
     // Construct the command. Specifying the input and output paths lets the build
