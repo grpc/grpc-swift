@@ -18,51 +18,56 @@
 /// specifications, using types from ``StructuredSwiftRepresentation``.
 ///
 /// For example, in the case of a service called "Bar", in the "foo" namespace which has
-/// one method "baz", the ``ClientCodeTranslator`` will create
+/// one method "baz" with input type "Input" and output type "Output", the ``ClientCodeTranslator`` will create
 /// a representation for the following generated code:
 ///
 /// ```swift
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarClientProtocol: Sendable {
-///   func baz<R: Sendable>(
-///     request: ClientRequest.Single<foo.Bar.Method.baz.Input>,
-///     serializer: some MessageSerializer<foo.Bar.Method.baz.Input>,
-///     deserializer: some MessageDeserializer<foo.Bar.Method.baz.Output>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<foo.Bar.Method.Baz.Output>) async throws -> R
-///   ) async throws -> ServerResponse.Stream<foo.Bar.Method.Baz.Output>
+///   func baz<R>(
+///     request: ClientRequest.Single<Foo_Bar_Input>,
+///     serializer: some MessageSerializer<Foo_Bar_Input>,
+///     deserializer: some MessageDeserializer<Foo_Bar_Output>,
+///     options: CallOptions = .defaults,
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///   ) async throws -> R where R: Sendable
 /// }
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-/// extension Foo.Bar.ClientProtocol {
-///   public func get<R: Sendable>(
-///     request: ClientRequest.Single<Foo.Bar.Method.Baz.Input>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo.Bar.Method.Baz.Output>) async throws -> R
-///   ) async rethrows -> R {
+/// extension Foo_Bar.ClientProtocol {
+///   public func baz<R>(
+///     request: ClientRequest.Single<Foo_Bar_Input>,
+///     options: CallOptions = .defaults,
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///   ) async throws -> R where R: Sendable {
 ///     try await self.baz(
 ///       request: request,
-///       serializer: ProtobufSerializer<Foo.Bar.Method.Baz.Input>(),
-///       deserializer: ProtobufDeserializer<Foo.Bar.Method.Baz.Output>(),
+///       serializer: ProtobufSerializer<Foo_Bar_Input>(),
+///       deserializer: ProtobufDeserializer<Foo_Bar_Output>(),
+///       options: options,
 ///       body
 ///     )
 /// }
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-/// public struct foo_BarClient: foo.Bar.ClientProtocol {
+/// public struct Foo_BarClient: Foo_Bar.ClientProtocol {
 ///   private let client: GRPCCore.GRPCClient
 ///   public init(client: GRPCCore.GRPCClient) {
 ///     self.client = client
 ///   }
-///   public func methodA<R: Sendable>(
-///     request: ClientRequest.Stream<namespaceA.ServiceA.Method.methodA.Input>,
-///     serializer: some MessageSerializer<namespaceA.ServiceA.Method.methodA.Input>,
-///     deserializer: some MessageDeserializer<namespaceA.ServiceA.Method.methodA.Output>,
-///     _ body: @Sendable @escaping (ClientResponse.Single<namespaceA.ServiceA.Method.methodA.Output>) async throws -> R
-///   ) async rethrows -> R {
-///    try await self.client.clientStreaming(
-///      request: request,
-///      descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
-///      serializer: serializer,
-///      deserializer: deserializer,
-///      handler: body
-///      )
+///   public func methodA<R>(
+///     request: ClientRequest.Stream<Foo_Bar_Input>,
+///     serializer: some MessageSerializer<Foo_Bar_Input>,
+///     deserializer: some MessageDeserializer<Foo_Bar_Output>,
+///     options: CallOptions = .defaults,
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///   ) async throws -> R where R: Sendable {
+///     try await self.client.unary(
+///       request: request,
+///       descriptor: NamespaceA.ServiceA.Method.MethodA.descriptor,
+///       serializer: serializer,
+///       deserializer: deserializer,
+///       options: options,
+///       handler: body
+///     )
 ///   }
 /// }
 ///```
@@ -214,18 +219,12 @@ extension ClientCodeTranslator {
         FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
         FunctionArgumentDescription(
           label: "serializer",
-          expression: .identifierPattern(
-            codeGenerationRequest.lookupSerializer(
-              self.methodInputOutputTypealias(for: method, service: service, type: .input)
-            )
-          )
+          expression: .identifierPattern(codeGenerationRequest.lookupSerializer(method.inputType))
         ),
         FunctionArgumentDescription(
           label: "deserializer",
           expression: .identifierPattern(
-            codeGenerationRequest.lookupDeserializer(
-              self.methodInputOutputTypealias(for: method, service: service, type: .output)
-            )
+            codeGenerationRequest.lookupDeserializer(method.outputType)
           )
         ),
         FunctionArgumentDescription(label: "options", expression: .identifierPattern("options")),
@@ -273,9 +272,7 @@ extension ClientCodeTranslator {
       label: "request",
       type: .generic(
         wrapper: clientRequestType,
-        wrapped: .member(
-          self.methodInputOutputTypealias(for: method, service: service, type: .input)
-        )
+        wrapped: .member(method.inputType)
       )
     )
   }
@@ -289,9 +286,7 @@ extension ClientCodeTranslator {
       type: ExistingTypeDescription.some(
         .generic(
           wrapper: .member("MessageSerializer"),
-          wrapped: .member(
-            self.methodInputOutputTypealias(for: method, service: service, type: .input)
-          )
+          wrapped: .member(method.inputType)
         )
       )
     )
@@ -306,9 +301,7 @@ extension ClientCodeTranslator {
       type: ExistingTypeDescription.some(
         .generic(
           wrapper: .member("MessageDeserializer"),
-          wrapped: .member(
-            self.methodInputOutputTypealias(for: method, service: service, type: .output)
-          )
+          wrapped: .member(method.outputType)
         )
       )
     )
@@ -321,9 +314,7 @@ extension ClientCodeTranslator {
     let clientStreaming = method.isOutputStreaming ? "Stream" : "Single"
     let closureParameterType = ExistingTypeDescription.generic(
       wrapper: .member(["ClientResponse", clientStreaming]),
-      wrapped: .member(
-        self.methodInputOutputTypealias(for: method, service: service, type: .output)
-      )
+      wrapped: .member(method.outputType)
     )
 
     let bodyClosure = ClosureSignatureDescription(
@@ -457,24 +448,5 @@ extension ClientCodeTranslator {
   fileprivate enum InputOutputType {
     case input
     case output
-  }
-
-  /// Generates the fully qualified name of the typealias for the input or output type of a method.
-  private func methodInputOutputTypealias(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    service: CodeGenerationRequest.ServiceDescriptor,
-    type: InputOutputType
-  ) -> String {
-    var components: String =
-      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase)"
-
-    switch type {
-    case .input:
-      components.append(".Input")
-    case .output:
-      components.append(".Output")
-    }
-
-    return components
   }
 }

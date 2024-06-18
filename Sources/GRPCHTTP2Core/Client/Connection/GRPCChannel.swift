@@ -397,40 +397,87 @@ extension GRPCChannel {
     }
   }
 
+  enum SupportedLoadBalancerConfig {
+    case roundRobin
+    case pickFirst(ServiceConfig.LoadBalancingConfig.PickFirst)
+
+    init?(_ config: ServiceConfig.LoadBalancingConfig) {
+      if let pickFirst = config.pickFirst {
+        self = .pickFirst(pickFirst)
+      } else if config.roundRobin != nil {
+        self = .roundRobin
+      } else {
+        return nil
+      }
+    }
+
+    func matches(loadBalancer: LoadBalancer) -> Bool {
+      switch (self, loadBalancer) {
+      case (.roundRobin, .roundRobin):
+        return true
+      case (.pickFirst, .pickFirst):
+        return true
+      case (.roundRobin, .pickFirst),
+        (.pickFirst, .roundRobin):
+        return false
+      }
+    }
+  }
+
   private func updateLoadBalancer(
     serviceConfig: ServiceConfig,
     endpoints: [Endpoint],
     in group: inout DiscardingTaskGroup
   ) {
-    // Pick the first applicable policy, else fallback to pick-first.
-    for policy in serviceConfig.loadBalancingConfig {
-      let onUpdatePolicy: GRPCChannel.StateMachine.OnChangeLoadBalancer
+    assert(!endpoints.isEmpty, "endpoints must be non-empty")
 
-      if policy.roundRobin != nil {
-        onUpdatePolicy = self.state.withLockedValue { state in
-          state.changeLoadBalancerKind(to: .roundRobin) {
-            let loadBalancer = RoundRobinLoadBalancer(
-              connector: self.connector,
-              backoff: self.backoff,
-              defaultCompression: self.defaultCompression,
-              enabledCompression: self.enabledCompression
-            )
-            return .roundRobin(loadBalancer)
-          }
-        }
-      } else if policy.pickFirst != nil {
-        fatalError("TODO: use pick-first when supported")
-      } else {
-        // Policy isn't known, ignore it.
-        continue
+    // Find the first supported config.
+    var configFromServiceConfig: SupportedLoadBalancerConfig?
+    for config in serviceConfig.loadBalancingConfig {
+      if let config = SupportedLoadBalancerConfig(config) {
+        configFromServiceConfig = config
+        break
       }
-
-      self.handleLoadBalancerChange(onUpdatePolicy, endpoints: endpoints, in: &group)
-      return
     }
 
-    // No suitable config was found, fallback to pick-first.
-    fatalError("TODO: use pick-first when supported")
+    let onUpdatePolicy: GRPCChannel.StateMachine.OnChangeLoadBalancer
+    var endpoints = endpoints
+
+    // Fallback to pick-first if no other config applies.
+    let loadBalancerConfig = configFromServiceConfig ?? .pickFirst(.init(shuffleAddressList: false))
+    switch loadBalancerConfig {
+    case .roundRobin:
+      onUpdatePolicy = self.state.withLockedValue { state in
+        state.changeLoadBalancerKind(to: loadBalancerConfig) {
+          let loadBalancer = RoundRobinLoadBalancer(
+            connector: self.connector,
+            backoff: self.backoff,
+            defaultCompression: self.defaultCompression,
+            enabledCompression: self.enabledCompression
+          )
+          return .roundRobin(loadBalancer)
+        }
+      }
+
+    case .pickFirst(let pickFirst):
+      if pickFirst.shuffleAddressList {
+        endpoints[0].addresses.shuffle()
+      }
+
+      onUpdatePolicy = self.state.withLockedValue { state in
+        state.changeLoadBalancerKind(to: loadBalancerConfig) {
+          let loadBalancer = PickFirstLoadBalancer(
+            connector: self.connector,
+            backoff: self.backoff,
+            defaultCompression: self.defaultCompression,
+            enabledCompression: self.enabledCompression
+          )
+          return .pickFirst(loadBalancer)
+        }
+      }
+    }
+
+    self.handleLoadBalancerChange(onUpdatePolicy, endpoints: endpoints, in: &group)
   }
 
   private func handleLoadBalancerChange(
@@ -620,23 +667,6 @@ extension GRPCChannel.StateMachine {
     }
   }
 
-  enum LoadBalancerKind {
-    case roundRobin
-    case pickFirst
-
-    func matches(loadBalancer: LoadBalancer) -> Bool {
-      switch (self, loadBalancer) {
-      case (.roundRobin, .roundRobin):
-        return true
-      case (.pickFirst, .pickFirst):
-        return true
-      case (.roundRobin, .pickFirst),
-        (.pickFirst, .roundRobin):
-        return false
-      }
-    }
-  }
-
   enum OnChangeLoadBalancer {
     case runLoadBalancer(LoadBalancer, stop: LoadBalancer?)
     case updateLoadBalancer(LoadBalancer)
@@ -644,7 +674,7 @@ extension GRPCChannel.StateMachine {
   }
 
   mutating func changeLoadBalancerKind(
-    to newLoadBalancerKind: LoadBalancerKind,
+    to newLoadBalancerKind: GRPCChannel.SupportedLoadBalancerConfig,
     _ makeLoadBalancer: () -> LoadBalancer
   ) -> OnChangeLoadBalancer {
     let onChangeLoadBalancer: OnChangeLoadBalancer

@@ -180,13 +180,13 @@ class ClientCompressedUnary: InteroperabilityTest {
     let client = Grpc_Testing_TestServiceNIOClient(channel: connection)
 
     let compressedRequest = Grpc_Testing_SimpleRequest.with { request in
-      request.expectCompressed = true
+      request.expectCompressed = .init(true)
       request.responseSize = 314_159
       request.payload = .zeros(count: 271_828)
     }
 
     var uncompressedRequest = compressedRequest
-    uncompressedRequest.expectCompressed = false
+    uncompressedRequest.expectCompressed = .init(false)
 
     // For unary RPCs we disable compression at the call level.
 
@@ -268,7 +268,7 @@ class ServerCompressedUnary: InteroperabilityTest {
     let client = Grpc_Testing_TestServiceNIOClient(channel: connection)
 
     let compressedRequest = Grpc_Testing_SimpleRequest.with { request in
-      request.responseCompressed = true
+      request.responseCompressed = .init(true)
       request.responseSize = 314_159
       request.payload = .zeros(count: 271_828)
     }
@@ -427,7 +427,7 @@ class ClientCompressedStreaming: InteroperabilityTest {
     // compression here will stop that header from being sent.
     let probe = client.streamingInputCall()
     let probeRequest: Grpc_Testing_StreamingInputCallRequest = .with { request in
-      request.expectCompressed = true
+      request.expectCompressed = .init(true)
       request.payload = .zeros(count: 27182)
     }
 
@@ -443,7 +443,7 @@ class ClientCompressedStreaming: InteroperabilityTest {
     // The first message is identical to the probe message, we'll reuse that.
     // The second should not be compressed.
     let secondMessage: Grpc_Testing_StreamingInputCallRequest = .with { request in
-      request.expectCompressed = false
+      request.expectCompressed = .init(false)
       request.payload = .zeros(count: 45904)
     }
 
@@ -565,11 +565,11 @@ class ServerCompressedStreaming: InteroperabilityTest {
     let request: Grpc_Testing_StreamingOutputCallRequest = .with { request in
       request.responseParameters = [
         .with {
-          $0.compressed = true
+          $0.compressed = .init(true)
           $0.size = 31415
         },
         .with {
-          $0.compressed = false
+          $0.compressed = .init(false)
           $0.size = 92653
         },
       ]
