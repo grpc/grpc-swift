@@ -100,7 +100,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
 
   func testGetListeningAddress_InvalidAddress() async {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
-      address: .unixDomainSocket(path: "")
+      address: .unixDomainSocket(path: "/this/should/be/an/invalid/path")
     )
 
     try? await withThrowingDiscardingTaskGroup { group in
