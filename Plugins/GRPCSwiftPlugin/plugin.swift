@@ -202,6 +202,10 @@ struct GRPCSwiftPlugin {
       protocArgs.append("--grpc-swift_opt=KeepMethodCasing=\(keepMethodCasingOption)")
     }
 
+    if let v2 {
+      protocArgs.append("--grpc-swift_opt=_V2=\(v2)")
+    }
+
     var inputFiles = [Path]()
     var outputFiles = [Path]()
 
@@ -227,10 +231,6 @@ struct GRPCSwiftPlugin {
         let reflectionOutputPath = outputDirectory.appending(file)
         outputFiles.append(reflectionOutputPath)
       }
-    }
-
-    if let v2 {
-      protocArgs.append("--grpc-swift_opt=_V2=\(v2)")
     }
 
     // Construct the command. Specifying the input and output paths lets the build
