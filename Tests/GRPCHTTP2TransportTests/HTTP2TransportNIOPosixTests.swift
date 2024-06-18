@@ -33,8 +33,8 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
 
       group.addTask {
         let address = try await transport.listeningAddress
-        XCTAssertNotNil(address.ipv4)
-        XCTAssertNotEqual(address.ipv4!.port, 0)
+        let ipv4Address = try XCTUnwrap(address.ipv4)
+        XCTAssertNotEqual(ipv4Address.port, 0)
         transport.stopListening()
       }
     }
@@ -50,8 +50,8 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
 
       group.addTask {
         let address = try await transport.listeningAddress
-        XCTAssertNotNil(address.ipv6)
-        XCTAssertNotEqual(address.ipv6!.port, 0)
+        let ipv6Address = try XCTUnwrap(address.ipv6)
+        XCTAssertNotEqual(ipv6Address.port, 0)
         transport.stopListening()
       }
     }
@@ -102,7 +102,6 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
       address: .unixDomainSocket(path: "")
     )
-    let errorThrown = _LockedValueBox(false)
 
     try? await withThrowingDiscardingTaskGroup { group in
       group.addTask {
@@ -112,8 +111,8 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       group.addTask {
         do {
           _ = try await transport.listeningAddress
+          XCTFail("Should have thrown a RuntimeError")
         } catch let error as RuntimeError {
-          errorThrown.withLockedValue { $0 = true }
           XCTAssertEqual(error.code, .serverIsStopped)
           XCTAssertEqual(
             error.message,
@@ -125,15 +124,12 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         }
       }
     }
-
-    XCTAssertTrue(errorThrown.withLockedValue({ $0 }))
   }
 
   func testGetListeningAddress_StoppedListening() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
       address: .ipv4(host: "0.0.0.0", port: 0)
     )
-    let errorThrown = _LockedValueBox(false)
 
     try? await withThrowingDiscardingTaskGroup { group in
       group.addTask {
@@ -141,8 +137,8 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
 
         do {
           _ = try await transport.listeningAddress
+          XCTFail("Should have thrown a RuntimeError")
         } catch let error as RuntimeError {
-          errorThrown.withLockedValue { $0 = true }
           XCTAssertEqual(error.code, .serverIsStopped)
           XCTAssertEqual(
             error.message,
@@ -160,7 +156,5 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         transport.stopListening()
       }
     }
-
-    XCTAssertTrue(errorThrown.withLockedValue({ $0 }))
   }
 }

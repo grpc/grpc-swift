@@ -114,7 +114,7 @@ extension HTTP2ServerTransport {
           self = .closedOrInvalidAddress(serverStoppedError)
           return .failPromise(listeningAddressPromise, error: serverStoppedError)
 
-        case .listening(let listeningAddressPromise):
+        case .listening:
           self = .closedOrInvalidAddress(serverStoppedError)
           return .doNothing
 

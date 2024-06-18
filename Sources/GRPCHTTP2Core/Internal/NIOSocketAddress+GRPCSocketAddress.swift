@@ -17,8 +17,8 @@
 import NIOCore
 
 @_spi(Package)
-public extension GRPCHTTP2Core.SocketAddress {
-  init(_ nioSocketAddress: NIOCore.SocketAddress) {
+extension GRPCHTTP2Core.SocketAddress {
+  public init(_ nioSocketAddress: NIOCore.SocketAddress) {
     switch nioSocketAddress {
     case .v4(let address):
       self = .ipv4(
@@ -39,16 +39,16 @@ public extension GRPCHTTP2Core.SocketAddress {
 }
 
 @_spi(Package)
-public extension NIOCore.SocketAddress {
-  init(_ address: GRPCHTTP2Core.SocketAddress.IPv4) throws {
+extension NIOCore.SocketAddress {
+  public init(_ address: GRPCHTTP2Core.SocketAddress.IPv4) throws {
     try self.init(ipAddress: address.host, port: address.port)
   }
 
-  init(_ address: GRPCHTTP2Core.SocketAddress.IPv6) throws {
+  public init(_ address: GRPCHTTP2Core.SocketAddress.IPv6) throws {
     try self.init(ipAddress: address.host, port: address.port)
   }
 
-  init(_ address: GRPCHTTP2Core.SocketAddress.UnixDomainSocket) throws {
+  public init(_ address: GRPCHTTP2Core.SocketAddress.UnixDomainSocket) throws {
     try self.init(unixDomainSocketPath: address.path)
   }
 }
