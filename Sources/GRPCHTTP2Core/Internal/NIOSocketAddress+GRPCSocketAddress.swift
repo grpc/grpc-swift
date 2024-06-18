@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-import GRPCCore
+import NIOCore
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct GRPCHTTP2TransportNIOTransportServices {
+@_spi(Package)
+extension NIOCore.SocketAddress {
+  public init(_ address: GRPCHTTP2Core.SocketAddress.IPv4) throws {
+    try self.init(ipAddress: address.host, port: address.port)
+  }
+
+  public init(_ address: GRPCHTTP2Core.SocketAddress.IPv6) throws {
+    try self.init(ipAddress: address.host, port: address.port)
+  }
+
+  public init(_ address: GRPCHTTP2Core.SocketAddress.UnixDomainSocket) throws {
+    try self.init(unixDomainSocketPath: address.path)
+  }
 }

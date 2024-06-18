@@ -216,7 +216,9 @@ extension Target {
   static let grpcHTTP2TransportNIOPosix: Target = .target(
     name: "GRPCHTTP2TransportNIOPosix",
     dependencies: [
+      .grpcCore,
       .grpcHTTP2Core,
+      .nioPosix,
       .nioExtras
     ]
   )
@@ -224,7 +226,11 @@ extension Target {
   static let grpcHTTP2TransportNIOTransportServices: Target = .target(
     name: "GRPCHTTP2TransportNIOTransportServices",
     dependencies: [
-      .grpcHTTP2Core
+      .grpcCore,
+      .grpcHTTP2Core,
+      .nioCore,
+      .nioExtras,
+      .nioTransportServices
     ]
   )
 
