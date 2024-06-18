@@ -21,6 +21,7 @@ import NIOExtras
 import NIOPosix
 
 extension HTTP2ServerTransport {
+  /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public struct Posix: ServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
@@ -28,6 +29,124 @@ extension HTTP2ServerTransport {
     private let eventLoopGroup: MultiThreadedEventLoopGroup
     private let serverQuiescingHelper: ServerQuiescingHelper
 
+    private enum State {
+      case idle(EventLoopPromise<GRPCHTTP2Core.SocketAddress>)
+      case listening(EventLoopFuture<GRPCHTTP2Core.SocketAddress>)
+      case closedOrInvalidAddress(RuntimeError)
+
+      public var listeningAddressFuture: EventLoopFuture<GRPCHTTP2Core.SocketAddress> {
+        get throws {
+          switch self {
+          case .idle(let eventLoopPromise):
+            return eventLoopPromise.futureResult
+          case .listening(let eventLoopFuture):
+            return eventLoopFuture
+          case .closedOrInvalidAddress(let runtimeError):
+            throw runtimeError
+          }
+        }
+      }
+
+      enum OnBound {
+        case succeedPromise(
+          _ promise: EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
+          address: GRPCHTTP2Core.SocketAddress
+        )
+        case failPromise(
+          _ promise: EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
+          error: RuntimeError
+        )
+      }
+
+      mutating func addressBound(
+        _ address: NIOCore.SocketAddress?,
+        userProvidedAddress: GRPCHTTP2Core.SocketAddress
+      ) -> OnBound {
+        switch self {
+        case .idle(let listeningAddressPromise):
+          if let address {
+            self = .listening(listeningAddressPromise.futureResult)
+            return .succeedPromise(
+              listeningAddressPromise,
+              address: GRPCHTTP2Core.SocketAddress(address)
+            )
+
+          } else if userProvidedAddress.virtualSocket != nil {
+            self = .listening(listeningAddressPromise.futureResult)
+            return .succeedPromise(listeningAddressPromise, address: userProvidedAddress)
+
+          } else {
+            assertionFailure("Unknown address type")
+            let invalidAddressError = RuntimeError(
+              code: .transportError,
+              message: "Unknown address type returned by transport."
+            )
+            self = .closedOrInvalidAddress(invalidAddressError)
+            return .failPromise(listeningAddressPromise, error: invalidAddressError)
+          }
+
+        case .listening, .closedOrInvalidAddress:
+          fatalError(
+            "Invalid state: addressBound should only be called once and when in idle state"
+          )
+        }
+      }
+
+      enum OnClose {
+        case failPromise(
+          EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
+          error: RuntimeError
+        )
+        case doNothing
+      }
+
+      mutating func close() -> OnClose {
+        let serverStoppedError = RuntimeError(
+          code: .serverIsStopped,
+          message: """
+            There is no listening address bound for this server: there may have been \
+            an error which caused the transport to close, or it may have shut down.
+            """
+        )
+
+        switch self {
+        case .idle(let listeningAddressPromise):
+          self = .closedOrInvalidAddress(serverStoppedError)
+          return .failPromise(listeningAddressPromise, error: serverStoppedError)
+
+        case .listening:
+          self = .closedOrInvalidAddress(serverStoppedError)
+          return .doNothing
+
+        case .closedOrInvalidAddress:
+          return .doNothing
+        }
+      }
+    }
+
+    private let listeningAddressState: _LockedValueBox<State>
+
+    /// The listening address for this server transport.
+    ///
+    /// It is an `async` property because it will only return once the address has been successfully bound.
+    ///
+    /// - Throws: A runtime error will be thrown if the address could not be bound or is not bound any
+    /// longer, because the transport isn't listening anymore. It can also throw if the transport returned an
+    /// invalid address.
+    public var listeningAddress: GRPCHTTP2Core.SocketAddress {
+      get async throws {
+        try await self.listeningAddressState
+          .withLockedValue { try $0.listeningAddressFuture }
+          .get()
+      }
+    }
+
+    /// Create a new `Posix` transport.
+    ///
+    /// - Parameters:
+    ///   - address: The address to which the server should be bound.
+    ///   - config: The transport configuration.
+    ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
     public init(
       address: GRPCHTTP2Core.SocketAddress,
       config: Config = .defaults,
@@ -37,11 +156,23 @@ extension HTTP2ServerTransport {
       self.config = config
       self.eventLoopGroup = eventLoopGroup
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
+
+      let eventLoop = eventLoopGroup.any()
+      self.listeningAddressState = _LockedValueBox(.idle(eventLoop.makePromise()))
     }
 
     public func listen(
       _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
+      defer {
+        switch self.listeningAddressState.withLockedValue({ $0.close() }) {
+        case .failPromise(let promise, let error):
+          promise.fail(error)
+        case .doNothing:
+          ()
+        }
+      }
+
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
         .serverChannelInitializer { channel in
           let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(
@@ -61,6 +192,19 @@ extension HTTP2ServerTransport {
             )
           }
         }
+
+      let action = self.listeningAddressState.withLockedValue {
+        $0.addressBound(
+          serverChannel.channel.localAddress,
+          userProvidedAddress: self.address
+        )
+      }
+      switch action {
+      case .succeedPromise(let promise, let address):
+        promise.succeed(address)
+      case .failPromise(let promise, let error):
+        promise.fail(error)
+      }
 
       try await serverChannel.executeThenClose { inbound in
         try await withThrowingDiscardingTaskGroup { serverTaskGroup in
