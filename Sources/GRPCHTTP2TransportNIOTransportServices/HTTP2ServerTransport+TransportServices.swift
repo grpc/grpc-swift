@@ -35,7 +35,7 @@ extension HTTP2ServerTransport {
       case listening(EventLoopFuture<GRPCHTTP2Core.SocketAddress>)
       case closedOrInvalidAddress(RuntimeError)
 
-      public var listeningAddressFuture: EventLoopFuture<GRPCHTTP2Core.SocketAddress> {
+      var listeningAddressFuture: EventLoopFuture<GRPCHTTP2Core.SocketAddress> {
         get throws {
           switch self {
           case .idle(let eventLoopPromise):

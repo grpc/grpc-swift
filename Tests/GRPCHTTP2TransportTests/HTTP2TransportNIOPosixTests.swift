@@ -61,7 +61,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
 
   func testGetListeningAddress_UnixDomainSocket() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
-      address: .unixDomainSocket(path: "/tmp/test")
+      address: .unixDomainSocket(path: "/tmp/posix-uds-test")
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -73,7 +73,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         let address = try await transport.listeningAddress
         XCTAssertEqual(
           address.unixDomainSocket,
-          GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/test")
+          GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/posix-uds-test")
         )
         transport.stopListening()
       }
