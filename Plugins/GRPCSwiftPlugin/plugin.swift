@@ -69,6 +69,8 @@ struct GRPCSwiftPlugin {
       var reflectionData: Bool?
       /// Determines whether the casing of generated function names is kept.
       var keepMethodCasing: Bool?
+      /// Whether the invocation is for `grpc-swift` v2.
+      var _V2: Bool?
     }
 
     /// Specify the directory in which to search for
@@ -155,7 +157,7 @@ struct GRPCSwiftPlugin {
   ///   - protocPath: The path to the `protoc` binary.
   ///   - protocGenSwiftPath: The path to the `protoc-gen-swift` binary.
   ///   - outputDirectory: The output directory for the generated files.
-  ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`
+  ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`.
   /// - Returns: The build command configured based on the arguments
   private func invokeProtoc(
     directory: Path,
@@ -194,6 +196,10 @@ struct GRPCSwiftPlugin {
 
     if let keepMethodCasingOption = invocation.keepMethodCasing {
       protocArgs.append("--grpc-swift_opt=KeepMethodCasing=\(keepMethodCasingOption)")
+    }
+
+    if let v2 = invocation._V2 {
+      protocArgs.append("--grpc-swift_opt=_V2=\(v2)")
     }
 
     var inputFiles = [Path]()
