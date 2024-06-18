@@ -18,25 +18,22 @@ import NIOCore
 
 @_spi(Package)
 public extension GRPCHTTP2Core.SocketAddress {
-  init?(_ nioSocketAddress: NIOCore.SocketAddress) {
+  init(_ nioSocketAddress: NIOCore.SocketAddress) {
     switch nioSocketAddress {
-    case .v4(let iPv4Address):
-      guard let port = nioSocketAddress.port else {
-        return nil
-      }
-      self = .ipv4(host: iPv4Address.host, port: port)
+    case .v4(let address):
+      self = .ipv4(
+        host: address.host,
+        port: nioSocketAddress.port ?? 0
+      )
 
-    case .v6(let iPv6Address):
-      guard let port = nioSocketAddress.port else {
-        return nil
-      }
-      self = .ipv6(host: iPv6Address.host, port: port)
+    case .v6(let address):
+      self = .ipv6(
+        host: address.host,
+        port: nioSocketAddress.port ?? 0
+      )
 
     case .unixDomainSocket:
-      guard let path = nioSocketAddress.pathname else {
-        return nil
-      }
-      self = .unixDomainSocket(path: path)
+      self = .unixDomainSocket(path: nioSocketAddress.pathname ?? "")
     }
   }
 }

@@ -34,6 +34,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       group.addTask {
         let address = try await transport.listeningAddress
         XCTAssertNotNil(address.ipv4)
+        XCTAssertNotEqual(address.ipv4!.port, 0)
         transport.stopListening()
       }
     }
@@ -50,6 +51,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       group.addTask {
         let address = try await transport.listeningAddress
         XCTAssertNotNil(address.ipv6)
+        XCTAssertNotEqual(address.ipv6!.port, 0)
         transport.stopListening()
       }
     }
@@ -76,11 +78,31 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     }
   }
 
+  func testGetListeningAddress_Vsock() async throws {
+    try XCTSkipUnless(self.vsockAvailable(), "Vsock unavailable")
+
+    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
+      address: .vsock(contextID: .any, port: .any)
+    )
+
+    try await withThrowingDiscardingTaskGroup { group in
+      group.addTask {
+        try await transport.listen { _ in }
+      }
+
+      group.addTask {
+        let address = try await transport.listeningAddress
+        XCTAssertNotNil(address.virtualSocket)
+        transport.stopListening()
+      }
+    }
+  }
+
   func testGetListeningAddress_InvalidAddress() async {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
-      address: .unixDomainSocket(path: "/this/is/an/invalid/path")
+      address: .unixDomainSocket(path: "")
     )
-    let expectation = expectation(description: "Getting address threw")
+    let errorThrown = _LockedValueBox(false)
 
     try? await withThrowingDiscardingTaskGroup { group in
       group.addTask {
@@ -91,7 +113,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         do {
           _ = try await transport.listeningAddress
         } catch let error as RuntimeError {
-          expectation.fulfill()
+          errorThrown.withLockedValue { $0 = true }
           XCTAssertEqual(error.code, .serverIsStopped)
           XCTAssertEqual(
             error.message,
@@ -104,14 +126,14 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       }
     }
 
-    await fulfillment(of: [expectation])
+    XCTAssertTrue(errorThrown.withLockedValue({ $0 }))
   }
 
   func testGetListeningAddress_StoppedListening() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
       address: .ipv4(host: "0.0.0.0", port: 0)
     )
-    let expectation = expectation(description: "Getting address threw")
+    let errorThrown = _LockedValueBox(false)
 
     try? await withThrowingDiscardingTaskGroup { group in
       group.addTask {
@@ -120,7 +142,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         do {
           _ = try await transport.listeningAddress
         } catch let error as RuntimeError {
-          expectation.fulfill()
+          errorThrown.withLockedValue { $0 = true }
           XCTAssertEqual(error.code, .serverIsStopped)
           XCTAssertEqual(
             error.message,
@@ -139,6 +161,6 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       }
     }
 
-    await fulfillment(of: [expectation])
+    XCTAssertTrue(errorThrown.withLockedValue({ $0 }))
   }
 }

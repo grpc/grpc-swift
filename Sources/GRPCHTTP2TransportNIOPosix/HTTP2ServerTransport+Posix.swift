@@ -31,7 +31,7 @@ extension HTTP2ServerTransport {
 
     private enum State {
       case idle(EventLoopPromise<GRPCHTTP2Core.SocketAddress>)
-      case listening(EventLoopPromise<GRPCHTTP2Core.SocketAddress>)
+      case listening(EventLoopFuture<GRPCHTTP2Core.SocketAddress>)
       case closedOrInvalidAddress(RuntimeError)
 
       public var listeningAddressFuture: EventLoopFuture<GRPCHTTP2Core.SocketAddress> {
@@ -39,8 +39,8 @@ extension HTTP2ServerTransport {
           switch self {
           case .idle(let eventLoopPromise):
             return eventLoopPromise.futureResult
-          case .listening(let eventLoopPromise):
-            return eventLoopPromise.futureResult
+          case .listening(let eventLoopFuture):
+            return eventLoopFuture
           case .closedOrInvalidAddress(let runtimeError):
             throw runtimeError
           }
@@ -65,27 +65,21 @@ extension HTTP2ServerTransport {
         switch self {
         case .idle(let listeningAddressPromise):
           if let address {
-            guard let validAddress = GRPCHTTP2Core.SocketAddress(address) else {
-              let invalidAddressError = RuntimeError(
-                code: .transportError,
-                message: "Invalid address returned by transport."
-              )
-              self = .closedOrInvalidAddress(invalidAddressError)
-              return .failPromise(listeningAddressPromise, error: invalidAddressError)
-            }
+            self = .listening(listeningAddressPromise.futureResult)
+            return .succeedPromise(
+              listeningAddressPromise,
+              address: GRPCHTTP2Core.SocketAddress(address)
+            )
 
-            self = .listening(listeningAddressPromise)
-            return .succeedPromise(listeningAddressPromise, address: validAddress)
-
-          } else if userProvidedAddress.unixDomainSocket != nil {
-            self = .listening(listeningAddressPromise)
+          } else if userProvidedAddress.virtualSocket != nil {
+            self = .listening(listeningAddressPromise.futureResult)
             return .succeedPromise(listeningAddressPromise, address: userProvidedAddress)
 
           } else {
             assertionFailure("Unknown address type")
             let invalidAddressError = RuntimeError(
               code: .transportError,
-              message: "Invalid address returned by transport."
+              message: "Unknown address type returned by transport."
             )
             self = .closedOrInvalidAddress(invalidAddressError)
             return .failPromise(listeningAddressPromise, error: invalidAddressError)
@@ -122,7 +116,7 @@ extension HTTP2ServerTransport {
 
         case .listening(let listeningAddressPromise):
           self = .closedOrInvalidAddress(serverStoppedError)
-          return .failPromise(listeningAddressPromise, error: serverStoppedError)
+          return .doNothing
 
         case .closedOrInvalidAddress:
           return .doNothing
