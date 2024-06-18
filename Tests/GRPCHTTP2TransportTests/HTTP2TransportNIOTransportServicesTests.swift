@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#if canImport(Network)
 import GRPCCore
 import GRPCHTTP2Core
 import GRPCHTTP2TransportNIOTransportServices
 import XCTest
 
-#if canImport(Network)
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_IPv4() async throws {
@@ -76,26 +76,6 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
           address.unixDomainSocket,
           GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/test")
         )
-        transport.stopListening()
-      }
-    }
-  }
-
-  func testGetListeningAddress_Vsock() async throws {
-    try XCTSkipUnless(self.vsockAvailable(), "Vsock unavailable")
-
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .vsock(contextID: .any, port: .any)
-    )
-
-    try await withThrowingDiscardingTaskGroup { group in
-      group.addTask {
-        try await transport.listen { _ in }
-      }
-
-      group.addTask {
-        let address = try await transport.listeningAddress
-        XCTAssertNotNil(address.virtualSocket)
         transport.stopListening()
       }
     }

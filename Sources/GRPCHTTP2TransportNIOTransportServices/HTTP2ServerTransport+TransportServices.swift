@@ -59,10 +59,7 @@ extension HTTP2ServerTransport {
         )
       }
 
-      mutating func addressBound(
-        _ address: NIOCore.SocketAddress?,
-        userProvidedAddress: GRPCHTTP2Core.SocketAddress
-      ) -> OnBound {
+      mutating func addressBound(_ address: NIOCore.SocketAddress?) -> OnBound {
         switch self {
         case .idle(let listeningAddressPromise):
           if let address {
@@ -71,10 +68,6 @@ extension HTTP2ServerTransport {
               listeningAddressPromise,
               address: GRPCHTTP2Core.SocketAddress(address)
             )
-
-          } else if userProvidedAddress.virtualSocket != nil {
-            self = .listening(listeningAddressPromise.futureResult)
-            return .succeedPromise(listeningAddressPromise, address: userProvidedAddress)
 
           } else {
             assertionFailure("Unknown address type")
@@ -195,10 +188,7 @@ extension HTTP2ServerTransport {
         }
 
       let action = self.listeningAddressState.withLockedValue {
-        $0.addressBound(
-          serverChannel.channel.localAddress,
-          userProvidedAddress: self.address
-        )
+        $0.addressBound(serverChannel.channel.localAddress)
       }
       switch action {
       case .succeedPromise(let promise, let address):
