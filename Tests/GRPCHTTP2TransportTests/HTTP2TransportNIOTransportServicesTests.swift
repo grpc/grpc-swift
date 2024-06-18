@@ -19,6 +19,7 @@ import GRPCHTTP2Core
 import GRPCHTTP2TransportNIOTransportServices
 import XCTest
 
+#if canImport(Network)
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_IPv4() async throws {
@@ -160,3 +161,4 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     }
   }
 }
+#endif
