@@ -79,7 +79,7 @@ final class InterceptedRPCCancellationTests: GRPCTestCase {
 final class MagicRequiredServerInterceptor<
   Request: Message,
   Response: Message
->: ServerInterceptor<Request, Response> {
+>: ServerInterceptor<Request, Response>, @unchecked Sendable {
   override func receive(
     _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
@@ -103,7 +103,7 @@ final class MagicRequiredServerInterceptor<
 final class MagicAddingClientInterceptor<
   Request: Message,
   Response: Message
->: ClientInterceptor<Request, Response> {
+>: ClientInterceptor<Request, Response>, @unchecked Sendable {
   private let channel: GRPCChannel
   private var requestParts = CircularBuffer<GRPCClientRequestPart<Request>>()
   private var retry: Call<Request, Response>?

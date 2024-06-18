@@ -22,7 +22,7 @@ import SwiftProtobuf
 final class DelegatingClientInterceptor<
   Request: Message,
   Response: Message
->: ClientInterceptor<Request, Response> {
+>: ClientInterceptor<Request, Response>, @unchecked Sendable {
   typealias RequestPart = GRPCClientRequestPart<Request>
   typealias ResponsePart = GRPCClientResponsePart<Response>
   typealias Context = ClientInterceptorContext<Request, Response>

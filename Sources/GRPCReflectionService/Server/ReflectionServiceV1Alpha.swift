@@ -197,8 +197,7 @@ extension Result<Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageR
     request: Grpc_Reflection_V1alpha_ServerReflectionRequest
   ) -> Grpc_Reflection_V1alpha_ServerReflectionResponse {
     let result = self.recover().attachRequest(request)
-    // Safe to '!' as the failure type is 'Never'.
-    return try! result.get()
+    return result.get()
   }
 }
 
@@ -212,3 +211,16 @@ where Success == Grpc_Reflection_V1alpha_ServerReflectionResponse.OneOf_MessageR
     }
   }
 }
+
+#if compiler(<6.0)
+extension Result where Failure == Never {
+  func get() -> Success {
+    switch self {
+    case .success(let success):
+      return success
+    case .failure:
+      fatalError("Unreachable")
+    }
+  }
+}
+#endif
