@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
+#if canImport(Network)
 import GRPCCore
 import GRPCHTTP2Core
-import GRPCHTTP2TransportNIOPosix
+import GRPCHTTP2TransportNIOTransportServices
 import XCTest
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-final class HTTP2TransportNIOPosixTests: XCTestCase {
+final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_IPv4() async throws {
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
+    let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .ipv4(host: "0.0.0.0", port: 0)
     )
 
@@ -41,7 +42,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testGetListeningAddress_IPv6() async throws {
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
+    let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .ipv6(host: "::1", port: 0)
     )
 
@@ -60,8 +61,8 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testGetListeningAddress_UnixDomainSocket() async throws {
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
-      address: .unixDomainSocket(path: "/tmp/posix-uds-test")
+    let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
+      address: .unixDomainSocket(path: "/tmp/niots-uds-test")
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -73,35 +74,15 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         let address = try await transport.listeningAddress
         XCTAssertEqual(
           address.unixDomainSocket,
-          GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/posix-uds-test")
+          GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/niots-uds-test")
         )
         transport.stopListening()
       }
     }
   }
 
-  func testGetListeningAddress_Vsock() async throws {
-    try XCTSkipUnless(self.vsockAvailable(), "Vsock unavailable")
-
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
-      address: .vsock(contextID: .any, port: .any)
-    )
-
-    try await withThrowingDiscardingTaskGroup { group in
-      group.addTask {
-        try await transport.listen { _ in }
-      }
-
-      group.addTask {
-        let address = try await transport.listeningAddress
-        XCTAssertNotNil(address.virtualSocket)
-        transport.stopListening()
-      }
-    }
-  }
-
   func testGetListeningAddress_InvalidAddress() async {
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
+    let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .unixDomainSocket(path: "/this/should/be/an/invalid/path")
     )
 
@@ -129,7 +110,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testGetListeningAddress_StoppedListening() async throws {
-    let transport = GRPCHTTP2Core.HTTP2ServerTransport.Posix(
+    let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .ipv4(host: "0.0.0.0", port: 0)
     )
 
@@ -160,3 +141,4 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     }
   }
 }
+#endif
