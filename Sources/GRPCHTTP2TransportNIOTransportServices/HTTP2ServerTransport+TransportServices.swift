@@ -36,7 +36,6 @@ extension HTTP2ServerTransport {
     ///   - address: The address to which the server should be bound.
     ///   - config: The transport configuration.
     ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
-
     public init(
       address: GRPCHTTP2Core.SocketAddress,
       config: Config = .defaults,
