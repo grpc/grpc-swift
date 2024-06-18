@@ -136,7 +136,9 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     var cancelled = false
     var timedOut = false
 
-    class FailOnCancel<Request, Response>: ClientInterceptor<Request, Response> {
+    class FailOnCancel<Request, Response>: ClientInterceptor<Request, Response>,
+      @unchecked Sendable
+    {
       override func cancel(
         promise: EventLoopPromise<Void>?,
         context: ClientInterceptorContext<Request, Response>
@@ -299,7 +301,9 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 // MARK: - Test Interceptors
 
 /// A simple interceptor which records and then forwards and request and response parts it sees.
-class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Response> {
+class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Response>, @unchecked
+  Sendable
+{
   var requestParts: [GRPCClientRequestPart<Request>] = []
   var responseParts: [GRPCClientResponsePart<Response>] = []
 
@@ -322,7 +326,7 @@ class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Respon
 }
 
 /// An interceptor which reverses string request messages.
-class StringRequestReverser: ClientInterceptor<String, String> {
+class StringRequestReverser: ClientInterceptor<String, String>, @unchecked Sendable {
   override func send(
     _ part: GRPCClientRequestPart<String>,
     promise: EventLoopPromise<Void>?,

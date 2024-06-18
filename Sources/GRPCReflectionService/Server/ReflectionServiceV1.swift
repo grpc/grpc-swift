@@ -191,8 +191,7 @@ extension Result<Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageRespon
     request: Grpc_Reflection_V1_ServerReflectionRequest
   ) -> Grpc_Reflection_V1_ServerReflectionResponse {
     let result = self.recover().attachRequest(request)
-    // Safe to '!' as the failure type is 'Never'.
-    return try! result.get()
+    return result.get()
   }
 }
 

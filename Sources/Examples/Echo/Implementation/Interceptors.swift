@@ -20,7 +20,9 @@ import NIOCore
 // All client interceptors derive from the 'ClientInterceptor' base class. We know the request and
 // response types for all Echo RPCs are the same: so we'll use them concretely here, allowing us
 // to access fields on each type as we intercept them.
-class LoggingEchoClientInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+class LoggingEchoClientInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>,
+  @unchecked Sendable
+{
   /// Called when the interceptor has received a request part to handle.
   ///
   /// - Parameters:

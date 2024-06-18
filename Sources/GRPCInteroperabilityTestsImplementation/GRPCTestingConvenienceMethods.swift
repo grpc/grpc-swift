@@ -40,13 +40,9 @@ extension Grpc_Testing_Payload {
 
 // MARK: - Bool value
 
-extension Grpc_Testing_BoolValue: ExpressibleByBooleanLiteral {
-  public typealias BooleanLiteralType = Bool
-
-  public init(booleanLiteral value: Bool) {
-    self = .with {
-      $0.value = value
-    }
+extension Grpc_Testing_BoolValue {
+  public init(_ value: Bool) {
+    self = .with { $0.value = value }
   }
 }
 
