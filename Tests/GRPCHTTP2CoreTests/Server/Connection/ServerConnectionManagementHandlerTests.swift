@@ -213,12 +213,7 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
     // The first ping is valid, the second and third are strikes.
     for _ in 1 ... 3 {
       try connection.ping(data: HTTP2PingData(), ack: false)
-      let frame = try XCTUnwrap(connection.readFrame())
-      XCTAssertEqual(frame.streamID, .rootStream)
-      XCTAssertPing(frame.payload) { data, ack in
-        XCTAssertEqual(data, HTTP2PingData())
-        XCTAssertTrue(ack)
-      }
+      XCTAssertNil(try connection.readFrame())
     }
 
     // The fourth ping is the third strike and triggers a GOAWAY.
@@ -245,12 +240,7 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
 
     for _ in 1 ... 100 {
       try connection.ping(data: HTTP2PingData(), ack: false)
-      let frame = try XCTUnwrap(connection.readFrame())
-      XCTAssertEqual(frame.streamID, .rootStream)
-      XCTAssertPing(frame.payload) { data, ack in
-        XCTAssertEqual(data, HTTP2PingData())
-        XCTAssertTrue(ack)
-      }
+      XCTAssertNil(try connection.readFrame())
 
       // Advance by the ping interval.
       connection.advanceTime(by: .minutes(1))
@@ -268,12 +258,7 @@ final class ServerConnectionManagementHandlerTests: XCTestCase {
       // The first ping is valid, the second and third are strikes.
       for _ in 1 ... 3 {
         try connection.ping(data: HTTP2PingData(), ack: false)
-        let frame = try XCTUnwrap(connection.readFrame())
-        XCTAssertEqual(frame.streamID, .rootStream)
-        XCTAssertPing(frame.payload) { data, ack in
-          XCTAssertEqual(data, HTTP2PingData())
-          XCTAssertTrue(ack)
-        }
+        XCTAssertNil(try connection.readFrame())
       }
     }
 

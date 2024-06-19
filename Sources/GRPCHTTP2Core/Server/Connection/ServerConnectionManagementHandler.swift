@@ -458,9 +458,7 @@ extension ServerConnectionManagementHandler {
       context.close(promise: nil)
 
     case .sendAck:
-      let ping = HTTP2Frame(streamID: .rootStream, payload: .ping(data, ack: true))
-      context.write(self.wrapOutboundOut(ping), promise: nil)
-      self.maybeFlush(context: context)
+      ()  // ACKs are sent by NIO's HTTP/2 handler, don't double ack.
 
     case .none:
       ()
