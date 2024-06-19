@@ -174,6 +174,10 @@ extension HTTP2ServerTransport {
       }
 
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
+        .serverChannelOption(
+          ChannelOptions.socketOption(.so_reuseaddr),
+          value: 1
+        )
         .serverChannelInitializer { channel in
           let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(
             channel: channel
