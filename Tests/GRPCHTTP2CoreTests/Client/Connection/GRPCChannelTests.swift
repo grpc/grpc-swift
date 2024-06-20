@@ -747,6 +747,65 @@ final class GRPCChannelTests: XCTestCase {
       group.cancelAll()
     }
   }
+
+  func testQueueRequestsThenClose() async throws {
+    // Start a server.
+    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
+    let address = try await server.bind()
+    let (resolver, continuation) = NameResolver.dynamic(updateMode: .push)
+    continuation.yield(.init(endpoints: [Endpoint(address)], serviceConfig: nil))
+
+    let channel = GRPCChannel(
+      resolver: resolver,
+      connector: .posix(),
+      config: .defaults,
+      defaultServiceConfig: ServiceConfig()
+    )
+
+    try await withThrowingDiscardingTaskGroup { group in
+      group.addTask {
+        try await server.run(.echo)
+      }
+
+      group.addTask {
+        await channel.connect()
+      }
+
+      for try await state in channel.connectivityState {
+        switch state {
+        case .ready:
+          try await channel.withStream(descriptor: .echoGet, options: .defaults) { stream in
+            try await stream.outbound.write(.metadata([:]))
+
+            var iterator = stream.inbound.makeAsyncIterator()
+            _ = try await iterator.next()  // initial metadata
+
+            // Drop the connection, this will trigger a state change to transient failure.
+            server.clients.first?.close(promise: nil)
+          }
+
+        case .transientFailure:
+          group.addTask {
+            channel.close()
+          }
+
+          // Try to open a new stream.
+          await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
+            try await channel.withStream(descriptor: .echoGet, options: .defaults) { stream in
+              XCTFail("Unexpected new stream")
+            }
+          } errorHandler: { error in
+            XCTAssertEqual(error.code, .unavailable)
+          }
+
+        default:
+          ()
+        }
+      }
+
+      group.cancelAll()
+    }
+  }
 }
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
