@@ -132,9 +132,7 @@ struct RPCStats {
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   mutating func merge(_ other: RPCStats) throws {
-    try self.latencyHistogram.merge(
-      other.latencyHistogram
-    )
+    try self.latencyHistogram.merge(other.latencyHistogram)
     self.requestResultCount.merge(other.requestResultCount) { (current, new) in
       current + new
     }
