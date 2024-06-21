@@ -747,6 +747,58 @@ final class GRPCChannelTests: XCTestCase {
       group.cancelAll()
     }
   }
+
+  func testQueueRequestsThenClose() async throws {
+    let (resolver, continuation) = NameResolver.dynamic(updateMode: .push)
+    continuation.yield(.init(endpoints: [Endpoint()], serviceConfig: nil))
+
+    // Set a high backoff so the channel stays in transient failure for long enough.
+    var config = GRPCChannel.Config.defaults
+    config.backoff.initial = .seconds(120)
+
+    let channel = GRPCChannel(
+      resolver: .static(
+        endpoints: [
+          Endpoint(.unixDomainSocket(path: "/testQueueRequestsThenClose"))
+        ]
+      ),
+      connector: .posix(),
+      config: .defaults,
+      defaultServiceConfig: ServiceConfig()
+    )
+
+    try await withThrowingDiscardingTaskGroup { group in
+      group.addTask {
+        await channel.connect()
+      }
+
+      for try await state in channel.connectivityState {
+        switch state {
+        case .transientFailure:
+          group.addTask {
+            // Sleep a little to increase the chances of the stream being queued before the channel
+            // reacts to the close.
+            try await Task.sleep(for: .milliseconds(10))
+            channel.close()
+          }
+
+          // Try to open a new stream.
+          await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
+            try await channel.withStream(descriptor: .echoGet, options: .defaults) { stream in
+              XCTFail("Unexpected new stream")
+            }
+          } errorHandler: { error in
+            XCTAssertEqual(error.code, .unavailable)
+          }
+
+        default:
+          ()
+        }
+      }
+
+      group.cancelAll()
+    }
+  }
 }
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)

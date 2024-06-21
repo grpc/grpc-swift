@@ -218,16 +218,13 @@ extension Subchannel {
     case .none:
       ()
 
+    case .close(let connection):
+      connection.close()
+
     case .connect(let connection):
       // About to start connecting, emit a state change event.
       self.event.continuation.yield(.connectivityStateChanged(.connecting))
       self.runConnection(connection, in: &group)
-
-    case .shutdown:
-      self.event.continuation.yield(.connectivityStateChanged(.shutdown))
-      // Close the event streams.
-      self.event.continuation.finish()
-      self.input.continuation.finish()
     }
   }
 
@@ -236,10 +233,12 @@ extension Subchannel {
     case .none:
       ()
 
-    case .close(let connection):
+    case .emitShutdownAndClose(let connection):
+      // Connection closed because the load balancer asked it to, so notify the load balancer.
+      self.event.continuation.yield(.connectivityStateChanged(.shutdown))
       connection.close()
 
-    case .shutdown:
+    case .emitShutdownAndFinish:
       // Connection closed because the load balancer asked it to, so notify the load balancer.
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
       // At this point there are no more events: close the event streams.
@@ -266,11 +265,12 @@ extension Subchannel {
 
   private func handleConnectSucceededEvent() {
     switch self.state.withLockedValue({ $0.connectSucceeded() }) {
-    case .updateState:
+    case .updateStateToReady:
       // Emit a connectivity state change: the load balancer can now use this subchannel.
       self.event.continuation.yield(.connectivityStateChanged(.ready))
 
-    case .close(let connection):
+    case .closeAndEmitShutdown(let connection):
+      self.event.continuation.yield(.connectivityStateChanged(.shutdown))
       connection.close()
 
     case .none:
@@ -299,11 +299,9 @@ extension Subchannel {
         }
       }
 
-    case .shutdown:
+    case .closeAndEmitShutdownEvent(let connection):
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
-      // No more events, close the streams.
-      self.event.continuation.finish()
-      self.input.continuation.finish()
+      connection.close()
 
     case .none:
       ()
@@ -325,26 +323,24 @@ extension Subchannel {
     _ reason: Connection.CloseReason,
     in group: inout DiscardingTaskGroup
   ) {
-    let isClosed = self.state.withLockedValue { $0.closed(reason: reason) }
-    guard isClosed else { return }
+    switch self.state.withLockedValue({ $0.closed(reason: reason) }) {
+    case .nothing:
+      ()
 
-    switch reason {
-    case .idleTimeout, .remote, .error(_, wasIdle: true):
-      // Connection closed due to an idle timeout or the remote telling it to GOAWAY; notify the
-      // load balancer about this.
+    case .emitIdle:
       self.event.continuation.yield(.connectivityStateChanged(.idle))
 
-    case .keepaliveTimeout, .error(_, wasIdle: false):
+    case .emitTransientFailureAndReconnect:
       // Unclean closes trigger a transient failure state change and a name resolution.
       self.event.continuation.yield(.connectivityStateChanged(.transientFailure))
       self.event.continuation.yield(.requiresNameResolution)
-
       // Attempt to reconnect.
       self.handleConnectInput(in: &group)
 
-    case .initiatedLocally:
-      // Connection closed because the load balancer asked it to, so notify the load balancer.
-      self.event.continuation.yield(.connectivityStateChanged(.shutdown))
+    case .finish(let emitShutdown):
+      if emitShutdown {
+        self.event.continuation.yield(.connectivityStateChanged(.shutdown))
+      }
 
       // At this point there are no more events: close the event streams.
       self.event.continuation.finish()
@@ -384,6 +380,7 @@ extension Subchannel {
       let addresses: [SocketAddress]
       var addressIterator: Array<SocketAddress>.Iterator
       var backoff: ConnectionBackoff.Iterator
+      var shutdownRequested: Bool = false
     }
 
     struct Connected {
@@ -442,8 +439,8 @@ extension Subchannel {
 
     enum OnClose {
       case none
-      case shutdown
-      case close(Connection)
+      case emitShutdownAndFinish
+      case emitShutdownAndClose(Connection)
     }
 
     mutating func close() -> OnClose {
@@ -451,16 +448,17 @@ extension Subchannel {
 
       switch self {
       case .notConnected:
-        onClose = .shutdown
+        onClose = .emitShutdownAndFinish
 
-      case .connecting(let state):
-        self = .closing(Closing(from: state))
+      case .connecting(var state):
+        state.shutdownRequested = true
+        self = .connecting(state)
         // Do nothing; the connection hasn't been established yet so can't be closed.
         onClose = .none
 
       case .connected(let state):
         self = .closing(Closing(from: state))
-        onClose = .close(state.connection)
+        onClose = .emitShutdownAndClose(state.connection)
 
       case .closing, .closed:
         onClose = .none
@@ -470,19 +468,27 @@ extension Subchannel {
     }
 
     enum OnConnectSucceeded {
-      case updateState
-      case close(Connection)
+      case updateStateToReady
+      case closeAndEmitShutdown(Connection)
       case none
     }
 
     mutating func connectSucceeded() -> OnConnectSucceeded {
       switch self {
       case .connecting(let state):
-        self = .connected(Connected(from: state))
-        return .updateState
+        if state.shutdownRequested {
+          self = .closing(Closing(from: state))
+          return .closeAndEmitShutdown(state.connection)
+        } else {
+          self = .connected(Connected(from: state))
+          return .updateStateToReady
+        }
+
       case .closing(let state):
-        self = .closing(state)
-        return .close(state.connection)
+        // Shouldn't happen via the connecting state.
+        assertionFailure("Invalid state")
+        return .closeAndEmitShutdown(state.connection)
+
       case .notConnected, .connected, .closed:
         return .none
       }
@@ -491,58 +497,76 @@ extension Subchannel {
     enum OnConnectFailed {
       case none
       case connect(Connection)
+      case closeAndEmitShutdownEvent(Connection)
       case backoff(Duration)
-      case shutdown
     }
 
     mutating func connectFailed(connector: any HTTP2Connector) -> OnConnectFailed {
+      let onConnectFailed: OnConnectFailed
+
       switch self {
-      case .connecting(var connecting):
-        if let address = connecting.addressIterator.next() {
-          connecting.connection = Connection(
+      case .connecting(var state):
+        if state.shutdownRequested {
+          // Subchannel has been asked to shutdown, do so now.
+          self = .closing(Closing(from: state))
+          onConnectFailed = .closeAndEmitShutdownEvent(state.connection)
+        } else if let address = state.addressIterator.next() {
+          state.connection = Connection(
             address: address,
             http2Connector: connector,
             defaultCompression: .none,
             enabledCompression: .all
           )
-          self = .connecting(connecting)
-          return .connect(connecting.connection)
+          self = .connecting(state)
+          onConnectFailed = .connect(state.connection)
         } else {
-          connecting.addressIterator = connecting.addresses.makeIterator()
-          let address = connecting.addressIterator.next()!
-          connecting.connection = Connection(
+          state.addressIterator = state.addresses.makeIterator()
+          let address = state.addressIterator.next()!
+          state.connection = Connection(
             address: address,
             http2Connector: connector,
             defaultCompression: .none,
             enabledCompression: .all
           )
-          let backoff = connecting.backoff.next()
-          self = .connecting(connecting)
-          return .backoff(backoff)
+          let backoff = state.backoff.next()
+          self = .connecting(state)
+          onConnectFailed = .backoff(backoff)
         }
 
       case .closing:
-        self = .closed
-        return .shutdown
+        // Should be handled via connection.closeRequested
+        assertionFailure("Invalid state")
+        onConnectFailed = .none
 
       case .notConnected, .connected, .closed:
-        return .none
+        onConnectFailed = .none
       }
+
+      return onConnectFailed
     }
 
     enum OnBackedOff {
       case none
       case connect(Connection)
-      case shutdown
+      case close(Connection)
     }
 
     mutating func backedOff() -> OnBackedOff {
       switch self {
       case .connecting(let state):
-        return .connect(state.connection)
+        if state.shutdownRequested {
+          self = .closing(Closing(from: state))
+          return .close(state.connection)
+        } else {
+          self = .connecting(state)
+          return .connect(state.connection)
+        }
+
       case .closing:
-        self = .closed
-        return .shutdown
+        // Shouldn't happen via the connecting state.
+        assertionFailure("Invalid state")
+        return .none
+
       case .notConnected, .connected, .closed:
         return .none
       }
@@ -558,20 +582,52 @@ extension Subchannel {
       }
     }
 
-    mutating func closed(reason: Connection.CloseReason) -> Bool {
+    enum OnClosed {
+      case nothing
+      case emitIdle
+      case emitTransientFailureAndReconnect
+      case finish(emitShutdown: Bool)
+    }
+
+    mutating func closed(reason: Connection.CloseReason) -> OnClosed {
+      let onClosed: OnClosed
+
       switch self {
-      case .connected, .closing:
+      case .connected:
         switch reason {
-        case .idleTimeout, .keepaliveTimeout, .error, .remote:
+        case .idleTimeout, .remote, .error(_, wasIdle: true):
           self = .notConnected
+          onClosed = .emitIdle
+
+        case .keepaliveTimeout, .error(_, wasIdle: false):
+          self = .notConnected
+          onClosed = .emitTransientFailureAndReconnect
+
         case .initiatedLocally:
           self = .closed
+          onClosed = .finish(emitShutdown: true)
         }
 
-        return true
+      case .closing:
+        switch reason {
+        case .idleTimeout, .remote, .error(_, wasIdle: true):
+          self = .notConnected
+          onClosed = .emitIdle
+
+        case .keepaliveTimeout, .error(_, wasIdle: false):
+          self = .notConnected
+          onClosed = .emitTransientFailureAndReconnect
+
+        case .initiatedLocally:
+          self = .closed
+          onClosed = .finish(emitShutdown: false)
+        }
+
       case .notConnected, .connecting, .closed:
-        return false
+        onClosed = .nothing
       }
+
+      return onClosed
     }
   }
 }

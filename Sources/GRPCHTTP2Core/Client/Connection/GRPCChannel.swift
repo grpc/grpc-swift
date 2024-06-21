@@ -355,10 +355,13 @@ extension GRPCChannel {
 extension GRPCChannel {
   private func handleClose(in group: inout DiscardingTaskGroup) {
     switch self.state.withLockedValue({ $0.close() }) {
-    case .close(let current, let next, let resolver):
+    case .close(let current, let next, let resolver, let continuations):
       resolver?.cancel()
       current.close()
       next?.close()
+      for continuation in continuations {
+        continuation.resume(throwing: RPCError(code: .unavailable, message: "channel is closed"))
+      }
       self._connectivityState.continuation.yield(.shutdown)
 
     case .cancelAll(let continuations):
@@ -924,7 +927,7 @@ extension GRPCChannel.StateMachine {
   enum OnClose {
     case none
     case cancelAll([RequestQueue.Continuation])
-    case close(LoadBalancer, LoadBalancer?, CancellableTaskHandle?)
+    case close(LoadBalancer, LoadBalancer?, CancellableTaskHandle?, [RequestQueue.Continuation])
   }
 
   mutating func close() -> OnClose {
@@ -936,7 +939,8 @@ extension GRPCChannel.StateMachine {
       onClose = .cancelAll(state.queue.removeAll())
 
     case .running(var state):
-      onClose = .close(state.current, state.next, state.nameResolverHandle)
+      let continuations = state.queue.removeAll()
+      onClose = .close(state.current, state.next, state.nameResolverHandle, continuations)
 
       state.past[state.current.id] = state.current
       if let next = state.next {
