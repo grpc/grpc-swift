@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPCCore
+
 import XCTest
+
+@testable import GRPCCore
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 final class ClientRPCExecutorTests: XCTestCase {
@@ -222,5 +224,49 @@ final class ClientRPCExecutorTests: XCTestCase {
     XCTAssertEqual(tester.clientStreamsOpened, 0)
     XCTAssertEqual(tester.clientStreamOpenFailures, 1)
     XCTAssertEqual(tester.serverStreamsAccepted, 0)
+  }
+
+  func testTimeoutIsPropagated() async throws {
+    // 'nil' means no retires or hedging, just try to execute the RPC once.
+    var policies: [RPCExecutionPolicy?] = [nil]
+
+    let retryPolicy = RetryPolicy(
+      maximumAttempts: 5,
+      initialBackoff: .seconds(1),
+      maximumBackoff: .seconds(1),
+      backoffMultiplier: 1.6,
+      retryableStatusCodes: [.unavailable]
+    )
+    policies.append(.retry(retryPolicy))
+
+    let hedgingPolicy = HedgingPolicy(
+      maximumAttempts: 5,
+      hedgingDelay: .seconds(1),
+      nonFatalStatusCodes: [.unavailable]
+    )
+    policies.append(.hedge(hedgingPolicy))
+
+    for policy in policies {
+      let timeout = Duration.seconds(120)
+      var options = CallOptions.defaults
+      options.timeout = timeout
+      options.executionPolicy = policy
+
+      let tester = ClientRPCExecutorTestHarness(transport: .inProcess, server: .echo)
+      try await tester.unary(
+        request: ClientRequest.Single(message: []),
+        options: options
+      ) { response in
+        let timeoutMetadata = Array(response.metadata[stringValues: "grpc-timeout"])
+        let parsed = try XCTUnwrap(timeoutMetadata.first.flatMap { Timeout(decoding: $0) })
+
+        // The timeout is handled as a deadline internally and gets converted back to a timeout
+        // when transmitted as metadata, so allow some leeway when checking the value.
+        let leeway = Duration.seconds(1)
+        let acceptable: ClosedRange<Duration> = timeout - leeway ... timeout + leeway
+
+        XCTAssert(acceptable.contains(parsed.duration))
+      }
+    }
   }
 }

@@ -32,7 +32,7 @@ extension ClientRPCExecutor {
     @usableFromInline
     let policy: HedgingPolicy
     @usableFromInline
-    let timeout: Duration?
+    let deadline: ContinuousClock.Instant?
     @usableFromInline
     let interceptors: [any ClientInterceptor]
     @usableFromInline
@@ -46,7 +46,7 @@ extension ClientRPCExecutor {
     init(
       transport: Transport,
       policy: HedgingPolicy,
-      timeout: Duration?,
+      deadline: ContinuousClock.Instant?,
       interceptors: [any ClientInterceptor],
       serializer: Serializer,
       deserializer: Deserializer,
@@ -54,7 +54,7 @@ extension ClientRPCExecutor {
     ) {
       self.transport = transport
       self.policy = policy
-      self.timeout = timeout
+      self.deadline = deadline
       self.interceptors = interceptors
       self.serializer = serializer
       self.deserializer = deserializer
@@ -83,10 +83,10 @@ extension ClientRPCExecutor.HedgingExecutor {
     // all other in flight attempts. Each attempt is started at a fixed interval unless the server
     // explicitly overrides the period using "pushback".
     let result = await withTaskGroup(of: _HedgingTaskResult<R>.self) { group in
-      if let timeout = self.timeout {
+      if let deadline = self.deadline {
         group.addTask {
           let result = await Result {
-            try await Task.sleep(for: timeout, clock: .continuous)
+            try await Task.sleep(until: deadline, clock: .continuous)
           }
           return .timedOut(result)
         }
@@ -103,7 +103,12 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
 
       group.addTask {
-        let replayableRequest = ClientRequest.Stream(metadata: request.metadata) { writer in
+        var metadata = request.metadata
+        if let deadline = self.deadline {
+          metadata.timeout = ContinuousClock.now.duration(to: deadline)
+        }
+
+        let replayableRequest = ClientRequest.Stream(metadata: metadata) { writer in
           try await writer.write(contentsOf: broadcast.stream)
         }
 

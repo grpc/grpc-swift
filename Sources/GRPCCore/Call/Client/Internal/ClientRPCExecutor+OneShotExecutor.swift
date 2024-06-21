@@ -32,7 +32,7 @@ extension ClientRPCExecutor {
     @usableFromInline
     let transport: Transport
     @usableFromInline
-    let timeout: Duration?
+    let deadline: ContinuousClock.Instant?
     @usableFromInline
     let interceptors: [any ClientInterceptor]
     @usableFromInline
@@ -43,13 +43,13 @@ extension ClientRPCExecutor {
     @inlinable
     init(
       transport: Transport,
-      timeout: Duration?,
+      deadline: ContinuousClock.Instant?,
       interceptors: [any ClientInterceptor],
       serializer: Serializer,
       deserializer: Deserializer
     ) {
       self.transport = transport
-      self.timeout = timeout
+      self.deadline = deadline
       self.interceptors = interceptors
       self.serializer = serializer
       self.deserializer = deserializer
@@ -72,10 +72,13 @@ extension ClientRPCExecutor.OneShotExecutor {
     ) { group in
       do {
         return try await self.transport.withStream(descriptor: method, options: options) { stream in
-          if let timeout = self.timeout {
+          var request = request
+
+          if let deadline = self.deadline {
+            request.metadata.timeout = ContinuousClock.now.duration(to: deadline)
             group.addTask {
               let result = await Result {
-                try await Task.sleep(until: .now.advanced(by: timeout), clock: .continuous)
+                try await Task.sleep(until: deadline, clock: .continuous)
               }
               return .timedOut(result)
             }
@@ -87,7 +90,7 @@ extension ClientRPCExecutor.OneShotExecutor {
             return .streamExecutorCompleted
           }
 
-          group.addTask {
+          group.addTask { [request] in
             let response = await ClientRPCExecutor.unsafeExecute(
               request: request,
               method: method,

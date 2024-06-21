@@ -32,7 +32,7 @@ extension ClientRPCExecutor {
     @usableFromInline
     let policy: RetryPolicy
     @usableFromInline
-    let timeout: Duration?
+    let deadline: ContinuousClock.Instant?
     @usableFromInline
     let interceptors: [any ClientInterceptor]
     @usableFromInline
@@ -46,7 +46,7 @@ extension ClientRPCExecutor {
     init(
       transport: Transport,
       policy: RetryPolicy,
-      timeout: Duration?,
+      deadline: ContinuousClock.Instant?,
       interceptors: [any ClientInterceptor],
       serializer: Serializer,
       deserializer: Deserializer,
@@ -54,7 +54,7 @@ extension ClientRPCExecutor {
     ) {
       self.transport = transport
       self.policy = policy
-      self.timeout = timeout
+      self.deadline = deadline
       self.interceptors = interceptors
       self.serializer = serializer
       self.deserializer = deserializer
@@ -94,10 +94,10 @@ extension ClientRPCExecutor.RetryExecutor {
       returning: Result<R, Error>.self
     ) { group in
       // Add a task to limit the overall execution time of the RPC.
-      if let timeout = self.timeout {
+      if let deadline = self.deadline {
         group.addTask {
           let result = await Result {
-            try await Task.sleep(until: .now.advanced(by: timeout), clock: .continuous)
+            try await Task.sleep(until: deadline, clock: .continuous)
           }
           return .timedOut(result)
         }
@@ -136,8 +136,14 @@ extension ClientRPCExecutor.RetryExecutor {
                 }
 
                 thisAttemptGroup.addTask {
+                  var metadata = request.metadata
+                  // Work out the timeout from the deadline.
+                  if let deadline = self.deadline {
+                    metadata.timeout = ContinuousClock.now.duration(to: deadline)
+                  }
+
                   let response = await ClientRPCExecutor.unsafeExecute(
-                    request: ClientRequest.Stream(metadata: request.metadata) {
+                    request: ClientRequest.Stream(metadata: metadata) {
                       try await $0.write(contentsOf: retry.stream)
                     },
                     method: method,
