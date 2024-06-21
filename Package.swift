@@ -259,6 +259,8 @@ extension Target {
     name: "performance-worker",
     dependencies: [
       .grpcCore,
+      .grpcHTTP2Core,
+      .grpcHTTP2TransportNIOPosix,
       .grpcProtobuf,
       .nioCore,
       .nioFileSystem
