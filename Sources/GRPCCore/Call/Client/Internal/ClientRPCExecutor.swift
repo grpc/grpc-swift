@@ -42,11 +42,13 @@ enum ClientRPCExecutor {
     interceptors: [any ClientInterceptor],
     handler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> Result
   ) async throws -> Result {
+    let deadline = options.timeout.map { ContinuousClock.now + $0 }
+
     switch options.executionPolicy?.wrapped {
     case .none:
       let oneShotExecutor = OneShotExecutor(
         transport: transport,
-        timeout: options.timeout,
+        deadline: deadline,
         interceptors: interceptors,
         serializer: serializer,
         deserializer: deserializer
@@ -63,7 +65,7 @@ enum ClientRPCExecutor {
       let retryExecutor = RetryExecutor(
         transport: transport,
         policy: policy,
-        timeout: options.timeout,
+        deadline: deadline,
         interceptors: interceptors,
         serializer: serializer,
         deserializer: deserializer,
@@ -81,7 +83,7 @@ enum ClientRPCExecutor {
       let hedging = HedgingExecutor(
         transport: transport,
         policy: policy,
-        timeout: options.timeout,
+        deadline: deadline,
         interceptors: interceptors,
         serializer: serializer,
         deserializer: deserializer,
