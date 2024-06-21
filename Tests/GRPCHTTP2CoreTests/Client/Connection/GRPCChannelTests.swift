@@ -749,14 +749,19 @@ final class GRPCChannelTests: XCTestCase {
   }
 
   func testQueueRequestsThenClose() async throws {
-    // Start a server.
-    let server = TestServer(eventLoopGroup: .singletonMultiThreadedEventLoopGroup)
-    let address = try await server.bind()
     let (resolver, continuation) = NameResolver.dynamic(updateMode: .push)
-    continuation.yield(.init(endpoints: [Endpoint(address)], serviceConfig: nil))
+    continuation.yield(.init(endpoints: [Endpoint()], serviceConfig: nil))
+
+    // Set a high backoff so the channel stays in transient failure for long enough.
+    var config = GRPCChannel.Config.defaults
+    config.backoff.initial = .seconds(120)
 
     let channel = GRPCChannel(
-      resolver: resolver,
+      resolver: .static(
+        endpoints: [
+          Endpoint(.unixDomainSocket(path: "/testQueueRequestsThenClose"))
+        ]
+      ),
       connector: .posix(),
       config: .defaults,
       defaultServiceConfig: ServiceConfig()
@@ -764,28 +769,16 @@ final class GRPCChannelTests: XCTestCase {
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await server.run(.echo)
-      }
-
-      group.addTask {
         await channel.connect()
       }
 
       for try await state in channel.connectivityState {
         switch state {
-        case .ready:
-          try await channel.withStream(descriptor: .echoGet, options: .defaults) { stream in
-            try await stream.outbound.write(.metadata([:]))
-
-            var iterator = stream.inbound.makeAsyncIterator()
-            _ = try await iterator.next()  // initial metadata
-
-            // Drop the connection, this will trigger a state change to transient failure.
-            server.clients.first?.close(promise: nil)
-          }
-
         case .transientFailure:
           group.addTask {
+            // Sleep a little to increase the chances of the stream being queued before the channel
+            // reacts to the close.
+            try await Task.sleep(for: .milliseconds(10))
             channel.close()
           }
 
