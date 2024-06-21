@@ -79,9 +79,9 @@ extension RouteGuideExample {
       let feature = try await self.routeGuide.getFeature(point)
 
       if !feature.name.isEmpty {
-        print("Found feature called '\(feature.name)' at \(feature.location)")
+        print("Found feature called '\(feature.name)' at \(feature.location.formatted)")
       } else {
-        print("Found no feature at \(feature.location)")
+        print("Found no feature at \(feature.location.formatted)")
       }
     } catch {
       print("RPC failed: \(error)")
@@ -113,7 +113,7 @@ extension RouteGuideExample {
     do {
       var resultCount = 1
       for try await feature in self.routeGuide.listFeatures(rectangle) {
-        print("Result #\(resultCount): \(feature)")
+        print("Result #\(resultCount): \(feature.name) at \(feature.location.formatted)")
         resultCount += 1
       }
     } catch {
@@ -134,7 +134,7 @@ extension RouteGuideExample {
       for i in 1 ... featuresToVisit {
         if let feature = features.randomElement() {
           let point = feature.location
-          print("Visiting point #\(i) at \(point)")
+          print("Visiting point #\(i) at \(point.formatted)")
           try await recordRoute.requestStream.send(point)
 
           // Sleep for 0.2s ... 1.0s before sending the next point.
@@ -181,7 +181,7 @@ extension RouteGuideExample {
         // Add a task to send each message adding a small sleep between each.
         group.addTask {
           for note in notes {
-            print("Sending message '\(note.message)' at \(note.location)")
+            print("Sending message '\(note.message)' at \(note.location.formatted)")
             try await routeChat.requestStream.send(note)
             // Sleep for 0.2s ... 1.0s before sending the next note.
             try await Task.sleep(nanoseconds: UInt64.random(in: UInt64(2e8) ... UInt64(1e9)))
@@ -193,7 +193,7 @@ extension RouteGuideExample {
         // Add a task to print each message received on the response stream.
         group.addTask {
           for try await note in routeChat.responseStream {
-            print("Received message '\(note.message)' at \(note.location)")
+            print("Received message '\(note.message)' at \(note.location.formatted)")
           }
         }
 
@@ -235,14 +235,8 @@ struct RouteGuide: AsyncParsableCommand {
   }
 }
 
-extension Routeguide_Point: CustomStringConvertible {
-  public var description: String {
+extension Routeguide_Point {
+  var formatted: String {
     return "(\(self.latitude), \(self.longitude))"
-  }
-}
-
-extension Routeguide_Feature: CustomStringConvertible {
-  public var description: String {
-    return "\(self.name) at \(self.location)"
   }
 }
