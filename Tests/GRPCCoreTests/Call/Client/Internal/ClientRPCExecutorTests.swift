@@ -227,6 +227,7 @@ final class ClientRPCExecutorTests: XCTestCase {
   }
 
   func testTimeoutIsPropagated() async throws {
+    // 'nil' means no retires or hedging, just try to execute the RPC once.
     var policies: [RPCExecutionPolicy?] = [nil]
 
     let retryPolicy = RetryPolicy(
