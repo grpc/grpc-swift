@@ -15,92 +15,46 @@
  */
 
 import GRPCCore
+import GRPCHTTP2Core
+import GRPCHTTP2TransportNIOPosix
 import NIOConcurrencyHelpers
 import NIOCore
+import NIOPosix
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable {
+final class WorkerService: Sendable {
   private let state: NIOLockedValueBox<State>
 
   init() {
-    let clientAndServer = State()
-    self.state = NIOLockedValueBox(clientAndServer)
+    self.state = NIOLockedValueBox(State())
   }
 
   private struct State {
-    var role: Role?
+    private var role: Role
 
     enum Role {
-      case client(ClientState)
-      case server(ServerState)
+      case none
+      case client(Client)
+      case server(Server)
     }
 
-    struct ServerState {
+    struct Server {
       var server: GRPCServer
       var stats: ServerStats
-
-      init(server: GRPCServer, stats: ServerStats) {
-        self.server = server
-        self.stats = stats
-      }
+      var eventLoopGroup: MultiThreadedEventLoopGroup
     }
 
-    struct ClientState {
+    struct Client {
       var clients: [BenchmarkClient]
       var stats: ClientStats
       var rpcStats: RPCStats
-
-      init(
-        clients: [BenchmarkClient],
-        stats: ClientStats,
-        rpcStats: RPCStats
-      ) {
-        self.clients = clients
-        self.stats = stats
-        self.rpcStats = rpcStats
-      }
-
-      func shutdownClients() throws {
-        for benchmarkClient in self.clients {
-          benchmarkClient.shutdown()
-        }
-      }
     }
 
-    init() {}
-
-    init(role: Role) {
-      self.role = role
+    init() {
+      self.role = .none
     }
 
-    var server: GRPCServer? {
-      switch self.role {
-      case let .server(serverState):
-        return serverState.server
-      case .client, .none:
-        return nil
-      }
-    }
-
-    var clients: [BenchmarkClient]? {
-      switch self.role {
-      case let .client(clientState):
-        return clientState.clients
-      case .server, .none:
-        return nil
-      }
-    }
-
-    var clientRPCStats: RPCStats? {
-      switch self.role {
-      case let .client(clientState):
-        return clientState.rpcStats
-      case .server, .none:
-        return nil
-      }
-    }
-
-    mutating func serverStats(replaceWith newStats: ServerStats? = nil) -> ServerStats? {
+    mutating func collectServerStats(replaceWith newStats: ServerStats? = nil) -> ServerStats? {
       switch self.role {
       case var .server(serverState):
         let stats = serverState.stats
@@ -114,98 +68,186 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
       }
     }
 
-    mutating func clientStats(replaceWith newStats: ClientStats? = nil) -> ClientStats? {
+    mutating func collectClientStats(
+      replaceWith newStats: ClientStats? = nil
+    ) -> (ClientStats, RPCStats)? {
       switch self.role {
-      case var .client(clientState):
-        let stats = clientState.stats
+      case var .client(state):
+        // Grab the existing stats and update if necessary.
+        let stats = state.stats
         if let newStats = newStats {
-          clientState.stats = newStats
-          self.role = .client(clientState)
+          state.stats = newStats
         }
-        return stats
+
+        // Merge in RPC stats from each client.
+        for client in state.clients {
+          try? state.rpcStats.merge(client.currentStats)
+        }
+
+        self.role = .client(state)
+        return (stats, state.rpcStats)
+
       case .server, .none:
         return nil
       }
     }
 
-    mutating func setupServer(server: GRPCServer, stats: ServerStats) throws {
-      let serverState = State.ServerState(server: server, stats: stats)
-      switch self.role {
-      case .server(_):
-        throw RPCError(code: .alreadyExists, message: "A server has already been set up.")
-
-      case .client(_):
-        throw RPCError(code: .failedPrecondition, message: "This worker has a client setup.")
-
-      case .none:
-        self.role = .server(serverState)
-      }
+    enum OnStartedServer {
+      case runServer
+      case invalidState(RPCError)
     }
 
-    mutating func setupClients(
-      benchmarkClients: [BenchmarkClient],
+    mutating func startedServer(
+      _ server: GRPCServer,
+      stats: ServerStats,
+      eventLoopGroup: MultiThreadedEventLoopGroup
+    ) -> OnStartedServer {
+      let action: OnStartedServer
+
+      switch self.role {
+      case .none:
+        let state = State.Server(server: server, stats: stats, eventLoopGroup: eventLoopGroup)
+        self.role = .server(state)
+        action = .runServer
+      case .server:
+        let error = RPCError(code: .alreadyExists, message: "A server has already been set up.")
+        action = .invalidState(error)
+      case .client:
+        let error = RPCError(code: .failedPrecondition, message: "This worker has a client setup.")
+        action = .invalidState(error)
+      }
+
+      return action
+    }
+
+    enum OnStartedClients {
+      case runClients
+      case invalidState(RPCError)
+    }
+
+    mutating func startedClients(
+      _ clients: [BenchmarkClient],
       stats: ClientStats,
       rpcStats: RPCStats
-    ) throws {
-      let clientState = State.ClientState(
-        clients: benchmarkClients,
-        stats: stats,
-        rpcStats: rpcStats
-      )
+    ) -> OnStartedClients {
+      let action: OnStartedClients
+
       switch self.role {
-      case .server(_):
-        throw RPCError(code: .alreadyExists, message: "This worker has a server setup.")
-
-      case .client(_):
-        throw RPCError(code: .failedPrecondition, message: "Clients have already been set up.")
-
       case .none:
-        self.role = .client(clientState)
+        let state = State.Client(clients: clients, stats: stats, rpcStats: rpcStats)
+        self.role = .client(state)
+        action = .runClients
+      case .server:
+        let error = RPCError(code: .alreadyExists, message: "This worker has a server setup.")
+        action = .invalidState(error)
+      case .client:
+        let error = RPCError(
+          code: .failedPrecondition,
+          message: "Clients have already been set up."
+        )
+        action = .invalidState(error)
+      }
+
+      return action
+    }
+
+    enum OnServerShutDown {
+      case shutdown(MultiThreadedEventLoopGroup)
+      case nothing
+    }
+
+    mutating func serverShutdown() -> OnServerShutDown {
+      switch self.role {
+      case .client:
+        preconditionFailure("Invalid state")
+      case .server(let state):
+        self.role = .none
+        return .shutdown(state.eventLoopGroup)
+      case .none:
+        return .nothing
       }
     }
 
-    mutating func updateRPCStats() throws {
+    enum OnStopListening {
+      case stopListening(GRPCServer)
+      case nothing
+    }
+
+    func stopListening() -> OnStopListening {
       switch self.role {
-      case var .client(clientState):
-        let benchmarkClients = clientState.clients
-        var rpcStats = clientState.rpcStats
-        for benchmarkClient in benchmarkClients {
-          try rpcStats.merge(benchmarkClient.currentStats)
-        }
+      case .client:
+        preconditionFailure("Invalid state")
+      case .server(let state):
+        return .stopListening(state.server)
+      case .none:
+        return .nothing
+      }
+    }
 
-        clientState.rpcStats = rpcStats
-        self.role = .client(clientState)
+    enum OnCloseClient {
+      case close([BenchmarkClient])
+      case nothing
+    }
 
-      case .server, .none:
-        ()
+    mutating func closeClients() -> OnCloseClient {
+      switch self.role {
+      case .client(let state):
+        self.role = .none
+        return .close(state.clients)
+      case .server:
+        preconditionFailure("Invalid state")
+      case .none:
+        return .nothing
+      }
+    }
+
+    enum OnQuitWorker {
+      case shutDownServer(GRPCServer)
+      case shutDownClients([BenchmarkClient])
+      case nothing
+    }
+
+    mutating func quit() -> OnQuitWorker {
+      switch self.role {
+      case .none:
+        return .nothing
+      case .client(let state):
+        self.role = .none
+        return .shutDownClients(state.clients)
+      case .server(let state):
+        self.role = .none
+        return .shutDownServer(state.server)
       }
     }
   }
+}
 
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   func quitWorker(
-    request: ServerRequest.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Input>
-  ) async throws -> ServerResponse.Single<Grpc_Testing_WorkerService.Method.QuitWorker.Output> {
+    request: ServerRequest.Single<Grpc_Testing_Void>
+  ) async throws -> ServerResponse.Single<Grpc_Testing_Void> {
+    let onQuit = self.state.withLockedValue { $0.quit() }
 
-    let role = self.state.withLockedValue { state in
-      defer { state.role = nil }
-      return state.role
-    }
+    switch onQuit {
+    case .nothing:
+      ()
 
-    if let role = role {
-      switch role {
-      case .client(let clientState):
-        try clientState.shutdownClients()
-      case .server(let serverState):
-        serverState.server.stopListening()
+    case .shutDownClients(let clients):
+      for client in clients {
+        client.shutdown()
       }
+
+    case .shutDownServer(let server):
+      server.stopListening()
     }
 
-    return ServerResponse.Single(message: Grpc_Testing_WorkerService.Method.QuitWorker.Output())
+    return ServerResponse.Single(message: Grpc_Testing_Void())
   }
 
   func coreCount(
-    request: ServerRequest.Single<Grpc_Testing_WorkerService.Method.CoreCount.Input>
-  ) async throws -> ServerResponse.Single<Grpc_Testing_WorkerService.Method.CoreCount.Output> {
+    request: ServerRequest.Single<Grpc_Testing_CoreRequest>
+  ) async throws -> ServerResponse.Single<Grpc_Testing_CoreResponse> {
     let coreCount = System.coreCount
     return ServerResponse.Single(
       message: Grpc_Testing_WorkerService.Method.CoreCount.Output.with {
@@ -215,17 +257,52 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
   }
 
   func runServer(
-    request: GRPCCore.ServerRequest.Stream<Grpc_Testing_WorkerService.Method.RunServer.Input>
-  ) async throws
-    -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunServer.Output>
-  {
+    request: ServerRequest.Stream<Grpc_Testing_ServerArgs>
+  ) async throws -> ServerResponse.Stream<Grpc_Testing_ServerStatus> {
     return ServerResponse.Stream { writer in
       try await withThrowingTaskGroup(of: Void.self) { group in
         for try await message in request.messages {
           switch message.argtype {
           case let .some(.setup(serverConfig)):
-            let server = try await self.setupServer(serverConfig)
-            group.addTask { try await server.run() }
+            let (server, transport) = try await self.startServer(serverConfig)
+            group.addTask {
+              let result: Result<Void, Error>
+
+              do {
+                try await server.run()
+                result = .success(())
+              } catch {
+                result = .failure(error)
+              }
+
+              switch self.state.withLockedValue({ $0.serverShutdown() }) {
+              case .shutdown(let eventLoopGroup):
+                try await eventLoopGroup.shutdownGracefully()
+              case .nothing:
+                ()
+              }
+
+              try result.get()
+            }
+
+            // Wait for the server to bind.
+            let address = try await transport.listeningAddress
+
+            let port: Int
+            if let ipv4 = address.ipv4 {
+              port = ipv4.port
+            } else if let ipv6 = address.ipv6 {
+              port = ipv6.port
+            } else {
+              throw RPCError(
+                code: .internalError,
+                message: "Server listening on unsupported address '\(address)'"
+              )
+            }
+
+            // Tell the client what port the server is listening on.
+            let message = Grpc_Testing_ServerStatus.with { $0.port = Int32(port) }
+            try await writer.write(message)
 
           case let .some(.mark(mark)):
             let response = try await self.makeServerStatsResponse(reset: mark.reset)
@@ -236,24 +313,23 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
           }
         }
 
-        try await group.next()
+        // Request stream ended, tell the server to stop listening. Once it's finished it will
+        // shutdown its ELG.
+        switch self.state.withLockedValue({ $0.stopListening() }) {
+        case .stopListening(let server):
+          server.stopListening()
+        case .nothing:
+          ()
+        }
       }
 
-      let server = self.state.withLockedValue { state in
-        defer { state.role = nil }
-        return state.server
-      }
-
-      server?.stopListening()
       return [:]
     }
   }
 
   func runClient(
-    request: GRPCCore.ServerRequest.Stream<Grpc_Testing_WorkerService.Method.RunClient.Input>
-  ) async throws
-    -> GRPCCore.ServerResponse.Stream<Grpc_Testing_WorkerService.Method.RunClient.Output>
-  {
+    request: ServerRequest.Stream<Grpc_Testing_ClientArgs>
+  ) async throws -> ServerResponse.Stream<Grpc_Testing_ClientStatus> {
     return ServerResponse.Stream { writer in
       try await withThrowingTaskGroup(of: Void.self) { group in
         for try await message in request.messages {
@@ -268,6 +344,9 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
               }
             }
 
+            let message = try await self.makeClientStatsResponse(reset: false)
+            try await writer.write(message)
+
           case let .mark(mark):
             let response = try await self.makeClientStatsResponse(reset: mark.reset)
             try await writer.write(response)
@@ -276,6 +355,16 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
             ()
           }
         }
+
+        switch self.state.withLockedValue({ $0.closeClients() }) {
+        case .close(let clients):
+          for client in clients {
+            client.shutdown()
+          }
+        case .nothing:
+          ()
+        }
+
         try await group.waitForAll()
 
         return [:]
@@ -286,15 +375,44 @@ final class WorkerService: Grpc_Testing_WorkerService.ServiceProtocol, Sendable 
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension WorkerService {
-  private func setupServer(_ config: Grpc_Testing_ServerConfig) async throws -> GRPCServer {
-    let server = GRPCServer(transport: NoOpServerTransport(), services: [BenchmarkService()])
+  private func startServer(
+    _ serverConfig: Grpc_Testing_ServerConfig
+  ) async throws -> (GRPCServer, HTTP2ServerTransport.Posix) {
+    // Prepare an ELG, the test might require more than the default of one.
+    let numberOfThreads: Int
+    if serverConfig.asyncServerThreads > 0 {
+      numberOfThreads = Int(serverConfig.asyncServerThreads)
+    } else {
+      numberOfThreads = System.coreCount
+    }
+    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: numberOfThreads)
+
+    // Don't restrict the max payload size, the client is always trusted.
+    var config = HTTP2ServerTransport.Posix.Config.defaults
+    config.rpc.maxRequestPayloadSize = .max
+
+    let transport = HTTP2ServerTransport.Posix(
+      address: .ipv4(host: "127.0.0.1", port: Int(serverConfig.port)),
+      config: config,
+      eventLoopGroup: eventLoopGroup
+    )
+
+    let server = GRPCServer(transport: transport, services: [BenchmarkService()])
     let stats = try await ServerStats()
 
-    try self.state.withLockedValue { state in
-      try state.setupServer(server: server, stats: stats)
+    // Hold on to the server and ELG in the state machine.
+    let action = self.state.withLockedValue {
+      $0.startedServer(server, stats: stats, eventLoopGroup: eventLoopGroup)
     }
 
-    return server
+    switch action {
+    case .runServer:
+      return (server, transport)
+    case .invalidState(let error):
+      server.stopListening()
+      try await eventLoopGroup.shutdownGracefully()
+      throw error
+    }
   }
 
   private func makeServerStatsResponse(
@@ -302,7 +420,7 @@ extension WorkerService {
   ) async throws -> Grpc_Testing_WorkerService.Method.RunServer.Output {
     let currentStats = try await ServerStats()
     let initialStats = self.state.withLockedValue { state in
-      return state.serverStats(replaceWith: reset ? currentStats : nil)
+      return state.collectServerStats(replaceWith: reset ? currentStats : nil)
     }
 
     guard let initialStats = initialStats else {
@@ -325,69 +443,90 @@ extension WorkerService {
   }
 
   private func setupClients(_ config: Grpc_Testing_ClientConfig) async throws -> [BenchmarkClient] {
-    let rpcType: BenchmarkClient.RPCType
-    switch config.rpcType {
-    case .unary:
-      rpcType = .unary
-    case .streaming:
-      rpcType = .streaming
-    case .streamingFromClient:
-      rpcType = .streamingFromClient
-    case .streamingFromServer:
-      rpcType = .streamingFromServer
-    case .streamingBothWays:
-      rpcType = .streamingBothWays
-    case .UNRECOGNIZED:
-      throw RPCError(code: .unknown, message: "The RPC type is UNRECOGNIZED.")
+    guard let rpcType = BenchmarkClient.RPCType(config.rpcType) else {
+      throw RPCError(code: .invalidArgument, message: "Unknown RPC type")
     }
+
+    // Parse the server targets into resolvable targets.
+    let ipv4Addresses = try self.parseServerTargets(config.serverTargets)
+    let target = ResolvableTargets.IPv4(addresses: ipv4Addresses)
 
     var clients = [BenchmarkClient]()
     for _ in 0 ..< config.clientChannels {
-      let grpcClient = self.makeGRPCClient()
-      clients.append(
-        BenchmarkClient(
-          client: grpcClient,
-          rpcNumber: config.outstandingRpcsPerChannel,
-          rpcType: rpcType,
-          messagesPerStream: config.messagesPerStream,
-          protoParams: config.payloadConfig.simpleParams,
-          histogramParams: config.histogramParams
-        )
+      let transport = try HTTP2ClientTransport.Posix(target: target)
+      let client = BenchmarkClient(
+        client: GRPCClient(transport: transport),
+        concurrentRPCs: Int(config.outstandingRpcsPerChannel),
+        rpcType: rpcType,
+        messagesPerStream: Int(config.messagesPerStream),
+        protoParams: config.payloadConfig.simpleParams,
+        histogramParams: config.histogramParams
       )
+
+      clients.append(client)
     }
+
     let stats = ClientStats()
     let histogram = RPCStats.LatencyHistogram(
       resolution: config.histogramParams.resolution,
       maxBucketStart: config.histogramParams.maxPossible
     )
+    let rpcStats = RPCStats(latencyHistogram: histogram)
 
-    try self.state.withLockedValue { state in
-      try state.setupClients(
-        benchmarkClients: clients,
-        stats: stats,
-        rpcStats: RPCStats(latencyHistogram: histogram)
-      )
+    let action = self.state.withLockedValue { state in
+      state.startedClients(clients, stats: stats, rpcStats: rpcStats)
     }
 
-    return clients
+    switch action {
+    case .runClients:
+      return clients
+    case .invalidState(let error):
+      for client in clients {
+        client.shutdown()
+      }
+      throw error
+    }
   }
 
-  func makeGRPCClient() -> GRPCClient {
-    fatalError()
+  private func parseServerTarget(_ target: String) -> GRPCHTTP2Core.SocketAddress.IPv4? {
+    guard let index = target.firstIndex(of: ":") else { return nil }
+
+    let host = target[..<index]
+    if let port = Int(target[target.index(after: index)...]) {
+      return SocketAddress.IPv4(host: String(host), port: port)
+    } else {
+      return nil
+    }
+  }
+
+  private func parseServerTargets(
+    _ targets: [String]
+  ) throws -> [GRPCHTTP2Core.SocketAddress.IPv4] {
+    try targets.map { target in
+      if let ipv4 = self.parseServerTarget(target) {
+        return ipv4
+      } else {
+        throw RPCError(
+          code: .invalidArgument,
+          message: """
+            Couldn't parse target '\(target)'. Must be in the format '<host>:<port>' for IPv4 \
+            or '[<host>]:<port>' for IPv6.
+            """
+        )
+      }
+    }
   }
 
   private func makeClientStatsResponse(
     reset: Bool
   ) async throws -> Grpc_Testing_WorkerService.Method.RunClient.Output {
     let currentUsageStats = ClientStats()
-    let (initialUsageStats, rpcStats) = try self.state.withLockedValue { state in
-      let initialUsageStats = state.clientStats(replaceWith: reset ? currentUsageStats : nil)
-      try state.updateRPCStats()
-      let rpcStats = state.clientRPCStats
-      return (initialUsageStats, rpcStats)
+
+    let stats = self.state.withLockedValue { state in
+      state.collectClientStats(replaceWith: reset ? currentUsageStats : nil)
     }
 
-    guard let initialUsageStats = initialUsageStats, let rpcStats = rpcStats else {
+    guard let (initialUsageStats, rpcStats) = stats else {
       throw RPCError(
         code: .notFound,
         message: "There are no initial client stats. Clients must be setup before calling 'mark'."
@@ -422,11 +561,16 @@ extension WorkerService {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-struct NoOpServerTransport: ServerTransport {
-  func listen(
-    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
-  ) async throws {}
-
-  func stopListening() {}
+@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension BenchmarkClient.RPCType {
+  init?(_ rpcType: Grpc_Testing_RpcType) {
+    switch rpcType {
+    case .unary:
+      self = .unary
+    case .streaming:
+      self = .streaming
+    default:
+      return nil
+    }
+  }
 }
