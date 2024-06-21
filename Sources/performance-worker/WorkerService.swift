@@ -151,26 +151,36 @@ final class WorkerService: Sendable {
       return action
     }
 
-    mutating func serverShutdown() -> EventLoopGroup? {
+    enum OnServerShutDown {
+      case shutdown(MultiThreadedEventLoopGroup)
+      case nothing
+    }
+
+    mutating func serverShutdown() -> OnServerShutDown {
       switch self.role {
       case .client:
         preconditionFailure("Invalid state")
       case .server(let state):
         self.role = .none
-        return state.eventLoopGroup
+        return .shutdown(state.eventLoopGroup)
       case .none:
-        return nil
+        return .nothing
       }
     }
 
-    func stopListening() -> GRPCServer? {
+    enum OnStopListening {
+      case stopListening(GRPCServer)
+      case nothing
+    }
+
+    func stopListening() -> OnStopListening {
       switch self.role {
       case .client:
         preconditionFailure("Invalid state")
       case .server(let state):
-        return state.server
+        return .stopListening(state.server)
       case .none:
-        return nil
+        return .nothing
       }
     }
 
@@ -265,8 +275,11 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
                 result = .failure(error)
               }
 
-              if let eventLoopGroup = self.state.withLockedValue({ $0.serverShutdown() }) {
+              switch self.state.withLockedValue({ $0.serverShutdown() }) {
+              case .shutdown(let eventLoopGroup):
                 try await eventLoopGroup.shutdownGracefully()
+              case .nothing:
+                ()
               }
 
               try result.get()
@@ -302,8 +315,11 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
 
         // Request stream ended, tell the server to stop listening. Once it's finished it will
         // shutdown its ELG.
-        if let server = self.state.withLockedValue({ $0.stopListening() }) {
+        switch self.state.withLockedValue({ $0.stopListening() }) {
+        case .stopListening(let server):
           server.stopListening()
+        case .nothing:
+          ()
         }
       }
 
