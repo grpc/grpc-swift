@@ -154,6 +154,7 @@ final class HTTP2TransportTests: XCTestCase {
       return try await transport.listeningAddress
 
     case .niots:
+      #if canImport(Network)
       var config = HTTP2ServerTransport.TransportServices.Config.defaults
       config.compression.enabledAlgorithms = compression
       let transport = HTTP2ServerTransport.TransportServices(
@@ -167,6 +168,9 @@ final class HTTP2TransportTests: XCTestCase {
       }
 
       return try await transport.listeningAddress
+      #else
+      throw XCTSkip("Transport not supported on this platform")
+      #endif
     }
   }
 
