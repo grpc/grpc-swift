@@ -98,7 +98,7 @@ final class HTTP2TransportTests: XCTestCase {
     }
   }
 
-  func forEachClientAndHTTPStatusServer(
+  func forEachClientAndHTTPStatusCodeServer(
     _ kind: [Transport.Kind] = [.posix],
     _ execute: (ControlClient, Transport.Kind) async throws -> Void
   ) async throws {
@@ -1218,7 +1218,7 @@ final class HTTP2TransportTests: XCTestCase {
   ]
 
   func testUnaryAgainstNonGRPCServer() async throws {
-    try await self.forEachClientAndHTTPStatusServer { control, kind in
+    try await self.forEachClientAndHTTPStatusCodeServer { control, kind in
       for (httpCode, expectedStatus) in Self.httpToStatusCodePairs {
         // Tell the server what to respond with.
         let metadata: Metadata = ["response-status": "\(httpCode)"]
@@ -1238,7 +1238,7 @@ final class HTTP2TransportTests: XCTestCase {
   }
 
   func testClientStreamingAgainstNonGRPCServer() async throws {
-    try await self.forEachClientAndHTTPStatusServer { control, kind in
+    try await self.forEachClientAndHTTPStatusCodeServer { control, kind in
       for (httpCode, expectedStatus) in Self.httpToStatusCodePairs {
         // Tell the server what to respond with.
         let request = ClientRequest.Stream(
@@ -1260,7 +1260,7 @@ final class HTTP2TransportTests: XCTestCase {
   }
 
   func testServerStreamingAgainstNonGRPCServer() async throws {
-    try await self.forEachClientAndHTTPStatusServer { control, kind in
+    try await self.forEachClientAndHTTPStatusCodeServer { control, kind in
       for (httpCode, expectedStatus) in Self.httpToStatusCodePairs {
         // Tell the server what to respond with.
         let metadata: Metadata = ["response-status": "\(httpCode)"]
@@ -1280,7 +1280,7 @@ final class HTTP2TransportTests: XCTestCase {
   }
 
   func testBidiStreamingAgainstNonGRPCServer() async throws {
-    try await self.forEachClientAndHTTPStatusServer { control, kind in
+    try await self.forEachClientAndHTTPStatusCodeServer { control, kind in
       for (httpCode, expectedStatus) in Self.httpToStatusCodePairs {
         // Tell the server what to respond with.
         let request = ClientRequest.Stream(
