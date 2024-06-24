@@ -1171,7 +1171,7 @@ final class HTTP2TransportTests: XCTestCase {
     }
   }
 
-  func testServerStreamTimeoutPropagatedToServer() async throws {
+  func testServerStreamingTimeoutPropagatedToServer() async throws {
     try await self.forEachTransportPair { control, pair in
       let message = ControlInput.with {
         $0.echoMetadataInHeaders = true
