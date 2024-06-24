@@ -49,6 +49,7 @@ final class HTTP2TransportTests: XCTestCase {
 
   func forEachTransportPair(
     _ transport: [Transport] = .supported,
+    enableControlService: Bool = true,
     clientCompression: CompressionAlgorithm = .none,
     clientEnabledCompression: CompressionAlgorithmSet = .none,
     serverCompression: CompressionAlgorithmSet = .none,
@@ -59,6 +60,7 @@ final class HTTP2TransportTests: XCTestCase {
         let address = try await self.runServer(
           in: &group,
           kind: pair.server,
+          enableControlService: enableControlService,
           compression: serverCompression
         )
 
@@ -135,8 +137,11 @@ final class HTTP2TransportTests: XCTestCase {
   private func runServer(
     in group: inout ThrowingTaskGroup<Void, Error>,
     kind: Transport.Kind,
+    enableControlService: Bool,
     compression: CompressionAlgorithmSet
   ) async throws -> GRPCHTTP2Core.SocketAddress {
+    let services = enableControlService ? [ControlService()] : []
+
     switch kind {
     case .posix:
       var config = HTTP2ServerTransport.Posix.Config.defaults
@@ -146,7 +151,7 @@ final class HTTP2TransportTests: XCTestCase {
         config: config
       )
 
-      let server = GRPCServer(transport: transport, services: [ControlService()])
+      let server = GRPCServer(transport: transport, services: services)
       group.addTask {
         try await server.run()
       }
@@ -162,7 +167,7 @@ final class HTTP2TransportTests: XCTestCase {
         config: config
       )
 
-      let server = GRPCServer(transport: transport, services: [ControlService()])
+      let server = GRPCServer(transport: transport, services: services)
       group.addTask {
         try await server.run()
       }
@@ -712,6 +717,53 @@ final class HTTP2TransportTests: XCTestCase {
       }
     }
   }
+
+  // MARK: - Not Implemented
+
+  func testUnaryNotImplemented() async throws {
+    try await self.forEachTransportPair(enableControlService: false) { control, pair in
+      let request = ClientRequest.Single(message: ControlInput())
+      try await control.unary(request: request) { response in
+        XCTAssertThrowsError(ofType: RPCError.self, try response.message) { error in
+          XCTAssertEqual(error.code, .unimplemented)
+        }
+      }
+    }
+  }
+
+  func testClientStreamingNotImplemented() async throws {
+    try await self.forEachTransportPair(enableControlService: false) { control, pair in
+      let request = ClientRequest.Stream(of: ControlInput.self) { _ in }
+      try await control.clientStream(request: request) { response in
+        XCTAssertThrowsError(ofType: RPCError.self, try response.message) { error in
+          XCTAssertEqual(error.code, .unimplemented)
+        }
+      }
+    }
+  }
+
+  func testServerStreamingNotImplemented() async throws {
+    try await self.forEachTransportPair(enableControlService: false) { control, pair in
+      let request = ClientRequest.Single(message: ControlInput())
+      try await control.serverStream(request: request) { response in
+        XCTAssertThrowsError(ofType: RPCError.self, try response.accepted.get()) { error in
+          XCTAssertEqual(error.code, .unimplemented)
+        }
+      }
+    }
+  }
+
+  func testBidiStreamingNotImplemented() async throws {
+    try await self.forEachTransportPair(enableControlService: false) { control, pair in
+      let request = ClientRequest.Stream(of: ControlInput.self) { _ in }
+      try await control.bidiStream(request: request) { response in
+        XCTAssertThrowsError(ofType: RPCError.self, try response.accepted.get()) { error in
+          XCTAssertEqual(error.code, .unimplemented)
+        }
+      }
+    }
+  }
+
 
   // MARK: - Compression tests
 
