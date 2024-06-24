@@ -764,7 +764,6 @@ final class HTTP2TransportTests: XCTestCase {
     }
   }
 
-
   // MARK: - Compression tests
 
   private func testUnaryCompression(
