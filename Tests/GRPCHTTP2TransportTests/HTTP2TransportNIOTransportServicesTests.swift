@@ -61,8 +61,13 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   }
 
   func testGetListeningAddress_UnixDomainSocket() async throws {
+    // There's currently a bug in NIOTS where we're not cleaning up (i.e. unlinking)
+    // UDS paths on close or upon binding the server if it already exists.
+    // To get around this, we append a UUID to the UDS path to prevent faillures
+    // when running the test more than once on the same host.
+    let uuid = UUID().uuidString
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .unixDomainSocket(path: "/tmp/niots-uds-test")
+      address: .unixDomainSocket(path: "/tmp/niots-uds-test-\(uuid)")
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -74,7 +79,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
         let address = try await transport.listeningAddress
         XCTAssertEqual(
           address.unixDomainSocket,
-          GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/niots-uds-test")
+          GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/niots-uds-test-\(uuid)")
         )
         transport.stopListening()
       }
