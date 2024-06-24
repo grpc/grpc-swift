@@ -64,6 +64,10 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .unixDomainSocket(path: "/tmp/niots-uds-test")
     )
+    defer {
+      // NIOTS does not unlink the UDS on close.
+      try? FileManager.default.removeItem(atPath: "/tmp/niots-uds-test")
+    }
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {
