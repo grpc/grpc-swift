@@ -749,9 +749,6 @@ final class GRPCChannelTests: XCTestCase {
   }
 
   func testQueueRequestsThenClose() async throws {
-    let (resolver, continuation) = NameResolver.dynamic(updateMode: .push)
-    continuation.yield(.init(endpoints: [Endpoint()], serviceConfig: nil))
-
     // Set a high backoff so the channel stays in transient failure for long enough.
     var config = GRPCChannel.Config.defaults
     config.backoff.initial = .seconds(120)

@@ -35,7 +35,7 @@ final class SubchannelTests: XCTestCase {
       XCTAssertEqual(error.code, .unavailable)
     }
 
-    subchannel.close()
+    subchannel.shutDown()
   }
 
   func testMakeStreamOnShutdownSubchannel() async throws {
@@ -48,7 +48,7 @@ final class SubchannelTests: XCTestCase {
       connector: .never
     )
 
-    subchannel.close()
+    subchannel.shutDown()
     await subchannel.run()
 
     await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
@@ -105,7 +105,7 @@ final class SubchannelTests: XCTestCase {
               }
             }
           }
-          subchannel.close()
+          subchannel.shutDown()
 
         default:
           ()
@@ -121,7 +121,7 @@ final class SubchannelTests: XCTestCase {
     let subchannel = self.makeSubchannel(
       address: .unixDomainSocket(path: path),
       connector: .posix(),
-      backoff: .fixed(at: .milliseconds(100))
+      backoff: .fixed(at: .milliseconds(10))
     )
 
     await withThrowingTaskGroup(of: Void.self) { group in
@@ -150,7 +150,7 @@ final class SubchannelTests: XCTestCase {
           }
 
         case .connectivityStateChanged(.ready):
-          subchannel.close()
+          subchannel.shutDown()
 
         case .connectivityStateChanged(.shutdown):
           group.cancelAll()
@@ -212,7 +212,7 @@ final class SubchannelTests: XCTestCase {
         case .connectivityStateChanged(.idle):
           subchannel.connect()
         case .connectivityStateChanged(.ready):
-          subchannel.close()
+          subchannel.shutDown()
         case .connectivityStateChanged(.shutdown):
           group.cancelAll()
         default:
@@ -263,7 +263,7 @@ final class SubchannelTests: XCTestCase {
           }
 
         case .connectivityStateChanged(.ready):
-          subchannel.close()
+          subchannel.shutDown()
 
         case .connectivityStateChanged(.shutdown):
           group.cancelAll()
@@ -304,7 +304,7 @@ final class SubchannelTests: XCTestCase {
           if idleCount == 1 {
             subchannel.connect()
           } else {
-            subchannel.close()
+            subchannel.shutDown()
           }
 
         case .connectivityStateChanged(.shutdown):
@@ -356,7 +356,7 @@ final class SubchannelTests: XCTestCase {
           case 1:
             subchannel.connect()
           case 2:
-            subchannel.close()
+            subchannel.shutDown()
           default:
             XCTFail("Unexpected idle")
           }
@@ -430,7 +430,7 @@ final class SubchannelTests: XCTestCase {
               let _ = try await iterator.next()
             }
           } else if readyCount == 2 {
-            subchannel.close()
+            subchannel.shutDown()
           }
 
         case .connectivityStateChanged(.shutdown):
@@ -484,7 +484,7 @@ final class SubchannelTests: XCTestCase {
           if idleCount == 1 {
             subchannel.connect()
           } else if idleCount == 2 {
-            subchannel.close()
+            subchannel.shutDown()
           }
 
         case .connectivityStateChanged(.ready):
