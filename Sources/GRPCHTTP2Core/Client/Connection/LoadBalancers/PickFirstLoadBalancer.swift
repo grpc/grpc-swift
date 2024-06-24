@@ -185,7 +185,7 @@ extension PickFirstLoadBalancer {
     switch onUpdate {
     case .connect(let newSubchannel, close: let oldSubchannel):
       self.runSubchannel(newSubchannel, in: &group)
-      oldSubchannel?.close()
+      oldSubchannel?.shutDown()
 
     case .none:
       ()
@@ -226,9 +226,9 @@ extension PickFirstLoadBalancer {
 
     switch onUpdateState {
     case .close(let subchannel):
-      subchannel.close()
+      subchannel.shutDown()
     case .closeAndPublishStateChange(let subchannel, let connectivityState):
-      subchannel.close()
+      subchannel.shutDown()
       self.event.continuation.yield(.connectivityStateChanged(connectivityState))
     case .publishStateChange(let connectivityState):
       self.event.continuation.yield(.connectivityStateChanged(connectivityState))
@@ -251,8 +251,8 @@ extension PickFirstLoadBalancer {
     switch onClose {
     case .closeSubchannels(let subchannel1, let subchannel2):
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
-      subchannel1.close()
-      subchannel2?.close()
+      subchannel1.shutDown()
+      subchannel2?.shutDown()
 
     case .closed:
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))

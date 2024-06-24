@@ -245,7 +245,7 @@ extension RoundRobinLoadBalancer {
     // present if there are more to remove than to add. These are the excess subchannels which
     // are closed now.
     for subchannel in removed {
-      subchannel.close()
+      subchannel.shutDown()
     }
   }
 
@@ -288,10 +288,10 @@ extension RoundRobinLoadBalancer {
 
     case .closeAndPublishStateChange(let subchannel, let aggregateState):
       self.event.continuation.yield(.connectivityStateChanged(aggregateState))
-      subchannel.close()
+      subchannel.shutDown()
 
     case .close(let subchannel):
-      subchannel.close()
+      subchannel.shutDown()
 
     case .closed:
       // All subchannels are closed; finish the streams so the run loop exits.
@@ -306,7 +306,7 @@ extension RoundRobinLoadBalancer {
   private func handleSubchannelGoingAway(key: EndpointKey) {
     switch self.state.withLockedValue({ $0.parkSubchannel(withKey: key) }) {
     case .closeAndUpdateState(let subchannel, let connectivityState):
-      subchannel.close()
+      subchannel.shutDown()
       if let connectivityState = connectivityState {
         self.event.continuation.yield(.connectivityStateChanged(connectivityState))
       }
@@ -323,7 +323,7 @@ extension RoundRobinLoadBalancer {
 
       // Close the subchannels.
       for subchannel in subchannels {
-        subchannel.close()
+        subchannel.shutDown()
       }
 
     case .closed:
