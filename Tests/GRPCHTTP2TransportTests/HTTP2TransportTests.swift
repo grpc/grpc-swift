@@ -732,9 +732,11 @@ final class HTTP2TransportTests: XCTestCase {
 
     var options = CallOptions.defaults
     options.compression = client
-    // TODO: pass in options to request
 
-    try await control.unary(request: ClientRequest.Single(message: message)) { response in
+    try await control.unary(
+      request: ClientRequest.Single(message: message),
+      options: options
+    ) { response in
       // Check the client algorithm.
       switch client {
       case .deflate, .gzip:
@@ -778,9 +780,8 @@ final class HTTP2TransportTests: XCTestCase {
 
     var options = CallOptions.defaults
     options.compression = client
-    // TODO: pass in options to request
 
-    try await control.clientStream(request: request) { response in
+    try await control.clientStream(request: request, options: options) { response in
       // Check the client algorithm.
       switch client {
       case .deflate, .gzip:
@@ -826,9 +827,11 @@ final class HTTP2TransportTests: XCTestCase {
 
     var options = CallOptions.defaults
     options.compression = client
-    // TODO: pass in options to request
 
-    try await control.serverStream(request: ClientRequest.Single(message: message)) { response in
+    try await control.serverStream(
+      request: ClientRequest.Single(message: message),
+      options: options
+    ) { response in
       // Check the client algorithm.
       switch client {
       case .deflate, .gzip:
@@ -873,9 +876,8 @@ final class HTTP2TransportTests: XCTestCase {
 
     var options = CallOptions.defaults
     options.compression = client
-    // TODO: pass in options to request
 
-    try await control.bidiStream(request: request) { response in
+    try await control.bidiStream(request: request, options: options) { response in
       // Check the client algorithm.
       switch client {
       case .deflate, .gzip:
