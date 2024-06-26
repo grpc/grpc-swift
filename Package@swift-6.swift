@@ -497,7 +497,7 @@ extension Target {
         .interoperabilityTests,
         .argumentParser
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
