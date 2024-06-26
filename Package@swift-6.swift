@@ -439,7 +439,7 @@ extension Target {
         .protobuf,
         .protobufPluginLibrary
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
