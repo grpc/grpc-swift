@@ -770,7 +770,7 @@ extension Target {
     .target(
       name: "GRPCCodeGen",
       path: "Sources/GRPCCodeGen",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
