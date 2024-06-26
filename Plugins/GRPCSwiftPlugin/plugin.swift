@@ -22,7 +22,7 @@ struct GRPCSwiftPlugin {
   /// Errors thrown by the `GRPCSwiftPlugin`
   enum PluginError: Error, CustomStringConvertible {
     /// Indicates that the target where the plugin was applied to was not `SourceModuleTarget`.
-    case invalidTarget(Target)
+    case invalidTarget(String)
     /// Indicates that the file extension of an input file was not `.proto`.
     case invalidInputFileExtension(String)
     /// Indicates that there was no configuration file at the required location.
@@ -31,7 +31,7 @@ struct GRPCSwiftPlugin {
     var description: String {
       switch self {
       case let .invalidTarget(target):
-        return "Expected a SwiftSourceModuleTarget but got '\(type(of: target))'."
+        return "Expected a SwiftSourceModuleTarget but got '\(target)'."
       case let .invalidInputFileExtension(path):
         return "The input file '\(path)' does not have a '.proto' extension."
       case let .noConfigFound(path):
@@ -259,7 +259,7 @@ extension GRPCSwiftPlugin: BuildToolPlugin {
     target: Target
   ) async throws -> [Command] {
     guard let swiftTarget = target as? SwiftSourceModuleTarget else {
-      throw PluginError.invalidTarget(target)
+      throw PluginError.invalidTarget("\(type(of: target))")
     }
     return try self.createBuildCommands(
       pluginWorkDirectory: context.pluginWorkDirectory,

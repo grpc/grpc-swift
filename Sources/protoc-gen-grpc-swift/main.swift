@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 import Foundation
+#if compiler(>=6.0)
 import GRPCCodeGen
 import GRPCProtobufCodeGen
+#endif
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
@@ -169,6 +171,7 @@ func main(args: [String]) throws {
           generatedFiles: &generatedFiles
         )
         if options.v2 {
+          #if compiler(>=6.0)
           let grpcGenerator = ProtobufCodeGenerator(
             configuration: SourceGenerator.Configuration(options: options)
           )
@@ -177,6 +180,7 @@ func main(args: [String]) throws {
             protoFileModuleMappings: options.protoToModuleMappings,
             extraModuleImports: options.extraModuleImports
           )
+          #endif
         } else {
           let grpcGenerator = Generator(fileDescriptor, options: options)
           grpcFile.content = grpcGenerator.code
@@ -198,6 +202,7 @@ do {
   Log("ERROR: \(error)")
 }
 
+#if compiler(>=6.0)
 extension SourceGenerator.Configuration {
   init(options: GeneratorOptions) {
     let accessLevel: SourceGenerator.Configuration.AccessLevel
@@ -216,3 +221,4 @@ extension SourceGenerator.Configuration {
     )
   }
 }
+#endif
