@@ -426,7 +426,7 @@ extension Target {
         .grpcCore,
         .protobuf
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
