@@ -795,7 +795,7 @@ extension Target {
         .grpcCodeGen
       ],
       path: "Sources/GRPCProtobufCodeGen",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 }
