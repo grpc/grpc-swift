@@ -242,7 +242,7 @@ extension Target {
         .nioPosix,
         .nioExtras
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
