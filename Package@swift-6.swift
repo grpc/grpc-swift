@@ -782,7 +782,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/GRPCProtobuf",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
