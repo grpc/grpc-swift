@@ -256,7 +256,7 @@ extension Target {
         .nioExtras,
         .nioTransportServices
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
