@@ -203,7 +203,7 @@ extension Target {
       dependencies: [
         .grpcCore
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
