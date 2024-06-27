@@ -229,7 +229,7 @@ extension Target {
         .dequeModule,
         .atomics
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 

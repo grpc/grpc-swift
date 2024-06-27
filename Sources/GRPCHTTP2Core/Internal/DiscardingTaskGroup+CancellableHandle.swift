@@ -55,7 +55,7 @@ extension DiscardingTaskGroup {
   }
 
   @usableFromInline
-  enum FinishedOrCancelled {
+  enum FinishedOrCancelled: Sendable {
     case finished
     case cancelled
   }
