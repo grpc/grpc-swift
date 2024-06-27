@@ -214,7 +214,7 @@ extension Target {
         .grpcCore,
         .tracing
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
