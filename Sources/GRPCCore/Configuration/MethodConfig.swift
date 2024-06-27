@@ -478,7 +478,7 @@ extension MethodConfig.Name: Codable {
     case method
   }
 
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
     let service = try container.decodeIfPresent(String.self, forKey: .service)
@@ -622,7 +622,7 @@ struct GoogleRPCCode: Codable {
     self.code = code
   }
 
-  init(from decoder: Decoder) throws {
+  init(from decoder: any Decoder) throws {
     let container = try decoder.singleValueContainer()
     let code: Status.Code?
 
@@ -641,7 +641,7 @@ struct GoogleRPCCode: Codable {
     }
   }
 
-  func encode(to encoder: Encoder) throws {
+  func encode(to encoder: any Encoder) throws {
     var container = encoder.singleValueContainer()
     try container.encode(self.code.googleRPCCode)
   }

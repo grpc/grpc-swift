@@ -91,7 +91,7 @@ extension ClientRPCExecutor.RetryExecutor {
     // retries may be skipped if the throttle is applied.
     let result = await withTaskGroup(
       of: _RetryExecutorTask<R>.self,
-      returning: Result<R, Error>.self
+      returning: Result<R, any Error>.self
     ) { group in
       // Add a task to limit the overall execution time of the RPC.
       if let deadline = self.deadline {
@@ -312,16 +312,16 @@ extension ClientRPCExecutor.RetryExecutor {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 enum _RetryExecutorTask<R> {
-  case timedOut(Result<Void, Error>)
-  case handledResponse(Result<R, Error>)
+  case timedOut(Result<Void, any Error>)
+  case handledResponse(Result<R, any Error>)
   case retry(Duration?)
-  case outboundFinished(Result<Void, Error>)
+  case outboundFinished(Result<Void, any Error>)
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 enum _RetryExecutorSubTask<R> {
   case streamProcessed
-  case handledResponse(Result<R, Error>)
+  case handledResponse(Result<R, any Error>)
   case retry(Duration?)
 }

@@ -18,7 +18,7 @@ import DequeModule
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 struct RequestQueue {
-  typealias Continuation = CheckedContinuation<LoadBalancer, Error>
+  typealias Continuation = CheckedContinuation<LoadBalancer, any Error>
 
   private struct QueueEntry {
     var continuation: Continuation

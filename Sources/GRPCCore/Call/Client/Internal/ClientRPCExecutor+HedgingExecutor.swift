@@ -158,10 +158,10 @@ extension ClientRPCExecutor.HedgingExecutor {
     method: MethodDescriptor,
     options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
-  ) async -> Result<R, Error> {
+  ) async -> Result<R, any Error> {
     await withTaskGroup(
       of: _HedgingAttemptTaskResult<R, Output>.self,
-      returning: Result<R, Error>.self
+      returning: Result<R, any Error>.self
     ) { group in
       // The strategy here is to have two types of task running in the group:
       // - To execute an RPC attempt.
@@ -508,9 +508,9 @@ extension ClientRPCExecutor.HedgingExecutor {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 enum _HedgingTaskResult<R> {
-  case rpcHandled(Result<R, Error>)
-  case finishedRequest(Result<Void, Error>)
-  case timedOut(Result<Void, Error>)
+  case rpcHandled(Result<R, any Error>)
+  case finishedRequest(Result<Void, any Error>)
+  case timedOut(Result<Void, any Error>)
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -522,8 +522,8 @@ enum _HedgingAttemptTaskResult<R, Output> {
   @usableFromInline
   enum AttemptResult {
     case unusableResponse(ClientResponse.Stream<Output>, Metadata.RetryPushback?)
-    case usableResponse(Result<R, Error>)
-    case noStreamAvailable(Error)
+    case usableResponse(Result<R, any Error>)
+    case noStreamAvailable(any Error)
   }
 
   @usableFromInline

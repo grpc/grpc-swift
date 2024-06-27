@@ -53,7 +53,7 @@ extension RPCWriter {
     /// All writes after ``finish(throwing:)`` has been called should result in an error
     /// being thrown.
     @inlinable
-    public func finish(throwing error: Error) {
+    public func finish(throwing error: any Error) {
       self.writer.finish(throwing: error)
     }
   }

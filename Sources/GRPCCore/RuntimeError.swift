@@ -27,7 +27,7 @@ public struct RuntimeError: Error, Hashable, Sendable {
   public var message: String
 
   /// The original error which led to this error being thrown.
-  public var cause: Error?
+  public var cause: (any Error)?
 
   /// Creates a new error.
   ///
@@ -35,7 +35,7 @@ public struct RuntimeError: Error, Hashable, Sendable {
   ///   - code: The error code.
   ///   - message: A description of the error.
   ///   - cause: The original error which led to this error being thrown.
-  public init(code: Code, message: String, cause: Error? = nil) {
+  public init(code: Code, message: String, cause: (any Error)? = nil) {
     self.code = code
     self.message = message
     self.cause = cause

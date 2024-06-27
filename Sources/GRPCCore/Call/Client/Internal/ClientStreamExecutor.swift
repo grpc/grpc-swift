@@ -149,7 +149,7 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
     on stream: Transport.Inbound
   ) async -> OnFirstResponsePart {
     var iterator = stream.makeAsyncIterator()
-    let result = await Result<OnFirstResponsePart, Error> {
+    let result = await Result<OnFirstResponsePart, any Error> {
       switch try await iterator.next() {
       case .metadata(let metadata):
         return .metadata(metadata, UnsafeTransfer(iterator))

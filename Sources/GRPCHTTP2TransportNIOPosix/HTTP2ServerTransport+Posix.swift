@@ -341,7 +341,7 @@ extension ServerBootstrap {
   @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
   fileprivate func bind<Output: Sendable>(
     to address: GRPCHTTP2Core.SocketAddress,
-    childChannelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Output>
+    childChannelInitializer: @escaping @Sendable (any Channel) -> EventLoopFuture<Output>
   ) async throws -> NIOAsyncChannel<Output, Never> {
     if let virtualSocket = address.virtualSocket {
       return try await self.bind(

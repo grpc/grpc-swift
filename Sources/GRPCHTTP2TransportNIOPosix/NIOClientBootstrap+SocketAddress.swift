@@ -23,7 +23,7 @@ extension ClientBootstrap {
   @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
   func connect<Result: Sendable>(
     to address: GRPCHTTP2Core.SocketAddress,
-    _ configure: @Sendable @escaping (Channel) -> EventLoopFuture<Result>
+    _ configure: @Sendable @escaping (any Channel) -> EventLoopFuture<Result>
   ) async throws -> Result {
     if let ipv4 = address.ipv4 {
       return try await self.connect(to: NIOCore.SocketAddress(ipv4), channelInitializer: configure)

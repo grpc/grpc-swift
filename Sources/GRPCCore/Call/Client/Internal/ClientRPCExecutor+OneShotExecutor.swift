@@ -68,7 +68,7 @@ extension ClientRPCExecutor.OneShotExecutor {
   ) async throws -> R {
     let result = await withTaskGroup(
       of: _OneShotExecutorTask<R>.self,
-      returning: Result<R, Error>.self
+      returning: Result<R, any Error>.self
     ) { group in
       do {
         return try await self.transport.withStream(descriptor: method, options: options) { stream in
@@ -146,6 +146,6 @@ extension ClientRPCExecutor.OneShotExecutor {
 @usableFromInline
 enum _OneShotExecutorTask<R> {
   case streamExecutorCompleted
-  case timedOut(Result<Void, Error>)
-  case responseHandled(Result<R, Error>)
+  case timedOut(Result<Void, any Error>)
+  case responseHandled(Result<R, any Error>)
 }

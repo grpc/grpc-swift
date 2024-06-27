@@ -129,7 +129,7 @@ extension BroadcastAsyncSequence {
     }
 
     @inlinable
-    func finish(with result: Result<Void, Error>) {
+    func finish(with result: Result<Void, any Error>) {
       self._storage.finish(result)
     }
 
@@ -139,7 +139,7 @@ extension BroadcastAsyncSequence {
     }
 
     @inlinable
-    func finish(throwing error: Error) {
+    func finish(throwing error: any Error) {
       self.finish(with: .failure(error))
     }
   }
@@ -232,7 +232,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   ///
   /// - Parameter result: Whether the stream is finishing cleanly or because of an error.
   @inlinable
-  func finish(_ result: Result<Void, Error>) {
+  func finish(_ result: Result<Void, any Error>) {
     let action = self._state.withLockedValue { state in state.finish(result: result) }
     switch action {
     case .none:
@@ -334,19 +334,19 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
 @usableFromInline
 struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
-  typealias ConsumerContinuation = CheckedContinuation<Element?, Error>
+  typealias ConsumerContinuation = CheckedContinuation<Element?, any Error>
   @usableFromInline
-  typealias ProducerContinuation = CheckedContinuation<Void, Error>
+  typealias ProducerContinuation = CheckedContinuation<Void, any Error>
 
   @usableFromInline
   struct ConsumerContinuations {
     @usableFromInline
     var continuations: _OneOrMany<ConsumerContinuation>
     @usableFromInline
-    var result: Result<Element?, Error>
+    var result: Result<Element?, any Error>
 
     @inlinable
-    init(continuations: _OneOrMany<ConsumerContinuation>, result: Result<Element?, Error>) {
+    init(continuations: _OneOrMany<ConsumerContinuation>, result: Result<Element?, any Error>) {
       self.continuations = continuations
       self.result = result
     }
@@ -369,10 +369,10 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
     @usableFromInline
     var continuations: [ProducerContinuation]
     @usableFromInline
-    var result: Result<Void, Error>
+    var result: Result<Void, any Error>
 
     @inlinable
-    init(continuations: [ProducerContinuation], result: Result<Void, Error>) {
+    init(continuations: [ProducerContinuation], result: Result<Void, any Error>) {
       self.continuations = continuations
       self.result = result
     }
@@ -435,7 +435,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       }
 
       @inlinable
-      mutating func finish(result: Result<Void, Error>) -> OnFinish {
+      mutating func finish(result: Result<Void, any Error>) -> OnFinish {
         let continuations = self.subscriptions.removeSubscribersWithContinuations()
         return .resume(
           .init(continuations: continuations, result: result.map { nil }),
@@ -755,7 +755,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       }
 
       @inlinable
-      mutating func finish(result: Result<Void, Error>) -> OnFinish {
+      mutating func finish(result: Result<Void, any Error>) -> OnFinish {
         let continuations = self.subscriptions.removeSubscribersWithContinuations()
         let producers = self.producers.map { $0.0 }
         self.producers.removeAll()
@@ -824,10 +824,10 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
 
       /// The terminating result of the sequence.
       @usableFromInline
-      let result: Result<Void, Error>
+      let result: Result<Void, any Error>
 
       @inlinable
-      init(from state: Initial, result: Result<Void, Error>) {
+      init(from state: Initial, result: Result<Void, any Error>) {
         self.elements = Elements()
         self.subscriptions = Subscriptions()
         self.subscriptionsToDrop = []
@@ -835,7 +835,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       }
 
       @inlinable
-      init(from state: Subscribed, result: Result<Void, Error>) {
+      init(from state: Subscribed, result: Result<Void, any Error>) {
         self.elements = Elements()
         self.subscriptions = state.subscriptions
         self.subscriptionsToDrop = []
@@ -843,7 +843,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       }
 
       @inlinable
-      init(from state: Streaming, result: Result<Void, Error>) {
+      init(from state: Streaming, result: Result<Void, any Error>) {
         self.elements = state.elements
         self.subscriptions = state.subscriptions
         self.subscriptionsToDrop = state.subscriptionsToDrop
@@ -1063,7 +1063,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   }
 
   @inlinable
-  mutating func finish(result: Result<Void, Error>) -> OnFinish {
+  mutating func finish(result: Result<Void, any Error>) -> OnFinish {
     let onFinish: OnFinish
 
     switch self._state {
@@ -1098,15 +1098,15 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
     @usableFromInline
     struct ReturnAndResumeProducers {
       @usableFromInline
-      var nextResult: Result<Element?, Error>
+      var nextResult: Result<Element?, any Error>
       @usableFromInline
       var producers: ProducerContinuations
 
       @inlinable
       init(
-        nextResult: Result<Element?, Error>,
+        nextResult: Result<Element?, any Error>,
         producers: [ProducerContinuation] = [],
-        producerResult: Result<Void, Error> = .success(())
+        producerResult: Result<Void, any Error> = .success(())
       ) {
         self.nextResult = nextResult
         self.producers = ProducerContinuations(continuations: producers, result: producerResult)
@@ -1153,7 +1153,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
   enum OnSetContinuation {
     case none
-    case resume(ConsumerContinuation, Result<Element?, Error>)
+    case resume(ConsumerContinuation, Result<Element?, any Error>)
   }
 
   @inlinable
@@ -1192,7 +1192,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
   enum OnCancelSubscription {
     case none
-    case resume(ConsumerContinuation, Result<Element?, Error>)
+    case resume(ConsumerContinuation, Result<Element?, any Error>)
   }
 
   @inlinable
@@ -1270,7 +1270,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
   enum OnWaitToProduceMore {
     case none
-    case resume(ProducerContinuation, Result<Void, Error>)
+    case resume(ProducerContinuation, Result<Void, any Error>)
   }
 
   @inlinable
