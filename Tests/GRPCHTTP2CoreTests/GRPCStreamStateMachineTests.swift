@@ -2510,6 +2510,87 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
     XCTAssertEqual(stateMachine.nextInboundMessage(), .noMoreMessages)
   }
 
+  // - MARK: Unexpected close
+
+  func testUnexpectedCloseWhenClientIdleOrOpen() throws {
+    let reasonAndExpectedErrorPairs = [
+      (
+        GRPCStreamStateMachine.UnexpectedInboundCloseReason.channelInactive,
+        RPCError(code: .unavailable, message: "Stream unexpectedly closed.")
+      ),
+      (
+        GRPCStreamStateMachine.UnexpectedInboundCloseReason.streamReset,
+        RPCError(
+          code: .unavailable,
+          message: "Stream unexpectedly closed: a RST_STREAM frame was received."
+        )
+      ),
+      (
+        GRPCStreamStateMachine.UnexpectedInboundCloseReason.errorThrown(
+          RPCError(code: .deadlineExceeded, message: "Test error")
+        ),
+        RPCError(code: .deadlineExceeded, message: "Test error")
+      ),
+    ]
+    let states = [
+      TargetStateMachineState.clientIdleServerIdle,
+      .clientOpenServerIdle,
+      .clientOpenServerOpen,
+      .clientOpenServerClosed,
+    ]
+
+    for state in states {
+      for (closeReason, expectedError) in reasonAndExpectedErrorPairs {
+        var stateMachine = self.makeServerStateMachine(targetState: state)
+        var action = stateMachine.unexpectedInboundClose(reason: closeReason)
+        guard case .fireError(let error) = action else {
+          XCTFail("Should have been `fireError` but was `\(action)` (state: \(state)).")
+          return
+        }
+        XCTAssertEqual(error as? RPCError, expectedError)
+
+        // Calling unexpectedInboundClose again should return `doNothing` because
+        // we're already closed.
+        action = stateMachine.unexpectedInboundClose(reason: closeReason)
+        guard case .doNothing = action else {
+          XCTFail("Should have been `doNothing` but was `\(action)` (state: \(state)).")
+          return
+        }
+      }
+    }
+  }
+
+  func testUnexpectedCloseWhenClientClosed() throws {
+    let closeReasons = [
+      GRPCStreamStateMachine.UnexpectedInboundCloseReason.channelInactive,
+      .streamReset,
+      .errorThrown(RPCError(code: .deadlineExceeded, message: "Test error")),
+    ]
+    let states = [
+      TargetStateMachineState.clientClosedServerIdle,
+      .clientClosedServerOpen,
+      .clientClosedServerClosed,
+    ]
+
+    for state in states {
+      for closeReason in closeReasons {
+        var stateMachine = self.makeServerStateMachine(targetState: state)
+        var action = stateMachine.unexpectedInboundClose(reason: closeReason)
+        guard case .doNothing = action else {
+          XCTFail("Should have been `doNothing` but was `\(action)` (state: \(state)).")
+          return
+        }
+
+        // Calling unexpectedInboundClose again should return `doNothing` again.
+        action = stateMachine.unexpectedInboundClose(reason: closeReason)
+        guard case .doNothing = action else {
+          XCTFail("Should have been `doNothing` but was `\(action)` (state: \(state)).")
+          return
+        }
+      }
+    }
+  }
+
   // - MARK: Common paths
 
   func testNormalFlow() throws {
