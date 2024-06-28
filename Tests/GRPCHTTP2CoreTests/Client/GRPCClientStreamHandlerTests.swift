@@ -19,9 +19,9 @@ import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import NIOHTTP1
-import NIOHTTP2
 import XCTest
 
+@testable import NIOHTTP2
 @testable import GRPCHTTP2Core
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -40,9 +40,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     let framesToBeIgnored: [HTTP2Frame.FramePayload] = [
       .ping(.init(), ack: false),
       .goAway(lastStreamID: .rootStream, errorCode: .cancel, opaqueData: nil),
-      // TODO: add .priority(StreamPriorityData) - right now, StreamPriorityData's
-      // initialiser is internal, so I can't create one of these frames.
-      .rstStream(.cancel),
+      .priority(HTTP2Frame.StreamPriorityData(exclusive: false, dependency: .rootStream, weight: 4)),
       .settings(.ack),
       .pushPromise(.init(pushedStreamID: .maxID, headers: [:])),
       .windowUpdate(windowSizeIncrement: 4),
@@ -763,6 +761,155 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       )
     )
     XCTAssertNil(try channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+  }
+
+  func testUnexpectedStreamClose_ErrorFired() throws {
+    let handler = GRPCClientStreamHandler(
+      methodDescriptor: .init(service: "test", method: "test"),
+      scheme: .http,
+      outboundEncoding: .none,
+      acceptedEncodings: [],
+      maximumPayloadSize: 1,
+      skipStateMachineAssertions: true
+    )
+
+    let channel = EmbeddedChannel(handler: handler)
+
+    // Write client's initial metadata
+    XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.metadata(Metadata())))
+    let clientInitialMetadata: HPACKHeaders = [
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
+      GRPCHTTP2Keys.scheme.rawValue: "http",
+      GRPCHTTP2Keys.method.rawValue: "POST",
+      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+      GRPCHTTP2Keys.te.rawValue: "trailers",
+    ]
+    let writtenInitialMetadata = try channel.assertReadHeadersOutbound()
+    XCTAssertEqual(writtenInitialMetadata.headers, clientInitialMetadata)
+
+    // An error is fired down the pipeline
+    let thrownError = ChannelError.connectTimeout(.milliseconds(100))
+    channel.pipeline.fireErrorCaught(thrownError)
+
+    // The client receives a status explaining the stream was closed because of the thrown error.
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCResponsePart.self),
+      .status(
+        .init(
+          code: .unavailable,
+          message: "Stream unexpectedly closed with error: \(thrownError)."
+        ),
+        [:]
+      )
+    )
+
+    // We should now be closed: check we can't write anymore.
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
+    ) { error in
+      XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
+    }
+  }
+
+  func testUnexpectedStreamClose_ChannelInactive() throws {
+    let handler = GRPCClientStreamHandler(
+      methodDescriptor: .init(service: "test", method: "test"),
+      scheme: .http,
+      outboundEncoding: .none,
+      acceptedEncodings: [],
+      maximumPayloadSize: 1,
+      skipStateMachineAssertions: true
+    )
+
+    let channel = EmbeddedChannel(handler: handler)
+
+    // Write client's initial metadata
+    XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.metadata(Metadata())))
+    let clientInitialMetadata: HPACKHeaders = [
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
+      GRPCHTTP2Keys.scheme.rawValue: "http",
+      GRPCHTTP2Keys.method.rawValue: "POST",
+      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+      GRPCHTTP2Keys.te.rawValue: "trailers",
+    ]
+    let writtenInitialMetadata = try channel.assertReadHeadersOutbound()
+    XCTAssertEqual(writtenInitialMetadata.headers, clientInitialMetadata)
+
+    // Channel becomes inactive
+    channel.pipeline.fireChannelInactive()
+
+    // The client receives a status explaining the stream was closed.
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCResponsePart.self),
+      .status(
+        .init(code: .unavailable, message: "Stream unexpectedly closed."),
+        [:]
+      )
+    )
+
+    // We should now be closed: check we can't write anymore.
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
+    ) { error in
+      XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
+    }
+  }
+
+  func testUnexpectedStreamClose_ResetStreamFrame() throws {
+    let handler = GRPCClientStreamHandler(
+      methodDescriptor: .init(service: "test", method: "test"),
+      scheme: .http,
+      outboundEncoding: .none,
+      acceptedEncodings: [],
+      maximumPayloadSize: 1,
+      skipStateMachineAssertions: true
+    )
+
+    let channel = EmbeddedChannel(handler: handler)
+
+    // Write client's initial metadata
+    XCTAssertNoThrow(try channel.writeOutbound(RPCRequestPart.metadata(Metadata())))
+    let clientInitialMetadata: HPACKHeaders = [
+      GRPCHTTP2Keys.path.rawValue: "/test/test",
+      GRPCHTTP2Keys.scheme.rawValue: "http",
+      GRPCHTTP2Keys.method.rawValue: "POST",
+      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
+      GRPCHTTP2Keys.te.rawValue: "trailers",
+    ]
+    let writtenInitialMetadata = try channel.assertReadHeadersOutbound()
+    XCTAssertEqual(writtenInitialMetadata.headers, clientInitialMetadata)
+
+    // Receive RST_STREAM
+    XCTAssertNoThrow(
+      try channel.writeInbound(
+        HTTP2Frame.FramePayload.rstStream(.internalError)
+      )
+    )
+
+    // The client receives a status explaining RST_STREAM was sent.
+    XCTAssertEqual(
+      try channel.readInbound(as: RPCResponsePart.self),
+      .status(
+        .init(
+          code: .unavailable,
+          message: "Stream unexpectedly closed: a RST_STREAM frame was received."
+        ),
+        [:]
+      )
+    )
+
+    // We should now be closed: check we can't write anymore.
+    XCTAssertThrowsError(
+      ofType: RPCError.self,
+      try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
+    ) { error in
+      XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
+    }
   }
 }
 
