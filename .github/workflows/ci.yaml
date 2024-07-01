@@ -154,7 +154,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: SwiftPM plugin test
-      run: ./scripts/run-plugin-tests.sh ${{ image.swift-tools-version }}
+      run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }}
     - name: Build without NIOSSL
       run: swift build
       env:
