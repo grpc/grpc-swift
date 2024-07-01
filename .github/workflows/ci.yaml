@@ -153,6 +153,8 @@ jobs:
       image: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@v4
+    - name: Install protoc
+      run: apt update && apt install -y protobuf-compiler
     - name: SwiftPM plugin test
       run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }}
     - name: Build without NIOSSL
