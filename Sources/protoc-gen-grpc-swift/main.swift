@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 import Foundation
+import SwiftProtobuf
+import SwiftProtobufPluginLibrary
+
 #if compiler(>=6.0)
 import GRPCCodeGen
 import GRPCProtobufCodeGen
 #endif
-import SwiftProtobuf
-import SwiftProtobufPluginLibrary
 
 func Log(_ message: String) {
   FileHandle.standardError.write((message + "\n").data(using: .utf8)!)
