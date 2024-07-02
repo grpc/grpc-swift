@@ -171,8 +171,9 @@ func main(args: [String]) throws {
           fileNamingOption: options.fileNaming,
           generatedFiles: &generatedFiles
         )
+
+        #if compiler(>=6.0)
         if options.v2 {
-          #if compiler(>=6.0)
           let grpcGenerator = ProtobufCodeGenerator(
             configuration: SourceGenerator.Configuration(options: options)
           )
@@ -181,11 +182,14 @@ func main(args: [String]) throws {
             protoFileModuleMappings: options.protoToModuleMappings,
             extraModuleImports: options.extraModuleImports
           )
-          #endif
         } else {
           let grpcGenerator = Generator(fileDescriptor, options: options)
           grpcFile.content = grpcGenerator.code
         }
+        #else
+        let grpcGenerator = Generator(fileDescriptor, options: options)
+        grpcFile.content = grpcGenerator.code
+        #endif
         grpcFile.name = grpcFileName
         response.file.append(grpcFile)
       }
