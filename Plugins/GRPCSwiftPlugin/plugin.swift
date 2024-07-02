@@ -318,8 +318,10 @@ struct PathLike: CustomStringConvertible {
   var description: String {
     #if compiler(<6.0)
     return String(describing: self.value)
-    #else
+    #elseif canImport(Darwin)
     return self.value.path()
+    #else
+    return self.value.path
     #endif
   }
 
