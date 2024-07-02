@@ -76,7 +76,7 @@ final class ProtobufCodingTests: XCTestCase {
 struct TestMessage: SwiftProtobuf.Message {
   var text: String = ""
   var unknownFields = SwiftProtobuf.UnknownStorage()
-  static var protoMessageName: String = "Test" + ".ServiceRequest"
+  static let protoMessageName: String = "Test.ServiceRequest"
   init() {}
 
   mutating func decodeMessage<D>(decoder: inout D) throws where D: SwiftProtobuf.Decoder {

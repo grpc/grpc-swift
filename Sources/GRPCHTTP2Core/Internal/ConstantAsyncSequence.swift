@@ -17,7 +17,7 @@
 import GRPCCore
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-private struct ConstantAsyncSequence<Element: Sendable>: AsyncSequence {
+private struct ConstantAsyncSequence<Element: Sendable>: AsyncSequence, Sendable {
   private let element: Element
 
   init(element: Element) {
@@ -42,7 +42,7 @@ private struct ConstantAsyncSequence<Element: Sendable>: AsyncSequence {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension RPCAsyncSequence {
+extension RPCAsyncSequence where Element: Sendable {
   static func constant(_ element: Element) -> RPCAsyncSequence<Element> {
     return RPCAsyncSequence(wrapping: ConstantAsyncSequence(element: element))
   }

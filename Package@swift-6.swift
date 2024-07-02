@@ -203,7 +203,7 @@ extension Target {
       dependencies: [
         .grpcCore
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -214,7 +214,7 @@ extension Target {
         .grpcCore,
         .tracing
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -229,7 +229,7 @@ extension Target {
         .dequeModule,
         .atomics
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -242,7 +242,7 @@ extension Target {
         .nioPosix,
         .nioExtras
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -256,7 +256,7 @@ extension Target {
         .nioExtras,
         .nioTransportServices
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -298,7 +298,7 @@ extension Target {
         .nioFileSystem,
         .argumentParser
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -426,7 +426,7 @@ extension Target {
         .grpcCore,
         .protobuf
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -439,7 +439,7 @@ extension Target {
         .protobuf,
         .protobufPluginLibrary
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -497,7 +497,7 @@ extension Target {
         .interoperabilityTests,
         .argumentParser
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -770,7 +770,7 @@ extension Target {
     .target(
       name: "GRPCCodeGen",
       path: "Sources/GRPCCodeGen",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -782,7 +782,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/GRPCProtobuf",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 
@@ -795,7 +795,7 @@ extension Target {
         .grpcCodeGen
       ],
       path: "Sources/GRPCProtobufCodeGen",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 }

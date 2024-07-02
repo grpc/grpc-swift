@@ -26,7 +26,7 @@ public protocol HTTP2Connector: Sendable {
 
 @_spi(Package)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct HTTP2Connection {
+public struct HTTP2Connection: Sendable {
   /// The underlying TCP connection wrapped up for use with gRPC.
   var channel: NIOAsyncChannel<ClientConnectionEvent, Void>
 
