@@ -626,6 +626,23 @@ extension Target {
     )
   }
 
+  static var echo_v2: Target {
+    .executableTarget(
+      name: "echo-v2",
+      dependencies: [
+        .grpcCore,
+        .grpcProtobuf,
+        .grpcHTTP2Core,
+        .grpcHTTP2TransportNIOPosix,
+        .argumentParser,
+      ].appending(
+        .nioSSL, if: includeNIOSSL
+      ),
+      path: "Sources/Examples/v2/Echo",
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
+    )
+  }
+
   static var helloWorldModel: Target {
     .target(
       name: "HelloWorldModel",
@@ -935,7 +952,10 @@ let package = Package(
     .grpcHTTP2TransportTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
-    .inProcessInteroperabilityTests
+    .inProcessInteroperabilityTests,
+
+    // v2 examples
+    .echo_v2,
   ]
 )
 
