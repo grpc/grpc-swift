@@ -810,10 +810,17 @@ extension Product {
     )
   }
 
-  static var grpcCore: Product {
+  static var _grpcCore: Product {
     .library(
       name: "_GRPCCore",
       targets: ["GRPCCore"]
+    )
+  }
+
+  static var _grpcProtobuf: Product {
+    .library(
+      name: "_GRPCProtobuf",
+      targets: ["GRPCProtobuf"]
     )
   }
 
@@ -851,12 +858,15 @@ extension Product {
 let package = Package(
   name: grpcPackageName,
   products: [
+    // v1
     .grpc,
-    .grpcCore,
     .cgrpcZlib,
     .grpcReflectionService,
     .protocGenGRPCSwift,
     .grpcSwiftPlugin,
+    // v2
+    ._grpcCore,
+    ._grpcProtobuf,
   ],
   dependencies: packageDependencies,
   targets: [
