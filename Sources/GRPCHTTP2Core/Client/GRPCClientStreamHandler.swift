@@ -135,7 +135,7 @@ extension GRPCClientStreamHandler {
       case .forwardStatus(let status):
         context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
       case .doNothing:
-        context.fireChannelInactive()
+        ()
       case .fireError:
         assertionFailure("`fireError` should only happen on the server side, never on the client.")
       }
@@ -164,10 +164,12 @@ extension GRPCClientStreamHandler {
     case .forwardStatus(let status):
       context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
     case .doNothing:
-      context.fireChannelInactive()
+      ()
     case .fireError:
       assertionFailure("`fireError` should only happen on the server side, never on the client.")
     }
+
+    context.fireChannelInactive()
   }
 
   func errorCaught(context: ChannelHandlerContext, error: any Error) {
@@ -175,7 +177,7 @@ extension GRPCClientStreamHandler {
     case .forwardStatus(let status):
       context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
     case .doNothing:
-      context.fireErrorCaught(error)
+      ()
     case .fireError:
       assertionFailure("`fireError` should only happen on the server side, never on the client.")
     }
