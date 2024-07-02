@@ -86,12 +86,12 @@ struct TestSpan: Span {
 
   var operationName: String {
     get { self.state.withLockedValue { $0.operationName } }
-    nonmutating set { self.state.withLockedValue { $0.operationName = newValue }}
+    nonmutating set { self.state.withLockedValue { $0.operationName = newValue } }
   }
 
   var attributes: Tracing.SpanAttributes {
     get { self.state.withLockedValue { $0.attributes } }
-    nonmutating set { self.state.withLockedValue { $0.attributes = newValue }}
+    nonmutating set { self.state.withLockedValue { $0.attributes = newValue } }
   }
 
   var events: [Tracing.SpanEvent] {
