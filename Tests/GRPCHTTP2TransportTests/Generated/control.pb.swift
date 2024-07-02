@@ -232,7 +232,7 @@ struct PayloadParameters {
   /// The number of bytes to put into the output payload.
   var size: Int32 = 0
 
-  /// The conent to use in the payload. The value is truncated to an octet.
+  /// The content to use in the payload. The value is truncated to an octet.
   var content: UInt32 = 0
 
   var unknownFields = SwiftProtobuf.UnknownStorage()

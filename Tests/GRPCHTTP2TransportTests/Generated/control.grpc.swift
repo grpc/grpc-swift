@@ -82,13 +82,13 @@ internal enum Control {
 /// the output.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 internal protocol ControlStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-    func unary(request: ServerRequest.Stream<Control.Method.Unary.Input>) async throws -> ServerResponse.Stream<Control.Method.Unary.Output>
+    func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 
-    func serverStream(request: ServerRequest.Stream<Control.Method.ServerStream.Input>) async throws -> ServerResponse.Stream<Control.Method.ServerStream.Output>
+    func serverStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 
-    func clientStream(request: ServerRequest.Stream<Control.Method.ClientStream.Input>) async throws -> ServerResponse.Stream<Control.Method.ClientStream.Output>
+    func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 
-    func bidiStream(request: ServerRequest.Stream<Control.Method.BidiStream.Input>) async throws -> ServerResponse.Stream<Control.Method.BidiStream.Output>
+    func bidiStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -98,32 +98,32 @@ extension Control.StreamingServiceProtocol {
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Control.Method.Unary.descriptor,
-            deserializer: ProtobufDeserializer<Control.Method.Unary.Input>(),
-            serializer: ProtobufSerializer<Control.Method.Unary.Output>(),
+            deserializer: ProtobufDeserializer<ControlInput>(),
+            serializer: ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.unary(request: request)
             }
         )
         router.registerHandler(
             forMethod: Control.Method.ServerStream.descriptor,
-            deserializer: ProtobufDeserializer<Control.Method.ServerStream.Input>(),
-            serializer: ProtobufSerializer<Control.Method.ServerStream.Output>(),
+            deserializer: ProtobufDeserializer<ControlInput>(),
+            serializer: ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.serverStream(request: request)
             }
         )
         router.registerHandler(
             forMethod: Control.Method.ClientStream.descriptor,
-            deserializer: ProtobufDeserializer<Control.Method.ClientStream.Input>(),
-            serializer: ProtobufSerializer<Control.Method.ClientStream.Output>(),
+            deserializer: ProtobufDeserializer<ControlInput>(),
+            serializer: ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.clientStream(request: request)
             }
         )
         router.registerHandler(
             forMethod: Control.Method.BidiStream.descriptor,
-            deserializer: ProtobufDeserializer<Control.Method.BidiStream.Input>(),
-            serializer: ProtobufSerializer<Control.Method.BidiStream.Output>(),
+            deserializer: ProtobufDeserializer<ControlInput>(),
+            serializer: ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.bidiStream(request: request)
             }
@@ -137,29 +137,29 @@ extension Control.StreamingServiceProtocol {
 /// the output.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 internal protocol ControlServiceProtocol: Control.StreamingServiceProtocol {
-    func unary(request: ServerRequest.Single<Control.Method.Unary.Input>) async throws -> ServerResponse.Single<Control.Method.Unary.Output>
+    func unary(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
 
-    func serverStream(request: ServerRequest.Single<Control.Method.ServerStream.Input>) async throws -> ServerResponse.Stream<Control.Method.ServerStream.Output>
+    func serverStream(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 
-    func clientStream(request: ServerRequest.Stream<Control.Method.ClientStream.Input>) async throws -> ServerResponse.Single<Control.Method.ClientStream.Output>
+    func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
 
-    func bidiStream(request: ServerRequest.Stream<Control.Method.BidiStream.Input>) async throws -> ServerResponse.Stream<Control.Method.BidiStream.Output>
+    func bidiStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 }
 
 /// Partial conformance to `ControlStreamingServiceProtocol`.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Control.ServiceProtocol {
-    internal func unary(request: ServerRequest.Stream<Control.Method.Unary.Input>) async throws -> ServerResponse.Stream<Control.Method.Unary.Output> {
+    internal func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
         let response = try await self.unary(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
 
-    internal func serverStream(request: ServerRequest.Stream<Control.Method.ServerStream.Input>) async throws -> ServerResponse.Stream<Control.Method.ServerStream.Output> {
+    internal func serverStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
         let response = try await self.serverStream(request: ServerRequest.Single(stream: request))
         return response
     }
 
-    internal func clientStream(request: ServerRequest.Stream<Control.Method.ClientStream.Input>) async throws -> ServerResponse.Stream<Control.Method.ClientStream.Output> {
+    internal func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
         let response = try await self.clientStream(request: request)
         return ServerResponse.Stream(single: response)
     }
@@ -172,91 +172,91 @@ extension Control.ServiceProtocol {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 internal protocol ControlClientProtocol: Sendable {
     func unary<R>(
-        request: ClientRequest.Single<Control.Method.Unary.Input>,
-        serializer: some MessageSerializer<Control.Method.Unary.Input>,
-        deserializer: some MessageDeserializer<Control.Method.Unary.Output>,
+        request: ClientRequest.Single<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Single<Control.Method.Unary.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
 
     func serverStream<R>(
-        request: ClientRequest.Single<Control.Method.ServerStream.Input>,
-        serializer: some MessageSerializer<Control.Method.ServerStream.Input>,
-        deserializer: some MessageDeserializer<Control.Method.ServerStream.Output>,
+        request: ClientRequest.Single<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Control.Method.ServerStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
 
     func clientStream<R>(
-        request: ClientRequest.Stream<Control.Method.ClientStream.Input>,
-        serializer: some MessageSerializer<Control.Method.ClientStream.Input>,
-        deserializer: some MessageDeserializer<Control.Method.ClientStream.Output>,
+        request: ClientRequest.Stream<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Single<Control.Method.ClientStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
 
     func bidiStream<R>(
-        request: ClientRequest.Stream<Control.Method.BidiStream.Input>,
-        serializer: some MessageSerializer<Control.Method.BidiStream.Input>,
-        deserializer: some MessageDeserializer<Control.Method.BidiStream.Output>,
+        request: ClientRequest.Stream<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Control.Method.BidiStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
 }
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Control.ClientProtocol {
     internal func unary<R>(
-        request: ClientRequest.Single<Control.Method.Unary.Input>,
+        request: ClientRequest.Single<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Control.Method.Unary.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.unary(
             request: request,
-            serializer: ProtobufSerializer<Control.Method.Unary.Input>(),
-            deserializer: ProtobufDeserializer<Control.Method.Unary.Output>(),
+            serializer: ProtobufSerializer<ControlInput>(),
+            deserializer: ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
     }
 
     internal func serverStream<R>(
-        request: ClientRequest.Single<Control.Method.ServerStream.Input>,
+        request: ClientRequest.Single<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Control.Method.ServerStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.serverStream(
             request: request,
-            serializer: ProtobufSerializer<Control.Method.ServerStream.Input>(),
-            deserializer: ProtobufDeserializer<Control.Method.ServerStream.Output>(),
+            serializer: ProtobufSerializer<ControlInput>(),
+            deserializer: ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
     }
 
     internal func clientStream<R>(
-        request: ClientRequest.Stream<Control.Method.ClientStream.Input>,
+        request: ClientRequest.Stream<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Control.Method.ClientStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.clientStream(
             request: request,
-            serializer: ProtobufSerializer<Control.Method.ClientStream.Input>(),
-            deserializer: ProtobufDeserializer<Control.Method.ClientStream.Output>(),
+            serializer: ProtobufSerializer<ControlInput>(),
+            deserializer: ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
     }
 
     internal func bidiStream<R>(
-        request: ClientRequest.Stream<Control.Method.BidiStream.Input>,
+        request: ClientRequest.Stream<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Control.Method.BidiStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.bidiStream(
             request: request,
-            serializer: ProtobufSerializer<Control.Method.BidiStream.Input>(),
-            deserializer: ProtobufDeserializer<Control.Method.BidiStream.Output>(),
+            serializer: ProtobufSerializer<ControlInput>(),
+            deserializer: ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
@@ -276,11 +276,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
 
     internal func unary<R>(
-        request: ClientRequest.Single<Control.Method.Unary.Input>,
-        serializer: some MessageSerializer<Control.Method.Unary.Input>,
-        deserializer: some MessageDeserializer<Control.Method.Unary.Output>,
+        request: ClientRequest.Single<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Control.Method.Unary.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -293,11 +293,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
 
     internal func serverStream<R>(
-        request: ClientRequest.Single<Control.Method.ServerStream.Input>,
-        serializer: some MessageSerializer<Control.Method.ServerStream.Input>,
-        deserializer: some MessageDeserializer<Control.Method.ServerStream.Output>,
+        request: ClientRequest.Single<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Control.Method.ServerStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.serverStreaming(
             request: request,
@@ -310,11 +310,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
 
     internal func clientStream<R>(
-        request: ClientRequest.Stream<Control.Method.ClientStream.Input>,
-        serializer: some MessageSerializer<Control.Method.ClientStream.Input>,
-        deserializer: some MessageDeserializer<Control.Method.ClientStream.Output>,
+        request: ClientRequest.Stream<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Control.Method.ClientStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
             request: request,
@@ -327,11 +327,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
 
     internal func bidiStream<R>(
-        request: ClientRequest.Stream<Control.Method.BidiStream.Input>,
-        serializer: some MessageSerializer<Control.Method.BidiStream.Input>,
-        deserializer: some MessageDeserializer<Control.Method.BidiStream.Output>,
+        request: ClientRequest.Stream<ControlInput>,
+        serializer: some MessageSerializer<ControlInput>,
+        deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Control.Method.BidiStream.Output>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
             request: request,

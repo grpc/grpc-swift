@@ -857,223 +857,13 @@ struct Grpc_ServiceConfig_CdsConfig {
   /// Required.
   var cluster: String = String()
 
+  /// If true, a dynamic subscription will be started for the cluster.
+  var isDynamic: Bool = false
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 }
-
-/// Represents an xDS server.
-struct Grpc_ServiceConfig_XdsServer {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// Required.
-  var serverUri: String = String()
-
-  /// A list of channel creds to use.  The first supported type will be used.
-  var channelCreds: [Grpc_ServiceConfig_XdsServer.ChannelCredentials] = []
-
-  /// A repeated list of server features.
-  var serverFeatures: [SwiftProtobuf.Google_Protobuf_Value] = []
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  struct ChannelCredentials {
-    // SwiftProtobuf.Message conformance is added in an extension below. See the
-    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-    // methods supported on all messages.
-
-    /// Required.
-    var type: String = String()
-
-    /// Optional JSON config.
-    var config: SwiftProtobuf.Google_Protobuf_Struct {
-      get {return _config ?? SwiftProtobuf.Google_Protobuf_Struct()}
-      set {_config = newValue}
-    }
-    /// Returns true if `config` has been explicitly set.
-    var hasConfig: Bool {return self._config != nil}
-    /// Clears the value of `config`. Subsequent reads from it will return its default value.
-    mutating func clearConfig() {self._config = nil}
-
-    var unknownFields = SwiftProtobuf.UnknownStorage()
-
-    init() {}
-
-    fileprivate var _config: SwiftProtobuf.Google_Protobuf_Struct? = nil
-  }
-
-  init() {}
-}
-
-/// Configuration for xds_cluster_resolver LB policy.
-struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// Ordered list of discovery mechanisms.
-  /// Must have at least one element.
-  /// Results from each discovery mechanism are concatenated together in
-  /// successive priorities.
-  var discoveryMechanisms: [Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism] = []
-
-  /// xDS LB policy. Will be used as the child config of the xds_cluster_impl LB policy.
-  var xdsLbPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  /// Describes a discovery mechanism instance.
-  /// For EDS or LOGICAL_DNS clusters, there will be exactly one
-  /// DiscoveryMechanism, which will describe the cluster of the parent
-  /// CDS policy.
-  /// For aggregate clusters, there will be one DiscoveryMechanism for each
-  /// underlying cluster.
-  struct DiscoveryMechanism {
-    // SwiftProtobuf.Message conformance is added in an extension below. See the
-    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-    // methods supported on all messages.
-
-    /// Cluster name.
-    var cluster: String {
-      get {return _storage._cluster}
-      set {_uniqueStorage()._cluster = newValue}
-    }
-
-    /// LRS server to send load reports to.
-    /// If not present, load reporting will be disabled.
-    /// If set to the empty string, load reporting will be sent to the same
-    /// server that we obtained CDS data from.
-    /// DEPRECATED: Use new lrs_load_reporting_server field instead.
-    var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
-      get {return _storage._lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
-      set {_uniqueStorage()._lrsLoadReportingServerName = newValue}
-    }
-    /// Returns true if `lrsLoadReportingServerName` has been explicitly set.
-    var hasLrsLoadReportingServerName: Bool {return _storage._lrsLoadReportingServerName != nil}
-    /// Clears the value of `lrsLoadReportingServerName`. Subsequent reads from it will return its default value.
-    mutating func clearLrsLoadReportingServerName() {_uniqueStorage()._lrsLoadReportingServerName = nil}
-
-    /// LRS server to send load reports to.
-    /// If not present, load reporting will be disabled.
-    /// Supercedes lrs_load_reporting_server_name field.
-    var lrsLoadReportingServer: Grpc_ServiceConfig_XdsServer {
-      get {return _storage._lrsLoadReportingServer ?? Grpc_ServiceConfig_XdsServer()}
-      set {_uniqueStorage()._lrsLoadReportingServer = newValue}
-    }
-    /// Returns true if `lrsLoadReportingServer` has been explicitly set.
-    var hasLrsLoadReportingServer: Bool {return _storage._lrsLoadReportingServer != nil}
-    /// Clears the value of `lrsLoadReportingServer`. Subsequent reads from it will return its default value.
-    mutating func clearLrsLoadReportingServer() {_uniqueStorage()._lrsLoadReportingServer = nil}
-
-    /// Maximum number of outstanding requests can be made to the upstream
-    /// cluster.  Default is 1024.
-    var maxConcurrentRequests: SwiftProtobuf.Google_Protobuf_UInt32Value {
-      get {return _storage._maxConcurrentRequests ?? SwiftProtobuf.Google_Protobuf_UInt32Value()}
-      set {_uniqueStorage()._maxConcurrentRequests = newValue}
-    }
-    /// Returns true if `maxConcurrentRequests` has been explicitly set.
-    var hasMaxConcurrentRequests: Bool {return _storage._maxConcurrentRequests != nil}
-    /// Clears the value of `maxConcurrentRequests`. Subsequent reads from it will return its default value.
-    mutating func clearMaxConcurrentRequests() {_uniqueStorage()._maxConcurrentRequests = nil}
-
-    var type: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum {
-      get {return _storage._type}
-      set {_uniqueStorage()._type = newValue}
-    }
-
-    /// For type EDS only.
-    /// EDS service name, as returned in CDS.
-    /// May be unset if not specified in CDS.
-    var edsServiceName: String {
-      get {return _storage._edsServiceName}
-      set {_uniqueStorage()._edsServiceName = newValue}
-    }
-
-    /// For type LOGICAL_DNS only.
-    /// DNS name to resolve in "host:port" form.
-    var dnsHostname: String {
-      get {return _storage._dnsHostname}
-      set {_uniqueStorage()._dnsHostname = newValue}
-    }
-
-    /// The configuration for outlier_detection child policies
-    /// Within this message, the child_policy field will be ignored
-    var outlierDetection: Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig {
-      get {return _storage._outlierDetection ?? Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig()}
-      set {_uniqueStorage()._outlierDetection = newValue}
-    }
-    /// Returns true if `outlierDetection` has been explicitly set.
-    var hasOutlierDetection: Bool {return _storage._outlierDetection != nil}
-    /// Clears the value of `outlierDetection`. Subsequent reads from it will return its default value.
-    mutating func clearOutlierDetection() {_uniqueStorage()._outlierDetection = nil}
-
-    /// The configuration for xds_override_host child policy
-    var overrideHostStatus: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] {
-      get {return _storage._overrideHostStatus}
-      set {_uniqueStorage()._overrideHostStatus = newValue}
-    }
-
-    /// Telemetry labels associated with this cluster
-    var telemetryLabels: Dictionary<String,String> {
-      get {return _storage._telemetryLabels}
-      set {_uniqueStorage()._telemetryLabels = newValue}
-    }
-
-    var unknownFields = SwiftProtobuf.UnknownStorage()
-
-    enum TypeEnum: SwiftProtobuf.Enum {
-      typealias RawValue = Int
-      case unknown // = 0
-      case eds // = 1
-      case logicalDns // = 2
-      case UNRECOGNIZED(Int)
-
-      init() {
-        self = .unknown
-      }
-
-      init?(rawValue: Int) {
-        switch rawValue {
-        case 0: self = .unknown
-        case 1: self = .eds
-        case 2: self = .logicalDns
-        default: self = .UNRECOGNIZED(rawValue)
-        }
-      }
-
-      var rawValue: Int {
-        switch self {
-        case .unknown: return 0
-        case .eds: return 1
-        case .logicalDns: return 2
-        case .UNRECOGNIZED(let i): return i
-        }
-      }
-
-    }
-
-    init() {}
-
-    fileprivate var _storage = _StorageClass.defaultInstance
-  }
-
-  init() {}
-}
-
-#if swift(>=4.2)
-
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum] = [
-    .unknown,
-    .eds,
-    .logicalDns,
-  ]
-}
-
-#endif  // swift(>=4.2)
 
 /// Configuration for xds_cluster_impl LB policy.
 struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
@@ -1083,6 +873,9 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
 
   /// Cluster name.  Required.
   var cluster: String = String()
+
+  /// Child policy.
+  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
 
   /// EDS service name.
   /// Not set if cluster is not an EDS cluster or if it does not
@@ -1128,9 +921,6 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
 
   var dropCategories: [Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig.DropCategory] = []
 
-  /// Child policy.
-  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
   /// Telemetry labels associated with this cluster
   var telemetryLabels: Dictionary<String,String> = [:]
 
@@ -1158,53 +948,6 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
   fileprivate var _maxConcurrentRequests: SwiftProtobuf.Google_Protobuf_UInt32Value? = nil
 }
 
-/// Configuration for eds LB policy.
-struct Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// Cluster name.  Required.
-  var cluster: String = String()
-
-  /// EDS service name, as returned in CDS.
-  /// May be unset if not specified in CDS.
-  var edsServiceName: String = String()
-
-  /// Server to send load reports to.
-  /// If unset, no load reporting is done.
-  /// If set to empty string, load reporting will be sent to the same
-  /// server as we are getting xds data from.
-  var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
-    get {return _lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
-    set {_lrsLoadReportingServerName = newValue}
-  }
-  /// Returns true if `lrsLoadReportingServerName` has been explicitly set.
-  var hasLrsLoadReportingServerName: Bool {return self._lrsLoadReportingServerName != nil}
-  /// Clears the value of `lrsLoadReportingServerName`. Subsequent reads from it will return its default value.
-  mutating func clearLrsLoadReportingServerName() {self._lrsLoadReportingServerName = nil}
-
-  /// Locality-picking policy.
-  /// This policy's config is expected to be in the format used
-  /// by the weighted_target policy.  Note that the config should include
-  /// an empty value for the "targets" field; that empty value will be
-  /// replaced by one that is dynamically generated based on the EDS data.
-  /// Optional; defaults to "weighted_target".
-  var localityPickingPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
-  /// Endpoint-picking policy.
-  /// This will be configured as the policy for each child in the
-  /// locality-policy's config.
-  /// Optional; defaults to "round_robin".
-  var endpointPickingPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  init() {}
-
-  fileprivate var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
-}
-
 /// Configuration for ring_hash LB policy.
 struct Grpc_ServiceConfig_RingHashLoadBalancingConfig {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -1222,60 +965,6 @@ struct Grpc_ServiceConfig_RingHashLoadBalancingConfig {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
-}
-
-/// Configuration for lrs LB policy.
-struct Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// Cluster name.  Required.
-  var clusterName: String = String()
-
-  /// EDS service name, as returned in CDS.
-  /// May be unset if not specified in CDS.
-  var edsServiceName: String = String()
-
-  /// Server to send load reports to.  Required.
-  /// If set to empty string, load reporting will be sent to the same
-  /// server as we are getting xds data from.
-  var lrsLoadReportingServerName: String = String()
-
-  var locality: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality {
-    get {return _locality ?? Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality()}
-    set {_locality = newValue}
-  }
-  /// Returns true if `locality` has been explicitly set.
-  var hasLocality: Bool {return self._locality != nil}
-  /// Clears the value of `locality`. Subsequent reads from it will return its default value.
-  mutating func clearLocality() {self._locality = nil}
-
-  /// Endpoint-picking policy.
-  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  /// The locality for which this policy will report load.  Required.
-  struct Locality {
-    // SwiftProtobuf.Message conformance is added in an extension below. See the
-    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-    // methods supported on all messages.
-
-    var region: String = String()
-
-    var zone: String = String()
-
-    var subzone: String = String()
-
-    var unknownFields = SwiftProtobuf.UnknownStorage()
-
-    init() {}
-  }
-
-  init() {}
-
-  fileprivate var _locality: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality? = nil
 }
 
 /// Configuration for the xds_wrr_locality load balancing policy.
@@ -1304,18 +993,20 @@ struct Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig {
   init() {}
 }
 
-/// Configuration for the override_host LB policy.
+/// Configuration for the xds_override_host LB policy.
 struct Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  var clusterName: String = String()
+
+  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
   /// valid health status for hosts that are considered when using
   /// xds_override_host_experimental policy.
   /// Default is [UNKNOWN, HEALTHY]
   var overrideHostStatus: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] = []
-
-  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1365,51 +1056,6 @@ extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus:
 }
 
 #endif  // swift(>=4.2)
-
-/// Configuration for xds LB policy.
-struct Grpc_ServiceConfig_XdsConfig {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// Name of balancer to connect to.
-  var balancerName: String = String()
-
-  /// Optional.  What LB policy to use for intra-locality routing.
-  /// If unset, will use whatever algorithm is specified by the balancer.
-  /// Multiple LB policies can be specified; clients will iterate through
-  /// the list in order and stop at the first policy that they support.
-  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
-  /// Optional.  What LB policy to use in fallback mode.  If not
-  /// specified, defaults to round_robin.
-  /// Multiple LB policies can be specified; clients will iterate through
-  /// the list in order and stop at the first policy that they support.
-  var fallbackPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
-
-  /// Optional.  Name to use in EDS query.  If not present, defaults to
-  /// the server name from the target URI.
-  var edsServiceName: String = String()
-
-  /// LRS server to send load reports to.
-  /// If not present, load reporting will be disabled.
-  /// If set to the empty string, load reporting will be sent to the same
-  /// server that we obtained CDS data from.
-  var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
-    get {return _lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
-    set {_lrsLoadReportingServerName = newValue}
-  }
-  /// Returns true if `lrsLoadReportingServerName` has been explicitly set.
-  var hasLrsLoadReportingServerName: Bool {return self._lrsLoadReportingServerName != nil}
-  /// Clears the value of `lrsLoadReportingServerName`. Subsequent reads from it will return its default value.
-  mutating func clearLrsLoadReportingServerName() {self._lrsLoadReportingServerName = nil}
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  init() {}
-
-  fileprivate var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
-}
 
 /// Selects LB policy and provides corresponding configuration.
 ///
@@ -1514,14 +1160,6 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     set {policy = .cdsExperimental(newValue)}
   }
 
-  var xdsClusterResolverExperimental: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
-    get {
-      if case .xdsClusterResolverExperimental(let v)? = policy {return v}
-      return Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig()
-    }
-    set {policy = .xdsClusterResolverExperimental(newValue)}
-  }
-
   var xdsClusterImplExperimental: Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
     get {
       if case .xdsClusterImplExperimental(let v)? = policy {return v}
@@ -1563,6 +1201,14 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
   }
 
   /// Deprecated xDS-related policies.
+  var xdsClusterResolverExperimental: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
+    get {
+      if case .xdsClusterResolverExperimental(let v)? = policy {return v}
+      return Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig()
+    }
+    set {policy = .xdsClusterResolverExperimental(newValue)}
+  }
+
   var lrsExperimental: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
     get {
       if case .lrsExperimental(let v)? = policy {return v}
@@ -1613,13 +1259,13 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     /// xDS-based load balancing.
     case xdsClusterManagerExperimental(Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig)
     case cdsExperimental(Grpc_ServiceConfig_CdsConfig)
-    case xdsClusterResolverExperimental(Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig)
     case xdsClusterImplExperimental(Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig)
     case overrideHostExperimental(Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig)
     case xdsWrrLocalityExperimental(Grpc_ServiceConfig_XdsWrrLocalityLoadBalancingPolicyConfig)
     case ringHashExperimental(Grpc_ServiceConfig_RingHashLoadBalancingConfig)
     case leastRequestExperimental(Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig)
     /// Deprecated xDS-related policies.
+    case xdsClusterResolverExperimental(Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig)
     case lrsExperimental(Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig)
     case edsExperimental(Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig)
     case xds(Grpc_ServiceConfig_XdsConfig)
@@ -1671,10 +1317,6 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
         guard case .cdsExperimental(let l) = lhs, case .cdsExperimental(let r) = rhs else { preconditionFailure() }
         return l == r
       }()
-      case (.xdsClusterResolverExperimental, .xdsClusterResolverExperimental): return {
-        guard case .xdsClusterResolverExperimental(let l) = lhs, case .xdsClusterResolverExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
       case (.xdsClusterImplExperimental, .xdsClusterImplExperimental): return {
         guard case .xdsClusterImplExperimental(let l) = lhs, case .xdsClusterImplExperimental(let r) = rhs else { preconditionFailure() }
         return l == r
@@ -1693,6 +1335,10 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
       }()
       case (.leastRequestExperimental, .leastRequestExperimental): return {
         guard case .leastRequestExperimental(let l) = lhs, case .leastRequestExperimental(let r) = rhs else { preconditionFailure() }
+        return l == r
+      }()
+      case (.xdsClusterResolverExperimental, .xdsClusterResolverExperimental): return {
+        guard case .xdsClusterResolverExperimental(let l) = lhs, case .xdsClusterResolverExperimental(let r) = rhs else { preconditionFailure() }
         return l == r
       }()
       case (.lrsExperimental, .lrsExperimental): return {
@@ -1879,6 +1525,370 @@ extension Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy: CaseIterable {
 
 #endif  // swift(>=4.2)
 
+/// Represents an xDS server.
+/// Deprecated.
+struct Grpc_ServiceConfig_XdsServer {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Required.
+  var serverUri: String = String()
+
+  /// A list of channel creds to use.  The first supported type will be used.
+  var channelCreds: [Grpc_ServiceConfig_XdsServer.ChannelCredentials] = []
+
+  /// A repeated list of server features.
+  var serverFeatures: [SwiftProtobuf.Google_Protobuf_Value] = []
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  struct ChannelCredentials {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Required.
+    var type: String = String()
+
+    /// Optional JSON config.
+    var config: SwiftProtobuf.Google_Protobuf_Struct {
+      get {return _config ?? SwiftProtobuf.Google_Protobuf_Struct()}
+      set {_config = newValue}
+    }
+    /// Returns true if `config` has been explicitly set.
+    var hasConfig: Bool {return self._config != nil}
+    /// Clears the value of `config`. Subsequent reads from it will return its default value.
+    mutating func clearConfig() {self._config = nil}
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    init() {}
+
+    fileprivate var _config: SwiftProtobuf.Google_Protobuf_Struct? = nil
+  }
+
+  init() {}
+}
+
+/// Configuration for xds_cluster_resolver LB policy.
+/// Deprecated.
+struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Ordered list of discovery mechanisms.
+  /// Must have at least one element.
+  /// Results from each discovery mechanism are concatenated together in
+  /// successive priorities.
+  var discoveryMechanisms: [Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism] = []
+
+  /// xDS LB policy. Will be used as the child config of the xds_cluster_impl LB policy.
+  var xdsLbPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// Describes a discovery mechanism instance.
+  /// For EDS or LOGICAL_DNS clusters, there will be exactly one
+  /// DiscoveryMechanism, which will describe the cluster of the parent
+  /// CDS policy.
+  /// For aggregate clusters, there will be one DiscoveryMechanism for each
+  /// underlying cluster.
+  struct DiscoveryMechanism {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Cluster name.
+    var cluster: String {
+      get {return _storage._cluster}
+      set {_uniqueStorage()._cluster = newValue}
+    }
+
+    /// LRS server to send load reports to.
+    /// If not present, load reporting will be disabled.
+    /// If set to the empty string, load reporting will be sent to the same
+    /// server that we obtained CDS data from.
+    /// DEPRECATED: Use new lrs_load_reporting_server field instead.
+    var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
+      get {return _storage._lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
+      set {_uniqueStorage()._lrsLoadReportingServerName = newValue}
+    }
+    /// Returns true if `lrsLoadReportingServerName` has been explicitly set.
+    var hasLrsLoadReportingServerName: Bool {return _storage._lrsLoadReportingServerName != nil}
+    /// Clears the value of `lrsLoadReportingServerName`. Subsequent reads from it will return its default value.
+    mutating func clearLrsLoadReportingServerName() {_uniqueStorage()._lrsLoadReportingServerName = nil}
+
+    /// LRS server to send load reports to.
+    /// If not present, load reporting will be disabled.
+    /// Supercedes lrs_load_reporting_server_name field.
+    var lrsLoadReportingServer: Grpc_ServiceConfig_XdsServer {
+      get {return _storage._lrsLoadReportingServer ?? Grpc_ServiceConfig_XdsServer()}
+      set {_uniqueStorage()._lrsLoadReportingServer = newValue}
+    }
+    /// Returns true if `lrsLoadReportingServer` has been explicitly set.
+    var hasLrsLoadReportingServer: Bool {return _storage._lrsLoadReportingServer != nil}
+    /// Clears the value of `lrsLoadReportingServer`. Subsequent reads from it will return its default value.
+    mutating func clearLrsLoadReportingServer() {_uniqueStorage()._lrsLoadReportingServer = nil}
+
+    /// Maximum number of outstanding requests can be made to the upstream
+    /// cluster.  Default is 1024.
+    var maxConcurrentRequests: SwiftProtobuf.Google_Protobuf_UInt32Value {
+      get {return _storage._maxConcurrentRequests ?? SwiftProtobuf.Google_Protobuf_UInt32Value()}
+      set {_uniqueStorage()._maxConcurrentRequests = newValue}
+    }
+    /// Returns true if `maxConcurrentRequests` has been explicitly set.
+    var hasMaxConcurrentRequests: Bool {return _storage._maxConcurrentRequests != nil}
+    /// Clears the value of `maxConcurrentRequests`. Subsequent reads from it will return its default value.
+    mutating func clearMaxConcurrentRequests() {_uniqueStorage()._maxConcurrentRequests = nil}
+
+    var type: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum {
+      get {return _storage._type}
+      set {_uniqueStorage()._type = newValue}
+    }
+
+    /// For type EDS only.
+    /// EDS service name, as returned in CDS.
+    /// May be unset if not specified in CDS.
+    var edsServiceName: String {
+      get {return _storage._edsServiceName}
+      set {_uniqueStorage()._edsServiceName = newValue}
+    }
+
+    /// For type LOGICAL_DNS only.
+    /// DNS name to resolve in "host:port" form.
+    var dnsHostname: String {
+      get {return _storage._dnsHostname}
+      set {_uniqueStorage()._dnsHostname = newValue}
+    }
+
+    /// The configuration for outlier_detection child policies
+    /// Within this message, the child_policy field will be ignored
+    var outlierDetection: Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig {
+      get {return _storage._outlierDetection ?? Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig()}
+      set {_uniqueStorage()._outlierDetection = newValue}
+    }
+    /// Returns true if `outlierDetection` has been explicitly set.
+    var hasOutlierDetection: Bool {return _storage._outlierDetection != nil}
+    /// Clears the value of `outlierDetection`. Subsequent reads from it will return its default value.
+    mutating func clearOutlierDetection() {_uniqueStorage()._outlierDetection = nil}
+
+    /// The configuration for xds_override_host child policy
+    var overrideHostStatus: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] {
+      get {return _storage._overrideHostStatus}
+      set {_uniqueStorage()._overrideHostStatus = newValue}
+    }
+
+    /// Telemetry labels associated with this cluster
+    var telemetryLabels: Dictionary<String,String> {
+      get {return _storage._telemetryLabels}
+      set {_uniqueStorage()._telemetryLabels = newValue}
+    }
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    enum TypeEnum: SwiftProtobuf.Enum {
+      typealias RawValue = Int
+      case unknown // = 0
+      case eds // = 1
+      case logicalDns // = 2
+      case UNRECOGNIZED(Int)
+
+      init() {
+        self = .unknown
+      }
+
+      init?(rawValue: Int) {
+        switch rawValue {
+        case 0: self = .unknown
+        case 1: self = .eds
+        case 2: self = .logicalDns
+        default: self = .UNRECOGNIZED(rawValue)
+        }
+      }
+
+      var rawValue: Int {
+        switch self {
+        case .unknown: return 0
+        case .eds: return 1
+        case .logicalDns: return 2
+        case .UNRECOGNIZED(let i): return i
+        }
+      }
+
+    }
+
+    init() {}
+
+    fileprivate var _storage = _StorageClass.defaultInstance
+  }
+
+  init() {}
+}
+
+#if swift(>=4.2)
+
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: CaseIterable {
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  static let allCases: [Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum] = [
+    .unknown,
+    .eds,
+    .logicalDns,
+  ]
+}
+
+#endif  // swift(>=4.2)
+
+/// Configuration for lrs LB policy.
+/// Deprecated.
+struct Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Cluster name.  Required.
+  var clusterName: String = String()
+
+  /// EDS service name, as returned in CDS.
+  /// May be unset if not specified in CDS.
+  var edsServiceName: String = String()
+
+  /// Server to send load reports to.  Required.
+  /// If set to empty string, load reporting will be sent to the same
+  /// server as we are getting xds data from.
+  var lrsLoadReportingServerName: String = String()
+
+  var locality: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality {
+    get {return _locality ?? Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality()}
+    set {_locality = newValue}
+  }
+  /// Returns true if `locality` has been explicitly set.
+  var hasLocality: Bool {return self._locality != nil}
+  /// Clears the value of `locality`. Subsequent reads from it will return its default value.
+  mutating func clearLocality() {self._locality = nil}
+
+  /// Endpoint-picking policy.
+  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// The locality for which this policy will report load.  Required.
+  struct Locality {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    var region: String = String()
+
+    var zone: String = String()
+
+    var subzone: String = String()
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    init() {}
+  }
+
+  init() {}
+
+  fileprivate var _locality: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality? = nil
+}
+
+/// Configuration for eds LB policy.
+/// Deprecated.
+struct Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Cluster name.  Required.
+  var cluster: String = String()
+
+  /// EDS service name, as returned in CDS.
+  /// May be unset if not specified in CDS.
+  var edsServiceName: String = String()
+
+  /// Server to send load reports to.
+  /// If unset, no load reporting is done.
+  /// If set to empty string, load reporting will be sent to the same
+  /// server as we are getting xds data from.
+  var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
+    get {return _lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
+    set {_lrsLoadReportingServerName = newValue}
+  }
+  /// Returns true if `lrsLoadReportingServerName` has been explicitly set.
+  var hasLrsLoadReportingServerName: Bool {return self._lrsLoadReportingServerName != nil}
+  /// Clears the value of `lrsLoadReportingServerName`. Subsequent reads from it will return its default value.
+  mutating func clearLrsLoadReportingServerName() {self._lrsLoadReportingServerName = nil}
+
+  /// Locality-picking policy.
+  /// This policy's config is expected to be in the format used
+  /// by the weighted_target policy.  Note that the config should include
+  /// an empty value for the "targets" field; that empty value will be
+  /// replaced by one that is dynamically generated based on the EDS data.
+  /// Optional; defaults to "weighted_target".
+  var localityPickingPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
+  /// Endpoint-picking policy.
+  /// This will be configured as the policy for each child in the
+  /// locality-policy's config.
+  /// Optional; defaults to "round_robin".
+  var endpointPickingPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+
+  fileprivate var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
+}
+
+/// Configuration for xds LB policy.
+/// Deprecated.
+struct Grpc_ServiceConfig_XdsConfig {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Name of balancer to connect to.
+  var balancerName: String = String()
+
+  /// Optional.  What LB policy to use for intra-locality routing.
+  /// If unset, will use whatever algorithm is specified by the balancer.
+  /// Multiple LB policies can be specified; clients will iterate through
+  /// the list in order and stop at the first policy that they support.
+  var childPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
+  /// Optional.  What LB policy to use in fallback mode.  If not
+  /// specified, defaults to round_robin.
+  /// Multiple LB policies can be specified; clients will iterate through
+  /// the list in order and stop at the first policy that they support.
+  var fallbackPolicy: [Grpc_ServiceConfig_LoadBalancingConfig] = []
+
+  /// Optional.  Name to use in EDS query.  If not present, defaults to
+  /// the server name from the target URI.
+  var edsServiceName: String = String()
+
+  /// LRS server to send load reports to.
+  /// If not present, load reporting will be disabled.
+  /// If set to the empty string, load reporting will be sent to the same
+  /// server that we obtained CDS data from.
+  var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
+    get {return _lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
+    set {_lrsLoadReportingServerName = newValue}
+  }
+  /// Returns true if `lrsLoadReportingServerName` has been explicitly set.
+  var hasLrsLoadReportingServerName: Bool {return self._lrsLoadReportingServerName != nil}
+  /// Clears the value of `lrsLoadReportingServerName`. Subsequent reads from it will return its default value.
+  mutating func clearLrsLoadReportingServerName() {self._lrsLoadReportingServerName = nil}
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+
+  fileprivate var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
+}
+
 #if swift(>=5.5) && canImport(_Concurrency)
 extension Grpc_ServiceConfig_MethodConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_MethodConfig.OneOf_RetryOrHedgingPolicy: @unchecked Sendable {}
@@ -1900,28 +1910,28 @@ extension Grpc_ServiceConfig_RlsLoadBalancingPolicyConfig: @unchecked Sendable {
 extension Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig.Child: @unchecked Sendable {}
 extension Grpc_ServiceConfig_CdsConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsServer: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsServer.ChannelCredentials: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: @unchecked Sendable {}
 extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig.DropCategory: @unchecked Sendable {}
-extension Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_RingHashLoadBalancingConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality: @unchecked Sendable {}
 extension Grpc_ServiceConfig_XdsWrrLocalityLoadBalancingPolicyConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_LoadBalancingConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_LoadBalancingConfig.OneOf_Policy: @unchecked Sendable {}
 extension Grpc_ServiceConfig_ServiceConfig: @unchecked Sendable {}
 extension Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy: @unchecked Sendable {}
 extension Grpc_ServiceConfig_ServiceConfig.RetryThrottlingPolicy: @unchecked Sendable {}
 extension Grpc_ServiceConfig_ServiceConfig.HealthCheckConfig: @unchecked Sendable {}
+extension Grpc_ServiceConfig_XdsServer: @unchecked Sendable {}
+extension Grpc_ServiceConfig_XdsServer.ChannelCredentials: @unchecked Sendable {}
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig: @unchecked Sendable {}
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism: @unchecked Sendable {}
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: @unchecked Sendable {}
+extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig: @unchecked Sendable {}
+extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality: @unchecked Sendable {}
+extension Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig: @unchecked Sendable {}
+extension Grpc_ServiceConfig_XdsConfig: @unchecked Sendable {}
 #endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -2833,6 +2843,7 @@ extension Grpc_ServiceConfig_CdsConfig: SwiftProtobuf.Message, SwiftProtobuf._Me
   static let protoMessageName: String = _protobuf_package + ".CdsConfig"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "cluster"),
+    2: .standard(proto: "is_dynamic"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -2842,6 +2853,7 @@ extension Grpc_ServiceConfig_CdsConfig: SwiftProtobuf.Message, SwiftProtobuf._Me
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.cluster) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.isDynamic) }()
       default: break
       }
     }
@@ -2851,306 +2863,30 @@ extension Grpc_ServiceConfig_CdsConfig: SwiftProtobuf.Message, SwiftProtobuf._Me
     if !self.cluster.isEmpty {
       try visitor.visitSingularStringField(value: self.cluster, fieldNumber: 1)
     }
+    if self.isDynamic != false {
+      try visitor.visitSingularBoolField(value: self.isDynamic, fieldNumber: 2)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Grpc_ServiceConfig_CdsConfig, rhs: Grpc_ServiceConfig_CdsConfig) -> Bool {
     if lhs.cluster != rhs.cluster {return false}
+    if lhs.isDynamic != rhs.isDynamic {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
-}
-
-extension Grpc_ServiceConfig_XdsServer: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".XdsServer"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "server_uri"),
-    2: .same(proto: "channel_creds"),
-    3: .same(proto: "server_features"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.serverUri) }()
-      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.channelCreds) }()
-      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.serverFeatures) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.serverUri.isEmpty {
-      try visitor.visitSingularStringField(value: self.serverUri, fieldNumber: 1)
-    }
-    if !self.channelCreds.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.channelCreds, fieldNumber: 2)
-    }
-    if !self.serverFeatures.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.serverFeatures, fieldNumber: 3)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_XdsServer, rhs: Grpc_ServiceConfig_XdsServer) -> Bool {
-    if lhs.serverUri != rhs.serverUri {return false}
-    if lhs.channelCreds != rhs.channelCreds {return false}
-    if lhs.serverFeatures != rhs.serverFeatures {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Grpc_ServiceConfig_XdsServer.ChannelCredentials: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = Grpc_ServiceConfig_XdsServer.protoMessageName + ".ChannelCredentials"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "type"),
-    2: .same(proto: "config"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.type) }()
-      case 2: try { try decoder.decodeSingularMessageField(value: &self._config) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.type.isEmpty {
-      try visitor.visitSingularStringField(value: self.type, fieldNumber: 1)
-    }
-    try { if let v = self._config {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-    } }()
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_XdsServer.ChannelCredentials, rhs: Grpc_ServiceConfig_XdsServer.ChannelCredentials) -> Bool {
-    if lhs.type != rhs.type {return false}
-    if lhs._config != rhs._config {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".XdsClusterResolverLoadBalancingPolicyConfig"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "discovery_mechanisms"),
-    2: .standard(proto: "xds_lb_policy"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.discoveryMechanisms) }()
-      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.xdsLbPolicy) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.discoveryMechanisms.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.discoveryMechanisms, fieldNumber: 1)
-    }
-    if !self.xdsLbPolicy.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.xdsLbPolicy, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig) -> Bool {
-    if lhs.discoveryMechanisms != rhs.discoveryMechanisms {return false}
-    if lhs.xdsLbPolicy != rhs.xdsLbPolicy {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.protoMessageName + ".DiscoveryMechanism"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "cluster"),
-    2: .standard(proto: "lrs_load_reporting_server_name"),
-    7: .standard(proto: "lrs_load_reporting_server"),
-    3: .standard(proto: "max_concurrent_requests"),
-    4: .same(proto: "type"),
-    5: .standard(proto: "eds_service_name"),
-    6: .standard(proto: "dns_hostname"),
-    8: .standard(proto: "outlier_detection"),
-    9: .standard(proto: "override_host_status"),
-    10: .standard(proto: "telemetry_labels"),
-  ]
-
-  fileprivate class _StorageClass {
-    var _cluster: String = String()
-    var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
-    var _lrsLoadReportingServer: Grpc_ServiceConfig_XdsServer? = nil
-    var _maxConcurrentRequests: SwiftProtobuf.Google_Protobuf_UInt32Value? = nil
-    var _type: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum = .unknown
-    var _edsServiceName: String = String()
-    var _dnsHostname: String = String()
-    var _outlierDetection: Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig? = nil
-    var _overrideHostStatus: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] = []
-    var _telemetryLabels: Dictionary<String,String> = [:]
-
-    #if swift(>=5.10)
-      // This property is used as the initial default value for new instances of the type.
-      // The type itself is protecting the reference to its storage via CoW semantics.
-      // This will force a copy to be made of this reference when the first mutation occurs;
-      // hence, it is safe to mark this as `nonisolated(unsafe)`.
-      static nonisolated(unsafe) let defaultInstance = _StorageClass()
-    #else
-      static let defaultInstance = _StorageClass()
-    #endif
-
-    private init() {}
-
-    init(copying source: _StorageClass) {
-      _cluster = source._cluster
-      _lrsLoadReportingServerName = source._lrsLoadReportingServerName
-      _lrsLoadReportingServer = source._lrsLoadReportingServer
-      _maxConcurrentRequests = source._maxConcurrentRequests
-      _type = source._type
-      _edsServiceName = source._edsServiceName
-      _dnsHostname = source._dnsHostname
-      _outlierDetection = source._outlierDetection
-      _overrideHostStatus = source._overrideHostStatus
-      _telemetryLabels = source._telemetryLabels
-    }
-  }
-
-  fileprivate mutating func _uniqueStorage() -> _StorageClass {
-    if !isKnownUniquelyReferenced(&_storage) {
-      _storage = _StorageClass(copying: _storage)
-    }
-    return _storage
-  }
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    _ = _uniqueStorage()
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      while let fieldNumber = try decoder.nextFieldNumber() {
-        // The use of inline closures is to circumvent an issue where the compiler
-        // allocates stack space for every case branch when no optimizations are
-        // enabled. https://github.com/apple/swift-protobuf/issues/1034
-        switch fieldNumber {
-        case 1: try { try decoder.decodeSingularStringField(value: &_storage._cluster) }()
-        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._lrsLoadReportingServerName) }()
-        case 3: try { try decoder.decodeSingularMessageField(value: &_storage._maxConcurrentRequests) }()
-        case 4: try { try decoder.decodeSingularEnumField(value: &_storage._type) }()
-        case 5: try { try decoder.decodeSingularStringField(value: &_storage._edsServiceName) }()
-        case 6: try { try decoder.decodeSingularStringField(value: &_storage._dnsHostname) }()
-        case 7: try { try decoder.decodeSingularMessageField(value: &_storage._lrsLoadReportingServer) }()
-        case 8: try { try decoder.decodeSingularMessageField(value: &_storage._outlierDetection) }()
-        case 9: try { try decoder.decodeRepeatedEnumField(value: &_storage._overrideHostStatus) }()
-        case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &_storage._telemetryLabels) }()
-        default: break
-        }
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every if/case branch local when no optimizations
-      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-      // https://github.com/apple/swift-protobuf/issues/1182
-      if !_storage._cluster.isEmpty {
-        try visitor.visitSingularStringField(value: _storage._cluster, fieldNumber: 1)
-      }
-      try { if let v = _storage._lrsLoadReportingServerName {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-      } }()
-      try { if let v = _storage._maxConcurrentRequests {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-      } }()
-      if _storage._type != .unknown {
-        try visitor.visitSingularEnumField(value: _storage._type, fieldNumber: 4)
-      }
-      if !_storage._edsServiceName.isEmpty {
-        try visitor.visitSingularStringField(value: _storage._edsServiceName, fieldNumber: 5)
-      }
-      if !_storage._dnsHostname.isEmpty {
-        try visitor.visitSingularStringField(value: _storage._dnsHostname, fieldNumber: 6)
-      }
-      try { if let v = _storage._lrsLoadReportingServer {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-      } }()
-      try { if let v = _storage._outlierDetection {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
-      } }()
-      if !_storage._overrideHostStatus.isEmpty {
-        try visitor.visitPackedEnumField(value: _storage._overrideHostStatus, fieldNumber: 9)
-      }
-      if !_storage._telemetryLabels.isEmpty {
-        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: _storage._telemetryLabels, fieldNumber: 10)
-      }
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism, rhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism) -> Bool {
-    if lhs._storage !== rhs._storage {
-      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
-        let _storage = _args.0
-        let rhs_storage = _args.1
-        if _storage._cluster != rhs_storage._cluster {return false}
-        if _storage._lrsLoadReportingServerName != rhs_storage._lrsLoadReportingServerName {return false}
-        if _storage._lrsLoadReportingServer != rhs_storage._lrsLoadReportingServer {return false}
-        if _storage._maxConcurrentRequests != rhs_storage._maxConcurrentRequests {return false}
-        if _storage._type != rhs_storage._type {return false}
-        if _storage._edsServiceName != rhs_storage._edsServiceName {return false}
-        if _storage._dnsHostname != rhs_storage._dnsHostname {return false}
-        if _storage._outlierDetection != rhs_storage._outlierDetection {return false}
-        if _storage._overrideHostStatus != rhs_storage._overrideHostStatus {return false}
-        if _storage._telemetryLabels != rhs_storage._telemetryLabels {return false}
-        return true
-      }
-      if !storagesAreEqual {return false}
-    }
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    0: .same(proto: "UNKNOWN"),
-    1: .same(proto: "EDS"),
-    2: .same(proto: "LOGICAL_DNS"),
-  ]
 }
 
 extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".XdsClusterImplLoadBalancingPolicyConfig"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "cluster"),
+    6: .standard(proto: "child_policy"),
     2: .standard(proto: "eds_service_name"),
     3: .standard(proto: "lrs_load_reporting_server_name"),
     7: .standard(proto: "lrs_load_reporting_server"),
     4: .standard(proto: "max_concurrent_requests"),
     5: .standard(proto: "drop_categories"),
-    6: .standard(proto: "child_policy"),
     8: .standard(proto: "telemetry_labels"),
   ]
 
@@ -3207,12 +2943,12 @@ extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig: SwiftProto
 
   static func ==(lhs: Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig) -> Bool {
     if lhs.cluster != rhs.cluster {return false}
+    if lhs.childPolicy != rhs.childPolicy {return false}
     if lhs.edsServiceName != rhs.edsServiceName {return false}
     if lhs._lrsLoadReportingServerName != rhs._lrsLoadReportingServerName {return false}
     if lhs._lrsLoadReportingServer != rhs._lrsLoadReportingServer {return false}
     if lhs._maxConcurrentRequests != rhs._maxConcurrentRequests {return false}
     if lhs.dropCategories != rhs.dropCategories {return false}
-    if lhs.childPolicy != rhs.childPolicy {return false}
     if lhs.telemetryLabels != rhs.telemetryLabels {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -3257,66 +2993,6 @@ extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig.DropCategor
   }
 }
 
-extension Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".EdsLoadBalancingPolicyConfig"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "cluster"),
-    2: .standard(proto: "eds_service_name"),
-    3: .standard(proto: "lrs_load_reporting_server_name"),
-    4: .standard(proto: "locality_picking_policy"),
-    5: .standard(proto: "endpoint_picking_policy"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.cluster) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.edsServiceName) }()
-      case 3: try { try decoder.decodeSingularMessageField(value: &self._lrsLoadReportingServerName) }()
-      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.localityPickingPolicy) }()
-      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.endpointPickingPolicy) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.cluster.isEmpty {
-      try visitor.visitSingularStringField(value: self.cluster, fieldNumber: 1)
-    }
-    if !self.edsServiceName.isEmpty {
-      try visitor.visitSingularStringField(value: self.edsServiceName, fieldNumber: 2)
-    }
-    try { if let v = self._lrsLoadReportingServerName {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    } }()
-    if !self.localityPickingPolicy.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.localityPickingPolicy, fieldNumber: 4)
-    }
-    if !self.endpointPickingPolicy.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.endpointPickingPolicy, fieldNumber: 5)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig) -> Bool {
-    if lhs.cluster != rhs.cluster {return false}
-    if lhs.edsServiceName != rhs.edsServiceName {return false}
-    if lhs._lrsLoadReportingServerName != rhs._lrsLoadReportingServerName {return false}
-    if lhs.localityPickingPolicy != rhs.localityPickingPolicy {return false}
-    if lhs.endpointPickingPolicy != rhs.endpointPickingPolicy {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
 extension Grpc_ServiceConfig_RingHashLoadBalancingConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RingHashLoadBalancingConfig"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
@@ -3350,110 +3026,6 @@ extension Grpc_ServiceConfig_RingHashLoadBalancingConfig: SwiftProtobuf.Message,
   static func ==(lhs: Grpc_ServiceConfig_RingHashLoadBalancingConfig, rhs: Grpc_ServiceConfig_RingHashLoadBalancingConfig) -> Bool {
     if lhs.minRingSize != rhs.minRingSize {return false}
     if lhs.maxRingSize != rhs.maxRingSize {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".LrsLoadBalancingPolicyConfig"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "cluster_name"),
-    2: .standard(proto: "eds_service_name"),
-    3: .standard(proto: "lrs_load_reporting_server_name"),
-    4: .same(proto: "locality"),
-    5: .standard(proto: "child_policy"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.clusterName) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.edsServiceName) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self.lrsLoadReportingServerName) }()
-      case 4: try { try decoder.decodeSingularMessageField(value: &self._locality) }()
-      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.childPolicy) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.clusterName.isEmpty {
-      try visitor.visitSingularStringField(value: self.clusterName, fieldNumber: 1)
-    }
-    if !self.edsServiceName.isEmpty {
-      try visitor.visitSingularStringField(value: self.edsServiceName, fieldNumber: 2)
-    }
-    if !self.lrsLoadReportingServerName.isEmpty {
-      try visitor.visitSingularStringField(value: self.lrsLoadReportingServerName, fieldNumber: 3)
-    }
-    try { if let v = self._locality {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
-    } }()
-    if !self.childPolicy.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.childPolicy, fieldNumber: 5)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig) -> Bool {
-    if lhs.clusterName != rhs.clusterName {return false}
-    if lhs.edsServiceName != rhs.edsServiceName {return false}
-    if lhs.lrsLoadReportingServerName != rhs.lrsLoadReportingServerName {return false}
-    if lhs._locality != rhs._locality {return false}
-    if lhs.childPolicy != rhs.childPolicy {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.protoMessageName + ".Locality"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "region"),
-    2: .same(proto: "zone"),
-    3: .same(proto: "subzone"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.region) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.zone) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self.subzone) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.region.isEmpty {
-      try visitor.visitSingularStringField(value: self.region, fieldNumber: 1)
-    }
-    if !self.zone.isEmpty {
-      try visitor.visitSingularStringField(value: self.zone, fieldNumber: 2)
-    }
-    if !self.subzone.isEmpty {
-      try visitor.visitSingularStringField(value: self.subzone, fieldNumber: 3)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality, rhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality) -> Bool {
-    if lhs.region != rhs.region {return false}
-    if lhs.zone != rhs.zone {return false}
-    if lhs.subzone != rhs.subzone {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -3526,8 +3098,9 @@ extension Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig: Swif
 extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".OverrideHostLoadBalancingPolicyConfig"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "override_host_status"),
+    3: .standard(proto: "cluster_name"),
     2: .standard(proto: "child_policy"),
+    1: .standard(proto: "override_host_status"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -3538,6 +3111,7 @@ extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig: SwiftProtobu
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedEnumField(value: &self.overrideHostStatus) }()
       case 2: try { try decoder.decodeRepeatedMessageField(value: &self.childPolicy) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.clusterName) }()
       default: break
       }
     }
@@ -3550,12 +3124,16 @@ extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig: SwiftProtobu
     if !self.childPolicy.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.childPolicy, fieldNumber: 2)
     }
+    if !self.clusterName.isEmpty {
+      try visitor.visitSingularStringField(value: self.clusterName, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig) -> Bool {
-    if lhs.overrideHostStatus != rhs.overrideHostStatus {return false}
+    if lhs.clusterName != rhs.clusterName {return false}
     if lhs.childPolicy != rhs.childPolicy {return false}
+    if lhs.overrideHostStatus != rhs.overrideHostStatus {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -3567,66 +3145,6 @@ extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus:
     1: .same(proto: "HEALTHY"),
     3: .same(proto: "DRAINING"),
   ]
-}
-
-extension Grpc_ServiceConfig_XdsConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".XdsConfig"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "balancer_name"),
-    2: .standard(proto: "child_policy"),
-    3: .standard(proto: "fallback_policy"),
-    4: .standard(proto: "eds_service_name"),
-    5: .standard(proto: "lrs_load_reporting_server_name"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.balancerName) }()
-      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.childPolicy) }()
-      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.fallbackPolicy) }()
-      case 4: try { try decoder.decodeSingularStringField(value: &self.edsServiceName) }()
-      case 5: try { try decoder.decodeSingularMessageField(value: &self._lrsLoadReportingServerName) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.balancerName.isEmpty {
-      try visitor.visitSingularStringField(value: self.balancerName, fieldNumber: 1)
-    }
-    if !self.childPolicy.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.childPolicy, fieldNumber: 2)
-    }
-    if !self.fallbackPolicy.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.fallbackPolicy, fieldNumber: 3)
-    }
-    if !self.edsServiceName.isEmpty {
-      try visitor.visitSingularStringField(value: self.edsServiceName, fieldNumber: 4)
-    }
-    try { if let v = self._lrsLoadReportingServerName {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
-    } }()
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Grpc_ServiceConfig_XdsConfig, rhs: Grpc_ServiceConfig_XdsConfig) -> Bool {
-    if lhs.balancerName != rhs.balancerName {return false}
-    if lhs.childPolicy != rhs.childPolicy {return false}
-    if lhs.fallbackPolicy != rhs.fallbackPolicy {return false}
-    if lhs.edsServiceName != rhs.edsServiceName {return false}
-    if lhs._lrsLoadReportingServerName != rhs._lrsLoadReportingServerName {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
 }
 
 extension Grpc_ServiceConfig_LoadBalancingConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -3642,12 +3160,12 @@ extension Grpc_ServiceConfig_LoadBalancingConfig: SwiftProtobuf.Message, SwiftPr
     19: .unique(proto: "rls", json: "rls_experimental"),
     14: .same(proto: "xds_cluster_manager_experimental"),
     6: .same(proto: "cds_experimental"),
-    11: .same(proto: "xds_cluster_resolver_experimental"),
     12: .same(proto: "xds_cluster_impl_experimental"),
     18: .same(proto: "override_host_experimental"),
     16: .same(proto: "xds_wrr_locality_experimental"),
     13: .same(proto: "ring_hash_experimental"),
     17: .same(proto: "least_request_experimental"),
+    11: .same(proto: "xds_cluster_resolver_experimental"),
     8: .same(proto: "lrs_experimental"),
     7: .same(proto: "eds_experimental"),
     2: .same(proto: "xds"),
@@ -4159,6 +3677,510 @@ extension Grpc_ServiceConfig_ServiceConfig.HealthCheckConfig: SwiftProtobuf.Mess
 
   static func ==(lhs: Grpc_ServiceConfig_ServiceConfig.HealthCheckConfig, rhs: Grpc_ServiceConfig_ServiceConfig.HealthCheckConfig) -> Bool {
     if lhs._serviceName != rhs._serviceName {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_XdsServer: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".XdsServer"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "server_uri"),
+    2: .same(proto: "channel_creds"),
+    3: .same(proto: "server_features"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.serverUri) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.channelCreds) }()
+      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.serverFeatures) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.serverUri.isEmpty {
+      try visitor.visitSingularStringField(value: self.serverUri, fieldNumber: 1)
+    }
+    if !self.channelCreds.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.channelCreds, fieldNumber: 2)
+    }
+    if !self.serverFeatures.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.serverFeatures, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_XdsServer, rhs: Grpc_ServiceConfig_XdsServer) -> Bool {
+    if lhs.serverUri != rhs.serverUri {return false}
+    if lhs.channelCreds != rhs.channelCreds {return false}
+    if lhs.serverFeatures != rhs.serverFeatures {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_XdsServer.ChannelCredentials: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = Grpc_ServiceConfig_XdsServer.protoMessageName + ".ChannelCredentials"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "type"),
+    2: .same(proto: "config"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.type) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._config) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.type.isEmpty {
+      try visitor.visitSingularStringField(value: self.type, fieldNumber: 1)
+    }
+    try { if let v = self._config {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_XdsServer.ChannelCredentials, rhs: Grpc_ServiceConfig_XdsServer.ChannelCredentials) -> Bool {
+    if lhs.type != rhs.type {return false}
+    if lhs._config != rhs._config {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".XdsClusterResolverLoadBalancingPolicyConfig"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .standard(proto: "discovery_mechanisms"),
+    2: .standard(proto: "xds_lb_policy"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.discoveryMechanisms) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.xdsLbPolicy) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.discoveryMechanisms.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.discoveryMechanisms, fieldNumber: 1)
+    }
+    if !self.xdsLbPolicy.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.xdsLbPolicy, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig) -> Bool {
+    if lhs.discoveryMechanisms != rhs.discoveryMechanisms {return false}
+    if lhs.xdsLbPolicy != rhs.xdsLbPolicy {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.protoMessageName + ".DiscoveryMechanism"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "cluster"),
+    2: .standard(proto: "lrs_load_reporting_server_name"),
+    7: .standard(proto: "lrs_load_reporting_server"),
+    3: .standard(proto: "max_concurrent_requests"),
+    4: .same(proto: "type"),
+    5: .standard(proto: "eds_service_name"),
+    6: .standard(proto: "dns_hostname"),
+    8: .standard(proto: "outlier_detection"),
+    9: .standard(proto: "override_host_status"),
+    10: .standard(proto: "telemetry_labels"),
+  ]
+
+  fileprivate class _StorageClass {
+    var _cluster: String = String()
+    var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
+    var _lrsLoadReportingServer: Grpc_ServiceConfig_XdsServer? = nil
+    var _maxConcurrentRequests: SwiftProtobuf.Google_Protobuf_UInt32Value? = nil
+    var _type: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum = .unknown
+    var _edsServiceName: String = String()
+    var _dnsHostname: String = String()
+    var _outlierDetection: Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig? = nil
+    var _overrideHostStatus: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] = []
+    var _telemetryLabels: Dictionary<String,String> = [:]
+
+    #if swift(>=5.10)
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+    #else
+      static let defaultInstance = _StorageClass()
+    #endif
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _cluster = source._cluster
+      _lrsLoadReportingServerName = source._lrsLoadReportingServerName
+      _lrsLoadReportingServer = source._lrsLoadReportingServer
+      _maxConcurrentRequests = source._maxConcurrentRequests
+      _type = source._type
+      _edsServiceName = source._edsServiceName
+      _dnsHostname = source._dnsHostname
+      _outlierDetection = source._outlierDetection
+      _overrideHostStatus = source._overrideHostStatus
+      _telemetryLabels = source._telemetryLabels
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularStringField(value: &_storage._cluster) }()
+        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._lrsLoadReportingServerName) }()
+        case 3: try { try decoder.decodeSingularMessageField(value: &_storage._maxConcurrentRequests) }()
+        case 4: try { try decoder.decodeSingularEnumField(value: &_storage._type) }()
+        case 5: try { try decoder.decodeSingularStringField(value: &_storage._edsServiceName) }()
+        case 6: try { try decoder.decodeSingularStringField(value: &_storage._dnsHostname) }()
+        case 7: try { try decoder.decodeSingularMessageField(value: &_storage._lrsLoadReportingServer) }()
+        case 8: try { try decoder.decodeSingularMessageField(value: &_storage._outlierDetection) }()
+        case 9: try { try decoder.decodeRepeatedEnumField(value: &_storage._overrideHostStatus) }()
+        case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &_storage._telemetryLabels) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if !_storage._cluster.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._cluster, fieldNumber: 1)
+      }
+      try { if let v = _storage._lrsLoadReportingServerName {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      } }()
+      try { if let v = _storage._maxConcurrentRequests {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+      } }()
+      if _storage._type != .unknown {
+        try visitor.visitSingularEnumField(value: _storage._type, fieldNumber: 4)
+      }
+      if !_storage._edsServiceName.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._edsServiceName, fieldNumber: 5)
+      }
+      if !_storage._dnsHostname.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._dnsHostname, fieldNumber: 6)
+      }
+      try { if let v = _storage._lrsLoadReportingServer {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+      } }()
+      try { if let v = _storage._outlierDetection {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+      } }()
+      if !_storage._overrideHostStatus.isEmpty {
+        try visitor.visitPackedEnumField(value: _storage._overrideHostStatus, fieldNumber: 9)
+      }
+      if !_storage._telemetryLabels.isEmpty {
+        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: _storage._telemetryLabels, fieldNumber: 10)
+      }
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism, rhs: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._cluster != rhs_storage._cluster {return false}
+        if _storage._lrsLoadReportingServerName != rhs_storage._lrsLoadReportingServerName {return false}
+        if _storage._lrsLoadReportingServer != rhs_storage._lrsLoadReportingServer {return false}
+        if _storage._maxConcurrentRequests != rhs_storage._maxConcurrentRequests {return false}
+        if _storage._type != rhs_storage._type {return false}
+        if _storage._edsServiceName != rhs_storage._edsServiceName {return false}
+        if _storage._dnsHostname != rhs_storage._dnsHostname {return false}
+        if _storage._outlierDetection != rhs_storage._outlierDetection {return false}
+        if _storage._overrideHostStatus != rhs_storage._overrideHostStatus {return false}
+        if _storage._telemetryLabels != rhs_storage._telemetryLabels {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: SwiftProtobuf._ProtoNameProviding {
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    0: .same(proto: "UNKNOWN"),
+    1: .same(proto: "EDS"),
+    2: .same(proto: "LOGICAL_DNS"),
+  ]
+}
+
+extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".LrsLoadBalancingPolicyConfig"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .standard(proto: "cluster_name"),
+    2: .standard(proto: "eds_service_name"),
+    3: .standard(proto: "lrs_load_reporting_server_name"),
+    4: .same(proto: "locality"),
+    5: .standard(proto: "child_policy"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.clusterName) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.edsServiceName) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.lrsLoadReportingServerName) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._locality) }()
+      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.childPolicy) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.clusterName.isEmpty {
+      try visitor.visitSingularStringField(value: self.clusterName, fieldNumber: 1)
+    }
+    if !self.edsServiceName.isEmpty {
+      try visitor.visitSingularStringField(value: self.edsServiceName, fieldNumber: 2)
+    }
+    if !self.lrsLoadReportingServerName.isEmpty {
+      try visitor.visitSingularStringField(value: self.lrsLoadReportingServerName, fieldNumber: 3)
+    }
+    try { if let v = self._locality {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
+    if !self.childPolicy.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.childPolicy, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig) -> Bool {
+    if lhs.clusterName != rhs.clusterName {return false}
+    if lhs.edsServiceName != rhs.edsServiceName {return false}
+    if lhs.lrsLoadReportingServerName != rhs.lrsLoadReportingServerName {return false}
+    if lhs._locality != rhs._locality {return false}
+    if lhs.childPolicy != rhs.childPolicy {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.protoMessageName + ".Locality"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "region"),
+    2: .same(proto: "zone"),
+    3: .same(proto: "subzone"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.region) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.zone) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.subzone) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.region.isEmpty {
+      try visitor.visitSingularStringField(value: self.region, fieldNumber: 1)
+    }
+    if !self.zone.isEmpty {
+      try visitor.visitSingularStringField(value: self.zone, fieldNumber: 2)
+    }
+    if !self.subzone.isEmpty {
+      try visitor.visitSingularStringField(value: self.subzone, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality, rhs: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality) -> Bool {
+    if lhs.region != rhs.region {return false}
+    if lhs.zone != rhs.zone {return false}
+    if lhs.subzone != rhs.subzone {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".EdsLoadBalancingPolicyConfig"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "cluster"),
+    2: .standard(proto: "eds_service_name"),
+    3: .standard(proto: "lrs_load_reporting_server_name"),
+    4: .standard(proto: "locality_picking_policy"),
+    5: .standard(proto: "endpoint_picking_policy"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.cluster) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.edsServiceName) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._lrsLoadReportingServerName) }()
+      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.localityPickingPolicy) }()
+      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.endpointPickingPolicy) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.cluster.isEmpty {
+      try visitor.visitSingularStringField(value: self.cluster, fieldNumber: 1)
+    }
+    if !self.edsServiceName.isEmpty {
+      try visitor.visitSingularStringField(value: self.edsServiceName, fieldNumber: 2)
+    }
+    try { if let v = self._lrsLoadReportingServerName {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    if !self.localityPickingPolicy.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.localityPickingPolicy, fieldNumber: 4)
+    }
+    if !self.endpointPickingPolicy.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.endpointPickingPolicy, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig, rhs: Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig) -> Bool {
+    if lhs.cluster != rhs.cluster {return false}
+    if lhs.edsServiceName != rhs.edsServiceName {return false}
+    if lhs._lrsLoadReportingServerName != rhs._lrsLoadReportingServerName {return false}
+    if lhs.localityPickingPolicy != rhs.localityPickingPolicy {return false}
+    if lhs.endpointPickingPolicy != rhs.endpointPickingPolicy {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Grpc_ServiceConfig_XdsConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".XdsConfig"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .standard(proto: "balancer_name"),
+    2: .standard(proto: "child_policy"),
+    3: .standard(proto: "fallback_policy"),
+    4: .standard(proto: "eds_service_name"),
+    5: .standard(proto: "lrs_load_reporting_server_name"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.balancerName) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.childPolicy) }()
+      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.fallbackPolicy) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.edsServiceName) }()
+      case 5: try { try decoder.decodeSingularMessageField(value: &self._lrsLoadReportingServerName) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.balancerName.isEmpty {
+      try visitor.visitSingularStringField(value: self.balancerName, fieldNumber: 1)
+    }
+    if !self.childPolicy.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.childPolicy, fieldNumber: 2)
+    }
+    if !self.fallbackPolicy.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.fallbackPolicy, fieldNumber: 3)
+    }
+    if !self.edsServiceName.isEmpty {
+      try visitor.visitSingularStringField(value: self.edsServiceName, fieldNumber: 4)
+    }
+    try { if let v = self._lrsLoadReportingServerName {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Grpc_ServiceConfig_XdsConfig, rhs: Grpc_ServiceConfig_XdsConfig) -> Bool {
+    if lhs.balancerName != rhs.balancerName {return false}
+    if lhs.childPolicy != rhs.childPolicy {return false}
+    if lhs.fallbackPolicy != rhs.fallbackPolicy {return false}
+    if lhs.edsServiceName != rhs.edsServiceName {return false}
+    if lhs._lrsLoadReportingServerName != rhs._lrsLoadReportingServerName {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

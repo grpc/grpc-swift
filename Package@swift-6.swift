@@ -798,6 +798,17 @@ extension Target {
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
+
+  static var grpcHealth: Target {
+    .target(
+      name: "GRPCHealth",
+      dependencies: [
+        .grpcCore,
+        .grpcProtobuf
+      ],
+      path: "Sources/Services/Health"
+    )
+  }
 }
 
 // MARK: - Products
@@ -922,7 +933,10 @@ let package = Package(
     .grpcHTTP2TransportTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
-    .inProcessInteroperabilityTests
+    .inProcessInteroperabilityTests,
+
+    // Health v1
+    .grpcHealth
   ]
 )
 
