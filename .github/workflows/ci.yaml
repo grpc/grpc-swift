@@ -140,16 +140,25 @@ jobs:
       matrix:
         include:
           - image: swiftlang/swift:nightly-jammy
+            swift-tools-version: '6.0'
           - image: swiftlang/swift:nightly-6.0-jammy
+            swift-tools-version: '6.0'
           - image: swift:5.10.1-noble
+            swift-tools-version: '5.10'
           - image: swift:5.9-jammy
+            swift-tools-version: '5.9'
           - image: swift:5.8-focal
+            swift-tools-version: '5.8'
     name: Integration Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@v4
+    - name: Install protoc
+      run: apt update && apt install -y protobuf-compiler
+    - name: SwiftPM plugin test
+      run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }}
     - name: Build without NIOSSL
       run: swift build
       env:
