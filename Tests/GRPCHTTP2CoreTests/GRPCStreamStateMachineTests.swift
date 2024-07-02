@@ -996,7 +996,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         GRPCStreamStateMachine.UnexpectedInboundCloseReason.errorThrown(thrownError),
         Status(
           code: .unavailable,
-          message: "Stream unexpectedly closed with error: \(thrownError)."
+          message: "Stream unexpectedly closed with error."
         )
       ),
     ]

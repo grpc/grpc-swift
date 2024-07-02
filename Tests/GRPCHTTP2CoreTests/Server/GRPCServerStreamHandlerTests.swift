@@ -18,10 +18,10 @@ import GRPCCore
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
+import NIOHTTP2
 import XCTest
 
 @testable import GRPCHTTP2Core
-@testable import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 final class GRPCServerStreamHandlerTests: XCTestCase {
@@ -38,9 +38,10 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let framesToBeIgnored: [HTTP2Frame.FramePayload] = [
       .ping(.init(), ack: false),
       .goAway(lastStreamID: .rootStream, errorCode: .cancel, opaqueData: nil),
-      .priority(
-        HTTP2Frame.StreamPriorityData(exclusive: false, dependency: .rootStream, weight: 4)
-      ),
+      // TODO: uncomment when it's possible to build a `StreamPriorityData`.
+      // .priority(
+      //   HTTP2Frame.StreamPriorityData(exclusive: false, dependency: .rootStream, weight: 4)
+      // ),
       .settings(.ack),
       .pushPromise(.init(pushedStreamID: .maxID, headers: [:])),
       .windowUpdate(windowSizeIncrement: 4),
