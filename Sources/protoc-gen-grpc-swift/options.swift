@@ -68,7 +68,9 @@ final class GeneratorOptions {
   private(set) var gRPCModuleName = "GRPC"
   private(set) var swiftProtobufModuleName = "SwiftProtobuf"
   private(set) var generateReflectionData = false
+  #if compiler(>=6.0)
   private(set) var v2 = false
+  #endif
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -155,12 +157,14 @@ final class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
+      #if compiler(>=6.0)
       case "_V2":
         if let value = Bool(pair.value) {
           self.v2 = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
+      #endif
 
       default:
         throw GenerationError.unknownParameter(name: pair.key)

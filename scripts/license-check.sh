@@ -74,6 +74,11 @@ check_copyright_headers() {
         drop_first=1
         expected_lines=15
         ;;
+      */Package@swift-*.swift)
+        expected_sha="$SWIFT_SHA"
+        drop_first=1
+        expected_lines=15
+        ;;
       */Package@swift-*.*.swift)
         expected_sha="$SWIFT_SHA"
         drop_first=1
