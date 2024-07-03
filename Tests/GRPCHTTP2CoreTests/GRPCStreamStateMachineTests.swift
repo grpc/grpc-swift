@@ -1013,7 +1013,7 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
         var stateMachine = self.makeClientStateMachine(targetState: state)
         var action = stateMachine.unexpectedInboundClose(reason: closeReason)
 
-        guard case .forwardStatus(let status) = action else {
+        guard case .forwardStatus_clientOnly(let status) = action else {
           XCTFail("Should have been `fireError` but was `\(action)` (state: \(state)).")
           return
         }
@@ -2543,7 +2543,7 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       for (closeReason, expectedError) in reasonAndExpectedErrorPairs {
         var stateMachine = self.makeServerStateMachine(targetState: state)
         var action = stateMachine.unexpectedInboundClose(reason: closeReason)
-        guard case .fireError(let error) = action else {
+        guard case .fireError_serverOnly(let error) = action else {
           XCTFail("Should have been `fireError` but was `\(action)` (state: \(state)).")
           return
         }

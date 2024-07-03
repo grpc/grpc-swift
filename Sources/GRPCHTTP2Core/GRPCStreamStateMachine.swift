@@ -541,16 +541,16 @@ struct GRPCStreamStateMachine {
   }
 
   enum OnUnexpectedInboundClose {
-    case forwardStatus(Status)
-    case fireError(any Error)
+    case forwardStatus_clientOnly(Status)
+    case fireError_serverOnly(any Error)
     case doNothing
 
     init(serverCloseReason: UnexpectedInboundCloseReason) {
       switch serverCloseReason {
       case .streamReset, .channelInactive:
-        self = .fireError(RPCError(serverCloseReason))
+        self = .fireError_serverOnly(RPCError(serverCloseReason))
       case .errorThrown(let error):
-        self = .fireError(error)
+        self = .fireError_serverOnly(error)
       }
     }
   }
@@ -1083,23 +1083,23 @@ extension GRPCStreamStateMachine {
     switch self.state {
     case .clientIdleServerIdle(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
-      return .forwardStatus(Status(RPCError(reason)))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
 
     case .clientOpenServerIdle(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
-      return .forwardStatus(Status(RPCError(reason)))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
 
     case .clientClosedServerIdle(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
-      return .forwardStatus(Status(RPCError(reason)))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
 
     case .clientOpenServerOpen(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
-      return .forwardStatus(Status(RPCError(reason)))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
 
     case .clientClosedServerOpen(let state):
       self.state = .clientClosedServerClosed(.init(previousState: state))
-      return .forwardStatus(Status(RPCError(reason)))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
 
     case .clientOpenServerClosed, .clientClosedServerClosed:
       return .doNothing

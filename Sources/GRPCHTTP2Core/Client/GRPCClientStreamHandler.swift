@@ -131,14 +131,7 @@ extension GRPCClientStreamHandler {
       }
 
     case .rstStream:
-      switch self.stateMachine.unexpectedInboundClose(reason: .streamReset) {
-      case .forwardStatus(let status):
-        context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
-      case .doNothing:
-        ()
-      case .fireError:
-        assertionFailure("`fireError` should only happen on the server side, never on the client.")
-      }
+      self.handleUnexpectedInboundClose(context: context, reason: .streamReset)
 
     case .ping, .goAway, .priority, .settings, .pushPromise, .windowUpdate,
       .alternativeService, .origin:
@@ -160,25 +153,24 @@ extension GRPCClientStreamHandler {
   }
 
   func channelInactive(context: ChannelHandlerContext) {
-    switch self.stateMachine.unexpectedInboundClose(reason: .channelInactive) {
-    case .forwardStatus(let status):
-      context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
-    case .doNothing:
-      ()
-    case .fireError:
-      assertionFailure("`fireError` should only happen on the server side, never on the client.")
-    }
-
+    self.handleUnexpectedInboundClose(context: context, reason: .channelInactive)
     context.fireChannelInactive()
   }
 
   func errorCaught(context: ChannelHandlerContext, error: any Error) {
-    switch self.stateMachine.unexpectedInboundClose(reason: .errorThrown(error)) {
-    case .forwardStatus(let status):
+    self.handleUnexpectedInboundClose(context: context, reason: .errorThrown(error))
+  }
+
+  private func handleUnexpectedInboundClose(
+    context: ChannelHandlerContext,
+    reason: GRPCStreamStateMachine.UnexpectedInboundCloseReason
+  ) {
+    switch self.stateMachine.unexpectedInboundClose(reason: reason) {
+    case .forwardStatus_clientOnly(let status):
       context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
     case .doNothing:
       ()
-    case .fireError:
+    case .fireError_serverOnly:
       assertionFailure("`fireError` should only happen on the server side, never on the client.")
     }
   }
