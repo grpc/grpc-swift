@@ -72,14 +72,52 @@ struct ServerRPCExecutor {
       _ request: ServerRequest.Stream<Input>
     ) async throws -> ServerResponse.Stream<Output>
   ) async {
+    if let timeout = metadata.timeout {
+      await Self._processRPCWithTimeout(
+        timeout: timeout,
+        method: method,
+        metadata: metadata,
+        inbound: inbound,
+        outbound: outbound,
+        deserializer: deserializer,
+        serializer: serializer,
+        interceptors: interceptors,
+        handler: handler
+      )
+    } else {
+      await Self._processRPC(
+        method: method,
+        metadata: metadata,
+        inbound: inbound,
+        outbound: outbound,
+        deserializer: deserializer,
+        serializer: serializer,
+        interceptors: interceptors,
+        handler: handler
+      )
+    }
+  }
+
+  @inlinable
+  static func _processRPCWithTimeout<Input, Output>(
+    timeout: Duration,
+    method: MethodDescriptor,
+    metadata: Metadata,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart>.AsyncIterator>,
+    outbound: RPCWriter<RPCResponsePart>.Closable,
+    deserializer: some MessageDeserializer<Input>,
+    serializer: some MessageSerializer<Output>,
+    interceptors: [any ServerInterceptor],
+    handler: @escaping @Sendable (
+      ServerRequest.Stream<Input>
+    ) async throws -> ServerResponse.Stream<Output>
+  ) async {
     await withTaskGroup(of: ServerExecutorTask.self) { group in
-      if let timeout = metadata.timeout {
-        group.addTask {
-          let result = await Result {
-            try await Task.sleep(for: timeout, clock: .continuous)
-          }
-          return .timedOut(result)
+      group.addTask {
+        let result = await Result {
+          try await Task.sleep(for: timeout, clock: .continuous)
         }
+        return .timedOut(result)
       }
 
       group.addTask {
