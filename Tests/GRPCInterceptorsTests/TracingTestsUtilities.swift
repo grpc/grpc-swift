@@ -21,10 +21,11 @@ import Tracing
 final class TestTracer: Tracer {
   typealias Span = TestSpan
 
-  private var testSpans: NIOLockedValueBox<[String: TestSpan]> = .init([:])
+  private let testSpans: NIOLockedValueBox<[String: TestSpan]> = .init([:])
 
   func getEventsForTestSpan(ofOperationName operationName: String) -> [SpanEvent] {
-    self.testSpans.withLockedValue({ $0[operationName] })?.events ?? []
+    let span = self.testSpans.withLockedValue({ $0[operationName] })
+    return span?.events ?? []
   }
 
   func extract<Carrier, Extract>(
@@ -67,13 +68,35 @@ final class TestTracer: Tracer {
   }
 }
 
-class TestSpan: Span {
-  var context: ServiceContextModule.ServiceContext
-  var operationName: String
-  var attributes: Tracing.SpanAttributes
-  var isRecording: Bool
-  private(set) var status: Tracing.SpanStatus?
-  private(set) var events: [Tracing.SpanEvent] = []
+struct TestSpan: Span, Sendable {
+  private struct State {
+    var context: ServiceContextModule.ServiceContext
+    var operationName: String
+    var attributes: Tracing.SpanAttributes
+    var status: Tracing.SpanStatus?
+    var events: [Tracing.SpanEvent] = []
+  }
+
+  private let state: NIOLockedValueBox<State>
+  let isRecording: Bool
+
+  var context: ServiceContextModule.ServiceContext {
+    self.state.withLockedValue { $0.context }
+  }
+
+  var operationName: String {
+    get { self.state.withLockedValue { $0.operationName } }
+    nonmutating set { self.state.withLockedValue { $0.operationName = newValue } }
+  }
+
+  var attributes: Tracing.SpanAttributes {
+    get { self.state.withLockedValue { $0.attributes } }
+    nonmutating set { self.state.withLockedValue { $0.attributes = newValue } }
+  }
+
+  var events: [Tracing.SpanEvent] {
+    self.state.withLockedValue { $0.events }
+  }
 
   init(
     context: ServiceContextModule.ServiceContext,
@@ -81,18 +104,17 @@ class TestSpan: Span {
     attributes: Tracing.SpanAttributes = [:],
     isRecording: Bool = true
   ) {
-    self.context = context
-    self.operationName = operationName
-    self.attributes = attributes
+    let state = State(context: context, operationName: operationName, attributes: attributes)
+    self.state = NIOLockedValueBox(state)
     self.isRecording = isRecording
   }
 
   func setStatus(_ status: Tracing.SpanStatus) {
-    self.status = status
+    self.state.withLockedValue { $0.status = status }
   }
 
   func addEvent(_ event: Tracing.SpanEvent) {
-    self.events.append(event)
+    self.state.withLockedValue { $0.events.append(event) }
   }
 
   func recordError<Instant>(
@@ -109,7 +131,9 @@ class TestSpan: Span {
   }
 
   func addLink(_ link: Tracing.SpanLink) {
-    self.context.spanLinks?.append(link)
+    self.state.withLockedValue {
+      $0.context.spanLinks?.append(link)
+    }
   }
 
   func end<Instant>(at instant: @autoclosure () -> Instant) where Instant: Tracing.TracerInstant {
@@ -150,7 +174,7 @@ extension ServiceContext {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct TestWriter<WriterElement>: RPCWriterProtocol {
+struct TestWriter<WriterElement: Sendable>: RPCWriterProtocol {
   typealias Element = WriterElement
 
   private let streamContinuation: AsyncStream<Element>.Continuation

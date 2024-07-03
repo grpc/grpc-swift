@@ -189,7 +189,7 @@ public struct GRPCChannel: ClientTransport {
   }
 
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.
-  public func withStream<T>(
+  public func withStream<T: Sendable>(
     descriptor: MethodDescriptor,
     options: CallOptions,
     _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
