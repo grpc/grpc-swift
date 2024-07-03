@@ -295,7 +295,7 @@ struct PathLike: CustomStringConvertible {
     #if compiler(<6.0)
     self.value = Path(path)
     #else
-    self.value = URL(string: path)!
+    self.value = URL(fileURLWithPath: path)
     #endif
   }
 
