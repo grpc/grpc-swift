@@ -586,7 +586,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/Echo/Model",
+      path: "Sources/Examples/v1/Echo/Model",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -601,7 +601,7 @@ extension Target {
         .nioHTTP2,
         .protobuf,
       ],
-      path: "Sources/Examples/Echo/Implementation",
+      path: "Sources/Examples/v1/Echo/Implementation",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -621,7 +621,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      path: "Sources/Examples/Echo/Runtime",
+      path: "Sources/Examples/v1/Echo/Runtime",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -634,7 +634,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/HelloWorld/Model",
+      path: "Sources/Examples/v1/HelloWorld/Model",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -649,7 +649,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/HelloWorld/Client",
+      path: "Sources/Examples/v1/HelloWorld/Client",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -664,7 +664,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/HelloWorld/Server",
+      path: "Sources/Examples/v1/HelloWorld/Server",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -677,7 +677,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/RouteGuide/Model",
+      path: "Sources/Examples/v1/RouteGuide/Model",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -692,7 +692,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/RouteGuide/Client",
+      path: "Sources/Examples/v1/RouteGuide/Client",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -708,7 +708,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/RouteGuide/Server",
+      path: "Sources/Examples/v1/RouteGuide/Server",
       swiftSettings: [.swiftLanguageVersion(.v5)]
     )
   }
@@ -724,7 +724,7 @@ extension Target {
         .nioExtras,
         .argumentParser,
       ],
-      path: "Sources/Examples/PacketCapture",
+      path: "Sources/Examples/v1/PacketCapture",
       exclude: [
         "README.md",
       ],
@@ -758,7 +758,7 @@ extension Target {
         .echoModel,
         .echoImplementation
       ],
-      path: "Sources/Examples/ReflectionService",
+      path: "Sources/Examples/v1/ReflectionService",
       resources: [
         .copy("Generated")
       ],

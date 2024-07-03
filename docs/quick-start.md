@@ -109,7 +109,7 @@ message HelloReply {
 ### Update and run the application
 
 We need to regenerate
-`Sources/Examples/HelloWorld/Model/helloworld.grpc.swift`, which
+`Sources/Examples/v1/HelloWorld/Model/helloworld.grpc.swift`, which
 contains our generated gRPC client and server classes.
 
 From the `grpc-swift` directory run
@@ -127,7 +127,7 @@ parts of our example application.
 #### Update the server
 
 In the same directory, open
-`Sources/Examples/HelloWorld/Server/GreeterProvider.swift`. Implement the new
+`Sources/Examples/v1/HelloWorld/Server/GreeterProvider.swift`. Implement the new
 method like this:
 
 ```swift
@@ -159,7 +159,7 @@ final class GreeterProvider: Helloworld_GreeterAsyncProvider {
 #### Update the client
 
 In the same directory, open
-`Sources/Examples/HelloWorld/Client/HelloWorldClient.swift`. Call the new method like this:
+`Sources/Examples/v1/HelloWorld/Client/HelloWorldClient.swift`. Call the new method like this:
 
 ```swift
 func run() async throws {
