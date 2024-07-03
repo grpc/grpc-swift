@@ -68,7 +68,7 @@ final class TestTracer: Tracer {
   }
 }
 
-struct TestSpan: Span {
+struct TestSpan: Span, Sendable {
   private struct State {
     var context: ServiceContextModule.ServiceContext
     var operationName: String
