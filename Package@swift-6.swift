@@ -806,7 +806,8 @@ extension Target {
         .grpcCore,
         .grpcProtobuf
       ],
-      path: "Sources/Services/Health"
+      path: "Sources/Services/Health",
+      swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
 }
@@ -920,6 +921,7 @@ let package = Package(
     .grpcHTTP2TransportNIOTransportServices,
     .grpcProtobuf,
     .grpcProtobufCodeGen,
+    .grpcHealth,
     .interoperabilityTestImplementation,
     .interoperabilityTestsExecutable,
     .performanceWorker,
@@ -933,10 +935,7 @@ let package = Package(
     .grpcHTTP2TransportTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
-    .inProcessInteroperabilityTests,
-
-    // Health v1
-    .grpcHealth
+    .inProcessInteroperabilityTests
   ]
 )
 
