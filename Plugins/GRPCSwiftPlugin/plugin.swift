@@ -99,43 +99,42 @@ struct GRPCSwiftPlugin {
   ///   - tool: The tool method from the context.
   /// - Returns: The build commands configured based on the arguments.
   func createBuildCommands(
-    pluginWorkDirectory: PackagePlugin.Path,
+    pluginWorkDirectory: PathLike,
     sourceFiles: FileList,
     tool: (String) throws -> PackagePlugin.PluginContext.Tool
   ) throws -> [Command] {
-    guard
-      let configurationFilePath = sourceFiles.first(
-        where: {
-          $0.path.lastComponent == Self.configurationFileName
-        }
-      )?.path
-    else {
+    let maybeConfigFile = sourceFiles.map { PathLike($0) }.first {
+      $0.lastComponent == Self.configurationFileName
+    }
+
+    guard let configurationFilePath = maybeConfigFile else {
       throw PluginError.noConfigFound(Self.configurationFileName)
     }
 
-    let data = try Data(contentsOf: URL(fileURLWithPath: "\(configurationFilePath)"))
+    let data = try Data(contentsOf: URL(configurationFilePath))
     let configuration = try JSONDecoder().decode(Configuration.self, from: data)
 
     try self.validateConfiguration(configuration)
 
     let targetDirectory = configurationFilePath.removingLastComponent()
-    var importPaths: [Path] = [targetDirectory]
+    var importPaths: [PathLike] = [targetDirectory]
     if let configuredImportPaths = configuration.importPaths {
-      importPaths.append(contentsOf: configuredImportPaths.map { Path($0) })
+      importPaths.append(contentsOf: configuredImportPaths.map { PathLike($0) })
     }
 
     // We need to find the path of protoc and protoc-gen-grpc-swift
-    let protocPath: Path
+    let protocPath: PathLike
     if let configuredProtocPath = configuration.protocPath {
-      protocPath = Path(configuredProtocPath)
+      protocPath = PathLike(configuredProtocPath)
     } else if let environmentPath = ProcessInfo.processInfo.environment["PROTOC_PATH"] {
       // The user set the env variable, so let's take that
-      protocPath = Path(environmentPath)
+      protocPath = PathLike(environmentPath)
     } else {
       // The user didn't set anything so let's try see if SPM can find a binary for us
-      protocPath = try tool("protoc").path
+      protocPath = try PathLike(tool("protoc"))
     }
-    let protocGenGRPCSwiftPath = try tool("protoc-gen-grpc-swift").path
+
+    let protocGenGRPCSwiftPath = try PathLike(tool("protoc-gen-grpc-swift"))
 
     return configuration.invocations.map { invocation in
       self.invokeProtoc(
@@ -160,12 +159,12 @@ struct GRPCSwiftPlugin {
   ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`.
   /// - Returns: The build command configured based on the arguments
   private func invokeProtoc(
-    directory: Path,
+    directory: PathLike,
     invocation: Configuration.Invocation,
-    protocPath: Path,
-    protocGenGRPCSwiftPath: Path,
-    outputDirectory: Path,
-    importPaths: [Path]
+    protocPath: PathLike,
+    protocGenGRPCSwiftPath: PathLike,
+    outputDirectory: PathLike,
+    importPaths: [PathLike]
   ) -> Command {
     // Construct the `protoc` arguments.
     var protocArgs = [
@@ -202,12 +201,12 @@ struct GRPCSwiftPlugin {
       protocArgs.append("--grpc-swift_opt=_V2=\(v2)")
     }
 
-    var inputFiles = [Path]()
-    var outputFiles = [Path]()
+    var inputFiles = [PathLike]()
+    var outputFiles = [PathLike]()
 
     for var file in invocation.protoFiles {
       // Append the file to the protoc args so that it is used for generating
-      protocArgs.append("\(file)")
+      protocArgs.append(file)
       inputFiles.append(directory.appending(file))
 
       // The name of the output file is based on the name of the input file.
@@ -261,11 +260,125 @@ extension GRPCSwiftPlugin: BuildToolPlugin {
     guard let swiftTarget = target as? SwiftSourceModuleTarget else {
       throw PluginError.invalidTarget("\(type(of: target))")
     }
+
+    #if compiler(<6.0)
+    let workDirectory = PathLike(context.pluginWorkDirectory)
+    #else
+    let workDirectory = PathLike(context.pluginWorkDirectoryURL)
+    #endif
+
     return try self.createBuildCommands(
-      pluginWorkDirectory: context.pluginWorkDirectory,
+      pluginWorkDirectory: workDirectory,
       sourceFiles: swiftTarget.sourceFiles,
       tool: context.tool
     )
+  }
+}
+
+// 'Path' was effectively deprecated in Swift 6 in favour of URL. ('Effectively' because all
+// methods, properties, and conformances have been deprecated but the type hasn't.) This type wraps
+// either depending on the compiler version.
+struct PathLike: CustomStringConvertible {
+  #if compiler(<6.0)
+  typealias Value = Path
+  #else
+  typealias Value = URL
+  #endif
+
+  private(set) var value: Value
+
+  init(_ value: Value) {
+    self.value = value
+  }
+
+  init(_ path: String) {
+    #if compiler(<6.0)
+    self.value = Path(path)
+    #else
+    self.value = URL(fileURLWithPath: path)
+    #endif
+  }
+
+  init(_ element: FileList.Element) {
+    #if compiler(<6.0)
+    self.value = element.path
+    #else
+    self.value = element.url
+    #endif
+  }
+
+  init(_ element: PluginContext.Tool) {
+    #if compiler(<6.0)
+    self.value = element.path
+    #else
+    self.value = element.url
+    #endif
+  }
+
+  var description: String {
+    #if compiler(<6.0)
+    return String(describing: self.value)
+    #elseif canImport(Darwin)
+    return self.value.path()
+    #else
+    return self.value.path
+    #endif
+  }
+
+  var lastComponent: String {
+    #if compiler(<6.0)
+    return self.value.lastComponent
+    #else
+    return self.value.lastPathComponent
+    #endif
+  }
+
+  func removingLastComponent() -> Self {
+    var copy = self
+    #if compiler(<6.0)
+    copy.value = self.value.removingLastComponent()
+    #else
+    copy.value = self.value.deletingLastPathComponent()
+    #endif
+    return copy
+  }
+
+  func appending(_ path: String) -> Self {
+    var copy = self
+    #if compiler(<6.0)
+    copy.value = self.value.appending(path)
+    #else
+    copy.value = self.value.appendingPathComponent(path)
+    #endif
+    return copy
+  }
+}
+
+extension Command {
+  static func buildCommand(
+    displayName: String?,
+    executable: PathLike,
+    arguments: [String],
+    inputFiles: [PathLike],
+    outputFiles: [PathLike]
+  ) -> PackagePlugin.Command {
+    return Self.buildCommand(
+      displayName: displayName,
+      executable: executable.value,
+      arguments: arguments,
+      inputFiles: inputFiles.map { $0.value },
+      outputFiles: outputFiles.map { $0.value }
+    )
+  }
+}
+
+extension URL {
+  init(_ pathLike: PathLike) {
+    #if compiler(<6.0)
+    self = URL(fileURLWithPath: "\(pathLike.value)")
+    #else
+    self = pathLike.value
+    #endif
   }
 }
 
@@ -277,8 +390,14 @@ extension GRPCSwiftPlugin: XcodeBuildToolPlugin {
     context: XcodePluginContext,
     target: XcodeTarget
   ) throws -> [Command] {
+    #if compiler(<6.0)
+    let workDirectory = PathLike(context.pluginWorkDirectory)
+    #else
+    let workDirectory = PathLike(URL(string: String(describing: context.pluginWorkDirectory))!)
+    #endif
+
     return try self.createBuildCommands(
-      pluginWorkDirectory: context.pluginWorkDirectory,
+      pluginWorkDirectory: workDirectory,
       sourceFiles: target.inputFiles,
       tool: context.tool
     )

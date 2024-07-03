@@ -109,7 +109,7 @@ extension HTTP2ClientTransport {
       self.channel.close()
     }
 
-    public func withStream<T>(
+    public func withStream<T: Sendable>(
       descriptor: MethodDescriptor,
       options: CallOptions,
       _ closure: (RPCStream<Inbound, Outbound>) async throws -> T

@@ -20,10 +20,11 @@ HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GRPC_PATH="${HERE}/.."
 
 function generate_package_manifest {
-  local version=$1
+  local tools_version=$1
   local grpc_path=$2
+  local grpc_version=$3
 
-  echo "// swift-tools-version: $version"
+  echo "// swift-tools-version: $tools_version"
   echo "import PackageDescription"
   echo ""
   echo "let package = Package("
@@ -36,7 +37,14 @@ function generate_package_manifest {
   echo "    .executableTarget("
   echo "      name: \"Foo\","
   echo "      dependencies: ["
-  echo "        .product(name: \"GRPC\", package: \"grpc-swift\"),"
+
+  if [ "$grpc_version" == "v1" ]; then
+    echo "        .product(name: \"GRPC\", package: \"grpc-swift\"),"
+  elif [ "$grpc_version" == "v2" ]; then
+    echo "        .product(name: \"_GRPCCore\", package: \"grpc-swift\"),"
+    echo "        .product(name: \"_GRPCProtobuf\", package: \"grpc-swift\"),"
+  fi
+
   echo "      ],"
   echo "      path: \"Sources/Foo\","
   echo "      plugins: ["
@@ -49,20 +57,30 @@ function generate_package_manifest {
 }
 
 function generate_grpc_plugin_config {
-  cat <<EOF
-{
-  "invocations": [
-    {
-      "protoFiles": ["Foo.proto"],
-      "visibility": "internal"
-    }
-  ]
-}
-EOF
+  local grpc_version=$1
+
+  echo "{"
+  echo "  \"invocations\": ["
+  echo "    {"
+  if [ "$grpc_version" == "v2" ]; then
+    echo "      \"_V2\": true,"
+  fi
+  echo "      \"protoFiles\": [\"Foo.proto\"],"
+  echo "      \"visibility\": \"internal\""
+  echo "    }"
+  echo "  ]"
+  echo "}"
 }
 
 function generate_protobuf_plugin_config {
-  generate_grpc_plugin_config
+  echo "{"
+  echo "  \"invocations\": ["
+  echo "    {"
+  echo "      \"protoFiles\": [\"Foo.proto\"],"
+  echo "      \"visibility\": \"internal\""
+  echo "    }"
+  echo "  ]"
+  echo "}"
 }
 
 function generate_proto {
@@ -82,31 +100,38 @@ function generate_main {
 }
 
 function generate_and_build {
-  local version=$1
+  local tools_version=$1
   local grpc_path=$2
+  local grpc_version=$3
   local protoc_path dir
 
   protoc_path=$(which protoc)
   dir=$(mktemp -d)
 
   echo "Generating package in $dir ..."
-  echo "Swift tools version: $version"
+  echo "Swift tools version: $tools_version"
+  echo "grpc-swift version: $grpc_version"
   echo "grpc-swift path: $grpc_path"
   echo "protoc path: $protoc_path"
   mkdir -p "$dir/Sources/Foo"
 
-  generate_package_manifest "$version" "$grpc_path" > "$dir/Package.swift"
-  generate_grpc_plugin_config > "$dir/Sources/Foo/grpc-swift-config.json"
+  generate_package_manifest "$tools_version" "$grpc_path" "$grpc_version" > "$dir/Package.swift"
+
   generate_protobuf_plugin_config > "$dir/Sources/Foo/swift-protobuf-config.json"
   generate_proto > "$dir/Sources/Foo/Foo.proto"
   generate_main > "$dir/Sources/Foo/main.swift"
+  generate_grpc_plugin_config "$grpc_version" > "$dir/Sources/Foo/grpc-swift-config.json"
 
   PROTOC_PATH=$protoc_path swift build --package-path "$dir"
 }
 
-if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 SWIFT_TOOLS_VERSION"
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 SWIFT_TOOLS_VERSION GRPC_SWIFT_VERSION"
+fi
+
+if [ "$2" != "v1" ] && [ "$2" != "v2" ]; then
+  echo "Invalid gRPC Swift version '$2' (must be 'v1' or 'v2')"
   exit 1
 fi
 
-generate_and_build "$1" "${GRPC_PATH}"
+generate_and_build "$1" "${GRPC_PATH}" "$2"
