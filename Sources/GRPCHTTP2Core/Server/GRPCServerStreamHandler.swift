@@ -139,7 +139,10 @@ extension GRPCServerStreamHandler {
         context.fireErrorCaught(error)
       }
 
-    case .ping, .goAway, .priority, .rstStream, .settings, .pushPromise, .windowUpdate,
+    case .rstStream:
+      self.handleUnexpectedInboundClose(context: context, reason: .streamReset)
+
+    case .ping, .goAway, .priority, .settings, .pushPromise, .windowUpdate,
       .alternativeService, .origin:
       ()
     }
@@ -162,6 +165,31 @@ extension GRPCServerStreamHandler {
         message: "RPC stream was closed before we got any Metadata."
       )
     )
+  }
+
+  func channelInactive(context: ChannelHandlerContext) {
+    self.handleUnexpectedInboundClose(context: context, reason: .channelInactive)
+    context.fireChannelInactive()
+  }
+
+  func errorCaught(context: ChannelHandlerContext, error: any Error) {
+    self.handleUnexpectedInboundClose(context: context, reason: .errorThrown(error))
+  }
+
+  private func handleUnexpectedInboundClose(
+    context: ChannelHandlerContext,
+    reason: GRPCStreamStateMachine.UnexpectedInboundCloseReason
+  ) {
+    switch self.stateMachine.unexpectedInboundClose(reason: reason) {
+    case .fireError_serverOnly(let wrappedError):
+      context.fireErrorCaught(wrappedError)
+    case .doNothing:
+      ()
+    case .forwardStatus_clientOnly:
+      assertionFailure(
+        "`forwardStatus` should only happen on the client side, never on the server."
+      )
+    }
   }
 }
 

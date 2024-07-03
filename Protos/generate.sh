@@ -240,6 +240,14 @@ function generate_worker_service {
   done
 }
 
+function generate_health_service {
+  local proto="$here/upstream/grpc/health/v1/health.proto"
+  local output="$root/Sources/Services/Health/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "Client=false" "Server=true" "_V2=true"
+}
+
 #------------------------------------------------------------------------------
 
 # Examples
@@ -264,3 +272,6 @@ generate_http2_transport_tests_service
 
 # Performance worker service
 generate_worker_service
+
+# Health
+generate_health_service

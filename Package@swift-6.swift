@@ -798,6 +798,18 @@ extension Target {
       swiftSettings: [.swiftLanguageVersion(.v6)]
     )
   }
+
+  static var grpcHealth: Target {
+    .target(
+      name: "GRPCHealth",
+      dependencies: [
+        .grpcCore,
+        .grpcProtobuf
+      ],
+      path: "Sources/Services/Health",
+      swiftSettings: [.swiftLanguageVersion(.v6)]
+    )
+  }
 }
 
 // MARK: - Products
@@ -909,6 +921,7 @@ let package = Package(
     .grpcHTTP2TransportNIOTransportServices,
     .grpcProtobuf,
     .grpcProtobufCodeGen,
+    .grpcHealth,
     .interoperabilityTestImplementation,
     .interoperabilityTestsExecutable,
     .performanceWorker,

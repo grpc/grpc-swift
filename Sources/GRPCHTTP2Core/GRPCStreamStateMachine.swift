@@ -539,6 +539,38 @@ struct GRPCStreamStateMachine {
       state.compressor?.end()
     }
   }
+
+  enum OnUnexpectedInboundClose {
+    case forwardStatus_clientOnly(Status)
+    case fireError_serverOnly(any Error)
+    case doNothing
+
+    init(serverCloseReason: UnexpectedInboundCloseReason) {
+      switch serverCloseReason {
+      case .streamReset, .channelInactive:
+        self = .fireError_serverOnly(RPCError(serverCloseReason))
+      case .errorThrown(let error):
+        self = .fireError_serverOnly(error)
+      }
+    }
+  }
+
+  enum UnexpectedInboundCloseReason {
+    case streamReset
+    case channelInactive
+    case errorThrown(any Error)
+  }
+
+  mutating func unexpectedInboundClose(
+    reason: UnexpectedInboundCloseReason
+  ) -> OnUnexpectedInboundClose {
+    switch self.configuration {
+    case .client:
+      return self.clientUnexpectedInboundClose(reason: reason)
+    case .server:
+      return self.serverUnexpectedInboundClose(reason: reason)
+    }
+  }
 }
 
 // - MARK: Client
@@ -1044,6 +1076,35 @@ extension GRPCStreamStateMachine {
     }
     throw RPCError(code: .internalError, message: message)
   }
+
+  private mutating func clientUnexpectedInboundClose(
+    reason: UnexpectedInboundCloseReason
+  ) -> OnUnexpectedInboundClose {
+    switch self.state {
+    case .clientIdleServerIdle(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
+
+    case .clientOpenServerIdle(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
+
+    case .clientClosedServerIdle(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
+
+    case .clientOpenServerOpen(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
+
+    case .clientClosedServerOpen(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return .forwardStatus_clientOnly(Status(RPCError(reason)))
+
+    case .clientOpenServerClosed, .clientClosedServerClosed:
+      return .doNothing
+    }
+  }
 }
 
 // - MARK: Server
@@ -1469,6 +1530,31 @@ extension GRPCStreamStateMachine {
       return .awaitMoreMessages
     }
   }
+
+  private mutating func serverUnexpectedInboundClose(
+    reason: UnexpectedInboundCloseReason
+  ) -> OnUnexpectedInboundClose {
+    switch self.state {
+    case .clientIdleServerIdle(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return OnUnexpectedInboundClose(serverCloseReason: reason)
+
+    case .clientOpenServerIdle(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return OnUnexpectedInboundClose(serverCloseReason: reason)
+
+    case .clientOpenServerOpen(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return OnUnexpectedInboundClose(serverCloseReason: reason)
+
+    case .clientOpenServerClosed(let state):
+      self.state = .clientClosedServerClosed(.init(previousState: state))
+      return OnUnexpectedInboundClose(serverCloseReason: reason)
+
+    case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
+      return .doNothing
+    }
+  }
 }
 
 extension MethodDescriptor {
@@ -1610,5 +1696,29 @@ extension Status.Code {
 extension MethodDescriptor {
   var path: String {
     return "/\(self.service)/\(self.method)"
+  }
+}
+
+extension RPCError {
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  fileprivate init(_ reason: GRPCStreamStateMachine.UnexpectedInboundCloseReason) {
+    switch reason {
+    case .streamReset:
+      self = RPCError(
+        code: .unavailable,
+        message: "Stream unexpectedly closed: a RST_STREAM frame was received."
+      )
+    case .channelInactive:
+      self = RPCError(code: .unavailable, message: "Stream unexpectedly closed.")
+    case .errorThrown:
+      self = RPCError(code: .unavailable, message: "Stream unexpectedly closed with error.")
+    }
+  }
+}
+
+extension Status {
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  fileprivate init(_ error: RPCError) {
+    self = Status(code: Status.Code(error.code), message: error.message)
   }
 }
