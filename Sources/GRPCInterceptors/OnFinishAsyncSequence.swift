@@ -20,8 +20,8 @@ struct OnFinishAsyncSequence<Element: Sendable>: AsyncSequence, Sendable {
 
   init<S: AsyncSequence>(
     wrapping other: S,
-    onFinish: @escaping () -> Void
-  ) where S.Element == Element {
+    onFinish: @escaping @Sendable () -> Void
+  ) where S.Element == Element, S: Sendable {
     self._makeAsyncIterator = {
       AsyncIterator(wrapping: other.makeAsyncIterator(), onFinish: onFinish)
     }
@@ -33,11 +33,11 @@ struct OnFinishAsyncSequence<Element: Sendable>: AsyncSequence, Sendable {
 
   struct AsyncIterator: AsyncIteratorProtocol {
     private var iterator: any AsyncIteratorProtocol
-    private var onFinish: (() -> Void)?
+    private var onFinish: (@Sendable () -> Void)?
 
     fileprivate init<Iterator>(
       wrapping other: Iterator,
-      onFinish: @escaping () -> Void
+      onFinish: @escaping @Sendable () -> Void
     ) where Iterator: AsyncIteratorProtocol, Iterator.Element == Element {
       self.iterator = other
       self.onFinish = onFinish

@@ -24,13 +24,13 @@ import NIOPosix
 @main
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 struct InteroperabilityTestsExecutable: AsyncParsableCommand {
-  static var configuration = CommandConfiguration(
+  static let configuration = CommandConfiguration(
     abstract: "gRPC Swift Interoperability Runner",
     subcommands: [StartServer.self, ListTests.self, RunTests.self]
   )
 
   struct StartServer: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
       abstract: "Start the gRPC Swift interoperability test server."
     )
 
@@ -50,7 +50,7 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
   }
 
   struct ListTests: ParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
       abstract: "List all interoperability test names."
     )
 
@@ -62,7 +62,7 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
   }
 
   struct RunTests: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
       abstract: """
           Run gRPC interoperability tests using a gRPC Swift client.
           You can specify a test name as an argument to run a single test.
