@@ -61,7 +61,7 @@ public protocol ClientTransport: Sendable {
   ///   - options: Options specific to the stream.
   ///   - closure: A closure that takes the opened stream as parameter.
   /// - Returns: Whatever value was returned from `closure`.
-  func withStream<T>(
+  func withStream<T: Sendable>(
     descriptor: MethodDescriptor,
     options: CallOptions,
     _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T

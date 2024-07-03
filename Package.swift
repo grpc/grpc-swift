@@ -51,10 +51,6 @@ let packageDependencies: [Package.Dependency] = [
     from: "1.0.5"
   ),
   .package(
-    url: "https://github.com/apple/swift-atomics.git",
-    from: "1.2.0"
-  ),
-  .package(
     url: "https://github.com/apple/swift-protobuf.git",
     from: "1.20.2"
   ),
@@ -67,14 +63,6 @@ let packageDependencies: [Package.Dependency] = [
     // Version is higher than in other Package@swift manifests: 1.1.0 raised the minimum Swift
     // version and indluded async support.
     from: "1.1.1"
-  ),
-  .package(
-    url: "https://github.com/apple/swift-docc-plugin",
-    from: "1.0.0"
-  ),
-  .package(
-    url: "https://github.com/apple/swift-distributed-tracing.git",
-    from: "1.0.0"
   ),
 ].appending(
   .package(
@@ -91,11 +79,7 @@ extension Target.Dependency {
   static let grpc: Self = .target(name: grpcTargetName)
   static let cgrpcZlib: Self = .target(name: cgrpcZlibTargetName)
   static let protocGenGRPCSwift: Self = .target(name: "protoc-gen-grpc-swift")
-  static let performanceWorker: Self = .target(name: "performance-worker")
   static let reflectionService: Self = .target(name: "GRPCReflectionService")
-  static let grpcCodeGen: Self = .target(name: "GRPCCodeGen")
-  static let grpcProtobuf: Self = .target(name: "GRPCProtobuf")
-  static let grpcProtobufCodeGen: Self = .target(name: "GRPCProtobufCodeGen")
 
   // Target dependencies; internal
   static let grpcSampleData: Self = .target(name: "GRPCSampleData")
@@ -140,15 +124,6 @@ extension Target.Dependency {
     package: "swift-protobuf"
   )
   static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
-  static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
-  static let tracing: Self = .product(name: "Tracing", package: "swift-distributed-tracing")
-
-  static let grpcCore: Self = .target(name: "GRPCCore")
-  static let grpcInProcessTransport: Self = .target(name: "GRPCInProcessTransport")
-  static let grpcInterceptors: Self = .target(name: "GRPCInterceptors")
-  static let grpcHTTP2Core: Self = .target(name: "GRPCHTTP2Core")
-  static let grpcHTTP2TransportNIOPosix: Self = .target(name: "GRPCHTTP2TransportNIOPosix")
-  static let grpcHTTP2TransportNIOTransportServices: Self = .target(name: "GRPCHTTP2TransportNIOTransportServices")
 }
 
 // MARK: - Targets
@@ -177,63 +152,6 @@ extension Target {
     path: "Sources/GRPC"
   )
 
-  static let grpcCore: Target = .target(
-    name: "GRPCCore",
-    dependencies: [
-      .dequeModule,
-      .atomics
-    ],
-    path: "Sources/GRPCCore"
-  )
-
-  static let grpcInProcessTransport: Target = .target(
-    name: "GRPCInProcessTransport",
-    dependencies: [
-      .grpcCore
-    ]
-  )
-
-  static let grpcInterceptors: Target = .target(
-    name: "GRPCInterceptors",
-    dependencies: [
-      .grpcCore,
-      .tracing
-    ]
-  )
-
-  static let grpcHTTP2Core: Target = .target(
-    name: "GRPCHTTP2Core",
-    dependencies: [
-      .grpcCore,
-      .nioCore,
-      .nioHTTP2,
-      .cgrpcZlib,
-      .dequeModule,
-      .atomics
-    ]
-  )
-
-  static let grpcHTTP2TransportNIOPosix: Target = .target(
-    name: "GRPCHTTP2TransportNIOPosix",
-    dependencies: [
-      .grpcCore,
-      .grpcHTTP2Core,
-      .nioPosix,
-      .nioExtras
-    ]
-  )
-
-  static let grpcHTTP2TransportNIOTransportServices: Target = .target(
-    name: "GRPCHTTP2TransportNIOTransportServices",
-    dependencies: [
-      .grpcCore,
-      .grpcHTTP2Core,
-      .nioCore,
-      .nioExtras,
-      .nioTransportServices
-    ]
-  )
-
   static let cgrpcZlib: Target = .target(
     name: cgrpcZlibTargetName,
     path: "Sources/CGRPCZlib",
@@ -247,24 +165,9 @@ extension Target {
     dependencies: [
       .protobuf,
       .protobufPluginLibrary,
-      .grpcCodeGen,
-      .grpcProtobufCodeGen
     ],
     exclude: [
       "README.md",
-    ]
-  )
-
-  static let performanceWorker: Target = .executableTarget(
-    name: "performance-worker",
-    dependencies: [
-      .grpcCore,
-      .grpcHTTP2Core,
-      .grpcHTTP2TransportNIOPosix,
-      .grpcProtobuf,
-      .nioCore,
-      .nioFileSystem,
-      .argumentParser
     ]
   )
 
@@ -304,91 +207,6 @@ extension Target {
     ]
   )
 
-  static let grpcCoreTests: Target = .testTarget(
-    name: "GRPCCoreTests",
-    dependencies: [
-      .grpcCore,
-      .grpcInProcessTransport,
-      .dequeModule,
-      .atomics,
-      .protobuf,
-    ]
-  )
-
-  static let grpcInProcessTransportTests: Target = .testTarget(
-    name: "GRPCInProcessTransportTests",
-    dependencies: [
-      .grpcCore,
-      .grpcInProcessTransport
-    ]
-  )
-
-  static let grpcInterceptorsTests: Target = .testTarget(
-    name: "GRPCInterceptorsTests",
-    dependencies: [
-      .grpcCore,
-      .tracing,
-      .nioCore,
-      .grpcInterceptors
-    ]
-  )
-
-  static let grpcHTTP2CoreTests: Target = .testTarget(
-    name: "GRPCHTTP2CoreTests",
-    dependencies: [
-      .grpcHTTP2Core,
-      .nioCore,
-      .nioHTTP2,
-      .nioEmbedded,
-      .nioTestUtils,
-    ]
-  )
-
-  static let grpcHTTP2TransportTests: Target = .testTarget(
-    name: "GRPCHTTP2TransportTests",
-    dependencies: [
-      .grpcHTTP2Core,
-      .grpcHTTP2TransportNIOPosix,
-      .grpcHTTP2TransportNIOTransportServices,
-      .grpcProtobuf
-    ]
-  )
-
-  static let grpcCodeGenTests: Target = .testTarget(
-    name: "GRPCCodeGenTests",
-    dependencies: [
-      .grpcCodeGen
-    ]
-  )
-
-  static let grpcProtobufTests: Target = .testTarget(
-    name: "GRPCProtobufTests",
-    dependencies: [
-      .grpcProtobuf,
-      .grpcCore,
-      .protobuf
-    ]
-  )
-
-  static let grpcProtobufCodeGenTests: Target = .testTarget(
-    name: "GRPCProtobufCodeGenTests",
-    dependencies: [
-      .grpcCodeGen,
-      .grpcProtobufCodeGen,
-      .protobuf,
-      .protobufPluginLibrary
-    ]
-  )
-
-  static let inProcessInteroperabilityTests: Target = .testTarget(
-    name: "InProcessInteroperabilityTests",
-    dependencies: [
-      .grpcInProcessTransport,
-      .interoperabilityTests,
-      .grpcCore
-    ]
-  )
-
   static let interopTestModels: Target = .target(
     name: "GRPCInteroperabilityTestModels",
     dependencies: [
@@ -404,25 +222,6 @@ extension Target {
       "src/proto/grpc/testing/messages.proto",
       "src/proto/grpc/testing/test.proto",
       "unimplemented_call.patch",
-    ]
-  )
-
-  static let interoperabilityTestImplementation: Target = .target(
-    name: "InteroperabilityTests",
-    dependencies: [
-      .grpcCore,
-      .grpcProtobuf
-    ]
-  )
-
-  static let interoperabilityTestsExecutable: Target = .executableTarget(
-    name: "interoperability-tests",
-    dependencies: [
-      .grpcCore,
-      .grpcHTTP2Core,
-      .grpcHTTP2TransportNIOPosix,
-      .interoperabilityTests,
-      .argumentParser
     ]
   )
 
@@ -639,29 +438,6 @@ extension Target {
       .copy("Generated")
     ]
   )
-
-  static let grpcCodeGen: Target = .target(
-    name: "GRPCCodeGen",
-    path: "Sources/GRPCCodeGen"
-  )
-
-  static let grpcProtobuf: Target = .target(
-    name: "GRPCProtobuf",
-    dependencies: [
-      .grpcCore,
-      .protobuf,
-    ],
-    path: "Sources/GRPCProtobuf"
-  )
-  static let grpcProtobufCodeGen: Target = .target(
-    name: "GRPCProtobufCodeGen",
-    dependencies: [
-      .protobuf,
-      .protobufPluginLibrary,
-      .grpcCodeGen
-    ],
-    path: "Sources/GRPCProtobufCodeGen"
-  )
 }
 
 // MARK: - Products
@@ -670,11 +446,6 @@ extension Product {
   static let grpc: Product = .library(
     name: grpcProductName,
     targets: [grpcTargetName]
-  )
-
-  static let grpcCore: Product = .library(
-    name: "_GRPCCore",
-    targets: ["GRPCCore"]
   )
 
   static let cgrpcZlib: Product = .library(
@@ -704,7 +475,6 @@ let package = Package(
   name: grpcPackageName,
   products: [
     .grpc,
-    .grpcCore,
     .cgrpcZlib,
     .grpcReflectionService,
     .protocGenGRPCSwift,
@@ -740,31 +510,6 @@ let package = Package(
     .routeGuideServer,
     .packetCapture,
     .reflectionServer,
-
-    // v2
-    .grpcCore,
-    .grpcInProcessTransport,
-    .grpcCodeGen,
-    .grpcInterceptors,
-    .grpcHTTP2Core,
-    .grpcHTTP2TransportNIOPosix,
-    .grpcHTTP2TransportNIOTransportServices,
-    .grpcProtobuf,
-    .grpcProtobufCodeGen,
-    .interoperabilityTestImplementation,
-    .interoperabilityTestsExecutable,
-    .performanceWorker,
-
-    // v2 tests
-    .grpcCoreTests,
-    .grpcInProcessTransportTests,
-    .grpcCodeGenTests,
-    .grpcInterceptorsTests,
-    .grpcHTTP2CoreTests,
-    .grpcHTTP2TransportTests,
-    .grpcProtobufTests,
-    .grpcProtobufCodeGenTests,
-    .inProcessInteroperabilityTests
   ]
 )
 

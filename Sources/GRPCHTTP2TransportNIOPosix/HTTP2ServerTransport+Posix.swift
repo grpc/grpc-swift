@@ -162,7 +162,7 @@ extension HTTP2ServerTransport {
     }
 
     public func listen(
-      _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+      _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
       defer {
         switch self.listeningAddressState.withLockedValue({ $0.close() }) {

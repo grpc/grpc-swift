@@ -247,16 +247,18 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   }
 
   func channelActive(context: ChannelHandlerContext) {
+    let view = LoopBoundView(handler: self, context: context)
+
     self.maxAgeTimer?.schedule(on: context.eventLoop) {
-      self.initiateGracefulShutdown(context: context)
+      view.initiateGracefulShutdown()
     }
 
     self.maxIdleTimer?.schedule(on: context.eventLoop) {
-      self.initiateGracefulShutdown(context: context)
+      view.initiateGracefulShutdown()
     }
 
     self.keepaliveTimer?.schedule(on: context.eventLoop) {
-      self.keepaliveTimerFired(context: context)
+      view.keepaliveTimerFired()
     }
 
     context.fireChannelActive()
@@ -321,8 +323,9 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.inReadLoop = false
 
     // Done reading: schedule the keep-alive timer.
+    let view = LoopBoundView(handler: self, context: context)
     self.keepaliveTimer?.schedule(on: context.eventLoop) {
-      self.keepaliveTimerFired(context: context)
+      view.keepaliveTimerFired()
     }
 
     context.fireChannelReadComplete()
@@ -330,6 +333,29 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
 
   func flush(context: ChannelHandlerContext) {
     self.maybeFlush(context: context)
+  }
+}
+
+extension ServerConnectionManagementHandler {
+  struct LoopBoundView: @unchecked Sendable {
+    private let handler: ServerConnectionManagementHandler
+    private let context: ChannelHandlerContext
+
+    init(handler: ServerConnectionManagementHandler, context: ChannelHandlerContext) {
+      self.handler = handler
+      self.context = context
+    }
+
+    func initiateGracefulShutdown() {
+      self.context.eventLoop.assertInEventLoop()
+      self.handler.initiateGracefulShutdown(context: self.context)
+    }
+
+    func keepaliveTimerFired() {
+      self.context.eventLoop.assertInEventLoop()
+      self.handler.keepaliveTimerFired(context: self.context)
+    }
+
   }
 }
 
@@ -379,8 +405,9 @@ extension ServerConnectionManagementHandler {
 
     switch self.state.streamClosed(id) {
     case .startIdleTimer:
+      let loopBound = LoopBoundView(handler: self, context: context)
       self.maxIdleTimer?.schedule(on: context.eventLoop) {
-        self.initiateGracefulShutdown(context: context)
+        loopBound.initiateGracefulShutdown()
       }
 
     case .close:
@@ -481,8 +508,9 @@ extension ServerConnectionManagementHandler {
       } else {
         // RPCs may have a grace period for finishing once the second GOAWAY frame has finished.
         // If this is set close the connection abruptly once the grace period passes.
+        let loopBound = NIOLoopBound(context, eventLoop: context.eventLoop)
         self.maxGraceTimer?.schedule(on: context.eventLoop) {
-          context.close(promise: nil)
+          loopBound.value.close(promise: nil)
         }
       }
 
@@ -497,8 +525,9 @@ extension ServerConnectionManagementHandler {
     self.maybeFlush(context: context)
 
     // Schedule a timeout on waiting for the response.
+    let loopBound = LoopBoundView(handler: self, context: context)
     self.keepaliveTimeoutTimer.schedule(on: context.eventLoop) {
-      self.initiateGracefulShutdown(context: context)
+      loopBound.initiateGracefulShutdown()
     }
   }
 }
