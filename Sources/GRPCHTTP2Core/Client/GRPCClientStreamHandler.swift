@@ -130,7 +130,10 @@ extension GRPCClientStreamHandler {
         context.fireErrorCaught(error)
       }
 
-    case .ping, .goAway, .priority, .rstStream, .settings, .pushPromise, .windowUpdate,
+    case .rstStream:
+      self.handleUnexpectedInboundClose(context: context, reason: .streamReset)
+
+    case .ping, .goAway, .priority, .settings, .pushPromise, .windowUpdate,
       .alternativeService, .origin:
       ()
     }
@@ -147,6 +150,29 @@ extension GRPCClientStreamHandler {
 
   func handlerRemoved(context: ChannelHandlerContext) {
     self.stateMachine.tearDown()
+  }
+
+  func channelInactive(context: ChannelHandlerContext) {
+    self.handleUnexpectedInboundClose(context: context, reason: .channelInactive)
+    context.fireChannelInactive()
+  }
+
+  func errorCaught(context: ChannelHandlerContext, error: any Error) {
+    self.handleUnexpectedInboundClose(context: context, reason: .errorThrown(error))
+  }
+
+  private func handleUnexpectedInboundClose(
+    context: ChannelHandlerContext,
+    reason: GRPCStreamStateMachine.UnexpectedInboundCloseReason
+  ) {
+    switch self.stateMachine.unexpectedInboundClose(reason: reason) {
+    case .forwardStatus_clientOnly(let status):
+      context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
+    case .doNothing:
+      ()
+    case .fireError_serverOnly:
+      assertionFailure("`fireError` should only happen on the server side, never on the client.")
+    }
   }
 }
 
