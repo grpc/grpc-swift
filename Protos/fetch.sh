@@ -34,6 +34,7 @@ rm -rf "$upstream"
 mkdir -p "$upstream/google"
 mkdir -p "$upstream/grpc/testing"
 mkdir -p "$upstream/grpc/core"
+mkdir -p "$upstream/grpc/health/v1"
 
 # Copy over the grpc-proto protos.
 cp -rp "$checkouts/grpc-proto/grpc/service_config" "$upstream/grpc/service_config"
@@ -47,6 +48,7 @@ cp -rp "$checkouts/grpc-proto/grpc/testing/control.proto" "$upstream/grpc/testin
 cp -rp "$checkouts/grpc-proto/grpc/testing/payloads.proto" "$upstream/grpc/testing/payloads.proto"
 cp -rp "$checkouts/grpc-proto/grpc/testing/stats.proto" "$upstream/grpc/testing/stats.proto"
 cp -rp "$checkouts/grpc-proto/grpc/core/stats.proto" "$upstream/grpc/core/stats.proto"
+cp -rp "$checkouts/grpc-proto/grpc/health/v1/health.proto" "$upstream/grpc/health/v1/health.proto"
 
 # Copy over the googleapis protos.
 mkdir -p "$upstream/google/rpc"
