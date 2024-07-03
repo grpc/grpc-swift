@@ -277,14 +277,17 @@ extension ClientConnectionHandler {
     }
 
     func keepaliveTimerFired() {
+      self.context.eventLoop.assertInEventLoop()
       self.handler.keepaliveTimerFired(context: self.context)
     }
 
     func keepaliveTimeoutExpired() {
+      self.context.eventLoop.assertInEventLoop()
       self.handler.keepaliveTimeoutExpired(context: self.context)
     }
 
     func maxIdleTimerFired() {
+      self.context.eventLoop.assertInEventLoop()
       self.handler.maxIdleTimerFired(context: self.context)
     }
   }

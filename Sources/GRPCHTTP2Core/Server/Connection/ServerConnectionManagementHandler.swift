@@ -347,10 +347,12 @@ extension ServerConnectionManagementHandler {
     }
 
     func initiateGracefulShutdown() {
+      self.context.eventLoop.assertInEventLoop()
       self.handler.initiateGracefulShutdown(context: self.context)
     }
 
     func keepaliveTimerFired() {
+      self.context.eventLoop.assertInEventLoop()
       self.handler.keepaliveTimerFired(context: self.context)
     }
 
