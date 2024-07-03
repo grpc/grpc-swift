@@ -34,7 +34,7 @@ updating.
 ### Example code and setup
 
 The example code for our tutorial is in
-[grpc/grpc-swift/Sources/Examples/RouteGuide][routeguide-source].
+[grpc/grpc-swift/Sources/Examples/v1/RouteGuide][routeguide-source].
 To download the example, clone the latest release in `grpc-swift` repository by
 running the following command (replacing `x.y.z` with the latest release, for
 example `1.7.0`):
@@ -43,10 +43,10 @@ example `1.7.0`):
 $ git clone -b x.y.z https://github.com/grpc/grpc-swift
 ```
 
-Then change your current directory to `grpc-swift/Sources/Examples/RouteGuide`:
+Then change your current directory to `grpc-swift/Sources/Examples/v1/RouteGuide`:
 
 ```sh
-$ cd grpc-swift/Sources/Examples/RouteGuide
+$ cd grpc-swift/Sources/Examples/v1/RouteGuide
 ```
 
 
@@ -151,7 +151,7 @@ $ Protos/generate.sh
 ```
 
 Running this command generates the following files in the
-`Sources/Examples/RouteGuide/Model` directory:
+`Sources/Examples/v1/RouteGuide/Model` directory:
 
 - `route_guide.pb.swift`, which contains the implementation of your generated
     message classes
@@ -165,10 +165,10 @@ $ protoc Protos/examples/route_guide/route_guide.proto \
     --proto_path=Protos/examples/route_guide \
     --plugin=./.build/debug/protoc-gen-swift \
     --swift_opt=Visibility=Public \
-    --swift_out=Sources/Examples/RouteGuide/Model \
+    --swift_out=Sources/Examples/v1/RouteGuide/Model \
     --plugin=./.build/debug/protoc-gen-grpc-swift \
     --grpc-swift_opt=Visibility=Public \
-    --grpc-swift_out=Sources/Examples/RouteGuide/Model
+    --grpc-swift_out=Sources/Examples/v1/RouteGuide/Model
 ```
 
 We invoke the protocol buffer compiler `protoc` with the path to our service
@@ -197,7 +197,7 @@ There are two parts to making our `RouteGuide` service do its job:
   service responses.
 
 You can find our example `RouteGuide` provider in
-[grpc-swift/Sources/Examples/RouteGuide/Server/RouteGuideProvider.swift][routeguide-provider].
+[grpc-swift/Sources/Examples/v1/RouteGuide/Server/RouteGuideProvider.swift][routeguide-provider].
 Let's take a closer look at how it works.
 
 #### Implementing RouteGuide
@@ -455,7 +455,7 @@ program from exiting (since `close()` is never called on the server).
 
 In this section, we'll look at creating a Swift client for our `RouteGuide`
 service. You can see our complete example client code in
-[grpc-swift/Sources/Examples/RouteGuide/Client/RouteGuideClient.swift][routeguide-client].
+[grpc-swift/Sources/Examples/v1/RouteGuide/Client/RouteGuideClient.swift][routeguide-client].
 
 #### Creating a stub
 
@@ -604,11 +604,11 @@ Follow the instructions in the Route Guide example directory
 [protobuf-docs]: https://developers.google.com/protocol-buffers/docs/proto3
 [protobuf-releases]: https://github.com/google/protobuf/releases
 [protocol-buffers]: https://developers.google.com/protocol-buffers/docs/overview
-[routeguide-client]: ../Sources/Examples/RouteGuide/Client/RouteGuideClient.swift
+[routeguide-client]: ../Sources/Examples/v1/RouteGuide/Client/RouteGuideClient.swift
 [routeguide-proto]: ../Protos/examples/route_guide/route_guide.proto
-[routeguide-provider]: ../Sources/Examples/RouteGuide/Server/RouteGuideProvider.swift
-[routeguide-readme]: ../Sources/Examples/RouteGuide/README.md
-[routeguide-source]: ../Sources/Examples/RouteGuide
+[routeguide-provider]: ../Sources/Examples/v1/RouteGuide/Server/RouteGuideProvider.swift
+[routeguide-readme]: ../Sources/Examples/v1/RouteGuide/README.md
+[routeguide-source]: ../Sources/Examples/v1/RouteGuide
 [run-protoc]: ../Protos/generate.sh
 [swift-protobuf-guide]: https://github.com/apple/swift-protobuf/blob/main/Documentation/API.md
 [swift-protobuf]: https://github.com/apple/swift-protobuf

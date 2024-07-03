@@ -4,7 +4,7 @@ This tutorial goes through the steps of adding Reflection service to a
 server, running it and testing it using gRPCurl.
 
  The server used in this example is implemented at
- [Sources/Examples/ReflectionService/ReflectionServer.swift][reflection-server]
+ [Sources/Examples/v1/ReflectionService/ReflectionServer.swift][reflection-server]
  and it supports the "Greeter", "Echo", and "Reflection" services.
 
 
@@ -38,27 +38,27 @@ describing the services of the server and the version of the reflection service.
 The server from this example uses the `GreeterProvider` and the `EchoProvider`,
 besides the `ReflectionService`.
 
-The associated proto files are located at `Sources/Examples/HelloWorld/Model/helloworld.proto`, and
-`Sources/Examples/Echo/Model/echo.proto` respectively.
+The associated proto files are located at `Sources/Examples/v1/HelloWorld/Model/helloworld.proto`, and
+`Sources/Examples/v1/Echo/Model/echo.proto` respectively.
 
 In order to generate the reflection data for the `helloworld.proto`, you can run the following command:
 
 ```sh
-$ protoc Sources/Examples/HelloWorld/Model/helloworld.proto \
-    --proto_path=Sources/Examples/HelloWorld/Model \
+$ protoc Sources/Examples/v1/HelloWorld/Model/helloworld.proto \
+    --proto_path=Sources/Examples/v1/HelloWorld/Model \
     --grpc-swift_opt=Client=false,Server=false,ReflectionData=true \
-    --grpc-swift_out=Sources/Examples/ReflectionService/Generated
+    --grpc-swift_out=Sources/Examples/v1/ReflectionService/Generated
 ```
 
 Let's break the command down:
 - The first argument passed to `protoc` is the path
   to the `.proto` file to generate reflection data
-  for: [`Sources/Examples/HelloWorld/Model/helloworld.proto`][helloworld-proto].
-- The `proto_path` flag is the path to search for imports: `Sources/Examples/HelloWorld/Model`.
+  for: [`Sources/Examples/v1/HelloWorld/Model/helloworld.proto`][helloworld-proto].
+- The `proto_path` flag is the path to search for imports: `Sources/Examples/v1/HelloWorld/Model`.
 - The 'grpc-swift_opt' flag allows us to list options for the Swift generator.
   To generate only the reflection data set: `Client=false,Server=false,ReflectionData=true`.
 - The `grpc-swift_out` flag is used to set the path of the directory
-  where the generated file will be located: `Sources/Examples/ReflectionService/Generated`.
+  where the generated file will be located: `Sources/Examples/v1/ReflectionService/Generated`.
 
 This command assumes that the `protoc-gen-grpc-swift` plugin is in your `$PATH` environment variable.
 You can learn how to get the plugin from this section of the `grpc-swift` README:
@@ -219,9 +219,9 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [grpc-cli]: https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
 [v1]: ../v1/reflection-v1.proto
 [v1alpha]: ../v1Alpha/reflection-v1alpha.proto
-[reflection-server]: ../../Examples/ReflectionService/ReflectionServer.swift
-[helloworld-proto]: ../../Examples/HelloWorld/Model/helloworld.proto
-[echo-proto]: ../../Examples/Echo/Model/echo.proto
+[reflection-server]: ../../Examples/v1/ReflectionService/ReflectionServer.swift
+[helloworld-proto]: ../../Examples/v1/HelloWorld/Model/helloworld.proto
+[echo-proto]: ../../Examples/v1/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
 [swiftpm-resources]: https://github.com/apple/swift-package-manager/blob/main/Documentation/PackageDescription.md#resource
 [spm-plugin]: ../../protoc-gen-grpc-swift/Docs.docc/spm-plugin.md

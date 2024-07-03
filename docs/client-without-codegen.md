@@ -27,4 +27,4 @@ using `makeClientStreamingCall`, `makeServerStreamingCall`, and
 These methods are also available on generated clients, allowing you to call
 methods which have been added to the service since the client was generated.
 
-[helloworld-source]: ../Sources/Examples/HelloWorld
+[helloworld-source]: ../Sources/Examples/v1/HelloWorld
