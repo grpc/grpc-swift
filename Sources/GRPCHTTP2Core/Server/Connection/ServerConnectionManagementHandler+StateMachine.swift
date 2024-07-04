@@ -57,12 +57,14 @@ extension ServerConnectionManagementHandler {
     mutating func streamOpened(_ id: HTTP2StreamID) {
       switch self.state {
       case .active(var state):
+        self.state = ._modifying
         state.lastStreamID = id
         let (inserted, _) = state.openStreams.insert(id)
         assert(inserted, "Can't open stream \(Int(id)), it's already open")
         self.state = .active(state)
 
       case .closing(var state):
+        self.state = ._modifying
         state.lastStreamID = id
         let (inserted, _) = state.openStreams.insert(id)
         assert(inserted, "Can't open stream \(Int(id)), it's already open")
@@ -70,6 +72,9 @@ extension ServerConnectionManagementHandler {
 
       case .closed:
         ()
+
+      case ._modifying:
+        preconditionFailure()
       }
     }
 
@@ -88,12 +93,14 @@ extension ServerConnectionManagementHandler {
 
       switch self.state {
       case .active(var state):
+        self.state = ._modifying
         let removedID = state.openStreams.remove(id)
         assert(removedID != nil, "Can't close stream \(Int(id)), it wasn't open")
         onStreamClosed = state.openStreams.isEmpty ? .startIdleTimer : .none
         self.state = .active(state)
 
       case .closing(var state):
+        self.state = ._modifying
         let removedID = state.openStreams.remove(id)
         assert(removedID != nil, "Can't close stream \(Int(id)), it wasn't open")
         // If the second GOAWAY hasn't been sent it isn't safe to close if there are no open
@@ -104,6 +111,9 @@ extension ServerConnectionManagementHandler {
 
       case .closed:
         onStreamClosed = .none
+
+      case ._modifying:
+        preconditionFailure()
       }
 
       return onStreamClosed
@@ -128,6 +138,7 @@ extension ServerConnectionManagementHandler {
 
       switch self.state {
       case .active(var state):
+        self.state = ._modifying
         let tooManyPings = state.keepalive.receivedPing(
           atTime: time,
           hasOpenStreams: !state.openStreams.isEmpty
@@ -142,6 +153,7 @@ extension ServerConnectionManagementHandler {
         }
 
       case .closing(var state):
+        self.state = ._modifying
         let tooManyPings = state.keepalive.receivedPing(
           atTime: time,
           hasOpenStreams: !state.openStreams.isEmpty
@@ -157,6 +169,9 @@ extension ServerConnectionManagementHandler {
 
       case .closed:
         onPing = .none
+
+      case ._modifying:
+        preconditionFailure()
       }
 
       return onPing
@@ -176,6 +191,8 @@ extension ServerConnectionManagementHandler {
 
       switch self.state {
       case .closing(var state):
+        self.state = ._modifying
+
         // If only one GOAWAY has been sent and the data matches the data from the GOAWAY ping then
         // the server should send another GOAWAY ratcheting down the last stream ID. If no streams
         // are open then the server can close the connection immediately after, otherwise it must
@@ -194,8 +211,13 @@ extension ServerConnectionManagementHandler {
           onPingAck = .none
         }
 
+        self.state = .closing(state)
+
       case .active, .closed:
         onPingAck = .none
+
+      case ._modifying:
+        preconditionFailure()
       }
 
       return onPingAck
@@ -220,6 +242,9 @@ extension ServerConnectionManagementHandler {
 
       case .closing, .closed:
         onStartGracefulShutdown = .none
+
+      case ._modifying:
+        preconditionFailure()
       }
 
       return onStartGracefulShutdown
@@ -229,15 +254,20 @@ extension ServerConnectionManagementHandler {
     mutating func resetKeepaliveState() {
       switch self.state {
       case .active(var state):
+        self.state = ._modifying
         state.keepalive.reset()
         self.state = .active(state)
 
       case .closing(var state):
+        self.state = ._modifying
         state.keepalive.reset()
         self.state = .closing(state)
 
       case .closed:
         ()
+
+      case ._modifying:
+        preconditionFailure()
       }
     }
 
@@ -360,5 +390,6 @@ extension ServerConnectionManagementHandler.StateMachine {
     case active(Active)
     case closing(Closing)
     case closed
+    case _modifying
   }
 }
