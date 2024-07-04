@@ -183,9 +183,13 @@ struct TestWriter<WriterElement: Sendable>: RPCWriterProtocol {
     self.streamContinuation = streamContinuation
   }
 
-  func write(contentsOf elements: some Sequence<Self.Element>) async throws {
+  func write(_ element: WriterElement) {
+    self.streamContinuation.yield(element)
+  }
+
+  func write(contentsOf elements: some Sequence<Self.Element>) {
     elements.forEach { element in
-      self.streamContinuation.yield(element)
+      self.write(element)
     }
   }
 }

@@ -28,6 +28,17 @@ extension RPCWriter {
       self.writer = other
     }
 
+    /// Writes a single element.
+    ///
+    /// This function suspends until the element has been accepted. Implements can use this
+    /// to exert backpressure on callers.
+    ///
+    /// - Parameter element: The element to write.
+    @inlinable
+    public func write(_ element: Element) async throws {
+      try await self.writer.write(element)
+    }
+
     /// Writes a sequence of elements.
     ///
     /// This function suspends until the elements have been accepted. Implements can use this

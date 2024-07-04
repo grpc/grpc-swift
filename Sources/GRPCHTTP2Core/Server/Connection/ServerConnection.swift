@@ -35,6 +35,10 @@ public enum ServerConnection {
         self.http2Stream = http2Stream
       }
 
+      public func write(_ element: RPCResponsePart) async throws {
+        try await self.responseWriter.write(element)
+      }
+
       public func write(contentsOf elements: some Sequence<Self.Element>) async throws {
         try await self.responseWriter.write(contentsOf: elements)
       }
