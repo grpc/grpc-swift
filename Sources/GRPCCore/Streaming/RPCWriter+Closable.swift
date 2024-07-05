@@ -30,7 +30,7 @@ extension RPCWriter {
 
     /// Writes a single element.
     ///
-    /// This function suspends until the element has been accepted. Implements can use this
+    /// This function suspends until the element has been accepted. Implementers can use this
     /// to exert backpressure on callers.
     ///
     /// - Parameter element: The element to write.
@@ -41,7 +41,7 @@ extension RPCWriter {
 
     /// Writes a sequence of elements.
     ///
-    /// This function suspends until the elements have been accepted. Implements can use this
+    /// This function suspends until the elements have been accepted. Implementers can use this
     /// to exert backpressure on callers.
     ///
     /// - Parameter elements: The elements to write.
