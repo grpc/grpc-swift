@@ -39,6 +39,13 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandl
 
   private let methodDescriptorPromise: EventLoopPromise<MethodDescriptor>
 
+  // Existential errors unconditionally allocate, avoid this per-use allocation by doing it
+  // statically.
+  private static let handlerRemovedBeforeDescriptorResolved: any Error = RPCError(
+    code: .unavailable,
+    message: "RPC stream was closed before we got any Metadata."
+  )
+
   init(
     scheme: GRPCStreamStateMachineConfiguration.Scheme,
     acceptedEncodings: CompressionAlgorithmSet,
@@ -159,12 +166,7 @@ extension GRPCServerStreamHandler {
 
   func handlerRemoved(context: ChannelHandlerContext) {
     self.stateMachine.tearDown()
-    self.methodDescriptorPromise.fail(
-      RPCError(
-        code: .unavailable,
-        message: "RPC stream was closed before we got any Metadata."
-      )
-    )
+    self.methodDescriptorPromise.fail(Self.handlerRemovedBeforeDescriptorResolved)
   }
 
   func channelInactive(context: ChannelHandlerContext) {
