@@ -30,7 +30,7 @@ public enum ClientConnectionEvent: Sendable {
     /// The local peer initiated the close.
     case initiatedLocally
     /// The connection was closed unexpectedly
-    case unexpected(Error?, isIdle: Bool)
+    case unexpected((any Error)?, isIdle: Bool)
   }
 
   /// The connection is now ready.
@@ -62,7 +62,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   }
 
   /// The `EventLoop` of the `Channel` this handler exists in.
-  private let eventLoop: EventLoop
+  private let eventLoop: any EventLoop
 
   /// The maximum amount of time the connection may be idle for. If the connection remains idle
   /// (i.e. has no open streams) for this period of time then the connection will be gracefully
@@ -104,7 +104,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   ///   - keepaliveWithoutCalls: Whether the client sends keep-alive pings when there are no calls
   ///       in progress.
   init(
-    eventLoop: EventLoop,
+    eventLoop: any EventLoop,
     maxIdleTime: TimeAmount?,
     keepaliveTime: TimeAmount?,
     keepaliveTimeout: TimeAmount?,
@@ -612,7 +612,7 @@ extension ClientConnectionHandler {
 
     enum OnClosed {
       case succeed(EventLoopPromise<Void>)
-      case unexpectedClose(Error?, isIdle: Bool)
+      case unexpectedClose((any Error)?, isIdle: Bool)
       case none
     }
 

@@ -45,7 +45,7 @@ struct Timer {
   }
 
   /// Schedule a task on the given `EventLoop`.
-  mutating func schedule(on eventLoop: EventLoop, work: @escaping @Sendable () throws -> Void) {
+  mutating func schedule(on eventLoop: any EventLoop, work: @escaping @Sendable () throws -> Void) {
     self.task?.cancel()
 
     if self.repeat {

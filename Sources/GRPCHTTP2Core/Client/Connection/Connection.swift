@@ -69,7 +69,7 @@ struct Connection: Sendable {
     /// Closed because the remote peer initiate shutdown (i.e. sent a GOAWAY frame).
     case remote
     /// Closed because the connection encountered an unexpected error.
-    case error(Error, wasIdle: Bool)
+    case error(any Error, wasIdle: Bool)
   }
 
   /// Inputs to the 'run' method.

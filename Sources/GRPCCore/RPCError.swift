@@ -33,7 +33,7 @@ public struct RPCError: Sendable, Hashable, Error {
   public var metadata: Metadata
 
   /// The original error which led to this error being thrown.
-  public var cause: Error?
+  public var cause: (any Error)?
 
   /// Create a new RPC error.
   ///
@@ -42,7 +42,7 @@ public struct RPCError: Sendable, Hashable, Error {
   ///   - message: A message providing additional context about the code.
   ///   - metadata: Any metadata to attach to the error.
   ///   - cause: An underlying error which led to this error being thrown.
-  public init(code: Code, message: String, metadata: Metadata = [:], cause: Error? = nil) {
+  public init(code: Code, message: String, metadata: Metadata = [:], cause: (any Error)? = nil) {
     self.code = code
     self.message = message
     self.metadata = metadata

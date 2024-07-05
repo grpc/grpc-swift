@@ -107,7 +107,7 @@ extension ChannelPipeline.SynchronousOperations {
   @_spi(Package)
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
   public func configureGRPCClientPipeline(
-    channel: Channel,
+    channel: any Channel,
     config: GRPCChannel.Config
   ) throws -> (
     NIOAsyncChannel<ClientConnectionEvent, Void>,

@@ -63,5 +63,5 @@ public protocol ClosableRPCWriterProtocol<Element>: RPCWriterProtocol {
   ///
   /// All writes after ``finish(throwing:)`` has been called should result in an error
   /// being thrown.
-  func finish(throwing error: Error)
+  func finish(throwing error: any Error)
 }

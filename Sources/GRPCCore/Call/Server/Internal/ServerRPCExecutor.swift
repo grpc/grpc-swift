@@ -241,7 +241,7 @@ struct ServerRPCExecutor {
 
   @usableFromInline
   enum ServerExecutorTask {
-    case timedOut(Result<Void, Error>)
+    case timedOut(Result<Void, any Error>)
     case executed
   }
 }

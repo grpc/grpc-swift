@@ -264,9 +264,9 @@ extension GRPCChannel {
     /// A stream was created, use it.
     case created(Connection.Stream)
     /// An error occurred while trying to create a stream, try again if possible.
-    case tryAgain(Error)
+    case tryAgain(any Error)
     /// An unrecoverable error occurred (e.g. the channel is closed), fail the RPC and don't retry.
-    case stopTrying(Error)
+    case stopTrying(any Error)
   }
 
   private func makeStream(
@@ -734,8 +734,8 @@ extension GRPCChannel.StateMachine {
     var finish: Bool = false
 
     struct ResumableContinuations {
-      var continuations: [CheckedContinuation<LoadBalancer, Error>]
-      var result: Result<LoadBalancer, Error>
+      var continuations: [CheckedContinuation<LoadBalancer, any Error>]
+      var result: Result<LoadBalancer, any Error>
     }
   }
 
@@ -878,7 +878,7 @@ extension GRPCChannel.StateMachine {
   }
 
   mutating func enqueue(
-    continuation: CheckedContinuation<LoadBalancer, Error>,
+    continuation: CheckedContinuation<LoadBalancer, any Error>,
     waitForReady: Bool,
     id: QueueEntryID
   ) -> Bool {
@@ -902,7 +902,7 @@ extension GRPCChannel.StateMachine {
 
   mutating func dequeueContinuation(
     id: QueueEntryID
-  ) -> CheckedContinuation<LoadBalancer, Error>? {
+  ) -> CheckedContinuation<LoadBalancer, any Error>? {
     switch self.state {
     case .notRunning(var state):
       self.state = ._modifying

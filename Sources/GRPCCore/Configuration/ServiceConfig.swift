@@ -70,7 +70,7 @@ extension ServiceConfig: Codable {
     case retryThrottling
   }
 
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
     let methodConfig = try container.decodeIfPresent(
@@ -91,7 +91,7 @@ extension ServiceConfig: Codable {
     )
   }
 
-  public func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(self.methodConfig, forKey: .methodConfig)
     try container.encode(self.loadBalancingConfig, forKey: .loadBalancingConfig)
@@ -179,7 +179,7 @@ extension ServiceConfig.LoadBalancingConfig {
       self.shuffleAddressList = shuffleAddressList
     }
 
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       let shuffle = try container.decodeIfPresent(Bool.self, forKey: .shuffleAddressList) ?? false
       self.shuffleAddressList = shuffle
@@ -200,7 +200,7 @@ extension ServiceConfig.LoadBalancingConfig: Codable {
     case pickFirst = "pick_first"
   }
 
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     if let value = try container.decodeIfPresent(RoundRobin.self, forKey: .roundRobin) {
       self.value = .roundRobin(value)
@@ -211,7 +211,7 @@ extension ServiceConfig.LoadBalancingConfig: Codable {
     }
   }
 
-  public func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     switch self.value {
     case .pickFirst(let value):
@@ -254,7 +254,7 @@ extension ServiceConfig {
       try self.validateTokenRatio()
     }
 
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       self.maxTokens = try container.decode(Int.self, forKey: .maxTokens)
       self.tokenRatio = try container.decode(Double.self, forKey: .tokenRatio)

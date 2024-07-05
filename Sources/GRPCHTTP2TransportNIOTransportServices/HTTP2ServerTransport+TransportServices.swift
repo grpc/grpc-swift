@@ -332,7 +332,7 @@ extension NIOCore.SocketAddress {
 extension NIOTSListenerBootstrap {
   fileprivate func bind<Output: Sendable>(
     to address: GRPCHTTP2Core.SocketAddress,
-    childChannelInitializer: @escaping @Sendable (Channel) -> EventLoopFuture<Output>
+    childChannelInitializer: @escaping @Sendable (any Channel) -> EventLoopFuture<Output>
   ) async throws -> NIOAsyncChannel<Output, Never> {
     if address.virtualSocket != nil {
       throw RuntimeError(

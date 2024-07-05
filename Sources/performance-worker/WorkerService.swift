@@ -266,7 +266,7 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
           case let .some(.setup(serverConfig)):
             let (server, transport) = try await self.startServer(serverConfig)
             group.addTask {
-              let result: Result<Void, Error>
+              let result: Result<Void, any Error>
 
               do {
                 try await server.run()

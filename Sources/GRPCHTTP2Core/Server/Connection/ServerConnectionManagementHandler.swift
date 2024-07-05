@@ -44,7 +44,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   typealias OutboundOut = HTTP2Frame
 
   /// The `EventLoop` of the `Channel` this handler exists in.
-  private let eventLoop: EventLoop
+  private let eventLoop: any EventLoop
 
   /// The maximum amount of time a connection may be idle for. If the connection remains idle
   /// (i.e. has no open streams) for this period of time then the connection will be gracefully
@@ -201,7 +201,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   ///       connection is closed if there are too many strikes.
   ///   - clock: A clock providing the current time.
   init(
-    eventLoop: EventLoop,
+    eventLoop: any EventLoop,
     maxIdleTime: TimeAmount?,
     maxAge: TimeAmount?,
     maxGraceTime: TimeAmount?,

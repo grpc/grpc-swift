@@ -92,7 +92,7 @@ struct TestMessage: SwiftProtobuf.Message {
     return true
   }
 
-  func isEqualTo(message: SwiftProtobuf.Message) -> Bool {
+  func isEqualTo(message: any SwiftProtobuf.Message) -> Bool {
     return false
   }
 }

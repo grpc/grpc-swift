@@ -193,7 +193,7 @@ extension Target {
         .atomics
       ],
       path: "Sources/GRPCCore",
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v5), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -203,7 +203,7 @@ extension Target {
       dependencies: [
         .grpcCore
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -214,7 +214,7 @@ extension Target {
         .grpcCore,
         .tracing
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -229,7 +229,7 @@ extension Target {
         .dequeModule,
         .atomics
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -242,7 +242,7 @@ extension Target {
         .nioPosix,
         .nioExtras
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -256,7 +256,7 @@ extension Target {
         .nioExtras,
         .nioTransportServices
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -298,7 +298,7 @@ extension Target {
         .nioFileSystem,
         .argumentParser
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -426,7 +426,7 @@ extension Target {
         .grpcCore,
         .protobuf
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -439,7 +439,7 @@ extension Target {
         .protobuf,
         .protobufPluginLibrary
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -451,7 +451,7 @@ extension Target {
         .interoperabilityTests,
         .grpcCore
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v5), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -483,7 +483,7 @@ extension Target {
         .grpcCore,
         .grpcProtobuf
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v5), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -497,7 +497,7 @@ extension Target {
         .interoperabilityTests,
         .argumentParser
       ],
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -787,7 +787,7 @@ extension Target {
     .target(
       name: "GRPCCodeGen",
       path: "Sources/GRPCCodeGen",
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -799,7 +799,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/GRPCProtobuf",
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -812,7 +812,7 @@ extension Target {
         .grpcCodeGen
       ],
       path: "Sources/GRPCProtobufCodeGen",
-      swiftSettings: [.swiftLanguageVersion(.v6)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
