@@ -144,7 +144,7 @@ extension HTTP2ClientTransport.Posix {
         }
       }
 
-      return HTTP2Connection(channel: channel, multiplexer: multiplexer, isPlaintext: false)
+      return HTTP2Connection(channel: channel, multiplexer: multiplexer, isPlaintext: true)
     }
   }
 }
