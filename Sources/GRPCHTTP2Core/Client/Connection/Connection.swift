@@ -366,6 +366,10 @@ extension Connection {
         self.http2Stream = http2Stream
       }
 
+      func write(_ element: RPCRequestPart) async throws {
+        try await self.requestWriter.write(element)
+      }
+
       func write(contentsOf elements: some Sequence<Self.Element>) async throws {
         try await self.requestWriter.write(contentsOf: elements)
       }

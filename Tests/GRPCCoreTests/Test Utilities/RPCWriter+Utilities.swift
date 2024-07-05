@@ -31,6 +31,10 @@ extension RPCWriter {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 private struct FailOnWrite<Element>: RPCWriterProtocol {
+  func write(_ element: Element) async throws {
+    XCTFail("Unexpected write")
+  }
+
   func write(contentsOf elements: some Sequence<Element>) async throws {
     XCTFail("Unexpected write")
   }
@@ -44,9 +48,13 @@ private struct AsyncStreamGatheringWriter<Element>: RPCWriterProtocol {
     self.continuation = continuation
   }
 
-  func write(contentsOf elements: some Sequence<Element>) async throws {
+  func write(_ element: Element) {
+    self.continuation.yield(element)
+  }
+
+  func write(contentsOf elements: some Sequence<Element>) {
     for element in elements {
-      self.continuation.yield(element)
+      self.write(element)
     }
   }
 }
