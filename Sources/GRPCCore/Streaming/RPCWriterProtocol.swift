@@ -20,9 +20,17 @@ public protocol RPCWriterProtocol<Element>: Sendable {
   /// The type of value written.
   associatedtype Element
 
+  /// Writes a single element.
+  ///
+  /// This function suspends until the element has been accepted. Implementers can use this
+  /// to exert backpressure on callers.
+  ///
+  /// - Parameter element: The element to write.
+  func write(_ element: Element) async throws
+
   /// Writes a sequence of elements.
   ///
-  /// This function suspends until the elements have been accepted. Implements can use this
+  /// This function suspends until the elements have been accepted. Implementers can use this
   /// to exert backpressure on callers.
   ///
   /// - Parameter elements: The elements to write.
@@ -31,13 +39,6 @@ public protocol RPCWriterProtocol<Element>: Sendable {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCWriterProtocol {
-  /// Writes a single element into the sink.
-  ///
-  /// - Parameter element: The element to write.
-  public func write(_ element: Element) async throws {
-    try await self.write(contentsOf: CollectionOfOne(element))
-  }
-
   /// Writes an `AsyncSequence` of values into the sink.
   ///
   /// - Parameter elements: The elements to write.

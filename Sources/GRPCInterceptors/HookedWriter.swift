@@ -32,6 +32,12 @@ struct HookedWriter<Element>: RPCWriterProtocol {
     self.afterEachWrite = afterEachWrite
   }
 
+  func write(_ element: Element) async throws {
+    self.beforeEachWrite()
+    try await self.writer.write(element)
+    self.afterEachWrite()
+  }
+
   func write(contentsOf elements: some Sequence<Element>) async throws {
     self.beforeEachWrite()
     try await self.writer.write(contentsOf: elements)

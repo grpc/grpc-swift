@@ -32,6 +32,11 @@ struct MessageToRPCResponsePartWriter<Serializer: MessageSerializer>: RPCWriterP
   }
 
   @inlinable
+  func write(_ element: Element) async throws {
+    try await self.base.write(.message(self.serializer.serialize(element)))
+  }
+
+  @inlinable
   func write(contentsOf elements: some Sequence<Serializer.Message>) async throws {
     let requestParts = try elements.map { message -> RPCResponsePart in
       .message(try self.serializer.serialize(message))
