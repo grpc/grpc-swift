@@ -1719,7 +1719,7 @@ internal enum GRPCHTTP2Keys: String {
 }
 
 extension HPACKHeaders {
-  fileprivate func firstString(forKey key: GRPCHTTP2Keys, canonicalForm: Bool = true) -> String? {
+  func firstString(forKey key: GRPCHTTP2Keys, canonicalForm: Bool = true) -> String? {
     self.values(forHeader: key.rawValue, canonicalForm: canonicalForm).first(where: { _ in true })
       .map {
         String($0)
