@@ -1353,6 +1353,62 @@ final class HTTP2TransportTests: XCTestCase {
       }
     }
   }
+
+  func testUnaryScheme() async throws {
+    try await self.forEachTransportPair { control, pair in
+      let input = ControlInput.with {
+        $0.echoMetadataInHeaders = true
+        $0.numberOfMessages = 1
+      }
+      let request = ClientRequest.Single(message: input)
+      try await control.unary(request: request) { response in
+        XCTAssertEqual(Array(response.metadata["echo-scheme"]), ["http"])
+      }
+    }
+  }
+
+  func testServerStreamingScheme() async throws {
+    try await self.forEachTransportPair { control, pair in
+      let input = ControlInput.with {
+        $0.echoMetadataInHeaders = true
+        $0.numberOfMessages = 1
+      }
+      let request = ClientRequest.Single(message: input)
+      try await control.serverStream(request: request) { response in
+        XCTAssertEqual(Array(response.metadata["echo-scheme"]), ["http"])
+      }
+    }
+  }
+
+  func testClientStreamingScheme() async throws {
+    try await self.forEachTransportPair { control, pair in
+      let request = ClientRequest.Stream(of: ControlInput.self) { writer in
+        let input = ControlInput.with {
+          $0.echoMetadataInHeaders = true
+          $0.numberOfMessages = 1
+        }
+        try await writer.write(input)
+      }
+      try await control.clientStream(request: request) { response in
+        XCTAssertEqual(Array(response.metadata["echo-scheme"]), ["http"])
+      }
+    }
+  }
+
+  func testBidiStreamingScheme() async throws {
+    try await self.forEachTransportPair { control, pair in
+      let request = ClientRequest.Stream(of: ControlInput.self) { writer in
+        let input = ControlInput.with {
+          $0.echoMetadataInHeaders = true
+          $0.numberOfMessages = 1
+        }
+        try await writer.write(input)
+      }
+      try await control.bidiStream(request: request) { response in
+        XCTAssertEqual(Array(response.metadata["echo-scheme"]), ["http"])
+      }
+    }
+  }
 }
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
