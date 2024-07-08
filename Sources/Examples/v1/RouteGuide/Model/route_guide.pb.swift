@@ -38,7 +38,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 /// (degrees multiplied by 10**7 and rounded to the nearest integer).
 /// Latitudes should be in the range +/- 90 degrees and longitude should be in
 /// the range +/- 180 degrees (inclusive).
-public struct Routeguide_Point {
+public struct Routeguide_Point: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -54,7 +54,7 @@ public struct Routeguide_Point {
 
 /// A latitude-longitude rectangle, represented as two diagonally opposite
 /// points "lo" and "hi".
-public struct Routeguide_Rectangle {
+public struct Routeguide_Rectangle: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -90,7 +90,7 @@ public struct Routeguide_Rectangle {
 /// A feature names something at a given point.
 ///
 /// If a feature could not be named, the name is empty.
-public struct Routeguide_Feature {
+public struct Routeguide_Feature: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -116,7 +116,7 @@ public struct Routeguide_Feature {
 }
 
 /// A RouteNote is a message sent while at a given point.
-public struct Routeguide_RouteNote {
+public struct Routeguide_RouteNote: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -146,7 +146,7 @@ public struct Routeguide_RouteNote {
 /// It contains the number of individual points received, the number of
 /// detected features, and the total distance covered as the cumulative sum of
 /// the distance between each point.
-public struct Routeguide_RouteSummary {
+public struct Routeguide_RouteSummary: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -167,14 +167,6 @@ public struct Routeguide_RouteSummary {
 
   public init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Routeguide_Point: @unchecked Sendable {}
-extension Routeguide_Rectangle: @unchecked Sendable {}
-extension Routeguide_Feature: @unchecked Sendable {}
-extension Routeguide_RouteNote: @unchecked Sendable {}
-extension Routeguide_RouteSummary: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 

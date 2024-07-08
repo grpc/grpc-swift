@@ -37,7 +37,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// The type of payload that should be returned.
-enum Grpc_Testing_PayloadType: SwiftProtobuf.Enum {
+enum Grpc_Testing_PayloadType: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
 
   /// Compressable text format.
@@ -62,18 +62,12 @@ enum Grpc_Testing_PayloadType: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension Grpc_Testing_PayloadType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   static let allCases: [Grpc_Testing_PayloadType] = [
     .compressable,
   ]
-}
 
-#endif  // swift(>=4.2)
+}
 
 /// The type of route that a client took to reach a server w.r.t. gRPCLB.
 /// The server must fill in "fallback" if it detects that the RPC reached
@@ -81,7 +75,7 @@ extension Grpc_Testing_PayloadType: CaseIterable {
 /// that the RPC reached the server via "gRPCLB backend" path (i.e. if it got
 /// the address of this server from the gRPCLB server BalanceLoad RPC). Exactly
 /// how this detection is done is context and server dependent.
-enum Grpc_Testing_GrpclbRouteType: SwiftProtobuf.Enum {
+enum Grpc_Testing_GrpclbRouteType: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
 
   /// Server didn't detect the route that a client took to reach it.
@@ -116,25 +110,19 @@ enum Grpc_Testing_GrpclbRouteType: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension Grpc_Testing_GrpclbRouteType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   static let allCases: [Grpc_Testing_GrpclbRouteType] = [
     .unknown,
     .fallback,
     .backend,
   ]
-}
 
-#endif  // swift(>=4.2)
+}
 
 /// TODO(dgq): Go back to using well-known types once
 /// https://github.com/grpc/grpc/issues/6980 has been fixed.
 /// import "google/protobuf/wrappers.proto";
-struct Grpc_Testing_BoolValue {
+struct Grpc_Testing_BoolValue: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -148,7 +136,7 @@ struct Grpc_Testing_BoolValue {
 }
 
 /// A block of data, to simply increase gRPC message size.
-struct Grpc_Testing_Payload {
+struct Grpc_Testing_Payload: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -166,7 +154,7 @@ struct Grpc_Testing_Payload {
 
 /// A protobuf representation for grpc status. This is used by test
 /// clients to specify a status that the server should attempt to return.
-struct Grpc_Testing_EchoStatus {
+struct Grpc_Testing_EchoStatus: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -181,7 +169,7 @@ struct Grpc_Testing_EchoStatus {
 }
 
 /// Unary request.
-struct Grpc_Testing_SimpleRequest {
+struct Grpc_Testing_SimpleRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -270,7 +258,7 @@ struct Grpc_Testing_SimpleRequest {
 }
 
 /// Unary response, as configured by the request.
-struct Grpc_Testing_SimpleResponse {
+struct Grpc_Testing_SimpleResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -310,7 +298,7 @@ struct Grpc_Testing_SimpleResponse {
 }
 
 /// Client-streaming request.
-struct Grpc_Testing_StreamingInputCallRequest {
+struct Grpc_Testing_StreamingInputCallRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -347,7 +335,7 @@ struct Grpc_Testing_StreamingInputCallRequest {
 }
 
 /// Client-streaming response.
-struct Grpc_Testing_StreamingInputCallResponse {
+struct Grpc_Testing_StreamingInputCallResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -361,7 +349,7 @@ struct Grpc_Testing_StreamingInputCallResponse {
 }
 
 /// Configuration for a particular response.
-struct Grpc_Testing_ResponseParameters {
+struct Grpc_Testing_ResponseParameters: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -394,7 +382,7 @@ struct Grpc_Testing_ResponseParameters {
 }
 
 /// Server-streaming request.
-struct Grpc_Testing_StreamingOutputCallRequest {
+struct Grpc_Testing_StreamingOutputCallRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -448,7 +436,7 @@ struct Grpc_Testing_StreamingOutputCallRequest {
 }
 
 /// Server-streaming response, as configured by the request and parameters.
-struct Grpc_Testing_StreamingOutputCallResponse {
+struct Grpc_Testing_StreamingOutputCallResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -472,7 +460,7 @@ struct Grpc_Testing_StreamingOutputCallResponse {
 
 /// For reconnect interop test only.
 /// Client tells server what reconnection parameters it used.
-struct Grpc_Testing_ReconnectParams {
+struct Grpc_Testing_ReconnectParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -487,7 +475,7 @@ struct Grpc_Testing_ReconnectParams {
 /// For reconnect interop test only.
 /// Server tells client whether its reconnects are following the spec and the
 /// reconnect backoffs it saw.
-struct Grpc_Testing_ReconnectInfo {
+struct Grpc_Testing_ReconnectInfo: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -501,7 +489,7 @@ struct Grpc_Testing_ReconnectInfo {
   init() {}
 }
 
-struct Grpc_Testing_LoadBalancerStatsRequest {
+struct Grpc_Testing_LoadBalancerStatsRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -522,7 +510,7 @@ struct Grpc_Testing_LoadBalancerStatsRequest {
   init() {}
 }
 
-struct Grpc_Testing_LoadBalancerStatsResponse {
+struct Grpc_Testing_LoadBalancerStatsResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -540,7 +528,7 @@ struct Grpc_Testing_LoadBalancerStatsResponse {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum MetadataType: SwiftProtobuf.Enum {
+  enum MetadataType: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
     case unknown // = 0
     case initial // = 1
@@ -569,9 +557,16 @@ struct Grpc_Testing_LoadBalancerStatsResponse {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_Testing_LoadBalancerStatsResponse.MetadataType] = [
+      .unknown,
+      .initial,
+      .trailing,
+    ]
+
   }
 
-  struct MetadataEntry {
+  struct MetadataEntry: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -591,7 +586,7 @@ struct Grpc_Testing_LoadBalancerStatsResponse {
     init() {}
   }
 
-  struct RpcMetadata {
+  struct RpcMetadata: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -605,7 +600,7 @@ struct Grpc_Testing_LoadBalancerStatsResponse {
     init() {}
   }
 
-  struct MetadataByPeer {
+  struct MetadataByPeer: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -618,7 +613,7 @@ struct Grpc_Testing_LoadBalancerStatsResponse {
     init() {}
   }
 
-  struct RpcsByPeer {
+  struct RpcsByPeer: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -634,21 +629,8 @@ struct Grpc_Testing_LoadBalancerStatsResponse {
   init() {}
 }
 
-#if swift(>=4.2)
-
-extension Grpc_Testing_LoadBalancerStatsResponse.MetadataType: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_Testing_LoadBalancerStatsResponse.MetadataType] = [
-    .unknown,
-    .initial,
-    .trailing,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
 /// Request for retrieving a test client's accumulated stats.
-struct Grpc_Testing_LoadBalancerAccumulatedStatsRequest {
+struct Grpc_Testing_LoadBalancerAccumulatedStatsRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -659,21 +641,27 @@ struct Grpc_Testing_LoadBalancerAccumulatedStatsRequest {
 }
 
 /// Accumulated stats for RPCs sent by a test client.
-struct Grpc_Testing_LoadBalancerAccumulatedStatsResponse {
+struct Grpc_Testing_LoadBalancerAccumulatedStatsResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// The total number of RPCs have ever issued for each type.
   /// Deprecated: use stats_per_method.rpcs_started instead.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var numRpcsStartedByMethod: Dictionary<String,Int32> = [:]
 
   /// The total number of RPCs have ever completed successfully for each type.
   /// Deprecated: use stats_per_method.result instead.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var numRpcsSucceededByMethod: Dictionary<String,Int32> = [:]
 
   /// The total number of RPCs have ever failed for each type.
   /// Deprecated: use stats_per_method.result instead.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var numRpcsFailedByMethod: Dictionary<String,Int32> = [:]
 
   /// Per-method RPC statistics.  The key is the RpcType in string form; e.g.
@@ -682,7 +670,7 @@ struct Grpc_Testing_LoadBalancerAccumulatedStatsResponse {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  struct MethodStats {
+  struct MethodStats: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -703,7 +691,7 @@ struct Grpc_Testing_LoadBalancerAccumulatedStatsResponse {
 }
 
 /// Configurations for a test client.
-struct Grpc_Testing_ClientConfigureRequest {
+struct Grpc_Testing_ClientConfigureRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -721,7 +709,7 @@ struct Grpc_Testing_ClientConfigureRequest {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Type of RPCs to send.
-  enum RpcType: SwiftProtobuf.Enum {
+  enum RpcType: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
     case emptyCall // = 0
     case unaryCall // = 1
@@ -747,10 +735,16 @@ struct Grpc_Testing_ClientConfigureRequest {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_Testing_ClientConfigureRequest.RpcType] = [
+      .emptyCall,
+      .unaryCall,
+    ]
+
   }
 
   /// Metadata to be attached for the given type of RPCs.
-  struct Metadata {
+  struct Metadata: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -769,20 +763,8 @@ struct Grpc_Testing_ClientConfigureRequest {
   init() {}
 }
 
-#if swift(>=4.2)
-
-extension Grpc_Testing_ClientConfigureRequest.RpcType: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_Testing_ClientConfigureRequest.RpcType] = [
-    .emptyCall,
-    .unaryCall,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
 /// Response for updating a test client's configuration.
-struct Grpc_Testing_ClientConfigureResponse {
+struct Grpc_Testing_ClientConfigureResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -792,7 +774,7 @@ struct Grpc_Testing_ClientConfigureResponse {
   init() {}
 }
 
-struct Grpc_Testing_MemorySize {
+struct Grpc_Testing_MemorySize: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -807,7 +789,7 @@ struct Grpc_Testing_MemorySize {
 /// Metrics data the server will update and send to the client. It mirrors orca load report
 /// https://github.com/cncf/xds/blob/eded343319d09f30032952beda9840bbd3dcf7ac/xds/data/orca/v3/orca_load_report.proto#L15,
 /// but avoids orca dependency. Used by both per-query and out-of-band reporting tests.
-struct Grpc_Testing_TestOrcaReport {
+struct Grpc_Testing_TestOrcaReport: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -826,7 +808,7 @@ struct Grpc_Testing_TestOrcaReport {
 }
 
 /// Status that will be return to callers of the Hook method
-struct Grpc_Testing_SetReturnStatusRequest {
+struct Grpc_Testing_SetReturnStatusRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -840,7 +822,7 @@ struct Grpc_Testing_SetReturnStatusRequest {
   init() {}
 }
 
-struct Grpc_Testing_HookRequest {
+struct Grpc_Testing_HookRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -856,7 +838,7 @@ struct Grpc_Testing_HookRequest {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum HookRequestCommand: SwiftProtobuf.Enum {
+  enum HookRequestCommand: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
 
     /// Default value
@@ -896,26 +878,20 @@ struct Grpc_Testing_HookRequest {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_Testing_HookRequest.HookRequestCommand] = [
+      .unspecified,
+      .start,
+      .stop,
+      .return,
+    ]
+
   }
 
   init() {}
 }
 
-#if swift(>=4.2)
-
-extension Grpc_Testing_HookRequest.HookRequestCommand: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_Testing_HookRequest.HookRequestCommand] = [
-    .unspecified,
-    .start,
-    .stop,
-    .return,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
-struct Grpc_Testing_HookResponse {
+struct Grpc_Testing_HookResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -924,43 +900,6 @@ struct Grpc_Testing_HookResponse {
 
   init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Testing_PayloadType: @unchecked Sendable {}
-extension Grpc_Testing_GrpclbRouteType: @unchecked Sendable {}
-extension Grpc_Testing_BoolValue: @unchecked Sendable {}
-extension Grpc_Testing_Payload: @unchecked Sendable {}
-extension Grpc_Testing_EchoStatus: @unchecked Sendable {}
-extension Grpc_Testing_SimpleRequest: @unchecked Sendable {}
-extension Grpc_Testing_SimpleResponse: @unchecked Sendable {}
-extension Grpc_Testing_StreamingInputCallRequest: @unchecked Sendable {}
-extension Grpc_Testing_StreamingInputCallResponse: @unchecked Sendable {}
-extension Grpc_Testing_ResponseParameters: @unchecked Sendable {}
-extension Grpc_Testing_StreamingOutputCallRequest: @unchecked Sendable {}
-extension Grpc_Testing_StreamingOutputCallResponse: @unchecked Sendable {}
-extension Grpc_Testing_ReconnectParams: @unchecked Sendable {}
-extension Grpc_Testing_ReconnectInfo: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsRequest: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsResponse: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsResponse.MetadataType: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsResponse.MetadataEntry: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsResponse.RpcMetadata: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsResponse.MetadataByPeer: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerStatsResponse.RpcsByPeer: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerAccumulatedStatsRequest: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerAccumulatedStatsResponse: @unchecked Sendable {}
-extension Grpc_Testing_LoadBalancerAccumulatedStatsResponse.MethodStats: @unchecked Sendable {}
-extension Grpc_Testing_ClientConfigureRequest: @unchecked Sendable {}
-extension Grpc_Testing_ClientConfigureRequest.RpcType: @unchecked Sendable {}
-extension Grpc_Testing_ClientConfigureRequest.Metadata: @unchecked Sendable {}
-extension Grpc_Testing_ClientConfigureResponse: @unchecked Sendable {}
-extension Grpc_Testing_MemorySize: @unchecked Sendable {}
-extension Grpc_Testing_TestOrcaReport: @unchecked Sendable {}
-extension Grpc_Testing_SetReturnStatusRequest: @unchecked Sendable {}
-extension Grpc_Testing_HookRequest: @unchecked Sendable {}
-extension Grpc_Testing_HookRequest.HookRequestCommand: @unchecked Sendable {}
-extension Grpc_Testing_HookResponse: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
@@ -1785,8 +1724,8 @@ extension Grpc_Testing_LoadBalancerAccumulatedStatsRequest: SwiftProtobuf.Messag
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
@@ -1987,8 +1926,8 @@ extension Grpc_Testing_ClientConfigureResponse: SwiftProtobuf.Message, SwiftProt
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
@@ -2058,10 +1997,10 @@ extension Grpc_Testing_TestOrcaReport: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.cpuUtilization != 0 {
+    if self.cpuUtilization.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.cpuUtilization, fieldNumber: 1)
     }
-    if self.memoryUtilization != 0 {
+    if self.memoryUtilization.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.memoryUtilization, fieldNumber: 2)
     }
     if !self.requestCost.isEmpty {
@@ -2185,8 +2124,8 @@ extension Grpc_Testing_HookResponse: SwiftProtobuf.Message, SwiftProtobuf._Messa
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {

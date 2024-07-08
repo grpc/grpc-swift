@@ -37,7 +37,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct Grpc_Health_V1_HealthCheckRequest {
+struct Grpc_Health_V1_HealthCheckRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -49,7 +49,7 @@ struct Grpc_Health_V1_HealthCheckRequest {
   init() {}
 }
 
-struct Grpc_Health_V1_HealthCheckResponse {
+struct Grpc_Health_V1_HealthCheckResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -58,7 +58,7 @@ struct Grpc_Health_V1_HealthCheckResponse {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum ServingStatus: SwiftProtobuf.Enum {
+  enum ServingStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
     case unknown // = 0
     case serving // = 1
@@ -92,30 +92,18 @@ struct Grpc_Health_V1_HealthCheckResponse {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_Health_V1_HealthCheckResponse.ServingStatus] = [
+      .unknown,
+      .serving,
+      .notServing,
+      .serviceUnknown,
+    ]
+
   }
 
   init() {}
 }
-
-#if swift(>=4.2)
-
-extension Grpc_Health_V1_HealthCheckResponse.ServingStatus: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_Health_V1_HealthCheckResponse.ServingStatus] = [
-    .unknown,
-    .serving,
-    .notServing,
-    .serviceUnknown,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Health_V1_HealthCheckRequest: @unchecked Sendable {}
-extension Grpc_Health_V1_HealthCheckResponse: @unchecked Sendable {}
-extension Grpc_Health_V1_HealthCheckResponse.ServingStatus: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 

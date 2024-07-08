@@ -34,7 +34,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct Grpc_Lookup_V1_RouteLookupRequest {
+struct Grpc_Lookup_V1_RouteLookupRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -58,7 +58,7 @@ struct Grpc_Lookup_V1_RouteLookupRequest {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Possible reasons for making a request.
-  enum Reason: SwiftProtobuf.Enum {
+  enum Reason: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
 
     /// Unused
@@ -93,25 +93,19 @@ struct Grpc_Lookup_V1_RouteLookupRequest {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_Lookup_V1_RouteLookupRequest.Reason] = [
+      .unknown,
+      .miss,
+      .stale,
+    ]
+
   }
 
   init() {}
 }
 
-#if swift(>=4.2)
-
-extension Grpc_Lookup_V1_RouteLookupRequest.Reason: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_Lookup_V1_RouteLookupRequest.Reason] = [
-    .unknown,
-    .miss,
-    .stale,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
-struct Grpc_Lookup_V1_RouteLookupResponse {
+struct Grpc_Lookup_V1_RouteLookupResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -133,12 +127,6 @@ struct Grpc_Lookup_V1_RouteLookupResponse {
 
   init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Lookup_V1_RouteLookupRequest: @unchecked Sendable {}
-extension Grpc_Lookup_V1_RouteLookupRequest.Reason: @unchecked Sendable {}
-extension Grpc_Lookup_V1_RouteLookupResponse: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
