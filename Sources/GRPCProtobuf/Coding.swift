@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Foundation
 import GRPCCore
 import SwiftProtobuf
 
@@ -28,8 +27,7 @@ public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: GRPCCore.Messa
   /// - Returns: An array of serialized bytes representing the message.
   public func serialize(_ message: Message) throws -> [UInt8] {
     do {
-      let data = try message.serializedData()
-      return Array(data)
+      return try message.serializedBytes()
     } catch let error {
       throw RPCError(
         code: .invalidArgument,
@@ -50,7 +48,7 @@ public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: GRPCCore.Mes
   /// - Returns: The deserialized message.
   public func deserialize(_ serializedMessageBytes: [UInt8]) throws -> Message {
     do {
-      let message = try Message(contiguousBytes: serializedMessageBytes)
+      let message = try Message(serializedBytes: serializedMessageBytes)
       return message
     } catch let error {
       throw RPCError(
