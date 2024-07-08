@@ -35,7 +35,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// The request message containing the user's name.
-public struct Helloworld_HelloRequest {
+public struct Helloworld_HelloRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -48,7 +48,7 @@ public struct Helloworld_HelloRequest {
 }
 
 /// The response message containing the greetings
-public struct Helloworld_HelloReply {
+public struct Helloworld_HelloReply: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -59,11 +59,6 @@ public struct Helloworld_HelloReply {
 
   public init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Helloworld_HelloRequest: @unchecked Sendable {}
-extension Helloworld_HelloReply: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 

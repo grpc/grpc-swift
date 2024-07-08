@@ -34,7 +34,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct Grpc_Testing_ByteBufferParams {
+struct Grpc_Testing_ByteBufferParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -48,7 +48,7 @@ struct Grpc_Testing_ByteBufferParams {
   init() {}
 }
 
-struct Grpc_Testing_SimpleProtoParams {
+struct Grpc_Testing_SimpleProtoParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -64,7 +64,7 @@ struct Grpc_Testing_SimpleProtoParams {
 
 /// TODO (vpai): Fill this in once the details of complex, representative
 ///              protos are decided
-struct Grpc_Testing_ComplexProtoParams {
+struct Grpc_Testing_ComplexProtoParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -74,7 +74,7 @@ struct Grpc_Testing_ComplexProtoParams {
   init() {}
 }
 
-struct Grpc_Testing_PayloadConfig {
+struct Grpc_Testing_PayloadConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -107,45 +107,15 @@ struct Grpc_Testing_PayloadConfig {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum OneOf_Payload: Equatable {
+  enum OneOf_Payload: Equatable, Sendable {
     case bytebufParams(Grpc_Testing_ByteBufferParams)
     case simpleParams(Grpc_Testing_SimpleProtoParams)
     case complexParams(Grpc_Testing_ComplexProtoParams)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_Testing_PayloadConfig.OneOf_Payload, rhs: Grpc_Testing_PayloadConfig.OneOf_Payload) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.bytebufParams, .bytebufParams): return {
-        guard case .bytebufParams(let l) = lhs, case .bytebufParams(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.simpleParams, .simpleParams): return {
-        guard case .simpleParams(let l) = lhs, case .simpleParams(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.complexParams, .complexParams): return {
-        guard case .complexParams(let l) = lhs, case .complexParams(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Testing_ByteBufferParams: @unchecked Sendable {}
-extension Grpc_Testing_SimpleProtoParams: @unchecked Sendable {}
-extension Grpc_Testing_ComplexProtoParams: @unchecked Sendable {}
-extension Grpc_Testing_PayloadConfig: @unchecked Sendable {}
-extension Grpc_Testing_PayloadConfig.OneOf_Payload: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
@@ -232,8 +202,8 @@ extension Grpc_Testing_ComplexProtoParams: SwiftProtobuf.Message, SwiftProtobuf.
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {

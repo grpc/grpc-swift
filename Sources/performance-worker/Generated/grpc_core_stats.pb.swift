@@ -34,7 +34,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct Grpc_Core_Bucket {
+struct Grpc_Core_Bucket: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -48,7 +48,7 @@ struct Grpc_Core_Bucket {
   init() {}
 }
 
-struct Grpc_Core_Histogram {
+struct Grpc_Core_Histogram: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -60,7 +60,7 @@ struct Grpc_Core_Histogram {
   init() {}
 }
 
-struct Grpc_Core_Metric {
+struct Grpc_Core_Metric: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -87,34 +87,16 @@ struct Grpc_Core_Metric {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum OneOf_Value: Equatable {
+  enum OneOf_Value: Equatable, Sendable {
     case count(UInt64)
     case histogram(Grpc_Core_Histogram)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_Core_Metric.OneOf_Value, rhs: Grpc_Core_Metric.OneOf_Value) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.count, .count): return {
-        guard case .count(let l) = lhs, case .count(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.histogram, .histogram): return {
-        guard case .histogram(let l) = lhs, case .histogram(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
 }
 
-struct Grpc_Core_Stats {
+struct Grpc_Core_Stats: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -125,14 +107,6 @@ struct Grpc_Core_Stats {
 
   init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Core_Bucket: @unchecked Sendable {}
-extension Grpc_Core_Histogram: @unchecked Sendable {}
-extension Grpc_Core_Metric: @unchecked Sendable {}
-extension Grpc_Core_Metric.OneOf_Value: @unchecked Sendable {}
-extension Grpc_Core_Stats: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
@@ -159,7 +133,7 @@ extension Grpc_Core_Bucket: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.start != 0 {
+    if self.start.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.start, fieldNumber: 1)
     }
     if self.count != 0 {

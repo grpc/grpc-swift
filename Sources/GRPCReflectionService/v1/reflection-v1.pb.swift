@@ -42,7 +42,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// The message sent by the client when calling ServerReflectionInfo method.
-public struct Grpc_Reflection_V1_ServerReflectionRequest {
+public struct Grpc_Reflection_V1_ServerReflectionRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -115,7 +115,7 @@ public struct Grpc_Reflection_V1_ServerReflectionRequest {
   /// To use reflection service, the client should set one of the following
   /// fields in message_request. The server distinguishes requests by their
   /// defined field and then handles them using corresponding methods.
-  public enum OneOf_MessageRequest: Equatable {
+  public enum OneOf_MessageRequest: Equatable, Sendable {
     /// Find a proto file by the file name.
     case fileByFilename(String)
     /// Find the proto file that declares the given fully-qualified symbol name.
@@ -138,36 +138,6 @@ public struct Grpc_Reflection_V1_ServerReflectionRequest {
     /// checked.
     case listServices(String)
 
-  #if !swift(>=4.1)
-    public static func ==(lhs: Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest, rhs: Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.fileByFilename, .fileByFilename): return {
-        guard case .fileByFilename(let l) = lhs, case .fileByFilename(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.fileContainingSymbol, .fileContainingSymbol): return {
-        guard case .fileContainingSymbol(let l) = lhs, case .fileContainingSymbol(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.fileContainingExtension, .fileContainingExtension): return {
-        guard case .fileContainingExtension(let l) = lhs, case .fileContainingExtension(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.allExtensionNumbersOfType, .allExtensionNumbersOfType): return {
-        guard case .allExtensionNumbersOfType(let l) = lhs, case .allExtensionNumbersOfType(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.listServices, .listServices): return {
-        guard case .listServices(let l) = lhs, case .listServices(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   public init() {}
@@ -175,7 +145,7 @@ public struct Grpc_Reflection_V1_ServerReflectionRequest {
 
 /// The type name and extension number sent by the client when requesting
 /// file_containing_extension.
-public struct Grpc_Reflection_V1_ExtensionRequest {
+public struct Grpc_Reflection_V1_ExtensionRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -191,7 +161,7 @@ public struct Grpc_Reflection_V1_ExtensionRequest {
 }
 
 /// The message sent by the server to answer ServerReflectionInfo method.
-public struct Grpc_Reflection_V1_ServerReflectionResponse {
+public struct Grpc_Reflection_V1_ServerReflectionResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -256,7 +226,7 @@ public struct Grpc_Reflection_V1_ServerReflectionResponse {
 
   /// The server sets one of the following fields according to the message_request
   /// in the request.
-  public enum OneOf_MessageResponse: Equatable {
+  public enum OneOf_MessageResponse: Equatable, Sendable {
     /// This message is used to answer file_by_filename, file_containing_symbol,
     /// file_containing_extension requests with transitive dependencies.
     /// As the repeated label is not allowed in oneof fields, we use a
@@ -271,32 +241,6 @@ public struct Grpc_Reflection_V1_ServerReflectionResponse {
     /// This message is used when an error occurs.
     case errorResponse(Grpc_Reflection_V1_ErrorResponse)
 
-  #if !swift(>=4.1)
-    public static func ==(lhs: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse, rhs: Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.fileDescriptorResponse, .fileDescriptorResponse): return {
-        guard case .fileDescriptorResponse(let l) = lhs, case .fileDescriptorResponse(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.allExtensionNumbersResponse, .allExtensionNumbersResponse): return {
-        guard case .allExtensionNumbersResponse(let l) = lhs, case .allExtensionNumbersResponse(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.listServicesResponse, .listServicesResponse): return {
-        guard case .listServicesResponse(let l) = lhs, case .listServicesResponse(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.errorResponse, .errorResponse): return {
-        guard case .errorResponse(let l) = lhs, case .errorResponse(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   public init() {}
@@ -307,7 +251,7 @@ public struct Grpc_Reflection_V1_ServerReflectionResponse {
 /// Serialized FileDescriptorProto messages sent by the server answering
 /// a file_by_filename, file_containing_symbol, or file_containing_extension
 /// request.
-public struct Grpc_Reflection_V1_FileDescriptorResponse {
+public struct Grpc_Reflection_V1_FileDescriptorResponse: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -324,7 +268,7 @@ public struct Grpc_Reflection_V1_FileDescriptorResponse {
 
 /// A list of extension numbers sent by the server answering
 /// all_extension_numbers_of_type request.
-public struct Grpc_Reflection_V1_ExtensionNumberResponse {
+public struct Grpc_Reflection_V1_ExtensionNumberResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -341,7 +285,7 @@ public struct Grpc_Reflection_V1_ExtensionNumberResponse {
 }
 
 /// A list of ServiceResponse sent by the server answering list_services request.
-public struct Grpc_Reflection_V1_ListServiceResponse {
+public struct Grpc_Reflection_V1_ListServiceResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -357,7 +301,7 @@ public struct Grpc_Reflection_V1_ListServiceResponse {
 
 /// The information of a single service used by ListServiceResponse to answer
 /// list_services request.
-public struct Grpc_Reflection_V1_ServiceResponse {
+public struct Grpc_Reflection_V1_ServiceResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -372,7 +316,7 @@ public struct Grpc_Reflection_V1_ServiceResponse {
 }
 
 /// The error code and error message sent by the server when an error occurs.
-public struct Grpc_Reflection_V1_ErrorResponse {
+public struct Grpc_Reflection_V1_ErrorResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -386,19 +330,6 @@ public struct Grpc_Reflection_V1_ErrorResponse {
 
   public init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Reflection_V1_ServerReflectionRequest: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ServerReflectionRequest.OneOf_MessageRequest: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ExtensionRequest: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ServerReflectionResponse: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ServerReflectionResponse.OneOf_MessageResponse: @unchecked Sendable {}
-extension Grpc_Reflection_V1_FileDescriptorResponse: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ExtensionNumberResponse: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ListServiceResponse: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ServiceResponse: @unchecked Sendable {}
-extension Grpc_Reflection_V1_ErrorResponse: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 

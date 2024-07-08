@@ -37,7 +37,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// The type of payload that should be returned.
-public enum Grpc_Testing_PayloadType: SwiftProtobuf.Enum {
+public enum Grpc_Testing_PayloadType: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
 
   /// Compressable text format.
@@ -62,23 +62,17 @@ public enum Grpc_Testing_PayloadType: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension Grpc_Testing_PayloadType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   public static let allCases: [Grpc_Testing_PayloadType] = [
     .compressable,
   ]
-}
 
-#endif  // swift(>=4.2)
+}
 
 /// TODO(dgq): Go back to using well-known types once
 /// https://github.com/grpc/grpc/issues/6980 has been fixed.
 /// import "google/protobuf/wrappers.proto";
-public struct Grpc_Testing_BoolValue {
+public struct Grpc_Testing_BoolValue: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -92,7 +86,7 @@ public struct Grpc_Testing_BoolValue {
 }
 
 /// A block of data, to simply increase gRPC message size.
-public struct Grpc_Testing_Payload {
+public struct Grpc_Testing_Payload: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -110,7 +104,7 @@ public struct Grpc_Testing_Payload {
 
 /// A protobuf representation for grpc status. This is used by test
 /// clients to specify a status that the server should attempt to return.
-public struct Grpc_Testing_EchoStatus {
+public struct Grpc_Testing_EchoStatus: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -125,7 +119,7 @@ public struct Grpc_Testing_EchoStatus {
 }
 
 /// Unary request.
-public struct Grpc_Testing_SimpleRequest {
+public struct Grpc_Testing_SimpleRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -197,7 +191,7 @@ public struct Grpc_Testing_SimpleRequest {
 }
 
 /// Unary response, as configured by the request.
-public struct Grpc_Testing_SimpleResponse {
+public struct Grpc_Testing_SimpleResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -227,7 +221,7 @@ public struct Grpc_Testing_SimpleResponse {
 }
 
 /// Client-streaming request.
-public struct Grpc_Testing_StreamingInputCallRequest {
+public struct Grpc_Testing_StreamingInputCallRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -264,7 +258,7 @@ public struct Grpc_Testing_StreamingInputCallRequest {
 }
 
 /// Client-streaming response.
-public struct Grpc_Testing_StreamingInputCallResponse {
+public struct Grpc_Testing_StreamingInputCallResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -278,7 +272,7 @@ public struct Grpc_Testing_StreamingInputCallResponse {
 }
 
 /// Configuration for a particular response.
-public struct Grpc_Testing_ResponseParameters {
+public struct Grpc_Testing_ResponseParameters: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -311,7 +305,7 @@ public struct Grpc_Testing_ResponseParameters {
 }
 
 /// Server-streaming request.
-public struct Grpc_Testing_StreamingOutputCallRequest {
+public struct Grpc_Testing_StreamingOutputCallRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -354,7 +348,7 @@ public struct Grpc_Testing_StreamingOutputCallRequest {
 }
 
 /// Server-streaming response, as configured by the request and parameters.
-public struct Grpc_Testing_StreamingOutputCallResponse {
+public struct Grpc_Testing_StreamingOutputCallResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -378,7 +372,7 @@ public struct Grpc_Testing_StreamingOutputCallResponse {
 
 /// For reconnect interop test only.
 /// Client tells server what reconnection parameters it used.
-public struct Grpc_Testing_ReconnectParams {
+public struct Grpc_Testing_ReconnectParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -393,7 +387,7 @@ public struct Grpc_Testing_ReconnectParams {
 /// For reconnect interop test only.
 /// Server tells client whether its reconnects are following the spec and the
 /// reconnect backoffs it saw.
-public struct Grpc_Testing_ReconnectInfo {
+public struct Grpc_Testing_ReconnectInfo: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -406,22 +400,6 @@ public struct Grpc_Testing_ReconnectInfo {
 
   public init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Testing_PayloadType: @unchecked Sendable {}
-extension Grpc_Testing_BoolValue: @unchecked Sendable {}
-extension Grpc_Testing_Payload: @unchecked Sendable {}
-extension Grpc_Testing_EchoStatus: @unchecked Sendable {}
-extension Grpc_Testing_SimpleRequest: @unchecked Sendable {}
-extension Grpc_Testing_SimpleResponse: @unchecked Sendable {}
-extension Grpc_Testing_StreamingInputCallRequest: @unchecked Sendable {}
-extension Grpc_Testing_StreamingInputCallResponse: @unchecked Sendable {}
-extension Grpc_Testing_ResponseParameters: @unchecked Sendable {}
-extension Grpc_Testing_StreamingOutputCallRequest: @unchecked Sendable {}
-extension Grpc_Testing_StreamingOutputCallResponse: @unchecked Sendable {}
-extension Grpc_Testing_ReconnectParams: @unchecked Sendable {}
-extension Grpc_Testing_ReconnectInfo: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 

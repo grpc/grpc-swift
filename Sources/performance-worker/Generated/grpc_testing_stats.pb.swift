@@ -34,7 +34,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct Grpc_Testing_ServerStats {
+struct Grpc_Testing_ServerStats: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -76,7 +76,7 @@ struct Grpc_Testing_ServerStats {
 }
 
 /// Histogram params based on grpc/support/histogram.c
-struct Grpc_Testing_HistogramParams {
+struct Grpc_Testing_HistogramParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -93,7 +93,7 @@ struct Grpc_Testing_HistogramParams {
 }
 
 /// Histogram data based on grpc/support/histogram.c
-struct Grpc_Testing_HistogramData {
+struct Grpc_Testing_HistogramData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -115,7 +115,7 @@ struct Grpc_Testing_HistogramData {
   init() {}
 }
 
-struct Grpc_Testing_RequestResultCount {
+struct Grpc_Testing_RequestResultCount: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -129,7 +129,7 @@ struct Grpc_Testing_RequestResultCount {
   init() {}
 }
 
-struct Grpc_Testing_ClientStats {
+struct Grpc_Testing_ClientStats: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -175,14 +175,6 @@ struct Grpc_Testing_ClientStats {
   fileprivate var _coreStats: Grpc_Core_Stats? = nil
 }
 
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Testing_ServerStats: @unchecked Sendable {}
-extension Grpc_Testing_HistogramParams: @unchecked Sendable {}
-extension Grpc_Testing_HistogramData: @unchecked Sendable {}
-extension Grpc_Testing_RequestResultCount: @unchecked Sendable {}
-extension Grpc_Testing_ClientStats: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
-
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.testing"
@@ -222,13 +214,13 @@ extension Grpc_Testing_ServerStats: SwiftProtobuf.Message, SwiftProtobuf._Messag
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    if self.timeElapsed != 0 {
+    if self.timeElapsed.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.timeElapsed, fieldNumber: 1)
     }
-    if self.timeUser != 0 {
+    if self.timeUser.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.timeUser, fieldNumber: 2)
     }
-    if self.timeSystem != 0 {
+    if self.timeSystem.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.timeSystem, fieldNumber: 3)
     }
     if self.totalCpuTime != 0 {
@@ -280,10 +272,10 @@ extension Grpc_Testing_HistogramParams: SwiftProtobuf.Message, SwiftProtobuf._Me
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.resolution != 0 {
+    if self.resolution.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.resolution, fieldNumber: 1)
     }
-    if self.maxPossible != 0 {
+    if self.maxPossible.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.maxPossible, fieldNumber: 2)
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -329,19 +321,19 @@ extension Grpc_Testing_HistogramData: SwiftProtobuf.Message, SwiftProtobuf._Mess
     if !self.bucket.isEmpty {
       try visitor.visitPackedUInt32Field(value: self.bucket, fieldNumber: 1)
     }
-    if self.minSeen != 0 {
+    if self.minSeen.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.minSeen, fieldNumber: 2)
     }
-    if self.maxSeen != 0 {
+    if self.maxSeen.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.maxSeen, fieldNumber: 3)
     }
-    if self.sum != 0 {
+    if self.sum.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.sum, fieldNumber: 4)
     }
-    if self.sumOfSquares != 0 {
+    if self.sumOfSquares.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.sumOfSquares, fieldNumber: 5)
     }
-    if self.count != 0 {
+    if self.count.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.count, fieldNumber: 6)
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -435,13 +427,13 @@ extension Grpc_Testing_ClientStats: SwiftProtobuf.Message, SwiftProtobuf._Messag
     try { if let v = self._latencies {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
     } }()
-    if self.timeElapsed != 0 {
+    if self.timeElapsed.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.timeElapsed, fieldNumber: 2)
     }
-    if self.timeUser != 0 {
+    if self.timeUser.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.timeUser, fieldNumber: 3)
     }
-    if self.timeSystem != 0 {
+    if self.timeSystem.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.timeSystem, fieldNumber: 4)
     }
     if !self.requestResults.isEmpty {
