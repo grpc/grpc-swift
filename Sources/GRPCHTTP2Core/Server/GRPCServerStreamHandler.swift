@@ -76,10 +76,15 @@ extension GRPCServerStreamHandler {
       case .byteBuffer(let buffer):
         do {
           switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
-          case .endRPCAndForwardErrorStatus:
+          case .endRPCAndForwardErrorStatus_clientOnly:
             preconditionFailure(
               "OnBufferReceivedAction.endRPCAndForwardErrorStatus should never be returned for the server."
             )
+
+          case .forwardErrorAndClose_serverOnly(let error):
+            context.fireErrorCaught(error)
+            context.close(mode: .all, promise: nil)
+
           case .readInbound:
             loop: while true {
               switch self.stateMachine.nextInboundMessage() {
@@ -95,7 +100,8 @@ extension GRPCServerStreamHandler {
           case .doNothing:
             ()
           }
-        } catch {
+        } catch let invalidState {
+          let error = RPCError(invalidState)
           context.fireErrorCaught(error)
         }
 
@@ -118,7 +124,7 @@ extension GRPCServerStreamHandler {
             assertionFailure("Method descriptor should have been present if we received metadata.")
           }
 
-        case .rejectRPC(let trailers):
+        case .rejectRPC_serverOnly(let trailers):
           self.flushPending = true
           self.methodDescriptorPromise.fail(
             RPCError(
@@ -129,20 +135,18 @@ extension GRPCServerStreamHandler {
           let response = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
           context.write(self.wrapOutboundOut(response), promise: nil)
 
-        case .receivedStatusAndMetadata:
-          throw RPCError(
-            code: .internalError,
-            message: "Server cannot get receivedStatusAndMetadata."
-          )
+        case .receivedStatusAndMetadata_clientOnly:
+          assertionFailure("Unexpected action")
 
-        case .protocolViolation:
+        case .protocolViolation_serverOnly:
           context.writeAndFlush(self.wrapOutboundOut(.rstStream(.protocolError)), promise: nil)
           context.close(promise: nil)
 
         case .doNothing:
-          throw RPCError(code: .internalError, message: "Server cannot receive doNothing.")
+          ()
         }
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         context.fireErrorCaught(error)
       }
 
@@ -207,7 +211,8 @@ extension GRPCServerStreamHandler {
         self.flushPending = true
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: promise)
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -215,7 +220,8 @@ extension GRPCServerStreamHandler {
     case .message(let message):
       do {
         try self.stateMachine.send(message: message, promise: promise)
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -225,7 +231,8 @@ extension GRPCServerStreamHandler {
         let headers = try self.stateMachine.send(status: status, metadata: metadata)
         let response = HTTP2Frame.FramePayload.headers(.init(headers: headers, endStream: true))
         self.pendingTrailers = (response, promise)
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -261,6 +268,10 @@ extension GRPCServerStreamHandler {
 
         case .awaitMoreMessages:
           break loop
+
+        case .closeAndFailPromise(let promise, let error):
+          context.close(mode: .all, promise: nil)
+          promise?.fail(error)
         }
       }
 
@@ -268,7 +279,8 @@ extension GRPCServerStreamHandler {
         self.flushPending = false
         context.flush()
       }
-    } catch {
+    } catch let invalidState {
+      let error = RPCError(invalidState)
       context.fireErrorCaught(error)
     }
   }

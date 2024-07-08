@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import GRPCCore
 import NIOCore
 
 /// A ``GRPCMessageFramer`` helps with the framing of gRPC data frames:
@@ -53,9 +54,9 @@ struct GRPCMessageFramer {
   /// - Parameter compressor: An optional compressor: if present, payloads will be compressed; otherwise
   /// they'll be framed as-is.
   /// - Throws: If an error is encountered, such as a compression failure, an error will be thrown.
-  mutating func next(
+  mutating func nextResult(
     compressor: Zlib.Compressor? = nil
-  ) throws -> (bytes: ByteBuffer, promise: EventLoopPromise<Void>?)? {
+  ) -> (result: Result<ByteBuffer, RPCError>, promise: EventLoopPromise<Void>?)? {
     if self.pendingMessages.isEmpty {
       // Nothing pending: exit early.
       return nil
@@ -77,18 +78,19 @@ struct GRPCMessageFramer {
 
     var pendingWritePromise: EventLoopPromise<Void>?
     while let message = self.pendingMessages.pop() {
-      try self.encode(message.bytes, compressor: compressor)
-      if let existingPendingWritePromise = pendingWritePromise {
-        existingPendingWritePromise.futureResult.cascade(to: message.promise)
-      } else {
-        pendingWritePromise = message.promise
+      pendingWritePromise.setOrCascade(to: message.promise)
+
+      do {
+        try self.encode(message.bytes, compressor: compressor)
+      } catch let rpcError {
+        return (result: .failure(rpcError), promise: pendingWritePromise)
       }
     }
 
-    return (bytes: self.writeBuffer, promise: pendingWritePromise)
+    return (result: .success(self.writeBuffer), promise: pendingWritePromise)
   }
 
-  private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws {
+  private mutating func encode(_ message: [UInt8], compressor: Zlib.Compressor?) throws(RPCError) {
     if let compressor {
       self.writeBuffer.writeInteger(UInt8(1))  // Set compression flag
 
@@ -97,8 +99,12 @@ struct GRPCMessageFramer {
       self.writeBuffer.writeInteger(UInt32(0))
 
       // Compress and overwrite the payload length field with the right length.
-      let writtenBytes = try compressor.compress(message, into: &self.writeBuffer)
-      self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
+      do {
+        let writtenBytes = try compressor.compress(message, into: &self.writeBuffer)
+        self.writeBuffer.setInteger(UInt32(writtenBytes), at: lengthIndex)
+      } catch let zlibError {
+        throw RPCError(code: .internalError, message: "Compression failed", cause: zlibError)
+      }
     } else {
       self.writeBuffer.writeMultipleIntegers(
         UInt8(0),  // Clear compression flag

@@ -310,19 +310,16 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       data: .byteBuffer(buffer),
       endStream: false
     )
-    XCTAssertThrowsError(
-      ofType: RPCError.self,
-      try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
-    ) { error in
-      XCTAssertEqual(error.code, .resourceExhausted)
-      XCTAssertEqual(
-        error.message,
-        "Message has exceeded the configured maximum payload size (max: 1, actual: 42)"
-      )
-    }
 
-    // Make sure we didn't read the received message
-    XCTAssertNil(try channel.readInbound(as: RPCRequestPart.self))
+    // Invalid payload should result in error status and stream being closed
+    try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
+    let part = try channel.readInbound(as: RPCResponsePart.self)
+    XCTAssertEqual(
+      part,
+      .status(Status(code: .internalError, message: "Failed to decode message"), [:])
+    )
+    channel.embeddedEventLoop.run()
+    try channel.closeFuture.wait()
   }
 
   func testServerSendsEOSWhenSendingMessage_ResultsInErrorStatus() throws {
@@ -451,10 +448,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     buffer.writeRepeatingByte(0, count: 42)  // message
     let serverDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
     XCTAssertThrowsError(
-      ofType: RPCError.self,
+      ofType: GRPCStreamStateMachine.InvalidState.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(serverDataPayload))
     ) { error in
-      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Cannot have received anything from a closed server.")
     }
   }
@@ -533,10 +529,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // Make sure we cannot write anymore because client's closed.
     XCTAssertThrowsError(
-      ofType: RPCError.self,
+      ofType: GRPCStreamStateMachine.InvalidState.self,
       try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
     ) { error in
-      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Client is closed, cannot send a message.")
     }
 
@@ -808,10 +803,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: RPCError.self,
+      ofType: GRPCStreamStateMachine.InvalidState.self,
       try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
     }
   }
@@ -854,10 +848,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: RPCError.self,
+      ofType: GRPCStreamStateMachine.InvalidState.self,
       try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
     }
   }
@@ -907,10 +900,9 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: RPCError.self,
+      ofType: GRPCStreamStateMachine.InvalidState.self,
       try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
     }
   }

@@ -217,3 +217,21 @@ final class GRPCMessageDeframerTests: XCTestCase {
     try self.testReadDecompressedMessageOverSizeLimit(method: .gzip)
   }
 }
+
+extension GRPCMessageFramer {
+  mutating func next(
+    compressor: Zlib.Compressor? = nil
+  ) throws(RPCError) -> (bytes: ByteBuffer, promise: EventLoopPromise<Void>?)? {
+    if let (result, promise) = self.nextResult(compressor: compressor) {
+      switch result {
+      case .success(let buffer):
+        return (bytes: buffer, promise: promise)
+      case .failure(let error):
+        promise?.fail(error)
+        throw error
+      }
+    } else {
+      return nil
+    }
+  }
+}
