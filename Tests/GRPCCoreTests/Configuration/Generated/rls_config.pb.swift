@@ -38,7 +38,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 /// name).  The name must match one of the names listed in the "name" field.  If
 /// the "required_match" field is true, one of the specified names must be
 /// present for the keybuilder to match.
-struct Grpc_Lookup_V1_NameMatcher {
+struct Grpc_Lookup_V1_NameMatcher: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -63,7 +63,7 @@ struct Grpc_Lookup_V1_NameMatcher {
 }
 
 /// A GrpcKeyBuilder applies to a given gRPC service, name, and headers.
-struct Grpc_Lookup_V1_GrpcKeyBuilder {
+struct Grpc_Lookup_V1_GrpcKeyBuilder: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -96,7 +96,7 @@ struct Grpc_Lookup_V1_GrpcKeyBuilder {
   /// fields are specified as fixed strings.  The service name is required and
   /// includes the proto package name.  The method name may be omitted, in
   /// which case any method on the given service is matched.
-  struct Name {
+  struct Name: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -116,7 +116,7 @@ struct Grpc_Lookup_V1_GrpcKeyBuilder {
   /// If this submessage is specified, the normal host/path fields will be left
   /// unset in the RouteLookupRequest. We are deprecating host/path in the
   /// RouteLookupRequest, so services should migrate to the ExtraKeys approach.
-  struct ExtraKeys {
+  struct ExtraKeys: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -153,7 +153,7 @@ struct Grpc_Lookup_V1_GrpcKeyBuilder {
 /// the id and the second segment as the object. If the host has a subdomain, the
 /// subdomain will be used as the id and the first segment as the object. If
 /// neither pattern matches, no keys will be extracted.
-struct Grpc_Lookup_V1_HttpKeyBuilder {
+struct Grpc_Lookup_V1_HttpKeyBuilder: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -226,7 +226,7 @@ struct Grpc_Lookup_V1_HttpKeyBuilder {
   init() {}
 }
 
-struct Grpc_Lookup_V1_RouteLookupConfig {
+struct Grpc_Lookup_V1_RouteLookupConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -314,7 +314,7 @@ struct Grpc_Lookup_V1_RouteLookupConfig {
 
 /// RouteLookupClusterSpecifier is used in xDS to represent a cluster specifier
 /// plugin for RLS.
-struct Grpc_Lookup_V1_RouteLookupClusterSpecifier {
+struct Grpc_Lookup_V1_RouteLookupClusterSpecifier: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -335,16 +335,6 @@ struct Grpc_Lookup_V1_RouteLookupClusterSpecifier {
 
   fileprivate var _routeLookupConfig: Grpc_Lookup_V1_RouteLookupConfig? = nil
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Lookup_V1_NameMatcher: @unchecked Sendable {}
-extension Grpc_Lookup_V1_GrpcKeyBuilder: @unchecked Sendable {}
-extension Grpc_Lookup_V1_GrpcKeyBuilder.Name: @unchecked Sendable {}
-extension Grpc_Lookup_V1_GrpcKeyBuilder.ExtraKeys: @unchecked Sendable {}
-extension Grpc_Lookup_V1_HttpKeyBuilder: @unchecked Sendable {}
-extension Grpc_Lookup_V1_RouteLookupConfig: @unchecked Sendable {}
-extension Grpc_Lookup_V1_RouteLookupClusterSpecifier: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 

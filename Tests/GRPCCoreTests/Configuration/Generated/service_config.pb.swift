@@ -49,7 +49,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 }
 
 /// Configuration for a method.
-struct Grpc_ServiceConfig_MethodConfig {
+struct Grpc_ServiceConfig_MethodConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -165,28 +165,10 @@ struct Grpc_ServiceConfig_MethodConfig {
 
   /// Only one of retry_policy or hedging_policy may be set. If neither is set,
   /// RPCs will not be retried or hedged.
-  enum OneOf_RetryOrHedgingPolicy: Equatable {
+  enum OneOf_RetryOrHedgingPolicy: Equatable, Sendable {
     case retryPolicy(Grpc_ServiceConfig_MethodConfig.RetryPolicy)
     case hedgingPolicy(Grpc_ServiceConfig_MethodConfig.HedgingPolicy)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_ServiceConfig_MethodConfig.OneOf_RetryOrHedgingPolicy, rhs: Grpc_ServiceConfig_MethodConfig.OneOf_RetryOrHedgingPolicy) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.retryPolicy, .retryPolicy): return {
-        guard case .retryPolicy(let l) = lhs, case .retryPolicy(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.hedgingPolicy, .hedgingPolicy): return {
-        guard case .hedgingPolicy(let l) = lhs, case .hedgingPolicy(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   /// The names of the methods to which this configuration applies.
@@ -216,7 +198,7 @@ struct Grpc_ServiceConfig_MethodConfig {
   /// - { "service": "s" }
   /// - { "service": "s", "method": null }
   /// - { "service": "s", "method": "" }
-  struct Name {
+  struct Name: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -232,7 +214,7 @@ struct Grpc_ServiceConfig_MethodConfig {
   }
 
   /// The retry policy for outgoing RPCs.
-  struct RetryPolicy {
+  struct RetryPolicy: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -286,7 +268,7 @@ struct Grpc_ServiceConfig_MethodConfig {
   /// The hedging policy for outgoing RPCs. Hedged RPCs may execute more than
   /// once on the server, so only idempotent methods should specify a hedging
   /// policy.
-  struct HedgingPolicy {
+  struct HedgingPolicy: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -335,7 +317,7 @@ struct Grpc_ServiceConfig_MethodConfig {
 }
 
 /// Configuration for pick_first LB policy.
-struct Grpc_ServiceConfig_PickFirstConfig {
+struct Grpc_ServiceConfig_PickFirstConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -351,7 +333,7 @@ struct Grpc_ServiceConfig_PickFirstConfig {
 }
 
 /// Configuration for round_robin LB policy.
-struct Grpc_ServiceConfig_RoundRobinConfig {
+struct Grpc_ServiceConfig_RoundRobinConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -362,7 +344,7 @@ struct Grpc_ServiceConfig_RoundRobinConfig {
 }
 
 /// Configuration for weighted_round_robin LB policy.
-struct Grpc_ServiceConfig_WeightedRoundRobinLbConfig {
+struct Grpc_ServiceConfig_WeightedRoundRobinLbConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -455,7 +437,7 @@ struct Grpc_ServiceConfig_WeightedRoundRobinLbConfig {
 }
 
 /// Configuration for outlier_detection LB policy
-struct Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig {
+struct Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -534,7 +516,7 @@ struct Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig {
   /// Parameters for the success rate ejection algorithm.
   /// This algorithm monitors the request success rate for all endpoints and
   /// ejects individual endpoints whose success rates are statistical outliers.
-  struct SuccessRateEjection {
+  struct SuccessRateEjection: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -607,7 +589,7 @@ struct Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig {
   /// Parameters for the failure percentage algorithm.
   /// This algorithm ejects individual endpoints whose failure rate is greater than
   /// some threshold, independently of any other endpoint.
-  struct FailurePercentageEjection {
+  struct FailurePercentageEjection: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -682,7 +664,7 @@ struct Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig {
 }
 
 /// Configuration for grpclb LB policy.
-struct Grpc_ServiceConfig_GrpcLbConfig {
+struct Grpc_ServiceConfig_GrpcLbConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -718,7 +700,7 @@ struct Grpc_ServiceConfig_GrpcLbConfig {
 }
 
 /// Configuration for priority LB policy.
-struct Grpc_ServiceConfig_PriorityLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_PriorityLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -735,7 +717,7 @@ struct Grpc_ServiceConfig_PriorityLoadBalancingPolicyConfig {
   /// The names are used to allow the priority policy to update
   /// existing child policies instead of creating new ones every
   /// time it receives a config update.
-  struct Child {
+  struct Child: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -754,7 +736,7 @@ struct Grpc_ServiceConfig_PriorityLoadBalancingPolicyConfig {
 }
 
 /// Configuration for weighted_target LB policy.
-struct Grpc_ServiceConfig_WeightedTargetLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_WeightedTargetLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -763,7 +745,7 @@ struct Grpc_ServiceConfig_WeightedTargetLoadBalancingPolicyConfig {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  struct Target {
+  struct Target: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -781,7 +763,7 @@ struct Grpc_ServiceConfig_WeightedTargetLoadBalancingPolicyConfig {
 }
 
 /// Config for RLS LB policy.
-struct Grpc_ServiceConfig_RlsLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_RlsLoadBalancingPolicyConfig: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -824,7 +806,7 @@ struct Grpc_ServiceConfig_RlsLoadBalancingPolicyConfig {
 }
 
 /// Configuration for xds_cluster_manager_experimental LB policy.
-struct Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -833,7 +815,7 @@ struct Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  struct Child {
+  struct Child: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -849,7 +831,7 @@ struct Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig {
 }
 
 /// Configuration for the cds LB policy.
-struct Grpc_ServiceConfig_CdsConfig {
+struct Grpc_ServiceConfig_CdsConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -866,7 +848,7 @@ struct Grpc_ServiceConfig_CdsConfig {
 }
 
 /// Configuration for xds_cluster_impl LB policy.
-struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -880,6 +862,8 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
   /// EDS service name.
   /// Not set if cluster is not an EDS cluster or if it does not
   /// specify an EDS service name.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var edsServiceName: String = String()
 
   /// Server to send load reports to.
@@ -887,6 +871,8 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
   /// If set to empty string, load reporting will be sent to the same
   /// server as we are getting xds data from.
   /// DEPRECATED: Use new lrs_load_reporting_server field instead.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
     get {return _lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
     set {_lrsLoadReportingServerName = newValue}
@@ -899,6 +885,8 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
   /// LRS server to send load reports to.
   /// If not present, load reporting will be disabled.
   /// Supercedes lrs_load_reporting_server_name field.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var lrsLoadReportingServer: Grpc_ServiceConfig_XdsServer {
     get {return _lrsLoadReportingServer ?? Grpc_ServiceConfig_XdsServer()}
     set {_lrsLoadReportingServer = newValue}
@@ -910,6 +898,8 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
 
   /// Maximum number of outstanding requests can be made to the upstream cluster.
   /// Default is 1024.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var maxConcurrentRequests: SwiftProtobuf.Google_Protobuf_UInt32Value {
     get {return _maxConcurrentRequests ?? SwiftProtobuf.Google_Protobuf_UInt32Value()}
     set {_maxConcurrentRequests = newValue}
@@ -919,15 +909,18 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
   /// Clears the value of `maxConcurrentRequests`. Subsequent reads from it will return its default value.
   mutating func clearMaxConcurrentRequests() {self._maxConcurrentRequests = nil}
 
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var dropCategories: [Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig.DropCategory] = []
 
   /// Telemetry labels associated with this cluster
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var telemetryLabels: Dictionary<String,String> = [:]
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Drop configuration.
-  struct DropCategory {
+  struct DropCategory: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -949,7 +942,7 @@ struct Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig {
 }
 
 /// Configuration for ring_hash LB policy.
-struct Grpc_ServiceConfig_RingHashLoadBalancingConfig {
+struct Grpc_ServiceConfig_RingHashLoadBalancingConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -968,7 +961,7 @@ struct Grpc_ServiceConfig_RingHashLoadBalancingConfig {
 }
 
 /// Configuration for the xds_wrr_locality load balancing policy.
-struct Grpc_ServiceConfig_XdsWrrLocalityLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_XdsWrrLocalityLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -981,7 +974,7 @@ struct Grpc_ServiceConfig_XdsWrrLocalityLoadBalancingPolicyConfig {
 }
 
 /// Configuration for the least_request LB policy.
-struct Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -994,7 +987,7 @@ struct Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig {
 }
 
 /// Configuration for the xds_override_host LB policy.
-struct Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1006,11 +999,13 @@ struct Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig {
   /// valid health status for hosts that are considered when using
   /// xds_override_host_experimental policy.
   /// Default is [UNKNOWN, HEALTHY]
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var overrideHostStatus: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum HealthStatus: SwiftProtobuf.Enum {
+  enum HealthStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
     case unknown // = 0
     case healthy // = 1
@@ -1039,23 +1034,17 @@ struct Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] = [
+      .unknown,
+      .healthy,
+      .draining,
+    ]
+
   }
 
   init() {}
 }
-
-#if swift(>=4.2)
-
-extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus] = [
-    .unknown,
-    .healthy,
-    .draining,
-  ]
-}
-
-#endif  // swift(>=4.2)
 
 /// Selects LB policy and provides corresponding configuration.
 ///
@@ -1068,7 +1057,7 @@ extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus:
 ///   config is invalid.
 /// - If the list doesn't contain any supported policy, the whole service config
 ///   is invalid.
-struct Grpc_ServiceConfig_LoadBalancingConfig {
+struct Grpc_ServiceConfig_LoadBalancingConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1201,6 +1190,8 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
   }
 
   /// Deprecated xDS-related policies.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var xdsClusterResolverExperimental: Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
     get {
       if case .xdsClusterResolverExperimental(let v)? = policy {return v}
@@ -1209,6 +1200,7 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     set {policy = .xdsClusterResolverExperimental(newValue)}
   }
 
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var lrsExperimental: Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
     get {
       if case .lrsExperimental(let v)? = policy {return v}
@@ -1217,6 +1209,7 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     set {policy = .lrsExperimental(newValue)}
   }
 
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var edsExperimental: Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig {
     get {
       if case .edsExperimental(let v)? = policy {return v}
@@ -1225,6 +1218,7 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     set {policy = .edsExperimental(newValue)}
   }
 
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var xds: Grpc_ServiceConfig_XdsConfig {
     get {
       if case .xds(let v)? = policy {return v}
@@ -1233,6 +1227,7 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     set {policy = .xds(newValue)}
   }
 
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var xdsExperimental: Grpc_ServiceConfig_XdsConfig {
     get {
       if case .xdsExperimental(let v)? = policy {return v}
@@ -1244,7 +1239,7 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Exactly one LB policy may be configured.
-  enum OneOf_Policy: Equatable {
+  enum OneOf_Policy: Equatable, Sendable {
     case pickFirst(Grpc_ServiceConfig_PickFirstConfig)
     case roundRobin(Grpc_ServiceConfig_RoundRobinConfig)
     case weightedRoundRobin(Grpc_ServiceConfig_WeightedRoundRobinLbConfig)
@@ -1265,102 +1260,18 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
     case ringHashExperimental(Grpc_ServiceConfig_RingHashLoadBalancingConfig)
     case leastRequestExperimental(Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig)
     /// Deprecated xDS-related policies.
+    ///
+    /// NOTE: This field was marked as deprecated in the .proto file.
     case xdsClusterResolverExperimental(Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig)
+    /// NOTE: This field was marked as deprecated in the .proto file.
     case lrsExperimental(Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig)
+    /// NOTE: This field was marked as deprecated in the .proto file.
     case edsExperimental(Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig)
+    /// NOTE: This field was marked as deprecated in the .proto file.
     case xds(Grpc_ServiceConfig_XdsConfig)
+    /// NOTE: This field was marked as deprecated in the .proto file.
     case xdsExperimental(Grpc_ServiceConfig_XdsConfig)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_ServiceConfig_LoadBalancingConfig.OneOf_Policy, rhs: Grpc_ServiceConfig_LoadBalancingConfig.OneOf_Policy) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.pickFirst, .pickFirst): return {
-        guard case .pickFirst(let l) = lhs, case .pickFirst(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.roundRobin, .roundRobin): return {
-        guard case .roundRobin(let l) = lhs, case .roundRobin(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.weightedRoundRobin, .weightedRoundRobin): return {
-        guard case .weightedRoundRobin(let l) = lhs, case .weightedRoundRobin(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.grpclb, .grpclb): return {
-        guard case .grpclb(let l) = lhs, case .grpclb(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.priorityExperimental, .priorityExperimental): return {
-        guard case .priorityExperimental(let l) = lhs, case .priorityExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.weightedTargetExperimental, .weightedTargetExperimental): return {
-        guard case .weightedTargetExperimental(let l) = lhs, case .weightedTargetExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.outlierDetection, .outlierDetection): return {
-        guard case .outlierDetection(let l) = lhs, case .outlierDetection(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.rls, .rls): return {
-        guard case .rls(let l) = lhs, case .rls(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.xdsClusterManagerExperimental, .xdsClusterManagerExperimental): return {
-        guard case .xdsClusterManagerExperimental(let l) = lhs, case .xdsClusterManagerExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.cdsExperimental, .cdsExperimental): return {
-        guard case .cdsExperimental(let l) = lhs, case .cdsExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.xdsClusterImplExperimental, .xdsClusterImplExperimental): return {
-        guard case .xdsClusterImplExperimental(let l) = lhs, case .xdsClusterImplExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.overrideHostExperimental, .overrideHostExperimental): return {
-        guard case .overrideHostExperimental(let l) = lhs, case .overrideHostExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.xdsWrrLocalityExperimental, .xdsWrrLocalityExperimental): return {
-        guard case .xdsWrrLocalityExperimental(let l) = lhs, case .xdsWrrLocalityExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.ringHashExperimental, .ringHashExperimental): return {
-        guard case .ringHashExperimental(let l) = lhs, case .ringHashExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.leastRequestExperimental, .leastRequestExperimental): return {
-        guard case .leastRequestExperimental(let l) = lhs, case .leastRequestExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.xdsClusterResolverExperimental, .xdsClusterResolverExperimental): return {
-        guard case .xdsClusterResolverExperimental(let l) = lhs, case .xdsClusterResolverExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.lrsExperimental, .lrsExperimental): return {
-        guard case .lrsExperimental(let l) = lhs, case .lrsExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.edsExperimental, .edsExperimental): return {
-        guard case .edsExperimental(let l) = lhs, case .edsExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.xds, .xds): return {
-        guard case .xds(let l) = lhs, case .xds(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.xdsExperimental, .xdsExperimental): return {
-        guard case .xdsExperimental(let l) = lhs, case .xdsExperimental(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
@@ -1368,11 +1279,12 @@ struct Grpc_ServiceConfig_LoadBalancingConfig {
 
 /// A ServiceConfig represents information about a service but is not specific to
 /// any name resolver.
-struct Grpc_ServiceConfig_ServiceConfig {
+struct Grpc_ServiceConfig_ServiceConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var loadBalancingPolicy: Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy = .unspecified
 
   /// Multiple LB policies can be specified; clients will iterate through
@@ -1421,7 +1333,7 @@ struct Grpc_ServiceConfig_ServiceConfig {
   /// returns at least one backend address in addition to the balancer
   /// address(es), the client may fall back to the requested policy if it
   /// is unable to reach any of the grpclb load balancers.
-  enum LoadBalancingPolicy: SwiftProtobuf.Enum {
+  enum LoadBalancingPolicy: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
     case unspecified // = 0
     case roundRobin // = 1
@@ -1447,6 +1359,12 @@ struct Grpc_ServiceConfig_ServiceConfig {
       }
     }
 
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    static let allCases: [Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy] = [
+      .unspecified,
+      .roundRobin,
+    ]
+
   }
 
   /// If a RetryThrottlingPolicy is provided, gRPC will automatically throttle
@@ -1462,7 +1380,7 @@ struct Grpc_ServiceConfig_ServiceConfig {
   ///
   /// If token_count is less than or equal to max_tokens / 2, then RPCs will not
   /// be retried and hedged RPCs will not be sent.
-  struct RetryThrottlingPolicy {
+  struct RetryThrottlingPolicy: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -1485,7 +1403,7 @@ struct Grpc_ServiceConfig_ServiceConfig {
     init() {}
   }
 
-  struct HealthCheckConfig {
+  struct HealthCheckConfig: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -1513,21 +1431,9 @@ struct Grpc_ServiceConfig_ServiceConfig {
   fileprivate var _healthCheckConfig: Grpc_ServiceConfig_ServiceConfig.HealthCheckConfig? = nil
 }
 
-#if swift(>=4.2)
-
-extension Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy] = [
-    .unspecified,
-    .roundRobin,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
 /// Represents an xDS server.
 /// Deprecated.
-struct Grpc_ServiceConfig_XdsServer {
+struct Grpc_ServiceConfig_XdsServer: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1543,7 +1449,7 @@ struct Grpc_ServiceConfig_XdsServer {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  struct ChannelCredentials {
+  struct ChannelCredentials: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -1573,7 +1479,7 @@ struct Grpc_ServiceConfig_XdsServer {
 
 /// Configuration for xds_cluster_resolver LB policy.
 /// Deprecated.
-struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1595,7 +1501,7 @@ struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
   /// CDS policy.
   /// For aggregate clusters, there will be one DiscoveryMechanism for each
   /// underlying cluster.
-  struct DiscoveryMechanism {
+  struct DiscoveryMechanism: @unchecked Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -1611,6 +1517,8 @@ struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
     /// If set to the empty string, load reporting will be sent to the same
     /// server that we obtained CDS data from.
     /// DEPRECATED: Use new lrs_load_reporting_server field instead.
+    ///
+    /// NOTE: This field was marked as deprecated in the .proto file.
     var lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue {
       get {return _storage._lrsLoadReportingServerName ?? SwiftProtobuf.Google_Protobuf_StringValue()}
       set {_uniqueStorage()._lrsLoadReportingServerName = newValue}
@@ -1688,7 +1596,7 @@ struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
 
-    enum TypeEnum: SwiftProtobuf.Enum {
+    enum TypeEnum: SwiftProtobuf.Enum, Swift.CaseIterable {
       typealias RawValue = Int
       case unknown // = 0
       case eds // = 1
@@ -1717,6 +1625,13 @@ struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
         }
       }
 
+      // The compiler won't synthesize support with the UNRECOGNIZED case.
+      static let allCases: [Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum] = [
+        .unknown,
+        .eds,
+        .logicalDns,
+      ]
+
     }
 
     init() {}
@@ -1727,22 +1642,9 @@ struct Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig {
   init() {}
 }
 
-#if swift(>=4.2)
-
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: CaseIterable {
-  // The compiler won't synthesize support with the UNRECOGNIZED case.
-  static let allCases: [Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum] = [
-    .unknown,
-    .eds,
-    .logicalDns,
-  ]
-}
-
-#endif  // swift(>=4.2)
-
 /// Configuration for lrs LB policy.
 /// Deprecated.
-struct Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1774,7 +1676,7 @@ struct Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// The locality for which this policy will report load.  Required.
-  struct Locality {
+  struct Locality: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -1797,7 +1699,7 @@ struct Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig {
 
 /// Configuration for eds LB policy.
 /// Deprecated.
-struct Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig {
+struct Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1845,12 +1747,14 @@ struct Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig {
 
 /// Configuration for xds LB policy.
 /// Deprecated.
-struct Grpc_ServiceConfig_XdsConfig {
+struct Grpc_ServiceConfig_XdsConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// Name of balancer to connect to.
+  ///
+  /// NOTE: This field was marked as deprecated in the .proto file.
   var balancerName: String = String()
 
   /// Optional.  What LB policy to use for intra-locality routing.
@@ -1888,51 +1792,6 @@ struct Grpc_ServiceConfig_XdsConfig {
 
   fileprivate var _lrsLoadReportingServerName: SwiftProtobuf.Google_Protobuf_StringValue? = nil
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_ServiceConfig_MethodConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_MethodConfig.OneOf_RetryOrHedgingPolicy: @unchecked Sendable {}
-extension Grpc_ServiceConfig_MethodConfig.Name: @unchecked Sendable {}
-extension Grpc_ServiceConfig_MethodConfig.RetryPolicy: @unchecked Sendable {}
-extension Grpc_ServiceConfig_MethodConfig.HedgingPolicy: @unchecked Sendable {}
-extension Grpc_ServiceConfig_PickFirstConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_RoundRobinConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_WeightedRoundRobinLbConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig.SuccessRateEjection: @unchecked Sendable {}
-extension Grpc_ServiceConfig_OutlierDetectionLoadBalancingConfig.FailurePercentageEjection: @unchecked Sendable {}
-extension Grpc_ServiceConfig_GrpcLbConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_PriorityLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_PriorityLoadBalancingPolicyConfig.Child: @unchecked Sendable {}
-extension Grpc_ServiceConfig_WeightedTargetLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_WeightedTargetLoadBalancingPolicyConfig.Target: @unchecked Sendable {}
-extension Grpc_ServiceConfig_RlsLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterManagerLoadBalancingPolicyConfig.Child: @unchecked Sendable {}
-extension Grpc_ServiceConfig_CdsConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterImplLoadBalancingPolicyConfig.DropCategory: @unchecked Sendable {}
-extension Grpc_ServiceConfig_RingHashLoadBalancingConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsWrrLocalityLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LeastRequestLocalityLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_OverrideHostLoadBalancingPolicyConfig.HealthStatus: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LoadBalancingConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LoadBalancingConfig.OneOf_Policy: @unchecked Sendable {}
-extension Grpc_ServiceConfig_ServiceConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_ServiceConfig.LoadBalancingPolicy: @unchecked Sendable {}
-extension Grpc_ServiceConfig_ServiceConfig.RetryThrottlingPolicy: @unchecked Sendable {}
-extension Grpc_ServiceConfig_ServiceConfig.HealthCheckConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsServer: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsServer.ChannelCredentials: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsClusterResolverLoadBalancingPolicyConfig.DiscoveryMechanism.TypeEnum: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_LrsLoadBalancingPolicyConfig.Locality: @unchecked Sendable {}
-extension Grpc_ServiceConfig_EdsLoadBalancingPolicyConfig: @unchecked Sendable {}
-extension Grpc_ServiceConfig_XdsConfig: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
@@ -2116,7 +1975,7 @@ extension Grpc_ServiceConfig_MethodConfig.RetryPolicy: SwiftProtobuf.Message, Sw
     try { if let v = self._maxBackoff {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
-    if self.backoffMultiplier != 0 {
+    if self.backoffMultiplier.bitPattern != 0 {
       try visitor.visitSingularFloatField(value: self.backoffMultiplier, fieldNumber: 4)
     }
     if !self.retryableStatusCodes.isEmpty {
@@ -2221,8 +2080,8 @@ extension Grpc_ServiceConfig_RoundRobinConfig: SwiftProtobuf.Message, SwiftProto
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
@@ -3632,7 +3491,7 @@ extension Grpc_ServiceConfig_ServiceConfig.RetryThrottlingPolicy: SwiftProtobuf.
     if self.maxTokens != 0 {
       try visitor.visitSingularUInt32Field(value: self.maxTokens, fieldNumber: 1)
     }
-    if self.tokenRatio != 0 {
+    if self.tokenRatio.bitPattern != 0 {
       try visitor.visitSingularFloatField(value: self.tokenRatio, fieldNumber: 2)
     }
     try unknownFields.traverse(visitor: &visitor)

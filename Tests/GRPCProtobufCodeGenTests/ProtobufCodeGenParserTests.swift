@@ -348,7 +348,7 @@ extension Google_Protobuf_FileDescriptorProto {
       $0.name = "helloworld.proto"
       $0.package = "helloworld"
       $0.dependency = ["same-module.proto", "different-module.proto"]
-      $0.publicDependency = [1, 2]
+      $0.publicDependency = [0, 1]
       $0.messageType = [requestType, responseType]
       $0.service = [service]
       $0.sourceCodeInfo = Google_Protobuf_SourceCodeInfo.with {

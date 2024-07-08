@@ -34,7 +34,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-enum Grpc_Testing_ClientType: SwiftProtobuf.Enum {
+enum Grpc_Testing_ClientType: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
 
   /// Many languages support a basic distinction between using
@@ -71,11 +71,6 @@ enum Grpc_Testing_ClientType: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension Grpc_Testing_ClientType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   static let allCases: [Grpc_Testing_ClientType] = [
     .syncClient,
@@ -83,11 +78,10 @@ extension Grpc_Testing_ClientType: CaseIterable {
     .otherClient,
     .callbackClient,
   ]
+
 }
 
-#endif  // swift(>=4.2)
-
-enum Grpc_Testing_ServerType: SwiftProtobuf.Enum {
+enum Grpc_Testing_ServerType: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
   case syncServer // = 0
   case asyncServer // = 1
@@ -124,11 +118,6 @@ enum Grpc_Testing_ServerType: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension Grpc_Testing_ServerType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   static let allCases: [Grpc_Testing_ServerType] = [
     .syncServer,
@@ -137,11 +126,10 @@ extension Grpc_Testing_ServerType: CaseIterable {
     .otherServer,
     .callbackServer,
   ]
+
 }
 
-#endif  // swift(>=4.2)
-
-enum Grpc_Testing_RpcType: SwiftProtobuf.Enum {
+enum Grpc_Testing_RpcType: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
   case unary // = 0
   case streaming // = 1
@@ -176,11 +164,6 @@ enum Grpc_Testing_RpcType: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension Grpc_Testing_RpcType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   static let allCases: [Grpc_Testing_RpcType] = [
     .unary,
@@ -189,13 +172,12 @@ extension Grpc_Testing_RpcType: CaseIterable {
     .streamingFromServer,
     .streamingBothWays,
   ]
-}
 
-#endif  // swift(>=4.2)
+}
 
 /// Parameters of poisson process distribution, which is a good representation
 /// of activity coming in from independent identical stationary sources.
-struct Grpc_Testing_PoissonParams {
+struct Grpc_Testing_PoissonParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -210,7 +192,7 @@ struct Grpc_Testing_PoissonParams {
 
 /// Once an RPC finishes, immediately start a new one.
 /// No configuration parameters needed.
-struct Grpc_Testing_ClosedLoopParams {
+struct Grpc_Testing_ClosedLoopParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -220,7 +202,7 @@ struct Grpc_Testing_ClosedLoopParams {
   init() {}
 }
 
-struct Grpc_Testing_LoadParams {
+struct Grpc_Testing_LoadParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -245,35 +227,17 @@ struct Grpc_Testing_LoadParams {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum OneOf_Load: Equatable {
+  enum OneOf_Load: Equatable, Sendable {
     case closedLoop(Grpc_Testing_ClosedLoopParams)
     case poisson(Grpc_Testing_PoissonParams)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_Testing_LoadParams.OneOf_Load, rhs: Grpc_Testing_LoadParams.OneOf_Load) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.closedLoop, .closedLoop): return {
-        guard case .closedLoop(let l) = lhs, case .closedLoop(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.poisson, .poisson): return {
-        guard case .poisson(let l) = lhs, case .poisson(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
 }
 
 /// presence of SecurityParams implies use of TLS
-struct Grpc_Testing_SecurityParams {
+struct Grpc_Testing_SecurityParams: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -289,7 +253,7 @@ struct Grpc_Testing_SecurityParams {
   init() {}
 }
 
-struct Grpc_Testing_ChannelArg {
+struct Grpc_Testing_ChannelArg: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -316,34 +280,16 @@ struct Grpc_Testing_ChannelArg {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum OneOf_Value: Equatable {
+  enum OneOf_Value: Equatable, Sendable {
     case strValue(String)
     case intValue(Int32)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_Testing_ChannelArg.OneOf_Value, rhs: Grpc_Testing_ChannelArg.OneOf_Value) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.strValue, .strValue): return {
-        guard case .strValue(let l) = lhs, case .strValue(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.intValue, .intValue): return {
-        guard case .intValue(let l) = lhs, case .intValue(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
 }
 
-struct Grpc_Testing_ClientConfig {
+struct Grpc_Testing_ClientConfig: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -481,7 +427,7 @@ struct Grpc_Testing_ClientConfig {
   fileprivate var _storage = _StorageClass.defaultInstance
 }
 
-struct Grpc_Testing_ClientStatus {
+struct Grpc_Testing_ClientStatus: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -503,7 +449,7 @@ struct Grpc_Testing_ClientStatus {
 }
 
 /// Request current stats
-struct Grpc_Testing_Mark {
+struct Grpc_Testing_Mark: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -516,7 +462,7 @@ struct Grpc_Testing_Mark {
   init() {}
 }
 
-struct Grpc_Testing_ClientArgs {
+struct Grpc_Testing_ClientArgs: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -541,34 +487,16 @@ struct Grpc_Testing_ClientArgs {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum OneOf_Argtype: Equatable {
+  enum OneOf_Argtype: Equatable, Sendable {
     case setup(Grpc_Testing_ClientConfig)
     case mark(Grpc_Testing_Mark)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_Testing_ClientArgs.OneOf_Argtype, rhs: Grpc_Testing_ClientArgs.OneOf_Argtype) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.setup, .setup): return {
-        guard case .setup(let l) = lhs, case .setup(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.mark, .mark): return {
-        guard case .mark(let l) = lhs, case .mark(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
 }
 
-struct Grpc_Testing_ServerConfig {
+struct Grpc_Testing_ServerConfig: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -631,7 +559,7 @@ struct Grpc_Testing_ServerConfig {
   fileprivate var _payloadConfig: Grpc_Testing_PayloadConfig? = nil
 }
 
-struct Grpc_Testing_ServerArgs {
+struct Grpc_Testing_ServerArgs: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -656,34 +584,16 @@ struct Grpc_Testing_ServerArgs {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  enum OneOf_Argtype: Equatable {
+  enum OneOf_Argtype: Equatable, Sendable {
     case setup(Grpc_Testing_ServerConfig)
     case mark(Grpc_Testing_Mark)
 
-  #if !swift(>=4.1)
-    static func ==(lhs: Grpc_Testing_ServerArgs.OneOf_Argtype, rhs: Grpc_Testing_ServerArgs.OneOf_Argtype) -> Bool {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch (lhs, rhs) {
-      case (.setup, .setup): return {
-        guard case .setup(let l) = lhs, case .setup(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      case (.mark, .mark): return {
-        guard case .mark(let l) = lhs, case .mark(let r) = rhs else { preconditionFailure() }
-        return l == r
-      }()
-      default: return false
-      }
-    }
-  #endif
   }
 
   init() {}
 }
 
-struct Grpc_Testing_ServerStatus {
+struct Grpc_Testing_ServerStatus: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -710,7 +620,7 @@ struct Grpc_Testing_ServerStatus {
   fileprivate var _stats: Grpc_Testing_ServerStats? = nil
 }
 
-struct Grpc_Testing_CoreRequest {
+struct Grpc_Testing_CoreRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -720,7 +630,7 @@ struct Grpc_Testing_CoreRequest {
   init() {}
 }
 
-struct Grpc_Testing_CoreResponse {
+struct Grpc_Testing_CoreResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -733,7 +643,7 @@ struct Grpc_Testing_CoreResponse {
   init() {}
 }
 
-struct Grpc_Testing_Void {
+struct Grpc_Testing_Void: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -744,7 +654,7 @@ struct Grpc_Testing_Void {
 }
 
 /// A single performance scenario: input to qps_json_driver
-struct Grpc_Testing_Scenario {
+struct Grpc_Testing_Scenario: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -813,7 +723,7 @@ struct Grpc_Testing_Scenario {
 }
 
 /// A set of scenarios to be run with qps_json_driver
-struct Grpc_Testing_Scenarios {
+struct Grpc_Testing_Scenarios: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -827,7 +737,7 @@ struct Grpc_Testing_Scenarios {
 
 /// Basic summary that can be computed from ClientStats and ServerStats
 /// once the scenario has finished.
-struct Grpc_Testing_ScenarioResultSummary {
+struct Grpc_Testing_ScenarioResultSummary: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -965,7 +875,7 @@ struct Grpc_Testing_ScenarioResultSummary {
 }
 
 /// Results of a single benchmark scenario.
-struct Grpc_Testing_ScenarioResult {
+struct Grpc_Testing_ScenarioResult: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1026,35 +936,6 @@ struct Grpc_Testing_ScenarioResult {
   fileprivate var _summary: Grpc_Testing_ScenarioResultSummary? = nil
 }
 
-#if swift(>=5.5) && canImport(_Concurrency)
-extension Grpc_Testing_ClientType: @unchecked Sendable {}
-extension Grpc_Testing_ServerType: @unchecked Sendable {}
-extension Grpc_Testing_RpcType: @unchecked Sendable {}
-extension Grpc_Testing_PoissonParams: @unchecked Sendable {}
-extension Grpc_Testing_ClosedLoopParams: @unchecked Sendable {}
-extension Grpc_Testing_LoadParams: @unchecked Sendable {}
-extension Grpc_Testing_LoadParams.OneOf_Load: @unchecked Sendable {}
-extension Grpc_Testing_SecurityParams: @unchecked Sendable {}
-extension Grpc_Testing_ChannelArg: @unchecked Sendable {}
-extension Grpc_Testing_ChannelArg.OneOf_Value: @unchecked Sendable {}
-extension Grpc_Testing_ClientConfig: @unchecked Sendable {}
-extension Grpc_Testing_ClientStatus: @unchecked Sendable {}
-extension Grpc_Testing_Mark: @unchecked Sendable {}
-extension Grpc_Testing_ClientArgs: @unchecked Sendable {}
-extension Grpc_Testing_ClientArgs.OneOf_Argtype: @unchecked Sendable {}
-extension Grpc_Testing_ServerConfig: @unchecked Sendable {}
-extension Grpc_Testing_ServerArgs: @unchecked Sendable {}
-extension Grpc_Testing_ServerArgs.OneOf_Argtype: @unchecked Sendable {}
-extension Grpc_Testing_ServerStatus: @unchecked Sendable {}
-extension Grpc_Testing_CoreRequest: @unchecked Sendable {}
-extension Grpc_Testing_CoreResponse: @unchecked Sendable {}
-extension Grpc_Testing_Void: @unchecked Sendable {}
-extension Grpc_Testing_Scenario: @unchecked Sendable {}
-extension Grpc_Testing_Scenarios: @unchecked Sendable {}
-extension Grpc_Testing_ScenarioResultSummary: @unchecked Sendable {}
-extension Grpc_Testing_ScenarioResult: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
-
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "grpc.testing"
@@ -1107,7 +988,7 @@ extension Grpc_Testing_PoissonParams: SwiftProtobuf.Message, SwiftProtobuf._Mess
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.offeredLoad != 0 {
+    if self.offeredLoad.bitPattern != 0 {
       try visitor.visitSingularDoubleField(value: self.offeredLoad, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -1125,8 +1006,8 @@ extension Grpc_Testing_ClosedLoopParams: SwiftProtobuf.Message, SwiftProtobuf._M
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
@@ -1902,8 +1783,8 @@ extension Grpc_Testing_CoreRequest: SwiftProtobuf.Message, SwiftProtobuf._Messag
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
@@ -1953,8 +1834,8 @@ extension Grpc_Testing_Void: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
   static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let _ = try decoder.nextFieldNumber() {
-    }
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
@@ -2261,58 +2142,58 @@ extension Grpc_Testing_ScenarioResultSummary: SwiftProtobuf.Message, SwiftProtob
       // allocates stack space for every if/case branch local when no optimizations
       // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
       // https://github.com/apple/swift-protobuf/issues/1182
-      if _storage._qps != 0 {
+      if _storage._qps.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._qps, fieldNumber: 1)
       }
-      if _storage._qpsPerServerCore != 0 {
+      if _storage._qpsPerServerCore.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._qpsPerServerCore, fieldNumber: 2)
       }
-      if _storage._serverSystemTime != 0 {
+      if _storage._serverSystemTime.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._serverSystemTime, fieldNumber: 3)
       }
-      if _storage._serverUserTime != 0 {
+      if _storage._serverUserTime.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._serverUserTime, fieldNumber: 4)
       }
-      if _storage._clientSystemTime != 0 {
+      if _storage._clientSystemTime.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._clientSystemTime, fieldNumber: 5)
       }
-      if _storage._clientUserTime != 0 {
+      if _storage._clientUserTime.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._clientUserTime, fieldNumber: 6)
       }
-      if _storage._latency50 != 0 {
+      if _storage._latency50.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._latency50, fieldNumber: 7)
       }
-      if _storage._latency90 != 0 {
+      if _storage._latency90.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._latency90, fieldNumber: 8)
       }
-      if _storage._latency95 != 0 {
+      if _storage._latency95.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._latency95, fieldNumber: 9)
       }
-      if _storage._latency99 != 0 {
+      if _storage._latency99.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._latency99, fieldNumber: 10)
       }
-      if _storage._latency999 != 0 {
+      if _storage._latency999.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._latency999, fieldNumber: 11)
       }
-      if _storage._serverCpuUsage != 0 {
+      if _storage._serverCpuUsage.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._serverCpuUsage, fieldNumber: 12)
       }
-      if _storage._successfulRequestsPerSecond != 0 {
+      if _storage._successfulRequestsPerSecond.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._successfulRequestsPerSecond, fieldNumber: 13)
       }
-      if _storage._failedRequestsPerSecond != 0 {
+      if _storage._failedRequestsPerSecond.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._failedRequestsPerSecond, fieldNumber: 14)
       }
-      if _storage._clientPollsPerRequest != 0 {
+      if _storage._clientPollsPerRequest.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._clientPollsPerRequest, fieldNumber: 15)
       }
-      if _storage._serverPollsPerRequest != 0 {
+      if _storage._serverPollsPerRequest.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._serverPollsPerRequest, fieldNumber: 16)
       }
-      if _storage._serverQueriesPerCpuSec != 0 {
+      if _storage._serverQueriesPerCpuSec.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._serverQueriesPerCpuSec, fieldNumber: 17)
       }
-      if _storage._clientQueriesPerCpuSec != 0 {
+      if _storage._clientQueriesPerCpuSec.bitPattern != 0 {
         try visitor.visitSingularDoubleField(value: _storage._clientQueriesPerCpuSec, fieldNumber: 18)
       }
       try { if let v = _storage._startTime {

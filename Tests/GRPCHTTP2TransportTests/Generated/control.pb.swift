@@ -35,7 +35,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-enum StatusCode: SwiftProtobuf.Enum {
+enum StatusCode: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
   case ok // = 0
   case cancelled // = 1
@@ -106,11 +106,6 @@ enum StatusCode: SwiftProtobuf.Enum {
     }
   }
 
-}
-
-#if swift(>=4.2)
-
-extension StatusCode: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
   static let allCases: [StatusCode] = [
     .ok,
@@ -131,11 +126,10 @@ extension StatusCode: CaseIterable {
     .dataLoss,
     .unauthenticated,
   ]
+
 }
 
-#endif  // swift(>=4.2)
-
-struct ControlInput {
+struct ControlInput: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -208,7 +202,7 @@ struct ControlInput {
   fileprivate var _status: RPCStatus? = nil
 }
 
-struct RPCStatus {
+struct RPCStatus: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -224,7 +218,7 @@ struct RPCStatus {
   init() {}
 }
 
-struct PayloadParameters {
+struct PayloadParameters: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -240,7 +234,7 @@ struct PayloadParameters {
   init() {}
 }
 
-struct ControlOutput {
+struct ControlOutput: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -251,14 +245,6 @@ struct ControlOutput {
 
   init() {}
 }
-
-#if swift(>=5.5) && canImport(_Concurrency)
-extension StatusCode: @unchecked Sendable {}
-extension ControlInput: @unchecked Sendable {}
-extension RPCStatus: @unchecked Sendable {}
-extension PayloadParameters: @unchecked Sendable {}
-extension ControlOutput: @unchecked Sendable {}
-#endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
