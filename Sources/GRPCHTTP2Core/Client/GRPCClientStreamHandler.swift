@@ -68,9 +68,12 @@ extension GRPCClientStreamHandler {
       case .byteBuffer(let buffer):
         do {
           switch try self.stateMachine.receive(buffer: buffer, endStream: endStream) {
-          case .endRPCAndForwardErrorStatus(let status):
+          case .endRPCAndForwardErrorStatus_clientOnly(let status):
             context.fireChannelRead(self.wrapInboundOut(.status(status, [:])))
             context.close(promise: nil)
+
+          case .forwardErrorAndClose_serverOnly:
+            assertionFailure("Unexpected client action")
 
           case .readInbound:
             loop: while true {
@@ -91,7 +94,8 @@ extension GRPCClientStreamHandler {
           case .doNothing:
             ()
           }
-        } catch {
+        } catch let invalidState {
+          let error = RPCError(invalidState)
           context.fireErrorCaught(error)
         }
 
@@ -109,24 +113,18 @@ extension GRPCClientStreamHandler {
         case .receivedMetadata(let metadata, _):
           context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
 
-        case .rejectRPC:
-          throw RPCError(
-            code: .internalError,
-            message: "Client cannot get rejectRPC."
-          )
-
-        case .receivedStatusAndMetadata(let status, let metadata):
+        case .receivedStatusAndMetadata_clientOnly(let status, let metadata):
           context.fireChannelRead(self.wrapInboundOut(.status(status, metadata)))
           context.fireUserInboundEventTriggered(ChannelEvent.inputClosed)
 
-        case .protocolViolation:
-          // Should only happen for servers
-          assertionFailure("Unexpected protocol violation")
+        case .rejectRPC_serverOnly, .protocolViolation_serverOnly:
+          assertionFailure("Unexpected action '\(action)'")
 
         case .doNothing:
           ()
         }
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         context.fireErrorCaught(error)
       }
 
@@ -187,7 +185,8 @@ extension GRPCClientStreamHandler {
         self.flushPending = true
         let headers = try self.stateMachine.send(metadata: metadata)
         context.write(self.wrapOutboundOut(.headers(.init(headers: headers))), promise: promise)
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -195,7 +194,8 @@ extension GRPCClientStreamHandler {
     case .message(let message):
       do {
         try self.stateMachine.send(message: message, promise: promise)
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -219,7 +219,8 @@ extension GRPCClientStreamHandler {
         // (otherwise, we'd skip flushing if we're in a read loop)
         self._flush(context: context)
         promise?.succeed()
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -233,7 +234,8 @@ extension GRPCClientStreamHandler {
         // (otherwise, we'd skip flushing if we're in a read loop)
         self._flush(context: context)
         context.close(mode: mode, promise: promise)
-      } catch {
+      } catch let invalidState {
+        let error = RPCError(invalidState)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
@@ -285,10 +287,16 @@ extension GRPCClientStreamHandler {
             context.flush()
           }
           break loop
+
+        case .closeAndFailPromise(let promise, let error):
+          context.close(mode: .all, promise: nil)
+          promise?.fail(error)
+          break loop
         }
+
       }
-    } catch {
-      context.fireErrorCaught(error)
+    } catch let invalidState {
+      context.fireErrorCaught(RPCError(invalidState))
     }
   }
 }

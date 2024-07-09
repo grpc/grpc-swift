@@ -396,6 +396,13 @@ struct GRPCStreamStateMachine {
   private var configuration: GRPCStreamStateMachineConfiguration
   private var skipAssertions: Bool
 
+  struct InvalidState: Error {
+    var message: String
+    init(_ message: String) {
+      self.message = message
+    }
+  }
+
   init(
     configuration: GRPCStreamStateMachineConfiguration,
     maximumPayloadSize: Int,
@@ -406,7 +413,7 @@ struct GRPCStreamStateMachine {
     self.skipAssertions = skipAssertions
   }
 
-  mutating func send(metadata: Metadata) throws -> HPACKHeaders {
+  mutating func send(metadata: Metadata) throws(InvalidState) -> HPACKHeaders {
     switch self.configuration {
     case .client(let clientConfiguration):
       return try self.clientSend(metadata: metadata, configuration: clientConfiguration)
@@ -415,7 +422,7 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func send(message: [UInt8], promise: EventLoopPromise<Void>?) throws {
+  mutating func send(message: [UInt8], promise: EventLoopPromise<Void>?) throws(InvalidState) {
     switch self.configuration {
     case .client:
       try self.clientSend(message: message, promise: promise)
@@ -424,7 +431,7 @@ struct GRPCStreamStateMachine {
     }
   }
 
-  mutating func closeOutbound() throws {
+  mutating func closeOutbound() throws(InvalidState) {
     switch self.configuration {
     case .client:
       try self.clientCloseOutbound()
@@ -436,7 +443,7 @@ struct GRPCStreamStateMachine {
   mutating func send(
     status: Status,
     metadata: Metadata
-  ) throws -> HPACKHeaders {
+  ) throws(InvalidState) -> HPACKHeaders {
     switch self.configuration {
     case .client:
       try self.invalidState(
@@ -452,17 +459,20 @@ struct GRPCStreamStateMachine {
 
   enum OnMetadataReceived: Equatable {
     case receivedMetadata(Metadata, MethodDescriptor?)
-
-    // Client-specific actions
-    case receivedStatusAndMetadata(status: Status, metadata: Metadata)
     case doNothing
 
+    // Client-specific actions
+    case receivedStatusAndMetadata_clientOnly(status: Status, metadata: Metadata)
+
     // Server-specific actions
-    case rejectRPC(trailers: HPACKHeaders)
-    case protocolViolation
+    case rejectRPC_serverOnly(trailers: HPACKHeaders)
+    case protocolViolation_serverOnly
   }
 
-  mutating func receive(headers: HPACKHeaders, endStream: Bool) throws -> OnMetadataReceived {
+  mutating func receive(
+    headers: HPACKHeaders,
+    endStream: Bool
+  ) throws(InvalidState) -> OnMetadataReceived {
     switch self.configuration {
     case .client(let clientConfiguration):
       return try self.clientReceive(
@@ -483,16 +493,19 @@ struct GRPCStreamStateMachine {
     case readInbound
     case doNothing
 
-    // Client-specific actions
-
     // This will be returned when the server sends a data frame with EOS set.
     // This is invalid as per the protocol specification, because the server
     // can only close by sending trailers, not by setting EOS when sending
     // a message.
-    case endRPCAndForwardErrorStatus(Status)
+    case endRPCAndForwardErrorStatus_clientOnly(Status)
+
+    case forwardErrorAndClose_serverOnly(RPCError)
   }
 
-  mutating func receive(buffer: ByteBuffer, endStream: Bool) throws -> OnBufferReceivedAction {
+  mutating func receive(
+    buffer: ByteBuffer,
+    endStream: Bool
+  ) throws(InvalidState) -> OnBufferReceivedAction {
     switch self.configuration {
     case .client:
       return try self.clientReceive(buffer: buffer, endStream: endStream)
@@ -513,9 +526,19 @@ struct GRPCStreamStateMachine {
       frame: ByteBuffer,
       promise: EventLoopPromise<Void>?
     )
+    case closeAndFailPromise(EventLoopPromise<Void>?, RPCError)
+
+    init(result: Result<ByteBuffer, RPCError>, promise: EventLoopPromise<Void>?) {
+      switch result {
+      case .success(let buffer):
+        self = .sendFrame(frame: buffer, promise: promise)
+      case .failure(let error):
+        self = .closeAndFailPromise(promise, error)
+      }
+    }
   }
 
-  mutating func nextOutboundFrame() throws -> OnNextOutboundFrame {
+  mutating func nextOutboundFrame() throws(InvalidState) -> OnNextOutboundFrame {
     switch self.configuration {
     case .client:
       return try self.clientNextOutboundFrame()
@@ -647,7 +670,7 @@ extension GRPCStreamStateMachine {
   private mutating func clientSend(
     metadata: Metadata,
     configuration: GRPCStreamStateMachineConfiguration.ClientConfiguration
-  ) throws -> HPACKHeaders {
+  ) throws(InvalidState) -> HPACKHeaders {
     // Client sends metadata only when opening the stream.
     switch self.state {
     case .clientIdleServerIdle(let state):
@@ -685,7 +708,10 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func clientSend(message: [UInt8], promise: EventLoopPromise<Void>?) throws {
+  private mutating func clientSend(
+    message: [UInt8],
+    promise: EventLoopPromise<Void>?
+  ) throws(InvalidState) {
     switch self.state {
     case .clientIdleServerIdle:
       try self.invalidState("Client not yet open.")
@@ -714,7 +740,7 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func clientCloseOutbound() throws {
+  private mutating func clientCloseOutbound() throws(InvalidState) {
     switch self.state {
     case .clientIdleServerIdle(let state):
       self.state = .clientClosedServerIdle(.init(previousState: state))
@@ -734,41 +760,52 @@ extension GRPCStreamStateMachine {
 
   /// Returns the client's next request to the server.
   /// - Returns: The request to be made to the server.
-  private mutating func clientNextOutboundFrame() throws -> OnNextOutboundFrame {
+  private mutating func clientNextOutboundFrame() throws(InvalidState) -> OnNextOutboundFrame {
+
     switch self.state {
     case .clientIdleServerIdle:
       try self.invalidState("Client is not open yet.")
 
     case .clientOpenServerIdle(var state):
       self.state = ._modifying
-      let request = try state.framer.next(compressor: state.compressor)
+      let next = state.framer.nextResult(compressor: state.compressor)
       self.state = .clientOpenServerIdle(state)
-      return request.map { .sendFrame(frame: $0.bytes, promise: $0.promise) }
-        ?? .awaitMoreMessages
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
+      } else {
+        return .awaitMoreMessages
+      }
 
     case .clientOpenServerOpen(var state):
       self.state = ._modifying
-      let request = try state.framer.next(compressor: state.compressor)
+      let next = state.framer.nextResult(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return request.map { .sendFrame(frame: $0.bytes, promise: $0.promise) }
-        ?? .awaitMoreMessages
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
+      } else {
+        return .awaitMoreMessages
+      }
 
     case .clientClosedServerIdle(var state):
       self.state = ._modifying
-      let request = try state.framer.next(compressor: state.compressor)
+      let next = state.framer.nextResult(compressor: state.compressor)
       self.state = .clientClosedServerIdle(state)
-      if let request {
-        return .sendFrame(frame: request.bytes, promise: request.promise)
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
       } else {
         return .noMoreMessages
       }
 
     case .clientClosedServerOpen(var state):
       self.state = ._modifying
-      let request = try state.framer.next(compressor: state.compressor)
+      let next = state.framer.nextResult(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      if let request {
-        return .sendFrame(frame: request.bytes, promise: request.promise)
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
       } else {
         return .noMoreMessages
       }
@@ -806,7 +843,7 @@ extension GRPCStreamStateMachine {
 
       guard let httpStatusCode else {
         return .invalid(
-          .receivedStatusAndMetadata(
+          .receivedStatusAndMetadata_clientOnly(
             status: .init(code: .unknown, message: "HTTP Status Code is missing."),
             metadata: Metadata(headers: metadata)
           )
@@ -822,7 +859,7 @@ extension GRPCStreamStateMachine {
 
       // Forward the mapped status code.
       return .invalid(
-        .receivedStatusAndMetadata(
+        .receivedStatusAndMetadata_clientOnly(
           status: .init(
             code: Status.Code(httpStatusCode: httpStatusCode),
             message: "Unexpected non-200 HTTP Status Code."
@@ -835,7 +872,7 @@ extension GRPCStreamStateMachine {
     let contentTypeHeader = metadata.first(name: GRPCHTTP2Keys.contentType.rawValue)
     guard contentTypeHeader.flatMap(ContentType.init) != nil else {
       return .invalid(
-        .receivedStatusAndMetadata(
+        .receivedStatusAndMetadata_clientOnly(
           status: .init(
             code: .internalError,
             message: "Missing \(GRPCHTTP2Keys.contentType.rawValue) header"
@@ -863,7 +900,7 @@ extension GRPCStreamStateMachine {
         configuration.acceptedEncodings.contains(parsedEncoding)
       else {
         return .error(
-          .receivedStatusAndMetadata(
+          .receivedStatusAndMetadata_clientOnly(
             status: .init(
               code: .internalError,
               message:
@@ -880,39 +917,43 @@ extension GRPCStreamStateMachine {
     return .success(inboundEncoding)
   }
 
-  private func validateAndReturnStatusAndMetadata(
-    _ metadata: HPACKHeaders
-  ) throws -> OnMetadataReceived {
-    let rawStatusCode = metadata.firstString(forKey: .grpcStatus)
-    guard let rawStatusCode,
-      let intStatusCode = Int(rawStatusCode),
-      let statusCode = Status.Code(rawValue: intStatusCode)
-    else {
-      let message =
-        "Non-initial metadata must be a trailer containing a valid grpc-status"
-        + (rawStatusCode.flatMap { "but was \($0)" } ?? "")
-      throw RPCError(code: .unknown, message: message)
+  private func validateTrailers(
+    _ trailers: HPACKHeaders
+  ) throws(InvalidState) -> OnMetadataReceived {
+    let statusValue = trailers.firstString(forKey: .grpcStatus)
+    let statusCode = statusValue.flatMap {
+      Int($0)
+    }.flatMap {
+      Status.Code(rawValue: $0)
     }
 
-    let statusMessage =
-      metadata.firstString(forKey: .grpcStatusMessage, canonicalForm: false)
-      .map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
+    let status: Status
+    if let code = statusCode {
+      let messageFieldValue = trailers.firstString(forKey: .grpcStatusMessage, canonicalForm: false)
+      let message = messageFieldValue.map { GRPCStatusMessageMarshaller.unmarshall($0) } ?? ""
+      status = Status(code: code, message: message)
+    } else {
+      let message: String
+      if let statusValue = statusValue {
+        message = "Invalid 'grpc-status' in trailers (\(statusValue))"
+      } else {
+        message = "No 'grpc-status' value in trailers"
+      }
+      status = Status(code: .unknown, message: message)
+    }
 
-    var convertedMetadata = Metadata(headers: metadata)
+    var convertedMetadata = Metadata(headers: trailers)
     convertedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatus.rawValue)
     convertedMetadata.removeAllValues(forKey: GRPCHTTP2Keys.grpcStatusMessage.rawValue)
 
-    return .receivedStatusAndMetadata(
-      status: Status(code: statusCode, message: statusMessage),
-      metadata: convertedMetadata
-    )
+    return .receivedStatusAndMetadata_clientOnly(status: status, metadata: convertedMetadata)
   }
 
   private mutating func clientReceive(
     headers: HPACKHeaders,
     endStream: Bool,
     configuration: GRPCStreamStateMachineConfiguration.ClientConfiguration
-  ) throws -> OnMetadataReceived {
+  ) throws(InvalidState) -> OnMetadataReceived {
     switch self.state {
     case .clientOpenServerIdle(let state):
       switch (self.clientValidateHeadersReceivedFromServer(headers), endStream) {
@@ -927,7 +968,7 @@ extension GRPCStreamStateMachine {
       case (.valid, true):
         // This is a trailers-only response: close server.
         self.state = .clientOpenServerClosed(.init(previousState: state))
-        return try self.validateAndReturnStatusAndMetadata(headers)
+        return try self.validateTrailers(headers)
       case (.valid, false):
         switch self.processInboundEncoding(headers: headers, configuration: configuration) {
         case .error(let failure):
@@ -960,7 +1001,7 @@ extension GRPCStreamStateMachine {
       if endStream {
         self.state = .clientOpenServerClosed(.init(previousState: state))
       }
-      return try self.validateAndReturnStatusAndMetadata(headers)
+      return try self.validateTrailers(headers)
 
     case .clientClosedServerIdle(let state):
       switch (self.clientValidateHeadersReceivedFromServer(headers), endStream) {
@@ -975,7 +1016,7 @@ extension GRPCStreamStateMachine {
       case (.valid, true):
         // This is a trailers-only response: close server.
         self.state = .clientClosedServerClosed(.init(previousState: state))
-        return try self.validateAndReturnStatusAndMetadata(headers)
+        return try self.validateTrailers(headers)
       case (.valid, false):
         switch self.processInboundEncoding(headers: headers, configuration: configuration) {
         case .error(let failure):
@@ -1000,7 +1041,7 @@ extension GRPCStreamStateMachine {
       if endStream {
         self.state = .clientClosedServerClosed(.init(previousState: state))
       }
-      return try self.validateAndReturnStatusAndMetadata(headers)
+      return try self.validateTrailers(headers)
 
     case .clientClosedServerClosed:
       // We could end up here if we received a grpc-status header in a previous
@@ -1031,7 +1072,7 @@ extension GRPCStreamStateMachine {
   private mutating func clientReceive(
     buffer: ByteBuffer,
     endStream: Bool
-  ) throws -> OnBufferReceivedAction {
+  ) throws(InvalidState) -> OnBufferReceivedAction {
     // This is a message received by the client, from the server.
     switch self.state {
     case .clientIdleServerIdle:
@@ -1051,7 +1092,7 @@ extension GRPCStreamStateMachine {
         // can only close by sending trailers, not by setting EOS when sending
         // a message.
         self.state = .clientClosedServerClosed(.init(previousState: state))
-        return .endRPCAndForwardErrorStatus(
+        return .endRPCAndForwardErrorStatus_clientOnly(
           Status(
             code: .internalError,
             message: """
@@ -1062,17 +1103,23 @@ extension GRPCStreamStateMachine {
         )
       }
 
-      try state.deframer.process(buffer: buffer) { deframedMessage in
-        state.inboundMessageBuffer.append(deframedMessage)
+      do {
+        try state.deframer.process(buffer: buffer) { deframedMessage in
+          state.inboundMessageBuffer.append(deframedMessage)
+        }
+        self.state = .clientOpenServerOpen(state)
+        return .readInbound
+      } catch {
+        self.state = .clientOpenServerOpen(state)
+        let status = Status(code: .internalError, message: "Failed to decode message")
+        return .endRPCAndForwardErrorStatus_clientOnly(status)
       }
-      self.state = .clientOpenServerOpen(state)
-      return .readInbound
 
     case .clientClosedServerOpen(var state):
       self.state = ._modifying
       if endStream {
         self.state = .clientClosedServerClosed(.init(previousState: state))
-        return .endRPCAndForwardErrorStatus(
+        return .endRPCAndForwardErrorStatus_clientOnly(
           Status(
             code: .internalError,
             message: """
@@ -1086,11 +1133,17 @@ extension GRPCStreamStateMachine {
       // The client may have sent the end stream and thus it's closed,
       // but the server may still be responding.
       // The client must have a deframer set up, so force-unwrap is okay.
-      try state.deframer!.process(buffer: buffer) { deframedMessage in
-        state.inboundMessageBuffer.append(deframedMessage)
+      do {
+        try state.deframer!.process(buffer: buffer) { deframedMessage in
+          state.inboundMessageBuffer.append(deframedMessage)
+        }
+        self.state = .clientClosedServerOpen(state)
+        return .readInbound
+      } catch {
+        self.state = .clientClosedServerOpen(state)
+        let status = Status(code: .internalError, message: "Failed to decode message")
+        return .endRPCAndForwardErrorStatus_clientOnly(status)
       }
-      self.state = .clientClosedServerOpen(state)
-      return .readInbound
 
     case .clientOpenServerClosed, .clientClosedServerClosed:
       try self.invalidState(
@@ -1136,11 +1189,11 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private func invalidState(_ message: String, line: UInt = #line) throws -> Never {
+  private func invalidState(_ message: String, line: UInt = #line) throws(InvalidState) -> Never {
     if !self.skipAssertions {
       assertionFailure(message, line: line)
     }
-    throw RPCError(code: .internalError, message: message)
+    throw InvalidState(message)
   }
 
   private mutating func clientUnexpectedInboundClose(
@@ -1207,7 +1260,7 @@ extension GRPCStreamStateMachine {
   private mutating func serverSend(
     metadata: Metadata,
     configuration: GRPCStreamStateMachineConfiguration.ServerConfiguration
-  ) throws -> HPACKHeaders {
+  ) throws(InvalidState) -> HPACKHeaders {
     // Server sends initial metadata
     switch self.state {
     case .clientOpenServerIdle(var state):
@@ -1262,7 +1315,10 @@ extension GRPCStreamStateMachine {
     }
   }
 
-  private mutating func serverSend(message: [UInt8], promise: EventLoopPromise<Void>?) throws {
+  private mutating func serverSend(
+    message: [UInt8],
+    promise: EventLoopPromise<Void>?
+  ) throws(InvalidState) {
     switch self.state {
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
       try self.invalidState(
@@ -1291,7 +1347,7 @@ extension GRPCStreamStateMachine {
   private mutating func serverSend(
     status: Status,
     customMetadata: Metadata
-  ) throws -> HPACKHeaders {
+  ) throws(InvalidState) -> HPACKHeaders {
     // Close the server.
     switch self.state {
     case .clientOpenServerOpen(var state):
@@ -1335,7 +1391,7 @@ extension GRPCStreamStateMachine {
     headers: HPACKHeaders,
     endStream: Bool,
     configuration: GRPCStreamStateMachineConfiguration.ServerConfiguration
-  ) throws -> OnMetadataReceived {
+  ) throws(InvalidState) -> OnMetadataReceived {
     func closeServer(
       from state: GRPCStreamStateMachineState.ClientIdleServerIdleState,
       endStream: Bool
@@ -1357,12 +1413,12 @@ extension GRPCStreamStateMachine {
         // Respond with HTTP-level Unsupported Media Type status code.
         var trailers = HPACKHeaders()
         trailers.add("415", forKey: .status)
-        return .rejectRPC(trailers: trailers)
+        return .rejectRPC_serverOnly(trailers: trailers)
       }
 
       guard let pathHeader = headers.firstString(forKey: .path) else {
         self.state = closeServer(from: state, endStream: endStream)
-        return .rejectRPC(
+        return .rejectRPC_serverOnly(
           trailers: .trailersOnly(
             code: .invalidArgument,
             message: "No \(GRPCHTTP2Keys.path.rawValue) header has been set."
@@ -1372,7 +1428,7 @@ extension GRPCStreamStateMachine {
 
       guard let path = MethodDescriptor(path: pathHeader) else {
         self.state = closeServer(from: state, endStream: endStream)
-        return .rejectRPC(
+        return .rejectRPC_serverOnly(
           trailers: .trailersOnly(
             code: .unimplemented,
             message:
@@ -1385,7 +1441,7 @@ extension GRPCStreamStateMachine {
         .flatMap { GRPCStreamStateMachineConfiguration.Scheme(rawValue: $0) }
       if scheme == nil {
         self.state = closeServer(from: state, endStream: endStream)
-        return .rejectRPC(
+        return .rejectRPC_serverOnly(
           trailers: .trailersOnly(
             code: .invalidArgument,
             message: ":scheme header must be present and one of \"http\" or \"https\"."
@@ -1395,7 +1451,7 @@ extension GRPCStreamStateMachine {
 
       guard let method = headers.firstString(forKey: .method), method == "POST" else {
         self.state = closeServer(from: state, endStream: endStream)
-        return .rejectRPC(
+        return .rejectRPC_serverOnly(
           trailers: .trailersOnly(
             code: .invalidArgument,
             message: ":method header is expected to be present and have a value of \"POST\"."
@@ -1405,7 +1461,7 @@ extension GRPCStreamStateMachine {
 
       guard let te = headers.firstString(forKey: .te), te == "trailers" else {
         self.state = closeServer(from: state, endStream: endStream)
-        return .rejectRPC(
+        return .rejectRPC_serverOnly(
           trailers: .trailersOnly(
             code: .invalidArgument,
             message: "\"te\" header is expected to be present and have a value of \"trailers\"."
@@ -1424,7 +1480,7 @@ extension GRPCStreamStateMachine {
       if let rawEncoding = encodingValuesIterator.next() {
         guard encodingValuesIterator.next() == nil else {
           self.state = closeServer(from: state, endStream: endStream)
-          return .rejectRPC(
+          return .rejectRPC_serverOnly(
             trailers: .trailersOnly(
               code: .internalError,
               message: "\(GRPCHTTP2Keys.encoding) must contain no more than one value."
@@ -1448,7 +1504,7 @@ extension GRPCStreamStateMachine {
             trailers.add(name: GRPCHTTP2Keys.acceptEncoding.rawValue, value: acceptedEncoding.name)
           }
 
-          return .rejectRPC(trailers: trailers)
+          return .rejectRPC_serverOnly(trailers: trailers)
         }
 
         // Server supports client's encoding.
@@ -1509,7 +1565,7 @@ extension GRPCStreamStateMachine {
 
     case .clientOpenServerIdle, .clientOpenServerOpen, .clientOpenServerClosed:
       // Metadata has already been received, should only be sent once by clients.
-      return .protocolViolation
+      return .protocolViolation_serverOnly
 
     case .clientClosedServerIdle, .clientClosedServerOpen, .clientClosedServerClosed:
       try self.invalidState("Client can't have sent metadata if closed.")
@@ -1522,7 +1578,7 @@ extension GRPCStreamStateMachine {
   private mutating func serverReceive(
     buffer: ByteBuffer,
     endStream: Bool
-  ) throws -> OnBufferReceivedAction {
+  ) throws(InvalidState) -> OnBufferReceivedAction {
     let action: OnBufferReceivedAction
 
     switch self.state {
@@ -1533,8 +1589,15 @@ extension GRPCStreamStateMachine {
       self.state = ._modifying
       // Deframer must be present on the server side, as we know the decompression
       // algorithm from the moment the client opens.
-      try state.deframer!.process(buffer: buffer) { deframedMessage in
-        state.inboundMessageBuffer.append(deframedMessage)
+
+      do {
+        try state.deframer!.process(buffer: buffer) { deframedMessage in
+          state.inboundMessageBuffer.append(deframedMessage)
+        }
+        action = .readInbound
+      } catch {
+        let error = RPCError(code: .internalError, message: "Failed to decode message")
+        action = .forwardErrorAndClose_serverOnly(error)
       }
 
       if endStream {
@@ -1543,12 +1606,17 @@ extension GRPCStreamStateMachine {
         self.state = .clientOpenServerIdle(state)
       }
 
-      action = .readInbound
-
     case .clientOpenServerOpen(var state):
       self.state = ._modifying
-      try state.deframer.process(buffer: buffer) { deframedMessage in
-        state.inboundMessageBuffer.append(deframedMessage)
+
+      do {
+        try state.deframer.process(buffer: buffer) { deframedMessage in
+          state.inboundMessageBuffer.append(deframedMessage)
+        }
+        action = .readInbound
+      } catch {
+        let error = RPCError(code: .internalError, message: "Failed to decode message")
+        action = .forwardErrorAndClose_serverOnly(error)
       }
 
       if endStream {
@@ -1556,8 +1624,6 @@ extension GRPCStreamStateMachine {
       } else {
         self.state = .clientOpenServerOpen(state)
       }
-
-      action = .readInbound
 
     case .clientOpenServerClosed(let state):
       // Client is not done sending request, but server has already closed.
@@ -1579,44 +1645,55 @@ extension GRPCStreamStateMachine {
     return action
   }
 
-  private mutating func serverNextOutboundFrame() throws -> OnNextOutboundFrame {
+  private mutating func serverNextOutboundFrame() throws(InvalidState) -> OnNextOutboundFrame {
     switch self.state {
     case .clientIdleServerIdle, .clientOpenServerIdle, .clientClosedServerIdle:
       try self.invalidState("Server is not open yet.")
 
     case .clientOpenServerOpen(var state):
       self.state = ._modifying
-      let response = try state.framer.next(compressor: state.compressor)
+      let next = state.framer.nextResult(compressor: state.compressor)
       self.state = .clientOpenServerOpen(state)
-      return response.map { .sendFrame(frame: $0.bytes, promise: $0.promise) }
-        ?? .awaitMoreMessages
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
+      } else {
+        return .awaitMoreMessages
+      }
 
     case .clientClosedServerOpen(var state):
       self.state = ._modifying
-      let response = try state.framer.next(compressor: state.compressor)
+      let next = state.framer.nextResult(compressor: state.compressor)
       self.state = .clientClosedServerOpen(state)
-      return response.map { .sendFrame(frame: $0.bytes, promise: $0.promise) }
-        ?? .awaitMoreMessages
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
+      } else {
+        return .awaitMoreMessages
+      }
 
     case .clientOpenServerClosed(var state):
       self.state = ._modifying
-      let response = try state.framer?.next(compressor: state.compressor)
+      let next = state.framer?.nextResult(compressor: state.compressor)
       self.state = .clientOpenServerClosed(state)
-      if let response {
-        return .sendFrame(frame: response.bytes, promise: response.promise)
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
       } else {
         return .noMoreMessages
       }
 
     case .clientClosedServerClosed(var state):
       self.state = ._modifying
-      let response = try state.framer?.next(compressor: state.compressor)
+      let next = state.framer?.nextResult(compressor: state.compressor)
       self.state = .clientClosedServerClosed(state)
-      if let response {
-        return .sendFrame(frame: response.bytes, promise: response.promise)
+
+      if let next = next {
+        return OnNextOutboundFrame(result: next.result, promise: next.promise)
       } else {
         return .noMoreMessages
       }
+
     case ._modifying:
       preconditionFailure()
     }
@@ -1858,5 +1935,12 @@ extension Status {
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   fileprivate init(_ error: RPCError) {
     self = Status(code: Status.Code(error.code), message: error.message)
+  }
+}
+
+extension RPCError {
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  init(_ invalidState: GRPCStreamStateMachine.InvalidState) {
+    self = RPCError(code: .internalError, message: "Invalid state", cause: invalidState)
   }
 }
