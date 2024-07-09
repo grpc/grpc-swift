@@ -412,6 +412,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
     ) { error in
+      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Invalid state")
     }
   }
@@ -521,6 +522,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeOutbound(trailers)
     ) { error in
+      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Invalid state")
     }
   }
@@ -967,6 +969,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
+      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Invalid state")
     }
   }
@@ -1021,6 +1024,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
+      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Invalid state")
     }
   }
@@ -1075,6 +1079,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
+      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Invalid state")
     }
   }
