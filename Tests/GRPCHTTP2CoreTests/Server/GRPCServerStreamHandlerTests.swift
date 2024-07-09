@@ -342,11 +342,8 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
     ) { error in
-      XCTAssertEqual(error.code, .resourceExhausted)
-      XCTAssertEqual(
-        error.message,
-        "Message has exceeded the configured maximum payload size (max: 1, actual: 42)"
-      )
+      XCTAssertEqual(error.code, .internalError)
+      XCTAssertEqual(error.message, "Failed to decode message")
     }
 
     // Make sure we haven't sent a response back and that we didn't read the received message
@@ -416,7 +413,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Client can't send a message if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -526,7 +523,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       try channel.writeOutbound(trailers)
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server can't send anything if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -973,7 +970,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server cannot send metadata if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -1028,7 +1025,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server cannot send metadata if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -1083,7 +1080,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
       XCTAssertEqual(error.code, .internalError)
-      XCTAssertEqual(error.message, "Server cannot send metadata if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 }

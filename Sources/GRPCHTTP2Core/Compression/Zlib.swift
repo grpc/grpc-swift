@@ -60,7 +60,7 @@ extension Zlib {
     /// - Parameter output: The `ByteBuffer` into which the compressed message should be written.
     /// - Returns: The number of bytes written into the `output` buffer.
     @discardableResult
-    func compress(_ input: [UInt8], into output: inout ByteBuffer) throws -> Int {
+    func compress(_ input: [UInt8], into output: inout ByteBuffer) throws(ZlibError) -> Int {
       defer { self.reset() }
       let upperBound = self.stream.deflateBound(inputBytes: input.count)
       return try self.stream.deflate(input, into: &output, upperBound: upperBound)
@@ -372,43 +372,48 @@ extension UnsafeMutablePointer<z_stream> {
     _ input: [UInt8],
     into output: inout ByteBuffer,
     upperBound: Int
-  ) throws -> Int {
+  ) throws(ZlibError) -> Int {
     defer {
       self.setNextInputBuffer(nil)
       self.setNextOutputBuffer(nil)
     }
 
-    var input = input
-    return try input.withUnsafeMutableBytes { input in
-      self.setNextInputBuffer(input)
+    do {
+      var input = input
+      return try input.withUnsafeMutableBytes { input in
+        self.setNextInputBuffer(input)
 
-      return try output.writeWithUnsafeMutableBytes(minimumWritableBytes: upperBound) { output in
-        self.setNextOutputBuffer(output)
+        return try output.writeWithUnsafeMutableBytes(minimumWritableBytes: upperBound) { output in
+          self.setNextOutputBuffer(output)
 
-        let rc = CGRPCZlib_deflate(self, Z_FINISH)
+          let rc = CGRPCZlib_deflate(self, Z_FINISH)
 
-        // Possible return codes:
-        // - Z_OK: some progress has been made
-        // - Z_STREAM_END: all input has been consumed and all output has been produced (only when
-        //   flush is set to Z_FINISH)
-        // - Z_STREAM_ERROR: the stream state was inconsistent
-        // - Z_BUF_ERROR: no progress is possible
-        //
-        // The documentation notes that Z_BUF_ERROR is not fatal, and deflate() can be called again
-        // with more input and more output space to continue compressing. However, we
-        // call `deflateBound()` before `deflate()` which guarantees that the output size will not be
-        // larger than the value returned by `deflateBound()` if `Z_FINISH` flush is used. As such,
-        // the only acceptable outcome is `Z_STREAM_END`.
-        guard rc == Z_STREAM_END else {
-          throw RPCError(
-            code: .internalError,
-            message: "Compression error",
-            cause: ZlibError(code: Int(rc), message: self.lastError ?? "")
-          )
+          // Possible return codes:
+          // - Z_OK: some progress has been made
+          // - Z_STREAM_END: all input has been consumed and all output has been produced (only when
+          //   flush is set to Z_FINISH)
+          // - Z_STREAM_ERROR: the stream state was inconsistent
+          // - Z_BUF_ERROR: no progress is possible
+          //
+          // The documentation notes that Z_BUF_ERROR is not fatal, and deflate() can be called again
+          // with more input and more output space to continue compressing. However, we
+          // call `deflateBound()` before `deflate()` which guarantees that the output size will not be
+          // larger than the value returned by `deflateBound()` if `Z_FINISH` flush is used. As such,
+          // the only acceptable outcome is `Z_STREAM_END`.
+          guard rc == Z_STREAM_END else {
+            throw ZlibError(code: Int(rc), message: self.lastError ?? "")
+          }
+
+          return output.count - self.availableOutputBytes
         }
-
-        return output.count - self.availableOutputBytes
       }
+    } catch let error as ZlibError {
+      throw error
+    } catch {
+      // Shouldn't happen as 'withUnsafeMutableBytes' and 'writeWithUnsafeMutableBytes' are
+      // marked 'rethrows' (but don't support typed throws, yet) and the closure only throws
+      // an 'RPCError' which is handled above.
+      fatalError("Unexpected error of type \(type(of: error))")
     }
   }
 }
