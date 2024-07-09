@@ -451,6 +451,7 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
       ofType: RPCError.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(serverDataPayload))
     ) { error in
+      XCTAssertEqual(error.code, .internalError)
       XCTAssertEqual(error.message, "Invalid state")
     }
   }

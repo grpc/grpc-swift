@@ -917,7 +917,7 @@ extension GRPCStreamStateMachine {
     return .success(inboundEncoding)
   }
 
-  private func validateAndReturnStatusAndMetadata(
+  private func validateTrailers(
     _ trailers: HPACKHeaders
   ) throws(InvalidState) -> OnMetadataReceived {
     let statusValue = trailers.firstString(forKey: .grpcStatus)
@@ -968,7 +968,7 @@ extension GRPCStreamStateMachine {
       case (.valid, true):
         // This is a trailers-only response: close server.
         self.state = .clientOpenServerClosed(.init(previousState: state))
-        return try self.validateAndReturnStatusAndMetadata(headers)
+        return try self.validateTrailers(headers)
       case (.valid, false):
         switch self.processInboundEncoding(headers: headers, configuration: configuration) {
         case .error(let failure):
@@ -1001,7 +1001,7 @@ extension GRPCStreamStateMachine {
       if endStream {
         self.state = .clientOpenServerClosed(.init(previousState: state))
       }
-      return try self.validateAndReturnStatusAndMetadata(headers)
+      return try self.validateTrailers(headers)
 
     case .clientClosedServerIdle(let state):
       switch (self.clientValidateHeadersReceivedFromServer(headers), endStream) {
@@ -1016,7 +1016,7 @@ extension GRPCStreamStateMachine {
       case (.valid, true):
         // This is a trailers-only response: close server.
         self.state = .clientClosedServerClosed(.init(previousState: state))
-        return try self.validateAndReturnStatusAndMetadata(headers)
+        return try self.validateTrailers(headers)
       case (.valid, false):
         switch self.processInboundEncoding(headers: headers, configuration: configuration) {
         case .error(let failure):
@@ -1041,7 +1041,7 @@ extension GRPCStreamStateMachine {
       if endStream {
         self.state = .clientClosedServerClosed(.init(previousState: state))
       }
-      return try self.validateAndReturnStatusAndMetadata(headers)
+      return try self.validateTrailers(headers)
 
     case .clientClosedServerClosed:
       // We could end up here if we received a grpc-status header in a previous

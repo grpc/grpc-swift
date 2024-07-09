@@ -460,7 +460,6 @@ final class GRPCStreamClientStateMachineTests: XCTestCase {
     ] {
       var stateMachine = self.makeClientStateMachine(targetState: targetState)
 
-      // Receiving initial metadata again should throw if grpc-status is not present.
       let action1 = try stateMachine.receive(
         headers: [
           GRPCHTTP2Keys.status.rawValue: "200",
