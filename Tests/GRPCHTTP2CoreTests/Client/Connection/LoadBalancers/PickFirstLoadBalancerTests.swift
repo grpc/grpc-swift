@@ -16,7 +16,7 @@
 
 import Atomics
 import GRPCCore
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOHTTP2
 import NIOPosix
 import XCTest

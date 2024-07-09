@@ -15,12 +15,11 @@
  */
 
 import GRPCCore
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOCore
 import NIOHTTP2
 import NIOPosix
 
-@_spi(Package)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension HTTP2Connector where Self == ThrowingConnector {
   /// A connector which throws the given error on a connect attempt.
@@ -29,7 +28,6 @@ extension HTTP2Connector where Self == ThrowingConnector {
   }
 }
 
-@_spi(Package)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension HTTP2Connector where Self == NeverConnector {
   /// A connector which fatal errors if a connect attempt is made.
@@ -38,7 +36,6 @@ extension HTTP2Connector where Self == NeverConnector {
   }
 }
 
-@_spi(Package)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension HTTP2Connector where Self == NIOPosixConnector {
   /// A connector which uses NIOPosix to establish a connection.

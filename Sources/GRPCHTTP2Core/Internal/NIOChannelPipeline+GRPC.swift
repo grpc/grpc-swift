@@ -21,13 +21,12 @@ import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ChannelPipeline.SynchronousOperations {
-  @_spi(Package) public typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
-  @_spi(Package) public typealias HTTP2StreamMultiplexer = NIOHTTP2Handler.AsyncStreamMultiplexer<
+  package typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
+  package typealias HTTP2StreamMultiplexer = NIOHTTP2Handler.AsyncStreamMultiplexer<
     (NIOAsyncChannel<RPCRequestPart, RPCResponsePart>, EventLoopFuture<MethodDescriptor>)
   >
 
-  @_spi(Package)
-  public func configureGRPCServerPipeline(
+  package func configureGRPCServerPipeline(
     channel: any Channel,
     compressionConfig: HTTP2ServerTransport.Config.Compression,
     connectionConfig: HTTP2ServerTransport.Config.Connection,
@@ -104,9 +103,8 @@ extension ChannelPipeline.SynchronousOperations {
 }
 
 extension ChannelPipeline.SynchronousOperations {
-  @_spi(Package)
   @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-  public func configureGRPCClientPipeline(
+  package func configureGRPCClientPipeline(
     channel: any Channel,
     config: GRPCChannel.Config
   ) throws -> (

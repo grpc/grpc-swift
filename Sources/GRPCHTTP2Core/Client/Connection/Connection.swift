@@ -44,9 +44,9 @@ import NIOHTTP2
 /// }
 /// ```
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-struct Connection: Sendable {
+package struct Connection: Sendable {
   /// Events which can happen over the lifetime of the connection.
-  enum Event: Sendable {
+  package enum Event: Sendable {
     /// The connect attempt succeeded and the connection is ready to use.
     case connectSucceeded
     /// The connect attempt failed.
@@ -59,7 +59,7 @@ struct Connection: Sendable {
   }
 
   /// The reason the connection closed.
-  enum CloseReason: Sendable {
+  package enum CloseReason: Sendable {
     /// Closed because an idle timeout fired.
     case idleTimeout
     /// Closed because a keepalive timer fired.
@@ -104,11 +104,11 @@ struct Connection: Sendable {
   }
 
   /// A stream of events which can happen to the connection.
-  var events: AsyncStream<Event> {
+  package var events: AsyncStream<Event> {
     self.event.stream
   }
 
-  init(
+  package init(
     address: SocketAddress,
     http2Connector: any HTTP2Connector,
     defaultCompression: CompressionAlgorithm,
@@ -127,7 +127,7 @@ struct Connection: Sendable {
   ///
   /// This function returns when the connection has closed. You can observe connection events
   /// by consuming the ``events`` sequence.
-  func run() async {
+  package func run() async {
     let connectResult = await Result {
       try await self.http2Connector.establishConnection(to: self.address)
     }
@@ -168,7 +168,7 @@ struct Connection: Sendable {
   }
 
   /// Gracefully close the connection.
-  func close() {
+  package func close() {
     self.input.continuation.yield(.close)
   }
 
@@ -176,7 +176,10 @@ struct Connection: Sendable {
   ///
   /// - Parameter descriptor: A descriptor of the method to create a stream for.
   /// - Returns: The open stream.
-  func makeStream(descriptor: MethodDescriptor, options: CallOptions) async throws -> Stream {
+  package func makeStream(
+    descriptor: MethodDescriptor,
+    options: CallOptions
+  ) async throws -> Stream {
     let (multiplexer, scheme) = try self.state.withLockedValue { state in
       switch state {
       case .connected(let connected):
@@ -349,11 +352,11 @@ struct Connection: Sendable {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection {
-  struct Stream {
-    typealias Inbound = NIOAsyncChannelInboundStream<RPCResponsePart>
+  package struct Stream {
+    package typealias Inbound = NIOAsyncChannelInboundStream<RPCResponsePart>
 
-    struct Outbound: ClosableRPCWriterProtocol {
-      typealias Element = RPCRequestPart
+    package struct Outbound: ClosableRPCWriterProtocol {
+      package typealias Element = RPCRequestPart
 
       private let requestWriter: NIOAsyncChannelOutboundWriter<RPCRequestPart>
       private let http2Stream: NIOAsyncChannel<RPCResponsePart, RPCRequestPart>
@@ -366,19 +369,19 @@ extension Connection {
         self.http2Stream = http2Stream
       }
 
-      func write(_ element: RPCRequestPart) async throws {
+      package func write(_ element: RPCRequestPart) async throws {
         try await self.requestWriter.write(element)
       }
 
-      func write(contentsOf elements: some Sequence<Self.Element>) async throws {
+      package func write(contentsOf elements: some Sequence<Self.Element>) async throws {
         try await self.requestWriter.write(contentsOf: elements)
       }
 
-      func finish() {
+      package func finish() {
         self.requestWriter.finish()
       }
 
-      func finish(throwing error: any Error) {
+      package func finish(throwing error: any Error) {
         // Fire the error inbound; this fails the inbound writer.
         self.http2Stream.channel.pipeline.fireErrorCaught(error)
       }
@@ -396,7 +399,7 @@ extension Connection {
       self.descriptor = descriptor
     }
 
-    func execute<T>(
+    package func execute<T>(
       _ closure: (_ inbound: Inbound, _ outbound: Outbound) async throws -> T
     ) async throws -> T where T: Sendable {
       try await self.http2Stream.executeThenClose { inbound, outbound in
@@ -428,7 +431,7 @@ extension Connection {
       /// Multiplexer for creating HTTP/2 streams.
       var multiplexer: NIOHTTP2Handler.AsyncStreamMultiplexer<Void>
       /// Whether the connection is plaintext, `false` implies TLS is being used.
-      var scheme: GRPCStreamStateMachineConfiguration.Scheme
+      var scheme: Scheme
 
       init(_ connection: HTTP2Connection) {
         self.channel = connection.channel

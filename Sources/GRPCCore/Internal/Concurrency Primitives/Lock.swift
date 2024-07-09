@@ -237,49 +237,48 @@ extension UnsafeMutablePointer {
 }
 
 @usableFromInline
-internal typealias LockedValueBox<Value> = _LockedValueBox<Value>
-
-// TODO: Use 'package' ACL when 5.9 is the minimum Swift version.
-public struct _LockedValueBox<Value> {
+package struct LockedValueBox<Value> {
   @usableFromInline
   let storage: LockStorage<Value>
 
   @inlinable
-  public init(_ value: Value) {
+  package init(_ value: Value) {
     self.storage = .create(value: value)
   }
 
   @inlinable
-  public func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
+  package func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
     return try self.storage.withLockedValue(mutate)
   }
 
   /// An unsafe view over the locked value box.
   ///
   /// Prefer ``withLockedValue(_:)`` where possible.
-  public var unsafe: Unsafe {
+  @usableFromInline
+  package var unsafe: Unsafe {
     Unsafe(storage: self.storage)
   }
 
-  public struct Unsafe {
+  @usableFromInline
+  package struct Unsafe {
     @usableFromInline
     let storage: LockStorage<Value>
 
     /// Manually acquire the lock.
     @inlinable
-    public func lock() {
+    package func lock() {
       self.storage.lock()
     }
 
     /// Manually release the lock.
     @inlinable
-    public func unlock() {
+    package func unlock() {
       self.storage.unlock()
     }
 
     /// Mutate the value, assuming the lock has been acquired manually.
     @inlinable
-    public func withValueAssumingLockIsAcquired<T>(
+    package func withValueAssumingLockIsAcquired<T>(
       _ mutate: (inout Value) throws -> T
     ) rethrows -> T {
       return try self.storage.withUnsafeMutablePointerToHeader { value in
@@ -289,4 +288,4 @@ public struct _LockedValueBox<Value> {
   }
 }
 
-extension _LockedValueBox: Sendable where Value: Sendable {}
+extension LockedValueBox: Sendable where Value: Sendable {}

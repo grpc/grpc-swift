@@ -20,14 +20,13 @@ import NIOCore
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public enum ServerConnection {
   public enum Stream {
-    @_spi(Package)
-    public struct Outbound: ClosableRPCWriterProtocol {
-      public typealias Element = RPCResponsePart
+    package struct Outbound: ClosableRPCWriterProtocol {
+      package typealias Element = RPCResponsePart
 
       private let responseWriter: NIOAsyncChannelOutboundWriter<RPCResponsePart>
       private let http2Stream: NIOAsyncChannel<RPCRequestPart, RPCResponsePart>
 
-      public init(
+      package init(
         responseWriter: NIOAsyncChannelOutboundWriter<RPCResponsePart>,
         http2Stream: NIOAsyncChannel<RPCRequestPart, RPCResponsePart>
       ) {
@@ -35,19 +34,19 @@ public enum ServerConnection {
         self.http2Stream = http2Stream
       }
 
-      public func write(_ element: RPCResponsePart) async throws {
+      package func write(_ element: RPCResponsePart) async throws {
         try await self.responseWriter.write(element)
       }
 
-      public func write(contentsOf elements: some Sequence<Self.Element>) async throws {
+      package func write(contentsOf elements: some Sequence<Self.Element>) async throws {
         try await self.responseWriter.write(contentsOf: elements)
       }
 
-      public func finish() {
+      package func finish() {
         self.responseWriter.finish()
       }
 
-      public func finish(throwing error: any Error) {
+      package func finish(throwing error: any Error) {
         // Fire the error inbound; this fails the inbound writer.
         self.http2Stream.channel.pipeline.fireErrorCaught(error)
       }

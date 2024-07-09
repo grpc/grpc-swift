@@ -44,8 +44,8 @@ import NIOConcurrencyHelpers
 /// }
 /// ```
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-struct Subchannel {
-  enum Event: Sendable, Hashable {
+package struct Subchannel {
+  package enum Event: Sendable, Hashable {
     /// The connection received a GOAWAY and will close soon. No new streams
     /// should be opened on this connection.
     case goingAway
@@ -79,7 +79,7 @@ struct Subchannel {
   let endpoint: Endpoint
 
   /// The ID of the subchannel.
-  let id: SubchannelID
+  package let id: SubchannelID
 
   /// A factory for connections.
   private let connector: any HTTP2Connector
@@ -93,7 +93,7 @@ struct Subchannel {
   /// The set of enabled compression algorithms.
   private let enabledCompression: CompressionAlgorithmSet
 
-  init(
+  package init(
     endpoint: Endpoint,
     id: SubchannelID,
     connector: any HTTP2Connector,
@@ -120,7 +120,7 @@ struct Subchannel {
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Subchannel {
   /// A stream of events which can happen to the subchannel.
-  var events: AsyncStream<Event> {
+  package var events: AsyncStream<Event> {
     self.event.stream
   }
 
@@ -132,7 +132,7 @@ extension Subchannel {
   /// failure state.
   ///
   /// Events and state changes can be observed via the ``events`` stream.
-  func run() async {
+  package func run() async {
     await withDiscardingTaskGroup { group in
       for await input in self.input.stream {
         switch input {
@@ -156,12 +156,12 @@ extension Subchannel {
   }
 
   /// Initiate a connection attempt, if possible.
-  func connect() {
+  package func connect() {
     self.input.continuation.yield(.connect)
   }
 
   /// Initiates graceful shutdown, if possible.
-  func shutDown() {
+  package func shutDown() {
     self.input.continuation.yield(.shutDown)
   }
 
@@ -169,7 +169,7 @@ extension Subchannel {
   ///
   /// - Parameter descriptor: A descriptor of the method to create a stream for.
   /// - Returns: The open stream.
-  func makeStream(
+  package func makeStream(
     descriptor: MethodDescriptor,
     options: CallOptions
   ) async throws -> Connection.Stream {

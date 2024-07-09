@@ -15,7 +15,7 @@
  */
 
 import GRPCCore
-@_spi(Package) import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOCore
 import NIOExtras
 import NIOPosix
@@ -124,7 +124,7 @@ extension HTTP2ServerTransport {
       }
     }
 
-    private let listeningAddressState: _LockedValueBox<State>
+    private let listeningAddressState: LockedValueBox<State>
 
     /// The listening address for this server transport.
     ///
@@ -158,7 +158,7 @@ extension HTTP2ServerTransport {
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
 
       let eventLoop = eventLoopGroup.any()
-      self.listeningAddressState = _LockedValueBox(.idle(eventLoop.makePromise()))
+      self.listeningAddressState = LockedValueBox(.idle(eventLoop.makePromise()))
     }
 
     public func listen(

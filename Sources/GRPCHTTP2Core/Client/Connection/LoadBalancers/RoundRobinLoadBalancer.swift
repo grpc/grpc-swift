@@ -58,7 +58,7 @@ import GRPCCore
 /// }
 /// ```
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-struct RoundRobinLoadBalancer {
+package struct RoundRobinLoadBalancer {
   enum Input: Sendable, Hashable {
     /// Update the addresses used by the load balancer to the following endpoints.
     case updateAddresses([Endpoint])
@@ -103,7 +103,7 @@ struct RoundRobinLoadBalancer {
   private let input: (stream: AsyncStream<Input>, continuation: AsyncStream<Input>.Continuation)
 
   /// The state of the load balancer.
-  private let state: _LockedValueBox<State>
+  private let state: LockedValueBox<State>
 
   /// A connector, capable of creating connections.
   private let connector: any HTTP2Connector
@@ -120,7 +120,7 @@ struct RoundRobinLoadBalancer {
   /// The ID of this load balancer.
   internal let id: LoadBalancerID
 
-  init(
+  package init(
     connector: any HTTP2Connector,
     backoff: ConnectionBackoff,
     defaultCompression: CompressionAlgorithm,
@@ -134,21 +134,21 @@ struct RoundRobinLoadBalancer {
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
-    self.state = _LockedValueBox(.active(State.Active()))
+    self.state = LockedValueBox(.active(State.Active()))
 
     // The load balancer starts in the idle state.
     self.event.continuation.yield(.connectivityStateChanged(.idle))
   }
 
   /// A stream of events which can happen to the load balancer.
-  var events: AsyncStream<LoadBalancerEvent> {
+  package var events: AsyncStream<LoadBalancerEvent> {
     self.event.stream
   }
 
   /// Runs the load balancer, returning when it has closed.
   ///
   /// You can monitor events which happen on the load balancer with ``events``.
-  func run() async {
+  package func run() async {
     await withDiscardingTaskGroup { group in
       for await input in self.input.stream {
         switch input {
@@ -169,19 +169,19 @@ struct RoundRobinLoadBalancer {
   /// Update the addresses used by the load balancer.
   ///
   /// This may result in new subchannels being created and some subchannels being removed.
-  func updateAddresses(_ endpoints: [Endpoint]) {
+  package func updateAddresses(_ endpoints: [Endpoint]) {
     self.input.continuation.yield(.updateAddresses(endpoints))
   }
 
   /// Close the load balancer, and all subchannels it manages.
-  func close() {
+  package func close() {
     self.input.continuation.yield(.close)
   }
 
   /// Pick a ready subchannel from the load balancer.
   ///
   /// - Returns: A subchannel, or `nil` if there aren't any ready subchannels.
-  func pickSubchannel() -> Subchannel? {
+  package func pickSubchannel() -> Subchannel? {
     switch self.state.withLockedValue({ $0.pickSubchannel() }) {
     case .picked(let subchannel):
       return subchannel
