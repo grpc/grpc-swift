@@ -29,8 +29,8 @@ final class GRPCMessageDeframerTests: XCTestCase {
   func testDecodeNotEnoughBytes() {
     var deframer = GRPCMessageDeframer(maxPayloadSize: .max)
     let bytes: [UInt8] = [
-      0x0,                // Compression byte (not compressed)
-      0x0, 0x0, 0x0, 0x1  // Length (1)
+      0x0,  // Compression byte (not compressed)
+      0x0, 0x0, 0x0, 0x1,  // Length (1)
     ]
     deframer.append(ByteBuffer(bytes: bytes))
     XCTAssertNil(try deframer.decodeNext())
@@ -39,8 +39,8 @@ final class GRPCMessageDeframerTests: XCTestCase {
   func testDecodeZeroLengthMessage() {
     var deframer = GRPCMessageDeframer(maxPayloadSize: .max)
     let bytes: [UInt8] = [
-      0x0,                // Compression byte (not compressed)
-      0x0, 0x0, 0x0, 0x0  // Length (0)
+      0x0,  // Compression byte (not compressed)
+      0x0, 0x0, 0x0, 0x0,  // Length (0)
     ]
     deframer.append(ByteBuffer(bytes: bytes))
     XCTAssertEqual(try deframer.decodeNext(), [])
@@ -49,9 +49,9 @@ final class GRPCMessageDeframerTests: XCTestCase {
   func testDecodeMessage() {
     var deframer = GRPCMessageDeframer(maxPayloadSize: .max)
     let bytes: [UInt8] = [
-      0x0,                // Compression byte (not compressed)
-      0x0, 0x0, 0x0, 0x1, // Length (1)
-      0xf                 // Payload
+      0x0,  // Compression byte (not compressed)
+      0x0, 0x0, 0x0, 0x1,  // Length (1)
+      0xf,  // Payload
     ]
     deframer.append(ByteBuffer(bytes: bytes))
     XCTAssertEqual(try deframer.decodeNext(), [0xf])
@@ -60,8 +60,8 @@ final class GRPCMessageDeframerTests: XCTestCase {
   func testDripFeedAndDecode() {
     var deframer = GRPCMessageDeframer(maxPayloadSize: .max)
     let bytes: [UInt8] = [
-      0x0,                // Compression byte (not compressed)
-      0x0, 0x0, 0x0, 0x1, // Length (1)
+      0x0,  // Compression byte (not compressed)
+      0x0, 0x0, 0x0, 0x1,  // Length (1)
     ]
 
     for byte in bytes {
@@ -78,13 +78,13 @@ final class GRPCMessageDeframerTests: XCTestCase {
     var deframer = GRPCMessageDeframer(maxPayloadSize: .max)
 
     var input = ByteBuffer()
-    input.writeInteger(UInt8(0))              // Compression byte (not compressed)
-    input.writeInteger(UInt32(1024))          // Length
-    input.writeRepeatingByte(42, count: 1024) // Payload
+    input.writeInteger(UInt8(0))  // Compression byte (not compressed)
+    input.writeInteger(UInt32(1024))  // Length
+    input.writeRepeatingByte(42, count: 1024)  // Payload
 
-    input.writeInteger(UInt8(0))              // Compression byte (not compressed)
-    input.writeInteger(UInt32(1024))          // Length
-    input.writeRepeatingByte(43, count: 512) // Payload (most of it)
+    input.writeInteger(UInt8(0))  // Compression byte (not compressed)
+    input.writeInteger(UInt32(1024))  // Length
+    input.writeRepeatingByte(43, count: 512)  // Payload (most of it)
 
     deframer.append(input)
     XCTAssertEqual(deframer._readerIndex, 0)

@@ -110,7 +110,10 @@ package struct GRPCMessageDeframer {
   }
 
   init(maxPayloadSize: Int, decompressor: Zlib.Decompressor?) {
-    self.decoder = GRPCMessageDecoder(maximumPayloadSize: maxPayloadSize, decompressor: decompressor)
+    self.decoder = GRPCMessageDecoder(
+      maximumPayloadSize: maxPayloadSize,
+      decompressor: decompressor
+    )
     self.buffer = nil
   }
 
@@ -133,7 +136,7 @@ package struct GRPCMessageDeframer {
     }
   }
 
-  package mutating func decodeNext() throws -> Optional<[UInt8]> {
+  package mutating func decodeNext() throws -> [UInt8]? {
     guard (self.buffer?.readableBytes ?? 0) > 0 else { return nil }
 
     // Avoid CoWs by swapping out the buffer

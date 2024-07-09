@@ -1933,7 +1933,6 @@ extension RPCError {
   }
 }
 
-
 extension Status {
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   fileprivate init(_ error: RPCError) {
@@ -1947,4 +1946,3 @@ extension RPCError {
     self = RPCError(code: .internalError, message: "Invalid state", cause: invalidState)
   }
 }
-
