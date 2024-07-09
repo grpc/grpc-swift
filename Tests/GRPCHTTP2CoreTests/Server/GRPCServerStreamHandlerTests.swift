@@ -409,10 +409,10 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     buffer.writeRepeatingByte(0, count: 42)  // message
     let clientDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(clientDataPayload))
     ) { error in
-      XCTAssertEqual(error.message, "Client can't send a message if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -518,10 +518,10 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     // Try writing and assert it throws to make sure we don't allow writes
     // after closing.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(trailers)
     ) { error in
-      XCTAssertEqual(error.message, "Server can't send anything if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -964,10 +964,10 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.message, "Server cannot send metadata if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -1018,10 +1018,10 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.message, "Server cannot send metadata if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -1072,10 +1072,10 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCResponsePart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.message, "Server cannot send metadata if closed.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 }

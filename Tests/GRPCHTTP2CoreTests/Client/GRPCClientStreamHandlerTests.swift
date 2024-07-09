@@ -448,10 +448,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
     buffer.writeRepeatingByte(0, count: 42)  // message
     let serverDataPayload = HTTP2Frame.FramePayload.Data(data: .byteBuffer(buffer), endStream: true)
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeInbound(HTTP2Frame.FramePayload.data(serverDataPayload))
     ) { error in
-      XCTAssertEqual(error.message, "Cannot have received anything from a closed server.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -529,10 +529,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // Make sure we cannot write anymore because client's closed.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCRequestPart.message(.init(repeating: 1, count: 42)))
     ) { error in
-      XCTAssertEqual(error.message, "Client is closed, cannot send a message.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
 
     // This is needed to clear the EmbeddedChannel's stored error, otherwise
@@ -803,10 +803,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -848,10 +848,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 
@@ -900,10 +900,10 @@ final class GRPCClientStreamHandlerTests: XCTestCase {
 
     // We should now be closed: check we can't write anymore.
     XCTAssertThrowsError(
-      ofType: GRPCStreamStateMachine.InvalidState.self,
+      ofType: RPCError.self,
       try channel.writeOutbound(RPCRequestPart.metadata(Metadata()))
     ) { error in
-      XCTAssertEqual(error.message, "Client is closed: can't send metadata.")
+      XCTAssertEqual(error.message, "Invalid state")
     }
   }
 }
