@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-enum ConnectivityState: Sendable, Hashable {
+package enum ConnectivityState: Sendable, Hashable {
   /// This channel isn't trying to create a connection because of a lack of new or pending RPCs.
   ///
   /// New streams may be created in this state. Doing so will cause the channel to enter the

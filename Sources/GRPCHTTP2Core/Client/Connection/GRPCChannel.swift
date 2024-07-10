@@ -16,11 +16,10 @@
 
 import Atomics
 import DequeModule
-@_spi(Package) import GRPCCore
+import GRPCCore
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-@_spi(Package)
-public struct GRPCChannel: ClientTransport {
+package struct GRPCChannel: ClientTransport {
   private enum Input: Sendable {
     /// Close the channel, if possible.
     case close
@@ -44,7 +43,7 @@ public struct GRPCChannel: ClientTransport {
   private let resolver: NameResolver
 
   /// The state of the channel.
-  private let state: _LockedValueBox<StateMachine>
+  private let state: LockedValueBox<StateMachine>
 
   /// The maximum number of times to attempt to create a stream per RPC.
   ///
@@ -69,18 +68,17 @@ public struct GRPCChannel: ClientTransport {
   private let defaultServiceConfig: ServiceConfig
 
   // These are both read frequently and updated infrequently so may be a bottleneck.
-  private let _methodConfig: _LockedValueBox<_MethodConfigs>
-  private let _retryThrottle: _LockedValueBox<RetryThrottle?>
+  private let _methodConfig: LockedValueBox<MethodConfigs>
+  private let _retryThrottle: LockedValueBox<RetryThrottle?>
 
-  @_spi(Package)
-  public init(
+  package init(
     resolver: NameResolver,
     connector: any HTTP2Connector,
     config: Config,
     defaultServiceConfig: ServiceConfig
   ) {
     self.resolver = resolver
-    self.state = _LockedValueBox(StateMachine())
+    self.state = LockedValueBox(StateMachine())
     self._connectivityState = AsyncStream.makeStream()
     self.input = AsyncStream.makeStream()
     self.connector = connector
@@ -96,19 +94,19 @@ public struct GRPCChannel: ClientTransport {
     self.defaultServiceConfig = defaultServiceConfig
 
     let throttle = defaultServiceConfig.retryThrottling.map { RetryThrottle(policy: $0) }
-    self._retryThrottle = _LockedValueBox(throttle)
+    self._retryThrottle = LockedValueBox(throttle)
 
-    let methodConfig = _MethodConfigs(serviceConfig: defaultServiceConfig)
-    self._methodConfig = _LockedValueBox(methodConfig)
+    let methodConfig = MethodConfigs(serviceConfig: defaultServiceConfig)
+    self._methodConfig = LockedValueBox(methodConfig)
   }
 
   /// The connectivity state of the channel.
-  var connectivityState: AsyncStream<ConnectivityState> {
+  package var connectivityState: AsyncStream<ConnectivityState> {
     self._connectivityState.stream
   }
 
   /// Returns a throttle which gRPC uses to determine whether retries can be executed.
-  public var retryThrottle: RetryThrottle? {
+  package var retryThrottle: RetryThrottle? {
     self._retryThrottle.withLockedValue { $0 }
   }
 
@@ -116,12 +114,12 @@ public struct GRPCChannel: ClientTransport {
   ///
   /// - Parameter descriptor: The method to lookup configuration for.
   /// - Returns: Configuration for the method, if it exists.
-  public func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
+  package func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
     self._methodConfig.withLockedValue { $0[descriptor] }
   }
 
   /// Establishes and maintains a connection to the remote destination.
-  public func connect() async {
+  package func connect() async {
     self.state.withLockedValue { $0.start() }
     self._connectivityState.continuation.yield(.idle)
 
@@ -184,12 +182,12 @@ public struct GRPCChannel: ClientTransport {
 
   /// Signal to the transport that no new streams may be created and that connections should be
   /// closed when all streams are closed.
-  public func close() {
+  package func close() {
     self.input.continuation.yield(.close)
   }
 
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.
-  public func withStream<T: Sendable>(
+  package func withStream<T: Sendable>(
     descriptor: MethodDescriptor,
     options: CallOptions,
     _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
@@ -229,22 +227,20 @@ public struct GRPCChannel: ClientTransport {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension GRPCChannel {
-  @_spi(Package)
-  public struct Config: Sendable {
+  package struct Config: Sendable {
     /// Configuration for HTTP/2 connections.
-    var http2: HTTP2ClientTransport.Config.HTTP2
+    package var http2: HTTP2ClientTransport.Config.HTTP2
 
     /// Configuration for backoff used when establishing a connection.
-    var backoff: HTTP2ClientTransport.Config.Backoff
+    package var backoff: HTTP2ClientTransport.Config.Backoff
 
     /// Configuration for connection management.
-    var connection: HTTP2ClientTransport.Config.Connection
+    package var connection: HTTP2ClientTransport.Config.Connection
 
     /// Compression configuration.
-    var compression: HTTP2ClientTransport.Config.Compression
+    package var compression: HTTP2ClientTransport.Config.Compression
 
-    @_spi(Package)
-    public init(
+    package init(
       http2: HTTP2ClientTransport.Config.HTTP2,
       backoff: HTTP2ClientTransport.Config.Backoff,
       connection: HTTP2ClientTransport.Config.Connection,
@@ -386,7 +382,7 @@ extension GRPCChannel {
     switch result.serviceConfig ?? .success(self.defaultServiceConfig) {
     case .success(let config):
       // Update per RPC configuration.
-      let methodConfig = _MethodConfigs(serviceConfig: config)
+      let methodConfig = MethodConfigs(serviceConfig: config)
       self._methodConfig.withLockedValue { $0 = methodConfig }
 
       let retryThrottle = config.retryThrottling.map { RetryThrottle(policy: $0) }

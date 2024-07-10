@@ -19,14 +19,14 @@ import NIOCore
 import NIOHPACK
 import NIOHTTP1
 
+package enum Scheme: String {
+  case http
+  case https
+}
+
 enum GRPCStreamStateMachineConfiguration {
   case client(ClientConfiguration)
   case server(ServerConfiguration)
-
-  enum Scheme: String {
-    case http
-    case https
-  }
 
   struct ClientConfiguration {
     var methodDescriptor: MethodDescriptor
@@ -631,7 +631,7 @@ struct GRPCStreamStateMachine {
 extension GRPCStreamStateMachine {
   private func makeClientHeaders(
     methodDescriptor: MethodDescriptor,
-    scheme: GRPCStreamStateMachineConfiguration.Scheme,
+    scheme: Scheme,
     outboundEncoding: CompressionAlgorithm?,
     acceptedEncodings: CompressionAlgorithmSet,
     customMetadata: Metadata
@@ -1437,8 +1437,7 @@ extension GRPCStreamStateMachine {
         )
       }
 
-      let scheme = headers.firstString(forKey: .scheme)
-        .flatMap { GRPCStreamStateMachineConfiguration.Scheme(rawValue: $0) }
+      let scheme = headers.firstString(forKey: .scheme).flatMap { Scheme(rawValue: $0) }
       if scheme == nil {
         self.state = closeServer(from: state, endStream: endStream)
         return .rejectRPC_serverOnly(

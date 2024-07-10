@@ -31,9 +31,10 @@ struct ProcessUniqueID: Hashable, Sendable, CustomStringConvertible {
 }
 
 /// A process-unique ID for a subchannel.
-struct SubchannelID: Hashable, Sendable, CustomStringConvertible {
+package struct SubchannelID: Hashable, Sendable, CustomStringConvertible {
   private let id = ProcessUniqueID()
-  var description: String {
+  package init() {}
+  package var description: String {
     "subchan_\(self.id)"
   }
 }

@@ -19,12 +19,12 @@ import NIOCore
 import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandler {
-  typealias InboundIn = HTTP2Frame.FramePayload
-  typealias InboundOut = RPCRequestPart
+package final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandler {
+  package typealias InboundIn = HTTP2Frame.FramePayload
+  package typealias InboundOut = RPCRequestPart
 
-  typealias OutboundIn = RPCResponsePart
-  typealias OutboundOut = HTTP2Frame.FramePayload
+  package typealias OutboundIn = RPCResponsePart
+  package typealias OutboundOut = HTTP2Frame.FramePayload
 
   private var stateMachine: GRPCStreamStateMachine
 
@@ -46,8 +46,8 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandl
     message: "RPC stream was closed before we got any Metadata."
   )
 
-  init(
-    scheme: GRPCStreamStateMachineConfiguration.Scheme,
+  package init(
+    scheme: Scheme,
     acceptedEncodings: CompressionAlgorithmSet,
     maximumPayloadSize: Int,
     methodDescriptorPromise: EventLoopPromise<MethodDescriptor>,
@@ -66,7 +66,7 @@ final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandl
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCServerStreamHandler {
-  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  package func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     self.isReading = true
     let frame = self.unwrapInboundIn(data)
     switch frame {
@@ -159,7 +159,7 @@ extension GRPCServerStreamHandler {
     }
   }
 
-  func channelReadComplete(context: ChannelHandlerContext) {
+  package func channelReadComplete(context: ChannelHandlerContext) {
     self.isReading = false
     if self.flushPending {
       self.flushPending = false
@@ -168,17 +168,17 @@ extension GRPCServerStreamHandler {
     context.fireChannelReadComplete()
   }
 
-  func handlerRemoved(context: ChannelHandlerContext) {
+  package func handlerRemoved(context: ChannelHandlerContext) {
     self.stateMachine.tearDown()
     self.methodDescriptorPromise.fail(Self.handlerRemovedBeforeDescriptorResolved)
   }
 
-  func channelInactive(context: ChannelHandlerContext) {
+  package func channelInactive(context: ChannelHandlerContext) {
     self.handleUnexpectedInboundClose(context: context, reason: .channelInactive)
     context.fireChannelInactive()
   }
 
-  func errorCaught(context: ChannelHandlerContext, error: any Error) {
+  package func errorCaught(context: ChannelHandlerContext, error: any Error) {
     self.handleUnexpectedInboundClose(context: context, reason: .errorThrown(error))
   }
 
@@ -203,7 +203,11 @@ extension GRPCServerStreamHandler {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCServerStreamHandler {
-  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  package func write(
+    context: ChannelHandlerContext,
+    data: NIOAny,
+    promise: EventLoopPromise<Void>?
+  ) {
     let frame = self.unwrapOutboundIn(data)
     switch frame {
     case .metadata(let metadata):
@@ -239,7 +243,7 @@ extension GRPCServerStreamHandler {
     }
   }
 
-  func flush(context: ChannelHandlerContext) {
+  package func flush(context: ChannelHandlerContext) {
     if self.isReading {
       // We don't want to flush yet if we're still in a read loop.
       return

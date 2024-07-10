@@ -15,7 +15,7 @@
  */
 
 import GRPCCore
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOCore
 import NIOHTTP2
 import NIOPosix
@@ -39,10 +39,6 @@ final class SubchannelTests: XCTestCase {
   }
 
   func testMakeStreamOnShutdownSubchannel() async throws {
-    #if compiler(<5.9)
-    throw XCTSkip("Occasionally crashes due to a Swift 5.8 concurrency runtime bug")
-    #endif
-
     let subchannel = self.makeSubchannel(
       address: .unixDomainSocket(path: "ignored"),
       connector: .never

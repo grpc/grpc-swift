@@ -18,15 +18,13 @@ import NIOCore
 import NIOHTTP2
 import NIOPosix
 
-@_spi(Package)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol HTTP2Connector: Sendable {
+package protocol HTTP2Connector: Sendable {
   func establishConnection(to address: SocketAddress) async throws -> HTTP2Connection
 }
 
-@_spi(Package)
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct HTTP2Connection: Sendable {
+package struct HTTP2Connection: Sendable {
   /// The underlying TCP connection wrapped up for use with gRPC.
   var channel: NIOAsyncChannel<ClientConnectionEvent, Void>
 
@@ -36,7 +34,7 @@ public struct HTTP2Connection: Sendable {
   /// Whether the connection is insecure (i.e. plaintext).
   var isPlaintext: Bool
 
-  public init(
+  package init(
     channel: NIOAsyncChannel<ClientConnectionEvent, Void>,
     multiplexer: NIOHTTP2Handler.AsyncStreamMultiplexer<Void>,
     isPlaintext: Bool

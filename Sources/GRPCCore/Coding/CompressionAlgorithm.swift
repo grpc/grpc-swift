@@ -16,15 +16,13 @@
 
 /// Message compression algorithms.
 public struct CompressionAlgorithm: Hashable, Sendable {
-  @_spi(Package)
-  public enum Value: UInt8, Hashable, Sendable, CaseIterable {
+  package enum Value: UInt8, Hashable, Sendable, CaseIterable {
     case none = 0
     case deflate
     case gzip
   }
 
-  @_spi(Package)
-  public let value: Value
+  package let value: Value
 
   fileprivate init(_ algorithm: Value) {
     self.value = algorithm

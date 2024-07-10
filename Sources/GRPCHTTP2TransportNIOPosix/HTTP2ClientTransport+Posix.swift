@@ -15,7 +15,7 @@
  */
 
 import GRPCCore
-@_spi(Package) import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOCore
 import NIOPosix
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 import XCTest
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)

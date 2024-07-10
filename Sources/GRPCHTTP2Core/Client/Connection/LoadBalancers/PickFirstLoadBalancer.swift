@@ -56,7 +56,7 @@ import GRPCCore
 /// }
 /// ```
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-struct PickFirstLoadBalancer {
+package struct PickFirstLoadBalancer {
   enum Input: Sendable, Hashable {
     /// Update the addresses used by the load balancer to the following endpoints.
     case updateEndpoint(Endpoint)
@@ -87,12 +87,12 @@ struct PickFirstLoadBalancer {
   private let enabledCompression: CompressionAlgorithmSet
 
   /// The state of the load-balancer.
-  private let state: _LockedValueBox<State>
+  private let state: LockedValueBox<State>
 
   /// The ID of this load balancer.
   internal let id: LoadBalancerID
 
-  init(
+  package init(
     connector: any HTTP2Connector,
     backoff: ConnectionBackoff,
     defaultCompression: CompressionAlgorithm,
@@ -103,7 +103,7 @@ struct PickFirstLoadBalancer {
     self.defaultCompression = defaultCompression
     self.enabledCompression = enabledCompression
     self.id = LoadBalancerID()
-    self.state = _LockedValueBox(State())
+    self.state = LockedValueBox(State())
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
@@ -112,14 +112,14 @@ struct PickFirstLoadBalancer {
   }
 
   /// A stream of events which can happen to the load balancer.
-  var events: AsyncStream<LoadBalancerEvent> {
+  package var events: AsyncStream<LoadBalancerEvent> {
     self.event.stream
   }
 
   /// Runs the load balancer, returning when it has closed.
   ///
   /// You can monitor events which happen on the load balancer with ``events``.
-  func run() async {
+  package func run() async {
     await withDiscardingTaskGroup { group in
       for await input in self.input.stream {
         switch input {
@@ -140,19 +140,19 @@ struct PickFirstLoadBalancer {
   /// Update the addresses used by the load balancer.
   ///
   /// This may result in new subchannels being created and some subchannels being removed.
-  func updateEndpoint(_ endpoint: Endpoint) {
+  package func updateEndpoint(_ endpoint: Endpoint) {
     self.input.continuation.yield(.updateEndpoint(endpoint))
   }
 
   /// Close the load balancer, and all subchannels it manages.
-  func close() {
+  package func close() {
     self.input.continuation.yield(.close)
   }
 
   /// Pick a ready subchannel from the load balancer.
   ///
   /// - Returns: A subchannel, or `nil` if there aren't any ready subchannels.
-  func pickSubchannel() -> Subchannel? {
+  package func pickSubchannel() -> Subchannel? {
     let onPickSubchannel = self.state.withLockedValue { $0.pickSubchannel() }
     switch onPickSubchannel {
     case .picked(let subchannel):
