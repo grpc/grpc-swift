@@ -17,14 +17,13 @@
 import GRPCCore
 import NIOCore
 
-/// A ``GRPCMessageDeframer`` helps with the deframing of gRPC data frames:
+/// A ``GRPCMessageDecoder`` helps with the deframing of gRPC data frames:
 /// - It reads the frame's metadata to know whether the message payload is compressed or not, and its length
 /// - It reads and decompresses the payload, if compressed
 /// - It helps put together frames that have been split across multiple `ByteBuffers` by the underlying transport
-struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
+struct GRPCMessageDecoder: NIOSingleStepByteToMessageDecoder {
   /// Length of the gRPC message header (1 compression byte, 4 bytes for the length).
   static let metadataLength = 5
-  static let defaultMaximumPayloadSize = Int.max
 
   typealias InboundOut = [UInt8]
 
@@ -38,7 +37,7 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
   /// - Important: You must call `end()` on the `decompressor` when you're done using it, to clean
   /// up any resources allocated by `Zlib`.
   init(
-    maximumPayloadSize: Int = Self.defaultMaximumPayloadSize,
+    maximumPayloadSize: Int,
     decompressor: Zlib.Decompressor? = nil
   ) {
     self.maximumPayloadSize = maximumPayloadSize
@@ -99,5 +98,56 @@ struct GRPCMessageDeframer: NIOSingleStepByteToMessageDecoder {
 
   mutating func decodeLast(buffer: inout ByteBuffer, seenEOF: Bool) throws -> InboundOut? {
     try self.decode(buffer: &buffer)
+  }
+}
+
+package struct GRPCMessageDeframer {
+  private var decoder: GRPCMessageDecoder
+  private var buffer: Optional<ByteBuffer>
+
+  package var _readerIndex: Int? {
+    self.buffer?.readerIndex
+  }
+
+  init(maxPayloadSize: Int, decompressor: Zlib.Decompressor?) {
+    self.decoder = GRPCMessageDecoder(
+      maximumPayloadSize: maxPayloadSize,
+      decompressor: decompressor
+    )
+    self.buffer = nil
+  }
+
+  package init(maxPayloadSize: Int) {
+    self.decoder = GRPCMessageDecoder(maximumPayloadSize: maxPayloadSize, decompressor: nil)
+    self.buffer = nil
+  }
+
+  package mutating func append(_ buffer: ByteBuffer) {
+    if self.buffer == nil || self.buffer!.readableBytes == 0 {
+      self.buffer = buffer
+    } else {
+      // Avoid having too many read bytes in the buffer which can lead to the buffer growing much
+      // larger than is necessary.
+      let readerIndex = self.buffer!.readerIndex
+      if readerIndex > 1024 && readerIndex > (self.buffer!.capacity / 2) {
+        self.buffer!.discardReadBytes()
+      }
+      self.buffer!.writeImmutableBuffer(buffer)
+    }
+  }
+
+  package mutating func decodeNext() throws -> [UInt8]? {
+    guard (self.buffer?.readableBytes ?? 0) > 0 else { return nil }
+    // Above checks mean this is both non-nil and non-empty.
+    let message = try self.decoder.decode(buffer: &self.buffer!)
+    return message
+  }
+}
+
+extension GRPCMessageDeframer {
+  mutating func decode(into queue: inout OneOrManyQueue<[UInt8]>) throws {
+    while let next = try self.decodeNext() {
+      queue.append(next)
+    }
   }
 }
