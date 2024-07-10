@@ -25,7 +25,7 @@ final class MethodConfigsTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
-    var configurations = _MethodConfigs()
+    var configurations = MethodConfigs()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let descriptor = MethodDescriptor(service: "test", method: "first")
     let retryPolicy = RetryPolicy(
@@ -48,7 +48,7 @@ final class MethodConfigsTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
-    var configurations = _MethodConfigs()
+    var configurations = MethodConfigs()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
     let retryPolicy = RetryPolicy(
@@ -72,7 +72,7 @@ final class MethodConfigsTests: XCTestCase {
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
-    var configurations = _MethodConfigs()
+    var configurations = MethodConfigs()
     configurations.setDefaultConfiguration(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
     let retryPolicy = RetryPolicy(

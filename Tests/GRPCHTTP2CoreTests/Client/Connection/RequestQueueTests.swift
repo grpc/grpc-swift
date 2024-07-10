@@ -45,7 +45,7 @@ final class RequestQueueTests: XCTestCase {
 
   func testPopFirstMultiple() async {
     await withTaskGroup(of: QueueEntryID.self) { group in
-      let queue = _LockedValueBox(RequestQueue())
+      let queue = LockedValueBox(RequestQueue())
       let signal1 = AsyncStream.makeStream(of: Void.self)
       let signal2 = AsyncStream.makeStream(of: Void.self)
 
@@ -110,7 +110,7 @@ final class RequestQueueTests: XCTestCase {
 
   func testRemoveEntryByIDMultiple() async {
     await withTaskGroup(of: QueueEntryID.self) { group in
-      let queue = _LockedValueBox(RequestQueue())
+      let queue = LockedValueBox(RequestQueue())
       let signal1 = AsyncStream.makeStream(of: Void.self)
       let signal2 = AsyncStream.makeStream(of: Void.self)
 
@@ -159,7 +159,7 @@ final class RequestQueueTests: XCTestCase {
   }
 
   func testRemoveFastFailingEntries() async throws {
-    let queue = _LockedValueBox(RequestQueue())
+    let queue = LockedValueBox(RequestQueue())
     let enqueued = AsyncStream.makeStream(of: Void.self)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -222,7 +222,7 @@ final class RequestQueueTests: XCTestCase {
   }
 
   func testRemoveAll() async throws {
-    let queue = _LockedValueBox(RequestQueue())
+    let queue = LockedValueBox(RequestQueue())
     let enqueued = AsyncStream.makeStream(of: Void.self)
 
     await withThrowingTaskGroup(of: Void.self) { group in

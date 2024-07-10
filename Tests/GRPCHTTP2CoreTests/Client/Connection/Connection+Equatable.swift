@@ -15,7 +15,7 @@
  */
 
 import GRPCCore
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 
 // Equatable conformance for these types is 'best effort', this is sufficient for testing but not
 // for general use. As such the conformance is added in the test module and must be declared
@@ -41,7 +41,7 @@ extension ClientConnectionEvent.CloseReason: Equatable {}
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection.Event {
-  public static func == (lhs: Connection.Event, rhs: Connection.Event) -> Bool {
+  package static func == (lhs: Connection.Event, rhs: Connection.Event) -> Bool {
     switch (lhs, rhs) {
     case (.connectSucceeded, .connectSucceeded),
       (.connectFailed, .connectFailed):
@@ -61,7 +61,7 @@ extension Connection.Event {
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection.CloseReason {
-  public static func == (lhs: Connection.CloseReason, rhs: Connection.CloseReason) -> Bool {
+  package static func == (lhs: Connection.CloseReason, rhs: Connection.CloseReason) -> Bool {
     switch (lhs, rhs) {
     case (.idleTimeout, .idleTimeout),
       (.keepaliveTimeout, .keepaliveTimeout),
@@ -83,7 +83,7 @@ extension Connection.CloseReason {
 }
 
 extension ClientConnectionEvent {
-  public static func == (lhs: ClientConnectionEvent, rhs: ClientConnectionEvent) -> Bool {
+  package static func == (lhs: ClientConnectionEvent, rhs: ClientConnectionEvent) -> Bool {
     switch (lhs, rhs) {
     case (.ready, .ready):
       return true
@@ -96,7 +96,7 @@ extension ClientConnectionEvent {
 }
 
 extension ClientConnectionEvent.CloseReason {
-  public static func == (lhs: Self, rhs: Self) -> Bool {
+  package static func == (lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
     case (.goAway(let lhsCode, let lhsMessage), .goAway(let rhsCode, let rhsMessage)):
       return lhsCode == rhsCode && lhsMessage == rhsMessage

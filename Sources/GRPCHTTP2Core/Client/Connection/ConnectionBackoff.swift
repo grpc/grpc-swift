@@ -15,26 +15,26 @@
  */
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-struct ConnectionBackoff {
-  var initial: Duration
-  var max: Duration
-  var multiplier: Double
-  var jitter: Double
+package struct ConnectionBackoff {
+  package var initial: Duration
+  package var max: Duration
+  package var multiplier: Double
+  package var jitter: Double
 
-  init(initial: Duration, max: Duration, multiplier: Double, jitter: Double) {
+  package init(initial: Duration, max: Duration, multiplier: Double, jitter: Double) {
     self.initial = initial
     self.max = max
     self.multiplier = multiplier
     self.jitter = jitter
   }
 
-  func makeIterator() -> Iterator {
+  package func makeIterator() -> Iterator {
     return Iterator(self)
   }
 
   // Deliberately not conforming to `IteratorProtocol` as `next()` never returns `nil` which
   // isn't expressible via `IteratorProtocol`.
-  struct Iterator {
+  package struct Iterator {
     private var isInitial: Bool
     private var currentBackoffSeconds: Double
 
@@ -62,7 +62,7 @@ struct ConnectionBackoff {
       return .nanoseconds(wholeNanos)
     }
 
-    mutating func next() -> Duration {
+    package mutating func next() -> Duration {
       // The initial backoff doesn't get jittered.
       if self.isInitial {
         self.isInitial = false

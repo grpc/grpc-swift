@@ -15,7 +15,7 @@
  */
 
 import GRPCCore
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOCore
 import NIOEmbedded
 import NIOHTTP2

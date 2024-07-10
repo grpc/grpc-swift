@@ -16,7 +16,7 @@
 
 import DequeModule
 import GRPCCore
-@_spi(Package) @testable import GRPCHTTP2Core
+import GRPCHTTP2Core
 import NIOCore
 import NIOHTTP2
 import NIOPosix

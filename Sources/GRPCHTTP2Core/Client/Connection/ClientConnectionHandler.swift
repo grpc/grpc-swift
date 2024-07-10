@@ -18,9 +18,8 @@ import NIOCore
 import NIOHTTP2
 
 /// An event which happens on a client's HTTP/2 connection.
-@_spi(Package)
-public enum ClientConnectionEvent: Sendable {
-  public enum CloseReason: Sendable {
+package enum ClientConnectionEvent: Sendable {
+  package enum CloseReason: Sendable {
     /// The server sent a GOAWAY frame to the client.
     case goAway(HTTP2ErrorCode, String)
     /// The keep alive timer fired and subsequently timed out.
@@ -49,14 +48,14 @@ public enum ClientConnectionEvent: Sendable {
 /// 3. Forwarding lifecycle events to the next handler.
 ///
 /// Some of the behaviours are described in [gRFC A8](https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md).
-final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandler {
-  typealias InboundIn = HTTP2Frame
-  typealias InboundOut = ClientConnectionEvent
+package final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandler {
+  package typealias InboundIn = HTTP2Frame
+  package typealias InboundOut = ClientConnectionEvent
 
-  typealias OutboundIn = Never
-  typealias OutboundOut = HTTP2Frame
+  package typealias OutboundIn = Never
+  package typealias OutboundOut = HTTP2Frame
 
-  enum OutboundEvent: Hashable, Sendable {
+  package enum OutboundEvent: Hashable, Sendable {
     /// Close the connection gracefully
     case closeGracefully
   }
@@ -103,7 +102,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
   ///       is received.
   ///   - keepaliveWithoutCalls: Whether the client sends keep-alive pings when there are no calls
   ///       in progress.
-  init(
+  package init(
     eventLoop: any EventLoop,
     maxIdleTime: TimeAmount?,
     keepaliveTime: TimeAmount?,
@@ -121,16 +120,16 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     self.inReadLoop = false
   }
 
-  func handlerAdded(context: ChannelHandlerContext) {
+  package func handlerAdded(context: ChannelHandlerContext) {
     assert(context.eventLoop === self.eventLoop)
     self.context = context
   }
 
-  func handlerRemoved(context: ChannelHandlerContext) {
+  package func handlerRemoved(context: ChannelHandlerContext) {
     self.context = nil
   }
 
-  func channelInactive(context: ChannelHandlerContext) {
+  package func channelInactive(context: ChannelHandlerContext) {
     switch self.state.closed() {
     case .none:
       ()
@@ -147,7 +146,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     self.keepaliveTimeoutTimer.cancel()
   }
 
-  func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+  package func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     switch event {
     case let event as NIOHTTP2StreamCreatedEvent:
       self._streamCreated(event.streamID, channel: context.channel)
@@ -162,7 +161,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     context.fireUserInboundEventTriggered(event)
   }
 
-  func errorCaught(context: ChannelHandlerContext, error: any Error) {
+  package func errorCaught(context: ChannelHandlerContext, error: any Error) {
     // Store the error and close, this will result in the final close event being fired down
     // the pipeline with an appropriate close reason and appropriate error. (This avoids
     // the async channel just throwing the error.)
@@ -170,7 +169,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     context.close(mode: .all, promise: nil)
   }
 
-  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  package func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let frame = self.unwrapInboundIn(data)
     self.inReadLoop = true
 
@@ -229,7 +228,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     }
   }
 
-  func channelReadComplete(context: ChannelHandlerContext) {
+  package func channelReadComplete(context: ChannelHandlerContext) {
     while self.flushPending {
       self.flushPending = false
       context.flush()
@@ -239,7 +238,7 @@ final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutboundHandl
     context.fireChannelReadComplete()
   }
 
-  func triggerUserOutboundEvent(
+  package func triggerUserOutboundEvent(
     context: ChannelHandlerContext,
     event: Any,
     promise: EventLoopPromise<Void>?
@@ -294,7 +293,7 @@ extension ClientConnectionHandler {
 }
 
 extension ClientConnectionHandler {
-  struct HTTP2StreamDelegate: @unchecked Sendable, NIOHTTP2StreamDelegate {
+  package struct HTTP2StreamDelegate: @unchecked Sendable, NIOHTTP2StreamDelegate {
     // @unchecked is okay: the only methods do the appropriate event-loop dance.
 
     private let handler: ClientConnectionHandler
@@ -303,7 +302,7 @@ extension ClientConnectionHandler {
       self.handler = handler
     }
 
-    func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
+    package func streamCreated(_ id: HTTP2StreamID, channel: any Channel) {
       if self.handler.eventLoop.inEventLoop {
         self.handler._streamCreated(id, channel: channel)
       } else {
@@ -313,7 +312,7 @@ extension ClientConnectionHandler {
       }
     }
 
-    func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
+    package func streamClosed(_ id: HTTP2StreamID, channel: any Channel) {
       if self.handler.eventLoop.inEventLoop {
         self.handler._streamClosed(id, channel: channel)
       } else {
@@ -324,7 +323,7 @@ extension ClientConnectionHandler {
     }
   }
 
-  var http2StreamDelegate: HTTP2StreamDelegate {
+  package var http2StreamDelegate: HTTP2StreamDelegate {
     return HTTP2StreamDelegate(self)
   }
 

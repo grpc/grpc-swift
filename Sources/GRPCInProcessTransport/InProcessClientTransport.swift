@@ -98,8 +98,8 @@ public struct InProcessClientTransport: ClientTransport {
 
   public let retryThrottle: RetryThrottle?
 
-  private let methodConfig: _MethodConfigs
-  private let state: _LockedValueBox<State>
+  private let methodConfig: MethodConfigs
+  private let state: LockedValueBox<State>
 
   /// Creates a new in-process client transport.
   ///
@@ -111,8 +111,8 @@ public struct InProcessClientTransport: ClientTransport {
     serviceConfig: ServiceConfig = ServiceConfig()
   ) {
     self.retryThrottle = serviceConfig.retryThrottling.map { RetryThrottle(policy: $0) }
-    self.methodConfig = _MethodConfigs(serviceConfig: serviceConfig)
-    self.state = _LockedValueBox(.unconnected(.init(serverTransport: server)))
+    self.methodConfig = MethodConfigs(serviceConfig: serviceConfig)
+    self.state = LockedValueBox(.unconnected(.init(serverTransport: server)))
   }
 
   /// Establish and maintain a connection to the remote destination.

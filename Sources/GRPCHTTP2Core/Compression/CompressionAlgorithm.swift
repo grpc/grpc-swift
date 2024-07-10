@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@_spi(Package) import GRPCCore
+import GRPCCore
 
 extension CompressionAlgorithm {
   init?(name: String) {

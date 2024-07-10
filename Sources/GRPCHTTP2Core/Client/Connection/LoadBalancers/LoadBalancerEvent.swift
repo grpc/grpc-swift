@@ -15,7 +15,7 @@
  */
 
 /// Events emitted by load-balancers.
-enum LoadBalancerEvent: Sendable, Hashable {
+package enum LoadBalancerEvent: Sendable, Hashable {
   /// The connectivity state of the subchannel changed.
   case connectivityStateChanged(ConnectivityState)
   /// The subchannel requests that the load balancer re-resolves names.

@@ -15,14 +15,14 @@
  */
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-enum LoadBalancer: Sendable {
+package enum LoadBalancer: Sendable {
   case roundRobin(RoundRobinLoadBalancer)
   case pickFirst(PickFirstLoadBalancer)
 }
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension LoadBalancer {
-  init(_ loadBalancer: RoundRobinLoadBalancer) {
+  package init(_ loadBalancer: RoundRobinLoadBalancer) {
     self = .roundRobin(loadBalancer)
   }
 
@@ -35,7 +35,7 @@ extension LoadBalancer {
     }
   }
 
-  var events: AsyncStream<LoadBalancerEvent> {
+  package var events: AsyncStream<LoadBalancerEvent> {
     switch self {
     case .roundRobin(let loadBalancer):
       return loadBalancer.events
@@ -44,7 +44,7 @@ extension LoadBalancer {
     }
   }
 
-  func run() async {
+  package func run() async {
     switch self {
     case .roundRobin(let loadBalancer):
       await loadBalancer.run()
@@ -53,7 +53,7 @@ extension LoadBalancer {
     }
   }
 
-  func close() {
+  package func close() {
     switch self {
     case .roundRobin(let loadBalancer):
       loadBalancer.close()
@@ -62,7 +62,7 @@ extension LoadBalancer {
     }
   }
 
-  func pickSubchannel() -> Subchannel? {
+  package func pickSubchannel() -> Subchannel? {
     switch self {
     case .roundRobin(let loadBalancer):
       return loadBalancer.pickSubchannel()

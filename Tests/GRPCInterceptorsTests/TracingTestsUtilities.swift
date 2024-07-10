@@ -193,19 +193,3 @@ struct TestWriter<WriterElement: Sendable>: RPCWriterProtocol {
     }
   }
 }
-
-#if swift(<5.9)
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension AsyncStream {
-  static func makeStream(
-    of elementType: Element.Type = Element.self,
-    bufferingPolicy limit: AsyncStream<Element>.Continuation.BufferingPolicy = .unbounded
-  ) -> (stream: AsyncStream<Element>, continuation: AsyncStream<Element>.Continuation) {
-    var continuation: AsyncStream<Element>.Continuation!
-    let stream = AsyncStream(Element.self, bufferingPolicy: limit) {
-      continuation = $0
-    }
-    return (stream, continuation)
-  }
-}
-#endif
