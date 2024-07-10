@@ -1105,10 +1105,7 @@ extension GRPCStreamStateMachine {
       state.deframer.append(buffer)
 
       do {
-        while let deframed = try state.deframer.decodeNext() {
-          state.inboundMessageBuffer.append(deframed)
-        }
-
+        try state.deframer.decode(into: &state.inboundMessageBuffer)
         self.state = .clientOpenServerOpen(state)
         return .readInbound
       } catch {
@@ -1137,9 +1134,7 @@ extension GRPCStreamStateMachine {
       // The client must have a deframer set up, so force-unwrap is okay.
       do {
         state.deframer!.append(buffer)
-        while let deframedMessage = try state.deframer!.decodeNext() {
-          state.inboundMessageBuffer.append(deframedMessage)
-        }
+        try state.deframer!.decode(into: &state.inboundMessageBuffer)
         self.state = .clientClosedServerOpen(state)
         return .readInbound
       } catch {
@@ -1593,9 +1588,7 @@ extension GRPCStreamStateMachine {
       // algorithm from the moment the client opens.
       do {
         state.deframer!.append(buffer)
-        while let deframedMessage = try state.deframer!.decodeNext() {
-          state.inboundMessageBuffer.append(deframedMessage)
-        }
+        try state.deframer!.decode(into: &state.inboundMessageBuffer)
         action = .readInbound
       } catch {
         let error = RPCError(code: .internalError, message: "Failed to decode message")
@@ -1612,9 +1605,7 @@ extension GRPCStreamStateMachine {
       self.state = ._modifying
       do {
         state.deframer.append(buffer)
-        while let deframedMessage = try state.deframer.decodeNext() {
-          state.inboundMessageBuffer.append(deframedMessage)
-        }
+        try state.deframer.decode(into: &state.inboundMessageBuffer)
         action = .readInbound
       } catch {
         let error = RPCError(code: .internalError, message: "Failed to decode message")

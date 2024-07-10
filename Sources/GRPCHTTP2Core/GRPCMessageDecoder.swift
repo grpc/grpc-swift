@@ -138,16 +138,16 @@ package struct GRPCMessageDeframer {
 
   package mutating func decodeNext() throws -> [UInt8]? {
     guard (self.buffer?.readableBytes ?? 0) > 0 else { return nil }
-
-    // Avoid CoWs by swapping out the buffer
-    var buffer: ByteBuffer? = nil
-    swap(&self.buffer, &buffer)
-    defer {
-      swap(&self.buffer, &buffer)
-    }
-
     // Above checks mean this is both non-nil and non-empty.
-    let message = try self.decoder.decode(buffer: &buffer!)
+    let message = try self.decoder.decode(buffer: &self.buffer!)
     return message
+  }
+}
+
+extension GRPCMessageDeframer {
+  mutating func decode(into queue: inout OneOrManyQueue<[UInt8]>) throws {
+    while let next = try self.decodeNext() {
+      queue.append(next)
+    }
   }
 }
