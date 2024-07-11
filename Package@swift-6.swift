@@ -260,6 +260,19 @@ extension Target {
     )
   }
 
+  static var grpcHTTP2Transport: Target {
+    .target(
+      name: "GRPCHTTP2Transport",
+      dependencies: [
+        .grpcCore,
+        .grpcHTTP2Core,
+        .grpcHTTP2TransportNIOPosix,
+        .grpcHTTP2TransportNIOTransportServices,
+      ],
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
+    )
+  }
+
   static var cgrpcZlib: Target {
     .target(
       name: cgrpcZlibTargetName,
@@ -853,6 +866,20 @@ extension Product {
     )
   }
 
+  static var _grpcInProcessTransport: Product {
+    .library(
+      name: "_GRPCInProcessTransport",
+      targets: ["GRPCInProcessTransport"]
+    )
+  }
+
+  static var _grpcHTTP2Transport: Product {
+    .library(
+      name: "_GRPCHTTP2Transport",
+      targets: ["GRPCHTTP2Transport"]
+    )
+  }
+
   static var cgrpcZlib: Product {
     .library(
       name: cgrpcZlibProductName,
@@ -896,6 +923,8 @@ let package = Package(
     // v2
     ._grpcCore,
     ._grpcProtobuf,
+    ._grpcHTTP2Transport,
+    ._grpcInProcessTransport,
   ],
   dependencies: packageDependencies,
   targets: [
@@ -930,20 +959,29 @@ let package = Package(
 
     // v2
     .grpcCore,
-    .grpcInProcessTransport,
     .grpcCodeGen,
-    .grpcInterceptors,
+
+    // v2 transports
+    .grpcInProcessTransport,
     .grpcHTTP2Core,
     .grpcHTTP2TransportNIOPosix,
     .grpcHTTP2TransportNIOTransportServices,
+    .grpcHTTP2Transport,
+
+    // v2 Protobuf support
     .grpcProtobuf,
     .grpcProtobufCodeGen,
+
+    // v2 add-ons
+    .grpcInterceptors,
     .grpcHealth,
+
+    // v2 integration testing
     .interoperabilityTestImplementation,
     .interoperabilityTestsExecutable,
     .performanceWorker,
 
-    // v2 tests
+    // v2 unit tests
     .grpcCoreTests,
     .grpcInProcessTransportTests,
     .grpcCodeGenTests,
