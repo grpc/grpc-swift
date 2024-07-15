@@ -65,17 +65,17 @@ internal enum Echo_Echo {
             Update.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias StreamingServiceProtocol = Echo_EchoStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ServiceProtocol = Echo_EchoServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ClientProtocol = Echo_EchoClientProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias Client = Echo_EchoClient
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Echo_EchoStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Immediately returns an echo of a request.
     func get(request: ServerRequest.Stream<Echo_EchoRequest>) async throws -> ServerResponse.Stream<Echo_EchoResponse>
@@ -91,9 +91,9 @@ internal protocol Echo_EchoStreamingServiceProtocol: GRPCCore.RegistrableRPCServ
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Echo_Echo.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Echo_Echo.Method.Get.descriptor,
@@ -130,7 +130,7 @@ extension Echo_Echo.StreamingServiceProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Echo_EchoServiceProtocol: Echo_Echo.StreamingServiceProtocol {
     /// Immediately returns an echo of a request.
     func get(request: ServerRequest.Single<Echo_EchoRequest>) async throws -> ServerResponse.Single<Echo_EchoResponse>
@@ -146,7 +146,7 @@ internal protocol Echo_EchoServiceProtocol: Echo_Echo.StreamingServiceProtocol {
 }
 
 /// Partial conformance to `Echo_EchoStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Echo_Echo.ServiceProtocol {
     internal func get(request: ServerRequest.Stream<Echo_EchoRequest>) async throws -> ServerResponse.Stream<Echo_EchoResponse> {
         let response = try await self.get(request: ServerRequest.Single(stream: request))
@@ -164,7 +164,7 @@ extension Echo_Echo.ServiceProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Echo_EchoClientProtocol: Sendable {
     /// Immediately returns an echo of a request.
     func get<R>(
@@ -203,7 +203,7 @@ internal protocol Echo_EchoClientProtocol: Sendable {
     ) async throws -> R where R: Sendable
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Echo_Echo.ClientProtocol {
     internal func get<R>(
         request: ClientRequest.Single<Echo_EchoRequest>,
@@ -262,7 +262,7 @@ extension Echo_Echo.ClientProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct Echo_EchoClient: Echo_Echo.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 

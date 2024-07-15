@@ -50,13 +50,13 @@ public enum Grpc_Testing_ReconnectService {
             Stop.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias StreamingServiceProtocol = Grpc_Testing_ReconnectServiceStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias ServiceProtocol = Grpc_Testing_ReconnectServiceServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias ClientProtocol = Grpc_Testing_ReconnectServiceClientProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias Client = Grpc_Testing_ReconnectServiceClient
 }
 
@@ -137,13 +137,13 @@ public enum Grpc_Testing_TestService {
             UnimplementedCall.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias StreamingServiceProtocol = Grpc_Testing_TestServiceStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias ServiceProtocol = Grpc_Testing_TestServiceServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias ClientProtocol = Grpc_Testing_TestServiceClientProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias Client = Grpc_Testing_TestServiceClient
 }
 
@@ -161,19 +161,19 @@ public enum Grpc_Testing_UnimplementedService {
             UnimplementedCall.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias StreamingServiceProtocol = Grpc_Testing_UnimplementedServiceStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias ServiceProtocol = Grpc_Testing_UnimplementedServiceServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias ClientProtocol = Grpc_Testing_UnimplementedServiceClientProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias Client = Grpc_Testing_UnimplementedServiceClient
 }
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_TestServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// One empty request followed by one empty response.
     func emptyCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty>
@@ -211,9 +211,9 @@ public protocol Grpc_Testing_TestServiceStreamingServiceProtocol: GRPCCore.Regis
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_TestService.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Testing_TestService.Method.EmptyCall.descriptor,
@@ -284,7 +284,7 @@ extension Grpc_Testing_TestService.StreamingServiceProtocol {
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_TestServiceServiceProtocol: Grpc_Testing_TestService.StreamingServiceProtocol {
     /// One empty request followed by one empty response.
     func emptyCall(request: ServerRequest.Single<Grpc_Testing_Empty>) async throws -> ServerResponse.Single<Grpc_Testing_Empty>
@@ -322,7 +322,7 @@ public protocol Grpc_Testing_TestServiceServiceProtocol: Grpc_Testing_TestServic
 }
 
 /// Partial conformance to `Grpc_Testing_TestServiceStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_TestService.ServiceProtocol {
     public func emptyCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty> {
         let response = try await self.emptyCall(request: ServerRequest.Single(stream: request))
@@ -357,16 +357,16 @@ extension Grpc_Testing_TestService.ServiceProtocol {
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_UnimplementedServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// A call that no server should implement
     func unimplementedCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_UnimplementedService.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Testing_UnimplementedService.Method.UnimplementedCall.descriptor,
@@ -381,14 +381,14 @@ extension Grpc_Testing_UnimplementedService.StreamingServiceProtocol {
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_UnimplementedServiceServiceProtocol: Grpc_Testing_UnimplementedService.StreamingServiceProtocol {
     /// A call that no server should implement
     func unimplementedCall(request: ServerRequest.Single<Grpc_Testing_Empty>) async throws -> ServerResponse.Single<Grpc_Testing_Empty>
 }
 
 /// Partial conformance to `Grpc_Testing_UnimplementedServiceStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_UnimplementedService.ServiceProtocol {
     public func unimplementedCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty> {
         let response = try await self.unimplementedCall(request: ServerRequest.Single(stream: request))
@@ -397,7 +397,7 @@ extension Grpc_Testing_UnimplementedService.ServiceProtocol {
 }
 
 /// A service used to control reconnect server.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_ReconnectServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     func start(request: ServerRequest.Stream<Grpc_Testing_ReconnectParams>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty>
 
@@ -405,9 +405,9 @@ public protocol Grpc_Testing_ReconnectServiceStreamingServiceProtocol: GRPCCore.
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_ReconnectService.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Testing_ReconnectService.Method.Start.descriptor,
@@ -429,7 +429,7 @@ extension Grpc_Testing_ReconnectService.StreamingServiceProtocol {
 }
 
 /// A service used to control reconnect server.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_ReconnectServiceServiceProtocol: Grpc_Testing_ReconnectService.StreamingServiceProtocol {
     func start(request: ServerRequest.Single<Grpc_Testing_ReconnectParams>) async throws -> ServerResponse.Single<Grpc_Testing_Empty>
 
@@ -437,7 +437,7 @@ public protocol Grpc_Testing_ReconnectServiceServiceProtocol: Grpc_Testing_Recon
 }
 
 /// Partial conformance to `Grpc_Testing_ReconnectServiceStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_ReconnectService.ServiceProtocol {
     public func start(request: ServerRequest.Stream<Grpc_Testing_ReconnectParams>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty> {
         let response = try await self.start(request: ServerRequest.Single(stream: request))
@@ -452,7 +452,7 @@ extension Grpc_Testing_ReconnectService.ServiceProtocol {
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
     /// One empty request followed by one empty response.
     func emptyCall<R>(
@@ -537,7 +537,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
     ) async throws -> R where R: Sendable
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_TestService.ClientProtocol {
     public func emptyCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
@@ -654,7 +654,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
 
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
@@ -819,7 +819,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_UnimplementedServiceClientProtocol: Sendable {
     /// A call that no server should implement
     func unimplementedCall<R>(
@@ -831,7 +831,7 @@ public protocol Grpc_Testing_UnimplementedServiceClientProtocol: Sendable {
     ) async throws -> R where R: Sendable
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_UnimplementedService.ClientProtocol {
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
@@ -850,7 +850,7 @@ extension Grpc_Testing_UnimplementedService.ClientProtocol {
 
 /// A simple service NOT implemented at servers so clients can test for
 /// that case.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
@@ -878,7 +878,7 @@ public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimplemente
 }
 
 /// A service used to control reconnect server.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_ReconnectServiceClientProtocol: Sendable {
     func start<R>(
         request: ClientRequest.Single<Grpc_Testing_ReconnectParams>,
@@ -897,7 +897,7 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: Sendable {
     ) async throws -> R where R: Sendable
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_ReconnectService.ClientProtocol {
     public func start<R>(
         request: ClientRequest.Single<Grpc_Testing_ReconnectParams>,
@@ -929,7 +929,7 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
 }
 
 /// A service used to control reconnect server.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 

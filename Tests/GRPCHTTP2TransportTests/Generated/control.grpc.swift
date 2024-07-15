@@ -66,13 +66,13 @@ internal enum Control {
             BidiStream.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias StreamingServiceProtocol = ControlStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ServiceProtocol = ControlServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ClientProtocol = ControlClientProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias Client = ControlClient
 }
 
@@ -80,7 +80,7 @@ internal enum Control {
 ///
 /// The control service has one RPC of each kind, the input to each RPC controls
 /// the output.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 
@@ -92,9 +92,9 @@ internal protocol ControlStreamingServiceProtocol: GRPCCore.RegistrableRPCServic
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Control.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Control.Method.Unary.descriptor,
@@ -135,7 +135,7 @@ extension Control.StreamingServiceProtocol {
 ///
 /// The control service has one RPC of each kind, the input to each RPC controls
 /// the output.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlServiceProtocol: Control.StreamingServiceProtocol {
     func unary(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
 
@@ -147,7 +147,7 @@ internal protocol ControlServiceProtocol: Control.StreamingServiceProtocol {
 }
 
 /// Partial conformance to `ControlStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Control.ServiceProtocol {
     internal func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
         let response = try await self.unary(request: ServerRequest.Single(stream: request))
@@ -169,7 +169,7 @@ extension Control.ServiceProtocol {
 ///
 /// The control service has one RPC of each kind, the input to each RPC controls
 /// the output.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlClientProtocol: Sendable {
     func unary<R>(
         request: ClientRequest.Single<ControlInput>,
@@ -204,7 +204,7 @@ internal protocol ControlClientProtocol: Sendable {
     ) async throws -> R where R: Sendable
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Control.ClientProtocol {
     internal func unary<R>(
         request: ClientRequest.Single<ControlInput>,
@@ -267,7 +267,7 @@ extension Control.ClientProtocol {
 ///
 /// The control service has one RPC of each kind, the input to each RPC controls
 /// the output.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct ControlClient: Control.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 

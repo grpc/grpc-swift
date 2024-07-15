@@ -68,13 +68,13 @@ internal enum Grpc_Testing_WorkerService {
             QuitWorker.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias StreamingServiceProtocol = Grpc_Testing_WorkerServiceStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ServiceProtocol = Grpc_Testing_WorkerServiceServiceProtocol
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Start server with specified workload.
     /// First request sent specifies the ServerConfig followed by ServerStatus
@@ -100,9 +100,9 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_WorkerService.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Testing_WorkerService.Method.RunServer.descriptor,
@@ -139,7 +139,7 @@ extension Grpc_Testing_WorkerService.StreamingServiceProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_WorkerService.StreamingServiceProtocol {
     /// Start server with specified workload.
     /// First request sent specifies the ServerConfig followed by ServerStatus
@@ -165,7 +165,7 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
 }
 
 /// Partial conformance to `Grpc_Testing_WorkerServiceStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_WorkerService.ServiceProtocol {
     internal func coreCount(request: ServerRequest.Stream<Grpc_Testing_CoreRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_CoreResponse> {
         let response = try await self.coreCount(request: ServerRequest.Single(stream: request))

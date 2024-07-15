@@ -77,17 +77,17 @@ internal enum Grpc_Testing_BenchmarkService {
             StreamingBothWays.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias StreamingServiceProtocol = Grpc_Testing_BenchmarkServiceStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ServiceProtocol = Grpc_Testing_BenchmarkServiceServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ClientProtocol = Grpc_Testing_BenchmarkServiceClientProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias Client = Grpc_Testing_BenchmarkServiceClient
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Testing_BenchmarkServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// One request followed by one response.
     /// The server returns the client payload as-is.
@@ -112,9 +112,9 @@ internal protocol Grpc_Testing_BenchmarkServiceStreamingServiceProtocol: GRPCCor
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_BenchmarkService.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Testing_BenchmarkService.Method.UnaryCall.descriptor,
@@ -159,7 +159,7 @@ extension Grpc_Testing_BenchmarkService.StreamingServiceProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Testing_BenchmarkServiceServiceProtocol: Grpc_Testing_BenchmarkService.StreamingServiceProtocol {
     /// One request followed by one response.
     /// The server returns the client payload as-is.
@@ -184,7 +184,7 @@ internal protocol Grpc_Testing_BenchmarkServiceServiceProtocol: Grpc_Testing_Ben
 }
 
 /// Partial conformance to `Grpc_Testing_BenchmarkServiceStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_BenchmarkService.ServiceProtocol {
     internal func unaryCall(request: ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_SimpleResponse> {
         let response = try await self.unaryCall(request: ServerRequest.Single(stream: request))
@@ -202,7 +202,7 @@ extension Grpc_Testing_BenchmarkService.ServiceProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
     /// One request followed by one response.
     /// The server returns the client payload as-is.
@@ -256,7 +256,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
     ) async throws -> R where R: Sendable
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_BenchmarkService.ClientProtocol {
     internal func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
@@ -329,7 +329,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
