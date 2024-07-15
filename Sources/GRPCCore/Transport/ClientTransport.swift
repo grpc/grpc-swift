@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol ClientTransport: Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCResponsePart>
+  typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   /// Returns a throttle which gRPC uses to determine whether retries can be executed.

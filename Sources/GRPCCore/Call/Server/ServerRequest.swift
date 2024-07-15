@@ -41,7 +41,7 @@ extension ServerRequest {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRequest {
   /// A request received at the server containing a stream of messages.
   public struct Stream<Message: Sendable>: Sendable {
@@ -54,14 +54,14 @@ extension ServerRequest {
     /// A sequence of messages received from the client.
     ///
     /// The sequence may be iterated at most once.
-    public var messages: RPCAsyncSequence<Message>
+    public var messages: RPCAsyncSequence<Message, any Error>
 
     /// Create a new streaming request.
     ///
     /// - Parameters:
     ///   - metadata: Metadata received from the client.
     ///   - messages: A sequence of messages received from the client.
-    public init(metadata: Metadata, messages: RPCAsyncSequence<Message>) {
+    public init(metadata: Metadata, messages: RPCAsyncSequence<Message, any Error>) {
       self.metadata = metadata
       self.messages = messages
     }
@@ -70,14 +70,14 @@ extension ServerRequest {
 
 // MARK: - Conversion
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRequest.Stream {
   public init(single request: ServerRequest.Single<Message>) {
     self.init(metadata: request.metadata, messages: .one(request.message))
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRequest.Single {
   public init(stream request: ServerRequest.Stream<Message>) async throws {
     var iterator = request.messages.makeAsyncIterator()

@@ -21,7 +21,7 @@ import NIOConcurrencyHelpers
 import NIOCore
 import NIOPosix
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class WorkerService: Sendable {
   private let state: NIOLockedValueBox<State>
 
@@ -222,7 +222,7 @@ final class WorkerService: Sendable {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   func quitWorker(
     request: ServerRequest.Single<Grpc_Testing_Void>
@@ -373,7 +373,7 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension WorkerService {
   private func startServer(
     _ serverConfig: Grpc_Testing_ServerConfig
@@ -561,7 +561,7 @@ extension WorkerService {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension BenchmarkClient.RPCType {
   init?(_ rpcType: Grpc_Testing_RpcType) {
     switch rpcType {

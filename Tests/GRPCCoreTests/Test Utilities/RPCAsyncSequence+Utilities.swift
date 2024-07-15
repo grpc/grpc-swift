@@ -15,14 +15,14 @@
  */
 import GRPCCore
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension RPCAsyncSequence {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension RPCAsyncSequence where Failure == any Error {
   static func elements(_ elements: Element...) -> Self {
     return .elements(elements)
   }
 
   static func elements(_ elements: [Element]) -> Self {
-    let stream = AsyncStream<Element> {
+    let stream = AsyncThrowingStream<Element, any Error> {
       for element in elements {
         $0.yield(element)
       }

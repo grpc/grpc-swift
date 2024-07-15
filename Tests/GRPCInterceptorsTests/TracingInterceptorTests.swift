@@ -20,13 +20,12 @@ import XCTest
 
 @testable import GRPCInterceptors
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class TracingInterceptorTests: XCTestCase {
   override class func setUp() {
     InstrumentationSystem.bootstrap(TestTracer())
   }
 
-  #if swift(>=5.8)  // Compiling these tests fails in 5.7
   func testClientInterceptor() async throws {
     var serviceContext = ServiceContext.topLevel
     let traceIDString = UUID().uuidString
@@ -56,10 +55,10 @@ final class TracingInterceptorTests: XCTestCase {
 
         return .init(
           metadata: [],
-          bodyParts: .init(
-            wrapping: AsyncStream<ClientResponse.Stream.Contents.BodyPart> { cont in
-              cont.yield(.message(["response"]))
-              cont.finish()
+          bodyParts: RPCAsyncSequence(
+            wrapping: AsyncThrowingStream<ClientResponse.Stream.Contents.BodyPart, any Error> {
+              $0.yield(.message(["response"]))
+              $0.finish()
             }
           )
         )
@@ -121,10 +120,10 @@ final class TracingInterceptorTests: XCTestCase {
 
         return .init(
           metadata: [],
-          bodyParts: .init(
-            wrapping: AsyncStream<ClientResponse.Stream.Contents.BodyPart> { cont in
-              cont.yield(.message(["response"]))
-              cont.finish()
+          bodyParts: RPCAsyncSequence(
+            wrapping: AsyncThrowingStream<ClientResponse.Stream.Contents.BodyPart, any Error> {
+              $0.yield(.message(["response"]))
+              $0.finish()
             }
           )
         )
@@ -167,7 +166,6 @@ final class TracingInterceptorTests: XCTestCase {
       )
     }
   }
-  #endif  // swift >= 5.7
 
   func testServerInterceptorErrorResponse() async throws {
     let methodDescriptor = MethodDescriptor(

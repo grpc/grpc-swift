@@ -19,14 +19,17 @@ import XCTest
 @testable import GRPCCore
 @testable import GRPCInProcessTransport
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessServerTransport()
-    let stream = RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>(
+    let stream = RPCStream<
+      RPCAsyncSequence<RPCRequestPart, any Error>,
+      RPCWriter<RPCResponsePart>.Closable
+    >(
       descriptor: .init(service: "testService", method: "testMethod"),
-      inbound: RPCAsyncSequence(
-        wrapping: AsyncStream {
+      inbound: RPCAsyncSequence<RPCRequestPart, any Error>(
+        wrapping: AsyncThrowingStream {
           $0.yield(.message([42]))
           $0.finish()
         }
@@ -57,11 +60,11 @@ final class InProcessServerTransportTests: XCTestCase {
   func testStopListening() async throws {
     let transport = InProcessServerTransport()
     let firstStream = RPCStream<
-      RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
+      RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
     >(
       descriptor: .init(service: "testService1", method: "testMethod1"),
       inbound: RPCAsyncSequence(
-        wrapping: AsyncStream {
+        wrapping: AsyncThrowingStream {
           $0.yield(.message([42]))
           $0.finish()
         }
@@ -84,11 +87,11 @@ final class InProcessServerTransportTests: XCTestCase {
       transport.stopListening()
 
       let secondStream = RPCStream<
-        RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable
+        RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
       >(
         descriptor: .init(service: "testService1", method: "testMethod1"),
         inbound: RPCAsyncSequence(
-          wrapping: AsyncStream {
+          wrapping: AsyncThrowingStream {
             $0.yield(.message([42]))
             $0.finish()
           }

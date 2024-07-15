@@ -60,13 +60,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   MethodA.descriptor
               ]
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
       """
@@ -97,13 +97,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
       """
@@ -134,9 +134,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
       }
       """
@@ -167,9 +167,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
       """
@@ -243,13 +243,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   MethodA.descriptor
               ]
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = ServiceAStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = ServiceAServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = ServiceAClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = ServiceAClient
       }
       """
@@ -315,13 +315,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   MethodB.descriptor
               ]
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
       """
@@ -352,13 +352,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package enum Method {
               package static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = NamespaceA_ServiceAClient
       }
       """
@@ -401,26 +401,26 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_AserviceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_AserviceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_AserviceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_AserviceClient
       }
       public enum NamespaceA_Bservice {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_BserviceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_BserviceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_BserviceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_BserviceClient
       }
       """
@@ -455,26 +455,26 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package enum Method {
               package static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias StreamingServiceProtocol = AServiceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias ServiceProtocol = AServiceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias ClientProtocol = AServiceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = AServiceClient
       }
       package enum BService {
           package enum Method {
               package static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias StreamingServiceProtocol = BServiceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias ServiceProtocol = BServiceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias ClientProtocol = BServiceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = BServiceClient
       }
       """
@@ -517,26 +517,26 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           internal enum Method {
               internal static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias StreamingServiceProtocol = Anamespace_AServiceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias ServiceProtocol = Anamespace_AServiceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias ClientProtocol = Anamespace_AServiceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias Client = Anamespace_AServiceClient
       }
       internal enum Bnamespace_BService {
           internal enum Method {
               internal static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias StreamingServiceProtocol = Bnamespace_BServiceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias ServiceProtocol = Bnamespace_BServiceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias ClientProtocol = Bnamespace_BServiceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias Client = Bnamespace_BServiceClient
       }
       """
@@ -573,26 +573,26 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = Anamespace_AServiceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = Anamespace_AServiceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = Anamespace_AServiceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = Anamespace_AServiceClient
       }
       public enum BService {
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = BServiceStreamingServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = BServiceServiceProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = BServiceClientProtocol
-          @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = BServiceClient
       }
       """

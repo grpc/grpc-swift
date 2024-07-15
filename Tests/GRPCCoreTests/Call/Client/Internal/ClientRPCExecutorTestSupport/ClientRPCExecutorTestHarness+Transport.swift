@@ -17,7 +17,7 @@ import Atomics
 import GRPCCore
 import GRPCInProcessTransport
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension InProcessServerTransport {
   func spawnClientTransport(
     throttle: RetryThrottle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)

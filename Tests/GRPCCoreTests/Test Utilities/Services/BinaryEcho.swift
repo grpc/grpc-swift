@@ -16,7 +16,7 @@
 import GRPCCore
 import XCTest
 
-@available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct BinaryEcho: RegistrableRPCService {
   func get(
     _ request: ServerRequest.Single<[UInt8]>

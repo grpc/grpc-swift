@@ -17,7 +17,7 @@ import XCTest
 
 @testable import GRPCCore
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input, Output>: Sendable {
     let fn: @Sendable (ServerRequest.Stream<Input>) async throws -> ServerResponse.Stream<Output>
@@ -54,7 +54,7 @@ struct ServerRPCExecutorTestHarness {
       ServerRequest.Stream<Input>
     ) async throws -> ServerResponse.Stream<Output>,
     producer: @escaping (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping (RPCAsyncSequence<RPCResponsePart>) async throws -> Void
+    consumer: @escaping (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
   ) async throws {
     try await self.execute(
       deserializer: deserializer,
@@ -70,7 +70,7 @@ struct ServerRPCExecutorTestHarness {
     serializer: some MessageSerializer<Output>,
     handler: ServerHandler<Input, Output>,
     producer: @escaping (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping (RPCAsyncSequence<RPCResponsePart>) async throws -> Void
+    consumer: @escaping (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
   ) async throws {
     let input = RPCAsyncSequence.makeBackpressuredStream(
       of: RPCRequestPart.self,
@@ -112,7 +112,7 @@ struct ServerRPCExecutorTestHarness {
   func execute(
     handler: ServerHandler<[UInt8], [UInt8]> = .echo,
     producer: @escaping (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping (RPCAsyncSequence<RPCResponsePart>) async throws -> Void
+    consumer: @escaping (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
   ) async throws {
     try await self.execute(
       deserializer: IdentityDeserializer(),
@@ -124,7 +124,7 @@ struct ServerRPCExecutorTestHarness {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRPCExecutorTestHarness.ServerHandler where Input == Output {
   static var echo: Self {
     return Self { request in

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientResponse.Single {
   /// Converts a streaming response into a single response.
   ///
@@ -82,7 +82,7 @@ extension ClientResponse.Single {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientResponse.Stream {
   /// Creates a streaming response from the given status and metadata.
   ///
@@ -103,7 +103,7 @@ extension ClientResponse.Stream {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientResponse.Stream {
   /// Returns a new response which maps the messages of this response.
   ///

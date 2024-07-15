@@ -15,33 +15,43 @@
  */
 
 /// A type-erasing `AsyncSequence`.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct RPCAsyncSequence<Element>: AsyncSequence, Sendable {
-  private let _makeAsyncIterator: @Sendable () -> AsyncIterator
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+public struct RPCAsyncSequence<Element, Failure: Error>: AsyncSequence, Sendable {
+  // Need a typealias: https://github.com/swiftlang/swift/issues/63877
+  @usableFromInline
+  typealias Wrapped = AsyncSequence<Element, Failure> & Sendable
+
+  @usableFromInline
+  let _wrapped: any Wrapped
 
   /// Creates an ``RPCAsyncSequence`` by wrapping another `AsyncSequence`.
-  public init<S: AsyncSequence>(wrapping other: S) where S.Element == Element {
-    self._makeAsyncIterator = {
-      AsyncIterator(wrapping: other.makeAsyncIterator())
-    }
+  public init<Source: AsyncSequence<Element, Failure>>(
+    wrapping other: Source
+  ) where Source: Sendable {
+    self._wrapped = other
   }
 
   public func makeAsyncIterator() -> AsyncIterator {
-    self._makeAsyncIterator()
+    AsyncIterator(wrapping: self._wrapped.makeAsyncIterator())
   }
 
   public struct AsyncIterator: AsyncIteratorProtocol {
-    private var iterator: any AsyncIteratorProtocol
+    private var iterator: any AsyncIteratorProtocol<Element, Failure>
 
-    fileprivate init<Iterator>(
-      wrapping other: Iterator
-    ) where Iterator: AsyncIteratorProtocol, Iterator.Element == Element {
+    fileprivate init(
+      wrapping other: some AsyncIteratorProtocol<Element, Failure>
+    ) {
       self.iterator = other
     }
 
+    public mutating func next(
+      isolation actor: isolated (any Actor)?
+    ) async throws(Failure) -> Element? {
+      try await self.iterator.next(isolation: `actor`)
+    }
+
     public mutating func next() async throws -> Element? {
-      let elem = try await self.iterator.next()
-      return elem as? Element
+      try await self.next(isolation: nil)
     }
   }
 }

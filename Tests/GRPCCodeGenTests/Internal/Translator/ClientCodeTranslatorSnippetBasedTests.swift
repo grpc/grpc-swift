@@ -43,7 +43,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -54,7 +54,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA_ServiceARequest>,
@@ -71,7 +71,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -124,7 +124,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -135,7 +135,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
@@ -152,7 +152,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -205,7 +205,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -216,7 +216,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA_ServiceARequest>,
@@ -233,7 +233,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -286,7 +286,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -297,7 +297,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
@@ -314,7 +314,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -375,7 +375,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       package protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -395,7 +395,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           package func methodA<R>(
               request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
@@ -426,7 +426,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       package struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -497,7 +497,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       internal protocol ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
@@ -508,7 +508,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension ServiceA.ClientProtocol {
           internal func methodA<R>(
               request: ClientRequest.Single<ServiceARequest>,
@@ -525,7 +525,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       internal struct ServiceAClient: ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -584,13 +584,13 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {}
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
       }
       /// Documentation for ServiceA
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
@@ -601,15 +601,15 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Documentation for ServiceB
       ///
       /// Line 2
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol ServiceBClientProtocol: Sendable {}
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension ServiceB.ClientProtocol {
       }
       /// Documentation for ServiceB
       ///
       /// Line 2
-      @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct ServiceBClient: ServiceB.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           

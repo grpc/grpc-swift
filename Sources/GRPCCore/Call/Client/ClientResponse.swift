@@ -204,7 +204,7 @@ extension ClientResponse {
   ///   print("RPC failed with code '\(error.code)'")
   /// }
   /// ```
-  @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   public struct Stream<Message: Sendable>: Sendable {
     public struct Contents: Sendable {
       /// Metadata received from the server at the beginning of the response.
@@ -219,7 +219,7 @@ extension ClientResponse {
       /// If the RPC fails then the sequence will throw an ``RPCError``.
       ///
       /// The sequence may only be iterated once.
-      public var bodyParts: RPCAsyncSequence<BodyPart>
+      public var bodyParts: RPCAsyncSequence<BodyPart, any Error>
 
       /// Parts received from the server.
       public enum BodyPart: Sendable {
@@ -236,7 +236,7 @@ extension ClientResponse {
       ///   - bodyParts: An `AsyncSequence` of parts received from the server.
       public init(
         metadata: Metadata,
-        bodyParts: RPCAsyncSequence<BodyPart>
+        bodyParts: RPCAsyncSequence<BodyPart, any Error>
       ) {
         self.metadata = metadata
         self.bodyParts = bodyParts
@@ -332,7 +332,7 @@ extension ClientResponse.Single {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientResponse.Stream {
   /// Creates a new accepted response.
   ///
@@ -343,7 +343,7 @@ extension ClientResponse.Stream {
   public init(
     of messageType: Message.Type = Message.self,
     metadata: Metadata,
-    bodyParts: RPCAsyncSequence<Contents.BodyPart>
+    bodyParts: RPCAsyncSequence<Contents.BodyPart, any Error>
   ) {
     let contents = Contents(metadata: metadata, bodyParts: bodyParts)
     self.accepted = .success(contents)
@@ -373,7 +373,7 @@ extension ClientResponse.Stream {
   /// Returns the messages received from the server.
   ///
   /// For rejected RPCs the `RPCAsyncSequence` throws a `RPCError``.
-  public var messages: RPCAsyncSequence<Message> {
+  public var messages: RPCAsyncSequence<Message, any Error> {
     switch self.accepted {
     case let .success(contents):
       let filtered = contents.bodyParts.compactMap {

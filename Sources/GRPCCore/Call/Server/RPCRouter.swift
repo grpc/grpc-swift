@@ -32,14 +32,17 @@
 /// 1. Remove individual methods by calling ``removeHandler(forMethod:)``, or
 /// 2. Implement ``RegistrableRPCService/registerMethods(with:)`` to register only the methods you
 ///    want to be served.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct RPCRouter: Sendable {
   @usableFromInline
   struct RPCHandler: Sendable {
     @usableFromInline
     let _fn:
       @Sendable (
-        _ stream: RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>,
+        _ stream: RPCStream<
+          RPCAsyncSequence<RPCRequestPart, any Error>,
+          RPCWriter<RPCResponsePart>.Closable
+        >,
         _ interceptors: [any ServerInterceptor]
       ) async -> Void
 
@@ -65,7 +68,10 @@ public struct RPCRouter: Sendable {
 
     @inlinable
     func handle(
-      stream: RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>,
+      stream: RPCStream<
+        RPCAsyncSequence<RPCRequestPart, any Error>,
+        RPCWriter<RPCResponsePart>.Closable
+      >,
       interceptors: [any ServerInterceptor]
     ) async {
       await self._fn(stream, interceptors)
@@ -134,10 +140,13 @@ public struct RPCRouter: Sendable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RPCRouter {
   internal func handle(
-    stream: RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>,
+    stream: RPCStream<
+      RPCAsyncSequence<RPCRequestPart, any Error>,
+      RPCWriter<RPCResponsePart>.Closable
+    >,
     interceptors: [any ServerInterceptor]
   ) async {
     if let handler = self.handlers[stream.descriptor] {

@@ -17,7 +17,7 @@
 import GRPCCore
 import GRPCHTTP2Core
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension NameResolver {
   static func `static`(
     endpoints: [Endpoint],
@@ -36,8 +36,8 @@ extension NameResolver {
 
   static func `dynamic`(
     updateMode: UpdateMode
-  ) -> (Self, AsyncStream<NameResolutionResult>.Continuation) {
-    let (stream, continuation) = AsyncStream.makeStream(of: NameResolutionResult.self)
+  ) -> (Self, AsyncThrowingStream<NameResolutionResult, any Error>.Continuation) {
+    let (stream, continuation) = AsyncThrowingStream.makeStream(of: NameResolutionResult.self)
     let resolver = NameResolver(names: RPCAsyncSequence(wrapping: stream), updateMode: updateMode)
     return (resolver, continuation)
   }
