@@ -18,11 +18,8 @@
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct RPCAsyncSequence<Element, Failure: Error>: AsyncSequence, Sendable {
   // Need a typealias: https://github.com/swiftlang/swift/issues/63877
-  @usableFromInline
-  typealias Wrapped = AsyncSequence<Element, Failure> & Sendable
-
-  @usableFromInline
-  let _wrapped: any Wrapped
+  private typealias Wrapped = AsyncSequence<Element, Failure> & Sendable
+  private let _wrapped: any Wrapped
 
   /// Creates an ``RPCAsyncSequence`` by wrapping another `AsyncSequence`.
   public init<Source: AsyncSequence<Element, Failure>>(
