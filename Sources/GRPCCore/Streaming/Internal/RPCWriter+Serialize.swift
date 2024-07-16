@@ -16,7 +16,10 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-struct SerializingRPCWriter<Base: RPCWriterProtocol<[UInt8]>, Serializer: MessageSerializer>: RPCWriterProtocol {
+struct SerializingRPCWriter<
+  Base: RPCWriterProtocol<[UInt8]>,
+  Serializer: MessageSerializer
+>: RPCWriterProtocol {
   @usableFromInline
   typealias Element = Serializer.Message
 
