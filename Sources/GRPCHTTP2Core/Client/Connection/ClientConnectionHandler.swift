@@ -433,6 +433,7 @@ extension ClientConnectionHandler {
       case active(Active)
       case closing(Closing)
       case closed
+      case _modifying
 
       struct Active {
         var openStreams: Set<HTTP2StreamID>
@@ -477,12 +478,16 @@ extension ClientConnectionHandler {
     mutating func receivedSettings() -> Bool {
       switch self.state {
       case .active(var active):
+        self.state = ._modifying
         let isFirstSettingsFrame = active.receivedSettings()
         self.state = .active(active)
         return isFirstSettingsFrame
 
       case .closing, .closed:
         return false
+
+      case ._modifying:
+        preconditionFailure()
       }
     }
 
@@ -490,10 +495,13 @@ extension ClientConnectionHandler {
     mutating func receivedError(_ error: any Error) {
       switch self.state {
       case .active(var active):
+        self.state = ._modifying
         active.error = error
         self.state = .active(active)
       case .closing, .closed:
         ()
+      case ._modifying:
+        preconditionFailure()
       }
     }
 
@@ -501,17 +509,22 @@ extension ClientConnectionHandler {
     mutating func streamOpened(_ id: HTTP2StreamID) {
       switch self.state {
       case .active(var state):
+        self.state = ._modifying
         let (inserted, _) = state.openStreams.insert(id)
         assert(inserted, "Can't open stream \(Int(id)), it's already open")
         self.state = .active(state)
 
       case .closing(var state):
+        self.state = ._modifying
         let (inserted, _) = state.openStreams.insert(id)
         assert(inserted, "Can't open stream \(Int(id)), it's already open")
         self.state = .closing(state)
 
       case .closed:
         ()
+
+      case ._modifying:
+        preconditionFailure()
       }
     }
 
@@ -530,6 +543,7 @@ extension ClientConnectionHandler {
 
       switch self.state {
       case .active(var state):
+        self.state = ._modifying
         let removedID = state.openStreams.remove(id)
         assert(removedID != nil, "Can't close stream \(Int(id)), it wasn't open")
         if state.openStreams.isEmpty {
@@ -540,6 +554,7 @@ extension ClientConnectionHandler {
         self.state = .active(state)
 
       case .closing(var state):
+        self.state = ._modifying
         let removedID = state.openStreams.remove(id)
         assert(removedID != nil, "Can't close stream \(Int(id)), it wasn't open")
         onStreamClosed = state.openStreams.isEmpty ? .close : .none
@@ -547,13 +562,16 @@ extension ClientConnectionHandler {
 
       case .closed:
         onStreamClosed = .none
+
+      case ._modifying:
+        preconditionFailure()
       }
 
       return onStreamClosed
     }
 
     /// Returns whether a keep alive ping should be sent to the server.
-    mutating func sendKeepalivePing() -> Bool {
+    func sendKeepalivePing() -> Bool {
       let sendKeepalivePing: Bool
 
       // Only send a ping if there are open streams or there are no open streams and keep alive
@@ -565,6 +583,8 @@ extension ClientConnectionHandler {
         sendKeepalivePing = !state.openStreams.isEmpty || state.allowKeepaliveWithoutCalls
       case .closed:
         sendKeepalivePing = false
+      case ._modifying:
+        preconditionFailure()
       }
 
       return sendKeepalivePing
@@ -580,6 +600,7 @@ extension ClientConnectionHandler {
 
       switch self.state {
       case .active(let state):
+        self.state = ._modifying
         // Only close immediately if there are no open streams. The client doesn't need to
         // ratchet down the last stream ID as only the client creates streams in gRPC.
         let close = state.openStreams.isEmpty
@@ -587,12 +608,16 @@ extension ClientConnectionHandler {
         self.state = .closing(State.Closing(from: state, closePromise: promise))
 
       case .closing(var state):
+        self.state = ._modifying
         state.closePromise.setOrCascade(to: promise)
         self.state = .closing(state)
         onGracefulShutdown = .none
 
       case .closed:
         onGracefulShutdown = .none
+
+      case ._modifying:
+        preconditionFailure()
       }
 
       return onGracefulShutdown
@@ -606,6 +631,8 @@ extension ClientConnectionHandler {
         return true
       case .closing, .closed:
         return false
+      case ._modifying:
+        preconditionFailure()
       }
     }
 
@@ -627,6 +654,8 @@ extension ClientConnectionHandler {
       case .closed:
         self.state = .closed
         return .none
+      case ._modifying:
+        preconditionFailure()
       }
     }
   }
