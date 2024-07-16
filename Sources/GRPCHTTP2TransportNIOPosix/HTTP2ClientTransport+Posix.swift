@@ -19,7 +19,7 @@ import GRPCHTTP2Core
 import NIOCore
 import NIOPosix
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport {
   /// A `ClientTransport` using HTTP/2 built on top of `NIOPosix`.
   ///
@@ -119,7 +119,7 @@ extension HTTP2ClientTransport {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport.Posix {
   struct Connector: HTTP2Connector {
     private let config: HTTP2ClientTransport.Posix.Config
@@ -149,7 +149,7 @@ extension HTTP2ClientTransport.Posix {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport.Posix {
   public struct Config: Sendable {
     /// Configuration for HTTP/2 connections.
@@ -191,7 +191,7 @@ extension HTTP2ClientTransport.Posix {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel.Config {
   init(posix: HTTP2ClientTransport.Posix.Config) {
     self.init(

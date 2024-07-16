@@ -837,6 +837,7 @@ struct AvailabilityDescription: Equatable, Codable {
     static let iOS = Self(name: "iOS")
     static let watchOS = Self(name: "watchOS")
     static let tvOS = Self(name: "tvOS")
+    static let visionOS = Self(name: "visionOS")
   }
 }
 

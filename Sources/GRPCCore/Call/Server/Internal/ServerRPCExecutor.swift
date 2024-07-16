@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 struct ServerRPCExecutor {
   /// Executes an RPC using the provided handler.
@@ -27,7 +27,10 @@ struct ServerRPCExecutor {
   ///   - handler: A handler which turns the request into a response.
   @inlinable
   static func execute<Input, Output>(
-    stream: RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>,
+    stream: RPCStream<
+      RPCAsyncSequence<RPCRequestPart, any Error>,
+      RPCWriter<RPCResponsePart>.Closable
+    >,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
@@ -63,7 +66,7 @@ struct ServerRPCExecutor {
   static func _execute<Input, Output>(
     method: MethodDescriptor,
     metadata: Metadata,
-    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart>.AsyncIterator>,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
     outbound: RPCWriter<RPCResponsePart>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
@@ -103,7 +106,7 @@ struct ServerRPCExecutor {
     timeout: Duration,
     method: MethodDescriptor,
     metadata: Metadata,
-    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart>.AsyncIterator>,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
     outbound: RPCWriter<RPCResponsePart>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
@@ -156,7 +159,7 @@ struct ServerRPCExecutor {
   static func _processRPC<Input, Output>(
     method: MethodDescriptor,
     metadata: Metadata,
-    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart>.AsyncIterator>,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
     outbound: RPCWriter<RPCResponsePart>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
@@ -233,7 +236,7 @@ struct ServerRPCExecutor {
 
   @inlinable
   static func _waitForFirstRequestPart(
-    inbound: RPCAsyncSequence<RPCRequestPart>
+    inbound: RPCAsyncSequence<RPCRequestPart, any Error>
   ) async -> OnFirstRequestPart {
     var iterator = inbound.makeAsyncIterator()
     let part = await Result { try await iterator.next() }
@@ -273,7 +276,10 @@ struct ServerRPCExecutor {
 
   @usableFromInline
   enum OnFirstRequestPart {
-    case process(Metadata, UnsafeTransfer<RPCAsyncSequence<RPCRequestPart>.AsyncIterator>)
+    case process(
+      Metadata,
+      UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>
+    )
     case reject(RPCError)
   }
 
@@ -284,7 +290,7 @@ struct ServerRPCExecutor {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(

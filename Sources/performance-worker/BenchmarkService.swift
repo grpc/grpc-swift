@@ -19,7 +19,7 @@ import GRPCCore
 
 import struct Foundation.Data
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   /// Used to check if the server can be streaming responses.
   private let working = ManagedAtomic<Bool>(true)
@@ -157,7 +157,7 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension BenchmarkService {
   private func checkOkStatus(_ responseStatus: Grpc_Testing_EchoStatus) throws {
     guard let code = Status.Code(rawValue: Int(responseStatus.code)) else {

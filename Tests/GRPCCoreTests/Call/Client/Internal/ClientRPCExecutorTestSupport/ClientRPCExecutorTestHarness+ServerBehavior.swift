@@ -18,17 +18,23 @@ import XCTest
 
 @testable import GRPCCore
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutorTestHarness {
   struct ServerStreamHandler: Sendable {
     private let handler:
       @Sendable (
-        _ stream: RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+        _ stream: RPCStream<
+          RPCAsyncSequence<RPCRequestPart, any Error>,
+          RPCWriter<RPCResponsePart>.Closable
+        >
       ) async throws -> Void
 
     init(
       _ handler: @escaping @Sendable (
-        RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+        RPCStream<
+          RPCAsyncSequence<RPCRequestPart, any Error>,
+          RPCWriter<RPCResponsePart>.Closable
+        >
       ) async throws -> Void
     ) {
       self.handler = handler
@@ -36,10 +42,15 @@ extension ClientRPCExecutorTestHarness {
 
     func handle<Inbound: AsyncSequence, Outbound: ClosableRPCWriterProtocol>(
       stream: RPCStream<Inbound, Outbound>
-    ) async throws where Inbound.Element == RPCRequestPart, Outbound.Element == RPCResponsePart {
+    ) async throws
+    where
+      Inbound.Element == RPCRequestPart,
+      Inbound.Failure == any Error,
+      Outbound.Element == RPCResponsePart
+    {
       let erased = RPCStream(
         descriptor: stream.descriptor,
-        inbound: RPCAsyncSequence(wrapping: stream.inbound),
+        inbound: RPCAsyncSequence<RPCRequestPart, any Error>(wrapping: stream.inbound),
         outbound: RPCWriter.Closable(wrapping: stream.outbound)
       )
 
@@ -48,7 +59,7 @@ extension ClientRPCExecutorTestHarness {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutorTestHarness.ServerStreamHandler {
   static var echo: Self {
     return Self { stream in

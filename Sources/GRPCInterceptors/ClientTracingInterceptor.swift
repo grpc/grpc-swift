@@ -23,7 +23,7 @@ import Tracing
 /// metadata. It will then be picked up by the server-side ``ServerTracingInterceptor``.
 ///
 /// For more information, refer to the documentation for `swift-distributed-tracing`.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct ClientTracingInterceptor: ClientInterceptor {
   private let injector: ClientRequestInjector
   private let emitEventOnEachWrite: Bool

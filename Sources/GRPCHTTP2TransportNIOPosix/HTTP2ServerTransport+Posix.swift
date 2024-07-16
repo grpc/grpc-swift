@@ -23,7 +23,7 @@ import NIOPosix
 
 extension HTTP2ServerTransport {
   /// A NIOPosix-backed implementation of a server transport.
-  @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   public struct Posix: ServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
     private let config: Config
@@ -292,7 +292,7 @@ extension HTTP2ServerTransport {
 
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ServerTransport.Posix {
   /// Configuration for the ``GRPCHTTP2TransportNIOPosix/GRPCHTTP2Core/HTTP2ServerTransport/Posix``.
   public struct Config: Sendable {

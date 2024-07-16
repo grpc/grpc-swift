@@ -20,7 +20,7 @@ import NIOHTTP2
 import NIOPosix
 import XCTest
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class GRPCChannelTests: XCTestCase {
   func testDefaultServiceConfig() throws {
     var serviceConfig = ServiceConfig()
@@ -798,7 +798,7 @@ final class GRPCChannelTests: XCTestCase {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel.Config {
   static var defaults: Self {
     Self(
@@ -816,7 +816,7 @@ extension Endpoint {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel {
   fileprivate func serverAddress() async throws -> String? {
     let values: Metadata.StringValues? = try await self.withStream(

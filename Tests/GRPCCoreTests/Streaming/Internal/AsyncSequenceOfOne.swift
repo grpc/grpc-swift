@@ -18,16 +18,17 @@ import XCTest
 
 @testable import GRPCCore
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal final class AsyncSequenceOfOneTests: XCTestCase {
   func testSuccessPath() async throws {
-    let sequence = RPCAsyncSequence.one("foo")
+    let sequence = RPCAsyncSequence<String, any Error>.one("foo")
     let contents = try await sequence.collect()
     XCTAssertEqual(contents, ["foo"])
   }
 
   func testFailurePath() async throws {
-    let sequence = RPCAsyncSequence<String>.throwing(RPCError(code: .cancelled, message: "foo"))
+    let error = RPCError(code: .cancelled, message: "foo")
+    let sequence = RPCAsyncSequence<String, any Error>.throwing(error)
 
     do {
       let _ = try await sequence.collect()

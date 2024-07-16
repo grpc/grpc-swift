@@ -50,16 +50,16 @@ internal enum Grpc_Health_V1_Health {
             Watch.descriptor
         ]
     }
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias StreamingServiceProtocol = Grpc_Health_V1_HealthStreamingServiceProtocol
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias ServiceProtocol = Grpc_Health_V1_HealthServiceProtocol
 }
 
 /// Health is gRPC's mechanism for checking whether a server is able to handle
 /// RPCs. Its semantics are documented in
 /// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Check gets the health of the specified service. If the requested service
     /// is unknown, the call will fail with status NOT_FOUND. If the caller does
@@ -91,9 +91,9 @@ internal protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.Regist
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Health_V1_Health.StreamingServiceProtocol {
-    @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Health_V1_Health.Method.Check.descriptor,
@@ -117,7 +117,7 @@ extension Grpc_Health_V1_Health.StreamingServiceProtocol {
 /// Health is gRPC's mechanism for checking whether a server is able to handle
 /// RPCs. Its semantics are documented in
 /// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.StreamingServiceProtocol {
     /// Check gets the health of the specified service. If the requested service
     /// is unknown, the call will fail with status NOT_FOUND. If the caller does
@@ -149,7 +149,7 @@ internal protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.St
 }
 
 /// Partial conformance to `Grpc_Health_V1_HealthStreamingServiceProtocol`.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Health_V1_Health.ServiceProtocol {
     internal func check(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
         let response = try await self.check(request: ServerRequest.Single(stream: request))

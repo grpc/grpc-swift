@@ -18,7 +18,7 @@ import Atomics
 import DequeModule
 import GRPCCore
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 package struct GRPCChannel: ClientTransport {
   private enum Input: Sendable {
     /// Close the channel, if possible.
@@ -124,7 +124,7 @@ package struct GRPCChannel: ClientTransport {
     self._connectivityState.continuation.yield(.idle)
 
     await withDiscardingTaskGroup { group in
-      var iterator: Optional<RPCAsyncSequence<NameResolutionResult>.AsyncIterator>
+      var iterator: Optional<RPCAsyncSequence<NameResolutionResult, any Error>.AsyncIterator>
 
       // The resolver can either push or pull values. If it pushes values the channel should
       // listen for new results. Otherwise the channel will pull values as and when necessary.
@@ -203,7 +203,7 @@ package struct GRPCChannel: ClientTransport {
         return try await stream.execute { inbound, outbound in
           let rpcStream = RPCStream(
             descriptor: stream.descriptor,
-            inbound: RPCAsyncSequence(wrapping: inbound),
+            inbound: RPCAsyncSequence<RPCResponsePart, any Error>(wrapping: inbound),
             outbound: RPCWriter.Closable(wrapping: outbound)
           )
           return try await closure(rpcStream)
@@ -225,7 +225,7 @@ package struct GRPCChannel: ClientTransport {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel {
   package struct Config: Sendable {
     /// Configuration for HTTP/2 connections.
@@ -254,7 +254,7 @@ extension GRPCChannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel {
   enum MakeStreamResult {
     /// A stream was created, use it.
@@ -347,7 +347,7 @@ extension GRPCChannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel {
   private func handleClose(in group: inout DiscardingTaskGroup) {
     switch self.state.withLockedValue({ $0.close() }) {
@@ -523,7 +523,7 @@ extension GRPCChannel {
     _ event: LoadBalancerEvent,
     loadBalancerID: LoadBalancerID,
     in group: inout DiscardingTaskGroup,
-    iterator: inout RPCAsyncSequence<NameResolutionResult>.AsyncIterator?
+    iterator: inout RPCAsyncSequence<NameResolutionResult, any Error>.AsyncIterator?
   ) async {
     switch event {
     case .connectivityStateChanged(let connectivityState):
@@ -557,7 +557,7 @@ extension GRPCChannel {
   }
 
   private func resolve(
-    iterator: inout RPCAsyncSequence<NameResolutionResult>.AsyncIterator?,
+    iterator: inout RPCAsyncSequence<NameResolutionResult, any Error>.AsyncIterator?,
     in group: inout DiscardingTaskGroup
   ) async {
     guard var iterator = iterator else { return }
@@ -574,7 +574,7 @@ extension GRPCChannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel {
   struct StateMachine {
     enum State {
@@ -649,7 +649,7 @@ extension GRPCChannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel.StateMachine {
   mutating func start() {
     precondition(!self.running, "channel must only be started once")

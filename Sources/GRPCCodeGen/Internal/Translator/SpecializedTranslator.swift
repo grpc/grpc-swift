@@ -49,10 +49,11 @@ extension SpecializedTranslator {
 
   internal var availabilityGuard: AvailabilityDescription {
     AvailabilityDescription(osVersions: [
-      .init(os: .macOS, version: "13.0"),
-      .init(os: .iOS, version: "16.0"),
-      .init(os: .watchOS, version: "9.0"),
-      .init(os: .tvOS, version: "16.0"),
+      .init(os: .macOS, version: "15.0"),
+      .init(os: .iOS, version: "18.0"),
+      .init(os: .watchOS, version: "11.0"),
+      .init(os: .tvOS, version: "18.0"),
+      .init(os: .visionOS, version: "2.0"),
     ])
   }
 }

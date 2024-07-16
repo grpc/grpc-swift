@@ -15,9 +15,9 @@
  */
 @testable import GRPCCore
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct AnyClientTransport: ClientTransport, Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCResponsePart>
+  typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   private let _retryThrottle: @Sendable () -> RetryThrottle?
@@ -81,13 +81,15 @@ struct AnyClientTransport: ClientTransport, Sendable {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct AnyServerTransport: ServerTransport, Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCRequestPart>
+  typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
   private let _listen:
-    @Sendable (@escaping (RPCStream<Inbound, Outbound>) async -> Void) async throws -> Void
+    @Sendable (
+      @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+    ) async throws -> Void
   private let _stopListening: @Sendable () -> Void
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
@@ -96,7 +98,7 @@ struct AnyServerTransport: ServerTransport, Sendable {
   }
 
   func listen(
-    _ streamHandler: @escaping (RPCStream<Inbound, Outbound>) async -> Void
+    _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
   ) async throws {
     try await self._listen(streamHandler)
   }

@@ -41,9 +41,9 @@ private struct ConstantAsyncSequence<Element: Sendable>: AsyncSequence, Sendable
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension RPCAsyncSequence where Element: Sendable {
-  static func constant(_ element: Element) -> RPCAsyncSequence<Element> {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension RPCAsyncSequence where Element: Sendable, Failure == any Error {
+  static func constant(_ element: Element) -> RPCAsyncSequence<Element, any Error> {
     return RPCAsyncSequence(wrapping: ConstantAsyncSequence(element: element))
   }
 }

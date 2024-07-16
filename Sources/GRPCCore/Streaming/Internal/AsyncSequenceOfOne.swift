@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RPCAsyncSequence {
   /// Returns an ``RPCAsyncSequence`` containing just the given element.
   @inlinable
   static func one(_ element: Element) -> Self {
-    return Self(wrapping: AsyncSequenceOfOne<Element, Never>(result: .success(element)))
+    let source = AsyncSequenceOfOne<Element, Failure>(result: .success(element))
+    return RPCAsyncSequence(wrapping: source)
   }
 
   /// Returns an ``RPCAsyncSequence`` throwing the given error.
   @inlinable
-  static func throwing<E: Error>(_ error: E) -> Self {
-    return Self(wrapping: AsyncSequenceOfOne<Element, E>(result: .failure(error)))
+  static func throwing(_ error: Failure) -> Self {
+    let source = AsyncSequenceOfOne<Element, Failure>(result: .failure(error))
+    return RPCAsyncSequence(wrapping: source)
   }
 }
 
 /// An `AsyncSequence` of a single value.
 @usableFromInline
 @available(macOS 10.15, iOS 13.0, tvOS 13, watchOS 6, *)
-struct AsyncSequenceOfOne<Element: Sendable, Failure: Error>: AsyncSequence {
+struct AsyncSequenceOfOne<Element: Sendable, Failure: Error>: AsyncSequence, Sendable {
   @usableFromInline
   let result: Result<Element, Failure>
 
@@ -57,11 +59,18 @@ struct AsyncSequenceOfOne<Element: Sendable, Failure: Error>: AsyncSequence {
     }
 
     @inlinable
-    mutating func next() async throws -> Element? {
+    mutating func next(
+      isolation actor: isolated (any Actor)?
+    ) async throws(Failure) -> Element? {
       guard let result = self.result else { return nil }
 
       self.result = nil
       return try result.get()
+    }
+
+    @inlinable
+    mutating func next() async throws -> Element? {
+      try await self.next(isolation: nil)
     }
   }
 }

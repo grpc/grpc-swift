@@ -18,7 +18,7 @@ import GRPCCore
 import GRPCHTTP2Core
 import XCTest
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class NameResolverRegistryTests: XCTestCase {
   struct FailingResolver: NameResolverFactory {
     typealias Target = StringTarget
@@ -152,7 +152,7 @@ final class NameResolverRegistryTests: XCTestCase {
     struct CustomResolver: NameResolverFactory {
       func resolver(for target: EmptyTarget) -> NameResolver {
         return NameResolver(
-          names: RPCAsyncSequence(wrapping: AsyncStream { $0.finish() }),
+          names: RPCAsyncSequence(wrapping: AsyncThrowingStream { $0.finish() }),
           updateMode: .push
         )
       }

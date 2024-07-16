@@ -19,7 +19,7 @@ import Foundation
 import GRPCCore
 import NIOConcurrencyHelpers
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct BenchmarkClient {
   private let _isShuttingDown = ManagedAtomic(false)
 
@@ -171,7 +171,9 @@ struct BenchmarkClient {
     // stream is sent to the request closure, and the request closure indicates the outcome back
     // to the response handler to keep the RPC alive for the appropriate amount of time.
     let status = AsyncStream.makeStream(of: RPCError.self)
-    let response = AsyncStream.makeStream(of: RPCAsyncSequence<Grpc_Testing_SimpleResponse>.self)
+    let response = AsyncStream.makeStream(
+      of: RPCAsyncSequence<Grpc_Testing_SimpleResponse, any Error>.self
+    )
 
     let request = ClientRequest.Stream(of: Grpc_Testing_SimpleRequest.self) { writer in
       defer { status.continuation.finish() }

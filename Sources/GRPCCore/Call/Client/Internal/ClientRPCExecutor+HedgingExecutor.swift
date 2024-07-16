@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor {
   @usableFromInline
   struct HedgingExecutor<
@@ -63,7 +63,7 @@ extension ClientRPCExecutor {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor.HedgingExecutor {
   @inlinable
   func execute<R: Sendable>(
@@ -513,7 +513,7 @@ enum _HedgingTaskResult<R> {
   case timedOut(Result<Void, any Error>)
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 enum _HedgingAttemptTaskResult<R, Output> {
   case attemptCompleted(AttemptResult)
@@ -533,7 +533,7 @@ enum _HedgingAttemptTaskResult<R, Output> {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 enum _HedgingAttemptSubtaskResult<Output> {
   case attemptPicked(Bool)

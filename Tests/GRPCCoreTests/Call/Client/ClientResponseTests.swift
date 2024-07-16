@@ -18,7 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class ClientResponseTests: XCTestCase {
   func testAcceptedSingleResponseConvenienceMethods() {
     let response = ClientResponse.Single(
@@ -59,7 +59,7 @@ final class ClientResponseTests: XCTestCase {
       of: String.self,
       metadata: ["foo": "bar"],
       bodyParts: RPCAsyncSequence(
-        wrapping: AsyncStream {
+        wrapping: AsyncThrowingStream {
           $0.yield(.message("foo"))
           $0.yield(.message("bar"))
           $0.yield(.message("baz"))

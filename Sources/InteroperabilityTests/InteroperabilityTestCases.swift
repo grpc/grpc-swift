@@ -31,7 +31,7 @@ import struct Foundation.Data
 /// Client asserts:
 /// - call was successful
 /// - response is non-null
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct EmptyUnary: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -65,7 +65,7 @@ struct EmptyUnary: InteroperabilityTest {
 /// - response payload body is 314159 bytes in size
 /// - clients are free to assert that the response payload body contents are zero and comparing
 ///   the entire response message against a golden response
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct LargeUnary: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -141,7 +141,7 @@ struct LargeUnary: InteroperabilityTest {
 /// - Response payload body is 314159 bytes in size.
 /// - Clients are free to assert that the response payload body contents are zeros and comparing the
 ///   entire response message against a golden response.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 class ClientCompressedUnary: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -250,7 +250,7 @@ class ClientCompressedUnary: InteroperabilityTest {
 /// - response payload body is 314159 bytes in size in both cases.
 /// - clients are free to assert that the response payload body contents are zero and comparing the
 ///   entire response message against a golden response
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 class ServerCompressedUnary: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -340,7 +340,7 @@ class ServerCompressedUnary: InteroperabilityTest {
 /// Client asserts:
 /// - call was successful
 /// - response aggregated_payload_size is 74922
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ClientStreaming: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -391,7 +391,7 @@ struct ClientStreaming: InteroperabilityTest {
 /// - response payload bodies are sized (in order): 31415, 9, 2653, 58979
 /// - clients are free to assert that the response payload body contents are zero and
 ///   comparing the entire response messages against golden responses
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ServerStreaming: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -468,7 +468,7 @@ struct ServerStreaming: InteroperabilityTest {
 /// - clients are free to assert that the response payload body contents are zero and comparing the
 ///   entire response messages against golden responses
 class ServerCompressedStreaming: InteroperabilityTest {
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
     let request: Grpc_Testing_StreamingOutputCallRequest = .with { request in
@@ -580,7 +580,7 @@ class ServerCompressedStreaming: InteroperabilityTest {
 /// - response payload bodies are sized (in order): 31415, 9, 2653, 58979
 /// - clients are free to assert that the response payload body contents are zero and
 ///   comparing the entire response messages against golden responses
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct PingPong: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -647,7 +647,7 @@ struct PingPong: InteroperabilityTest {
 /// Client asserts:
 /// - call was successful
 /// - exactly zero responses
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct EmptyStream: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -703,7 +703,7 @@ struct EmptyStream: InteroperabilityTest {
 ///   received in the initial metadata for calls in Procedure steps 1 and 2.
 /// - metadata with key "x-grpc-test-echo-trailing-bin" and value 0xababab is received in the
 ///   trailing metadata for calls in Procedure steps 1 and 2.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct CustomMetadata: InteroperabilityTest {
   let initialMetadataName = "x-grpc-test-echo-initial"
   let initialMetadataValue = "test_initial_metadata_value"
@@ -824,7 +824,7 @@ struct CustomMetadata: InteroperabilityTest {
 /// Client asserts:
 /// - received status code is the same as the sent code for both Procedure steps 1 and 2
 /// - received status message is the same as the sent message for both Procedure steps 1 and 2
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct StatusCodeAndMessage: InteroperabilityTest {
   let expectedCode = 2
   let expectedMessage = "test status message"
@@ -902,7 +902,7 @@ struct StatusCodeAndMessage: InteroperabilityTest {
 /// - received status code is the same as the sent code for Procedure step 1
 /// - received status message is the same as the sent message for Procedure step 1, including all
 ///   whitespace characters
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct SpecialStatusMessage: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -945,7 +945,7 @@ struct SpecialStatusMessage: InteroperabilityTest {
 ///
 /// Client asserts:
 /// - received status code is 12 (UNIMPLEMENTED)
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct UnimplementedMethod: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let testServiceClient = Grpc_Testing_TestService.Client(client: client)
@@ -978,7 +978,7 @@ struct UnimplementedMethod: InteroperabilityTest {
 ///
 /// Client asserts:
 /// - received status code is 12 (UNIMPLEMENTED)
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct UnimplementedService: InteroperabilityTest {
   func run(client: GRPCClient) async throws {
     let unimplementedServiceClient = Grpc_Testing_UnimplementedService.Client(client: client)

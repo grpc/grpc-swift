@@ -35,7 +35,7 @@ import GRPCCore
 /// block until ``connect()`` is called or the task is cancelled.
 ///
 /// - SeeAlso: ``ClientTransport``
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct InProcessClientTransport: ClientTransport {
   private enum State: Sendable {
     struct UnconnectedState {
@@ -54,7 +54,9 @@ public struct InProcessClientTransport: ClientTransport {
       var openStreams:
         [Int: (
           RPCStream<Inbound, Outbound>,
-          RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+          RPCStream<
+            RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
+          >
         )]
       var signalEndContinuation: AsyncStream<Void>.Continuation
 
@@ -73,7 +75,9 @@ public struct InProcessClientTransport: ClientTransport {
       var openStreams:
         [Int: (
           RPCStream<Inbound, Outbound>,
-          RPCStream<RPCAsyncSequence<RPCRequestPart>, RPCWriter<RPCResponsePart>.Closable>
+          RPCStream<
+            RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
+          >
         )]
       var signalEndContinuation: AsyncStream<Void>.Continuation?
 
@@ -93,7 +97,7 @@ public struct InProcessClientTransport: ClientTransport {
     case closed(ClosedState)
   }
 
-  public typealias Inbound = RPCAsyncSequence<RPCResponsePart>
+  public typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
   public typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   public let retryThrottle: RetryThrottle?
@@ -229,8 +233,12 @@ public struct InProcessClientTransport: ClientTransport {
     options: CallOptions,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
-    let request = RPCAsyncSequence<RPCRequestPart>._makeBackpressuredStream(watermarks: (16, 32))
-    let response = RPCAsyncSequence<RPCResponsePart>._makeBackpressuredStream(watermarks: (16, 32))
+    let request = RPCAsyncSequence<RPCRequestPart, any Error>._makeBackpressuredStream(
+      watermarks: (16, 32)
+    )
+    let response = RPCAsyncSequence<RPCResponsePart, any Error>._makeBackpressuredStream(
+      watermarks: (16, 32)
+    )
 
     let clientStream = RPCStream(
       descriptor: descriptor,

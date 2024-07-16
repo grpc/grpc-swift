@@ -21,7 +21,7 @@ import GRPCHTTP2TransportNIOPosix
 import NIOPosix
 
 @main
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct PerformanceWorker: AsyncParsableCommand {
   static var configuration: CommandConfiguration {
     CommandConfiguration(

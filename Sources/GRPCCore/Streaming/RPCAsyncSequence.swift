@@ -15,33 +15,51 @@
  */
 
 /// A type-erasing `AsyncSequence`.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct RPCAsyncSequence<Element>: AsyncSequence, Sendable {
-  private let _makeAsyncIterator: @Sendable () -> AsyncIterator
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+public struct RPCAsyncSequence<Element, Failure: Error>: AsyncSequence, @unchecked Sendable {
+  // @unchecked Sendable is required because 'any' doesn't support composition with primary
+  // associated types. (see: https://github.com/swiftlang/swift/issue/63877)
+  //
+  // To work around that limitation the 'init' requires that the async sequence being wrapped
+  // is 'Sendable' but that constraint must be dropped internally. This is safe, the compiler just
+  // can't prove it.
+  @usableFromInline
+  let _wrapped: any AsyncSequence<Element, Failure>
 
   /// Creates an ``RPCAsyncSequence`` by wrapping another `AsyncSequence`.
-  public init<S: AsyncSequence>(wrapping other: S) where S.Element == Element {
-    self._makeAsyncIterator = {
-      AsyncIterator(wrapping: other.makeAsyncIterator())
-    }
+  @inlinable
+  public init<Source: AsyncSequence<Element, Failure>>(
+    wrapping other: Source
+  ) where Source: Sendable {
+    self._wrapped = other
   }
 
+  @inlinable
   public func makeAsyncIterator() -> AsyncIterator {
-    self._makeAsyncIterator()
+    AsyncIterator(wrapping: self._wrapped.makeAsyncIterator())
   }
 
   public struct AsyncIterator: AsyncIteratorProtocol {
-    private var iterator: any AsyncIteratorProtocol
+    @usableFromInline
+    private(set) var iterator: any AsyncIteratorProtocol<Element, Failure>
 
-    fileprivate init<Iterator>(
-      wrapping other: Iterator
-    ) where Iterator: AsyncIteratorProtocol, Iterator.Element == Element {
+    @inlinable
+    init(
+      wrapping other: some AsyncIteratorProtocol<Element, Failure>
+    ) {
       self.iterator = other
     }
 
+    @inlinable
+    public mutating func next(
+      isolation actor: isolated (any Actor)?
+    ) async throws(Failure) -> Element? {
+      try await self.iterator.next(isolation: `actor`)
+    }
+
+    @inlinable
     public mutating func next() async throws -> Element? {
-      let elem = try await self.iterator.next()
-      return elem as? Element
+      try await self.next(isolation: nil)
     }
   }
 }
