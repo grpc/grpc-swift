@@ -27,11 +27,11 @@ public struct ServiceDescriptor: Sendable, Hashable {
   /// - "package.service": if a package name is specified. For example, "helloworld.Greeter".
   /// - "service": if a package name is not specified. For example, "Greeter".
   public var fullyQualifiedService: String {
-    if self.package.count > 0 {
-      return "\(self.package).\(self.service)"
+    if self.package.isEmpty {
+      return self.service
     }
 
-    return self.service
+    return "\(self.package).\(self.service)"
   }
 
   /// - Parameters:
