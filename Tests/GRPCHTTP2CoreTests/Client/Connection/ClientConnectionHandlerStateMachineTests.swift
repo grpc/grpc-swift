@@ -44,6 +44,13 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
     XCTAssertEqual(state.streamClosed(1), .close)
   }
 
+  func testCloseWhenAlreadyClosingGracefully() {
+    var state = self.makeStateMachine()
+    state.streamOpened(1)
+    XCTAssertEqual(state.beginGracefulShutdown(promise: nil), .sendGoAway(false))
+    XCTAssertTrue(state.beginClosing())
+  }
+
   func testOpenAndCloseStreamWhenClosed() {
     var state = self.makeStateMachine()
     _ = state.closed()
@@ -104,4 +111,5 @@ final class ClientConnectionHandlerStateMachineTests: XCTestCase {
     // Close immediately, not streams are open.
     XCTAssertEqual(state.beginGracefulShutdown(promise: nil), .sendGoAway(true))
   }
+
 }

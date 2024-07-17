@@ -144,6 +144,7 @@ package final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutbo
 
     self.keepaliveTimer?.cancel()
     self.keepaliveTimeoutTimer.cancel()
+    context.fireChannelInactive()
   }
 
   package func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
@@ -175,22 +176,32 @@ package final class ClientConnectionHandler: ChannelInboundHandler, ChannelOutbo
 
     switch frame.payload {
     case .goAway(_, let errorCode, let data):
-      // Receiving a GOAWAY frame means we need to stop creating streams immediately and start
-      // closing the connection.
-      switch self.state.beginGracefulShutdown(promise: nil) {
-      case .sendGoAway(let close):
-        // gRPC servers may indicate why the GOAWAY was sent in the opaque data.
-        let message = data.map { String(buffer: $0) } ?? ""
-        context.fireChannelRead(self.wrapInboundOut(.closing(.goAway(errorCode, message))))
+      if errorCode == .noError {
+        // Receiving a GOAWAY frame means we need to stop creating streams immediately and start
+        // closing the connection.
+        switch self.state.beginGracefulShutdown(promise: nil) {
+        case .sendGoAway(let close):
+          // gRPC servers may indicate why the GOAWAY was sent in the opaque data.
+          let message = data.map { String(buffer: $0) } ?? ""
+          context.fireChannelRead(self.wrapInboundOut(.closing(.goAway(errorCode, message))))
 
-        // Clients should send GOAWAYs when closing a connection.
-        self.writeAndFlushGoAway(context: context, errorCode: .noError)
-        if close {
+          // Clients should send GOAWAYs when closing a connection.
+          self.writeAndFlushGoAway(context: context, errorCode: .noError)
+          if close {
+            context.close(promise: nil)
+          }
+
+        case .none:
+          ()
+        }
+      } else {
+        // Some error, begin closing.
+        if self.state.beginClosing() {
+          // gRPC servers may indicate why the GOAWAY was sent in the opaque data.
+          let message = data.map { String(buffer: $0) } ?? ""
+          context.fireChannelRead(self.wrapInboundOut(.closing(.goAway(errorCode, message))))
           context.close(promise: nil)
         }
-
-      case .none:
-        ()
       }
 
     case .ping(let data, let ack):
@@ -459,9 +470,11 @@ extension ClientConnectionHandler {
         var allowKeepaliveWithoutCalls: Bool
         var openStreams: Set<HTTP2StreamID>
         var closePromise: Optional<EventLoopPromise<Void>>
+        var isGraceful: Bool
 
-        init(from state: Active, closePromise: EventLoopPromise<Void>?) {
+        init(from state: Active, isGraceful: Bool, closePromise: EventLoopPromise<Void>?) {
           self.openStreams = state.openStreams
+          self.isGraceful = isGraceful
           self.allowKeepaliveWithoutCalls = state.allowKeepaliveWithoutCalls
           self.closePromise = closePromise
         }
@@ -605,7 +618,7 @@ extension ClientConnectionHandler {
         // ratchet down the last stream ID as only the client creates streams in gRPC.
         let close = state.openStreams.isEmpty
         onGracefulShutdown = .sendGoAway(close)
-        self.state = .closing(State.Closing(from: state, closePromise: promise))
+        self.state = .closing(State.Closing(from: state, isGraceful: true, closePromise: promise))
 
       case .closing(var state):
         self.state = ._modifying
@@ -627,9 +640,15 @@ extension ClientConnectionHandler {
     mutating func beginClosing() -> Bool {
       switch self.state {
       case .active(let active):
-        self.state = .closing(State.Closing(from: active, closePromise: nil))
+        self.state = .closing(State.Closing(from: active, isGraceful: false, closePromise: nil))
         return true
-      case .closing, .closed:
+      case .closing(var state):
+        self.state = ._modifying
+        let forceShutdown = state.isGraceful
+        state.isGraceful = false
+        self.state = .closing(state)
+        return forceShutdown
+      case .closed:
         return false
       case ._modifying:
         preconditionFailure()
