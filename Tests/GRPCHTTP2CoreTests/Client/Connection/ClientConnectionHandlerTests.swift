@@ -212,6 +212,26 @@ final class ClientConnectionHandlerTests: XCTestCase {
     try connection.waitUntilClosed()
   }
 
+  func testGoAwayWithNoErrorThenGoAwayWithProtocolError() throws {
+    let connection = try Connection()
+    try connection.activate()
+
+    connection.streamOpened(1)
+    connection.streamOpened(2)
+    connection.streamOpened(3)
+
+    try connection.goAway(lastStreamID: .maxID, errorCode: .noError)
+    // Should read out an event.
+    XCTAssertEqual(try connection.readEvent(), .closing(.goAway(.noError, "")))
+
+    // Upgrade the close from graceful to 'error'.
+    try connection.goAway(lastStreamID: .maxID, errorCode: .protocolError)
+    // Should read out an event and the connection will be closed without waiting for notification
+    // from existing streams.
+    XCTAssertEqual(try connection.readEvent(), .closing(.goAway(.protocolError, "")))
+    try connection.waitUntilClosed()
+  }
+
   func testOutboundGracefulClose() throws {
     let connection = try Connection()
     try connection.activate()
