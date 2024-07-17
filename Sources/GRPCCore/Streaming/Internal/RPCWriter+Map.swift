@@ -16,18 +16,18 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-struct MapRPCWriter<Value, Mapped>: RPCWriterProtocol {
+struct MapRPCWriter<Value, Mapped, Base: RPCWriterProtocol<Mapped>>: RPCWriterProtocol {
   @usableFromInline
   typealias Element = Value
 
   @usableFromInline
-  let base: RPCWriter<Mapped>
+  let base: Base
   @usableFromInline
   let transform: @Sendable (Value) -> Mapped
 
   @inlinable
-  init(base: some RPCWriterProtocol<Mapped>, transform: @escaping @Sendable (Value) -> Mapped) {
-    self.base = RPCWriter(wrapping: base)
+  init(base: Base, transform: @escaping @Sendable (Value) -> Mapped) {
+    self.base = base
     self.transform = transform
   }
 

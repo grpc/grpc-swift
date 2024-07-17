@@ -16,19 +16,22 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-struct SerializingRPCWriter<Serializer: MessageSerializer>: RPCWriterProtocol {
+struct SerializingRPCWriter<
+  Base: RPCWriterProtocol<[UInt8]>,
+  Serializer: MessageSerializer
+>: RPCWriterProtocol {
   @usableFromInline
   typealias Element = Serializer.Message
 
   @usableFromInline
-  let base: RPCWriter<[UInt8]>
+  let base: Base
   @usableFromInline
   let serializer: Serializer
 
   @inlinable
-  init(serializer: Serializer, base: some RPCWriterProtocol<[UInt8]>) {
+  init(serializer: Serializer, base: Base) {
     self.serializer = serializer
-    self.base = RPCWriter(wrapping: base)
+    self.base = base
   }
 
   @inlinable
