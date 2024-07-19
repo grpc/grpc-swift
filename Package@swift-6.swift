@@ -417,7 +417,7 @@ extension Target {
         .grpcHTTP2TransportNIOTransportServices,
         .grpcProtobuf
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 

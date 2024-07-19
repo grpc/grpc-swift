@@ -135,7 +135,7 @@ final class HTTP2TransportTests: XCTestCase {
   }
 
   private func runServer(
-    in group: inout ThrowingTaskGroup<Void, Error>,
+    in group: inout ThrowingTaskGroup<Void, any Error>,
     kind: Transport.Kind,
     enableControlService: Bool,
     compression: CompressionAlgorithmSet
