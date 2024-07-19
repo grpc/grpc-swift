@@ -366,7 +366,7 @@ extension Target {
         .atomics,
         .protobuf,
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 

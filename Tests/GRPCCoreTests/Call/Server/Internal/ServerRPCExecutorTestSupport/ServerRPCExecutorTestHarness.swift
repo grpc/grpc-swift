@@ -19,7 +19,7 @@ import XCTest
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ServerRPCExecutorTestHarness {
-  struct ServerHandler<Input, Output>: Sendable {
+  struct ServerHandler<Input: Sendable, Output: Sendable>: Sendable {
     let fn: @Sendable (ServerRequest.Stream<Input>) async throws -> ServerResponse.Stream<Output>
 
     init(
@@ -53,8 +53,8 @@ struct ServerRPCExecutorTestHarness {
     handler: @escaping @Sendable (
       ServerRequest.Stream<Input>
     ) async throws -> ServerResponse.Stream<Output>,
-    producer: @escaping (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
+    producer: @escaping @Sendable (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
+    consumer: @escaping @Sendable (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
   ) async throws {
     try await self.execute(
       deserializer: deserializer,
@@ -69,8 +69,12 @@ struct ServerRPCExecutorTestHarness {
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: ServerHandler<Input, Output>,
-    producer: @escaping (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
+    producer: @escaping @Sendable (
+      RPCWriter<RPCRequestPart>.Closable
+    ) async throws -> Void,
+    consumer: @escaping @Sendable (
+      RPCAsyncSequence<RPCResponsePart, any Error>
+    ) async throws -> Void
   ) async throws {
     let input = RPCAsyncSequence.makeBackpressuredStream(
       of: RPCRequestPart.self,
@@ -111,8 +115,12 @@ struct ServerRPCExecutorTestHarness {
 
   func execute(
     handler: ServerHandler<[UInt8], [UInt8]> = .echo,
-    producer: @escaping (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
+    producer: @escaping @Sendable (
+      RPCWriter<RPCRequestPart>.Closable
+    ) async throws -> Void,
+    consumer: @escaping @Sendable (
+      RPCAsyncSequence<RPCResponsePart, any Error>
+    ) async throws -> Void
   ) async throws {
     try await self.execute(
       deserializer: IdentityDeserializer(),

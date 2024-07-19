@@ -41,7 +41,7 @@ private struct FailOnWrite<Element>: RPCWriterProtocol {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-private struct AsyncStreamGatheringWriter<Element>: RPCWriterProtocol {
+private struct AsyncStreamGatheringWriter<Element: Sendable>: RPCWriterProtocol {
   let continuation: AsyncStream<Element>.Continuation
 
   init(continuation: AsyncStream<Element>.Continuation) {

@@ -590,7 +590,7 @@ final class BufferedStreamTests: XCTestCase {
       of: Int.self,
       backPressureStrategy: .watermark(low: 0, high: 0)
     )
-    let (producerStream, producerContinuation) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerContinuation) = AsyncThrowingStream<Void, any Error>.makeStream()
     var iterator = stream.makeAsyncIterator()
 
     source?.write(1) {
@@ -688,7 +688,7 @@ final class BufferedStreamTests: XCTestCase {
       backPressureStrategy: .watermark(low: 1, high: 2)
     )
 
-    let (producerStream, producerSource) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerSource) = AsyncThrowingStream<Void, any Error>.makeStream()
 
     try await source.write(1)
 
@@ -749,7 +749,7 @@ final class BufferedStreamTests: XCTestCase {
     )
     var iterator = stream.makeAsyncIterator()
 
-    let (producerStream, producerSource) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerSource) = AsyncThrowingStream<Void, any Error>.makeStream()
 
     let writeResult = try { try source.write(1) }()
 
@@ -779,7 +779,7 @@ final class BufferedStreamTests: XCTestCase {
     )
     var iterator = stream.makeAsyncIterator()
 
-    let (producerStream, producerSource) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerSource) = AsyncThrowingStream<Void, any Error>.makeStream()
 
     let writeResult = try { try source.write(1) }()
 
@@ -809,7 +809,7 @@ final class BufferedStreamTests: XCTestCase {
     )
     var iterator = stream.makeAsyncIterator()
 
-    let (producerStream, producerSource) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerSource) = AsyncThrowingStream<Void, any Error>.makeStream()
 
     let writeResult = try { try source.write(1) }()
 
@@ -843,7 +843,7 @@ final class BufferedStreamTests: XCTestCase {
       backPressureStrategy: .watermark(low: 1, high: 2)
     )
 
-    let (producerStream, producerSource) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerSource) = AsyncThrowingStream<Void, any Error>.makeStream()
 
     try await source.write(1)
 
@@ -877,7 +877,7 @@ final class BufferedStreamTests: XCTestCase {
       backPressureStrategy: .watermark(low: 1, high: 2)
     )
 
-    let (producerStream, producerSource) = AsyncThrowingStream<Void, Error>.makeStream()
+    let (producerStream, producerSource) = AsyncThrowingStream<Void, any Error>.makeStream()
 
     try await source.write(1)
 
