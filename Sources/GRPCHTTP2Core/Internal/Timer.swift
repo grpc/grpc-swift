@@ -16,7 +16,7 @@
 
 import NIOCore
 
-struct Timer {
+package struct Timer {
   /// The delay to wait before running the task.
   private let delay: TimeAmount
   /// The task to run, if scheduled.
@@ -38,14 +38,17 @@ struct Timer {
     }
   }
 
-  init(delay: TimeAmount, repeat: Bool = false) {
+  package init(delay: TimeAmount, repeat: Bool = false) {
     self.delay = delay
     self.task = nil
     self.repeat = `repeat`
   }
 
   /// Schedule a task on the given `EventLoop`.
-  mutating func schedule(on eventLoop: any EventLoop, work: @escaping @Sendable () throws -> Void) {
+  package mutating func schedule(
+    on eventLoop: any EventLoop,
+    work: @escaping @Sendable () throws -> Void
+  ) {
     self.task?.cancel()
 
     if self.repeat {
@@ -60,7 +63,7 @@ struct Timer {
   }
 
   /// Cancels the task, if one was scheduled.
-  mutating func cancel() {
+  package mutating func cancel() {
     self.task?.cancel()
     self.task = nil
   }

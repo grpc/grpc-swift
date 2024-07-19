@@ -404,7 +404,7 @@ extension Target {
         .nioEmbedded,
         .nioTestUtils,
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 

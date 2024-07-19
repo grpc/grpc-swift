@@ -2886,10 +2886,5 @@ extension GRPCStreamStateMachine.OnNextOutboundFrame {
   }
 }
 
-#if compiler(>=6.0)
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GRPCStreamStateMachine.OnNextOutboundFrame: @retroactive Equatable {}
-#else
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension GRPCStreamStateMachine.OnNextOutboundFrame: Equatable {}
-#endif

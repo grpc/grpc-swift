@@ -86,7 +86,7 @@ enum LoadBalancerTest {
   ) async throws {
     enum TestEvent {
       case timedOut
-      case completed(Result<Void, Error>)
+      case completed(Result<Void, any Error>)
     }
 
     try await withThrowingTaskGroup(of: TestEvent.self) { group in

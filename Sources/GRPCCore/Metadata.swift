@@ -289,12 +289,11 @@ extension Metadata: RandomAccessCollection {
 }
 
 extension Metadata {
-
   /// A sequence of metadata values for a given key.
-  public struct Values: Sequence {
+  public struct Values: Sequence, Sendable {
 
     /// An iterator for all metadata ``Value``s associated with a given key.
-    public struct Iterator: IteratorProtocol {
+    public struct Iterator: IteratorProtocol, Sendable {
       private var metadataIterator: Metadata.Iterator
       private let key: String
 
@@ -339,12 +338,11 @@ extension Metadata {
 extension Metadata {
 
   /// A sequence of metadata string values for a given key.
-  public struct StringValues: Sequence {
-
+  public struct StringValues: Sequence, Sendable {
     /// An iterator for all string values associated with a given key.
     ///
     /// This iterator will only return values originally stored as strings for a given key.
-    public struct Iterator: IteratorProtocol {
+    public struct Iterator: IteratorProtocol, Sendable {
       private var values: Values.Iterator
 
       init(values: Values) {
@@ -388,15 +386,14 @@ extension Metadata {
 }
 
 extension Metadata {
-
   /// A sequence of metadata binary values for a given key.
-  public struct BinaryValues: Sequence {
+  public struct BinaryValues: Sequence, Sendable {
 
     /// An iterator for all binary data values associated with a given key.
     ///
     /// This iterator will return values originally stored as binary data for a given key, and will also try to
     /// decode values stored as strings as if they were base64-encoded strings.
-    public struct Iterator: IteratorProtocol {
+    public struct Iterator: IteratorProtocol, Sendable {
       private var values: Values.Iterator
 
       init(values: Values) {

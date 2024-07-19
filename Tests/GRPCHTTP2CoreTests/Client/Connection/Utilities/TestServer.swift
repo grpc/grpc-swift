@@ -29,7 +29,7 @@ final class TestServer: Sendable {
   private typealias Stream = NIOAsyncChannel<RPCRequestPart, RPCResponsePart>
   private typealias Multiplexer = NIOHTTP2AsyncSequence<Stream>
 
-  private let connected: NIOLockedValueBox<[Channel]>
+  private let connected: NIOLockedValueBox<[any Channel]>
 
   typealias Inbound = NIOAsyncChannelInboundStream<RPCRequestPart>
   typealias Outbound = NIOAsyncChannelOutboundWriter<RPCResponsePart>
@@ -47,7 +47,7 @@ final class TestServer: Sendable {
     case uds(String)
   }
 
-  var clients: [Channel] {
+  var clients: [any Channel] {
     return self.connected.withLockedValue { $0 }
   }
 
@@ -55,7 +55,7 @@ final class TestServer: Sendable {
     precondition(self.server.withLockedValue { $0 } == nil)
 
     @Sendable
-    func configure(_ channel: Channel) -> EventLoopFuture<Multiplexer> {
+    func configure(_ channel: any Channel) -> EventLoopFuture<Multiplexer> {
       self.connected.withLockedValue {
         $0.append(channel)
       }

@@ -44,8 +44,8 @@ extension NameResolver {
 }
 
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
-struct ConstantAsyncSequence<Element>: AsyncSequence {
-  private let result: Result<Element, Error>
+struct ConstantAsyncSequence<Element: Sendable>: AsyncSequence, Sendable {
+  private let result: Result<Element, any Error>
 
   init(element: Element) {
     self.result = .success(element)
@@ -60,9 +60,9 @@ struct ConstantAsyncSequence<Element>: AsyncSequence {
   }
 
   struct AsyncIterator: AsyncIteratorProtocol {
-    private let result: Result<Element, Error>
+    private let result: Result<Element, any Error>
 
-    fileprivate init(result: Result<Element, Error>) {
+    fileprivate init(result: Result<Element, any Error>) {
       self.result = result
     }
 
