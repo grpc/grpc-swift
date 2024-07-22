@@ -427,7 +427,7 @@ extension Target {
       dependencies: [
         .grpcCodeGen
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5)]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
