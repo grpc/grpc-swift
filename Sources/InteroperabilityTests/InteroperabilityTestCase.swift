@@ -48,7 +48,7 @@ public protocol InteroperabilityTest {
 /// Note: Tests for compression have not been implemented yet as compression is
 /// not supported. Once the API which allows for compression will be implemented
 /// these tests should be added.
-public enum InteroperabilityTestCase: String, CaseIterable {
+public enum InteroperabilityTestCase: String, CaseIterable, Sendable {
   case emptyUnary = "empty_unary"
   case largeUnary = "large_unary"
   case clientCompressedUnary = "client_compressed_unary"

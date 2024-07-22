@@ -24,7 +24,7 @@ import NIOPosix
 /// then closing. Each stream will be closed with the ":status" set to the value of the
 /// "response-status" header field in the request headers.
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
-final class HTTP2StatusCodeServer {
+final class HTTP2StatusCodeServer: Sendable {
   private let address: EventLoopPromise<GRPCHTTP2Core.SocketAddress.IPv4>
   private let eventLoopGroup: MultiThreadedEventLoopGroup
 

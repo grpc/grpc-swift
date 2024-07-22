@@ -104,6 +104,9 @@ final class StringCodeWriter {
   func nextLineAppendsToLastLine() { nextWriteAppendsToLastLine = true }
 }
 
+@available(*, unavailable)
+extension TextBasedRenderer: Sendable {}
+
 /// A renderer that uses string interpolation and concatenation
 /// to convert the provided structure code into raw string form.
 struct TextBasedRenderer: RendererProtocol {

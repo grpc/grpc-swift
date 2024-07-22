@@ -204,9 +204,9 @@ final class ConnectionTests: XCTestCase {
 
 extension ClientBootstrap {
   @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-  func connect<T>(
+  func connect<T: Sendable>(
     to address: GRPCHTTP2Core.SocketAddress,
-    _ configure: @Sendable @escaping (Channel) -> EventLoopFuture<T>
+    _ configure: @Sendable @escaping (any Channel) -> EventLoopFuture<T>
   ) async throws -> T {
     if let ipv4 = address.ipv4 {
       return try await self.connect(

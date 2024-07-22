@@ -15,32 +15,33 @@
  */
 
 import Atomics
+import GRPCCore
+import GRPCHTTP2Core
 import NIOEmbedded
 import XCTest
-
-@testable import GRPCHTTP2Core
 
 internal final class TimerTests: XCTestCase {
   func testScheduleOneOffTimer() {
     let loop = EmbeddedEventLoop()
     defer { try! loop.close() }
 
-    var value = 0
-
+    let value = LockedValueBox(0)
     var timer = Timer(delay: .seconds(1), repeat: false)
     timer.schedule(on: loop) {
-      XCTAssertEqual(value, 0)
-      value += 1
+      value.withLockedValue {
+        XCTAssertEqual($0, 0)
+        $0 += 1
+      }
     }
 
     loop.advanceTime(by: .milliseconds(999))
-    XCTAssertEqual(value, 0)
+    XCTAssertEqual(value.withLockedValue { $0 }, 0)
     loop.advanceTime(by: .milliseconds(1))
-    XCTAssertEqual(value, 1)
+    XCTAssertEqual(value.withLockedValue { $0 }, 1)
 
     // Run again to make sure the task wasn't repeated.
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(value, 1)
+    XCTAssertEqual(value.withLockedValue { $0 }, 1)
   }
 
   func testCancelOneOffTimer() {
@@ -61,26 +62,25 @@ internal final class TimerTests: XCTestCase {
     let loop = EmbeddedEventLoop()
     defer { try! loop.close() }
 
-    var values = [Int]()
-
+    let values = LockedValueBox([Int]())
     var timer = Timer(delay: .seconds(1), repeat: true)
     timer.schedule(on: loop) {
-      values.append(values.count)
+      values.withLockedValue { $0.append($0.count) }
     }
 
     loop.advanceTime(by: .milliseconds(999))
-    XCTAssertEqual(values, [])
+    XCTAssertEqual(values.withLockedValue { $0 }, [])
     loop.advanceTime(by: .milliseconds(1))
-    XCTAssertEqual(values, [0])
+    XCTAssertEqual(values.withLockedValue { $0 }, [0])
 
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(values, [0, 1])
+    XCTAssertEqual(values.withLockedValue { $0 }, [0, 1])
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(values, [0, 1, 2])
+    XCTAssertEqual(values.withLockedValue { $0 }, [0, 1, 2])
 
     timer.cancel()
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(values, [0, 1, 2])
+    XCTAssertEqual(values.withLockedValue { $0 }, [0, 1, 2])
   }
 
   func testCancelRepeatedTimer() {

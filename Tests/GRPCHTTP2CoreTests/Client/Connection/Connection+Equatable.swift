@@ -18,18 +18,7 @@ import GRPCCore
 import GRPCHTTP2Core
 
 // Equatable conformance for these types is 'best effort', this is sufficient for testing but not
-// for general use. As such the conformance is added in the test module and must be declared
-// as a `@retroactive` conformance.
-#if compiler(>=6.0)
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-extension Connection.Event: @retroactive Equatable {}
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-extension Connection.CloseReason: @retroactive Equatable {}
-
-extension ClientConnectionEvent: @retroactive Equatable {}
-extension ClientConnectionEvent.CloseReason: @retroactive Equatable {}
-
-#else
+// for general use.
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection.Event: Equatable {}
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
@@ -37,7 +26,6 @@ extension Connection.CloseReason: Equatable {}
 
 extension ClientConnectionEvent: Equatable {}
 extension ClientConnectionEvent.CloseReason: Equatable {}
-#endif
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
 extension Connection.Event {

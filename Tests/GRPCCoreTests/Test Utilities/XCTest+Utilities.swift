@@ -28,7 +28,7 @@ func XCTAssertDescription(
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertThrowsErrorAsync<T>(
   _ expression: () async throws -> T,
-  errorHandler: (Error) -> Void
+  errorHandler: (any Error) -> Void
 ) async {
   do {
     _ = try await expression()

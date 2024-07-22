@@ -16,9 +16,12 @@
 
 /// A type-erasing `AsyncSequence`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-public struct RPCAsyncSequence<Element, Failure: Error>: AsyncSequence, @unchecked Sendable {
+public struct RPCAsyncSequence<
+  Element: Sendable,
+  Failure: Error
+>: AsyncSequence, @unchecked Sendable {
   // @unchecked Sendable is required because 'any' doesn't support composition with primary
-  // associated types. (see: https://github.com/swiftlang/swift/issue/63877)
+  // associated types. (see: https://github.com/swiftlang/swift/issues/63877)
   //
   // To work around that limitation the 'init' requires that the async sequence being wrapped
   // is 'Sendable' but that constraint must be dropped internally. This is safe, the compiler just

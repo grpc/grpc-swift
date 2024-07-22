@@ -19,12 +19,10 @@ import struct Foundation.Data
 import class Foundation.JSONDecoder
 import class Foundation.JSONEncoder
 
-private let jsonEncoder = JSONEncoder()
-private let jsonDecoder = JSONDecoder()
-
 struct JSONSerializer<Message: Codable>: MessageSerializer {
   func serialize(_ message: Message) throws -> [UInt8] {
     do {
+      let jsonEncoder = JSONEncoder()
       return try Array(jsonEncoder.encode(message))
     } catch {
       throw RPCError(code: .internalError, message: "Can't serialize message to JSON. \(error)")
@@ -35,6 +33,7 @@ struct JSONSerializer<Message: Codable>: MessageSerializer {
 struct JSONDeserializer<Message: Codable>: MessageDeserializer {
   func deserialize(_ serializedMessageBytes: [UInt8]) throws -> Message {
     do {
+      let jsonDecoder = JSONDecoder()
       return try jsonDecoder.decode(Message.self, from: Data(serializedMessageBytes))
     } catch {
       throw RPCError(code: .internalError, message: "Can't deserialze message from JSON. \(error)")

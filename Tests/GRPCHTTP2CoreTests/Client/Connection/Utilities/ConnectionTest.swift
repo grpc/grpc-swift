@@ -29,7 +29,7 @@ enum ConnectionTest {
   }
 
   static func run(
-    connector: HTTP2Connector,
+    connector: any HTTP2Connector,
     server mode: Server.Mode = .regular,
     handlEvents: (
       _ context: Context,
@@ -67,10 +67,10 @@ extension ConnectionTest {
   final class Server {
     private let eventLoop: any EventLoop
     private var listener: (any Channel)?
-    private let client: EventLoopPromise<Channel>
+    private let client: EventLoopPromise<any Channel>
     private let mode: Mode
 
-    enum Mode {
+    enum Mode: Sendable {
       case regular
       case closeOnAccept
     }
@@ -86,7 +86,7 @@ extension ConnectionTest {
       self.client.futureResult.whenSuccess { $0.close(mode: .all, promise: nil) }
     }
 
-    var acceptedChannel: Channel {
+    var acceptedChannel: any Channel {
       get throws {
         try self.client.futureResult.wait()
       }
@@ -95,15 +95,17 @@ extension ConnectionTest {
     func bind() async throws -> GRPCHTTP2Core.SocketAddress {
       precondition(self.listener == nil, "\(#function) must only be called once")
 
-      let hasAcceptedChannel = try await self.eventLoop.submit {
-        NIOLoopBoundBox(false, eventLoop: self.eventLoop)
+      let hasAcceptedChannel = try await self.eventLoop.submit { [loop = self.eventLoop] in
+        NIOLoopBoundBox(false, eventLoop: loop)
       }.get()
 
-      let bootstrap = ServerBootstrap(group: self.eventLoop).childChannelInitializer { channel in
+      let bootstrap = ServerBootstrap(
+        group: self.eventLoop
+      ).childChannelInitializer { [mode = self.mode, client = self.client] channel in
         precondition(!hasAcceptedChannel.value, "already accepted a channel")
         hasAcceptedChannel.value = true
 
-        switch self.mode {
+        switch mode {
         case .closeOnAccept:
           return channel.close()
 
@@ -128,7 +130,7 @@ extension ConnectionTest {
 
             try sync.addHandler(h2)
             try sync.addHandler(mux)
-            try sync.addHandlers(SucceedOnSettingsAck(promise: self.client))
+            try sync.addHandlers(SucceedOnSettingsAck(promise: client))
           }
         }
       }
@@ -147,9 +149,9 @@ extension ConnectionTest {
     typealias InboundIn = HTTP2Frame
     typealias InboundOut = HTTP2Frame
 
-    private let promise: EventLoopPromise<Channel>
+    private let promise: EventLoopPromise<any Channel>
 
-    init(promise: EventLoopPromise<Channel>) {
+    init(promise: EventLoopPromise<any Channel>) {
       self.promise = promise
     }
 
