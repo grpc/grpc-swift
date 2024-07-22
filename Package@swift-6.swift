@@ -464,7 +464,7 @@ extension Target {
         .interoperabilityTests,
         .grpcCore
       ],
-      swiftSettings: [.swiftLanguageVersion(.v5), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
