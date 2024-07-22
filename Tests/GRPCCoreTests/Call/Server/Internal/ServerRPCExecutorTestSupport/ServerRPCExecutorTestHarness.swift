@@ -53,8 +53,12 @@ struct ServerRPCExecutorTestHarness {
     handler: @escaping @Sendable (
       ServerRequest.Stream<Input>
     ) async throws -> ServerResponse.Stream<Output>,
-    producer: @escaping @Sendable (RPCWriter<RPCRequestPart>.Closable) async throws -> Void,
-    consumer: @escaping @Sendable (RPCAsyncSequence<RPCResponsePart, any Error>) async throws -> Void
+    producer: @escaping @Sendable (
+      RPCWriter<RPCRequestPart>.Closable
+    ) async throws -> Void,
+    consumer: @escaping @Sendable (
+      RPCAsyncSequence<RPCResponsePart, any Error>
+    ) async throws -> Void
   ) async throws {
     try await self.execute(
       deserializer: deserializer,

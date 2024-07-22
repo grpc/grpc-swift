@@ -15,11 +15,10 @@
  */
 
 import Atomics
-import NIOEmbedded
-import XCTest
-
 import GRPCCore
 import GRPCHTTP2Core
+import NIOEmbedded
+import XCTest
 
 internal final class TimerTests: XCTestCase {
   func testScheduleOneOffTimer() {
