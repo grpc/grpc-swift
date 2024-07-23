@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.8
 /*
  * Copyright 2021, gRPC Authors All rights reserved.
  *
