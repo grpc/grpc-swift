@@ -102,7 +102,7 @@ public protocol ClientInterceptor: Sendable {
   func intercept<Input: Sendable, Output: Sendable>(
     request: ClientRequest.Stream<Input>,
     context: ClientInterceptorContext,
-    next: @Sendable (
+    next: (
       _ request: ClientRequest.Stream<Input>,
       _ context: ClientInterceptorContext
     ) async throws -> ClientResponse.Stream<Output>

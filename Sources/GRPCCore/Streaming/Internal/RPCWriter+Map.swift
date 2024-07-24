@@ -23,10 +23,10 @@ struct MapRPCWriter<Value, Mapped, Base: RPCWriterProtocol<Mapped>>: RPCWriterPr
   @usableFromInline
   let base: Base
   @usableFromInline
-  let transform: @Sendable (Value) -> Mapped
+  let transform: @Sendable (Value) throws -> Mapped
 
   @inlinable
-  init(base: Base, transform: @escaping @Sendable (Value) -> Mapped) {
+  init(base: Base, transform: @escaping @Sendable (Value) throws -> Mapped) {
     self.base = base
     self.transform = transform
   }
@@ -38,7 +38,7 @@ struct MapRPCWriter<Value, Mapped, Base: RPCWriterProtocol<Mapped>>: RPCWriterPr
 
   @inlinable
   func write(contentsOf elements: some Sequence<Value>) async throws {
-    let transformed = elements.lazy.map { self.transform($0) }
+    let transformed = try elements.lazy.map { try self.transform($0) }
     try await self.base.write(contentsOf: transformed)
   }
 }
@@ -48,7 +48,7 @@ extension RPCWriter {
   @inlinable
   static func map<Mapped>(
     into writer: some RPCWriterProtocol<Mapped>,
-    transform: @Sendable @escaping (Element) -> Mapped
+    transform: @Sendable @escaping (Element) throws -> Mapped
   ) -> Self {
     let mapper = MapRPCWriter(base: writer, transform: transform)
     return RPCWriter(wrapping: mapper)

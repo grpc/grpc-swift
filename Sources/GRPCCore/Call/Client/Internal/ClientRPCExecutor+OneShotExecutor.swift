@@ -66,86 +66,115 @@ extension ClientRPCExecutor.OneShotExecutor {
     options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async throws -> R {
-    let result = await withTaskGroup(
-      of: _OneShotExecutorTask<R>.self,
-      returning: Result<R, any Error>.self
-    ) { group in
-      do {
-        return try await self.transport.withStream(descriptor: method, options: options) { stream in
-          var request = request
+    let result: Result<R, any Error>
 
-          if let deadline = self.deadline {
-            request.metadata.timeout = ContinuousClock.now.duration(to: deadline)
-            group.addTask {
-              let result = await Result {
-                try await Task.sleep(until: deadline, clock: .continuous)
-              }
-              return .timedOut(result)
-            }
-          }
-
-          let streamExecutor = ClientStreamExecutor(transport: self.transport)
-          group.addTask {
-            await streamExecutor.run()
-            return .streamExecutorCompleted
-          }
-
-          group.addTask { [request] in
-            let response = await ClientRPCExecutor.unsafeExecute(
-              request: request,
-              method: method,
-              attempt: 1,
-              serializer: self.serializer,
-              deserializer: self.deserializer,
-              interceptors: self.interceptors,
-              streamProcessor: streamExecutor,
-              stream: stream
-            )
-
-            let result = await Result {
-              try await responseHandler(response)
-            }
-
-            return .responseHandled(result)
-          }
-
-          while let result = await group.next() {
-            switch result {
-            case .streamExecutorCompleted:
-              // Stream finished; wait for the response to be handled.
-              ()
-
-            case .timedOut(.success):
-              // The deadline passed; cancel the ongoing work group.
-              group.cancelAll()
-
-            case .timedOut(.failure):
-              // The deadline task failed (because the task was cancelled). Wait for the response
-              // to be handled.
-              ()
-
-            case .responseHandled(let result):
-              // Response handled: cancel any other remaining tasks.
-              group.cancelAll()
-              return result
-            }
-          }
-
-          // Unreachable: exactly one task returns `responseHandled` and we return when it completes.
-          fatalError("Internal inconsistency")
-        }
-      } catch {
-        return .failure(error)
+    if let deadline = self.deadline {
+      var request = request
+      request.metadata.timeout = ContinuousClock.now.duration(to: deadline)
+      result = await withDeadline(deadline) {
+        await self._execute(
+          request: request,
+          method: method,
+          options: options,
+          responseHandler: responseHandler
+        )
       }
+    } else {
+      result = await self._execute(
+        request: request,
+        method: method,
+        options: options,
+        responseHandler: responseHandler
+      )
     }
 
     return try result.get()
   }
 }
 
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension ClientRPCExecutor.OneShotExecutor {
+  @inlinable
+  func _execute<R>(
+    request: ClientRequest.Stream<Input>,
+    method: MethodDescriptor,
+    options: CallOptions,
+    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+  ) async -> Result<R, any Error> {
+    return await withDiscardingTaskGroup(returning: Result<R, any Error>.self) { group in
+      do {
+        return try await self.transport.withStream(descriptor: method, options: options) { stream in
+          let response = await ClientRPCExecutor._execute(
+            in: &group,
+            request: request,
+            method: method,
+            attempt: 1,
+            serializer: self.serializer,
+            deserializer: self.deserializer,
+            interceptors: self.interceptors,
+            stream: stream
+          )
+
+          let result = await Result {
+            try await responseHandler(response)
+          }
+
+          // The user handler can finish before the stream. Cancel it if that's the case.
+          group.cancelAll()
+
+          return result
+        }
+      } catch {
+        return .failure(error)
+      }
+    }
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+@inlinable
+func withDeadline<Result>(
+  _ deadline: ContinuousClock.Instant,
+  execute: @escaping () async -> Result
+) async -> Result {
+  return await withTaskGroup(of: _DeadlineChildTaskResult<Result>.self) { group in
+    group.addTask {
+      do {
+        try await Task.sleep(until: deadline)
+        return .deadlinePassed
+      } catch {
+        return .timeoutCancelled
+      }
+    }
+
+    group.addTask {
+      let result = await execute()
+      return .taskCompleted(result)
+    }
+
+    while let next = await group.next() {
+      switch next {
+      case .deadlinePassed:
+        // Timeout expired; cancel the work.
+        group.cancelAll()
+
+      case .timeoutCancelled:
+        ()  // Wait for more tasks to finish.
+
+      case .taskCompleted(let result):
+        // The work finished. Cancel any remaining tasks.
+        group.cancelAll()
+        return result
+      }
+    }
+
+    fatalError("Internal inconsistency")
+  }
+}
+
 @usableFromInline
-enum _OneShotExecutorTask<R> {
-  case streamExecutorCompleted
-  case timedOut(Result<Void, any Error>)
-  case responseHandled(Result<R, any Error>)
+enum _DeadlineChildTaskResult<Value> {
+  case deadlinePassed
+  case timeoutCancelled
+  case taskCompleted(Value)
 }

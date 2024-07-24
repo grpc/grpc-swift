@@ -16,59 +16,7 @@
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
-internal struct ClientStreamExecutor<Transport: ClientTransport> {
-  /// The client transport to execute the stream on.
-  @usableFromInline
-  let _transport: Transport
-
-  /// An `AsyncStream` and continuation to send and receive processing events on.
-  @usableFromInline
-  let _work: (stream: AsyncStream<_Event>, continuation: AsyncStream<_Event>.Continuation)
-
-  @usableFromInline
-  let _watermarks: (low: Int, high: Int)
-
-  @usableFromInline
-  enum _Event: Sendable {
-    /// Send the request on the outbound stream.
-    case request(ClientRequest.Stream<[UInt8]>, Transport.Outbound)
-    /// Receive the response from the inbound stream.
-    case response(
-      RPCWriter<ClientResponse.Stream<[UInt8]>.Contents.BodyPart>.Closable,
-      UnsafeTransfer<Transport.Inbound.AsyncIterator>
-    )
-  }
-
-  @inlinable
-  init(transport: Transport, responseStreamWatermarks: (low: Int, high: Int) = (16, 32)) {
-    self._transport = transport
-    self._work = AsyncStream.makeStream()
-    self._watermarks = responseStreamWatermarks
-  }
-
-  /// Run the stream executor.
-  ///
-  /// This is required to be running until the response returned from ``execute(request:method:)``
-  /// has been processed.
-  @inlinable
-  func run() async {
-    await withTaskGroup(of: Void.self) { group in
-      for await event in self._work.stream {
-        switch event {
-        case .request(let request, let outboundStream):
-          group.addTask {
-            await self._processRequest(request, on: outboundStream)
-          }
-
-        case .response(let writer, let iterator):
-          group.addTask {
-            await self._processResponse(writer: writer, iterator: iterator)
-          }
-        }
-      }
-    }
-  }
-
+internal enum ClientStreamExecutor {
   /// Execute a request on the stream executor.
   ///
   /// The ``run()`` method must be running at the same time as this method.
@@ -77,37 +25,52 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
   ///   - request: A streaming request.
   ///   - method: A description of the method to call.
   /// - Returns: A streamed response.
-  @inlinable
-  func execute(
-    request: ClientRequest.Stream<[UInt8]>,
-    method: MethodDescriptor,
-    stream: RPCStream<Transport.Inbound, Transport.Outbound>
-  ) async -> ClientResponse.Stream<[UInt8]> {
-    // Each execution method can add work to process in the 'run' method. They must not add
-    // new work once they return.
-    defer { self._work.continuation.finish() }
+  @inlinable  // would be private
+  static func execute<Input: Sendable, Output: Sendable>(
+    in group: inout DiscardingTaskGroup,
+    request: ClientRequest.Stream<Input>,
+    context: ClientInterceptorContext,
+    attempt: Int,
+    serializer: some MessageSerializer<Input>,
+    deserializer: some MessageDeserializer<Output>,
+    stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
+  ) async -> ClientResponse.Stream<Output> {
+    // Let the server know this is a retry.
+    var metadata = request.metadata
+    if attempt > 1 {
+      metadata.previousRPCAttempts = attempt &- 1
+    }
 
-    // Start processing the request.
-    self._work.continuation.yield(.request(request, stream.outbound))
+    group.addTask {
+      await Self._processRequest(on: stream.outbound, request: request, serializer: serializer)
+    }
 
-    let part = await self._waitForFirstResponsePart(on: stream.inbound)
-
+    let part = await Self._waitForFirstResponsePart(on: stream.inbound)
     // Wait for the first response to determine how to handle the response.
     switch part {
-    case .metadata(let metadata, let iterator):
-      // Expected happy case: the server is processing the request.
+    case .metadata(var metadata, let iterator):
+      // Attach the number of previous attempts, it can be useful information for callers.
+      if attempt > 1 {
+        metadata.previousRPCAttempts = attempt &- 1
+      }
 
-      // TODO: (optimisation) use a hint about whether the response is streamed. Use a specialised
-      // sequence to avoid allocations if it isn't
-      let responses = RPCAsyncSequence.makeBackpressuredStream(
-        of: ClientResponse.Stream<[UInt8]>.Contents.BodyPart.self,
-        watermarks: self._watermarks
+      let bodyParts = RawBodyPartToMessageSequence(
+        base: AsyncIteratorSequence(iterator.wrappedValue),
+        deserializer: deserializer
       )
 
-      self._work.continuation.yield(.response(responses.writer, iterator))
-      return ClientResponse.Stream(metadata: metadata, bodyParts: responses.stream)
+      // Expected happy case: the server is processing the request.
+      return ClientResponse.Stream(
+        metadata: metadata,
+        bodyParts: RPCAsyncSequence(wrapping: bodyParts)
+      )
 
-    case .status(let status, let metadata):
+    case .status(let status, var metadata):
+      // Attach the number of previous attempts, it can be useful information for callers.
+      if attempt > 1 {
+        metadata.previousRPCAttempts = attempt &- 1
+      }
+
       // Expected unhappy (but okay) case; the server rejected the request.
       return ClientResponse.Stream(status: status, metadata: metadata)
 
@@ -117,14 +80,15 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
     }
   }
 
-  @inlinable
-  func _processRequest<Stream: ClosableRPCWriterProtocol<RPCRequestPart>>(
-    _ request: ClientRequest.Stream<[UInt8]>,
-    on stream: Stream
+  @inlinable  // would be private
+  static func _processRequest<Outbound>(
+    on stream: some ClosableRPCWriterProtocol<RPCRequestPart>,
+    request: ClientRequest.Stream<Outbound>,
+    serializer: some MessageSerializer<Outbound>
   ) async {
     let result = await Result {
       try await stream.write(.metadata(request.metadata))
-      try await request.producer(.map(into: stream) { .message($0) })
+      try await request.producer(.map(into: stream) { .message(try serializer.serialize($0)) })
     }.castError(to: RPCError.self) { other in
       RPCError(code: .unknown, message: "Write failed.", cause: other)
     }
@@ -139,14 +103,14 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
 
   @usableFromInline
   enum OnFirstResponsePart: Sendable {
-    case metadata(Metadata, UnsafeTransfer<Transport.Inbound.AsyncIterator>)
+    case metadata(Metadata, UnsafeTransfer<ClientTransport.Inbound.AsyncIterator>)
     case status(Status, Metadata)
     case failed(RPCError)
   }
 
-  @inlinable
-  func _waitForFirstResponsePart(
-    on stream: Transport.Inbound
+  @inlinable  // would be private
+  static func _waitForFirstResponsePart(
+    on stream: ClientTransport.Inbound
   ) async -> OnFirstResponsePart {
     var iterator = stream.makeAsyncIterator()
     let result = await Result<OnFirstResponsePart, any Error> {
@@ -193,15 +157,56 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
     }
   }
 
-  @inlinable
-  func _processResponse(
-    writer: RPCWriter<ClientResponse.Stream<[UInt8]>.Contents.BodyPart>.Closable,
-    iterator: UnsafeTransfer<Transport.Inbound.AsyncIterator>
-  ) async {
-    var iterator = iterator.wrappedValue
-    let result = await Result {
-      while let next = try await iterator.next() {
-        switch next {
+  @usableFromInline
+  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+  struct RawBodyPartToMessageSequence<
+    Base: AsyncSequence<RPCResponsePart, Failure>,
+    Message: Sendable,
+    Deserializer: MessageDeserializer<Message>,
+    Failure: Error
+  >: AsyncSequence {
+    @usableFromInline
+    typealias Element = AsyncIterator.Element
+
+    @usableFromInline
+    let base: Base
+    @usableFromInline
+    let deserializer: Deserializer
+
+    @inlinable
+    init(base: Base, deserializer: Deserializer) {
+      self.base = base
+      self.deserializer = deserializer
+    }
+
+    @inlinable
+    func makeAsyncIterator() -> AsyncIterator {
+      AsyncIterator(base: self.base.makeAsyncIterator(), deserializer: self.deserializer)
+    }
+
+    @usableFromInline
+    struct AsyncIterator: AsyncIteratorProtocol {
+      @usableFromInline
+      typealias Element = ClientResponse.Stream<Message>.Contents.BodyPart
+
+      @usableFromInline
+      var base: Base.AsyncIterator
+      @usableFromInline
+      let deserializer: Deserializer
+
+      @inlinable
+      init(base: Base.AsyncIterator, deserializer: Deserializer) {
+        self.base = base
+        self.deserializer = deserializer
+      }
+
+      @inlinable
+      mutating func next(
+        isolation actor: isolated (any Actor)?
+      ) async throws(any Error) -> ClientResponse.Stream<Message>.Contents.BodyPart? {
+        guard let part = try await self.base.next(isolation: `actor`) else { return nil }
+
+        switch part {
         case .metadata(let metadata):
           let error = RPCError(
             code: .internalError,
@@ -213,30 +218,22 @@ internal struct ClientStreamExecutor<Transport: ClientTransport> {
           throw error
 
         case .message(let bytes):
-          try await writer.write(.message(bytes))
+          let message = try self.deserializer.deserialize(bytes)
+          return .message(message)
 
         case .status(let status, let metadata):
           if let error = RPCError(status: status, metadata: metadata) {
             throw error
           } else {
-            try await writer.write(.trailingMetadata(metadata))
+            return .trailingMetadata(metadata)
           }
         }
       }
-    }.castError(to: RPCError.self) { error in
-      RPCError(
-        code: .unknown,
-        message: "Can't write to output stream, cancelling RPC.",
-        cause: error
-      )
-    }
 
-    // Make sure the writer is finished.
-    switch result {
-    case .success:
-      writer.finish()
-    case .failure(let error):
-      writer.finish(throwing: error)
+      @inlinable
+      mutating func next() async throws -> ClientResponse.Stream<Message>.Contents.BodyPart? {
+        try await self.next(isolation: nil)
+      }
     }
   }
 }
