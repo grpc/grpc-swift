@@ -17,7 +17,7 @@
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RPCAsyncSequence where Failure == any Error {
   @inlinable
-  static func makeBackpressuredStream(
+  package static func makeBackpressuredStream(
     of elementType: Element.Type = Element.self,
     watermarks: (low: Int, high: Int)
   ) -> (stream: Self, writer: RPCWriter<Element>.Closable) {
@@ -27,13 +27,5 @@ extension RPCAsyncSequence where Failure == any Error {
     )
 
     return (RPCAsyncSequence(wrapping: stream), RPCWriter.Closable(wrapping: continuation))
-  }
-
-  @inlinable
-  package static func _makeBackpressuredStream(
-    of elementType: Element.Type = Element.self,
-    watermarks: (low: Int, high: Int)
-  ) -> (stream: Self, writer: RPCWriter<Element>.Closable) {
-    return Self.makeBackpressuredStream(of: elementType, watermarks: watermarks)
   }
 }
