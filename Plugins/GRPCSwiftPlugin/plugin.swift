@@ -393,7 +393,7 @@ extension GRPCSwiftPlugin: XcodeBuildToolPlugin {
     #if compiler(<6.0)
     let workDirectory = PathLike(context.pluginWorkDirectory)
     #else
-    let workDirectory = PathLike(URL(string: String(describing: context.pluginWorkDirectory))!)
+    let workDirectory = PathLike(context.pluginWorkDirectoryURL)
     #endif
 
     return try self.createBuildCommands(
