@@ -30,7 +30,7 @@ extension RPCAsyncSequence where Failure == any Error {
   }
 
   @inlinable
-  public static func _makeBackpressuredStream(
+  package static func _makeBackpressuredStream(
     of elementType: Element.Type = Element.self,
     watermarks: (low: Int, high: Int)
   ) -> (stream: Self, writer: RPCWriter<Element>.Closable) {
