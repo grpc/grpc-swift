@@ -272,7 +272,10 @@ extension Target {
         .grpcHTTP2Core,
         .nioPosix,
         .nioExtras
-      ],
+      ].appending(
+        .nioSSL,
+        if: includeNIOSSL
+      ),
       swiftSettings: [
         ._swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),

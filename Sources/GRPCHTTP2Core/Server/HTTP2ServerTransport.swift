@@ -188,4 +188,49 @@ extension HTTP2ServerTransport.Config {
       Self(maxRequestPayloadSize: 4 * 1024 * 1024)
     }
   }
+
+  public struct TLS: Sendable {
+    public struct Certificate: Sendable {
+      public struct SerializationFormat: Sendable, Equatable {
+        private enum Wrapping {
+          case pem
+          case der
+        }
+
+        private let serialization: Wrapping
+
+        public static let pem = Self(serialization: .pem)
+        public static let der = Self(serialization: .der)
+      }
+
+      public var bytes: [UInt8]
+      public var serializationFormat: SerializationFormat
+    }
+
+    public struct PrivateKey: Sendable {
+      public struct SerializationFormat: Sendable, Equatable {
+        private enum Wrapping {
+          case pem
+          case der
+        }
+
+        private let serialization: Wrapping
+
+        public static let pem = Self(serialization: .pem)
+        public static let der = Self(serialization: .der)
+      }
+
+      public var bytes: [UInt8]
+      public var serializationFormat: SerializationFormat
+    }
+
+    /// The certificate the server will offer during negotiation.
+    public var certificate: Certificate
+    /// The private key associated with the leaf certificate.
+    public var privateKey: PrivateKey
+    /// Whether to verify the remote certificate.
+    public var verifyClientCertificate: Bool
+    /// Whether ALPN is required.
+    public var requireALPN: Bool
+  }
 }
