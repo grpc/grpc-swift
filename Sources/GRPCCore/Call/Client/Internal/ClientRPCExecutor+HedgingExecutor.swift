@@ -340,7 +340,8 @@ extension ClientRPCExecutor.HedgingExecutor {
           }
 
           group.addTask {
-            let result = await withDiscardingTaskGroup(
+            let result = await withTaskGroup(
+              of: Void.self,
               returning: _HedgingAttemptTaskResult<R, Output>.AttemptResult.self
             ) { group in
               var request = request

@@ -101,7 +101,7 @@ extension ClientRPCExecutor.OneShotExecutor {
     options: CallOptions,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> Result<R, any Error> {
-    return await withDiscardingTaskGroup(returning: Result<R, any Error>.self) { group in
+    return await withTaskGroup(of: Void.self, returning: Result<R, any Error>.self) { group in
       do {
         return try await self.transport.withStream(descriptor: method, options: options) { stream in
           let response = await ClientRPCExecutor._execute(

@@ -115,7 +115,7 @@ extension ClientRPCExecutor {
   /// - Returns: The deserialized response.
   @inlinable  // would be private
   static func _execute<Input: Sendable, Output: Sendable>(
-    in group: inout DiscardingTaskGroup,
+    in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     attempt: Int,
@@ -158,12 +158,12 @@ extension ClientRPCExecutor {
 
   @inlinable
   static func _intercept<Input, Output>(
-    in group: inout DiscardingTaskGroup,
+    in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
     context: ClientInterceptorContext,
     iterator: Array<any ClientInterceptor>.Iterator,
     finally: (
-      _ group: inout DiscardingTaskGroup,
+      _ group: inout TaskGroup<Void>,
       _ request: ClientRequest.Stream<Input>,
       _ context: ClientInterceptorContext
     ) async -> ClientResponse.Stream<Output>

@@ -206,7 +206,8 @@ extension ClientRPCExecutor.RetryExecutor {
     attempt: Int,
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> _RetryExecutorTask<R> {
-    return await withDiscardingTaskGroup(
+    return await withTaskGroup(
+      of: Void.self,
       returning: _RetryExecutorTask<R>.self
     ) { group in
       let request = ClientRequest.Stream(metadata: metadata) {
