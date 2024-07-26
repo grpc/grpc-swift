@@ -25,7 +25,7 @@ internal enum ClientStreamExecutor {
   ///   - request: A streaming request.
   ///   - method: A description of the method to call.
   /// - Returns: A streamed response.
-  @inlinable  // would be private
+  @inlinable
   static func execute<Input: Sendable, Output: Sendable>(
     in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
