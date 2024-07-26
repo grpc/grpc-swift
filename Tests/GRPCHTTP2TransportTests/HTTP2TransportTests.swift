@@ -57,7 +57,7 @@ final class HTTP2TransportTests: XCTestCase {
   ) async throws {
     for pair in transport {
       try await withThrowingTaskGroup(of: Void.self) { group in
-        let address = try await self.runServer(
+        let (server, address) = try await self.runServer(
           in: &group,
           kind: pair.server,
           enableControlService: enableControlService,
@@ -94,8 +94,8 @@ final class HTTP2TransportTests: XCTestCase {
           XCTFail("Unexpected error: '\(error)' (\(pair))")
         }
 
+        server.stopListening()
         client.close()
-        group.cancelAll()
       }
     }
   }
@@ -139,7 +139,7 @@ final class HTTP2TransportTests: XCTestCase {
     kind: Transport.Kind,
     enableControlService: Bool,
     compression: CompressionAlgorithmSet
-  ) async throws -> GRPCHTTP2Core.SocketAddress {
+  ) async throws -> (GRPCServer, GRPCHTTP2Core.SocketAddress) {
     let services = enableControlService ? [ControlService()] : []
 
     switch kind {
@@ -156,7 +156,8 @@ final class HTTP2TransportTests: XCTestCase {
         try await server.run()
       }
 
-      return try await transport.listeningAddress
+      let address = try await transport.listeningAddress
+      return (server, address)
 
     case .niots:
       #if canImport(Network)
@@ -172,7 +173,8 @@ final class HTTP2TransportTests: XCTestCase {
         try await server.run()
       }
 
-      return try await transport.listeningAddress
+      let address = try await transport.listeningAddress
+      return (server, address)
       #else
       throw XCTSkip("Transport not supported on this platform")
       #endif
