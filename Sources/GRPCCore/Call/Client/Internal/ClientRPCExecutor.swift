@@ -104,9 +104,6 @@ enum ClientRPCExecutor {
 extension ClientRPCExecutor {
   /// Executes a request on a given stream processor.
   ///
-  /// - Warning: This method is "unsafe" because the `streamProcessor` must be running in a task
-  ///   while this function is executing.
-  ///
   /// - Parameters:
   ///   - request: The request to execute.
   ///   - method: A description of the method to execute the request against.
@@ -115,44 +112,44 @@ extension ClientRPCExecutor {
   ///   - deserializer: A deserializer to convert bytes to output messages.
   ///   - interceptors: An array of interceptors which the request and response pass through. The
   ///       interceptors will be called in the order of the array.
-  ///   - streamProcessor: A processor which executes the serialized request.
   /// - Returns: The deserialized response.
-  @inlinable
-  static func unsafeExecute<Transport: ClientTransport, Input: Sendable, Output: Sendable>(
+  @inlinable  // would be private
+  static func _execute<Input: Sendable, Output: Sendable>(
+    in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     interceptors: [any ClientInterceptor],
-    streamProcessor: ClientStreamExecutor<Transport>,
-    stream: RPCStream<Transport.Inbound, Transport.Outbound>
+    stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
   ) async -> ClientResponse.Stream<Output> {
     let context = ClientInterceptorContext(descriptor: method)
 
     if interceptors.isEmpty {
-      return await Self._runRPC(
+      return await ClientStreamExecutor.execute(
+        in: &group,
         request: request,
         context: context,
         attempt: attempt,
         serializer: serializer,
         deserializer: deserializer,
-        streamProcessor: streamProcessor,
         stream: stream
       )
     } else {
       return await Self._intercept(
+        in: &group,
         request: request,
         context: context,
-        interceptors: interceptors
-      ) { request, context in
-        return await Self._runRPC(
+        iterator: interceptors.makeIterator()
+      ) { group, request, context in
+        return await ClientStreamExecutor.execute(
+          in: &group,
           request: request,
           context: context,
           attempt: attempt,
           serializer: serializer,
           deserializer: deserializer,
-          streamProcessor: streamProcessor,
           stream: stream
         )
       }
@@ -160,71 +157,13 @@ extension ClientRPCExecutor {
   }
 
   @inlinable
-  static func _runRPC<Transport: ClientTransport, Input: Sendable, Output: Sendable>(
-    request: ClientRequest.Stream<Input>,
-    context: ClientInterceptorContext,
-    attempt: Int,
-    serializer: some MessageSerializer<Input>,
-    deserializer: some MessageDeserializer<Output>,
-    streamProcessor: ClientStreamExecutor<Transport>,
-    stream: RPCStream<Transport.Inbound, Transport.Outbound>
-  ) async -> ClientResponse.Stream<Output> {
-    // Let the server know this is a retry.
-    var metadata = request.metadata
-    if attempt > 1 {
-      metadata.previousRPCAttempts = attempt &- 1
-    }
-
-    var response = await streamProcessor.execute(
-      request: ClientRequest.Stream<[UInt8]>(metadata: metadata) { writer in
-        try await request.producer(.serializing(into: writer, with: serializer))
-      },
-      method: context.descriptor,
-      stream: stream
-    )
-
-    // Attach the number of previous attempts, it can be useful information for callers.
-    if attempt > 1 {
-      switch response.accepted {
-      case .success(var contents):
-        contents.metadata.previousRPCAttempts = attempt &- 1
-        response.accepted = .success(contents)
-
-      case .failure(var error):
-        error.metadata.previousRPCAttempts = attempt &- 1
-        response.accepted = .failure(error)
-      }
-    }
-
-    return response.map { bytes in
-      try deserializer.deserialize(bytes)
-    }
-  }
-
-  @inlinable
   static func _intercept<Input, Output>(
-    request: ClientRequest.Stream<Input>,
-    context: ClientInterceptorContext,
-    interceptors: [any ClientInterceptor],
-    finally: @Sendable (
-      _ request: ClientRequest.Stream<Input>,
-      _ context: ClientInterceptorContext
-    ) async -> ClientResponse.Stream<Output>
-  ) async -> ClientResponse.Stream<Output> {
-    return await self._intercept(
-      request: request,
-      context: context,
-      iterator: interceptors.makeIterator(),
-      finally: finally
-    )
-  }
-
-  @inlinable
-  static func _intercept<Input, Output>(
+    in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
     context: ClientInterceptorContext,
     iterator: Array<any ClientInterceptor>.Iterator,
-    finally: @Sendable (
+    finally: (
+      _ group: inout TaskGroup<Void>,
       _ request: ClientRequest.Stream<Input>,
       _ context: ClientInterceptorContext
     ) async -> ClientResponse.Stream<Output>
@@ -236,7 +175,13 @@ extension ClientRPCExecutor {
       let iter = iterator
       do {
         return try await interceptor.intercept(request: request, context: context) {
-          await self._intercept(request: $0, context: $1, iterator: iter, finally: finally)
+          await self._intercept(
+            in: &group,
+            request: $0,
+            context: $1,
+            iterator: iter,
+            finally: finally
+          )
         }
       } catch let error as RPCError {
         return ClientResponse.Stream(error: error)
@@ -246,7 +191,7 @@ extension ClientRPCExecutor {
       }
 
     case .none:
-      return await finally(request, context)
+      return await finally(&group, request, context)
     }
   }
 }

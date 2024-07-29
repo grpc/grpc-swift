@@ -46,8 +46,10 @@ public struct ClientTracingInterceptor: ClientInterceptor {
   public func intercept<Input, Output>(
     request: ClientRequest.Stream<Input>,
     context: ClientInterceptorContext,
-    next: @Sendable (ClientRequest.Stream<Input>, ClientInterceptorContext) async throws ->
-      ClientResponse.Stream<Output>
+    next: (
+      ClientRequest.Stream<Input>,
+      ClientInterceptorContext
+    ) async throws -> ClientResponse.Stream<Output>
   ) async throws -> ClientResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var request = request
     let tracer = InstrumentationSystem.tracer
