@@ -635,16 +635,14 @@ extension BufferedStream {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension BufferedStream {
-  // We are unchecked Sendable since we are protecting our state with a lock.
   @usableFromInline
-  final class _BackPressuredStorage: Sendable {
-    /// The state machine
+  struct _BackPressuredStorage: Sendable {
     @usableFromInline
     let _stateMachine: _ManagedCriticalState<_StateMachine>
 
     @usableFromInline
     var onTermination: (@Sendable () -> Void)? {
-      set {
+      nonmutating set {
         self._stateMachine.withCriticalRegion {
           $0._onTermination = newValue
         }

@@ -103,12 +103,7 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
 
       group.addTask {
-        var metadata = request.metadata
-        if let deadline = self.deadline {
-          metadata.timeout = ContinuousClock.now.duration(to: deadline)
-        }
-
-        let replayableRequest = ClientRequest.Stream(metadata: metadata) { writer in
+        let replayableRequest = ClientRequest.Stream(metadata: request.metadata) { writer in
           try await writer.write(contentsOf: broadcast.stream)
         }
 
@@ -243,6 +238,10 @@ extension ClientRPCExecutor.HedgingExecutor {
             ()
           }
 
+        case .attemptPicked:
+          // Not used by this task group.
+          fatalError("Internal inconsistency")
+
         case .attemptCompleted(let outcome):
           switch outcome {
           case .usableResponse(let response):
@@ -327,7 +326,7 @@ extension ClientRPCExecutor.HedgingExecutor {
         descriptor: method,
         options: options
       ) { stream -> _HedgingAttemptTaskResult<R, Output>.AttemptResult in
-        return await withTaskGroup(of: _HedgingAttemptSubtaskResult<Output>.self) { group in
+        return await withTaskGroup(of: _HedgingAttemptTaskResult<R, Output>.self) { group in
           group.addTask {
             do {
               // The picker stream will have at most one element.
@@ -340,35 +339,27 @@ extension ClientRPCExecutor.HedgingExecutor {
             }
           }
 
-          let processor = ClientStreamExecutor(transport: self.transport)
-
           group.addTask {
-            await processor.run()
-            return .processorFinished
-          }
-
-          group.addTask {
-            let response = await ClientRPCExecutor.unsafeExecute(
-              request: request,
-              method: method,
-              attempt: attempt,
-              serializer: self.serializer,
-              deserializer: self.deserializer,
-              interceptors: self.interceptors,
-              streamProcessor: processor,
-              stream: stream
-            )
-            return .response(response)
-          }
-
-          for await next in group {
-            switch next {
-            case .attemptPicked(let wasPicked):
-              if !wasPicked {
-                group.cancelAll()
+            let result = await withTaskGroup(
+              of: Void.self,
+              returning: _HedgingAttemptTaskResult<R, Output>.AttemptResult.self
+            ) { group in
+              var request = request
+              if let deadline = self.deadline {
+                request.metadata.timeout = ContinuousClock.now.duration(to: deadline)
               }
 
-            case .response(let response):
+              let response = await ClientRPCExecutor._execute(
+                in: &group,
+                request: request,
+                method: method,
+                attempt: attempt,
+                serializer: self.serializer,
+                deserializer: self.deserializer,
+                interceptors: self.interceptors,
+                stream: stream
+              )
+
               switch response.accepted {
               case .success:
                 self.transport.retryThrottle?.recordSuccess()
@@ -405,10 +396,25 @@ extension ClientRPCExecutor.HedgingExecutor {
                   }
                 }
               }
+            }
 
-            case .processorFinished:
-              // Processor finished, wait for the response outcome.
-              ()
+            return .attemptCompleted(result)
+          }
+
+          for await next in group {
+            switch next {
+            case .attemptPicked(let wasPicked):
+              if !wasPicked {
+                group.cancelAll()
+              }
+
+            case .attemptCompleted(let result):
+              group.cancelAll()
+              return result
+
+            case .scheduledAttemptFired:
+              // Not used by this task group.
+              fatalError("Internal inconsistency")
             }
           }
 
@@ -516,6 +522,7 @@ enum _HedgingTaskResult<R> {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 enum _HedgingAttemptTaskResult<R, Output> {
+  case attemptPicked(Bool)
   case attemptCompleted(AttemptResult)
   case scheduledAttemptFired(ScheduleEvent)
 
@@ -531,12 +538,4 @@ enum _HedgingAttemptTaskResult<R, Output> {
     case ran
     case cancelled
   }
-}
-
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-@usableFromInline
-enum _HedgingAttemptSubtaskResult<Output> {
-  case attemptPicked(Bool)
-  case processorFinished
-  case response(ClientResponse.Stream<Output>)
 }

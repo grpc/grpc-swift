@@ -233,10 +233,10 @@ public struct InProcessClientTransport: ClientTransport {
     options: CallOptions,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
-    let request = RPCAsyncSequence<RPCRequestPart, any Error>._makeBackpressuredStream(
+    let request = RPCAsyncSequence<RPCRequestPart, any Error>.makeBackpressuredStream(
       watermarks: (16, 32)
     )
-    let response = RPCAsyncSequence<RPCResponsePart, any Error>._makeBackpressuredStream(
+    let response = RPCAsyncSequence<RPCResponsePart, any Error>.makeBackpressuredStream(
       watermarks: (16, 32)
     )
 
