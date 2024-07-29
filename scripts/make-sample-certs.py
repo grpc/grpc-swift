@@ -13,9 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-import subprocess
+
+import argparse
 import datetime
+import os
+import shutil
+import subprocess
+import tempfile
 
 TEMPLATE = """\
 /*
@@ -194,7 +198,7 @@ def extract_key(ec_key_and_params):
     return "\n".join(lines).strip()
 
 
-if __name__ == "__main__":
+def update_sample_certs():
     now = datetime.datetime.now()
     # makecert uses an expiry of 365 days.
     delta = datetime.timedelta(days=365)
@@ -231,3 +235,27 @@ if __name__ == "__main__":
     formatted = TEMPLATE.format(**kwargs)
     with open("Sources/GRPCSampleData/GRPCSwiftCertificate.swift", "w") as fh:
         fh.write(formatted)
+
+
+def update_p12_bundle():
+    tmp_dir = tempfile.TemporaryDirectory()
+    subprocess.check_call(["git", "clone", "--single-branch", "--branch",
+                           "make-p12-bundle-for-grpc-swift-tests",
+                           "https://github.com/glbrntt/swift-nio-ssl",
+                           tmp_dir.name])
+
+    subprocess.check_call(["./make-pkcs12.sh"], cwd=tmp_dir.name)
+    shutil.copyfile(tmp_dir.name + "/bundle.p12", "Sources/GRPCSampleData/bundle.p12")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-p12-bundle", action="store_false", dest="p12")
+    parser.add_argument("--no-sample-certs", action="store_false", dest="sample_certs")
+    args = parser.parse_args()
+
+    if args.sample_certs:
+        update_sample_certs()
+
+    if args.p12:
+        update_p12_bundle()
