@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-import GRPCCore
+import XCTest
 
-/// A registerable RPC service to probe whether a server is able to handle RPCs.
-@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public final class HealthService: RegistrableRPCService {
-  internal let service = InternalHealthService()
-
-  public func registerMethods(with router: inout RPCRouter) {
-    self.service.registerMethods(with: &router)
+func XCTAssertThrowsError<T, E: Error>(
+  ofType: E.Type,
+  _ expression: @autoclosure () throws -> T,
+  _ errorHandler: (E) -> Void
+) {
+  XCTAssertThrowsError(try expression()) { error in
+    guard let error = error as? E else {
+      return XCTFail("Error had unexpected type '\(type(of: error))'")
+    }
+    errorHandler(error)
   }
 }

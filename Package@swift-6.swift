@@ -478,7 +478,7 @@ extension Target {
         .grpcInProcessTransport
       ],
       path: "Tests/Services/HealthTests",
-      swiftSettings: [.swiftLanguageVersion(.v5), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageVersion(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 

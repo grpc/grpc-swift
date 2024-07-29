@@ -18,102 +18,105 @@ import GRPCCore
 
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 internal final class InternalHealthService: Grpc_Health_V1_HealthServiceProtocol {
-  private let lockedStorage = LockedValueBox([String: StatusAndContinuations]())
-
-  /// Creates a response with `status` and writes that response to a stream.
-  private func writeResponseToStream(
-    writer: RPCWriter<Grpc_Health_V1_HealthCheckResponse>,
-    status: Grpc_Health_V1_HealthCheckResponse.ServingStatus
-  ) async throws {
-    var response = Grpc_Health_V1_HealthCheckResponse()
-    response.status = status
-
-    try await writer.write(response)
-  }
+  private let state = InternalHealthService.State()
 
   func check(
     request: ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>
   ) async throws -> ServerResponse.Single<Grpc_Health_V1_HealthCheckResponse> {
     let service = request.message.service
 
-    if let statusAndContinuations = self.lockedStorage.withLockedValue({ $0[service] }) {
+    if let status = self.state.getCurrentStatus(ofService: service) {
       var response = Grpc_Health_V1_HealthCheckResponse()
-      response.status = statusAndContinuations.status
+      response.status = status
 
       return ServerResponse.Single(message: response)
     }
 
-    return ServerResponse.Single(
-      error: RPCError(status: Status(code: .notFound, message: "Requested service unknown."))!
-    )
+    throw RPCError(code: .notFound, message: "Requested service unknown.")
   }
 
   func watch(
     request: ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>
   ) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
     let service = request.message.service
+    let statuses = AsyncStream.makeStream(of: Grpc_Health_V1_HealthCheckResponse.ServingStatus.self)
 
-    let statusStream = AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus> {
-      continuation in
-
-      self.lockedStorage.withLockedValue { storage in
-        if storage[service] == nil {
-          storage[service] = StatusAndContinuations(status: .serviceUnknown)
-        }
-
-        storage[service]!.addContinuation(continuation)
-      }
-    }
+    self.state.addContinuation(statuses.continuation, forService: service)
 
     return ServerResponse.Stream(
       of: Grpc_Health_V1_HealthCheckResponse.self
     ) { writer in
-      try await self.writeResponseToStream(
-        writer: writer,
-        status: self.lockedStorage.withLockedValue { storage in
-          assert(storage[service] != nil)
+      var response = Grpc_Health_V1_HealthCheckResponse()
 
-          return storage[service]!.status
+      for await status in statuses.stream {
+        response.status = status
+        try await writer.write(response)
+      }
+
+      return [:]
+    }
+  }
+
+  func updateStatus(
+    _ status: Grpc_Health_V1_HealthCheckResponse.ServingStatus,
+    ofService service: String
+  ) {
+    self.state.updateStatus(status, ofService: service)
+  }
+}
+
+@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension InternalHealthService {
+  private struct State: Sendable {
+    private let lockedStorage = LockedValueBox([String: ServiceState]())
+
+    fileprivate func getCurrentStatus(
+      ofService service: String
+    ) -> Grpc_Health_V1_HealthCheckResponse.ServingStatus? {
+      return self.lockedStorage.withLockedValue { $0[service]?.currentStatus }
+    }
+
+    fileprivate func updateStatus(
+      _ status: Grpc_Health_V1_HealthCheckResponse.ServingStatus,
+      ofService service: String
+    ) {
+      self.lockedStorage.withLockedValue { storage in
+        if storage[service] == nil {
+          storage[service] = ServiceState(status: status)
+        } else {
+          storage[service]!.updateStatus(status)
         }
-      )
-
-      for await status in statusStream {
-        try await self.writeResponseToStream(writer: writer, status: status)
       }
-
-      return Metadata()
     }
-  }
 
-  /// Updates the status of a service in the storage.
-  func updateService(
-    descriptor: ServiceDescriptor,
-    status: Grpc_Health_V1_HealthCheckResponse.ServingStatus
-  ) throws {
-    try self.lockedStorage.withLockedValue { storage in
-      if storage[descriptor.fullyQualifiedService] == nil {
-        storage[descriptor.fullyQualifiedService] = StatusAndContinuations(status: status)
-      } else {
-        try storage[descriptor.fullyQualifiedService]!.update(status)
+    fileprivate func addContinuation(
+      _ continuation: AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus>.Continuation,
+      forService service: String
+    ) {
+      self.lockedStorage.withLockedValue { storage in
+        storage[service, default: ServiceState(status: .serviceUnknown)]
+          .addContinuation(continuation)
+        continuation.yield(storage[service]!.currentStatus)
       }
     }
   }
 
-  /// The status of a service, and the continuation of its "watch" streams.
-  private struct StatusAndContinuations {
-    private(set) var status: Grpc_Health_V1_HealthCheckResponse.ServingStatus
-    private var continuations = [
-      AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus>.Continuation
-    ]()
+  /// Encapsulates the current status of a service and the continuations of its "watch" streams.
+  private struct ServiceState: Sendable {
+    private(set) var currentStatus: Grpc_Health_V1_HealthCheckResponse.ServingStatus
+    private var continuations:
+      [AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus>.Continuation]
 
     /// Updates the status and provides values to the streams.
-    fileprivate mutating func update(
+    fileprivate mutating func updateStatus(
       _ status: Grpc_Health_V1_HealthCheckResponse.ServingStatus
-    ) throws {
-      self.status = status
+    ) {
+      if self.currentStatus != status {
+        self.currentStatus = status
 
-      for continuation in self.continuations {
-        continuation.yield(status)
+        for continuation in self.continuations {
+          continuation.yield(status)
+        }
       }
     }
 
@@ -125,7 +128,8 @@ internal final class InternalHealthService: Grpc_Health_V1_HealthServiceProtocol
     }
 
     fileprivate init(status: Grpc_Health_V1_HealthCheckResponse.ServingStatus) {
-      self.status = status
+      self.currentStatus = status
+      self.continuations = []
     }
   }
 }

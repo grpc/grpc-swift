@@ -14,18 +14,73 @@
  * limitations under the License.
  */
 
+import GRPCCore
+
 /// A coupled Health service and provider.
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public struct Health {
+public struct Health: Sendable {
+  private let internalHealthService = InternalHealthService()
+
   /// A registerable RPC service to probe whether a server is able to handle RPCs.
-  public let service: HealthService
+  public let service: Health.Service
 
   /// Provides handlers to interact with the coupled Health service.
-  public let provider: HealthProvider
+  public let provider: Provider
 
-  /// Constructs a new ``Health``, coupling a ``HealthService`` and a ``HealthProvider``.
+  /// Constructs a new ``Health``, coupling a ``Health.Service`` and a ``Health.Provider``.
   public init() {
-    self.service = HealthService()
-    self.provider = HealthProvider(healthService: self.service)
+    self.service = Health.Service(internalHealthService: self.internalHealthService)
+    self.provider = Health.Provider(internalHealthService: self.internalHealthService)
+  }
+}
+
+@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+extension Health {
+  /// A registerable RPC service to probe whether a server is able to handle RPCs.
+  public struct Service: RegistrableRPCService, Sendable {
+    private let internalHealthService: InternalHealthService
+
+    public func registerMethods(with router: inout RPCRouter) {
+      self.internalHealthService.registerMethods(with: &router)
+    }
+
+    fileprivate init(internalHealthService: InternalHealthService) {
+      self.internalHealthService = internalHealthService
+    }
+  }
+
+  /// Provides handlers to interact with a Health service.
+  public struct Provider: Sendable {
+    private let internalHealthService: InternalHealthService
+
+    /// Updates the status of a service in the Health service.
+    public func updateStatus(
+      _ status: ServingStatus,
+      ofService service: ServiceDescriptor
+    ) {
+      self.internalHealthService.updateStatus(
+        Grpc_Health_V1_HealthCheckResponse.ServingStatus(status),
+        ofService: service.fullyQualifiedService
+      )
+    }
+
+    fileprivate init(internalHealthService: InternalHealthService) {
+      self.internalHealthService = internalHealthService
+    }
+  }
+}
+
+extension Grpc_Health_V1_HealthCheckResponse.ServingStatus {
+  /// Constructs a new ``Grpc_Health_V1_HealthCheckResponse.ServingStatus`` from ``ServingStatus``.
+  ///
+  /// - Parameters:
+  ///   - status: The base status.
+  package init(_ status: ServingStatus) {
+    switch status.value {
+    case .serving:
+      self = .serving
+    case .notServing:
+      self = .notServing
+    }
   }
 }
