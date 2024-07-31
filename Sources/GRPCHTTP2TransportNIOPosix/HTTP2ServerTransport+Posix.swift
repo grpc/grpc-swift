@@ -205,17 +205,23 @@ extension HTTP2ServerTransport {
               privateKey: .privateKey(privateKey)
             )
             tlsConfiguration.minimumTLSVersion = .tlsv12
-            tlsConfiguration.certificateVerification = tlsConfig.verifyClientCertificate ? .fullVerification : .none
+            tlsConfiguration.certificateVerification =
+              tlsConfig.verifyClientCertificate ? .fullVerification : .none
             tlsConfiguration.trustRoots = .default
-            tlsConfiguration.applicationProtocols = [GRPCApplicationProtocolIdentifier.gRPC, GRPCApplicationProtocolIdentifier.h2]
+            tlsConfiguration.applicationProtocols = [
+              GRPCApplicationProtocolIdentifier.gRPC, GRPCApplicationProtocolIdentifier.h2,
+            ]
 
             let nioSSLContext = try! NIOSSLContext(configuration: tlsConfiguration)
             let nioSSLServerHandler = NIOSSLServerHandler(context: nioSSLContext)
 
-            let http2ConfigurationPromise: EventLoopPromise<(
-              ChannelPipeline.SynchronousOperations.HTTP2ConnectionChannel,
-              ChannelPipeline.SynchronousOperations.HTTP2StreamMultiplexer
-            )> = channel.eventLoop.makePromise()
+            let http2ConfigurationPromise:
+              EventLoopPromise<
+                (
+                  ChannelPipeline.SynchronousOperations.HTTP2ConnectionChannel,
+                  ChannelPipeline.SynchronousOperations.HTTP2StreamMultiplexer
+                )
+              > = channel.eventLoop.makePromise()
             let pipelineConfigurator = HTTP2PipelineConfigurator(
               requireALPN: tlsConfig.requireALPN,
               configurationCompletePromise: http2ConfigurationPromise,
@@ -445,7 +451,10 @@ extension NIOSSLSerializationFormats {
     case .der:
       self = .der
     default:
-      throw RPCError(code: .invalidArgument, message: "Invalid certificate serialization format provided: \(format).")
+      throw RPCError(
+        code: .invalidArgument,
+        message: "Invalid certificate serialization format provided: \(format)."
+      )
     }
   }
 
@@ -456,7 +465,10 @@ extension NIOSSLSerializationFormats {
     case .der:
       self = .der
     default:
-      throw RPCError(code: .invalidArgument, message: "Invalid private key serialization format provided: \(format).")
+      throw RPCError(
+        code: .invalidArgument,
+        message: "Invalid private key serialization format provided: \(format)."
+      )
     }
   }
 }

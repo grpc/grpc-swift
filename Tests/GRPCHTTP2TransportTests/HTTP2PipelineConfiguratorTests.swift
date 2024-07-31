@@ -31,37 +31,48 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let channel = try self.setUpChannel(requireALPN: true)
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I"),
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
     channel.pipeline.fireUserInboundEventTriggered(
       TLSUserEvent.handshakeCompleted(negotiatedProtocol: GRPCApplicationProtocolIdentifier.h2)
     )
     channel.embeddedEventLoop.run()
 
-    await self.assertHandlersArePresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersArePresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
     await self.assertHandlersAreNotPresent(in: channel, [HTTP2PipelineConfigurator.self])
   }
 
@@ -69,35 +80,48 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let channel = try self.setUpChannel(requireALPN: true)
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I"),
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    channel.pipeline.fireUserInboundEventTriggered(TLSUserEvent.handshakeCompleted(negotiatedProtocol: GRPCApplicationProtocolIdentifier.gRPC))
+    channel.pipeline.fireUserInboundEventTriggered(
+      TLSUserEvent.handshakeCompleted(negotiatedProtocol: GRPCApplicationProtocolIdentifier.gRPC)
+    )
     channel.embeddedEventLoop.run()
 
-    await self.assertHandlersArePresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersArePresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
     await self.assertHandlersAreNotPresent(in: channel, [HTTP2PipelineConfigurator.self])
   }
 
@@ -105,28 +129,38 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let channel = try self.setUpChannel(requireALPN: true)
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I"),
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    channel.pipeline.fireUserInboundEventTriggered(TLSUserEvent.handshakeCompleted(negotiatedProtocol: "unknown protocol"))
+    channel.pipeline.fireUserInboundEventTriggered(
+      TLSUserEvent.handshakeCompleted(negotiatedProtocol: "unknown protocol")
+    )
     channel.embeddedEventLoop.run()
 
     // The channel should be closed now.
@@ -140,28 +174,38 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let channel = try self.setUpChannel(requireALPN: true)
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I"),
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    channel.pipeline.fireUserInboundEventTriggered(TLSUserEvent.handshakeCompleted(negotiatedProtocol: nil))
+    channel.pipeline.fireUserInboundEventTriggered(
+      TLSUserEvent.handshakeCompleted(negotiatedProtocol: nil)
+    )
     channel.embeddedEventLoop.run()
 
     // The channel should be closed now.
@@ -175,107 +219,49 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let channel = try self.setUpChannel(requireALPN: false)
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I")
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     // Assert we still have the configurator in the pipeline (and not the other handlers) as we haven't received enough
     // bytes yet to assert that we're on HTTP2.
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
     // Finish sending the rest of the H2 preface
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: " "),
-      UInt8(ascii: "*"),
-      UInt8(ascii: " "),
-      UInt8(ascii: "H"),
-      UInt8(ascii: "T"),
-      UInt8(ascii: "T"),
-      UInt8(ascii: "P"),
-      UInt8(ascii: "/"),
-      UInt8(ascii: "2"),
-      UInt8(ascii: "."),
-      UInt8(ascii: "0"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n"),
-      UInt8(ascii: "S"),
-      UInt8(ascii: "M"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n")
-    ]))
-    XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
-    channel.embeddedEventLoop.run()
-
-    // Now the configurator must have done its job: assert the configurator handler
-    // is gone and the other H2 handlers are present.
-    await self.assertHandlersArePresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
-    await self.assertHandlersAreNotPresent(in: channel, [HTTP2PipelineConfigurator.self])
-  }
-
-  func testALPNNotRequired_DoesNotHappen_AndUnknownPrefaceReceived() async throws {
-    let channel = try self.setUpChannel(requireALPN: false)
-
-    await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
-
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I")
-    ]))
-    XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
-    channel.embeddedEventLoop.run()
-
-    // Assert we still have the configurator in the pipeline (and not the other handlers) as we haven't received enough
-    // bytes yet to assert that we're on HTTP2.
-    await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
-
-    // Send a set of bytes that's the same length as the H2 preface but is not it.
-    // The channel should close now.
-    XCTAssertThrowsError(
-      ofType: ChannelError.self,
-      try channel.writeInbound(ByteBuffer(bytes: [
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
         UInt8(ascii: " "),
         UInt8(ascii: "*"),
         UInt8(ascii: " "),
-        UInt8(ascii: "J"),
-        UInt8(ascii: "K"),
-        UInt8(ascii: "K"),
-        UInt8(ascii: "A"),
+        UInt8(ascii: "H"),
+        UInt8(ascii: "T"),
+        UInt8(ascii: "T"),
+        UInt8(ascii: "P"),
         UInt8(ascii: "/"),
-        UInt8(ascii: "5"),
+        UInt8(ascii: "2"),
         UInt8(ascii: "."),
         UInt8(ascii: "0"),
         UInt8(ascii: "\r"),
@@ -287,8 +273,89 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
         UInt8(ascii: "\r"),
         UInt8(ascii: "\n"),
         UInt8(ascii: "\r"),
-        UInt8(ascii: "\n")
-      ]))
+        UInt8(ascii: "\n"),
+      ])
+    )
+    XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
+    channel.embeddedEventLoop.run()
+
+    // Now the configurator must have done its job: assert the configurator handler
+    // is gone and the other H2 handlers are present.
+    await self.assertHandlersArePresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
+    await self.assertHandlersAreNotPresent(in: channel, [HTTP2PipelineConfigurator.self])
+  }
+
+  func testALPNNotRequired_DoesNotHappen_AndUnknownPrefaceReceived() async throws {
+    let channel = try self.setUpChannel(requireALPN: false)
+
+    await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
+
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
+    XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
+    channel.embeddedEventLoop.run()
+
+    // Assert we still have the configurator in the pipeline (and not the other handlers) as we haven't received enough
+    // bytes yet to assert that we're on HTTP2.
+    await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
+
+    // Send a set of bytes that's the same length as the H2 preface but is not it.
+    // The channel should close now.
+    XCTAssertThrowsError(
+      ofType: ChannelError.self,
+      try channel.writeInbound(
+        ByteBuffer(bytes: [
+          UInt8(ascii: " "),
+          UInt8(ascii: "*"),
+          UInt8(ascii: " "),
+          UInt8(ascii: "J"),
+          UInt8(ascii: "K"),
+          UInt8(ascii: "K"),
+          UInt8(ascii: "A"),
+          UInt8(ascii: "/"),
+          UInt8(ascii: "5"),
+          UInt8(ascii: "."),
+          UInt8(ascii: "0"),
+          UInt8(ascii: "\r"),
+          UInt8(ascii: "\n"),
+          UInt8(ascii: "\r"),
+          UInt8(ascii: "\n"),
+          UInt8(ascii: "S"),
+          UInt8(ascii: "M"),
+          UInt8(ascii: "\r"),
+          UInt8(ascii: "\n"),
+          UInt8(ascii: "\r"),
+          UInt8(ascii: "\n"),
+        ])
+      )
     ) { error in
       XCTAssertEqual(error, .badInterfaceAddressFamily)
     }
@@ -301,80 +368,100 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let channel = try self.setUpChannel(requireALPN: false)
 
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: "P"),
-      UInt8(ascii: "R"),
-      UInt8(ascii: "I")
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: "P"),
+        UInt8(ascii: "R"),
+        UInt8(ascii: "I"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     // Assert we still have the configurator in the pipeline (and not the other handlers) as we haven't received enough
     // bytes yet to assert that we're on HTTP2.
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
-    channel.pipeline.fireUserInboundEventTriggered(TLSUserEvent.handshakeCompleted(negotiatedProtocol: GRPCApplicationProtocolIdentifier.h2))
+    channel.pipeline.fireUserInboundEventTriggered(
+      TLSUserEvent.handshakeCompleted(negotiatedProtocol: GRPCApplicationProtocolIdentifier.h2)
+    )
     channel.embeddedEventLoop.run()
 
     // Assert nothing has changed.
     await self.assertHandlersArePresent(in: channel, [HTTP2PipelineConfigurator.self])
-    await self.assertHandlersAreNotPresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersAreNotPresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
 
     // Receive the H2 preface...
-    try channel.writeInbound(ByteBuffer(bytes: [
-      UInt8(ascii: " "),
-      UInt8(ascii: "*"),
-      UInt8(ascii: " "),
-      UInt8(ascii: "H"),
-      UInt8(ascii: "T"),
-      UInt8(ascii: "T"),
-      UInt8(ascii: "P"),
-      UInt8(ascii: "/"),
-      UInt8(ascii: "2"),
-      UInt8(ascii: "."),
-      UInt8(ascii: "0"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n"),
-      UInt8(ascii: "S"),
-      UInt8(ascii: "M"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n"),
-      UInt8(ascii: "\r"),
-      UInt8(ascii: "\n")
-    ]))
+    try channel.writeInbound(
+      ByteBuffer(bytes: [
+        UInt8(ascii: " "),
+        UInt8(ascii: "*"),
+        UInt8(ascii: " "),
+        UInt8(ascii: "H"),
+        UInt8(ascii: "T"),
+        UInt8(ascii: "T"),
+        UInt8(ascii: "P"),
+        UInt8(ascii: "/"),
+        UInt8(ascii: "2"),
+        UInt8(ascii: "."),
+        UInt8(ascii: "0"),
+        UInt8(ascii: "\r"),
+        UInt8(ascii: "\n"),
+        UInt8(ascii: "\r"),
+        UInt8(ascii: "\n"),
+        UInt8(ascii: "S"),
+        UInt8(ascii: "M"),
+        UInt8(ascii: "\r"),
+        UInt8(ascii: "\n"),
+        UInt8(ascii: "\r"),
+        UInt8(ascii: "\n"),
+      ])
+    )
     XCTAssertNil(try channel.readInbound(as: ByteBuffer.self))
     channel.embeddedEventLoop.run()
 
     // Now the configurator must have done its job: assert the configurator handler
     // is gone and the other H2 handlers are present.
-    await self.assertHandlersArePresent(in: channel, [
-      GRPCServerFlushNotificationHandler.self,
-      NIOHTTP2Handler.self,
-      ServerConnectionManagementHandler.self
-    ])
+    await self.assertHandlersArePresent(
+      in: channel,
+      [
+        GRPCServerFlushNotificationHandler.self,
+        NIOHTTP2Handler.self,
+        ServerConnectionManagementHandler.self,
+      ]
+    )
     await self.assertHandlersAreNotPresent(in: channel, [HTTP2PipelineConfigurator.self])
   }
 
   private func setUpChannel(requireALPN: Bool) throws -> EmbeddedChannel {
     let channel = EmbeddedChannel()
-    let promise = channel.eventLoop.makePromise(of: HTTP2PipelineConfigurator.HTTP2ConfiguratorResult.self)
+    let promise = channel.eventLoop.makePromise(
+      of: HTTP2PipelineConfigurator.HTTP2ConfiguratorResult.self
+    )
     let handler = HTTP2PipelineConfigurator(
       requireALPN: requireALPN,
       configurationCompletePromise: promise,
@@ -387,22 +474,29 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     return channel
   }
 
-  private func assertHandlersArePresent(in channel: EmbeddedChannel, _ handlers: [any ChannelHandler.Type]) async {
+  private func assertHandlersArePresent(
+    in channel: EmbeddedChannel,
+    _ handlers: [any ChannelHandler.Type]
+  ) async {
     for handler in handlers {
       await XCTAssertNoThrowAsync(try await channel.pipeline.containsHandler(type: handler).get())
     }
   }
 
-  private func assertHandlersAreNotPresent(in channel: EmbeddedChannel, _ handlers: [any ChannelHandler.Type]) async {
+  private func assertHandlersAreNotPresent(
+    in channel: EmbeddedChannel,
+    _ handlers: [any ChannelHandler.Type]
+  ) async {
     for handler in handlers {
-      await XCTAssertThrowsError(try await channel.pipeline.containsHandler(type: handler).get()) { error in
+      await XCTAssertThrowsError(try await channel.pipeline.containsHandler(type: handler).get()) {
+        error in
         XCTAssertEqual(error as? ChannelPipelineError, .notFound)
       }
     }
   }
 }
 
-fileprivate func XCTAssertThrowsError<T>(
+private func XCTAssertThrowsError<T>(
   _ expression: @autoclosure () async throws -> T,
   verify: (any Error) -> Void = { _ in },
   file: StaticString = #filePath,
@@ -416,7 +510,7 @@ fileprivate func XCTAssertThrowsError<T>(
   }
 }
 
-fileprivate func XCTAssertNoThrowAsync<T>(
+private func XCTAssertNoThrowAsync<T>(
   _ expression: @autoclosure () async throws -> T,
   file: StaticString = #filePath,
   line: UInt = #line
