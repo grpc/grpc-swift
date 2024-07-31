@@ -51,10 +51,23 @@ extension ChannelPipeline.SynchronousOperations {
     )
     try self.addHandler(flushNotificationHandler)
 
+    // Window size which mustn't exceed 2^31 - 1 (RFC 9113 § 6.5.2).
+    let clampedTargetWindowSize = min(http2Config.targetWindowSize, (1 << 31) - 1)
+
+    // Max frame size must be in the range 2^14 ..< 2^24 (RFC 9113 § 4.2).
+    let clampedMaxFrameSize: Int
+    if http2Config.maxFrameSize >= (1 << 24) {
+      clampedMaxFrameSize = (1 << 24) - 1
+    } else if http2Config.maxFrameSize < (1 << 14) {
+      clampedMaxFrameSize = (1 << 14)
+    } else {
+      clampedMaxFrameSize = http2Config.maxFrameSize
+    }
+
     var http2HandlerConnectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
     var http2HandlerHTTP2Settings = HTTP2Settings([
-      HTTP2Setting(parameter: .initialWindowSize, value: http2Config.targetWindowSize),
-      HTTP2Setting(parameter: .maxFrameSize, value: http2Config.maxFrameSize),
+      HTTP2Setting(parameter: .initialWindowSize, value: clampedTargetWindowSize),
+      HTTP2Setting(parameter: .maxFrameSize, value: clampedMaxFrameSize),
       HTTP2Setting(parameter: .maxHeaderListSize, value: HPACKDecoder.defaultMaxHeaderListSize),
     ])
     if let maxConcurrentStreams = http2Config.maxConcurrentStreams {
@@ -65,7 +78,7 @@ extension ChannelPipeline.SynchronousOperations {
     http2HandlerConnectionConfiguration.initialSettings = http2HandlerHTTP2Settings
 
     var http2HandlerStreamConfiguration = NIOHTTP2Handler.StreamConfiguration()
-    http2HandlerStreamConfiguration.targetWindowSize = http2Config.targetWindowSize
+    http2HandlerStreamConfiguration.targetWindowSize = clampedTargetWindowSize
 
     let streamMultiplexer = try self.configureAsyncHTTP2Pipeline(
       mode: .server,
@@ -111,10 +124,10 @@ extension ChannelPipeline.SynchronousOperations {
     NIOAsyncChannel<ClientConnectionEvent, Void>,
     NIOHTTP2Handler.AsyncStreamMultiplexer<Void>
   ) {
-    // Window size which mustn't exceed 2^32 - 1 (RFC 9113 § 6.1.3).
+    // Window size which mustn't exceed 2^31 - 1 (RFC 9113 § 6.5.2).
     let clampedTargetWindowSize = min(config.http2.targetWindowSize, (1 << 31) - 1)
 
-    // Max frame size must be in the range 2^14 ..< 2^24 (RFC 9113 § 6.1.3).
+    // Max frame size must be in the range 2^14 ..< 2^24 (RFC 9113 § 4.2).
     let clampedMaxFrameSize: Int
     if config.http2.maxFrameSize >= (1 << 24) {
       clampedMaxFrameSize = (1 << 24) - 1
