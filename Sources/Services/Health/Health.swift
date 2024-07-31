@@ -16,21 +16,26 @@
 
 import GRPCCore
 
-/// A coupled Health service and provider.
+/// ``Health`` is gRPC’s mechanism for checking whether a server is able to handle RPCs. Its semantics are documented in
+/// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.
+///
+/// `Health` initializes a new `Health.Service` and a `Health.Provider`.
+/// - `Health.Service` is a registerable RPC service to probe whether a server is able to handle RPCs.
+/// - `Health.Provider` provides handlers to interact with `Health.Service`.
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct Health: Sendable {
-  private let internalHealthService = InternalHealthService()
-
   /// A registerable RPC service to probe whether a server is able to handle RPCs.
   public let service: Health.Service
 
   /// Provides handlers to interact with the coupled Health service.
-  public let provider: Provider
+  public let provider: Health.Provider
 
-  /// Constructs a new ``Health``, coupling a ``Health.Service`` and a ``Health.Provider``.
+  /// Constructs a new `Health`, coupling a `Health.Service` and a `Health.Provider`.
   public init() {
-    self.service = Health.Service(internalHealthService: self.internalHealthService)
-    self.provider = Health.Provider(internalHealthService: self.internalHealthService)
+    let healthService = HealthService()
+
+    self.service = Health.Service(healthService: healthService)
+    self.provider = Health.Provider(healthService: healthService)
   }
 }
 
@@ -38,40 +43,44 @@ public struct Health: Sendable {
 extension Health {
   /// A registerable RPC service to probe whether a server is able to handle RPCs.
   public struct Service: RegistrableRPCService, Sendable {
-    private let internalHealthService: InternalHealthService
+    private let healthService: HealthService
 
     public func registerMethods(with router: inout RPCRouter) {
-      self.internalHealthService.registerMethods(with: &router)
+      self.healthService.registerMethods(with: &router)
     }
 
-    fileprivate init(internalHealthService: InternalHealthService) {
-      self.internalHealthService = internalHealthService
+    fileprivate init(healthService: HealthService) {
+      self.healthService = healthService
     }
   }
 
   /// Provides handlers to interact with a Health service.
   public struct Provider: Sendable {
-    private let internalHealthService: InternalHealthService
+    private let healthService: HealthService
 
     /// Updates the status of a service in the Health service.
+    ///
+    /// - Parameters:
+    ///   - status: The status of the service.
+    ///   - service: The description of the service.
     public func updateStatus(
       _ status: ServingStatus,
-      ofService service: ServiceDescriptor
+      forService service: ServiceDescriptor
     ) {
-      self.internalHealthService.updateStatus(
+      self.healthService.updateStatus(
         Grpc_Health_V1_HealthCheckResponse.ServingStatus(status),
-        ofService: service.fullyQualifiedService
+        forService: service.fullyQualifiedService
       )
     }
 
-    fileprivate init(internalHealthService: InternalHealthService) {
-      self.internalHealthService = internalHealthService
+    fileprivate init(healthService: HealthService) {
+      self.healthService = healthService
     }
   }
 }
 
 extension Grpc_Health_V1_HealthCheckResponse.ServingStatus {
-  /// Constructs a new ``Grpc_Health_V1_HealthCheckResponse.ServingStatus`` from ``ServingStatus``.
+  /// Constructs a new ``Grpc_Health_V1_HealthCheckResponse/ServingStatus`` from ``ServingStatus``.
   ///
   /// - Parameters:
   ///   - status: The base status.

@@ -15,6 +15,9 @@
  */
 
 /// The status of a service.
+///
+/// - `ServingStatus.serving` indicates that a service is healthy.
+/// - `ServingStatus.notServing` indicates that a service is unhealthy.
 public struct ServingStatus: Sendable, Hashable {
   package enum Value: Sendable, Hashable {
     case serving

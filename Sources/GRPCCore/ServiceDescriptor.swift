@@ -43,3 +43,10 @@ public struct ServiceDescriptor: Sendable, Hashable {
     self.service = service
   }
 }
+
+extension ServiceDescriptor {
+  /// The descriptor for a server.
+  ///
+  /// An unspecified service name refers to the server.
+  public static let server = ServiceDescriptor(package: "", service: "")
+}

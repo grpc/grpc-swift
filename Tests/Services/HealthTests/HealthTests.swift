@@ -52,10 +52,11 @@ final class HealthTests: XCTestCase {
     try await withHealthClient { (healthClient, healthProvider) in
       let testServiceDescriptor = ServiceDescriptor.testService
 
-      healthProvider.updateStatus(.serving, ofService: testServiceDescriptor)
+      healthProvider.updateStatus(.serving, forService: testServiceDescriptor)
 
-      var message = Grpc_Health_V1_HealthCheckRequest()
-      message.service = testServiceDescriptor.fullyQualifiedService
+      let message = Grpc_Health_V1_HealthCheckRequest.with {
+        $0.service = testServiceDescriptor.fullyQualifiedService
+      }
 
       try await healthClient.check(request: ClientRequest.Single(message: message)) { response in
         try XCTAssertEqual(response.message.status, .serving)
@@ -65,10 +66,10 @@ final class HealthTests: XCTestCase {
 
   func testCheckOnUnknownService() async throws {
     try await withHealthClient { (healthClient, healthProvider) in
-      var message = Grpc_Health_V1_HealthCheckRequest()
-      message.service =
-        ServiceDescriptor(package: "does.not", service: "Exist")
-        .fullyQualifiedService
+      let message = Grpc_Health_V1_HealthCheckRequest.with {
+        $0.service =
+          ServiceDescriptor(package: "does.not", service: "Exist").fullyQualifiedService
+      }
 
       try await healthClient.check(request: ClientRequest.Single(message: message)) { response in
         try XCTAssertThrowsError(ofType: RPCError.self, response.message) { error in
@@ -80,7 +81,7 @@ final class HealthTests: XCTestCase {
 
   func testCheckOnServer() async throws {
     try await withHealthClient { (healthClient, healthProvider) in
-      healthProvider.updateStatus(.notServing, ofService: ServiceDescriptor.server)
+      healthProvider.updateStatus(.notServing, forService: ServiceDescriptor.server)
 
       let message = Grpc_Health_V1_HealthCheckRequest()
 
@@ -96,10 +97,12 @@ final class HealthTests: XCTestCase {
 
       let statusesToBeSent: [ServingStatus] = [.serving, .notServing, .serving]
 
-      healthProvider.updateStatus(statusesToBeSent[0], ofService: testServiceDescriptor)
+      // Before watching the service, make the status of the service known to the Health service.
+      healthProvider.updateStatus(statusesToBeSent[0], forService: testServiceDescriptor)
 
-      var message = Grpc_Health_V1_HealthCheckRequest()
-      message.service = testServiceDescriptor.fullyQualifiedService
+      let message = Grpc_Health_V1_HealthCheckRequest.with {
+        $0.service = testServiceDescriptor.fullyQualifiedService
+      }
 
       try await healthClient.watch(request: ClientRequest.Single(message: message)) { response in
         var responseStreamIterator = response.messages.makeAsyncIterator()
@@ -112,7 +115,7 @@ final class HealthTests: XCTestCase {
           XCTAssertEqual(message.status, expectedStatus)
 
           if i < statusesToBeSent.count - 1 {
-            healthProvider.updateStatus(statusesToBeSent[i + 1], ofService: testServiceDescriptor)
+            healthProvider.updateStatus(statusesToBeSent[i + 1], forService: testServiceDescriptor)
           }
         }
       }
@@ -123,17 +126,20 @@ final class HealthTests: XCTestCase {
     try await withHealthClient { (healthClient, healthProvider) in
       let testServiceDescriptor = ServiceDescriptor.testService
 
-      var message = Grpc_Health_V1_HealthCheckRequest()
-      message.service = testServiceDescriptor.fullyQualifiedService
+      let message = Grpc_Health_V1_HealthCheckRequest.with {
+        $0.service = testServiceDescriptor.fullyQualifiedService
+      }
 
       try await healthClient.watch(request: ClientRequest.Single(message: message)) { response in
         var responseStreamIterator = response.messages.makeAsyncIterator()
         var next = try await responseStreamIterator.next()
         var message = try XCTUnwrap(next)
 
+        // As the service was watched before being updated, the first status received should be
+        // .serviceUnknown.
         XCTAssertEqual(message.status, .serviceUnknown)
 
-        healthProvider.updateStatus(.notServing, ofService: testServiceDescriptor)
+        healthProvider.updateStatus(.notServing, forService: testServiceDescriptor)
 
         next = try await responseStreamIterator.next()
         message = try XCTUnwrap(next)
@@ -153,19 +159,18 @@ final class HealthTests: XCTestCase {
       try await withThrowingTaskGroup(
         of: [Grpc_Health_V1_HealthCheckResponse.ServingStatus].self
       ) { group in
-        var message = Grpc_Health_V1_HealthCheckRequest()
-        message.service = testServiceDescriptor.fullyQualifiedService
+        let message = Grpc_Health_V1_HealthCheckRequest.with {
+          $0.service = testServiceDescriptor.fullyQualifiedService
+        }
 
-        let immutableMessage = message
-
-        /// The `continuation` of this stream is used to signal when the "watch" response streams are up and ready.
+        /// The continuation of this stream will be used to signal when the watch response streams are up and ready.
         let signal = AsyncStream.makeStream(of: Void.self)
         let numberOfWatches = 2
 
         for _ in 0 ..< numberOfWatches {
           group.addTask {
             return try await healthClient.watch(
-              request: ClientRequest.Single(message: immutableMessage)
+              request: ClientRequest.Single(message: message)
             ) { response in
               signal.continuation.yield()  // Make signal
 
@@ -178,8 +183,8 @@ final class HealthTests: XCTestCase {
               // test never finishes. Hence, it is based on the expected number of statuses to be
               // received.
               for _ in 0 ..< statusesToBeSent.count + 1 {
-                // As the service will be "watched" before being updated, the first status received
-                // should be `.serviceUnknown`. Hence, the range of this iteration is increased by 1.
+                // As the service will be watched before being updated, the first status received
+                // should be .serviceUnknown. Hence, the range of this iteration is increased by 1.
 
                 let next = try await responseStreamIterator.next()
                 let message = try XCTUnwrap(next)
@@ -191,11 +196,11 @@ final class HealthTests: XCTestCase {
           }
         }
 
-        // Wait until all the "watch" streams are up and ready.
+        // Wait until all the watch streams are up and ready.
         for await _ in signal.stream.prefix(numberOfWatches) {}
 
         for status in statusesToBeSent {
-          healthProvider.updateStatus(status, ofService: testServiceDescriptor)
+          healthProvider.updateStatus(status, forService: testServiceDescriptor)
         }
 
         for try await receivedStatuses in group {
@@ -214,71 +219,35 @@ final class HealthTests: XCTestCase {
     try await withHealthClient { (healthClient, healthProvider) in
       let testServiceDescriptor = ServiceDescriptor.testService
 
-      let statusesToBeSent: [ServingStatus] = [
-        .serving,
-        .notServing,
-        .notServing,
-        .notServing,
-        .serving,
-      ]
+      let statusesToBeSent: [ServingStatus] = [.notServing, .notServing, .notServing, .serving]
 
-      let expectedReceivedStatuses: [Grpc_Health_V1_HealthCheckResponse.ServingStatus] = [
-        // As the service will be "watched" before being updated, the first status received should
-        // be .serviceUnknown.
+      // The repeated .notServing updates should be received only once. Also, as the service will
+      // be watched before being updated, the first status received should be .serviceUnknown.
+      let expectedStatuses: [Grpc_Health_V1_HealthCheckResponse.ServingStatus] = [
         .serviceUnknown,
-        .serving,
-        .notServing,  // The repeated `.notServing` updates should be received only once.
+        .notServing,
         .serving,
       ]
 
-      try await withThrowingTaskGroup(
-        of: [Grpc_Health_V1_HealthCheckResponse.ServingStatus].self
-      ) { group in
-        var message = Grpc_Health_V1_HealthCheckRequest()
-        message.service = testServiceDescriptor.fullyQualifiedService
+      let message = Grpc_Health_V1_HealthCheckRequest.with {
+        $0.service = testServiceDescriptor.fullyQualifiedService
+      }
 
-        let immutableMessage = message
-
-        /// The `continuation` of this stream is used to signal when the "watch" response stream is up and ready.
-        let signal = AsyncStream.makeStream(of: Void.self)
-
-        group.addTask {
-          return try await healthClient.watch(
-            request: ClientRequest.Single(message: immutableMessage)
-          ) { response in
-            signal.continuation.finish()  // Make signal
-
-            var statuses = [Grpc_Health_V1_HealthCheckResponse.ServingStatus]()
-            var responseStreamIterator = response.messages.makeAsyncIterator()
-
-            // Since responseStreamIterator.next() will never be nil (ideally, as the response
-            // stream is always open), the iteration cannot be based on when
-            // responseStreamIterator.next() is nil. Else, the iteration infinitely awaits and the
-            // test never finishes. Hence, it is based on the expected number of statuses to be
-            // received.
-            for _ in 0 ..< expectedReceivedStatuses.count {
-              let next = try await responseStreamIterator.next()
-              let message = try XCTUnwrap(next)
-              statuses.append(message.status)
-            }
-
-            return statuses
-          }
-        }
-
-        // Wait until the "watch" stream is up and ready.
-        for await _ in signal.stream {}
-
+      try await healthClient.watch(
+        request: ClientRequest.Single(message: message)
+      ) { response in
+        // Send all status updates.
         for status in statusesToBeSent {
-          healthProvider.updateStatus(status, ofService: testServiceDescriptor)
+          healthProvider.updateStatus(status, forService: testServiceDescriptor)
         }
 
-        for try await receivedStatuses in group {
-          XCTAssertEqual(receivedStatuses.count, expectedReceivedStatuses.count)
+        var responseStreamIterator = response.messages.makeAsyncIterator()
 
-          for i in 0 ..< receivedStatuses.count {
-            XCTAssertEqual(receivedStatuses[i], expectedReceivedStatuses[i])
-          }
+        for i in 0 ..< expectedStatuses.count {
+          let next = try await responseStreamIterator.next()
+          let message = try XCTUnwrap(next)
+
+          XCTAssertEqual(message.status, expectedStatuses[i])
         }
       }
     }
@@ -288,7 +257,7 @@ final class HealthTests: XCTestCase {
     try await withHealthClient { (healthClient, healthProvider) in
       let statusesToBeSent: [ServingStatus] = [.serving, .notServing, .serving]
 
-      healthProvider.updateStatus(statusesToBeSent[0], ofService: ServiceDescriptor.server)
+      healthProvider.updateStatus(statusesToBeSent[0], forService: ServiceDescriptor.server)
 
       let message = Grpc_Health_V1_HealthCheckRequest()
 
@@ -305,7 +274,7 @@ final class HealthTests: XCTestCase {
           if i < statusesToBeSent.count - 1 {
             healthProvider.updateStatus(
               statusesToBeSent[i + 1],
-              ofService: ServiceDescriptor.server
+              forService: ServiceDescriptor.server
             )
           }
         }
@@ -316,7 +285,4 @@ final class HealthTests: XCTestCase {
 
 extension ServiceDescriptor {
   fileprivate static let testService = ServiceDescriptor(package: "test", service: "Service")
-
-  /// An unspecified service name refers to the server.
-  fileprivate static let server = ServiceDescriptor(package: "", service: "")
 }
