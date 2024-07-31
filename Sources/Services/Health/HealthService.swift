@@ -67,9 +67,8 @@ internal final class HealthService: Grpc_Health_V1_HealthServiceProtocol {
 
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension HealthService {
-  /// The state of the Health service.
   private struct State: Sendable {
-    /// A locked value box of `["service name": ServiceState]`.
+    // The state of each service keyed by the fully qualified service name.
     private let lockedStorage = LockedValueBox([String: ServiceState]())
 
     fileprivate func currentStatus(
@@ -98,13 +97,12 @@ extension HealthService {
     }
   }
 
-  /// Encapsulates the current status of a service and the continuations of its watch streams.
+  // Encapsulates the current status of a service and the continuations of its watch streams.
   private struct ServiceState: Sendable {
     private(set) var currentStatus: Grpc_Health_V1_HealthCheckResponse.ServingStatus
     private var continuations:
       [AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus>.Continuation]
 
-    /// Updates the status and provides values to the streams.
     fileprivate mutating func updateStatus(
       _ status: Grpc_Health_V1_HealthCheckResponse.ServingStatus
     ) {
@@ -119,7 +117,6 @@ extension HealthService {
       }
     }
 
-    /// Adds a continuation for a stream of statuses.
     fileprivate mutating func addContinuation(
       _ continuation: AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus>.Continuation
     ) {
@@ -127,7 +124,7 @@ extension HealthService {
       continuation.yield(self.currentStatus)
     }
 
-    fileprivate init(status: Grpc_Health_V1_HealthCheckResponse.ServingStatus) {
+    fileprivate init(status: Grpc_Health_V1_HealthCheckResponse.ServingStatus = .unknown) {
       self.currentStatus = status
       self.continuations = []
     }

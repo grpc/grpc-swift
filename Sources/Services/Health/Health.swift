@@ -19,18 +19,37 @@ import GRPCCore
 /// ``Health`` is gRPC’s mechanism for checking whether a server is able to handle RPCs. Its semantics are documented in
 /// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.
 ///
-/// `Health` initializes a new `Health.Service` and a `Health.Provider`.
-/// - `Health.Service` is a registerable RPC service to probe whether a server is able to handle RPCs.
-/// - `Health.Provider` provides handlers to interact with `Health.Service`.
+/// `Health` initializes a new ``Health/Service-swift.struct`` and ``Health/Provider-swift.struct``.
+/// - `Health.Service` implements the Health service from the `grpc.health.v1` package and can be registered with a server
+/// like any other service.
+/// - `Health.Provider` provides status updates to `Health.Service`. `Health.Service` doesn't know about the other
+/// services running on a server so it must be provided with status updates via `Health.Provider`. To make specifying the service
+/// being updated easier, the generated code for services includes an extension to `ServiceDescriptor`.
+///
+/// The following shows an example of initializing a Health service and updating the status of the `Foo` service in the `bar` package.
+///
+/// ```swift
+/// let health = Health()
+/// let server = GRPCServer(
+///   transport: transport,
+///   services: [health.service, FooService()]
+/// )
+///
+/// health.provider.updateStatus(
+///   .serving,
+///   forService: .bar_Foo
+/// )
+/// ```
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct Health: Sendable {
-  /// A registerable RPC service to probe whether a server is able to handle RPCs.
+  /// An implementation of the `grpc.health.v1.Health` service.
   public let service: Health.Service
 
-  /// Provides handlers to interact with the coupled Health service.
+  /// Provides status updates to the Health service.
   public let provider: Health.Provider
 
-  /// Constructs a new `Health`, coupling a `Health.Service` and a `Health.Provider`.
+  /// Constructs a new ``Health``, initializing a ``Health/Service-swift.struct`` and a
+  /// ``Health/Provider-swift.struct``.
   public init() {
     let healthService = HealthService()
 
@@ -41,7 +60,7 @@ public struct Health: Sendable {
 
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Health {
-  /// A registerable RPC service to probe whether a server is able to handle RPCs.
+  /// An implementation of the `grpc.health.v1.Health` service.
   public struct Service: RegistrableRPCService, Sendable {
     private let healthService: HealthService
 
@@ -54,11 +73,11 @@ extension Health {
     }
   }
 
-  /// Provides handlers to interact with a Health service.
+  /// Provides status updates to ``Health/Service-swift.struct``.
   public struct Provider: Sendable {
     private let healthService: HealthService
 
-    /// Updates the status of a service in the Health service.
+    /// Updates the status of a service.
     ///
     /// - Parameters:
     ///   - status: The status of the service.
@@ -80,10 +99,6 @@ extension Health {
 }
 
 extension Grpc_Health_V1_HealthCheckResponse.ServingStatus {
-  /// Constructs a new ``Grpc_Health_V1_HealthCheckResponse/ServingStatus`` from ``ServingStatus``.
-  ///
-  /// - Parameters:
-  ///   - status: The base status.
   package init(_ status: ServingStatus) {
     switch status.value {
     case .serving:

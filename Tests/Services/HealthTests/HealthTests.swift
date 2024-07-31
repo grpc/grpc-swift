@@ -67,8 +67,7 @@ final class HealthTests: XCTestCase {
   func testCheckOnUnknownService() async throws {
     try await withHealthClient { (healthClient, healthProvider) in
       let message = Grpc_Health_V1_HealthCheckRequest.with {
-        $0.service =
-          ServiceDescriptor(package: "does.not", service: "Exist").fullyQualifiedService
+        $0.service = "does.not/Exist"
       }
 
       try await healthClient.check(request: ClientRequest.Single(message: message)) { response in
@@ -81,7 +80,11 @@ final class HealthTests: XCTestCase {
 
   func testCheckOnServer() async throws {
     try await withHealthClient { (healthClient, healthProvider) in
-      healthProvider.updateStatus(.notServing, forService: ServiceDescriptor.server)
+      // An unspecified service refers to the server.
+      healthProvider.updateStatus(
+        .notServing,
+        forService: ServiceDescriptor(package: "", service: "")
+      )
 
       let message = Grpc_Health_V1_HealthCheckRequest()
 
@@ -163,7 +166,8 @@ final class HealthTests: XCTestCase {
           $0.service = testServiceDescriptor.fullyQualifiedService
         }
 
-        /// The continuation of this stream will be used to signal when the watch response streams are up and ready.
+        // The continuation of this stream will be used to signal when the watch response streams
+        // are up and ready.
         let signal = AsyncStream.makeStream(of: Void.self)
         let numberOfWatches = 2
 
@@ -257,7 +261,13 @@ final class HealthTests: XCTestCase {
     try await withHealthClient { (healthClient, healthProvider) in
       let statusesToBeSent: [ServingStatus] = [.serving, .notServing, .serving]
 
-      healthProvider.updateStatus(statusesToBeSent[0], forService: ServiceDescriptor.server)
+      // An unspecified service refers to the server.
+      let serverDescriptor = ServiceDescriptor(package: "", service: "")
+
+      healthProvider.updateStatus(
+        statusesToBeSent[0],
+        forService: serverDescriptor
+      )
 
       let message = Grpc_Health_V1_HealthCheckRequest()
 
@@ -274,7 +284,7 @@ final class HealthTests: XCTestCase {
           if i < statusesToBeSent.count - 1 {
             healthProvider.updateStatus(
               statusesToBeSent[i + 1],
-              forService: ServiceDescriptor.server
+              forService: serverDescriptor
             )
           }
         }
