@@ -189,48 +189,155 @@ extension HTTP2ServerTransport.Config {
     }
   }
 
-  public struct TLS: Sendable {
-    public struct Certificate: Sendable {
-      public struct SerializationFormat: Sendable, Equatable {
-        private enum Wrapping {
-          case pem
-          case der
-        }
-
-        private let serialization: Wrapping
-
-        public static let pem = Self(serialization: .pem)
-        public static let der = Self(serialization: .der)
-      }
-
-      public var bytes: [UInt8]
-      public var serializationFormat: SerializationFormat
+  public struct TransportSecurity: Sendable {
+    private enum Wrapped {
+      case plaintext
+      case tls(TLS)
     }
 
-    public struct PrivateKey: Sendable {
-      public struct SerializationFormat: Sendable, Equatable {
-        private enum Wrapping {
-          case pem
-          case der
-        }
+    private let wrapped: Wrapped
 
-        private let serialization: Wrapping
+    /// This connection is plaintext: no encryption will take place.
+    public static let plaintext = Self(wrapped: .plaintext)
 
-        public static let pem = Self(serialization: .pem)
-        public static let der = Self(serialization: .der)
+    /// This connection will use TLS.
+    public static func tls(_ tls: TLS) -> Self {
+      Self(wrapped: .tls(tls))
+    }
+
+    /// Returns the TLS configuration, if the security has been set to ``tls(_:)``.
+    public var tlsConfig: TLS? {
+      switch wrapped {
+      case .plaintext:
+        return nil
+      case .tls(let config):
+        return config
+      }
+    }
+  }
+
+  public struct TLS: Sendable {
+    /// The serialization format of the provided certificates and private keys.
+    public struct SerializationFormat: Sendable, Equatable {
+      private enum Wrapped {
+        case pem
+        case der
       }
 
-      public var bytes: [UInt8]
-      public var serializationFormat: SerializationFormat
+      private let serialization: Wrapped
+
+      public static let pem = Self(serialization: .pem)
+      public static let der = Self(serialization: .der)
+    }
+
+    public struct CertificateSource: Sendable {
+      private enum Wrapped {
+        case file(path: String, serializationFormat: SerializationFormat)
+        case certificate(bytes: [UInt8], serializationFormat: SerializationFormat)
+      }
+
+      private let wrapped: Wrapped
+
+      /// The certificate will be provided via a file.
+      public static func file(path: String, serializationFormat: SerializationFormat) -> Self {
+        Self(wrapped: .file(path: path, serializationFormat: serializationFormat))
+      }
+
+      /// The certificate will be provided as an array of bytes.
+      public static func certificate(bytes: [UInt8], serializationFormat: SerializationFormat) -> Self {
+        Self(wrapped: .certificate(bytes: bytes, serializationFormat: serializationFormat))
+      }
+
+      /// The file path to the location of the certificate, if the source was set to ``file(path:serializationFormat:)``.
+      public var filePath: String? {
+        switch wrapped {
+        case .file(let path, _):
+          return path
+        case .certificate:
+          return nil
+        }
+      }
+
+      /// The bytes of the certificate, if the source was set to ``certificate(bytes:serializationFormat:)``.
+      public var certificateBytes: [UInt8]? {
+        switch wrapped {
+        case .certificate(let bytes, _):
+          return bytes
+        case .file:
+          return nil
+        }
+      }
+
+      /// The serialization format of the certificate.
+      public var serializationFormat: SerializationFormat {
+        switch wrapped {
+        case .file(_, let format):
+          return format
+        case .certificate(_, let format):
+          return format
+        }
+      }
+    }
+
+    public struct PrivateKeySource: Sendable {
+      private enum Wrapped {
+        case file(path: String, serializationFormat: SerializationFormat)
+        case privateKey(bytes: [UInt8], serializationFormat: SerializationFormat)
+      }
+
+      private let wrapped: Wrapped
+
+      /// The private key will be provided via a file.
+      public static func file(path: String, serializationFormat: SerializationFormat) -> Self {
+        Self(wrapped: .file(path: path, serializationFormat: serializationFormat))
+      }
+
+      /// The private key will be provided as an array of bytes.
+      public static func privateKey(bytes: [UInt8], serializationFormat: SerializationFormat) -> Self {
+        Self(wrapped: .privateKey(bytes: bytes, serializationFormat: serializationFormat))
+      }
+
+      /// The file path to the location of the private key, if the source was set to ``file(path:serializationFormat:)``.
+      public var filePath: String? {
+        switch wrapped {
+        case .file(let path, _):
+          return path
+        case .privateKey:
+          return nil
+        }
+      }
+
+      /// The bytes of the private key, if the source was set to ``privateKey(bytes:serializationFormat:)``.
+      public var privateKeyBytes: [UInt8]? {
+        switch wrapped {
+        case .privateKey(let bytes, _):
+          return bytes
+        case .file:
+          return nil
+        }
+      }
+
+      /// The serialization format of the private key.
+      public var serializationFormat: SerializationFormat {
+        switch wrapped {
+        case .file(_, let format):
+          return format
+        case .privateKey(_, let format):
+          return format
+        }
+      }
     }
 
     /// The certificate the server will offer during negotiation.
-    public var certificate: Certificate
+    public var certificateChainSources: [CertificateSource]
     /// The private key associated with the leaf certificate.
-    public var privateKey: PrivateKey
+    public var privateKeySource: PrivateKeySource
     /// Whether to verify the remote certificate.
     public var verifyClientCertificate: Bool
     /// Whether ALPN is required.
+    ///
+    /// If this is set to `true` and the protocol negotiation is unsuccessful, then the server bootstrapping
+    /// will fail.
     public var requireALPN: Bool
   }
 }

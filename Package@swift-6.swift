@@ -241,7 +241,10 @@ extension Target {
         .cgrpcZlib,
         .dequeModule,
         .atomics
-      ],
+      ].appending(
+        .nioSSL,
+        if: includeNIOSSL
+      ),
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),

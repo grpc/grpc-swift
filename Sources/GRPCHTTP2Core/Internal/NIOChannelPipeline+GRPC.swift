@@ -19,6 +19,10 @@ package import NIOCore
 internal import NIOHPACK
 package import NIOHTTP2
 
+#if canImport(NIOSSL)
+import NIOSSL
+#endif
+
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ChannelPipeline.SynchronousOperations {
   package typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
@@ -32,8 +36,31 @@ extension ChannelPipeline.SynchronousOperations {
     connectionConfig: HTTP2ServerTransport.Config.Connection,
     http2Config: HTTP2ServerTransport.Config.HTTP2,
     rpcConfig: HTTP2ServerTransport.Config.RPC,
-    useTLS: Bool
+    transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
   ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
+    #if canImport(NIOSSL)
+    if let tlsConfig = transportSecurity.tlsConfig {
+      let certificateChain = try NIOSSLCertificateSource.certificateChain(from: tlsConfig.certificateChainSources)
+      let privateKey = try NIOSSLPrivateKey(privateKeySource: tlsConfig.privateKeySource)
+
+      var tlsConfiguration = TLSConfiguration.makeServerConfiguration(
+        certificateChain: certificateChain,
+        privateKey: .privateKey(privateKey)
+      )
+      tlsConfiguration.minimumTLSVersion = .tlsv12
+      tlsConfiguration.certificateVerification = tlsConfig.verifyClientCertificate ? .fullVerification : .none
+      tlsConfiguration.trustRoots = .default
+      tlsConfiguration.applicationProtocols = [
+        GRPCApplicationProtocolIdentifier.gRPC, GRPCApplicationProtocolIdentifier.h2,
+      ]
+
+      let nioSSLContext = try! NIOSSLContext(configuration: tlsConfiguration)
+      let nioSSLServerHandler = NIOSSLServerHandler(context: nioSSLContext)
+
+      try self.addHandler(nioSSLServerHandler)
+    }
+    #endif
+
     let serverConnectionHandler = ServerConnectionManagementHandler(
       eventLoop: self.eventLoop,
       maxIdleTime: connectionConfig.maxIdleTime.map { TimeAmount($0) },
@@ -44,7 +71,8 @@ extension ChannelPipeline.SynchronousOperations {
       allowKeepaliveWithoutCalls: connectionConfig.keepalive.clientBehavior.allowWithoutCalls,
       minPingIntervalWithoutCalls: TimeAmount(
         connectionConfig.keepalive.clientBehavior.minPingIntervalWithoutCalls
-      )
+      ),
+      requireALPN: transportSecurity.tlsConfig?.requireALPN ?? false
     )
     let flushNotificationHandler = GRPCServerFlushNotificationHandler(
       serverConnectionManagementHandler: serverConnectionHandler
@@ -81,7 +109,7 @@ extension ChannelPipeline.SynchronousOperations {
       return streamChannel.eventLoop.makeCompletedFuture {
         let methodDescriptorPromise = streamChannel.eventLoop.makePromise(of: MethodDescriptor.self)
         let streamHandler = GRPCServerStreamHandler(
-          scheme: useTLS ? .https : .http,
+          scheme: transportSecurity.tlsConfig != nil ? .https : .http,
           acceptedEncodings: compressionConfig.enabledAlgorithms,
           maximumPayloadSize: rpcConfig.maxRequestPayloadSize,
           methodDescriptorPromise: methodDescriptorPromise
@@ -181,3 +209,64 @@ extension ChannelPipeline.SynchronousOperations {
     min(targetWindowSize, (1 << 31) - 1)
   }
 }
+
+#if canImport(NIOSSL)
+extension NIOSSLSerializationFormats {
+  fileprivate init(_ format: HTTP2ServerTransport.Config.TLS.SerializationFormat) {
+    switch format {
+    case .pem:
+      self = .pem
+    case .der:
+      self = .der
+    default:
+      fatalError("Invalid serialization format provided.")
+    }
+  }
+}
+
+extension NIOSSLCertificate {
+  fileprivate convenience init(certificateSource source: HTTP2ServerTransport.Config.TLS.CertificateSource) throws {
+    if let filePath = source.filePath {
+      try self.init(
+        file: filePath,
+        format: NIOSSLSerializationFormats(source.serializationFormat)
+      )
+    } else if let certificateBytes = source.certificateBytes {
+      try self.init(
+        bytes: certificateBytes,
+        format: NIOSSLSerializationFormats(source.serializationFormat)
+      )
+    } else {
+      fatalError("No other available certificate source")
+    }
+  }
+}
+
+extension NIOSSLCertificateSource {
+  fileprivate static func certificateChain(
+    from certificateChainSources: [HTTP2ServerTransport.Config.TLS.CertificateSource]
+  ) throws -> [NIOSSLCertificateSource] {
+    try certificateChainSources.map {
+      .certificate(try NIOSSLCertificate(certificateSource: $0))
+    }
+  }
+}
+
+extension NIOSSLPrivateKey {
+  fileprivate convenience init(privateKeySource source: HTTP2ServerTransport.Config.TLS.PrivateKeySource) throws {
+    if let filePath = source.filePath {
+      try self.init(
+        file: filePath,
+        format: NIOSSLSerializationFormats(source.serializationFormat)
+      )
+    } else if let bytes = source.privateKeyBytes {
+      try self.init(
+        bytes: bytes,
+        format: NIOSSLSerializationFormats(source.serializationFormat)
+      )
+    } else {
+      fatalError("No other available private key source")
+    }
+  }
+}
+#endif
