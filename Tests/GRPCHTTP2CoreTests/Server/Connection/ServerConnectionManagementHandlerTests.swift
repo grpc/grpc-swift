@@ -361,6 +361,7 @@ extension ServerConnectionManagementHandlerTests {
         keepaliveTimeout: keepaliveTimeout,
         allowKeepaliveWithoutCalls: allowKeepaliveWithoutCalls,
         minPingIntervalWithoutCalls: minPingIntervalWithoutCalls,
+        requireALPN: false,
         clock: self.clock
       )
 

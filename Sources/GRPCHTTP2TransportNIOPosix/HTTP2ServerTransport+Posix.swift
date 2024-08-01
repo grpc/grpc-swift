@@ -21,10 +21,6 @@ internal import NIOExtras
 internal import NIOHTTP2
 public import NIOPosix  // has to be public because of default argument value in init
 
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
-
 extension HTTP2ServerTransport {
   /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -190,66 +186,6 @@ extension HTTP2ServerTransport {
           return channel.pipeline.addHandler(quiescingHandler)
         }
         .bind(to: self.address) { channel in
-          #if canImport(NIOSSL)
-          if let tlsConfig = self.config.tls {
-            let certificate = try! NIOSSLCertificate(
-              bytes: tlsConfig.certificate.bytes,
-              format: try! NIOSSLSerializationFormats(tlsConfig.certificate.serializationFormat)
-            )
-            let privateKey = try! NIOSSLPrivateKey(
-              bytes: tlsConfig.privateKey.bytes,
-              format: NIOSSLSerializationFormats(tlsConfig.privateKey.serializationFormat)
-            )
-            var tlsConfiguration = TLSConfiguration.makeServerConfiguration(
-              certificateChain: [.certificate(certificate)],
-              privateKey: .privateKey(privateKey)
-            )
-            tlsConfiguration.minimumTLSVersion = .tlsv12
-            tlsConfiguration.certificateVerification =
-              tlsConfig.verifyClientCertificate ? .fullVerification : .none
-            tlsConfiguration.trustRoots = .default
-            tlsConfiguration.applicationProtocols = [
-              GRPCApplicationProtocolIdentifier.gRPC, GRPCApplicationProtocolIdentifier.h2,
-            ]
-
-            let nioSSLContext = try! NIOSSLContext(configuration: tlsConfiguration)
-            let nioSSLServerHandler = NIOSSLServerHandler(context: nioSSLContext)
-
-            let http2ConfigurationPromise:
-              EventLoopPromise<
-                (
-                  ChannelPipeline.SynchronousOperations.HTTP2ConnectionChannel,
-                  ChannelPipeline.SynchronousOperations.HTTP2StreamMultiplexer
-                )
-              > = channel.eventLoop.makePromise()
-            let pipelineConfigurator = HTTP2PipelineConfigurator(
-              requireALPN: tlsConfig.requireALPN,
-              configurationCompletePromise: http2ConfigurationPromise,
-              compressionConfig: self.config.compression,
-              connectionConfig: self.config.connection,
-              http2Config: self.config.http2,
-              rpcConfig: self.config.rpc
-            )
-
-            channel.pipeline.addHandlers([nioSSLServerHandler, pipelineConfigurator])
-              .whenFailure { error in
-                http2ConfigurationPromise.fail(error)
-              }
-
-            return http2ConfigurationPromise.futureResult
-          } else {
-            return channel.eventLoop.makeCompletedFuture {
-              return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
-                channel: channel,
-                compressionConfig: self.config.compression,
-                connectionConfig: self.config.connection,
-                http2Config: self.config.http2,
-                rpcConfig: self.config.rpc,
-                useTLS: false
-              )
-            }
-          }
-          #else
           return channel.eventLoop.makeCompletedFuture {
             return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
@@ -257,10 +193,9 @@ extension HTTP2ServerTransport {
               connectionConfig: self.config.connection,
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
-              useTLS: false
+              transportSecurity: self.config.transportSecurity
             )
           }
-          #endif
         }
 
       let action = self.listeningAddressState.withLockedValue {
@@ -369,8 +304,8 @@ extension HTTP2ServerTransport.Posix {
     public var http2: HTTP2ServerTransport.Config.HTTP2
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
-    /// TLS configuration. If present, TLS will be used.
-    public var tls: HTTP2ServerTransport.Config.TLS?
+    /// Transport security: either
+    public var transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
 
     /// Construct a new `Config`.
     /// - Parameters:
@@ -383,13 +318,13 @@ extension HTTP2ServerTransport.Posix {
       connection: HTTP2ServerTransport.Config.Connection,
       http2: HTTP2ServerTransport.Config.HTTP2,
       rpc: HTTP2ServerTransport.Config.RPC,
-      tls: HTTP2ServerTransport.Config.TLS? = nil
+      transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
     ) {
       self.compression = compression
       self.connection = connection
       self.http2 = http2
       self.rpc = rpc
-      self.tls = tls
+      self.transportSecurity = transportSecurity
     }
 
     /// Default values for the different configurations.
@@ -398,7 +333,8 @@ extension HTTP2ServerTransport.Posix {
         compression: .defaults,
         connection: .defaults,
         http2: .defaults,
-        rpc: .defaults
+        rpc: .defaults,
+        transportSecurity: .plaintext
       )
     }
   }
@@ -441,35 +377,3 @@ extension ServerBootstrap {
     }
   }
 }
-
-#if canImport(NIOSSL)
-extension NIOSSLSerializationFormats {
-  init(_ format: HTTP2ServerTransport.Config.TLS.Certificate.SerializationFormat) throws {
-    switch format {
-    case .pem:
-      self = .pem
-    case .der:
-      self = .der
-    default:
-      throw RPCError(
-        code: .invalidArgument,
-        message: "Invalid certificate serialization format provided: \(format)."
-      )
-    }
-  }
-
-  init(_ format: HTTP2ServerTransport.Config.TLS.PrivateKey.SerializationFormat) throws {
-    switch format {
-    case .pem:
-      self = .pem
-    case .der:
-      self = .der
-    default:
-      throw RPCError(
-        code: .invalidArgument,
-        message: "Invalid private key serialization format provided: \(format)."
-      )
-    }
-  }
-}
-#endif

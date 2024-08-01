@@ -188,7 +188,7 @@ extension HTTP2ServerTransport {
               connectionConfig: self.config.connection,
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
-              useTLS: false
+              transportSecurity: .plaintext
             )
           }
         }

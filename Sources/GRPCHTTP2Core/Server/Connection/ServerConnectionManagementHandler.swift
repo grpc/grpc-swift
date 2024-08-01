@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+internal import GRPCCore
 internal import NIOCore
 internal import NIOHTTP2
+internal import NIOTLS
 
 /// A `ChannelHandler` which manages the lifecycle of a gRPC connection over HTTP/2.
 ///
@@ -71,6 +73,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
 
   /// Whether a flush is pending.
   private var flushPending: Bool
+
   /// Whether `channelRead` has been called and `channelReadComplete` hasn't yet been called.
   /// Resets once `channelReadComplete` returns.
   private var inReadLoop: Bool
@@ -83,6 +86,8 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
 
   /// The clock.
   private let clock: Clock
+
+  private let requireALPN: Bool
 
   /// A clock providing the current time.
   ///
@@ -209,6 +214,7 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     keepaliveTimeout: TimeAmount?,
     allowKeepaliveWithoutCalls: Bool,
     minPingIntervalWithoutCalls: TimeAmount,
+    requireALPN: Bool,
     clock: Clock = .nio
   ) {
     self.eventLoop = eventLoop
@@ -235,6 +241,8 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     self.inReadLoop = false
     self.clock = clock
     self.frameStats = FrameStats()
+
+    self.requireALPN = requireALPN
   }
 
   func handlerAdded(context: ChannelHandlerContext) {
@@ -283,6 +291,20 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
 
     case is ChannelShouldQuiesceEvent:
       self.initiateGracefulShutdown(context: context)
+
+    #if canImport(NIOSSL)
+    case TLSUserEvent.handshakeCompleted(let negotiatedProtocol):
+      if negotiatedProtocol == nil, self.requireALPN {
+        // No ALPN protocol negotiated but it was required: fire an error and close the channel.
+        context.fireErrorCaught(
+          RPCError(
+            code: .internalError,
+            message: "ALPN resulted in no protocol being negotiated, but it was required."
+          )
+        )
+        context.close(mode: .all, promise: nil)
+      }
+    #endif
 
     default:
       ()
