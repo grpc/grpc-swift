@@ -300,7 +300,7 @@ final class Test_TextBasedRenderer: XCTestCase {
     try _test(
       .dictionary([
         .init(key: .literal("foo"), value: .literal("bar")),
-        .init(key: .literal("bar"), value: .literal("baz"))
+        .init(key: .literal("bar"), value: .literal("baz")),
       ]),
       renderedBy: { $0.renderLiteral(_:) },
       rendersAs: #"""
