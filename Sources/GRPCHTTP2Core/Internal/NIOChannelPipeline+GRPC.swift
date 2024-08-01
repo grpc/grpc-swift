@@ -164,7 +164,7 @@ extension ChannelPipeline.SynchronousOperations {
 
 extension ChannelPipeline.SynchronousOperations {
   /// Max frame size must be in the range `2^14 ..< 2^24` (RFC 9113 § 4.2).
-  internal func clampMaxFrameSize(_ maxFrameSize: Int) -> Int {
+  fileprivate func clampMaxFrameSize(_ maxFrameSize: Int) -> Int {
     let clampedMaxFrameSize: Int
     if maxFrameSize >= (1 << 24) {
       clampedMaxFrameSize = (1 << 24) - 1
