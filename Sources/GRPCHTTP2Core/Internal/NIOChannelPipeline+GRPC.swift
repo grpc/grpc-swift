@@ -51,18 +51,8 @@ extension ChannelPipeline.SynchronousOperations {
     )
     try self.addHandler(flushNotificationHandler)
 
-    // Window size which mustn't exceed 2^31 - 1 (RFC 9113 § 6.5.2).
-    let clampedTargetWindowSize = min(http2Config.targetWindowSize, (1 << 31) - 1)
-
-    // Max frame size must be in the range 2^14 ..< 2^24 (RFC 9113 § 4.2).
-    let clampedMaxFrameSize: Int
-    if http2Config.maxFrameSize >= (1 << 24) {
-      clampedMaxFrameSize = (1 << 24) - 1
-    } else if http2Config.maxFrameSize < (1 << 14) {
-      clampedMaxFrameSize = (1 << 14)
-    } else {
-      clampedMaxFrameSize = http2Config.maxFrameSize
-    }
+    let clampedTargetWindowSize = self.clampTargetWindowSize(http2Config.targetWindowSize)
+    let clampedMaxFrameSize = self.clampMaxFrameSize(http2Config.maxFrameSize)
 
     var http2HandlerConnectionConfiguration = NIOHTTP2Handler.ConnectionConfiguration()
     var http2HandlerHTTP2Settings = HTTP2Settings([
@@ -124,18 +114,8 @@ extension ChannelPipeline.SynchronousOperations {
     NIOAsyncChannel<ClientConnectionEvent, Void>,
     NIOHTTP2Handler.AsyncStreamMultiplexer<Void>
   ) {
-    // Window size which mustn't exceed 2^31 - 1 (RFC 9113 § 6.5.2).
-    let clampedTargetWindowSize = min(config.http2.targetWindowSize, (1 << 31) - 1)
-
-    // Max frame size must be in the range 2^14 ..< 2^24 (RFC 9113 § 4.2).
-    let clampedMaxFrameSize: Int
-    if config.http2.maxFrameSize >= (1 << 24) {
-      clampedMaxFrameSize = (1 << 24) - 1
-    } else if config.http2.maxFrameSize < (1 << 14) {
-      clampedMaxFrameSize = (1 << 14)
-    } else {
-      clampedMaxFrameSize = config.http2.maxFrameSize
-    }
+    let clampedTargetWindowSize = self.clampTargetWindowSize(config.http2.targetWindowSize)
+    let clampedMaxFrameSize = self.clampMaxFrameSize(config.http2.maxFrameSize)
 
     // Use NIOs defaults as a starting point.
     var http2 = NIOHTTP2Handler.Configuration()
@@ -179,5 +159,25 @@ extension ChannelPipeline.SynchronousOperations {
     )
 
     return (connection, multiplexer)
+  }
+}
+
+extension ChannelPipeline.SynchronousOperations {
+  /// Max frame size must be in the range `2^14 ..< 2^24` (RFC 9113 § 4.2).
+  internal func clampMaxFrameSize(_ maxFrameSize: Int) -> Int {
+    let clampedMaxFrameSize: Int
+    if maxFrameSize >= (1 << 24) {
+      clampedMaxFrameSize = (1 << 24) - 1
+    } else if maxFrameSize < (1 << 14) {
+      clampedMaxFrameSize = (1 << 14)
+    } else {
+      clampedMaxFrameSize = maxFrameSize
+    }
+    return clampedMaxFrameSize
+  }
+
+  /// Window size which mustn't exceed `2^31 - 1` (RFC 9113 § 6.5.2).
+  internal func clampTargetWindowSize(_ targetWindowSize: Int) -> Int {
+    min(targetWindowSize, (1 << 31) - 1)
   }
 }
