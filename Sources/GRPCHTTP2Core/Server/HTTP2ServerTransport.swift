@@ -244,7 +244,10 @@ extension HTTP2ServerTransport.Config {
       }
 
       /// The certificate will be provided as an array of bytes.
-      public static func certificate(bytes: [UInt8], serializationFormat: SerializationFormat) -> Self {
+      public static func certificate(
+        bytes: [UInt8],
+        serializationFormat: SerializationFormat
+      ) -> Self {
         Self(wrapped: .certificate(bytes: bytes, serializationFormat: serializationFormat))
       }
 
@@ -293,7 +296,10 @@ extension HTTP2ServerTransport.Config {
       }
 
       /// The private key will be provided as an array of bytes.
-      public static func privateKey(bytes: [UInt8], serializationFormat: SerializationFormat) -> Self {
+      public static func privateKey(
+        bytes: [UInt8],
+        serializationFormat: SerializationFormat
+      ) -> Self {
         Self(wrapped: .privateKey(bytes: bytes, serializationFormat: serializationFormat))
       }
 

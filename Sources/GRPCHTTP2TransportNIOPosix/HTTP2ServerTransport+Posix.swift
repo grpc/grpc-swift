@@ -186,8 +186,8 @@ extension HTTP2ServerTransport {
           return channel.pipeline.addHandler(quiescingHandler)
         }
         .bind(to: self.address) { channel in
-          return channel.eventLoop.makeCompletedFuture {
-            return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
+          channel.eventLoop.makeCompletedFuture {
+            try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.config.compression,
               connectionConfig: self.config.connection,
