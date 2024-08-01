@@ -989,6 +989,9 @@ extension ConnectionManagerTests {
     let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
       self.loop.makeFailedFuture(DoomedChannelError())
     }
+    defer {
+      try! manager.shutdown().wait()
+    }
 
     self.waitForStateChanges([
       Change(from: .idle, to: .connecting),
@@ -1154,9 +1157,7 @@ extension ConnectionManagerTests {
 
   func testHTTP2Delegates() throws {
     let channel = EmbeddedChannel(loop: self.loop)
-    defer {
-      XCTAssertNoThrow(try channel.finish())
-    }
+    // The channel gets shut down by the connection manager.
 
     let multiplexer = HTTP2StreamMultiplexer(
       mode: .client,
@@ -1215,6 +1216,11 @@ extension ConnectionManagerTests {
       http2Delegate: http2,
       logger: self.logger
     )
+    defer {
+      let future = manager.shutdown()
+      self.loop.run()
+      try! future.wait()
+    }
 
     // Start connecting.
     let futureMultiplexer = manager.getHTTP2Multiplexer()
