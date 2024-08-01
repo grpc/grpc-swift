@@ -281,6 +281,35 @@ final class Test_TextBasedRenderer: XCTestCase {
         ]
         """#
     )
+    try _test(
+      .dictionary([]),
+      renderedBy: { $0.renderLiteral(_:) },
+      rendersAs: #"""
+        [:]
+        """#
+    )
+    try _test(
+      .dictionary([.init(key: .literal("foo"), value: .literal("bar"))]),
+      renderedBy: { $0.renderLiteral(_:) },
+      rendersAs: #"""
+        [
+            "foo": "bar"
+        ]
+        """#
+    )
+    try _test(
+      .dictionary([
+        .init(key: .literal("foo"), value: .literal("bar")),
+        .init(key: .literal("bar"), value: .literal("baz"))
+      ]),
+      renderedBy: { $0.renderLiteral(_:) },
+      rendersAs: #"""
+        [
+            "foo": "bar",
+            "bar": "baz"
+        ]
+        """#
+    )
   }
 
   func testExpression() throws {

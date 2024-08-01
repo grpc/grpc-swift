@@ -70,6 +70,28 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension NamespaceA_ServiceA.ClientProtocol {
+          /// Documentation for MethodA
+          public func methodA<Result>(
+              _ message: NamespaceA_ServiceARequest,
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> Result = {
+                  try $0.message
+              }
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>(
+                  message: message,
+                  metadata: metadata
+              )
+              return try await self.methodA(
+                  request: request,
+                  options: options,
+                  handleResponse
+              )
+          }
+      }
       /// Documentation for ServiceA
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
@@ -148,6 +170,28 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
                   deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
+              )
+          }
+      }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension NamespaceA_ServiceA.ClientProtocol {
+          /// Documentation for MethodA
+          public func methodA<Result>(
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> Result = {
+                  try $0.message
+              }
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>(
+                  metadata: metadata,
+                  producer: requestProducer
+              )
+              return try await self.methodA(
+                  request: request,
+                  options: options,
+                  handleResponse
               )
           }
       }
@@ -232,6 +276,26 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension NamespaceA_ServiceA.ClientProtocol {
+          /// Documentation for MethodA
+          public func methodA<Result>(
+              _ message: NamespaceA_ServiceARequest,
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>(
+                  message: message,
+                  metadata: metadata
+              )
+              return try await self.methodA(
+                  request: request,
+                  options: options,
+                  handleResponse
+              )
+          }
+      }
       /// Documentation for ServiceA
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
@@ -310,6 +374,26 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
                   deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
+              )
+          }
+      }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension NamespaceA_ServiceA.ClientProtocol {
+          /// Documentation for MethodA
+          public func methodA<Result>(
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>(
+                  metadata: metadata,
+                  producer: requestProducer
+              )
+              return try await self.methodA(
+                  request: request,
+                  options: options,
+                  handleResponse
               )
           }
       }
@@ -425,6 +509,46 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension NamespaceA_ServiceA.ClientProtocol {
+          /// Documentation for MethodA
+          package func methodA<Result>(
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> Result = {
+                  try $0.message
+              }
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>(
+                  metadata: metadata,
+                  producer: requestProducer
+              )
+              return try await self.methodA(
+                  request: request,
+                  options: options,
+                  handleResponse
+              )
+          }
+          
+          /// Documentation for MethodB
+          package func methodB<Result>(
+              _ message: NamespaceA_ServiceARequest,
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>(
+                  message: message,
+                  metadata: metadata
+              )
+              return try await self.methodB(
+                  request: request,
+                  options: options,
+                  handleResponse
+              )
+          }
+      }
       /// Documentation for ServiceA
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       package struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
@@ -524,6 +648,28 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               )
           }
       }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension ServiceA.ClientProtocol {
+          /// Documentation for MethodA
+          internal func methodA<Result>(
+              _ message: ServiceARequest,
+              metadata: GRPCCore.Metadata = [:],
+              options: GRPCCore.CallOptions = .defaults,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<ServiceAResponse>) async throws -> Result = {
+                  try $0.message
+              }
+          ) async throws -> Result where Result: Sendable {
+              let request = GRPCCore.ClientRequest.Single<ServiceARequest>(
+                  message: message,
+                  metadata: metadata
+              )
+              return try await self.methodA(
+                  request: request,
+                  options: options,
+                  handleResponse
+              )
+          }
+      }
       /// Documentation for ServiceA
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       internal struct ServiceAClient: ServiceA.ClientProtocol {
@@ -589,6 +735,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
       }
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension NamespaceA_ServiceA.ClientProtocol {
+      }
       /// Documentation for ServiceA
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
@@ -603,6 +752,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       /// Line 2
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol ServiceBClientProtocol: Sendable {}
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+      extension ServiceB.ClientProtocol {
+      }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension ServiceB.ClientProtocol {
       }
@@ -629,14 +781,16 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   private func assertClientCodeTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
-    accessLevel: SourceGenerator.Configuration.AccessLevel
+    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    file: StaticString = #filePath,
+    line: UInt = #line
   ) throws {
     let translator = ClientCodeTranslator(accessLevel: accessLevel)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
     let contents = renderer.renderedContents()
-    try XCTAssertEqualWithDiff(contents, expectedSwift)
+    try XCTAssertEqualWithDiff(contents, expectedSwift, file: file, line: line)
   }
 }
 

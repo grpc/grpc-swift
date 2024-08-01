@@ -78,31 +78,24 @@ struct ClientCodeTranslator: SpecializedTranslator {
     self.accessLevel = accessLevel
   }
 
-  func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
-    var codeBlocks = [CodeBlock]()
+  func translate(from request: CodeGenerationRequest) throws -> [CodeBlock] {
+    var blocks = [CodeBlock]()
 
-    for service in codeGenerationRequest.services {
-      codeBlocks.append(
-        .declaration(
-          .commentable(
-            .preFormatted(service.documentation),
-            self.makeClientProtocol(for: service, in: codeGenerationRequest)
-          )
-        )
-      )
-      codeBlocks.append(
-        .declaration(self.makeExtensionProtocol(for: service, in: codeGenerationRequest))
-      )
-      codeBlocks.append(
-        .declaration(
-          .commentable(
-            .preFormatted(service.documentation),
-            self.makeClientStruct(for: service, in: codeGenerationRequest)
-          )
-        )
-      )
+    for service in request.services {
+      let `protocol` = self.makeClientProtocol(for: service, in: request)
+      blocks.append(.declaration(.commentable(.preFormatted(service.documentation), `protocol`)))
+
+      let defaultImplementation = self.makeDefaultImplementation(for: service, in: request)
+      blocks.append(.declaration(defaultImplementation))
+
+      let sugaredAPI = self.makeSugaredAPI(forService: service, request: request)
+      blocks.append(.declaration(sugaredAPI))
+
+      let clientStruct = self.makeClientStruct(for: service, in: request)
+      blocks.append(.declaration(.commentable(.preFormatted(service.documentation), clientStruct)))
     }
-    return codeBlocks
+
+    return blocks
   }
 }
 
@@ -132,7 +125,7 @@ extension ClientCodeTranslator {
     return .guarded(self.availabilityGuard, clientProtocol)
   }
 
-  private func makeExtensionProtocol(
+  private func makeDefaultImplementation(
     for service: CodeGenerationRequest.ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
@@ -156,6 +149,225 @@ extension ClientCodeTranslator {
       self.availabilityGuard,
       clientProtocolExtension
     )
+  }
+
+  private func makeSugaredAPI(
+    forService service: CodeGenerationRequest.ServiceDescriptor,
+    request: CodeGenerationRequest
+  ) -> Declaration {
+    let sugaredAPIExtension = Declaration.extension(
+      ExtensionDescription(
+        onType: "\(service.namespacedGeneratedName).ClientProtocol",
+        declarations: service.methods.map { method in
+          self.makeSugaredMethodDeclaration(
+            method: method,
+            accessModifier: self.accessModifier
+          )
+        }
+      )
+    )
+
+    return .guarded(self.availabilityGuard, sugaredAPIExtension)
+  }
+
+  private func makeSugaredMethodDeclaration(
+    method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
+    accessModifier: AccessModifier?
+  ) -> Declaration {
+    let signature = FunctionSignatureDescription(
+      accessModifier: accessModifier,
+      kind: .function(name: method.name.generatedLowerCase),
+      generics: [.member("Result")],
+      parameters: self.makeParametersForSugaredMethodDeclaration(method: method),
+      keywords: [.async, .throws],
+      returnType: .identifierPattern("Result"),
+      whereClause: WhereClause(
+        requirements: [
+          .conformance("Result", "Sendable")
+        ]
+      )
+    )
+
+    let functionDescription = FunctionDescription(
+      signature: signature,
+      body: self.makeFunctionBodyForSugaredMethodDeclaration(method: method)
+    )
+
+    if method.documentation.isEmpty {
+      return .function(functionDescription)
+    } else {
+      return .commentable(.preFormatted(method.documentation), .function(functionDescription))
+    }
+  }
+
+  private func makeParametersForSugaredMethodDeclaration(
+    method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+  ) -> [ParameterDescription] {
+    var parameters = [ParameterDescription]()
+
+    // Unary inputs have a 'message' parameters
+    if !method.isInputStreaming {
+      parameters.append(
+        ParameterDescription(
+          label: "_",
+          name: "message",
+          type: .member([method.inputType])
+        )
+      )
+    }
+
+    parameters.append(
+      ParameterDescription(
+        label: "metadata",
+        type: .member(["GRPCCore", "Metadata"]),
+        defaultValue: .literal(.dictionary([]))
+      )
+    )
+
+    parameters.append(
+      ParameterDescription(
+        label: "options",
+        type: .member(["GRPCCore", "CallOptions"]),
+        defaultValue: .memberAccess(.dot("defaults"))
+      )
+    )
+
+    // Streaming inputs have a writer callback
+    if method.isInputStreaming {
+      parameters.append(
+        ParameterDescription(
+          label: "requestProducer",
+          type: .closure(
+            ClosureSignatureDescription(
+              parameters: [
+                ParameterDescription(
+                  type: .generic(
+                    wrapper: .member(["GRPCCore", "RPCWriter"]),
+                    wrapped: .member(method.inputType)
+                  )
+                )
+              ],
+              keywords: [.async, .throws],
+              returnType: .identifierPattern("Void"),
+              sendable: true,
+              escaping: true
+            )
+          )
+        )
+      )
+    }
+
+    // All methods have a response handler.
+    var responseHandler = ParameterDescription(label: "onResponse", name: "handleResponse")
+    let responseKind = method.isOutputStreaming ? "Stream" : "Single"
+    responseHandler.type = .closure(
+      ClosureSignatureDescription(
+        parameters: [
+          ParameterDescription(
+            type: .generic(
+              wrapper: .member(["GRPCCore", "ClientResponse", responseKind]),
+              wrapped: .member(method.outputType)
+            )
+          )
+        ],
+        keywords: [.async, .throws],
+        returnType: .identifierPattern("Result"),
+        sendable: true,
+        escaping: true
+      )
+    )
+
+    if !method.isOutputStreaming {
+      responseHandler.defaultValue = .closureInvocation(
+        ClosureInvocationDescription(
+          body: [.expression(.try(.identifierPattern("$0").dot("message")))]
+        )
+      )
+    }
+
+    parameters.append(responseHandler)
+
+    return parameters
+  }
+
+  private func makeFunctionBodyForSugaredMethodDeclaration(
+    method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+  ) -> [CodeBlock] {
+    // Produces the following:
+    //
+    // let request = GRPCCore.ClientRequest.Single<Input>(message: message, metadata: metadata)
+    // return try await method(request: request, options: options, responseHandler: responseHandler)
+    //
+    // or:
+    //
+    // let request = GRPCCore.ClientRequest.Stream<Input>(metadata: metadata, producer: writer)
+    // return try await method(request: request, options: options, responseHandler: responseHandler)
+
+    // First, make the init for the ClientRequest
+    let requestType = method.isInputStreaming ? "Stream" : "Single"
+    var requestInit = FunctionCallDescription(
+      calledExpression: .identifier(
+        .type(
+          .generic(
+            wrapper: .member(["GRPCCore", "ClientRequest", requestType]),
+            wrapped: .member(method.inputType)
+          )
+        )
+      )
+    )
+
+    if method.isInputStreaming {
+      requestInit.arguments.append(
+        FunctionArgumentDescription(
+          label: "metadata",
+          expression: .identifierPattern("metadata")
+        )
+      )
+      requestInit.arguments.append(
+        FunctionArgumentDescription(
+          label: "producer",
+          expression: .identifierPattern("requestProducer")
+        )
+      )
+    } else {
+      requestInit.arguments.append(
+        FunctionArgumentDescription(
+          label: "message",
+          expression: .identifierPattern("message")
+        )
+      )
+      requestInit.arguments.append(
+        FunctionArgumentDescription(
+          label: "metadata",
+          expression: .identifierPattern("metadata")
+        )
+      )
+    }
+
+    // Now declare the request:
+    //
+    // let request = <RequestInit>
+    let request = VariableDescription(
+      kind: .let,
+      left: .identifier(.pattern("request")),
+      right: .functionCall(requestInit)
+    )
+
+    var blocks = [CodeBlock]()
+    blocks.append(.declaration(.variable(request)))
+
+    // Finally, call the underlying method.
+    let methodCall = FunctionCallDescription(
+      calledExpression: .identifierPattern("self").dot(method.name.generatedLowerCase),
+      arguments: [
+        FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
+        FunctionArgumentDescription(label: "options", expression: .identifierPattern("options")),
+        FunctionArgumentDescription(expression: .identifierPattern("handleResponse")),
+      ]
+    )
+
+    blocks.append(.expression(.return(.try(.await(.functionCall(methodCall))))))
+    return blocks
   }
 
   private func makeClientProtocolMethod(
