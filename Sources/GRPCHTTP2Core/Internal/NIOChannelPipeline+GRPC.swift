@@ -40,7 +40,9 @@ extension ChannelPipeline.SynchronousOperations {
   ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
     #if canImport(NIOSSL)
     if let tlsConfig = transportSecurity.tlsConfig {
-      let certificateChain = try NIOSSLCertificateSource.certificateChain(from: tlsConfig.certificateChainSources)
+      let certificateChain = try NIOSSLCertificateSource.certificateChain(
+        from: tlsConfig.certificateChainSources
+      )
       let privateKey = try NIOSSLPrivateKey(privateKeySource: tlsConfig.privateKeySource)
 
       var tlsConfiguration = TLSConfiguration.makeServerConfiguration(
@@ -48,7 +50,8 @@ extension ChannelPipeline.SynchronousOperations {
         privateKey: .privateKey(privateKey)
       )
       tlsConfiguration.minimumTLSVersion = .tlsv12
-      tlsConfiguration.certificateVerification = tlsConfig.verifyClientCertificate ? .fullVerification : .none
+      tlsConfiguration.certificateVerification =
+        tlsConfig.verifyClientCertificate ? .fullVerification : .none
       tlsConfiguration.trustRoots = .default
       tlsConfiguration.applicationProtocols = [
         GRPCApplicationProtocolIdentifier.gRPC, GRPCApplicationProtocolIdentifier.h2,
@@ -225,7 +228,9 @@ extension NIOSSLSerializationFormats {
 }
 
 extension NIOSSLCertificate {
-  fileprivate convenience init(certificateSource source: HTTP2ServerTransport.Config.TLS.CertificateSource) throws {
+  fileprivate convenience init(
+    certificateSource source: HTTP2ServerTransport.Config.TLS.CertificateSource
+  ) throws {
     if let filePath = source.filePath {
       try self.init(
         file: filePath,
@@ -253,7 +258,9 @@ extension NIOSSLCertificateSource {
 }
 
 extension NIOSSLPrivateKey {
-  fileprivate convenience init(privateKeySource source: HTTP2ServerTransport.Config.TLS.PrivateKeySource) throws {
+  fileprivate convenience init(
+    privateKeySource source: HTTP2ServerTransport.Config.TLS.PrivateKeySource
+  ) throws {
     if let filePath = source.filePath {
       try self.init(
         file: filePath,
