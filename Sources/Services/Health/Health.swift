@@ -92,6 +92,23 @@ extension Health {
       )
     }
 
+    /// Updates the status of a service.
+    ///
+    /// - Parameters:
+    ///   - status: The status of the service.
+    ///   - service: The fully qualified service name in the format:
+    ///     - "package.service": if the service is part of a package. For example, "helloworld.Greeter".
+    ///     - "service": if the service is not part of a package. For example, "Greeter".
+    public func updateStatus(
+      _ status: ServingStatus,
+      forService service: String
+    ) {
+      self.healthService.updateStatus(
+        Grpc_Health_V1_HealthCheckResponse.ServingStatus(status),
+        forService: service
+      )
+    }
+
     fileprivate init(healthService: HealthService) {
       self.healthService = healthService
     }

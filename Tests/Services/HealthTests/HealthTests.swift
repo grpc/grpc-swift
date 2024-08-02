@@ -67,7 +67,7 @@ final class HealthTests: XCTestCase {
   func testCheckOnUnknownService() async throws {
     try await withHealthClient { (healthClient, healthProvider) in
       let message = Grpc_Health_V1_HealthCheckRequest.with {
-        $0.service = "does.not/Exist"
+        $0.service = "does.not.Exist"
       }
 
       try await healthClient.check(request: ClientRequest.Single(message: message)) { response in
@@ -81,10 +81,7 @@ final class HealthTests: XCTestCase {
   func testCheckOnServer() async throws {
     try await withHealthClient { (healthClient, healthProvider) in
       // An unspecified service refers to the server.
-      healthProvider.updateStatus(
-        .notServing,
-        forService: ServiceDescriptor(package: "", service: "")
-      )
+      healthProvider.updateStatus(.notServing, forService: "")
 
       let message = Grpc_Health_V1_HealthCheckRequest()
 
@@ -262,12 +259,7 @@ final class HealthTests: XCTestCase {
       let statusesToBeSent: [ServingStatus] = [.serving, .notServing, .serving]
 
       // An unspecified service refers to the server.
-      let serverDescriptor = ServiceDescriptor(package: "", service: "")
-
-      healthProvider.updateStatus(
-        statusesToBeSent[0],
-        forService: serverDescriptor
-      )
+      healthProvider.updateStatus(statusesToBeSent[0], forService: "")
 
       let message = Grpc_Health_V1_HealthCheckRequest()
 
@@ -282,10 +274,7 @@ final class HealthTests: XCTestCase {
           XCTAssertEqual(message.status, expectedStatus)
 
           if i < statusesToBeSent.count - 1 {
-            healthProvider.updateStatus(
-              statusesToBeSent[i + 1],
-              forService: serverDescriptor
-            )
+            healthProvider.updateStatus(statusesToBeSent[i + 1], forService: "")
           }
         }
       }

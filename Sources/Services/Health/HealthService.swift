@@ -17,7 +17,7 @@
 import GRPCCore
 
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-internal final class HealthService: Grpc_Health_V1_HealthServiceProtocol {
+internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {
   private let state = HealthService.State()
 
   func check(
