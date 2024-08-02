@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
+public import GRPCCore
+
 import NIOHTTP2
 
 /// A namespace for the HTTP/2 server transport.

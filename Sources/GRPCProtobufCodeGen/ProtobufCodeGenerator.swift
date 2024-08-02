@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCodeGen
-import SwiftProtobufPluginLibrary
+public import GRPCCodeGen
+public import SwiftProtobufPluginLibrary
 
 public struct ProtobufCodeGenerator {
   internal var configuration: SourceGenerator.Configuration

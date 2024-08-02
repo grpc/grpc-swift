@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+public import GRPCCore
 
 /// An in-process implementation of a ``ClientTransport``.
 ///

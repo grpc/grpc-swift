@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOCore
+package import GRPCCore
+package import NIOCore
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public enum ServerConnection {

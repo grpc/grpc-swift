@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import SwiftProtobuf
+public import GRPCCore
+public import SwiftProtobuf
 
 /// Serializes a Protobuf message into a sequence of bytes.
 public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: GRPCCore.MessageSerializer {

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #if canImport(Darwin)
-import Darwin
+public import Darwin // should be @usableFromInline
 #else
-import Glibc
+public import Glibc // should be @usableFromInline
 #endif
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
