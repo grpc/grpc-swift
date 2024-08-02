@@ -16,7 +16,6 @@
 
 package import NIOCore
 package import NIOHTTP2
-
 import NIOPosix
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)

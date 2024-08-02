@@ -15,10 +15,9 @@
  */
 
 package import GRPCCore
-package import NIOHTTP2
-package import NIOCore
-
 import NIOConcurrencyHelpers
+package import NIOCore
+package import NIOHTTP2
 
 /// A `Connection` provides communication to a single remote peer.
 ///

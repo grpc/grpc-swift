@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-public import Atomics // should be @usableFromInline
+public import Atomics  // should be @usableFromInline
 
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 @usableFromInline

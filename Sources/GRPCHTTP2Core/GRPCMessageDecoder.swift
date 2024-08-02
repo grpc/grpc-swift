@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package import NIOCore
-
 import GRPCCore
+package import NIOCore
 
 /// A ``GRPCMessageDecoder`` helps with the deframing of gRPC data frames:
 /// - It reads the frame's metadata to know whether the message payload is compressed or not, and its length

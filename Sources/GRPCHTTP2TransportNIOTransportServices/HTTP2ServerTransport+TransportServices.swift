@@ -16,7 +16,7 @@
 
 #if canImport(Network)
 public import GRPCCore
-public import NIOTransportServices // has to be public because of default argument value in init
+public import NIOTransportServices  // has to be public because of default argument value in init
 public import GRPCHTTP2Core
 
 import NIOCore

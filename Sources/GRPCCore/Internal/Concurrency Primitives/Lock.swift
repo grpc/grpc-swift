@@ -28,9 +28,9 @@
 //===----------------------------------------------------------------------===//
 
 #if canImport(Darwin)
-public import Darwin // should be @usableFromInline
+public import Darwin  // should be @usableFromInline
 #elseif canImport(Glibc)
-public import Glibc // should be @usableFromInline
+public import Glibc  // should be @usableFromInline
 #endif
 
 @usableFromInline
