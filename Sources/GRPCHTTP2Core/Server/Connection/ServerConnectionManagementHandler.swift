@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import NIOCore
-import NIOHTTP2
+internal import NIOCore
+internal import NIOHTTP2
 
 /// A `ChannelHandler` which manages the lifecycle of a gRPC connection over HTTP/2.
 ///

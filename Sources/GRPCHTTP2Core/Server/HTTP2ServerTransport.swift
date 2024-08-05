@@ -15,7 +15,7 @@
  */
 
 public import GRPCCore
-import NIOHTTP2
+internal import NIOHTTP2
 
 /// A namespace for the HTTP/2 server transport.
 public enum HTTP2ServerTransport {}

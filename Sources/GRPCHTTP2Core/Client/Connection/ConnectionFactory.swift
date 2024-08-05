@@ -16,7 +16,7 @@
 
 package import NIOCore
 package import NIOHTTP2
-import NIOPosix
+internal import NIOPosix
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 package protocol HTTP2Connector: Sendable {

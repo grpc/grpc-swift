@@ -15,7 +15,7 @@
  */
 
 public import GRPCCore
-import Tracing
+internal import Tracing
 
 /// A server interceptor that extracts tracing information from the request.
 ///

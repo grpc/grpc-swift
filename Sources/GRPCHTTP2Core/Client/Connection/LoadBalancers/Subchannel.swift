@@ -15,7 +15,7 @@
  */
 
 package import GRPCCore
-import NIOConcurrencyHelpers
+internal import NIOConcurrencyHelpers
 
 /// A ``Subchannel`` provides communication to a single ``Endpoint``.
 ///

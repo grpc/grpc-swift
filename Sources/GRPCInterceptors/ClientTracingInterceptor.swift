@@ -15,7 +15,7 @@
  */
 
 public import GRPCCore
-import Tracing
+internal import Tracing
 
 /// A client interceptor that injects tracing information into the request.
 ///

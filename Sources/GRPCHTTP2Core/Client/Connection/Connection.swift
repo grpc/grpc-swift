@@ -15,7 +15,7 @@
  */
 
 package import GRPCCore
-import NIOConcurrencyHelpers
+internal import NIOConcurrencyHelpers
 package import NIOCore
 package import NIOHTTP2
 

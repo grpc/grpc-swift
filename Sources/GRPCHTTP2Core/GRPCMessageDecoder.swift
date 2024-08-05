@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+internal import GRPCCore
 package import NIOCore
 
 /// A ``GRPCMessageDecoder`` helps with the deframing of gRPC data frames:

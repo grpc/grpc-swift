@@ -16,9 +16,9 @@
 
 public import GRPCCore
 public import GRPCHTTP2Core
-import NIOCore
-import NIOExtras
-import NIOHTTP2
+internal import NIOCore
+internal import NIOExtras
+internal import NIOHTTP2
 public import NIOPosix  // has to be public because of default argument value in init
 
 extension HTTP2ServerTransport {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import Atomics
-import DequeModule
+internal import Atomics
+internal import DequeModule
 package import GRPCCore
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
