@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+public import GRPCCore
 
 /// A namespace for the HTTP/2 client transport.
 public enum HTTP2ClientTransport {}

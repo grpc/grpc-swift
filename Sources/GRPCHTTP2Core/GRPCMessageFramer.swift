@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOCore
+internal import GRPCCore
+internal import NIOCore
 
 /// A ``GRPCMessageFramer`` helps with the framing of gRPC data frames:
 /// - It prepends data with the required metadata (compression flag and message length).

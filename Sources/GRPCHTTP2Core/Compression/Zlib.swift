@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import CGRPCZlib
-import GRPCCore
-import NIOCore
+internal import CGRPCZlib
+internal import GRPCCore
+internal import NIOCore
 
 enum Zlib {
   enum Method {

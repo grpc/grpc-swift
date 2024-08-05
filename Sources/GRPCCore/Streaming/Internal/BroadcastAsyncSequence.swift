@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import DequeModule
+
+public import DequeModule  // should be @usableFromInline
 
 /// An `AsyncSequence` which can broadcast its values to multiple consumers concurrently.
 ///

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import NIOCore
-import NIOHTTP2
+package import NIOCore
+package import NIOHTTP2
 
 /// An event which happens on a client's HTTP/2 connection.
 package enum ClientConnectionEvent: Sendable {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+package import GRPCCore
 
 /// A load-balancer which maintains to a set of subchannels and uses round-robin to pick a
 /// subchannel when picking a subchannel to use.

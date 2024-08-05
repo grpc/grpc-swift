@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import Tracing
+public import GRPCCore
+internal import Tracing
 
 /// A client interceptor that injects tracing information into the request.
 ///
