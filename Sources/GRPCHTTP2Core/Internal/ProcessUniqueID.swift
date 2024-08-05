@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import Atomics
+internal import Atomics
 
 /// An ID which is unique within this process.
 struct ProcessUniqueID: Hashable, Sendable, CustomStringConvertible {

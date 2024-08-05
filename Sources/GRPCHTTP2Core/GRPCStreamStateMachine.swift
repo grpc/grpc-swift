@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOCore
-import NIOHPACK
-import NIOHTTP1
+internal import GRPCCore
+internal import NIOCore
+internal import NIOHPACK
+internal import NIOHTTP1
 
 package enum Scheme: String {
   case http

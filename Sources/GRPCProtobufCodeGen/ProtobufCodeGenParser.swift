@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import Foundation
-import SwiftProtobuf
-import SwiftProtobufPluginLibrary
+internal import Foundation
+internal import SwiftProtobuf
+internal import SwiftProtobufPluginLibrary
 
-import struct GRPCCodeGen.CodeGenerationRequest
+internal import struct GRPCCodeGen.CodeGenerationRequest
 
 /// Parses a ``FileDescriptor`` object into a ``CodeGenerationRequest`` object.
 internal struct ProtobufCodeGenParser {

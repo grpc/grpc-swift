@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOConcurrencyHelpers
-import NIOCore
-import NIOHTTP2
+package import GRPCCore
+internal import NIOConcurrencyHelpers
+package import NIOCore
+package import NIOHTTP2
 
 /// A `Connection` provides communication to a single remote peer.
 ///

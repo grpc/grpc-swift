@@ -207,7 +207,11 @@ extension Target {
         .atomics
       ],
       path: "Sources/GRPCCore",
-      swiftSettings: [._swiftLanguageMode(.v5), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v5),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -217,7 +221,11 @@ extension Target {
       dependencies: [
         .grpcCore
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -228,7 +236,11 @@ extension Target {
         .grpcCore,
         .tracing
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -243,7 +255,11 @@ extension Target {
         .dequeModule,
         .atomics
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -256,7 +272,11 @@ extension Target {
         .nioPosix,
         .nioExtras
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -270,7 +290,11 @@ extension Target {
         .nioExtras,
         .nioTransportServices
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -283,7 +307,11 @@ extension Target {
         .grpcHTTP2TransportNIOPosix,
         .grpcHTTP2TransportNIOTransportServices,
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -510,7 +538,7 @@ extension Target {
         .grpcCore,
         .grpcProtobuf
       ],
-      swiftSettings: [._swiftLanguageMode(.v5), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -814,7 +842,11 @@ extension Target {
     .target(
       name: "GRPCCodeGen",
       path: "Sources/GRPCCodeGen",
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -826,7 +858,11 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/GRPCProtobuf",
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -839,7 +875,11 @@ extension Target {
         .grpcCodeGen
       ],
       path: "Sources/GRPCProtobufCodeGen",
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -851,7 +891,11 @@ extension Target {
         .grpcProtobuf
       ],
       path: "Sources/Services/Health",
-      swiftSettings: [._swiftLanguageMode(.v6)]
+      swiftSettings: [
+        ._swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 }

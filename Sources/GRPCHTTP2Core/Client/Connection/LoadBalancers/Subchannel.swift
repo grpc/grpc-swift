@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOConcurrencyHelpers
+package import GRPCCore
+internal import NIOConcurrencyHelpers
 
 /// A ``Subchannel`` provides communication to a single ``Endpoint``.
 ///

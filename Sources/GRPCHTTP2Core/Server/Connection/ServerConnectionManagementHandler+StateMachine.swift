@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import NIOCore
-import NIOHTTP2
+internal import NIOCore
+internal import NIOHTTP2
 
 extension ServerConnectionManagementHandler {
   /// Tracks the state of TCP connections at the server.

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import GRPCHTTP2Core
-import NIOCore
-import NIOPosix
+internal import GRPCCore
+internal import GRPCHTTP2Core
+internal import NIOCore
+internal import NIOPosix
 
 extension ClientBootstrap {
   @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
