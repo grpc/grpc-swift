@@ -47,12 +47,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           public enum Method {
               public enum MethodA {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: "namespaceA.ServiceA",
+                      service: NamespaceA_ServiceA.serviceDescriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
@@ -68,6 +72,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -94,6 +101,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -105,6 +116,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -131,6 +145,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -138,6 +156,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -164,6 +185,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -171,6 +196,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -197,9 +225,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -230,12 +265,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "",
+              service: "ServiceA"
+          )
           public enum Method {
               public enum MethodA {
                   public typealias Input = ServiceARequest
                   public typealias Output = ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: "ServiceA",
+                      service: ServiceA.serviceDescriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
@@ -251,6 +290,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = ServiceAClient
+      }
+      extension ServiceDescriptor {
+          public static let serviceA: ServiceDescriptor = ServiceA.serviceDescriptor
       }
       """
 
@@ -293,12 +335,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           public enum Method {
               public enum MethodA {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: "namespaceA.ServiceA",
+                      service: NamespaceA_ServiceA.serviceDescriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
@@ -306,7 +352,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: "namespaceA.ServiceA",
+                      service: NamespaceA_ServiceA.serviceDescriptor.fullyQualifiedService,
                       method: "MethodB"
                   )
               }
@@ -323,6 +369,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -349,6 +398,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       package enum NamespaceA_ServiceA {
+          package static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
           package enum Method {
               package static let descriptors: [MethodDescriptor] = []
           }
@@ -360,6 +413,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = NamespaceA_ServiceAClient
+      }
+      extension ServiceDescriptor {
+          package static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
       }
       """
 
@@ -398,6 +454,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_Aservice {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "AService"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -410,7 +470,14 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_AserviceClient
       }
+      extension ServiceDescriptor {
+          public static let namespaceA_Aservice: ServiceDescriptor = NamespaceA_Aservice.serviceDescriptor
+      }
       public enum NamespaceA_Bservice {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "namespaceA",
+              service: "BService"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -422,6 +489,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = NamespaceA_BserviceClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_BserviceClient
+      }
+      extension ServiceDescriptor {
+          public static let namespaceA_Bservice: ServiceDescriptor = NamespaceA_Bservice.serviceDescriptor
       }
       """
 
@@ -452,6 +522,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       package enum AService {
+          package static let serviceDescriptor = ServiceDescriptor(
+              package: "",
+              service: "AService"
+          )
           package enum Method {
               package static let descriptors: [MethodDescriptor] = []
           }
@@ -464,7 +538,14 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = AServiceClient
       }
+      extension ServiceDescriptor {
+          package static let aservice: ServiceDescriptor = AService.serviceDescriptor
+      }
       package enum BService {
+          package static let serviceDescriptor = ServiceDescriptor(
+              package: "",
+              service: "BService"
+          )
           package enum Method {
               package static let descriptors: [MethodDescriptor] = []
           }
@@ -476,6 +557,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package typealias ClientProtocol = BServiceClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = BServiceClient
+      }
+      extension ServiceDescriptor {
+          package static let bservice: ServiceDescriptor = BService.serviceDescriptor
       }
       """
 
@@ -514,6 +598,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       internal enum Anamespace_AService {
+          internal static let serviceDescriptor = ServiceDescriptor(
+              package: "anamespace",
+              service: "AService"
+          )
           internal enum Method {
               internal static let descriptors: [MethodDescriptor] = []
           }
@@ -526,7 +614,14 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias Client = Anamespace_AServiceClient
       }
+      extension ServiceDescriptor {
+          internal static let anamespace_AService: ServiceDescriptor = Anamespace_AService.serviceDescriptor
+      }
       internal enum Bnamespace_BService {
+          internal static let serviceDescriptor = ServiceDescriptor(
+              package: "bnamespace",
+              service: "BService"
+          )
           internal enum Method {
               internal static let descriptors: [MethodDescriptor] = []
           }
@@ -538,6 +633,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           internal typealias ClientProtocol = Bnamespace_BServiceClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias Client = Bnamespace_BServiceClient
+      }
+      extension ServiceDescriptor {
+          internal static let bnamespace_BService: ServiceDescriptor = Bnamespace_BService.serviceDescriptor
       }
       """
 
@@ -570,6 +668,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum Anamespace_AService {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "anamespace",
+              service: "AService"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -582,7 +684,14 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = Anamespace_AServiceClient
       }
+      extension ServiceDescriptor {
+          public static let anamespace_AService: ServiceDescriptor = Anamespace_AService.serviceDescriptor
+      }
       public enum BService {
+          public static let serviceDescriptor = ServiceDescriptor(
+              package: "",
+              service: "BService"
+          )
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -594,6 +703,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ClientProtocol = BServiceClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = BServiceClient
+      }
+      extension ServiceDescriptor {
+          public static let bService: ServiceDescriptor = BService.serviceDescriptor
       }
       """
 

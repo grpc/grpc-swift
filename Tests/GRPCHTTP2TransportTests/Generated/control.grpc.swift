@@ -26,12 +26,16 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Control {
+    internal static let serviceDescriptor = ServiceDescriptor(
+        package: "",
+        service: "Control"
+    )
     internal enum Method {
         internal enum Unary {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: "Control",
+                service: Control.serviceDescriptor.fullyQualifiedService,
                 method: "Unary"
             )
         }
@@ -39,7 +43,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: "Control",
+                service: Control.serviceDescriptor.fullyQualifiedService,
                 method: "ServerStream"
             )
         }
@@ -47,7 +51,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: "Control",
+                service: Control.serviceDescriptor.fullyQualifiedService,
                 method: "ClientStream"
             )
         }
@@ -55,7 +59,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: "Control",
+                service: Control.serviceDescriptor.fullyQualifiedService,
                 method: "BidiStream"
             )
         }
@@ -74,6 +78,10 @@ internal enum Control {
     internal typealias ClientProtocol = ControlClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias Client = ControlClient
+}
+
+extension ServiceDescriptor {
+    internal static let control: ServiceDescriptor = Control.serviceDescriptor
 }
 
 /// A controllable service for testing.

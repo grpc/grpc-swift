@@ -60,12 +60,16 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import ExtraModule
 
         internal enum Hello_World_Greeter {
+            internal static let serviceDescriptor = ServiceDescriptor(
+                package: "hello.world",
+                service: "Greeter"
+            )
             internal enum Method {
                 internal enum SayHello {
                     internal typealias Input = Hello_World_HelloRequest
                     internal typealias Output = Hello_World_HelloReply
                     internal static let descriptor = MethodDescriptor(
-                        service: "hello.world.Greeter",
+                        service: Hello_World_Greeter.serviceDescriptor.fullyQualifiedService,
                         method: "SayHello"
                     )
                 }
@@ -77,6 +81,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             internal typealias ClientProtocol = Hello_World_GreeterClientProtocol
             @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
             internal typealias Client = Hello_World_GreeterClient
+        }
+
+        extension ServiceDescriptor {
+            internal static let hello_world_Greeter: ServiceDescriptor = Hello_World_Greeter.serviceDescriptor
         }
 
         /// The greeting service definition.
@@ -175,12 +183,16 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import ExtraModule
 
         public enum Helloworld_Greeter {
+          public static let serviceDescriptor = ServiceDescriptor(
+            package: "helloworld",
+            service: "Greeter"
+          )
           public enum Method {
             public enum SayHello {
               public typealias Input = Helloworld_HelloRequest
               public typealias Output = Helloworld_HelloReply
               public static let descriptor = MethodDescriptor(
-                service: "helloworld.Greeter",
+                service: Helloworld_Greeter.serviceDescriptor.fullyQualifiedService,
                 method: "SayHello"
               )
             }
@@ -192,6 +204,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           public typealias StreamingServiceProtocol = Helloworld_GreeterStreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
+        }
+
+        extension ServiceDescriptor {
+          public static let helloworld_Greeter: ServiceDescriptor = Helloworld_Greeter.serviceDescriptor
         }
 
         /// The greeting service definition.
@@ -270,12 +286,16 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import ExtraModule
 
         package enum Greeter {
+          package static let serviceDescriptor = ServiceDescriptor(
+            package: "",
+            service: "Greeter"
+          )
           package enum Method {
             package enum SayHello {
               package typealias Input = HelloRequest
               package typealias Output = HelloReply
               package static let descriptor = MethodDescriptor(
-                service: "Greeter",
+                service: Greeter.serviceDescriptor.fullyQualifiedService,
                 method: "SayHello"
               )
             }
@@ -291,6 +311,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           package typealias ClientProtocol = GreeterClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = GreeterClient
+        }
+
+        extension ServiceDescriptor {
+          package static let greeter: ServiceDescriptor = Greeter.serviceDescriptor
         }
 
         /// The greeting service definition.
