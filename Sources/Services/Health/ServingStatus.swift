@@ -19,7 +19,7 @@
 /// - ``ServingStatus/serving`` indicates that a service is healthy.
 /// - ``ServingStatus/notServing`` indicates that a service is unhealthy.
 public struct ServingStatus: Sendable, Hashable {
-  package enum Value: Sendable, Hashable {
+  internal enum Value: Sendable, Hashable {
     case serving
     case notServing
   }
@@ -30,7 +30,7 @@ public struct ServingStatus: Sendable, Hashable {
   /// A status indicating that a service unhealthy.
   public static let notServing = ServingStatus(.notServing)
 
-  package var value: Value
+  internal var value: Value
 
   private init(_ value: Value) {
     self.value = value

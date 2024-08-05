@@ -37,7 +37,7 @@ internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {
 
   func watch(
     request: ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>
-  ) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
+  ) async -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
     let service = request.message.service
     let statuses = AsyncStream.makeStream(of: Grpc_Health_V1_HealthCheckResponse.ServingStatus.self)
 
