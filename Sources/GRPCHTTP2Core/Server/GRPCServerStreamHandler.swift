@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOCore
-import NIOHTTP2
+package import GRPCCore
+package import NIOCore
+package import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 package final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChannelHandler {

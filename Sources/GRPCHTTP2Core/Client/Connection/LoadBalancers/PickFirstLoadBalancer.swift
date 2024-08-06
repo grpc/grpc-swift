@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+package import GRPCCore
 
 /// A load-balancer which has a single subchannel.
 ///

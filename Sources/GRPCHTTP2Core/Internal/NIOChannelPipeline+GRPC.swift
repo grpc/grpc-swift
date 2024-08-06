@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import NIOCore
-import NIOHPACK
-import NIOHTTP2
+package import GRPCCore
+package import NIOCore
+internal import NIOHPACK
+package import NIOHTTP2
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ChannelPipeline.SynchronousOperations {

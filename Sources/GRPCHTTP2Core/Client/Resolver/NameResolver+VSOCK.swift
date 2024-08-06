@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+internal import GRPCCore
 
 extension ResolvableTargets {
   /// A resolvable target for Virtual Socket addresses.

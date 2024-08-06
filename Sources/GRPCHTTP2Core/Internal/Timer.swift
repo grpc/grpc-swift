@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import NIOCore
+package import NIOCore
 
 package struct Timer {
   /// The delay to wait before running the task.

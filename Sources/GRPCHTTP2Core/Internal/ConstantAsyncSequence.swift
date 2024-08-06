@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+internal import GRPCCore
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 private struct ConstantAsyncSequence<Element: Sendable>: AsyncSequence, Sendable {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import DequeModule
+internal import DequeModule
 
 /// A FIFO-queue which allows for a single element to be stored on the stack and defers to a
 /// heap-implementation if further elements are added.

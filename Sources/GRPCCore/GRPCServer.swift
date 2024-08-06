@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import Atomics
+internal import Atomics
 
 /// A gRPC server.
 ///

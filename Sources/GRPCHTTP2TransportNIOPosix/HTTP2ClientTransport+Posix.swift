@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import GRPCHTTP2Core
-import NIOCore
-import NIOPosix
+public import GRPCCore
+public import GRPCHTTP2Core  // should be @usableFromInline
+public import NIOCore
+public import NIOPosix  // has to be public because of default argument value in init
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport {

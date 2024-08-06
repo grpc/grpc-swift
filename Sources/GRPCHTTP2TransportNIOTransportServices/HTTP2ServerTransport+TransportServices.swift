@@ -15,12 +15,13 @@
  */
 
 #if canImport(Network)
-import GRPCCore
-import GRPCHTTP2Core
-import NIOCore
-import NIOExtras
-import NIOHTTP2
-import NIOTransportServices
+public import GRPCCore
+public import NIOTransportServices  // has to be public because of default argument value in init
+public import GRPCHTTP2Core
+
+internal import NIOCore
+internal import NIOExtras
+internal import NIOHTTP2
 
 extension HTTP2ServerTransport {
   /// A NIO Transport Services-backed implementation of a server transport.
