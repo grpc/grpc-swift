@@ -110,77 +110,107 @@ final class Test_TextBasedRenderer: XCTestCase {
   func testImports() throws {
     try _test(nil, renderedBy: { $0.renderImports(_:) }, rendersAs: "")
     try _test(
-      [ImportDescription(moduleName: "Foo"), ImportDescription(moduleName: "Bar")],
+      [
+        ImportDescription(accessLevel: .internal, moduleName: "Foo"),
+        ImportDescription(accessLevel: .public, moduleName: "Bar"),
+      ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
-        import Foo
-        import Bar
+        internal import Foo
+        public import Bar
         """#
     )
     try _test(
-      [ImportDescription(moduleName: "Foo", spi: "Secret")],
+      [ImportDescription(accessLevel: .internal, moduleName: "Foo", spi: "Secret")],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
-        @_spi(Secret) import Foo
+        @_spi(Secret) internal import Foo
         """#
     )
     try _test(
-      [ImportDescription(moduleName: "Foo", preconcurrency: .onOS(["Bar", "Baz"]))],
+      [
+        ImportDescription(
+          accessLevel: .internal,
+          moduleName: "Foo",
+          preconcurrency: .onOS(["Bar", "Baz"])
+        )
+      ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
         #if os(Bar) || os(Baz)
-        @preconcurrency import Foo
+        @preconcurrency internal import Foo
         #else
-        import Foo
+        internal import Foo
         #endif
         """#
     )
     try _test(
       [
-        ImportDescription(moduleName: "Foo", preconcurrency: .always),
-        ImportDescription(moduleName: "Bar", spi: "Secret", preconcurrency: .always),
+        ImportDescription(accessLevel: .internal, moduleName: "Foo", preconcurrency: .always),
+        ImportDescription(
+          accessLevel: .internal,
+          moduleName: "Bar",
+          spi: "Secret",
+          preconcurrency: .always
+        ),
       ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
-        @preconcurrency import Foo
-        @preconcurrency @_spi(Secret) import Bar
+        @preconcurrency internal import Foo
+        @preconcurrency @_spi(Secret) internal import Bar
         """#
     )
 
     try _test(
       [
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .typealias, name: "Bar")
         ),
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .struct, name: "Baz")
         ),
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .class, name: "Bac")
         ),
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .enum, name: "Bap")
         ),
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .protocol, name: "Bat")
         ),
-        ImportDescription(moduleName: "Foo", item: ImportDescription.Item(kind: .let, name: "Bam")),
-        ImportDescription(moduleName: "Foo", item: ImportDescription.Item(kind: .var, name: "Bag")),
         ImportDescription(
+          accessLevel: .package,
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .let, name: "Bam")
+        ),
+        ImportDescription(
+          accessLevel: .package,
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .var, name: "Bag")
+        ),
+        ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .func, name: "Bak")
         ),
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           spi: "Secret",
           item: ImportDescription.Item(kind: .func, name: "SecretBar")
         ),
         ImportDescription(
+          accessLevel: .package,
           moduleName: "Foo",
           preconcurrency: .always,
           item: ImportDescription.Item(kind: .func, name: "PreconcurrencyBar")
@@ -188,16 +218,16 @@ final class Test_TextBasedRenderer: XCTestCase {
       ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
-        import typealias Foo.Bar
-        import struct Foo.Baz
-        import class Foo.Bac
-        import enum Foo.Bap
-        import protocol Foo.Bat
-        import let Foo.Bam
-        import var Foo.Bag
-        import func Foo.Bak
-        @_spi(Secret) import func Foo.SecretBar
-        @preconcurrency import func Foo.PreconcurrencyBar
+        package import typealias Foo.Bar
+        package import struct Foo.Baz
+        package import class Foo.Bac
+        package import enum Foo.Bap
+        package import protocol Foo.Bat
+        package import let Foo.Bam
+        package import var Foo.Bag
+        package import func Foo.Bak
+        @_spi(Secret) package import func Foo.SecretBar
+        @preconcurrency package import func Foo.PreconcurrencyBar
         """#
     )
   }
@@ -850,14 +880,14 @@ final class Test_TextBasedRenderer: XCTestCase {
     try _test(
       .init(
         topComment: .inline("hi"),
-        imports: [.init(moduleName: "Foo")],
+        imports: [.init(accessLevel: .internal, moduleName: "Foo")],
         codeBlocks: [.init(comment: nil, item: .declaration(.struct(.init(name: "Bar"))))]
       ),
       renderedBy: { $0.renderFile(_:) },
       rendersAs: #"""
         // hi
 
-        import Foo
+        internal import Foo
 
         struct Bar {}
         """#
@@ -868,7 +898,7 @@ final class Test_TextBasedRenderer: XCTestCase {
     try _test(
       .init(
         topComment: .inline("hi"),
-        imports: [.init(moduleName: "Foo")],
+        imports: [.init(accessLevel: .public, moduleName: "Foo")],
         codeBlocks: [
           .init(
             comment: nil,
@@ -880,7 +910,7 @@ final class Test_TextBasedRenderer: XCTestCase {
       rendersAs: #"""
         // hi
 
-        import Foo
+        public import Foo
 
         struct Bar {
           struct Baz {}

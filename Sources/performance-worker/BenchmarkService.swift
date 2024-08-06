@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import Atomics
-import GRPCCore
+private import Atomics
+internal import GRPCCore
 
 import struct Foundation.Data
 
