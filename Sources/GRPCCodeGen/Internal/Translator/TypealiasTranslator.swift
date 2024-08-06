@@ -22,10 +22,7 @@
 /// a representation for the following generated code:
 /// ```swift
 /// public enum Echo_Echo {
-///   public static let descriptor = ServiceDescriptor(
-///     package: "echo",
-///     service: "Echo"
-///   )
+///   public static let descriptor = ServiceDescriptor.echo_Echo
 ///
 ///   public enum Method {
 ///     public enum Get {
@@ -62,7 +59,10 @@
 /// }
 ///
 /// extension ServiceDescriptor {
-///   public static let echo_Echo: ServiceDescriptor = Echo_Echo.descriptor
+///   public static let echo_Echo = Self(
+///     package: "echo",
+///     service: "Echo"
+///   )
 /// }
 /// ```
 ///
@@ -302,12 +302,45 @@ extension TypealiasTranslator {
     )
   }
 
+  private func makeServiceIdentifier(_ service: CodeGenerationRequest.ServiceDescriptor) -> String {
+    let prefix: String
+
+    if service.namespace.normalizedBase.isEmpty {
+      prefix = ""
+    } else {
+      prefix = "\(service.namespace.normalizedBase)_"
+    }
+
+    return "\(prefix)\(service.name.normalizedBase)"
+  }
+
   private func makeStaticServiceDescriptorProperty(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> VariableDescription {
+    let serviceIdentifier = makeServiceIdentifier(service)
+
+    return VariableDescription(
+      accessModifier: self.accessModifier,
+      isStatic: true,
+      kind: .let,
+      left: .identifierPattern("descriptor"),
+      right: .memberAccess(
+        MemberAccessDescription(
+          left: .identifierPattern("ServiceDescriptor"),
+          right: serviceIdentifier
+        )
+      )
+    )
+  }
+
+  private func makeServiceDescriptorExtension(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> Declaration {
+    let serviceIdentifier = makeServiceIdentifier(service)
+
     let serviceDescriptorInitialization = Expression.functionCall(
       FunctionCallDescription(
-        calledExpression: .identifierType(.member("ServiceDescriptor")),
+        calledExpression: .identifierType(.member("Self")),
         arguments: [
           FunctionArgumentDescription(
             label: "package",
@@ -321,33 +354,6 @@ extension TypealiasTranslator {
       )
     )
 
-    return VariableDescription(
-      accessModifier: self.accessModifier,
-      isStatic: true,
-      kind: .let,
-      left: .identifierPattern("descriptor"),
-      right: serviceDescriptorInitialization
-    )
-  }
-
-  private func makeServiceDescriptorExtension(
-    for service: CodeGenerationRequest.ServiceDescriptor
-  ) -> Declaration {
-    let prefix: String
-
-    if service.namespace.normalizedBase.isEmpty {
-      prefix = ""
-    } else {
-      prefix = "\(service.namespace.normalizedBase)_"
-    }
-
-    let serviceIdentifier = prefix + service.name.normalizedBase
-
-    let staticServiceDescriptorProperty = MemberAccessDescription(
-      left: .identifierPattern(service.namespacedGeneratedName),
-      right: "descriptor"
-    )
-
     return .extension(
       ExtensionDescription(
         onType: "ServiceDescriptor",
@@ -358,8 +364,7 @@ extension TypealiasTranslator {
               isStatic: true,
               kind: .let,
               left: .identifier(.pattern(serviceIdentifier)),
-              type: .member("ServiceDescriptor"),
-              right: .memberAccess(staticServiceDescriptorProperty)
+              right: serviceDescriptorInitialization
             )
           )
         ]

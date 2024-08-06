@@ -60,10 +60,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import ExtraModule
 
         internal enum Hello_World_Greeter {
-            internal static let descriptor = ServiceDescriptor(
-                package: "hello.world",
-                service: "Greeter"
-            )
+            internal static let descriptor = ServiceDescriptor.hello_world_Greeter
             internal enum Method {
                 internal enum SayHello {
                     internal typealias Input = Hello_World_HelloRequest
@@ -84,7 +81,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         extension ServiceDescriptor {
-            internal static let hello_world_Greeter: ServiceDescriptor = Hello_World_Greeter.descriptor
+            internal static let hello_world_Greeter = Self(
+                package: "hello.world",
+                service: "Greeter"
+            )
         }
 
         /// The greeting service definition.
@@ -183,10 +183,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import ExtraModule
 
         public enum Helloworld_Greeter {
-          public static let descriptor = ServiceDescriptor(
-            package: "helloworld",
-            service: "Greeter"
-          )
+          public static let descriptor = ServiceDescriptor.helloworld_Greeter
           public enum Method {
             public enum SayHello {
               public typealias Input = Helloworld_HelloRequest
@@ -207,7 +204,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         extension ServiceDescriptor {
-          public static let helloworld_Greeter: ServiceDescriptor = Helloworld_Greeter.descriptor
+          public static let helloworld_Greeter = Self(
+            package: "helloworld",
+            service: "Greeter"
+          )
         }
 
         /// The greeting service definition.
@@ -286,10 +286,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         import ExtraModule
 
         package enum Greeter {
-          package static let descriptor = ServiceDescriptor(
-            package: "",
-            service: "Greeter"
-          )
+          package static let descriptor = ServiceDescriptor.Greeter
           package enum Method {
             package enum SayHello {
               package typealias Input = HelloRequest
@@ -314,7 +311,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         }
 
         extension ServiceDescriptor {
-          package static let Greeter: ServiceDescriptor = Greeter.descriptor
+          package static let Greeter = Self(
+            package: "",
+            service: "Greeter"
+          )
         }
 
         /// The greeting service definition.
