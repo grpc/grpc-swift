@@ -171,7 +171,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       @_spi(Secret) import enum Foo.Bar
 
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -185,7 +185,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       }
 
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
 
       /// Documentation for AService

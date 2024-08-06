@@ -22,7 +22,7 @@
 /// a representation for the following generated code:
 /// ```swift
 /// public enum Echo_Echo {
-///   public static let serviceDescriptor = ServiceDescriptor(
+///   public static let descriptor = ServiceDescriptor(
 ///     package: "echo",
 ///     service: "Echo"
 ///   )
@@ -32,7 +32,7 @@
 ///       public typealias Input = Echo_EchoRequest
 ///       public typealias Output = Echo_EchoResponse
 ///       public static let descriptor = MethodDescriptor(
-///         service: Echo_Echo.serviceDescriptor.fullyQualifiedService,
+///         service: Echo_Echo.descriptor.fullyQualifiedService,
 ///         method: "Get"
 ///       )
 ///     }
@@ -41,7 +41,7 @@
 ///       public typealias Input = Echo_EchoRequest
 ///       public typealias Output = Echo_EchoResponse
 ///       public static let descriptor = MethodDescriptor(
-///         service: Echo_Echo.serviceDescriptor.fullyQualifiedService,
+///         service: Echo_Echo.descriptor.fullyQualifiedService,
 ///         method: "Collect"
 ///       )
 ///     }
@@ -62,7 +62,7 @@
 /// }
 ///
 /// extension ServiceDescriptor {
-///   public static let echo_Echo: ServiceDescriptor = Echo_Echo.serviceDescriptor
+///   public static let echo_Echo: ServiceDescriptor = Echo_Echo.descriptor
 /// }
 /// ```
 ///
@@ -129,29 +129,7 @@ extension TypealiasTranslator {
     methodsEnum.members.append(methodDescriptorsDeclaration)
 
     // Create the static service descriptor property.
-    let serviceDescriptorInitialization = Expression.functionCall(
-      FunctionCallDescription(
-        calledExpression: .identifierType(.member("ServiceDescriptor")),
-        arguments: [
-          FunctionArgumentDescription(
-            label: "package",
-            expression: .literal(service.namespace.base)
-          ),
-          FunctionArgumentDescription(
-            label: "service",
-            expression: .literal(service.name.base)
-          ),
-        ]
-      )
-    )
-
-    let staticServiceDescriptorProperty = VariableDescription(
-      accessModifier: self.accessModifier,
-      isStatic: true,
-      kind: .let,
-      left: .identifierPattern("serviceDescriptor"),
-      right: serviceDescriptorInitialization
-    )
+    let staticServiceDescriptorProperty = self.makeStaticServiceDescriptorProperty(for: service)
 
     serviceEnum.members.append(.variable(staticServiceDescriptorProperty))
     serviceEnum.members.append(.enum(methodsEnum))
@@ -212,7 +190,7 @@ extension TypealiasTranslator {
       left: .memberAccess(
         MemberAccessDescription(
           left: .identifierType(.member([service.namespacedGeneratedName])),
-          right: "serviceDescriptor"
+          right: "descriptor"
         )
       ),
       right: "fullyQualifiedService"
@@ -324,17 +302,50 @@ extension TypealiasTranslator {
     )
   }
 
+  private func makeStaticServiceDescriptorProperty(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> VariableDescription {
+    let serviceDescriptorInitialization = Expression.functionCall(
+      FunctionCallDescription(
+        calledExpression: .identifierType(.member("ServiceDescriptor")),
+        arguments: [
+          FunctionArgumentDescription(
+            label: "package",
+            expression: .literal(service.namespace.base)
+          ),
+          FunctionArgumentDescription(
+            label: "service",
+            expression: .literal(service.name.base)
+          ),
+        ]
+      )
+    )
+
+    return VariableDescription(
+      accessModifier: self.accessModifier,
+      isStatic: true,
+      kind: .let,
+      left: .identifierPattern("descriptor"),
+      right: serviceDescriptorInitialization
+    )
+  }
+
   private func makeServiceDescriptorExtension(
     for service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
-    let serviceIdentifier =
-      service.namespace.generatedLowerCase.isEmpty
-      ? service.name.generatedLowerCase
-      : "\(service.namespace.generatedLowerCase)_\(service.name.generatedUpperCase)"
+    let prefix: String
+
+    if service.namespace.normalizedBase.isEmpty {
+      prefix = ""
+    } else {
+      prefix = "\(service.namespace.normalizedBase)_"
+    }
+
+    let serviceIdentifier = prefix + service.name.normalizedBase
 
     let staticServiceDescriptorProperty = MemberAccessDescription(
       left: .identifierPattern(service.namespacedGeneratedName),
-      right: "serviceDescriptor"
+      right: "descriptor"
     )
 
     return .extension(

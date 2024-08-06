@@ -47,7 +47,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -56,7 +56,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: NamespaceA_ServiceA.serviceDescriptor.fullyQualifiedService,
+                      service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
@@ -74,7 +74,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = NamespaceA_ServiceAClient
       }
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -101,7 +101,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -118,7 +118,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = NamespaceA_ServiceAClient
       }
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -145,7 +145,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -158,7 +158,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
       }
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -185,7 +185,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -198,7 +198,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = NamespaceA_ServiceAClient
       }
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -225,7 +225,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -234,7 +234,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           }
       }
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -265,7 +265,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "",
               service: "ServiceA"
           )
@@ -274,7 +274,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   public typealias Input = ServiceARequest
                   public typealias Output = ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: ServiceA.serviceDescriptor.fullyQualifiedService,
+                      service: ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
@@ -292,7 +292,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = ServiceAClient
       }
       extension ServiceDescriptor {
-          public static let serviceA: ServiceDescriptor = ServiceA.serviceDescriptor
+          public static let ServiceA: ServiceDescriptor = ServiceA.descriptor
       }
       """
 
@@ -335,7 +335,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -344,7 +344,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: NamespaceA_ServiceA.serviceDescriptor.fullyQualifiedService,
+                      service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
@@ -352,7 +352,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = MethodDescriptor(
-                      service: NamespaceA_ServiceA.serviceDescriptor.fullyQualifiedService,
+                      service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodB"
                   )
               }
@@ -371,7 +371,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = NamespaceA_ServiceAClient
       }
       extension ServiceDescriptor {
-          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          public static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -398,7 +398,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       package enum NamespaceA_ServiceA {
-          package static let serviceDescriptor = ServiceDescriptor(
+          package static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "ServiceA"
           )
@@ -415,7 +415,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package typealias Client = NamespaceA_ServiceAClient
       }
       extension ServiceDescriptor {
-          package static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.serviceDescriptor
+          package static let namespaceA_ServiceA: ServiceDescriptor = NamespaceA_ServiceA.descriptor
       }
       """
 
@@ -454,7 +454,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_Aservice {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "AService"
           )
@@ -471,10 +471,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = NamespaceA_AserviceClient
       }
       extension ServiceDescriptor {
-          public static let namespaceA_Aservice: ServiceDescriptor = NamespaceA_Aservice.serviceDescriptor
+          public static let namespaceA_AService: ServiceDescriptor = NamespaceA_Aservice.descriptor
       }
       public enum NamespaceA_Bservice {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "namespaceA",
               service: "BService"
           )
@@ -491,7 +491,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = NamespaceA_BserviceClient
       }
       extension ServiceDescriptor {
-          public static let namespaceA_Bservice: ServiceDescriptor = NamespaceA_Bservice.serviceDescriptor
+          public static let namespaceA_BService: ServiceDescriptor = NamespaceA_Bservice.descriptor
       }
       """
 
@@ -522,7 +522,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       package enum AService {
-          package static let serviceDescriptor = ServiceDescriptor(
+          package static let descriptor = ServiceDescriptor(
               package: "",
               service: "AService"
           )
@@ -539,10 +539,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package typealias Client = AServiceClient
       }
       extension ServiceDescriptor {
-          package static let aservice: ServiceDescriptor = AService.serviceDescriptor
+          package static let AService: ServiceDescriptor = AService.descriptor
       }
       package enum BService {
-          package static let serviceDescriptor = ServiceDescriptor(
+          package static let descriptor = ServiceDescriptor(
               package: "",
               service: "BService"
           )
@@ -559,7 +559,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           package typealias Client = BServiceClient
       }
       extension ServiceDescriptor {
-          package static let bservice: ServiceDescriptor = BService.serviceDescriptor
+          package static let BService: ServiceDescriptor = BService.descriptor
       }
       """
 
@@ -598,7 +598,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       internal enum Anamespace_AService {
-          internal static let serviceDescriptor = ServiceDescriptor(
+          internal static let descriptor = ServiceDescriptor(
               package: "anamespace",
               service: "AService"
           )
@@ -615,10 +615,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           internal typealias Client = Anamespace_AServiceClient
       }
       extension ServiceDescriptor {
-          internal static let anamespace_AService: ServiceDescriptor = Anamespace_AService.serviceDescriptor
+          internal static let anamespace_AService: ServiceDescriptor = Anamespace_AService.descriptor
       }
       internal enum Bnamespace_BService {
-          internal static let serviceDescriptor = ServiceDescriptor(
+          internal static let descriptor = ServiceDescriptor(
               package: "bnamespace",
               service: "BService"
           )
@@ -635,7 +635,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           internal typealias Client = Bnamespace_BServiceClient
       }
       extension ServiceDescriptor {
-          internal static let bnamespace_BService: ServiceDescriptor = Bnamespace_BService.serviceDescriptor
+          internal static let bnamespace_BService: ServiceDescriptor = Bnamespace_BService.descriptor
       }
       """
 
@@ -668,7 +668,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum Anamespace_AService {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "anamespace",
               service: "AService"
           )
@@ -685,10 +685,10 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = Anamespace_AServiceClient
       }
       extension ServiceDescriptor {
-          public static let anamespace_AService: ServiceDescriptor = Anamespace_AService.serviceDescriptor
+          public static let anamespace_AService: ServiceDescriptor = Anamespace_AService.descriptor
       }
       public enum BService {
-          public static let serviceDescriptor = ServiceDescriptor(
+          public static let descriptor = ServiceDescriptor(
               package: "",
               service: "BService"
           )
@@ -705,7 +705,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           public typealias Client = BServiceClient
       }
       extension ServiceDescriptor {
-          public static let bService: ServiceDescriptor = BService.serviceDescriptor
+          public static let BService: ServiceDescriptor = BService.descriptor
       }
       """
 

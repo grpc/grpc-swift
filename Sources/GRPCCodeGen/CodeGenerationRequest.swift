@@ -321,3 +321,12 @@ public struct CodeGenerationRequest {
     }
   }
 }
+
+extension CodeGenerationRequest.Name {
+  /// The base name replacing occurrences of "." with "_".
+  ///
+  /// For example, if `base` is "Foo.Bar", then `normalizedBase` is "Foo_Bar".
+  public var normalizedBase: String {
+    return self.base.replacingOccurrences(of: ".", with: "_")
+  }
+}
