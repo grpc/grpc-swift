@@ -21,6 +21,10 @@ internal import NIOExtras
 internal import NIOHTTP2
 public import NIOPosix  // has to be public because of default argument value in init
 
+#if canImport(NIOSSL)
+import NIOSSL
+#endif
+
 extension HTTP2ServerTransport {
   /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -174,6 +178,15 @@ extension HTTP2ServerTransport {
         }
       }
 
+      #if canImport(NIOSSL)
+      let nioSSLContext: NIOSSLContext?
+      if let tlsConfig = self.config.transportSecurity.tlsConfig {
+        nioSSLContext = try! NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+      } else {
+        nioSSLContext = nil
+      }
+      #endif
+
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
         .serverChannelOption(
           ChannelOptions.socketOption(.so_reuseaddr),
@@ -187,6 +200,17 @@ extension HTTP2ServerTransport {
         }
         .bind(to: self.address) { channel in
           channel.eventLoop.makeCompletedFuture {
+            #if canImport(NIOSSL)
+            try channel.pipeline.syncOperations.configureGRPCServerPipeline(
+              channel: channel,
+              compressionConfig: self.config.compression,
+              connectionConfig: self.config.connection,
+              http2Config: self.config.http2,
+              rpcConfig: self.config.rpc,
+              transportSecurity: self.config.transportSecurity,
+              nioSSLContext: nioSSLContext
+            )
+            #else
             try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.config.compression,
@@ -195,6 +219,7 @@ extension HTTP2ServerTransport {
               rpcConfig: self.config.rpc,
               transportSecurity: self.config.transportSecurity
             )
+            #endif
           }
         }
 
@@ -304,7 +329,7 @@ extension HTTP2ServerTransport.Posix {
     public var http2: HTTP2ServerTransport.Config.HTTP2
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
-    /// Transport security: either
+    /// Transport security: either plaintext or TLS.
     public var transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
 
     /// Construct a new `Config`.

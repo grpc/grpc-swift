@@ -87,6 +87,9 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
   /// The clock.
   private let clock: Clock
 
+  /// Whether ALPN is required.
+  /// If it is but the TLS handshake finished without negotiating a protocol, an error will be fired down the
+  /// pipeline and the channel will be closed.
   private let requireALPN: Bool
 
   /// A clock providing the current time.
