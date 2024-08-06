@@ -25,10 +25,7 @@ import GRPCCore
 import GRPCProtobuf
 
 public enum Grpc_Testing_EmptyService {
-    public static let descriptor = ServiceDescriptor(
-        package: "grpc.testing",
-        service: "EmptyService"
-    )
+    public static let descriptor = ServiceDescriptor.grpc_testing_EmptyService
     public enum Method {
         public static let descriptors: [MethodDescriptor] = []
     }
@@ -43,7 +40,10 @@ public enum Grpc_Testing_EmptyService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_EmptyService: ServiceDescriptor = Grpc_Testing_EmptyService.descriptor
+    public static let grpc_testing_EmptyService = Self(
+        package: "grpc.testing",
+        service: "EmptyService"
+    )
 }
 
 /// A service that has zero methods.

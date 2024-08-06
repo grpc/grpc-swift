@@ -28,10 +28,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Grpc_Testing_BenchmarkService {
-    internal static let descriptor = ServiceDescriptor(
-        package: "grpc.testing",
-        service: "BenchmarkService"
-    )
+    internal static let descriptor = ServiceDescriptor.grpc_testing_BenchmarkService
     internal enum Method {
         internal enum UnaryCall {
             internal typealias Input = Grpc_Testing_SimpleRequest
@@ -92,7 +89,10 @@ internal enum Grpc_Testing_BenchmarkService {
 }
 
 extension ServiceDescriptor {
-    internal static let grpc_testing_BenchmarkService: ServiceDescriptor = Grpc_Testing_BenchmarkService.descriptor
+    internal static let grpc_testing_BenchmarkService = Self(
+        package: "grpc.testing",
+        service: "BenchmarkService"
+    )
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)

@@ -28,10 +28,7 @@ import GRPCCore
 import GRPCProtobuf
 
 public enum Grpc_Testing_ReconnectService {
-    public static let descriptor = ServiceDescriptor(
-        package: "grpc.testing",
-        service: "ReconnectService"
-    )
+    public static let descriptor = ServiceDescriptor.grpc_testing_ReconnectService
     public enum Method {
         public enum Start {
             public typealias Input = Grpc_Testing_ReconnectParams
@@ -65,14 +62,14 @@ public enum Grpc_Testing_ReconnectService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_ReconnectService: ServiceDescriptor = Grpc_Testing_ReconnectService.descriptor
+    public static let grpc_testing_ReconnectService = Self(
+        package: "grpc.testing",
+        service: "ReconnectService"
+    )
 }
 
 public enum Grpc_Testing_TestService {
-    public static let descriptor = ServiceDescriptor(
-        package: "grpc.testing",
-        service: "TestService"
-    )
+    public static let descriptor = ServiceDescriptor.grpc_testing_TestService
     public enum Method {
         public enum EmptyCall {
             public typealias Input = Grpc_Testing_Empty
@@ -160,14 +157,14 @@ public enum Grpc_Testing_TestService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_TestService: ServiceDescriptor = Grpc_Testing_TestService.descriptor
+    public static let grpc_testing_TestService = Self(
+        package: "grpc.testing",
+        service: "TestService"
+    )
 }
 
 public enum Grpc_Testing_UnimplementedService {
-    public static let descriptor = ServiceDescriptor(
-        package: "grpc.testing",
-        service: "UnimplementedService"
-    )
+    public static let descriptor = ServiceDescriptor.grpc_testing_UnimplementedService
     public enum Method {
         public enum UnimplementedCall {
             public typealias Input = Grpc_Testing_Empty
@@ -192,7 +189,10 @@ public enum Grpc_Testing_UnimplementedService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_UnimplementedService: ServiceDescriptor = Grpc_Testing_UnimplementedService.descriptor
+    public static let grpc_testing_UnimplementedService = Self(
+        package: "grpc.testing",
+        service: "UnimplementedService"
+    )
 }
 
 /// A simple service to test the various types of RPCs and experiment with

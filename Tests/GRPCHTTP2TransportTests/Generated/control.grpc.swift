@@ -26,10 +26,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Control {
-    internal static let descriptor = ServiceDescriptor(
-        package: "",
-        service: "Control"
-    )
+    internal static let descriptor = ServiceDescriptor.Control
     internal enum Method {
         internal enum Unary {
             internal typealias Input = ControlInput
@@ -81,7 +78,10 @@ internal enum Control {
 }
 
 extension ServiceDescriptor {
-    internal static let Control: ServiceDescriptor = Control.descriptor
+    internal static let Control = Self(
+        package: "",
+        service: "Control"
+    )
 }
 
 /// A controllable service for testing.

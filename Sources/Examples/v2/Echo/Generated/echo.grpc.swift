@@ -25,10 +25,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Echo_Echo {
-    internal static let descriptor = ServiceDescriptor(
-        package: "echo",
-        service: "Echo"
-    )
+    internal static let descriptor = ServiceDescriptor.echo_Echo
     internal enum Method {
         internal enum Get {
             internal typealias Input = Echo_EchoRequest
@@ -80,7 +77,10 @@ internal enum Echo_Echo {
 }
 
 extension ServiceDescriptor {
-    internal static let echo_Echo: ServiceDescriptor = Echo_Echo.descriptor
+    internal static let echo_Echo = Self(
+        package: "echo",
+        service: "Echo"
+    )
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)

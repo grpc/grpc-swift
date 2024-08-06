@@ -28,10 +28,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Grpc_Testing_WorkerService {
-    internal static let descriptor = ServiceDescriptor(
-        package: "grpc.testing",
-        service: "WorkerService"
-    )
+    internal static let descriptor = ServiceDescriptor.grpc_testing_WorkerService
     internal enum Method {
         internal enum RunServer {
             internal typealias Input = Grpc_Testing_ServerArgs
@@ -79,7 +76,10 @@ internal enum Grpc_Testing_WorkerService {
 }
 
 extension ServiceDescriptor {
-    internal static let grpc_testing_WorkerService: ServiceDescriptor = Grpc_Testing_WorkerService.descriptor
+    internal static let grpc_testing_WorkerService = Self(
+        package: "grpc.testing",
+        service: "WorkerService"
+    )
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
