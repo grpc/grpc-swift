@@ -658,7 +658,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
 public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    public init(client: GRPCCore.GRPCClient) {
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 
@@ -854,7 +854,7 @@ extension Grpc_Testing_UnimplementedService.ClientProtocol {
 public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    public init(client: GRPCCore.GRPCClient) {
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 
@@ -933,7 +933,7 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
 public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    public init(client: GRPCCore.GRPCClient) {
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 

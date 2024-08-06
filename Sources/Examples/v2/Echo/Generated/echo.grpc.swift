@@ -266,7 +266,7 @@ extension Echo_Echo.ClientProtocol {
 internal struct Echo_EchoClient: Echo_Echo.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    internal init(client: GRPCCore.GRPCClient) {
+    internal init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 

@@ -333,7 +333,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
 internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    internal init(client: GRPCCore.GRPCClient) {
+    internal init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 
