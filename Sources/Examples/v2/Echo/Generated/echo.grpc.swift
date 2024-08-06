@@ -25,7 +25,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Echo_Echo {
-    internal static let serviceDescriptor = ServiceDescriptor(
+    internal static let descriptor = ServiceDescriptor(
         package: "echo",
         service: "Echo"
     )
@@ -34,7 +34,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: Echo_Echo.serviceDescriptor.fullyQualifiedService,
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Get"
             )
         }
@@ -42,7 +42,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: Echo_Echo.serviceDescriptor.fullyQualifiedService,
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Expand"
             )
         }
@@ -50,7 +50,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: Echo_Echo.serviceDescriptor.fullyQualifiedService,
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Collect"
             )
         }
@@ -58,7 +58,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: Echo_Echo.serviceDescriptor.fullyQualifiedService,
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Update"
             )
         }
@@ -80,7 +80,7 @@ internal enum Echo_Echo {
 }
 
 extension ServiceDescriptor {
-    internal static let echo_Echo: ServiceDescriptor = Echo_Echo.serviceDescriptor
+    internal static let echo_Echo: ServiceDescriptor = Echo_Echo.descriptor
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)

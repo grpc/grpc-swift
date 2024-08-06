@@ -28,7 +28,7 @@ import GRPCCore
 import GRPCProtobuf
 
 public enum Grpc_Testing_ReconnectService {
-    public static let serviceDescriptor = ServiceDescriptor(
+    public static let descriptor = ServiceDescriptor(
         package: "grpc.testing",
         service: "ReconnectService"
     )
@@ -37,7 +37,7 @@ public enum Grpc_Testing_ReconnectService {
             public typealias Input = Grpc_Testing_ReconnectParams
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_ReconnectService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_ReconnectService.descriptor.fullyQualifiedService,
                 method: "Start"
             )
         }
@@ -45,7 +45,7 @@ public enum Grpc_Testing_ReconnectService {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_ReconnectInfo
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_ReconnectService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_ReconnectService.descriptor.fullyQualifiedService,
                 method: "Stop"
             )
         }
@@ -65,11 +65,11 @@ public enum Grpc_Testing_ReconnectService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_ReconnectService: ServiceDescriptor = Grpc_Testing_ReconnectService.serviceDescriptor
+    public static let grpc_testing_ReconnectService: ServiceDescriptor = Grpc_Testing_ReconnectService.descriptor
 }
 
 public enum Grpc_Testing_TestService {
-    public static let serviceDescriptor = ServiceDescriptor(
+    public static let descriptor = ServiceDescriptor(
         package: "grpc.testing",
         service: "TestService"
     )
@@ -78,7 +78,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "EmptyCall"
             )
         }
@@ -86,7 +86,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_SimpleRequest
             public typealias Output = Grpc_Testing_SimpleResponse
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "UnaryCall"
             )
         }
@@ -94,7 +94,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_SimpleRequest
             public typealias Output = Grpc_Testing_SimpleResponse
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "CacheableUnaryCall"
             )
         }
@@ -102,7 +102,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingOutputCallRequest
             public typealias Output = Grpc_Testing_StreamingOutputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "StreamingOutputCall"
             )
         }
@@ -110,7 +110,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingInputCallRequest
             public typealias Output = Grpc_Testing_StreamingInputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "StreamingInputCall"
             )
         }
@@ -118,7 +118,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingOutputCallRequest
             public typealias Output = Grpc_Testing_StreamingOutputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "FullDuplexCall"
             )
         }
@@ -126,7 +126,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingOutputCallRequest
             public typealias Output = Grpc_Testing_StreamingOutputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "HalfDuplexCall"
             )
         }
@@ -134,7 +134,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_TestService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "UnimplementedCall"
             )
         }
@@ -160,11 +160,11 @@ public enum Grpc_Testing_TestService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_TestService: ServiceDescriptor = Grpc_Testing_TestService.serviceDescriptor
+    public static let grpc_testing_TestService: ServiceDescriptor = Grpc_Testing_TestService.descriptor
 }
 
 public enum Grpc_Testing_UnimplementedService {
-    public static let serviceDescriptor = ServiceDescriptor(
+    public static let descriptor = ServiceDescriptor(
         package: "grpc.testing",
         service: "UnimplementedService"
     )
@@ -173,7 +173,7 @@ public enum Grpc_Testing_UnimplementedService {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_UnimplementedService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_UnimplementedService.descriptor.fullyQualifiedService,
                 method: "UnimplementedCall"
             )
         }
@@ -192,7 +192,7 @@ public enum Grpc_Testing_UnimplementedService {
 }
 
 extension ServiceDescriptor {
-    public static let grpc_testing_UnimplementedService: ServiceDescriptor = Grpc_Testing_UnimplementedService.serviceDescriptor
+    public static let grpc_testing_UnimplementedService: ServiceDescriptor = Grpc_Testing_UnimplementedService.descriptor
 }
 
 /// A simple service to test the various types of RPCs and experiment with

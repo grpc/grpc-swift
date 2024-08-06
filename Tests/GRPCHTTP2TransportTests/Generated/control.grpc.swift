@@ -26,7 +26,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Control {
-    internal static let serviceDescriptor = ServiceDescriptor(
+    internal static let descriptor = ServiceDescriptor(
         package: "",
         service: "Control"
     )
@@ -35,7 +35,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: Control.serviceDescriptor.fullyQualifiedService,
+                service: Control.descriptor.fullyQualifiedService,
                 method: "Unary"
             )
         }
@@ -43,7 +43,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: Control.serviceDescriptor.fullyQualifiedService,
+                service: Control.descriptor.fullyQualifiedService,
                 method: "ServerStream"
             )
         }
@@ -51,7 +51,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: Control.serviceDescriptor.fullyQualifiedService,
+                service: Control.descriptor.fullyQualifiedService,
                 method: "ClientStream"
             )
         }
@@ -59,7 +59,7 @@ internal enum Control {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
             internal static let descriptor = MethodDescriptor(
-                service: Control.serviceDescriptor.fullyQualifiedService,
+                service: Control.descriptor.fullyQualifiedService,
                 method: "BidiStream"
             )
         }
@@ -81,7 +81,7 @@ internal enum Control {
 }
 
 extension ServiceDescriptor {
-    internal static let control: ServiceDescriptor = Control.serviceDescriptor
+    internal static let Control: ServiceDescriptor = Control.descriptor
 }
 
 /// A controllable service for testing.

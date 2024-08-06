@@ -28,7 +28,7 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Grpc_Testing_WorkerService {
-    internal static let serviceDescriptor = ServiceDescriptor(
+    internal static let descriptor = ServiceDescriptor(
         package: "grpc.testing",
         service: "WorkerService"
     )
@@ -37,7 +37,7 @@ internal enum Grpc_Testing_WorkerService {
             internal typealias Input = Grpc_Testing_ServerArgs
             internal typealias Output = Grpc_Testing_ServerStatus
             internal static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_WorkerService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "RunServer"
             )
         }
@@ -45,7 +45,7 @@ internal enum Grpc_Testing_WorkerService {
             internal typealias Input = Grpc_Testing_ClientArgs
             internal typealias Output = Grpc_Testing_ClientStatus
             internal static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_WorkerService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "RunClient"
             )
         }
@@ -53,7 +53,7 @@ internal enum Grpc_Testing_WorkerService {
             internal typealias Input = Grpc_Testing_CoreRequest
             internal typealias Output = Grpc_Testing_CoreResponse
             internal static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_WorkerService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "CoreCount"
             )
         }
@@ -61,7 +61,7 @@ internal enum Grpc_Testing_WorkerService {
             internal typealias Input = Grpc_Testing_Void
             internal typealias Output = Grpc_Testing_Void
             internal static let descriptor = MethodDescriptor(
-                service: Grpc_Testing_WorkerService.serviceDescriptor.fullyQualifiedService,
+                service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "QuitWorker"
             )
         }
@@ -79,7 +79,7 @@ internal enum Grpc_Testing_WorkerService {
 }
 
 extension ServiceDescriptor {
-    internal static let grpc_testing_WorkerService: ServiceDescriptor = Grpc_Testing_WorkerService.serviceDescriptor
+    internal static let grpc_testing_WorkerService: ServiceDescriptor = Grpc_Testing_WorkerService.descriptor
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
