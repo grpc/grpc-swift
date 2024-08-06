@@ -114,7 +114,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         internal struct Hello_World_GreeterClient: Hello_World_Greeter.ClientProtocol {
             private let client: GRPCCore.GRPCClient
             
-            internal init(client: GRPCCore.GRPCClient) {
+            internal init(wrapping client: GRPCCore.GRPCClient) {
                 self.client = client
             }
             
@@ -367,7 +367,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         package struct GreeterClient: Greeter.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          package init(client: GRPCCore.GRPCClient) {
+          package init(wrapping client: GRPCCore.GRPCClient) {
             self.client = client
           }
           

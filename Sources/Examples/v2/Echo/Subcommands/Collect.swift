@@ -37,7 +37,7 @@ struct Collect: AsyncParsableCommand {
         try await client.run()
       }
 
-      let echo = Echo_EchoClient(client: client)
+      let echo = Echo_EchoClient(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
         let request = ClientRequest.Stream(of: Echo_EchoRequest.self) { writer in
