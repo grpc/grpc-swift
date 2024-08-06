@@ -110,7 +110,7 @@ extension TLSConfiguration {
     )
     tlsConfiguration.minimumTLSVersion = .tlsv12
     tlsConfiguration.certificateVerification =
-    tlsConfig.verifyClientCertificate ? .fullVerification : .none
+      tlsConfig.verifyClientCertificate ? .fullVerification : .none
     tlsConfiguration.trustRoots = tlsConfig.trustRoots.map { try? NIOSSLTrustRoots($0) } ?? .default
     tlsConfiguration.applicationProtocols = ["grpc-exp", "h2"]
 
