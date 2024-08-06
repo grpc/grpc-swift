@@ -907,8 +907,7 @@ extension Target {
       path: "Sources/Services/Health",
       swiftSettings: [
         ._swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault")
+        .enableUpcomingFeature("ExistentialAny")
       ]
     )
   }
