@@ -84,7 +84,13 @@ public struct CodeGenerationRequest {
   public struct Dependency: Equatable {
     /// If the dependency is an item, the property's value is the item representation.
     /// If the dependency is a module, this property is nil.
-    public var item: Item? = nil
+    public var item: Item?
+
+    /// The access level to be included in imports of this dependency.
+    ///
+    /// - Note: This defaults to `public`, which is the default access level for imports on compilers
+    /// up to and including Swift 6.0.
+    public var accessLevel: SourceGenerator.Configuration.AccessLevel
 
     /// The name of the imported module or of the module an item is imported from.
     public var module: String
@@ -102,12 +108,14 @@ public struct CodeGenerationRequest {
       item: Item? = nil,
       module: String,
       spi: String? = nil,
-      preconcurrency: PreconcurrencyRequirement = .notRequired
+      preconcurrency: PreconcurrencyRequirement = .notRequired,
+      accessLevel: SourceGenerator.Configuration.AccessLevel
     ) {
       self.item = item
       self.module = module
       self.spi = spi
       self.preconcurrency = preconcurrency
+      self.accessLevel = accessLevel
     }
 
     /// Represents an item imported from a module.
