@@ -252,12 +252,12 @@ extension Target {
         .grpcCore,
         .nioCore,
         .nioHTTP2,
+        .nioTLS,
         .cgrpcZlib,
         .dequeModule,
         .atomics
       ].appending(
-        .nioSSL,
-        if: includeNIOSSL
+        .nioSSL, if: includeNIOSSL
       ),
       swiftSettings: [
         ._swiftLanguageMode(.v6),
@@ -465,7 +465,9 @@ extension Target {
         .grpcHTTP2TransportNIOPosix,
         .grpcHTTP2TransportNIOTransportServices,
         .grpcProtobuf
-      ],
+      ].appending(
+        .nioSSL, if: includeNIOSSL
+      ),
       swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }

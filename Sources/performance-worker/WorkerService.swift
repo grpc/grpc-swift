@@ -388,7 +388,7 @@ extension WorkerService {
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: numberOfThreads)
 
     // Don't restrict the max payload size, the client is always trusted.
-    var config = HTTP2ServerTransport.Posix.Config.defaults
+    var config = HTTP2ServerTransport.Posix.Config.defaults(transportSecurity: .plaintext)
     config.rpc.maxRequestPayloadSize = .max
 
     let transport = HTTP2ServerTransport.Posix(

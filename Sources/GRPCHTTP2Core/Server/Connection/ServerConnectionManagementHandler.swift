@@ -295,7 +295,6 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
     case is ChannelShouldQuiesceEvent:
       self.initiateGracefulShutdown(context: context)
 
-    #if canImport(NIOSSL)
     case TLSUserEvent.handshakeCompleted(let negotiatedProtocol):
       if negotiatedProtocol == nil, self.requireALPN {
         // No ALPN protocol negotiated but it was required: fire an error and close the channel.
@@ -307,7 +306,6 @@ final class ServerConnectionManagementHandler: ChannelDuplexHandler {
         )
         context.close(mode: .all, promise: nil)
       }
-    #endif
 
     default:
       ()
