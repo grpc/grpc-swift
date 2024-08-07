@@ -353,7 +353,9 @@ extension HTTP2ServerTransport.Posix {
     }
 
     /// Default values for the different configurations.
-    public static func defaults(transportSecurity: HTTP2ServerTransport.Config.TransportSecurity) -> Self {
+    public static func defaults(
+      transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
+    ) -> Self {
       Self(
         compression: .defaults,
         connection: .defaults,

@@ -16,8 +16,8 @@
 
 import GRPCCore
 import GRPCHTTP2Core
-import XCTest
 import GRPCHTTP2TransportNIOPosix
+import XCTest
 
 #if canImport(NIOSSL)
 import NIOSSL
