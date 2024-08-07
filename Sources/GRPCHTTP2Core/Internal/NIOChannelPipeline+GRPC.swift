@@ -38,10 +38,10 @@ extension ChannelPipeline.SynchronousOperations {
     http2Config: HTTP2ServerTransport.Config.HTTP2,
     rpcConfig: HTTP2ServerTransport.Config.RPC,
     transportSecurity: HTTP2ServerTransport.Config.TransportSecurity,
-    nioSSLContext: NIOSSLContext?
+    sslContext: NIOSSLContext?
   ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
-    if let nioSSLContext {
-      try self.addHandler(NIOSSLServerHandler(context: nioSSLContext))
+    if let sslContext {
+      try self.addHandler(NIOSSLServerHandler(context: sslContext))
     }
 
     return try self.configureGRPCServerPipeline(

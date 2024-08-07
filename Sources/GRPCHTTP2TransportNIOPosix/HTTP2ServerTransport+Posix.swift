@@ -154,7 +154,7 @@ extension HTTP2ServerTransport {
     ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
     public init(
       address: GRPCHTTP2Core.SocketAddress,
-      config: Config = .defaults,
+      config: Config,
       eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) {
       self.address = address
@@ -181,7 +181,7 @@ extension HTTP2ServerTransport {
       #if canImport(NIOSSL)
       let nioSSLContext: NIOSSLContext?
       if let tlsConfig = self.config.transportSecurity.tlsConfig {
-        nioSSLContext = try! NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+        nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
       } else {
         nioSSLContext = nil
       }
@@ -208,7 +208,7 @@ extension HTTP2ServerTransport {
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
               transportSecurity: self.config.transportSecurity,
-              nioSSLContext: nioSSLContext
+              sslContext: nioSSLContext
             )
             #else
             try channel.pipeline.syncOperations.configureGRPCServerPipeline(
@@ -329,7 +329,7 @@ extension HTTP2ServerTransport.Posix {
     public var http2: HTTP2ServerTransport.Config.HTTP2
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
-    /// Transport security: either plaintext or TLS.
+    /// The transport's security.
     public var transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
 
     /// Construct a new `Config`.
@@ -353,13 +353,13 @@ extension HTTP2ServerTransport.Posix {
     }
 
     /// Default values for the different configurations.
-    public static var defaults: Self {
+    public static func defaults(transportSecurity: HTTP2ServerTransport.Config.TransportSecurity) -> Self {
       Self(
         compression: .defaults,
         connection: .defaults,
         http2: .defaults,
         rpc: .defaults,
-        transportSecurity: .plaintext
+        transportSecurity: transportSecurity
       )
     }
   }

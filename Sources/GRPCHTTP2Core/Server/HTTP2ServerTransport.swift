@@ -232,65 +232,60 @@ extension HTTP2ServerTransport.Config {
 
     public struct CertificateSource: Sendable {
       package enum Wrapped {
-        case file(path: String, serializationFormat: SerializationFormat)
-        case bytes(bytes: [UInt8], serializationFormat: SerializationFormat)
+        case file(path: String, format: SerializationFormat)
+        case bytes(bytes: [UInt8], format: SerializationFormat)
       }
 
       package let wrapped: Wrapped
 
       /// The certificate will be provided via a file.
-      public static func file(path: String, serializationFormat: SerializationFormat) -> Self {
-        Self(wrapped: .file(path: path, serializationFormat: serializationFormat))
+      public static func file(path: String, format: SerializationFormat) -> Self {
+        Self(wrapped: .file(path: path, format: format))
       }
 
       /// The certificate will be provided as an array of bytes.
-      public static func bytes(
-        _ bytes: [UInt8],
-        serializationFormat: SerializationFormat
-      ) -> Self {
-        Self(wrapped: .bytes(bytes: bytes, serializationFormat: serializationFormat))
+      public static func bytes(_ bytes: [UInt8], format: SerializationFormat) -> Self {
+        Self(wrapped: .bytes(bytes: bytes, format: format))
       }
     }
 
     public struct PrivateKeySource: Sendable {
       package enum Wrapped {
-        case file(path: String, serializationFormat: SerializationFormat)
-        case bytes(bytes: [UInt8], serializationFormat: SerializationFormat)
+        case file(path: String, format: SerializationFormat)
+        case bytes(bytes: [UInt8], format: SerializationFormat)
       }
 
       package let wrapped: Wrapped
 
       /// The private key will be provided via a file.
-      public static func file(path: String, serializationFormat: SerializationFormat) -> Self {
-        Self(wrapped: .file(path: path, serializationFormat: serializationFormat))
+      public static func file(path: String, format: SerializationFormat) -> Self {
+        Self(wrapped: .file(path: path, format: format))
       }
 
       /// The private key will be provided as an array of bytes.
       public static func bytes(
         _ bytes: [UInt8],
-        serializationFormat: SerializationFormat
+        format: SerializationFormat
       ) -> Self {
-        Self(wrapped: .bytes(bytes: bytes, serializationFormat: serializationFormat))
+        Self(wrapped: .bytes(bytes: bytes, format: format))
       }
     }
 
-    public struct TrustRoots: Sendable {
+    public struct TrustRootsSource: Sendable {
       package enum Wrapped {
-        case pemFile(path: String)
-        case pemBytes(bytes: [UInt8])
+        case certificates([CertificateSource])
+        case systemDefault
       }
 
       package let wrapped: Wrapped
 
       /// Path to either a file of CA certificates in PEM format, or a directory containing CA certificates in PEM format.
-      public static func pemFile(path: String) -> Self {
-        Self(wrapped: .pemFile(path: path))
+      public static func certificates(_ certificateSources: [CertificateSource]) -> Self {
+        Self(wrapped: .certificates(certificateSources))
       }
 
-      /// Bytes to a certificate serialized in PEM format.
-      public static func pemBytes(bytes: [UInt8]) -> Self {
-        Self(wrapped: .pemBytes(bytes: bytes))
-      }
+      /// The system default trust.
+      public static let systemDefault: Self = Self(wrapped: .systemDefault)
     }
 
     /// The certificate the server will offer during negotiation.
@@ -302,10 +297,8 @@ extension HTTP2ServerTransport.Config {
     /// Whether to verify the remote certificate.
     public var verifyClientCertificate: Bool
 
-    /// Optional custom trust roots to be used when verifying client certificates.
-    ///
-    /// If not provided, the system default trust will be used.
-    public var trustRoots: TrustRoots?
+    /// Custom trust roots to be used when verifying client certificates.
+    public var trustRoots: TrustRootsSource
 
     /// Whether ALPN is required.
     ///
@@ -315,9 +308,9 @@ extension HTTP2ServerTransport.Config {
     public init(
       certificateChainSources: [CertificateSource],
       privateKeySource: PrivateKeySource,
-      verifyClientCertificate: Bool,
-      trustRoots: TrustRoots?,
-      requireALPN: Bool
+      verifyClientCertificate: Bool = true,
+      trustRoots: TrustRootsSource = .systemDefault,
+      requireALPN: Bool = false
     ) {
       self.certificateChainSources = certificateChainSources
       self.privateKeySource = privateKeySource
