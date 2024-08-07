@@ -168,6 +168,7 @@ extension Target.Dependency {
   static var grpcHTTP2Core: Self { .target(name: "GRPCHTTP2Core") }
   static var grpcHTTP2TransportNIOPosix: Self { .target(name: "GRPCHTTP2TransportNIOPosix") }
   static var grpcHTTP2TransportNIOTransportServices: Self { .target(name: "GRPCHTTP2TransportNIOTransportServices") }
+  static var grpcHealth: Self { .target(name: "GRPCHealth") }
 }
 
 // MARK: - Targets
@@ -506,6 +507,19 @@ extension Target {
         .interoperabilityTests,
         .grpcCore
       ],
+      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+    )
+  }
+
+  static var grpcHealthTests: Target {
+    .testTarget(
+      name: "GRPCHealthTests",
+      dependencies: [
+        .grpcHealth,
+        .grpcProtobuf,
+        .grpcInProcessTransport
+      ],
+      path: "Tests/Services/HealthTests",
       swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
@@ -893,8 +907,7 @@ extension Target {
       path: "Sources/Services/Health",
       swiftSettings: [
         ._swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault")
+        .enableUpcomingFeature("ExistentialAny")
       ]
     )
   }
@@ -1046,6 +1059,7 @@ let package = Package(
     .grpcInterceptorsTests,
     .grpcHTTP2CoreTests,
     .grpcHTTP2TransportTests,
+    .grpcHealthTests,
     .grpcProtobufTests,
     .grpcProtobufCodeGenTests,
     .inProcessInteroperabilityTests,
