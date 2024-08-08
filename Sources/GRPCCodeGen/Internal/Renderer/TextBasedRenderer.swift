@@ -198,17 +198,20 @@ struct TextBasedRenderer: RendererProtocol {
     func render(preconcurrency: Bool) {
       let spiPrefix = description.spi.map { "@_spi(\($0)) " } ?? ""
       let preconcurrencyPrefix = preconcurrency ? "@preconcurrency " : ""
+      let accessLevel = "\(description.accessLevel) "
 
       if let item = description.item {
         writer.writeLine(
-          "\(preconcurrencyPrefix)\(spiPrefix)import \(item.kind) \(description.moduleName).\(item.name)"
+          "\(preconcurrencyPrefix)\(spiPrefix)\(accessLevel)import \(item.kind) \(description.moduleName).\(item.name)"
         )
       } else if let moduleTypes = description.moduleTypes {
         for type in moduleTypes {
-          writer.writeLine("\(preconcurrencyPrefix)\(spiPrefix)import \(type)")
+          writer.writeLine("\(preconcurrencyPrefix)\(spiPrefix)\(accessLevel)import \(type)")
         }
       } else {
-        writer.writeLine("\(preconcurrencyPrefix)\(spiPrefix)import \(description.moduleName)")
+        writer.writeLine(
+          "\(preconcurrencyPrefix)\(spiPrefix)\(accessLevel)import \(description.moduleName)"
+        )
       }
     }
 

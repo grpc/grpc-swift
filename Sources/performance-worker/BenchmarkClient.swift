@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import Atomics
-import Foundation
-import GRPCCore
-import NIOConcurrencyHelpers
+private import Atomics
+private import Foundation
+internal import GRPCCore
+private import NIOConcurrencyHelpers
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct BenchmarkClient {

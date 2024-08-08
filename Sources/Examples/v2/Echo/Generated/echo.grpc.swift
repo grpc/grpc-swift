@@ -21,8 +21,8 @@
 // For information on using the generated types, please see the documentation:
 //   https://github.com/grpc/grpc-swift
 
-import GRPCCore
-import GRPCProtobuf
+internal import GRPCCore
+internal import GRPCProtobuf
 
 internal enum Echo_Echo {
     internal static let descriptor = ServiceDescriptor.echo_Echo
