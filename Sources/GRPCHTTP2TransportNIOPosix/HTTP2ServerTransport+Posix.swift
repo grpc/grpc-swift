@@ -201,17 +201,13 @@ extension HTTP2ServerTransport {
         .bind(to: self.address) { channel in
           channel.eventLoop.makeCompletedFuture {
             #if canImport(NIOSSL)
-            try channel.pipeline.syncOperations.configureGRPCServerPipeline(
-              channel: channel,
-              compressionConfig: self.config.compression,
-              connectionConfig: self.config.connection,
-              http2Config: self.config.http2,
-              rpcConfig: self.config.rpc,
-              transportSecurity: self.config.transportSecurity,
-              sslContext: nioSSLContext
-            )
-            #else
-            try channel.pipeline.syncOperations.configureGRPCServerPipeline(
+            if let nioSSLContext {
+              try channel.pipeline.syncOperations.addHandler(
+                NIOSSLServerHandler(context: nioSSLContext)
+              )
+            }
+            #endif
+            return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.config.compression,
               connectionConfig: self.config.connection,
@@ -219,7 +215,6 @@ extension HTTP2ServerTransport {
               rpcConfig: self.config.rpc,
               transportSecurity: self.config.transportSecurity
             )
-            #endif
           }
         }
 
