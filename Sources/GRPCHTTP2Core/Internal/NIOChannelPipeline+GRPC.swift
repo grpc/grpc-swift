@@ -19,41 +19,12 @@ package import NIOCore
 internal import NIOHPACK
 package import NIOHTTP2
 
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
-
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ChannelPipeline.SynchronousOperations {
   package typealias HTTP2ConnectionChannel = NIOAsyncChannel<HTTP2Frame, HTTP2Frame>
   package typealias HTTP2StreamMultiplexer = NIOHTTP2Handler.AsyncStreamMultiplexer<
     (NIOAsyncChannel<RPCRequestPart, RPCResponsePart>, EventLoopFuture<MethodDescriptor>)
   >
-
-  #if canImport(NIOSSL)
-  package func configureGRPCServerPipeline(
-    channel: any Channel,
-    compressionConfig: HTTP2ServerTransport.Config.Compression,
-    connectionConfig: HTTP2ServerTransport.Config.Connection,
-    http2Config: HTTP2ServerTransport.Config.HTTP2,
-    rpcConfig: HTTP2ServerTransport.Config.RPC,
-    transportSecurity: HTTP2ServerTransport.Config.TransportSecurity,
-    sslContext: NIOSSLContext?
-  ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
-    if let sslContext {
-      try self.addHandler(NIOSSLServerHandler(context: sslContext))
-    }
-
-    return try self.configureGRPCServerPipeline(
-      channel: channel,
-      compressionConfig: compressionConfig,
-      connectionConfig: connectionConfig,
-      http2Config: http2Config,
-      rpcConfig: rpcConfig,
-      transportSecurity: transportSecurity
-    )
-  }
-  #endif
 
   package func configureGRPCServerPipeline(
     channel: any Channel,
