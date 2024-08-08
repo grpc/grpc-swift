@@ -27,20 +27,6 @@ let cgrpcZlibTargetName = cgrpcZlibProductName
 
 let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == nil
 
-// Temporary shim: nightly toolchains renamed 'swiftLanguageVersion' to 'swiftLanguageMode'. This
-// isn't yet available in a beta Xcode.
-//
-// See also: https://github.com/swiftlang/swift-package-manager/issues/7823
-extension SwiftSetting {
-  static func _swiftLanguageMode(_ version: SwiftVersion) -> SwiftSetting {
-    #if os(Linux)
-    return .swiftLanguageMode(version)
-    #else
-    return .swiftLanguageVersion(version)
-    #endif
-  }
-}
-
 // MARK: - Package Dependencies
 
 let packageDependencies: [Package.Dependency] = [
@@ -196,7 +182,7 @@ extension Target {
         .nioSSL, if: includeNIOSSL
       ),
       path: "Sources/GRPC",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -209,7 +195,7 @@ extension Target {
       ],
       path: "Sources/GRPCCore",
       swiftSettings: [
-        ._swiftLanguageMode(.v5),
+        .swiftLanguageMode(.v5),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -223,7 +209,7 @@ extension Target {
         .grpcCore
       ],
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -238,7 +224,7 @@ extension Target {
         .tracing
       ],
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -257,7 +243,7 @@ extension Target {
         .atomics
       ],
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -274,7 +260,7 @@ extension Target {
         .nioExtras
       ],
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -292,7 +278,7 @@ extension Target {
         .nioTransportServices
       ],
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -309,7 +295,7 @@ extension Target {
         .grpcHTTP2TransportNIOTransportServices,
       ],
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -338,7 +324,7 @@ extension Target {
       exclude: [
         "README.md",
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -354,7 +340,7 @@ extension Target {
         .nioFileSystem,
         .argumentParser
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -395,7 +381,7 @@ extension Target {
       exclude: [
         "Codegen/Serialization/echo.grpc.reflection"
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -409,7 +395,7 @@ extension Target {
         .atomics,
         .protobuf,
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -420,7 +406,7 @@ extension Target {
         .grpcCore,
         .grpcInProcessTransport
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -433,7 +419,7 @@ extension Target {
         .nioCore,
         .grpcInterceptors
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -447,7 +433,7 @@ extension Target {
         .nioEmbedded,
         .nioTestUtils,
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -460,7 +446,7 @@ extension Target {
         .grpcHTTP2TransportNIOTransportServices,
         .grpcProtobuf
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -470,7 +456,7 @@ extension Target {
       dependencies: [
         .grpcCodeGen
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -482,7 +468,7 @@ extension Target {
         .grpcCore,
         .protobuf
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -495,7 +481,7 @@ extension Target {
         .protobuf,
         .protobufPluginLibrary
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -507,7 +493,7 @@ extension Target {
         .interoperabilityTests,
         .grpcCore
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -520,7 +506,7 @@ extension Target {
         .grpcInProcessTransport
       ],
       path: "Tests/Services/HealthTests",
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -541,7 +527,7 @@ extension Target {
         "src/proto/grpc/testing/test.proto",
         "unimplemented_call.patch",
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -552,7 +538,7 @@ extension Target {
         .grpcCore,
         .grpcProtobuf
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -566,7 +552,7 @@ extension Target {
         .interoperabilityTests,
         .argumentParser
       ],
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -583,7 +569,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -598,7 +584,7 @@ extension Target {
         .logging,
         .argumentParser,
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -616,7 +602,7 @@ extension Target {
       exclude: [
         "README.md",
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -632,7 +618,7 @@ extension Target {
         .nioHTTP2,
         .argumentParser,
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -643,7 +629,7 @@ extension Target {
       exclude: [
         "bundle.p12",
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -656,7 +642,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/Examples/v1/Echo/Model",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -671,7 +657,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/Examples/v1/Echo/Implementation",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -691,7 +677,7 @@ extension Target {
         .nioSSL, if: includeNIOSSL
       ),
       path: "Sources/Examples/v1/Echo/Runtime",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -708,7 +694,7 @@ extension Target {
         .nioSSL, if: includeNIOSSL
       ),
       path: "Sources/Examples/v2/Echo",
-      swiftSettings: [._swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
 
@@ -721,7 +707,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/Examples/v1/HelloWorld/Model",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -736,7 +722,7 @@ extension Target {
         .argumentParser,
       ],
       path: "Sources/Examples/v1/HelloWorld/Client",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -751,7 +737,7 @@ extension Target {
         .argumentParser,
       ],
       path: "Sources/Examples/v1/HelloWorld/Server",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -764,7 +750,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/Examples/v1/RouteGuide/Model",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -779,7 +765,7 @@ extension Target {
         .argumentParser,
       ],
       path: "Sources/Examples/v1/RouteGuide/Client",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -795,7 +781,7 @@ extension Target {
         .argumentParser,
       ],
       path: "Sources/Examples/v1/RouteGuide/Server",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -814,7 +800,7 @@ extension Target {
       exclude: [
         "README.md",
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -827,7 +813,7 @@ extension Target {
         .protobuf,
       ],
       path: "Sources/GRPCReflectionService",
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -848,7 +834,7 @@ extension Target {
       resources: [
         .copy("Generated")
       ],
-      swiftSettings: [._swiftLanguageMode(.v5)]
+      swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
 
@@ -857,7 +843,7 @@ extension Target {
       name: "GRPCCodeGen",
       path: "Sources/GRPCCodeGen",
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -873,7 +859,7 @@ extension Target {
       ],
       path: "Sources/GRPCProtobuf",
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -890,7 +876,7 @@ extension Target {
       ],
       path: "Sources/GRPCProtobufCodeGen",
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]
@@ -906,7 +892,7 @@ extension Target {
       ],
       path: "Sources/Services/Health",
       swiftSettings: [
-        ._swiftLanguageMode(.v6),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny")
       ]
     )
