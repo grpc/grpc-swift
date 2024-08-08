@@ -25,12 +25,13 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Echo_Echo {
+    internal static let descriptor = ServiceDescriptor.echo_Echo
     internal enum Method {
         internal enum Get {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: "echo.Echo",
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Get"
             )
         }
@@ -38,7 +39,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: "echo.Echo",
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Expand"
             )
         }
@@ -46,7 +47,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: "echo.Echo",
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Collect"
             )
         }
@@ -54,7 +55,7 @@ internal enum Echo_Echo {
             internal typealias Input = Echo_EchoRequest
             internal typealias Output = Echo_EchoResponse
             internal static let descriptor = MethodDescriptor(
-                service: "echo.Echo",
+                service: Echo_Echo.descriptor.fullyQualifiedService,
                 method: "Update"
             )
         }
@@ -73,6 +74,13 @@ internal enum Echo_Echo {
     internal typealias ClientProtocol = Echo_EchoClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias Client = Echo_EchoClient
+}
+
+extension ServiceDescriptor {
+    internal static let echo_Echo = Self(
+        package: "echo",
+        service: "Echo"
+    )
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)

@@ -28,12 +28,13 @@ import GRPCCore
 import GRPCProtobuf
 
 internal enum Grpc_Testing_BenchmarkService {
+    internal static let descriptor = ServiceDescriptor.grpc_testing_BenchmarkService
     internal enum Method {
         internal enum UnaryCall {
             internal typealias Input = Grpc_Testing_SimpleRequest
             internal typealias Output = Grpc_Testing_SimpleResponse
             internal static let descriptor = MethodDescriptor(
-                service: "grpc.testing.BenchmarkService",
+                service: Grpc_Testing_BenchmarkService.descriptor.fullyQualifiedService,
                 method: "UnaryCall"
             )
         }
@@ -41,7 +42,7 @@ internal enum Grpc_Testing_BenchmarkService {
             internal typealias Input = Grpc_Testing_SimpleRequest
             internal typealias Output = Grpc_Testing_SimpleResponse
             internal static let descriptor = MethodDescriptor(
-                service: "grpc.testing.BenchmarkService",
+                service: Grpc_Testing_BenchmarkService.descriptor.fullyQualifiedService,
                 method: "StreamingCall"
             )
         }
@@ -49,7 +50,7 @@ internal enum Grpc_Testing_BenchmarkService {
             internal typealias Input = Grpc_Testing_SimpleRequest
             internal typealias Output = Grpc_Testing_SimpleResponse
             internal static let descriptor = MethodDescriptor(
-                service: "grpc.testing.BenchmarkService",
+                service: Grpc_Testing_BenchmarkService.descriptor.fullyQualifiedService,
                 method: "StreamingFromClient"
             )
         }
@@ -57,7 +58,7 @@ internal enum Grpc_Testing_BenchmarkService {
             internal typealias Input = Grpc_Testing_SimpleRequest
             internal typealias Output = Grpc_Testing_SimpleResponse
             internal static let descriptor = MethodDescriptor(
-                service: "grpc.testing.BenchmarkService",
+                service: Grpc_Testing_BenchmarkService.descriptor.fullyQualifiedService,
                 method: "StreamingFromServer"
             )
         }
@@ -65,7 +66,7 @@ internal enum Grpc_Testing_BenchmarkService {
             internal typealias Input = Grpc_Testing_SimpleRequest
             internal typealias Output = Grpc_Testing_SimpleResponse
             internal static let descriptor = MethodDescriptor(
-                service: "grpc.testing.BenchmarkService",
+                service: Grpc_Testing_BenchmarkService.descriptor.fullyQualifiedService,
                 method: "StreamingBothWays"
             )
         }
@@ -85,6 +86,13 @@ internal enum Grpc_Testing_BenchmarkService {
     internal typealias ClientProtocol = Grpc_Testing_BenchmarkServiceClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal typealias Client = Grpc_Testing_BenchmarkServiceClient
+}
+
+extension ServiceDescriptor {
+    internal static let grpc_testing_BenchmarkService = Self(
+        package: "grpc.testing",
+        service: "BenchmarkService"
+    )
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
