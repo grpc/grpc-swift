@@ -25,6 +25,7 @@ import GRPCCore
 import GRPCProtobuf
 
 public enum Grpc_Testing_EmptyService {
+    public static let descriptor = ServiceDescriptor.grpc_testing_EmptyService
     public enum Method {
         public static let descriptors: [MethodDescriptor] = []
     }
@@ -36,6 +37,13 @@ public enum Grpc_Testing_EmptyService {
     public typealias ClientProtocol = Grpc_Testing_EmptyServiceClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias Client = Grpc_Testing_EmptyServiceClient
+}
+
+extension ServiceDescriptor {
+    public static let grpc_testing_EmptyService = Self(
+        package: "grpc.testing",
+        service: "EmptyService"
+    )
 }
 
 /// A service that has zero methods.

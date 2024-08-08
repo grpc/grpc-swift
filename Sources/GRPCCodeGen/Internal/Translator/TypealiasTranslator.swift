@@ -21,35 +21,48 @@
 /// For example, in the case of the ``Echo`` service, the ``TypealiasTranslator`` will create
 /// a representation for the following generated code:
 /// ```swift
-/// public enum Echo {
-///   public enum Echo {
-///     public enum Method {
-///       public enum Get {
-///         public typealias Input = Echo_EchoRequest
-///         public typealias Output = Echo_EchoResponse
-///         public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Get")
-///       }
+/// public enum Echo_Echo {
+///   public static let descriptor = ServiceDescriptor.echo_Echo
 ///
-///       public enum Collect {
-///         public typealias Input = Echo_EchoRequest
-///         public typealias Output = Echo_EchoResponse
-///         public static let descriptor = MethodDescriptor(service: "echo.Echo", method: "Collect")
-///       }
-///       // ...
-///
-///       public static let descriptors: [MethodDescriptor] = [
-///         Get.descriptor,
-///         Collect.descriptor,
-///         // ...
-///       ]
+///   public enum Method {
+///     public enum Get {
+///       public typealias Input = Echo_EchoRequest
+///       public typealias Output = Echo_EchoResponse
+///       public static let descriptor = MethodDescriptor(
+///         service: Echo_Echo.descriptor.fullyQualifiedService,
+///         method: "Get"
+///       )
 ///     }
 ///
-///     @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-///     public typealias StreamingServiceProtocol = echo_EchoServiceStreamingProtocol
-///     @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-///     public typealias ServiceProtocol = echo_EchoServiceProtocol
+///     public enum Collect {
+///       public typealias Input = Echo_EchoRequest
+///       public typealias Output = Echo_EchoResponse
+///       public static let descriptor = MethodDescriptor(
+///         service: Echo_Echo.descriptor.fullyQualifiedService,
+///         method: "Collect"
+///       )
+///     }
+///     // ...
 ///
+///     public static let descriptors: [MethodDescriptor] = [
+///       Get.descriptor,
+///       Collect.descriptor,
+///       // ...
+///     ]
 ///   }
+///
+///   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+///   public typealias StreamingServiceProtocol = Echo_EchoServiceStreamingProtocol
+///   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+///   public typealias ServiceProtocol = Echo_EchoServiceProtocol
+///
+/// }
+///
+/// extension ServiceDescriptor {
+///   public static let echo_Echo = Self(
+///     package: "echo",
+///     service: "Echo"
+///   )
 /// }
 /// ```
 ///
@@ -82,6 +95,10 @@ struct TypealiasTranslator: SpecializedTranslator {
             item: .declaration(try self.makeServiceEnum(from: service, named: generatedEnumName))
           )
         )
+
+        codeBlocks.append(
+          CodeBlock(item: .declaration(self.makeServiceDescriptorExtension(for: service)))
+        )
       }
     }
 
@@ -111,6 +128,10 @@ extension TypealiasTranslator {
     let methodDescriptorsDeclaration = self.makeMethodDescriptors(for: service)
     methodsEnum.members.append(methodDescriptorsDeclaration)
 
+    // Create the static service descriptor property.
+    let staticServiceDescriptorProperty = self.makeStaticServiceDescriptorProperty(for: service)
+
+    serviceEnum.members.append(.variable(staticServiceDescriptorProperty))
     serviceEnum.members.append(.enum(methodsEnum))
 
     if self.server {
@@ -165,6 +186,16 @@ extension TypealiasTranslator {
     from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> Declaration {
+    let fullyQualifiedService = MemberAccessDescription(
+      left: .memberAccess(
+        MemberAccessDescription(
+          left: .identifierType(.member([service.namespacedGeneratedName])),
+          right: "descriptor"
+        )
+      ),
+      right: "fullyQualifiedService"
+    )
+
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
@@ -172,7 +203,7 @@ extension TypealiasTranslator {
         arguments: [
           FunctionArgumentDescription(
             label: "service",
-            expression: .literal(service.fullyQualifiedName)
+            expression: .memberAccess(fullyQualifiedService)
           ),
           FunctionArgumentDescription(
             label: "method",
@@ -267,6 +298,76 @@ extension TypealiasTranslator {
         accessModifier: self.accessModifier,
         name: "Client",
         existingType: .member("\(service.namespacedGeneratedName)Client")
+      )
+    )
+  }
+
+  private func makeServiceIdentifier(_ service: CodeGenerationRequest.ServiceDescriptor) -> String {
+    let prefix: String
+
+    if service.namespace.normalizedBase.isEmpty {
+      prefix = ""
+    } else {
+      prefix = service.namespace.normalizedBase + "_"
+    }
+
+    return prefix + service.name.normalizedBase
+  }
+
+  private func makeStaticServiceDescriptorProperty(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> VariableDescription {
+    let serviceIdentifier = makeServiceIdentifier(service)
+
+    return VariableDescription(
+      accessModifier: self.accessModifier,
+      isStatic: true,
+      kind: .let,
+      left: .identifierPattern("descriptor"),
+      right: .memberAccess(
+        MemberAccessDescription(
+          left: .identifierPattern("ServiceDescriptor"),
+          right: serviceIdentifier
+        )
+      )
+    )
+  }
+
+  private func makeServiceDescriptorExtension(
+    for service: CodeGenerationRequest.ServiceDescriptor
+  ) -> Declaration {
+    let serviceIdentifier = makeServiceIdentifier(service)
+
+    let serviceDescriptorInitialization = Expression.functionCall(
+      FunctionCallDescription(
+        calledExpression: .identifierType(.member("Self")),
+        arguments: [
+          FunctionArgumentDescription(
+            label: "package",
+            expression: .literal(service.namespace.base)
+          ),
+          FunctionArgumentDescription(
+            label: "service",
+            expression: .literal(service.name.base)
+          ),
+        ]
+      )
+    )
+
+    return .extension(
+      ExtensionDescription(
+        onType: "ServiceDescriptor",
+        declarations: [
+          .variable(
+            VariableDescription(
+              accessModifier: self.accessModifier,
+              isStatic: true,
+              kind: .let,
+              left: .identifier(.pattern(serviceIdentifier)),
+              right: serviceDescriptorInitialization
+            )
+          )
+        ]
       )
     )
   }

@@ -28,12 +28,13 @@ import GRPCCore
 import GRPCProtobuf
 
 package enum Grpc_Health_V1_Health {
+    package static let descriptor = ServiceDescriptor.grpc_health_v1_Health
     package enum Method {
         package enum Check {
             package typealias Input = Grpc_Health_V1_HealthCheckRequest
             package typealias Output = Grpc_Health_V1_HealthCheckResponse
             package static let descriptor = MethodDescriptor(
-                service: "grpc.health.v1.Health",
+                service: Grpc_Health_V1_Health.descriptor.fullyQualifiedService,
                 method: "Check"
             )
         }
@@ -41,7 +42,7 @@ package enum Grpc_Health_V1_Health {
             package typealias Input = Grpc_Health_V1_HealthCheckRequest
             package typealias Output = Grpc_Health_V1_HealthCheckResponse
             package static let descriptor = MethodDescriptor(
-                service: "grpc.health.v1.Health",
+                service: Grpc_Health_V1_Health.descriptor.fullyQualifiedService,
                 method: "Watch"
             )
         }
@@ -58,6 +59,13 @@ package enum Grpc_Health_V1_Health {
     package typealias ClientProtocol = Grpc_Health_V1_HealthClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     package typealias Client = Grpc_Health_V1_HealthClient
+}
+
+extension ServiceDescriptor {
+    package static let grpc_health_v1_Health = Self(
+        package: "grpc.health.v1",
+        service: "Health"
+    )
 }
 
 /// Health is gRPC's mechanism for checking whether a server is able to handle
