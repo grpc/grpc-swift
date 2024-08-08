@@ -558,7 +558,8 @@ extension Target {
       ],
       swiftSettings: [
         ._swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny")
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
       ]
     )
   }
@@ -918,7 +919,8 @@ extension Target {
       path: "Sources/Services/Health",
       swiftSettings: [
         ._swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny")
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
       ]
     )
   }
