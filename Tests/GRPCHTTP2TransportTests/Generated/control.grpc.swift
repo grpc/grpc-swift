@@ -279,7 +279,7 @@ extension Control.ClientProtocol {
 internal struct ControlClient: Control.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    internal init(client: GRPCCore.GRPCClient) {
+    internal init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 

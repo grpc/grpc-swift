@@ -88,7 +88,7 @@ final class HTTP2TransportTests: XCTestCase {
         }
 
         do {
-          let control = ControlClient(client: client)
+          let control = ControlClient(wrapping: client)
           try await execute(control, pair)
         } catch {
           XCTFail("Unexpected error: '\(error)' (\(pair))")
@@ -123,7 +123,7 @@ final class HTTP2TransportTests: XCTestCase {
         }
 
         do {
-          let control = ControlClient(client: client)
+          let control = ControlClient(wrapping: client)
           try await execute(control, clientKind)
         } catch {
           XCTFail("Unexpected error: '\(error)' (\(clientKind))")

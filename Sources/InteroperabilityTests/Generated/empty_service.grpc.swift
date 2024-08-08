@@ -83,7 +83,7 @@ extension Grpc_Testing_EmptyService.ClientProtocol {
 public struct Grpc_Testing_EmptyServiceClient: Grpc_Testing_EmptyService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    public init(client: GRPCCore.GRPCClient) {
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 }
