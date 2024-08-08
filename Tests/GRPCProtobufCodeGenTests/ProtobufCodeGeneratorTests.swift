@@ -97,7 +97,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             internal func sayHello<R>(
                 request: ClientRequest.Single<Hello_World_HelloRequest>,
                 options: CallOptions = .defaults,
-                _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_HelloReply>) async throws -> R
+                _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_HelloReply>) async throws -> R = {
+                    try $0.message
+                }
             ) async throws -> R where R: Sendable {
                 try await self.sayHello(
                     request: request,
@@ -124,7 +126,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 serializer: some MessageSerializer<Hello_World_HelloRequest>,
                 deserializer: some MessageDeserializer<Hello_World_HelloReply>,
                 options: CallOptions = .defaults,
-                _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_HelloReply>) async throws -> R
+                _ body: @Sendable @escaping (ClientResponse.Single<Hello_World_HelloReply>) async throws -> R = {
+                    try $0.message
+                }
             ) async throws -> R where R: Sendable {
                 try await self.client.unary(
                     request: request,
@@ -350,7 +354,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           package func sayHello<R>(
             request: ClientRequest.Single<HelloRequest>,
             options: CallOptions = .defaults,
-            _ body: @Sendable @escaping (ClientResponse.Single<HelloReply>) async throws -> R
+            _ body: @Sendable @escaping (ClientResponse.Single<HelloReply>) async throws -> R = {
+              try $0.message
+            }
           ) async throws -> R where R: Sendable {
             try await self.sayHello(
               request: request,
@@ -377,7 +383,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             serializer: some MessageSerializer<HelloRequest>,
             deserializer: some MessageDeserializer<HelloReply>,
             options: CallOptions = .defaults,
-            _ body: @Sendable @escaping (ClientResponse.Single<HelloReply>) async throws -> R
+            _ body: @Sendable @escaping (ClientResponse.Single<HelloReply>) async throws -> R = {
+              try $0.message
+            }
           ) async throws -> R where R: Sendable {
             try await self.client.unary(
               request: request,
