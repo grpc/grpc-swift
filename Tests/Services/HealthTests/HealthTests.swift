@@ -27,7 +27,7 @@ final class HealthTests: XCTestCase {
     let inProcess = InProcessTransport.makePair()
     let server = GRPCServer(transport: inProcess.server, services: [health.service])
     let client = GRPCClient(transport: inProcess.client)
-    let healthClient = Grpc_Health_V1_HealthClient(client: client)
+    let healthClient = Grpc_Health_V1_HealthClient(wrapping: client)
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {

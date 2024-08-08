@@ -258,7 +258,7 @@ extension Grpc_Health_V1_Health.ClientProtocol {
 package struct Grpc_Health_V1_HealthClient: Grpc_Health_V1_Health.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
-    package init(client: GRPCCore.GRPCClient) {
+    package init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
 
