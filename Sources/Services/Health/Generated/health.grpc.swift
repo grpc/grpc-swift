@@ -24,8 +24,8 @@
 // For information on using the generated types, please see the documentation:
 //   https://github.com/grpc/grpc-swift
 
-import GRPCCore
-import GRPCProtobuf
+package import GRPCCore
+internal import GRPCProtobuf
 
 package enum Grpc_Health_V1_Health {
     package static let descriptor = ServiceDescriptor.grpc_health_v1_Health
