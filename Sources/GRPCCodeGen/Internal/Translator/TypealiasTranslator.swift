@@ -308,10 +308,10 @@ extension TypealiasTranslator {
     if service.namespace.normalizedBase.isEmpty {
       prefix = ""
     } else {
-      prefix = "\(service.namespace.normalizedBase)_"
+      prefix = service.namespace.normalizedBase + "_"
     }
 
-    return "\(prefix)\(service.name.normalizedBase)"
+    return prefix + service.name.normalizedBase
   }
 
   private func makeStaticServiceDescriptorProperty(
