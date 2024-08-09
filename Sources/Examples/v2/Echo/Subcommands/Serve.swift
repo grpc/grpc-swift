@@ -27,7 +27,10 @@ struct Serve: AsyncParsableCommand {
   var port: Int = 1234
 
   func run() async throws {
-    let transport = HTTP2ServerTransport.Posix(address: .ipv4(host: "127.0.0.1", port: self.port))
+    let transport = HTTP2ServerTransport.Posix(
+      address: .ipv4(host: "127.0.0.1", port: self.port),
+      config: .defaults(transportSecurity: .plaintext)
+    )
     let server = GRPCServer(transport: transport, services: [EchoService()])
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask { try await server.run() }

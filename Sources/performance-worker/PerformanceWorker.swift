@@ -52,7 +52,7 @@ struct PerformanceWorker: AsyncParsableCommand {
 
     let transport = HTTP2ServerTransport.Posix(
       address: .ipv4(host: "127.0.0.1", port: self.driverPort),
-      config: .defaults
+      config: .defaults(transportSecurity: .plaintext)
     )
 
     let server = GRPCServer(transport: transport, services: [WorkerService()])
