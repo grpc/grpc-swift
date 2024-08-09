@@ -205,7 +205,7 @@ extension ClientCodeTranslator {
   ) -> [ParameterDescription] {
     var parameters = [ParameterDescription]()
 
-    // Unary inputs have a 'message' parameters
+    // Unary inputs have a 'message' parameter
     if !method.isInputStreaming {
       parameters.append(
         ParameterDescription(
