@@ -47,24 +47,24 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA_ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
               )
@@ -81,11 +81,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.unary(
                   request: request,
@@ -128,24 +128,24 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA_ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
               )
@@ -162,11 +162,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.clientStreaming(
                   request: request,
@@ -209,24 +209,24 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA_ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
               )
@@ -243,11 +243,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.serverStreaming(
                   request: request,
@@ -290,24 +290,24 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA_ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
               )
@@ -324,11 +324,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           public func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.bidirectionalStreaming(
                   request: request,
@@ -379,47 +379,47 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       package protocol NamespaceA_ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
           
           /// Documentation for MethodB
           func methodB<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           package func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA_ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
               )
           }
           
           package func methodB<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodB(
                   request: request,
-                  serializer: ProtobufSerializer<NamespaceA_ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
                   body
               )
@@ -436,11 +436,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           package func methodA<R>(
-              request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Stream<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.clientStreaming(
                   request: request,
@@ -454,11 +454,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodB
           package func methodB<R>(
-              request: ClientRequest.Single<NamespaceA_ServiceARequest>,
-              serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<NamespaceA_ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<NamespaceA_ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.serverStreaming(
                   request: request,
@@ -501,24 +501,24 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       internal protocol ServiceAClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<R>(
-              request: ClientRequest.Single<ServiceARequest>,
-              serializer: some MessageSerializer<ServiceARequest>,
-              deserializer: some MessageDeserializer<ServiceAResponse>,
-              options: CallOptions,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<ServiceAResponse>,
+              options: GRPCCore.CallOptions,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension ServiceA.ClientProtocol {
           internal func methodA<R>(
-              request: ClientRequest.Single<ServiceARequest>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<ServiceARequest>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
-                  serializer: ProtobufSerializer<ServiceARequest>(),
-                  deserializer: ProtobufDeserializer<ServiceAResponse>(),
+                  serializer: GRPCProtobuf.ProtobufSerializer<ServiceARequest>(),
+                  deserializer: GRPCProtobuf.ProtobufDeserializer<ServiceAResponse>(),
                   options: options,
                   body
               )
@@ -535,11 +535,11 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           
           /// Documentation for MethodA
           internal func methodA<R>(
-              request: ClientRequest.Single<ServiceARequest>,
-              serializer: some MessageSerializer<ServiceARequest>,
-              deserializer: some MessageDeserializer<ServiceAResponse>,
-              options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R
+              request: GRPCCore.ClientRequest.Single<ServiceARequest>,
+              serializer: some GRPCCore.MessageSerializer<ServiceARequest>,
+              deserializer: some GRPCCore.MessageDeserializer<ServiceAResponse>,
+              options: GRPCCore.CallOptions = .defaults,
+              _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ServiceAResponse>) async throws -> R
           ) async throws -> R where R: Sendable {
               try await self.client.unary(
                   request: request,

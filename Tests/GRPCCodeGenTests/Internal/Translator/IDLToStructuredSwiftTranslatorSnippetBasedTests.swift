@@ -171,9 +171,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       @_spi(Secret) import enum Foo.Bar
 
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
@@ -181,7 +181,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
       }
 
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"

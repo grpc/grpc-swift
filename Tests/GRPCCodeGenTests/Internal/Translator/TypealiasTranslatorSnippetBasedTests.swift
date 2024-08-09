@@ -47,17 +47,17 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
               public enum MethodA {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
-                  public static let descriptor = MethodDescriptor(
+                  public static let descriptor = GRPCCore.MethodDescriptor(
                       service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
-              public static let descriptors: [MethodDescriptor] = [
+              public static let descriptors: [GRPCCore.MethodDescriptor] = [
                   MethodA.descriptor
               ]
           }
@@ -70,7 +70,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -101,9 +101,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
@@ -114,7 +114,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -145,16 +145,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -185,16 +185,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -225,12 +225,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -265,17 +265,17 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum ServiceA {
-          public static let descriptor = ServiceDescriptor.ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.ServiceA
           public enum Method {
               public enum MethodA {
                   public typealias Input = ServiceARequest
                   public typealias Output = ServiceAResponse
-                  public static let descriptor = MethodDescriptor(
+                  public static let descriptor = GRPCCore.MethodDescriptor(
                       service: ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
               }
-              public static let descriptors: [MethodDescriptor] = [
+              public static let descriptors: [GRPCCore.MethodDescriptor] = [
                   MethodA.descriptor
               ]
           }
@@ -288,7 +288,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = ServiceAClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let ServiceA = Self(
               package: "",
               service: "ServiceA"
@@ -335,12 +335,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
               public enum MethodA {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
-                  public static let descriptor = MethodDescriptor(
+                  public static let descriptor = GRPCCore.MethodDescriptor(
                       service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodA"
                   )
@@ -348,12 +348,12 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public enum MethodB {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
-                  public static let descriptor = MethodDescriptor(
+                  public static let descriptor = GRPCCore.MethodDescriptor(
                       service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
                       method: "MethodB"
                   )
               }
-              public static let descriptors: [MethodDescriptor] = [
+              public static let descriptors: [GRPCCore.MethodDescriptor] = [
                   MethodA.descriptor,
                   MethodB.descriptor
               ]
@@ -367,7 +367,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_ServiceAClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -398,9 +398,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       package enum NamespaceA_ServiceA {
-          package static let descriptor = ServiceDescriptor.namespaceA_ServiceA
+          package static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
           package enum Method {
-              package static let descriptors: [MethodDescriptor] = []
+              package static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
@@ -411,7 +411,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = NamespaceA_ServiceAClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           package static let namespaceA_ServiceA = Self(
               package: "namespaceA",
               service: "ServiceA"
@@ -454,9 +454,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum NamespaceA_Aservice {
-          public static let descriptor = ServiceDescriptor.namespaceA_AService
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_AService
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_AserviceStreamingServiceProtocol
@@ -467,16 +467,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_AserviceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_AService = Self(
               package: "namespaceA",
               service: "AService"
           )
       }
       public enum NamespaceA_Bservice {
-          public static let descriptor = ServiceDescriptor.namespaceA_BService
+          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_BService
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_BserviceStreamingServiceProtocol
@@ -487,7 +487,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = NamespaceA_BserviceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_BService = Self(
               package: "namespaceA",
               service: "BService"
@@ -522,9 +522,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       package enum AService {
-          package static let descriptor = ServiceDescriptor.AService
+          package static let descriptor = GRPCCore.ServiceDescriptor.AService
           package enum Method {
-              package static let descriptors: [MethodDescriptor] = []
+              package static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias StreamingServiceProtocol = AServiceStreamingServiceProtocol
@@ -535,16 +535,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = AServiceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           package static let AService = Self(
               package: "",
               service: "AService"
           )
       }
       package enum BService {
-          package static let descriptor = ServiceDescriptor.BService
+          package static let descriptor = GRPCCore.ServiceDescriptor.BService
           package enum Method {
-              package static let descriptors: [MethodDescriptor] = []
+              package static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias StreamingServiceProtocol = BServiceStreamingServiceProtocol
@@ -555,7 +555,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           package typealias Client = BServiceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           package static let BService = Self(
               package: "",
               service: "BService"
@@ -598,9 +598,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       internal enum Anamespace_AService {
-          internal static let descriptor = ServiceDescriptor.anamespace_AService
+          internal static let descriptor = GRPCCore.ServiceDescriptor.anamespace_AService
           internal enum Method {
-              internal static let descriptors: [MethodDescriptor] = []
+              internal static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias StreamingServiceProtocol = Anamespace_AServiceStreamingServiceProtocol
@@ -611,16 +611,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias Client = Anamespace_AServiceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           internal static let anamespace_AService = Self(
               package: "anamespace",
               service: "AService"
           )
       }
       internal enum Bnamespace_BService {
-          internal static let descriptor = ServiceDescriptor.bnamespace_BService
+          internal static let descriptor = GRPCCore.ServiceDescriptor.bnamespace_BService
           internal enum Method {
-              internal static let descriptors: [MethodDescriptor] = []
+              internal static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias StreamingServiceProtocol = Bnamespace_BServiceStreamingServiceProtocol
@@ -631,7 +631,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           internal typealias Client = Bnamespace_BServiceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           internal static let bnamespace_BService = Self(
               package: "bnamespace",
               service: "BService"
@@ -668,9 +668,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
     let expectedSwift =
       """
       public enum Anamespace_AService {
-          public static let descriptor = ServiceDescriptor.anamespace_AService
+          public static let descriptor = GRPCCore.ServiceDescriptor.anamespace_AService
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = Anamespace_AServiceStreamingServiceProtocol
@@ -681,16 +681,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = Anamespace_AServiceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let anamespace_AService = Self(
               package: "anamespace",
               service: "AService"
           )
       }
       public enum BService {
-          public static let descriptor = ServiceDescriptor.BService
+          public static let descriptor = GRPCCore.ServiceDescriptor.BService
           public enum Method {
-              public static let descriptors: [MethodDescriptor] = []
+              public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = BServiceStreamingServiceProtocol
@@ -701,7 +701,7 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias Client = BServiceClient
       }
-      extension ServiceDescriptor {
+      extension GRPCCore.ServiceDescriptor {
           public static let BService = Self(
               package: "",
               service: "BService"

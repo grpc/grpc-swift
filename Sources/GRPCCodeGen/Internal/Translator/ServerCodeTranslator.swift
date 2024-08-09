@@ -25,8 +25,8 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
 ///   func baz(
-///     request: ServerRequest.Stream<Foo_Bar_Input>
-///   ) async throws -> ServerResponse.Stream<Foo_Bar_Output>
+///     request: GRPCCore.ServerRequest.Stream<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.ServerResponse.Stream<Foo_Bar_Output>
 /// }
 /// // Conformance to `GRPCCore.RegistrableRPCService`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -34,8 +34,8 @@
 ///   public func registerMethods(with router: inout GRPCCore.RPCRouter) {
 ///     router.registerHandler(
 ///       forMethod: Foo_Bar.Method.baz.descriptor,
-///       deserializer: ProtobufDeserializer<Foo_Bar_Input>(),
-///       serializer: ProtobufSerializer<Foo_Bar_Output>(),
+///       deserializer: GRPCProtobuf.ProtobufDeserializer<Foo_Bar_Input>(),
+///       serializer: GRPCProtobuf.ProtobufSerializer<Foo_Bar_Output>(),
 ///       handler: { request in try await self.baz(request: request) }
 ///     )
 ///   }
@@ -43,17 +43,17 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarServiceProtocol: Foo_Bar.StreamingServiceProtocol {
 ///   func baz(
-///     request: ServerRequest.Single<Foo_Bar_Input>
-///   ) async throws -> ServerResponse.Single<Foo_Bar_Output>
+///     request: GRPCCore.ServerRequest.Single<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.ServerResponse.Single<Foo_Bar_Output>
 /// }
 /// // Partial conformance to `Foo_BarStreamingServiceProtocol`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension Foo_Bar.ServiceProtocol {
 ///   public func baz(
-///     request: ServerRequest.Stream<Foo_Bar_Input>
-///   ) async throws -> ServerResponse.Stream<Foo_Bar_Output> {
-///     let response = try await self.baz(request: ServerRequest.Single(stream: request))
-///     return ServerResponse.Stream(single: response)
+///     request: GRPCCore.ServerRequest.Stream<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.ServerResponse.Stream<Foo_Bar_Output> {
+///     let response = try await self.baz(request: GRPCCore.ServerRequest.Single(stream: request))
+///     return GRPCCore.ServerResponse.Stream(single: response)
 ///   }
 /// }
 ///```
@@ -147,7 +147,7 @@ extension ServerCodeTranslator {
         .init(
           label: "request",
           type: .generic(
-            wrapper: .member(["ServerRequest", "Stream"]),
+            wrapper: .member(["GRPCCore.ServerRequest", "Stream"]),
             wrapped: .member(method.inputType)
           )
         )
@@ -155,7 +155,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["ServerResponse", "Stream"]),
+          wrapper: .member(["GRPCCore.ServerResponse", "Stream"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -322,7 +322,7 @@ extension ServerCodeTranslator {
           label: "request",
           type:
             .generic(
-              wrapper: .member(["ServerRequest", inputStreaming]),
+              wrapper: .member(["GRPCCore.ServerRequest", inputStreaming]),
               wrapped: .member(method.inputType)
             )
         )
@@ -330,7 +330,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["ServerResponse", outputStreaming]),
+          wrapper: .member(["GRPCCore.ServerResponse", outputStreaming]),
           wrapped: .member(method.outputType)
         )
       )
@@ -390,7 +390,7 @@ extension ServerCodeTranslator {
       serverRequest = Expression.functionCall(
         calledExpression: .memberAccess(
           MemberAccessDescription(
-            left: .identifierPattern("ServerRequest"),
+            left: .identifierPattern("GRPCCore.ServerRequest"),
             right: "Single"
           )
         ),
@@ -429,7 +429,7 @@ extension ServerCodeTranslator {
       returnValue = .functionCall(
         calledExpression: .memberAccess(
           MemberAccessDescription(
-            left: .identifierType(.member(["ServerResponse"])),
+            left: .identifierType(.member(["GRPCCore.ServerResponse"])),
             right: "Stream"
           )
         ),

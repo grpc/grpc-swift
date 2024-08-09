@@ -25,24 +25,24 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarClientProtocol: Sendable {
 ///   func baz<R>(
-///     request: ClientRequest.Single<Foo_Bar_Input>,
-///     serializer: some MessageSerializer<Foo_Bar_Input>,
-///     deserializer: some MessageDeserializer<Foo_Bar_Output>,
-///     options: CallOptions = .defaults,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///     request: GRPCCore.ClientRequest.Single<Foo_Bar_Input>,
+///     serializer: some GRPCCore.MessageSerializer<Foo_Bar_Input>,
+///     deserializer: some GRPCCore.MessageDeserializer<Foo_Bar_Output>,
+///     options: GRPCCore.CallOptions = .defaults,
+///     _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Foo_Bar_Output>) async throws -> R
 ///   ) async throws -> R where R: Sendable
 /// }
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension Foo_Bar.ClientProtocol {
 ///   public func baz<R>(
-///     request: ClientRequest.Single<Foo_Bar_Input>,
-///     options: CallOptions = .defaults,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///     request: GRPCCore.ClientRequest.Single<Foo_Bar_Input>,
+///     options: GRPCCore.CallOptions = .defaults,
+///     _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Foo_Bar_Output>) async throws -> R
 ///   ) async throws -> R where R: Sendable {
 ///     try await self.baz(
 ///       request: request,
-///       serializer: ProtobufSerializer<Foo_Bar_Input>(),
-///       deserializer: ProtobufDeserializer<Foo_Bar_Output>(),
+///       serializer: GRPCProtobuf.ProtobufSerializer<Foo_Bar_Input>(),
+///       deserializer: GRPCProtobuf.ProtobufDeserializer<Foo_Bar_Output>(),
 ///       options: options,
 ///       body
 ///     )
@@ -54,11 +54,11 @@
 ///     self.client = client
 ///   }
 ///   public func methodA<R>(
-///     request: ClientRequest.Stream<Foo_Bar_Input>,
-///     serializer: some MessageSerializer<Foo_Bar_Input>,
-///     deserializer: some MessageDeserializer<Foo_Bar_Output>,
-///     options: CallOptions = .defaults,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///     request: GRPCCore.ClientRequest.Stream<Foo_Bar_Input>,
+///     serializer: some GRPCCore.MessageSerializer<Foo_Bar_Input>,
+///     deserializer: some GRPCCore.MessageDeserializer<Foo_Bar_Output>,
+///     options: GRPCCore.CallOptions = .defaults,
+///     _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Foo_Bar_Output>) async throws -> R
 ///   ) async throws -> R where R: Sendable {
 ///     try await self.client.unary(
 ///       request: request,
@@ -254,7 +254,7 @@ extension ClientCodeTranslator {
     parameters.append(
       ParameterDescription(
         label: "options",
-        type: .member("CallOptions"),
+        type: .member("GRPCCore.CallOptions"),
         defaultValue: includeDefaultCallOptions
           ? .memberAccess(MemberAccessDescription(right: "defaults")) : nil
       )
@@ -267,7 +267,7 @@ extension ClientCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> ParameterDescription {
     let requestType = method.isInputStreaming ? "Stream" : "Single"
-    let clientRequestType = ExistingTypeDescription.member(["ClientRequest", requestType])
+    let clientRequestType = ExistingTypeDescription.member(["GRPCCore.ClientRequest", requestType])
     return ParameterDescription(
       label: "request",
       type: .generic(
@@ -285,7 +285,7 @@ extension ClientCodeTranslator {
       label: "serializer",
       type: ExistingTypeDescription.some(
         .generic(
-          wrapper: .member("MessageSerializer"),
+          wrapper: .member("GRPCCore.MessageSerializer"),
           wrapped: .member(method.inputType)
         )
       )
@@ -300,7 +300,7 @@ extension ClientCodeTranslator {
       label: "deserializer",
       type: ExistingTypeDescription.some(
         .generic(
-          wrapper: .member("MessageDeserializer"),
+          wrapper: .member("GRPCCore.MessageDeserializer"),
           wrapped: .member(method.outputType)
         )
       )
@@ -313,7 +313,7 @@ extension ClientCodeTranslator {
   ) -> ParameterDescription {
     let clientStreaming = method.isOutputStreaming ? "Stream" : "Single"
     let closureParameterType = ExistingTypeDescription.generic(
-      wrapper: .member(["ClientResponse", clientStreaming]),
+      wrapper: .member(["GRPCCore.ClientResponse", clientStreaming]),
       wrapped: .member(method.outputType)
     )
 
