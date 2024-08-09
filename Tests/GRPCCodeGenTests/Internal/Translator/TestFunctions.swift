@@ -81,10 +81,10 @@ internal func makeCodeGenerationRequest(
     dependencies: dependencies,
     services: services,
     lookupSerializer: {
-      "ProtobufSerializer<\($0)>()"
+      "GRPCProtobuf.ProtobufSerializer<\($0)>()"
     },
     lookupDeserializer: {
-      "ProtobufDeserializer<\($0)>()"
+      "GRPCProtobuf.ProtobufDeserializer<\($0)>()"
     }
   )
 }

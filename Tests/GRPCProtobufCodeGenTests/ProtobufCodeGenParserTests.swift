@@ -95,11 +95,11 @@ final class ProtobufCodeGenParserTests: XCTestCase {
 
     XCTAssertEqual(
       parsedCodeGenRequest.lookupSerializer("Helloworld_HelloRequest"),
-      "ProtobufSerializer<Helloworld_HelloRequest>()"
+      "GRPCProtobuf.ProtobufSerializer<Helloworld_HelloRequest>()"
     )
     XCTAssertEqual(
       parsedCodeGenRequest.lookupDeserializer("Helloworld_HelloRequest"),
-      "ProtobufDeserializer<Helloworld_HelloRequest>()"
+      "GRPCProtobuf.ProtobufDeserializer<Helloworld_HelloRequest>()"
     )
   }
 
@@ -176,11 +176,11 @@ final class ProtobufCodeGenParserTests: XCTestCase {
 
     XCTAssertEqual(
       parsedCodeGenRequest.lookupSerializer("Hello_World_HelloRequest"),
-      "ProtobufSerializer<Hello_World_HelloRequest>()"
+      "GRPCProtobuf.ProtobufSerializer<Hello_World_HelloRequest>()"
     )
     XCTAssertEqual(
       parsedCodeGenRequest.lookupDeserializer("Hello_World_HelloRequest"),
-      "ProtobufDeserializer<Hello_World_HelloRequest>()"
+      "GRPCProtobuf.ProtobufDeserializer<Hello_World_HelloRequest>()"
     )
   }
 
@@ -257,11 +257,11 @@ final class ProtobufCodeGenParserTests: XCTestCase {
 
     XCTAssertEqual(
       parsedCodeGenRequest.lookupSerializer("HelloRequest"),
-      "ProtobufSerializer<HelloRequest>()"
+      "GRPCProtobuf.ProtobufSerializer<HelloRequest>()"
     )
     XCTAssertEqual(
       parsedCodeGenRequest.lookupDeserializer("HelloRequest"),
-      "ProtobufDeserializer<HelloRequest>()"
+      "GRPCProtobuf.ProtobufDeserializer<HelloRequest>()"
     )
   }
 }
