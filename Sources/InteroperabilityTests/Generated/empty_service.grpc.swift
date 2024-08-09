@@ -82,7 +82,7 @@ extension Grpc_Testing_EmptyService.ClientProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_EmptyServiceClient: Grpc_Testing_EmptyService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
+    
     public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }

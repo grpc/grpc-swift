@@ -9,20 +9,17 @@ jobs:
     name: License Header and Formatting Checks
     runs-on: ubuntu-latest
     container:
-      image: swift
+      image: swiftlang/swift:nightly-6.0-jammy
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache/restore@v4
-      with:
-        path: scripts/.swift-format-source
-        key: ${{ runner.os }}-swift-format
-    - name: "Formatting and License Headers check"
+    - name: "Checkout repository"
+      uses: actions/checkout@v4
+    - name: Mark the workspace as safe
+      run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
+    - name: "Install protoc"
+      run: apt update && apt install -y protobuf-compiler
+    - name: "Formatting, License Headers, and Generated Code check"
       run: |
         ./scripts/sanity.sh
-    - uses: actions/cache/save@v4
-      with:
-        path: scripts/.swift-format-source
-        key: ${{ runner.os }}-swift-format
   unit-tests:
     strategy:
       fail-fast: false

@@ -16,7 +16,7 @@
 
 set -eu
 
-HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 function run_logged() {
   local message=$1
@@ -38,14 +38,19 @@ function run_logged() {
 }
 
 function check_license_headers() {
-  run_logged "Checking license headers" "$HERE/license-check.sh"
+  run_logged "Checking license headers" "$here/license-check.sh"
 }
 
 function check_formatting() {
-  run_logged "Checking formatting" "$HERE/format.sh -l"
+  run_logged "Checking formatting" "$here/format.sh -l"
+}
+
+function check_generated_code_is_up_to_date() {
+  run_logged "Checking generated code is up-to-date" "$here/check-generated-code.sh"
 }
 
 errors=0
 check_license_headers
 check_formatting
+check_generated_code_is_up_to_date
 exit $errors

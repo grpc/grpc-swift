@@ -743,8 +743,8 @@ struct Grpc_Testing_ScenarioResultSummary: @unchecked Sendable {
   // methods supported on all messages.
 
   /// Total number of operations per second over all clients. What is counted as 1 'operation' depends on the benchmark scenarios:
-  /// For unary benchmarks, an operation is processing of a single unary RPC.
-  /// For streaming benchmarks, an operation is processing of a single ping pong of request and response.
+  /// For unary benchmarks, an operation is processing of a single unary RPC. 
+  /// For streaming benchmarks, an operation is processing of a single ping pong of request and response. 
   var qps: Double {
     get {return _storage._qps}
     set {_uniqueStorage()._qps = newValue}
@@ -757,8 +757,8 @@ struct Grpc_Testing_ScenarioResultSummary: @unchecked Sendable {
   }
 
   /// The total server cpu load based on system time across all server processes, expressed as percentage of a single cpu core.
-  /// For example, 85 implies 85% of a cpu core, 125 implies 125% of a cpu core. Since we are accumulating the cpu load across all the server
-  /// processes, the value could > 100 when there are multiple servers or a single server using multiple threads and cores.
+  /// For example, 85 implies 85% of a cpu core, 125 implies 125% of a cpu core. Since we are accumulating the cpu load across all the server 
+  /// processes, the value could > 100 when there are multiple servers or a single server using multiple threads and cores. 
   /// Same explanation for the total client cpu load below.
   var serverSystemTime: Double {
     get {return _storage._serverSystemTime}

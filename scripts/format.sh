@@ -52,53 +52,20 @@ while getopts ":flh" opt; do
   esac
 done
 
-THIS_SCRIPT=$0
-HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-REPO="$HERE/.."
-SWIFTFORMAT_DIR="$HERE/.swift-format-source"
-SWIFTFORMAT_VERSION=510.0.0
-
-# Clone SwiftFormat if we don't already have it.
-if [ ! -d "$SWIFTFORMAT_DIR" ]; then
-  echo "- Cloning swift-format @ $SWIFTFORMAT_VERSION"
-  git clone \
-    --depth 1 \
-    --branch "$SWIFTFORMAT_VERSION" \
-    https://github.com/apple/swift-format.git \
-    "$SWIFTFORMAT_DIR"
-fi
-
-cd "$SWIFTFORMAT_DIR"
-
-# Figure out the path for the binary.
-SWIFTFORMAT_BIN="$(swift build --show-bin-path -c release)/swift-format-$SWIFTFORMAT_VERSION"
-
-# Build it if we don't already have it.
-if [ ! -f "$SWIFTFORMAT_BIN" ]; then
-  # We're not on the right tag, fetch and checkout the right one.
-  echo "- Fetching swift-format @ $SWIFTFORMAT_VERSION"
-  git fetch --depth 1 origin "refs/tags/$SWIFTFORMAT_VERSION:refs/tags/$SWIFTFORMAT_VERSION"
-  git checkout "$SWIFTFORMAT_VERSION"
-
-  # Now build and name the bin appropriately.
-  echo "- Building swift-format @ $SWIFTFORMAT_VERSION"
-  swift build -c release --product swift-format
-  mv "$(swift build --show-bin-path -c release)/swift-format" "$SWIFTFORMAT_BIN"
-
-  echo "- OK"
-fi
+here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+repo="$here/.."
 
 if "$lint"; then
-  "${SWIFTFORMAT_BIN}" lint \
+  swift format lint \
     --parallel --recursive --strict \
-    "${REPO}/Sources" \
-    "${REPO}/Tests" \
-    "${REPO}/Plugins" \
-    "${REPO}/Performance/Benchmarks/Benchmarks/GRPCSwiftBenchmark" \
+    "${repo}/Sources" \
+    "${repo}/Tests" \
+    "${repo}/Plugins" \
+    "${repo}/Performance/Benchmarks/Benchmarks/GRPCSwiftBenchmark" \
     && SWIFT_FORMAT_RC=$? || SWIFT_FORMAT_RC=$?
 
   if [[ "${SWIFT_FORMAT_RC}" -ne 0 ]]; then
-    fatal "Running swift-format produced errors.
+    fatal "Running swift format produced errors.
 
     To fix, run the following command:
 
@@ -107,21 +74,21 @@ if "$lint"; then
     exit "${SWIFT_FORMAT_RC}"
   fi
 
-  log "Ran swift-format lint with no errors."
+  log "Ran swift format lint with no errors."
 elif "$format"; then
-  "${SWIFTFORMAT_BIN}" format \
+  swift format \
     --parallel --recursive --in-place \
-    "${REPO}/Sources" \
-    "${REPO}/Tests" \
-    "${REPO}/Plugins" \
-    "${REPO}/Performance/Benchmarks/Benchmarks/GRPCSwiftBenchmark" \
+    "${repo}/Sources" \
+    "${repo}/Tests" \
+    "${repo}/Plugins" \
+    "${repo}/Performance/Benchmarks/Benchmarks/GRPCSwiftBenchmark" \
     && SWIFT_FORMAT_RC=$? || SWIFT_FORMAT_RC=$?
 
   if [[ "${SWIFT_FORMAT_RC}" -ne 0 ]]; then
-    fatal "Running swift-format produced errors." "${SWIFT_FORMAT_RC}"
+    fatal "Running swift format produced errors." "${SWIFT_FORMAT_RC}"
   fi
 
-  log "Ran swift-format with no errors."
+  log "Ran swift format with no errors."
 else
   fatal "No actions taken."
 fi

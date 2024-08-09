@@ -119,7 +119,7 @@ function generate_reflection_service {
   mv "$output_v1/reflection.grpc.swift" "$output_v1/reflection-v1.grpc.swift"
 
   local proto_v1alpha="$here/upstream/grpc/reflection/v1alpha/reflection.proto"
-  local output_v1alpha="$root/Sources/GRPCReflectionService/v1alpha"
+  local output_v1alpha="$root/Sources/GRPCReflectionService/v1Alpha"
 
   # Messages were accidentally leaked into public API, they shouldn't be but we
   # can't undo that change until the next major version.
