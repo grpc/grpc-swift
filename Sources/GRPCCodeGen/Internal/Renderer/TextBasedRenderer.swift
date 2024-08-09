@@ -528,6 +528,29 @@ struct TextBasedRenderer: RendererProtocol {
         writer.nextLineAppendsToLastLine()
       }
       writer.writeLine("]")
+
+    case .dictionary(let items):
+      writer.writeLine("[")
+      if items.isEmpty {
+        writer.nextLineAppendsToLastLine()
+        writer.writeLine(":")
+        writer.nextLineAppendsToLastLine()
+      } else {
+        writer.withNestedLevel {
+          for (item, isLast) in items.enumeratedWithLastMarker() {
+            renderExpression(item.key)
+            writer.nextLineAppendsToLastLine()
+            writer.writeLine(": ")
+            writer.nextLineAppendsToLastLine()
+            renderExpression(item.value)
+            if !isLast {
+              writer.nextLineAppendsToLastLine()
+              writer.writeLine(",")
+            }
+          }
+        }
+      }
+      writer.writeLine("]")
     }
   }
 

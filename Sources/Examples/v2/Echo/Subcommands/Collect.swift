@@ -40,17 +40,13 @@ struct Collect: AsyncParsableCommand {
       let echo = Echo_EchoClient(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
-        let request = ClientRequest.Stream(of: Echo_EchoRequest.self) { writer in
+        let message = try await echo.collect { writer in
           for part in self.arguments.message.split(separator: " ") {
             print("collect → \(part)")
             try await writer.write(.with { $0.text = String(part) })
           }
         }
-
-        try await echo.collect(request: request) { response in
-          let message = try response.message
-          print("collect ← \(message.text)")
-        }
+        print("collect ← \(message.text)")
       }
 
       client.close()

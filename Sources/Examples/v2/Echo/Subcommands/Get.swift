@@ -40,10 +40,8 @@ struct Get: AsyncParsableCommand {
       for _ in 0 ..< self.arguments.repetitions {
         let message = Echo_EchoRequest.with { $0.text = self.arguments.message }
         print("get → \(message.text)")
-        try await echo.get(request: ClientRequest.Single(message: message)) { response in
-          let message = try response.message
-          print("get ← \(message.text)")
-        }
+        let response = try await echo.get(message)
+        print("get ← \(message.text)")
       }
 
       client.close()

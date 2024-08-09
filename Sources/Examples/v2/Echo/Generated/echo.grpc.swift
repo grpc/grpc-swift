@@ -271,6 +271,85 @@ extension Echo_Echo.ClientProtocol {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Echo_Echo.ClientProtocol {
+    /// Immediately returns an echo of a request.
+    internal func get<Result>(
+        _ message: Echo_EchoRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<Echo_EchoRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.get(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+
+    /// Splits a request into words and returns each word in a stream of messages.
+    internal func expand<Result>(
+        _ message: Echo_EchoRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<Echo_EchoRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.expand(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+
+    /// Collects a stream of messages and returns them concatenated when the caller closes.
+    internal func collect<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<Echo_EchoRequest>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.collect(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+
+    /// Streams back messages as they are received in an input stream.
+    internal func update<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<Echo_EchoRequest>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.update(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct Echo_EchoClient: Echo_Echo.ClientProtocol {
     private let client: GRPCCore.GRPCClient
 
