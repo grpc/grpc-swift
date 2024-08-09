@@ -189,112 +189,32 @@ extension HTTP2ServerTransport.Config {
     }
   }
 
-  public struct TransportSecurity: Sendable {
-    private enum Wrapped {
-      case plaintext
-      case tls(TLS)
-    }
-
-    private let wrapped: Wrapped
-
-    /// This connection is plaintext: no encryption will take place.
-    public static let plaintext = Self(wrapped: .plaintext)
-
-    /// This connection will use TLS.
-    public static func tls(_ tls: TLS) -> Self {
-      Self(wrapped: .tls(tls))
-    }
-
-    /// Returns the TLS configuration, if the security has been set to ``tls(_:)``.
-    package var tlsConfig: TLS? {
-      switch wrapped {
-      case .plaintext:
-        return nil
-      case .tls(let config):
-        return config
-      }
-    }
-  }
-
   public struct TLS: Sendable {
-    /// The serialization format of the provided certificates and private keys.
-    public struct SerializationFormat: Sendable, Equatable {
-      package enum Wrapped {
-        case pem
-        case der
-      }
-
-      package let wrapped: Wrapped
-
-      public static let pem = Self(wrapped: .pem)
-      public static let der = Self(wrapped: .der)
-    }
-
-    public struct CertificateSource: Sendable {
-      package enum Wrapped {
-        case file(path: String, format: SerializationFormat)
-        case bytes(bytes: [UInt8], format: SerializationFormat)
-      }
-
-      package let wrapped: Wrapped
-
-      /// The certificate will be provided via a file.
-      public static func file(path: String, format: SerializationFormat) -> Self {
-        Self(wrapped: .file(path: path, format: format))
-      }
-
-      /// The certificate will be provided as an array of bytes.
-      public static func bytes(_ bytes: [UInt8], format: SerializationFormat) -> Self {
-        Self(wrapped: .bytes(bytes: bytes, format: format))
-      }
-    }
-
-    public struct PrivateKeySource: Sendable {
-      package enum Wrapped {
-        case file(path: String, format: SerializationFormat)
-        case bytes(bytes: [UInt8], format: SerializationFormat)
-      }
-
-      package let wrapped: Wrapped
-
-      /// The private key will be provided via a file.
-      public static func file(path: String, format: SerializationFormat) -> Self {
-        Self(wrapped: .file(path: path, format: format))
-      }
-
-      /// The private key will be provided as an array of bytes.
-      public static func bytes(
-        _ bytes: [UInt8],
-        format: SerializationFormat
-      ) -> Self {
-        Self(wrapped: .bytes(bytes: bytes, format: format))
-      }
-    }
-
     public struct TrustRootsSource: Sendable {
       package enum Wrapped {
-        case certificates([CertificateSource])
+        case certificates([HTTP2Transport.Config.TLS.CertificateSource])
         case systemDefault
       }
 
       package let wrapped: Wrapped
 
-      /// Path to either a file of CA certificates in PEM format, or a directory containing CA certificates in PEM format.
-      public static func certificates(_ certificateSources: [CertificateSource]) -> Self {
+      /// A list of ``HTTP2ServerTransport/Config/TLS/CertificateSource``s making up the
+      /// chain of trust.
+      public static func certificates(_ certificateSources: [HTTP2Transport.Config.TLS.CertificateSource]) -> Self {
         Self(wrapped: .certificates(certificateSources))
       }
 
-      /// The system default trust.
+      /// The system default trust store.
       public static let systemDefault: Self = Self(wrapped: .systemDefault)
     }
 
     /// The certificate the server will offer during negotiation.
-    public var certificateChainSources: [CertificateSource]
+    public var certificateChainSources: [HTTP2Transport.Config.TLS.CertificateSource]
 
     /// The private key associated with the leaf certificate.
-    public var privateKeySource: PrivateKeySource
+    public var privateKeySource: HTTP2Transport.Config.TLS.PrivateKeySource
 
-    /// Whether to verify the remote certificate.
+    /// Whether to verify the client's certificate, if one is presented.
     public var verifyClientCertificate: Bool
 
     /// Custom trust roots to be used when verifying client certificates.
@@ -305,18 +225,17 @@ extension HTTP2ServerTransport.Config {
     /// If this is set to `true` but the client does not support ALPN, then the connection will be rejected.
     public var requireALPN: Bool
 
-    public init(
-      certificateChainSources: [CertificateSource],
-      privateKeySource: PrivateKeySource,
-      verifyClientCertificate: Bool = true,
-      trustRoots: TrustRootsSource = .systemDefault,
-      requireALPN: Bool = false
-    ) {
-      self.certificateChainSources = certificateChainSources
-      self.privateKeySource = privateKeySource
-      self.verifyClientCertificate = verifyClientCertificate
-      self.trustRoots = trustRoots
-      self.requireALPN = requireALPN
+    public static func defaults(
+      certificateChainSources: [HTTP2Transport.Config.TLS.CertificateSource],
+      privateKeySource: HTTP2Transport.Config.TLS.PrivateKeySource
+    ) -> Self {
+      Self.init(
+        certificateChainSources: certificateChainSources,
+        privateKeySource: privateKeySource,
+        verifyClientCertificate: false,
+        trustRoots: .systemDefault,
+        requireALPN: false
+      )
     }
   }
 }

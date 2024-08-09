@@ -17,7 +17,7 @@
 import NIOSSL
 
 extension NIOSSLSerializationFormats {
-  fileprivate init(_ format: HTTP2ServerTransport.Config.TLS.SerializationFormat) {
+  fileprivate init(_ format: HTTP2Transport.Config.TLS.SerializationFormat) {
     switch format.wrapped {
     case .pem:
       self = .pem
@@ -27,7 +27,7 @@ extension NIOSSLSerializationFormats {
   }
 }
 
-extension Sequence<HTTP2ServerTransport.Config.TLS.CertificateSource> {
+extension Sequence<HTTP2Transport.Config.TLS.CertificateSource> {
   func sslCertificateSources() throws -> [NIOSSLCertificateSource] {
     var certificateSources: [NIOSSLCertificateSource] = []
     for source in self {
@@ -67,7 +67,7 @@ extension Sequence<HTTP2ServerTransport.Config.TLS.CertificateSource> {
 
 extension NIOSSLPrivateKey {
   fileprivate convenience init(
-    privateKeySource source: HTTP2ServerTransport.Config.TLS.PrivateKeySource
+    privateKeySource source: HTTP2Transport.Config.TLS.PrivateKeySource
   ) throws {
     switch source.wrapped {
     case .file(let path, let serializationFormat):

@@ -32,7 +32,8 @@ extension ChannelPipeline.SynchronousOperations {
     connectionConfig: HTTP2ServerTransport.Config.Connection,
     http2Config: HTTP2ServerTransport.Config.HTTP2,
     rpcConfig: HTTP2ServerTransport.Config.RPC,
-    transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
+    requireALPN: Bool,
+    scheme: Scheme
   ) throws -> (HTTP2ConnectionChannel, HTTP2StreamMultiplexer) {
     let serverConnectionHandler = ServerConnectionManagementHandler(
       eventLoop: self.eventLoop,
@@ -45,7 +46,7 @@ extension ChannelPipeline.SynchronousOperations {
       minPingIntervalWithoutCalls: TimeAmount(
         connectionConfig.keepalive.clientBehavior.minPingIntervalWithoutCalls
       ),
-      requireALPN: transportSecurity.tlsConfig?.requireALPN ?? false
+      requireALPN: requireALPN
     )
     let flushNotificationHandler = GRPCServerFlushNotificationHandler(
       serverConnectionManagementHandler: serverConnectionHandler
@@ -82,7 +83,7 @@ extension ChannelPipeline.SynchronousOperations {
       return streamChannel.eventLoop.makeCompletedFuture {
         let methodDescriptorPromise = streamChannel.eventLoop.makePromise(of: MethodDescriptor.self)
         let streamHandler = GRPCServerStreamHandler(
-          scheme: transportSecurity.tlsConfig != nil ? .https : .http,
+          scheme: scheme,
           acceptedEncodings: compressionConfig.enabledAlgorithms,
           maximumPayloadSize: rpcConfig.maxRequestPayloadSize,
           methodDescriptorPromise: methodDescriptorPromise

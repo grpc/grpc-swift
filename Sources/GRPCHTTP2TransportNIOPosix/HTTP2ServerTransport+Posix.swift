@@ -180,10 +180,18 @@ extension HTTP2ServerTransport {
 
       #if canImport(NIOSSL)
       let nioSSLContext: NIOSSLContext?
-      if let tlsConfig = self.config.transportSecurity.tlsConfig {
-        nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
-      } else {
+      switch self.config.transportSecurity.wrapped {
+      case .plaintext:
         nioSSLContext = nil
+      case .tls(let tlsConfig):
+        do {
+          nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+        } catch {
+          throw HTTP2Transport.Error(
+            message: "There was a problem setting up TLS: check the TLS configuration",
+            cause: error
+          )
+        }
       }
       #endif
 
@@ -207,13 +215,26 @@ extension HTTP2ServerTransport {
               )
             }
             #endif
+
+            let requireALPN: Bool
+            let scheme: Scheme
+            switch self.config.transportSecurity.wrapped {
+            case .plaintext:
+              requireALPN = false
+              scheme = .http
+            case .tls(let tlsConfig):
+              requireALPN = tlsConfig.requireALPN
+              scheme = .https
+            }
+
             return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.config.compression,
               connectionConfig: self.config.connection,
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
-              transportSecurity: self.config.transportSecurity
+              requireALPN: requireALPN,
+              scheme: scheme
             )
           }
         }
@@ -309,13 +330,29 @@ extension HTTP2ServerTransport {
       self.serverQuiescingHelper.initiateShutdown(promise: nil)
     }
   }
-
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ServerTransport.Posix {
   /// Config for the `Posix` transport.
   public struct Config: Sendable {
+    public struct TransportSecurity: Sendable {
+      package enum Wrapped {
+        case plaintext
+        case tls(HTTP2ServerTransport.Config.TLS)
+      }
+
+      package let wrapped: Wrapped
+
+      /// This connection is plaintext: no encryption will take place.
+      public static let plaintext = Self(wrapped: .plaintext)
+
+      /// This connection will use TLS.
+      public static func tls(_ tls: HTTP2ServerTransport.Config.TLS) -> Self {
+        Self(wrapped: .tls(tls))
+      }
+    }
+
     /// Compression configuration.
     public var compression: HTTP2ServerTransport.Config.Compression
     /// Connection configuration.
@@ -325,7 +362,7 @@ extension HTTP2ServerTransport.Posix {
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
     /// The transport's security.
-    public var transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
+    public var transportSecurity: TransportSecurity
 
     /// Construct a new `Config`.
     /// - Parameters:
@@ -333,12 +370,13 @@ extension HTTP2ServerTransport.Posix {
     ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
+    ///   - transportSecurity: The transport's security configuration.
     public init(
       compression: HTTP2ServerTransport.Config.Compression,
       connection: HTTP2ServerTransport.Config.Connection,
       http2: HTTP2ServerTransport.Config.HTTP2,
       rpc: HTTP2ServerTransport.Config.RPC,
-      transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
+      transportSecurity: TransportSecurity
     ) {
       self.compression = compression
       self.connection = connection
@@ -349,7 +387,7 @@ extension HTTP2ServerTransport.Posix {
 
     /// Default values for the different configurations.
     public static func defaults(
-      transportSecurity: HTTP2ServerTransport.Config.TransportSecurity
+      transportSecurity: TransportSecurity
     ) -> Self {
       Self(
         compression: .defaults,

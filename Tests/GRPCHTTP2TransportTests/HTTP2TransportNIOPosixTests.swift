@@ -264,7 +264,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     """
 
   func testTLSConfig_Defaults() throws {
-    let grpcTLSConfig = HTTP2ServerTransport.Config.TLS(
+    let grpcTLSConfig = HTTP2ServerTransport.Config.TLS.defaults(
       certificateChainSources: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],
@@ -288,18 +288,17 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       .privateKey(try NIOSSLPrivateKey(bytes: Array(Self.samplePemKey.utf8), format: .pem))
     )
     XCTAssertEqual(nioSSLTLSConfig.minimumTLSVersion, .tlsv12)
-    XCTAssertEqual(nioSSLTLSConfig.certificateVerification, .fullVerification)
+    XCTAssertEqual(nioSSLTLSConfig.certificateVerification, .none)
     XCTAssertEqual(nioSSLTLSConfig.trustRoots, .default)
     XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
   }
 
   func testTLSConfig_NoVerifyClient() throws {
-    let grpcTLSConfig = HTTP2ServerTransport.Config.TLS(
+    let grpcTLSConfig = HTTP2ServerTransport.Config.TLS.defaults(
       certificateChainSources: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],
-      privateKeySource: .bytes(Array(Self.samplePemKey.utf8), format: .pem),
-      verifyClientCertificate: false
+      privateKeySource: .bytes(Array(Self.samplePemKey.utf8), format: .pem)
     )
     let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
 
@@ -325,13 +324,14 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testTLSConfig_CustomTrustRoots() throws {
-    let grpcTLSConfig = HTTP2ServerTransport.Config.TLS(
+    var grpcTLSConfig = HTTP2ServerTransport.Config.TLS.defaults(
       certificateChainSources: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],
-      privateKeySource: .bytes(Array(Self.samplePemKey.utf8), format: .pem),
-      trustRoots: .certificates([.bytes(Array(Self.samplePemCert.utf8), format: .pem)])
+      privateKeySource: .bytes(Array(Self.samplePemKey.utf8), format: .pem)
     )
+    grpcTLSConfig.trustRoots = .certificates([.bytes(Array(Self.samplePemCert.utf8), format: .pem)])
+    grpcTLSConfig.verifyClientCertificate = true
     let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
 
     XCTAssertEqual(
