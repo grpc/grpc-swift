@@ -342,17 +342,9 @@ extension ClientCodeTranslator {
 
     if includeDefaultResponseHandler {
       defaultResponseHandler = .closureInvocation(
-        body: [
-          CodeBlock(
-            item: .expression(
-              .try(
-                .memberAccess(
-                  MemberAccessDescription(left: .identifierPattern("$0"), right: "message")
-                )
-              )
-            )
-          )
-        ]
+        ClosureInvocationDescription(
+          body: [.expression(.try(.identifierPattern("$0").dot("message")))]
+        )
       )
     }
 
