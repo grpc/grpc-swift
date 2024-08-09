@@ -110,6 +110,21 @@ extension NIOSSLTrustRoots {
   }
 }
 
+extension CertificateVerification {
+  fileprivate init(
+    _ verificationMode: HTTP2ServerTransport.Config.TLS.ClientCertificateVerificationMode
+  ) {
+    switch verificationMode.wrapped {
+    case .doNotVerify:
+      self = .none
+    case .fullVerification:
+      self = .fullVerification
+    case .noHostnameVerification:
+      self = .noHostnameVerification
+    }
+  }
+}
+
 extension TLSConfiguration {
   package init(_ tlsConfig: HTTP2ServerTransport.Config.TLS) throws {
     let certificateChain = try tlsConfig.certificateChainSources.sslCertificateSources()
@@ -120,8 +135,9 @@ extension TLSConfiguration {
       privateKey: .privateKey(privateKey)
     )
     tlsConfiguration.minimumTLSVersion = .tlsv12
-    tlsConfiguration.certificateVerification =
-      tlsConfig.verifyClientCertificate ? .fullVerification : .none
+    tlsConfiguration.certificateVerification = CertificateVerification(
+      tlsConfig.clientCertificateVerificationMode
+    )
     tlsConfiguration.trustRoots = try NIOSSLTrustRoots(tlsConfig.trustRoots)
     tlsConfiguration.applicationProtocols = ["grpc-exp", "h2"]
 

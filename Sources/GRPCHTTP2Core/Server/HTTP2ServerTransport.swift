@@ -210,14 +210,34 @@ extension HTTP2ServerTransport.Config {
       public static let systemDefault: Self = Self(wrapped: .systemDefault)
     }
 
-    /// The certificate the server will offer during negotiation.
+    /// How to verify client certificates.
+    public struct ClientCertificateVerificationMode: Sendable {
+      package enum Wrapped {
+        case doNotVerify
+        case fullVerification
+        case noHostnameVerification
+      }
+
+      package let wrapped: Wrapped
+
+      /// All certificate verification disabled.
+      public static let doNotVerify: Self = Self(wrapped: .doNotVerify)
+
+      /// Certificates will be validated against the trust store, but will not be checked to see if they are valid for the given hostname.
+      public static let noHostnameVerification: Self = Self(wrapped: .noHostnameVerification)
+
+      /// Certificates will be validated against the trust store and checked against the hostname of the service we are contacting.
+      public static let fullVerification: Self = Self(wrapped: .fullVerification)
+    }
+
+    /// The certificates the server will offer during negotiation.
     public var certificateChainSources: [HTTP2Transport.Config.TLS.CertificateSource]
 
     /// The private key associated with the leaf certificate.
     public var privateKeySource: HTTP2Transport.Config.TLS.PrivateKeySource
 
-    /// Whether to verify the client's certificate, if one is presented.
-    public var verifyClientCertificate: Bool
+    /// How to verify the client certificate, if one is presented.
+    public var clientCertificateVerificationMode: ClientCertificateVerificationMode
 
     /// Custom trust roots to be used when verifying client certificates.
     public var trustRoots: TrustRootsSource
@@ -227,6 +247,15 @@ extension HTTP2ServerTransport.Config {
     /// If this is set to `true` but the client does not support ALPN, then the connection will be rejected.
     public var requireALPN: Bool
 
+    /// Create a new ``HTTP2ServerTransport/Config/TLS`` with some values defaulted:
+    /// - `clientCertificateVerificationMode` = `doNotVerify`
+    /// - `trustRoots` = `systemDefault`
+    /// - `requireALPN` = `false`
+    ///
+    /// - Parameters:
+    ///   - certificateChainSources: The certificates the server will offer during negotiation.
+    ///   - privateKeySource: The private key associated with the leaf certificate.
+    /// - Returns: A new ``HTTP2ServerTransport/Config/TLS.
     public static func defaults(
       certificateChainSources: [HTTP2Transport.Config.TLS.CertificateSource],
       privateKeySource: HTTP2Transport.Config.TLS.PrivateKeySource
@@ -234,7 +263,30 @@ extension HTTP2ServerTransport.Config {
       Self.init(
         certificateChainSources: certificateChainSources,
         privateKeySource: privateKeySource,
-        verifyClientCertificate: false,
+        clientCertificateVerificationMode: .doNotVerify,
+        trustRoots: .systemDefault,
+        requireALPN: false
+      )
+    }
+
+    /// Create a new ``HTTP2ServerTransport/Config/TLS`` with some values defaulted to match
+    /// the requirements of mTLS:
+    /// - `clientCertificateVerificationMode` = `noHostnameVerification`
+    /// - `trustRoots` = `systemDefault`
+    /// - `requireALPN` = `false`
+    ///
+    /// - Parameters:
+    ///   - certificateChainSources: The certificates the server will offer during negotiation.
+    ///   - privateKeySource: The private key associated with the leaf certificate.
+    /// - Returns: A new ``HTTP2ServerTransport/Config/TLS.
+    public static func mTLS(
+      certificateChainSources: [HTTP2Transport.Config.TLS.CertificateSource],
+      privateKeySource: HTTP2Transport.Config.TLS.PrivateKeySource
+    ) -> Self {
+      Self.init(
+        certificateChainSources: certificateChainSources,
+        privateKeySource: privateKeySource,
+        clientCertificateVerificationMode: .noHostnameVerification,
         trustRoots: .systemDefault,
         requireALPN: false
       )
