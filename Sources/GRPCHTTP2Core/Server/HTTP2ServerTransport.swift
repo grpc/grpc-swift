@@ -200,7 +200,9 @@ extension HTTP2ServerTransport.Config {
 
       /// A list of ``HTTP2ServerTransport/Config/TLS/CertificateSource``s making up the
       /// chain of trust.
-      public static func certificates(_ certificateSources: [HTTP2Transport.Config.TLS.CertificateSource]) -> Self {
+      public static func certificates(
+        _ certificateSources: [HTTP2Transport.Config.TLS.CertificateSource]
+      ) -> Self {
         Self(wrapped: .certificates(certificateSources))
       }
 
