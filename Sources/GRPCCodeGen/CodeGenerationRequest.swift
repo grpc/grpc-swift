@@ -87,9 +87,6 @@ public struct CodeGenerationRequest {
     public var item: Item?
 
     /// The access level to be included in imports of this dependency.
-    ///
-    /// - Note: This defaults to `public`, which is the default access level for imports on compilers
-    /// up to and including Swift 6.0.
     public var accessLevel: SourceGenerator.Configuration.AccessLevel
 
     /// The name of the imported module or of the module an item is imported from.

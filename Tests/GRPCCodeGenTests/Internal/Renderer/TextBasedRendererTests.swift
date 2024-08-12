@@ -113,11 +113,21 @@ final class Test_TextBasedRenderer: XCTestCase {
       [
         ImportDescription(moduleName: "Foo"),
         ImportDescription(moduleName: "Bar"),
+        ImportDescription(accessLevel: .fileprivate, moduleName: "BazFileprivate"),
+        ImportDescription(accessLevel: .private, moduleName: "BazPrivate"),
+        ImportDescription(accessLevel: .internal, moduleName: "BazInternal"),
+        ImportDescription(accessLevel: .package, moduleName: "BazPackage"),
+        ImportDescription(accessLevel: .public, moduleName: "BazPublic"),
       ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
         import Foo
         import Bar
+        fileprivate import BazFileprivate
+        private import BazPrivate
+        internal import BazInternal
+        package import BazPackage
+        public import BazPublic
         """#
     )
     try _test(
@@ -941,7 +951,6 @@ final class Test_TextBasedRenderer: XCTestCase {
 }
 
 extension Test_TextBasedRenderer {
-
   func _test<Input>(
     _ input: Input,
     renderedBy renderClosure: (TextBasedRenderer) -> ((Input) -> String),
