@@ -199,7 +199,7 @@ extension TypealiasTranslator {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
-        calledExpression: .identifierType(.member("GRPCCore.MethodDescriptor")),
+        calledExpression: .identifierType(.member(["GRPCCore", "MethodDescriptor"])),
         arguments: [
           FunctionArgumentDescription(
             label: "service",
@@ -245,7 +245,7 @@ extension TypealiasTranslator {
       isStatic: true,
       kind: .let,
       left: .identifier(.pattern("descriptors")),
-      type: .array(.member("GRPCCore.MethodDescriptor")),
+      type: .array(.member(["GRPCCore", "MethodDescriptor"])),
       right: .literal(.array(methodDescriptors))
     )
   }

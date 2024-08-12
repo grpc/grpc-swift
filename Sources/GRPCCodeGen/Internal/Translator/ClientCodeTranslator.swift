@@ -472,7 +472,7 @@ extension ClientCodeTranslator {
     parameters.append(
       ParameterDescription(
         label: "options",
-        type: .member("GRPCCore.CallOptions"),
+        type: .member(["GRPCCore", "CallOptions"]),
         defaultValue: includeDefaultCallOptions
           ? .memberAccess(MemberAccessDescription(right: "defaults")) : nil
       )
@@ -491,7 +491,9 @@ extension ClientCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> ParameterDescription {
     let requestType = method.isInputStreaming ? "Stream" : "Single"
-    let clientRequestType = ExistingTypeDescription.member(["GRPCCore.ClientRequest", requestType])
+    let clientRequestType = ExistingTypeDescription.member([
+      "GRPCCore", "ClientRequest", requestType,
+    ])
     return ParameterDescription(
       label: "request",
       type: .generic(
@@ -509,7 +511,7 @@ extension ClientCodeTranslator {
       label: "serializer",
       type: ExistingTypeDescription.some(
         .generic(
-          wrapper: .member("GRPCCore.MessageSerializer"),
+          wrapper: .member(["GRPCCore", "MessageSerializer"]),
           wrapped: .member(method.inputType)
         )
       )
@@ -524,7 +526,7 @@ extension ClientCodeTranslator {
       label: "deserializer",
       type: ExistingTypeDescription.some(
         .generic(
-          wrapper: .member("GRPCCore.MessageDeserializer"),
+          wrapper: .member(["GRPCCore", "MessageDeserializer"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -538,7 +540,7 @@ extension ClientCodeTranslator {
   ) -> ParameterDescription {
     let clientStreaming = method.isOutputStreaming ? "Stream" : "Single"
     let closureParameterType = ExistingTypeDescription.generic(
-      wrapper: .member(["GRPCCore.ClientResponse", clientStreaming]),
+      wrapper: .member(["GRPCCore", "ClientResponse", clientStreaming]),
       wrapped: .member(method.outputType)
     )
 

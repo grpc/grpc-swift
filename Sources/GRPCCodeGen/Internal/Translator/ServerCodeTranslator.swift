@@ -147,7 +147,7 @@ extension ServerCodeTranslator {
         .init(
           label: "request",
           type: .generic(
-            wrapper: .member(["GRPCCore.ServerRequest", "Stream"]),
+            wrapper: .member(["GRPCCore", "ServerRequest", "Stream"]),
             wrapped: .member(method.inputType)
           )
         )
@@ -155,7 +155,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["GRPCCore.ServerResponse", "Stream"]),
+          wrapper: .member(["GRPCCore", "ServerResponse", "Stream"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -322,7 +322,7 @@ extension ServerCodeTranslator {
           label: "request",
           type:
             .generic(
-              wrapper: .member(["GRPCCore.ServerRequest", inputStreaming]),
+              wrapper: .member(["GRPCCore", "ServerRequest", inputStreaming]),
               wrapped: .member(method.inputType)
             )
         )
@@ -330,7 +330,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["GRPCCore.ServerResponse", outputStreaming]),
+          wrapper: .member(["GRPCCore", "ServerResponse", outputStreaming]),
           wrapped: .member(method.outputType)
         )
       )
@@ -429,7 +429,7 @@ extension ServerCodeTranslator {
       returnValue = .functionCall(
         calledExpression: .memberAccess(
           MemberAccessDescription(
-            left: .identifierType(.member(["GRPCCore.ServerResponse"])),
+            left: .identifierType(.member(["GRPCCore", "ServerResponse"])),
             right: "Stream"
           )
         ),
