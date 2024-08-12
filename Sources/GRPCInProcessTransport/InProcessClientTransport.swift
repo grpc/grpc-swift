@@ -22,15 +22,13 @@ public import GRPCCore
 /// involved, as the client and server will communicate directly with each other via in-process streams.
 ///
 /// To use this client, you'll have to provide an ``InProcessServerTransport`` upon creation, as well
-/// as a ``ClientRPCExecutionConfigurationCollection``, containing a set of
-/// ``ClientRPCExecutionConfiguration``s which are specific, per-method configurations for your
-/// transport.
+/// as a ``ServiceConfig``.
 ///
 /// Once you have a client, you must keep a long-running task executing ``connect()``, which
 /// will return only once all streams have been finished and ``close()`` has been called on this client; or
 /// when the containing task is cancelled.
 ///
-/// To execute requests using this client, use ``withStream(descriptor:_:)``. If this function is
+/// To execute requests using this client, use ``withStream(descriptor:options:_:)``. If this function is
 /// called before ``connect()`` is called, then any streams will remain pending and the call will
 /// block until ``connect()`` is called or the task is cancelled.
 ///
@@ -187,7 +185,7 @@ public struct InProcessClientTransport: ClientTransport {
 
   /// Signal to the transport that no new streams may be created.
   ///
-  /// Existing streams may run to completion naturally but calling ``withStream(descriptor:_:)``
+  /// Existing streams may run to completion naturally but calling ``withStream(descriptor:options:_:)``
   /// will result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
   /// If you want to forcefully cancel all active streams then cancel the task running ``connect()``.

@@ -24,8 +24,8 @@
 /// given method by calling ``removeHandler(forMethod:)``.
 ///
 /// In most cases you won't need to interact with the router directly. Instead you should register
-/// your services with ``GRPCServer/Services-swift.struct/register(_:)`` which will in turn register
-/// each method with the router.
+/// your services with ``GRPCServer/init(transport:services:interceptors:)`` which will in turn
+/// register each method with the router.
 ///
 /// You may wish to not serve all methods from your service in which case you can either:
 ///

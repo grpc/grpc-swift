@@ -21,7 +21,7 @@ public import GRPCCore
 /// This is useful when you're interested in testing your application without any actual networking layers
 /// involved, as the client and server will communicate directly with each other via in-process streams.
 ///
-/// To use this server, you call ``listen()`` and iterate over the returned `AsyncSequence` to get all
+/// To use this server, you call ``listen(_:)`` and iterate over the returned `AsyncSequence` to get all
 /// RPC requests made from clients (as ``RPCStream``s).
 /// To stop listening to new requests, call ``stopListening()``.
 ///
@@ -68,9 +68,6 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   }
 
   /// Stop listening to any new ``RPCStream`` publications.
-  ///
-  /// All further calls to ``acceptStream(_:)`` will not produce any new elements on the
-  /// ``RPCAsyncSequence`` returned by ``listen()``.
   ///
   /// - SeeAlso: ``ServerTransport``
   public func stopListening() {

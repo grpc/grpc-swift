@@ -21,11 +21,11 @@ public import GRPCCore
 public struct NameResolver: Sendable {
   /// A sequence of name resolution results.
   ///
-  /// Resolvers may be push or pull based. Resolvers with the ``UpdateMode-swift.enum/push``
+  /// Resolvers may be push or pull based. Resolvers with the ``UpdateMode-swift.struct/push``
   /// update mode have addresses pushed to them by an external source and you should subscribe
   /// to changes in addresses by awaiting for new values in a loop.
   ///
-  /// Resolvers with the ``UpdateMode-swift.enum/pull`` update mode shouldn't be subscribed to,
+  /// Resolvers with the ``UpdateMode-swift.struct/pull`` update mode shouldn't be subscribed to,
   /// instead you should create an iterator and ask for new results as and when necessary.
   public var names: RPCAsyncSequence<NameResolutionResult, any Error>
 

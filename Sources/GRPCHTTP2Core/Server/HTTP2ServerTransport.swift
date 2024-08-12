@@ -29,7 +29,7 @@ extension HTTP2ServerTransport.Config {
   public struct Compression: Sendable {
     /// Compression algorithms enabled for inbound messages.
     ///
-    /// - Note: ``CompressionAlgorithm/none`` is always supported, even if it isn't set here.
+    /// - Note: `CompressionAlgorithm.none` is always supported, even if it isn't set here.
     public var enabledAlgorithms: CompressionAlgorithmSet
 
     /// Creates a new compression configuration.
