@@ -275,6 +275,81 @@ extension Control.ClientProtocol {
     }
 }
 
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Control.ClientProtocol {
+    internal func unary<Result>(
+        _ message: ControlInput,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<ControlInput>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unary(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    internal func serverStream<Result>(
+        _ message: ControlInput,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<ControlInput>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.serverStream(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    internal func clientStream<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<ControlInput>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<ControlInput>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.clientStream(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    internal func bidiStream<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<ControlInput>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<ControlInput>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.bidiStream(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+}
+
 /// A controllable service for testing.
 ///
 /// The control service has one RPC of each kind, the input to each RPC controls

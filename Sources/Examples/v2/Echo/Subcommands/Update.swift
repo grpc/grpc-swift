@@ -40,14 +40,12 @@ struct Update: AsyncParsableCommand {
       let echo = Echo_EchoClient(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
-        let request = ClientRequest.Stream(of: Echo_EchoRequest.self) { writer in
+        try await echo.update { writer in
           for part in self.arguments.message.split(separator: " ") {
             print("update → \(part)")
             try await writer.write(.with { $0.text = String(part) })
           }
-        }
-
-        try await echo.update(request: request) { response in
+        } onResponse: { response in
           for try await message in response.messages {
             print("update ← \(message.text)")
           }
