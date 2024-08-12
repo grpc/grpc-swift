@@ -152,6 +152,7 @@ extension Target.Dependency {
   static var grpcInProcessTransport: Self { .target(name: "GRPCInProcessTransport") }
   static var grpcInterceptors: Self { .target(name: "GRPCInterceptors") }
   static var grpcHTTP2Core: Self { .target(name: "GRPCHTTP2Core") }
+  static var grpcHTTP2Transport: Self { .target(name: "GRPCHTTP2Transport") }
   static var grpcHTTP2TransportNIOPosix: Self { .target(name: "GRPCHTTP2TransportNIOPosix") }
   static var grpcHTTP2TransportNIOTransportServices: Self { .target(name: "GRPCHTTP2TransportNIOTransportServices") }
   static var grpcHealth: Self { .target(name: "GRPCHealth") }
@@ -706,7 +707,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      path: "Sources/Examples/v2/Echo",
+      path: "Sources/Examples/v2/echo",
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
@@ -755,6 +756,23 @@ extension Target {
       ],
       path: "Sources/Examples/v1/HelloWorld/Server",
       swiftSettings: [.swiftLanguageMode(.v5)]
+    )
+  }
+
+  static var helloWorld_v2: Target {
+    .executableTarget(
+      name: "hello-world",
+      dependencies: [
+        .grpcProtobuf,
+        .grpcHTTP2Transport,
+        .argumentParser,
+      ],
+      path: "Sources/Examples/v2/hello-world",
+      swiftSettings: [
+        .swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -1069,6 +1087,7 @@ let package = Package(
 
     // v2 examples
     .echo_v2,
+    .helloWorld_v2,
   ]
 )
 
