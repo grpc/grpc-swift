@@ -295,7 +295,7 @@ extension Echo_Echo.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Splits a request into words and returns each word in a stream of messages.
     internal func expand<Result>(
         _ message: Echo_EchoRequest,
@@ -313,7 +313,7 @@ extension Echo_Echo.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Collects a stream of messages and returns them concatenated when the caller closes.
     internal func collect<Result>(
         metadata: GRPCCore.Metadata = [:],
@@ -333,7 +333,7 @@ extension Echo_Echo.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Streams back messages as they are received in an input stream.
     internal func update<Result>(
         metadata: GRPCCore.Metadata = [:],

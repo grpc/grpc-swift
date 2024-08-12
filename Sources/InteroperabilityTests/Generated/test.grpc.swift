@@ -707,7 +707,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// One request followed by one response.
     public func unaryCall<Result>(
         _ message: Grpc_Testing_SimpleRequest,
@@ -727,7 +727,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// One request followed by one response. Response has cache control
     /// headers set such that a caching HTTP proxy (such as GFE) can
     /// satisfy subsequent requests.
@@ -749,7 +749,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// One request followed by a sequence of responses (streamed download).
     /// The server returns the payload with client desired type and sizes.
     public func streamingOutputCall<Result>(
@@ -768,7 +768,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// A sequence of requests followed by one response (streamed upload).
     /// The server returns the aggregated size of client payload as the result.
     public func streamingInputCall<Result>(
@@ -789,7 +789,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// A sequence of requests with each request served by the server immediately.
     /// As one request could lead to multiple responses, this interface
     /// demonstrates the idea of full duplexing.
@@ -809,7 +809,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// A sequence of requests followed by a sequence of responses.
     /// The server buffers all the client requests and then serves them in order. A
     /// stream of responses are returned to the client when the server starts with
@@ -830,7 +830,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// The test server will not implement this method. It will be used
     /// to test the behavior when clients call unimplemented methods.
     public func unimplementedCall<Result>(
@@ -1190,7 +1190,7 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     public func stop<Result>(
         _ message: Grpc_Testing_Empty,
         metadata: GRPCCore.Metadata = [:],

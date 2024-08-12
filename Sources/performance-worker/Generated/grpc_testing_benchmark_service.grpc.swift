@@ -363,7 +363,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Repeated sequence of one request followed by one response.
     /// Should be called streaming ping-pong
     /// The server returns the client payload as-is on each response
@@ -383,7 +383,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Single-sided unbounded streaming from client to server
     /// The server returns the client payload as-is once the client does WritesDone
     internal func streamingFromClient<Result>(
@@ -404,7 +404,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Single-sided unbounded streaming from server to client
     /// The server repeatedly returns the client payload as-is
     internal func streamingFromServer<Result>(
@@ -423,7 +423,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Two-sided unbounded streaming between server to client
     /// Both sides send the content of their own choice to the other
     internal func streamingBothWays<Result>(

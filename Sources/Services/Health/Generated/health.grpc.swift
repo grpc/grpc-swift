@@ -282,7 +282,7 @@ extension Grpc_Health_V1_Health.ClientProtocol {
             handleResponse
         )
     }
-
+    
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
     /// serving status.  It will then subsequently send a new message whenever

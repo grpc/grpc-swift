@@ -295,7 +295,7 @@ extension Control.ClientProtocol {
             handleResponse
         )
     }
-
+    
     internal func serverStream<Result>(
         _ message: ControlInput,
         metadata: GRPCCore.Metadata = [:],
@@ -312,7 +312,7 @@ extension Control.ClientProtocol {
             handleResponse
         )
     }
-
+    
     internal func clientStream<Result>(
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
@@ -331,7 +331,7 @@ extension Control.ClientProtocol {
             handleResponse
         )
     }
-
+    
     internal func bidiStream<Result>(
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
