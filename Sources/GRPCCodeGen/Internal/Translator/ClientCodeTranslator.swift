@@ -52,7 +52,7 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public struct Foo_BarClient: Foo_Bar.ClientProtocol {
 ///   private let client: GRPCCore.GRPCClient
-///   public init(client: GRPCCore.GRPCClient) {
+///   public init(wrapping client: GRPCCore.GRPCClient) {
 ///     self.client = client
 ///   }
 ///   public func methodA<R>(
@@ -397,7 +397,9 @@ extension ClientCodeTranslator {
       signature: .init(
         accessModifier: self.accessModifier,
         kind: .initializer,
-        parameters: [.init(label: "client", type: .member(["GRPCCore", "GRPCClient"]))]
+        parameters: [
+          .init(label: "wrapping", name: "client", type: .member(["GRPCCore", "GRPCClient"]))
+        ]
       ),
       body: [CodeBlock(item: .expression(initializerBody))]
     )

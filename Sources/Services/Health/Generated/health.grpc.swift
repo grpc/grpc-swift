@@ -28,12 +28,13 @@ import GRPCCore
 import GRPCProtobuf
 
 package enum Grpc_Health_V1_Health {
+    package static let descriptor = ServiceDescriptor.grpc_health_v1_Health
     package enum Method {
         package enum Check {
             package typealias Input = Grpc_Health_V1_HealthCheckRequest
             package typealias Output = Grpc_Health_V1_HealthCheckResponse
             package static let descriptor = MethodDescriptor(
-                service: "grpc.health.v1.Health",
+                service: Grpc_Health_V1_Health.descriptor.fullyQualifiedService,
                 method: "Check"
             )
         }
@@ -41,7 +42,7 @@ package enum Grpc_Health_V1_Health {
             package typealias Input = Grpc_Health_V1_HealthCheckRequest
             package typealias Output = Grpc_Health_V1_HealthCheckResponse
             package static let descriptor = MethodDescriptor(
-                service: "grpc.health.v1.Health",
+                service: Grpc_Health_V1_Health.descriptor.fullyQualifiedService,
                 method: "Watch"
             )
         }
@@ -60,6 +61,13 @@ package enum Grpc_Health_V1_Health {
     package typealias Client = Grpc_Health_V1_HealthClient
 }
 
+extension ServiceDescriptor {
+    package static let grpc_health_v1_Health = Self(
+        package: "grpc.health.v1",
+        service: "Health"
+    )
+}
+
 /// Health is gRPC's mechanism for checking whether a server is able to handle
 /// RPCs. Its semantics are documented in
 /// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.
@@ -75,7 +83,7 @@ package protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.Registr
     ///
     /// Check implementations should be idempotent and side effect free.
     func check(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
-
+    
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
     /// serving status.  It will then subsequently send a new message whenever
@@ -133,7 +141,7 @@ package protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.Str
     ///
     /// Check implementations should be idempotent and side effect free.
     func check(request: ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Single<Grpc_Health_V1_HealthCheckResponse>
-
+    
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
     /// serving status.  It will then subsequently send a new message whenever
@@ -159,7 +167,7 @@ extension Grpc_Health_V1_Health.ServiceProtocol {
         let response = try await self.check(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-
+    
     package func watch(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
         let response = try await self.watch(request: ServerRequest.Single(stream: request))
         return response
@@ -187,7 +195,7 @@ package protocol Grpc_Health_V1_HealthClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
     /// serving status.  It will then subsequently send a new message whenever
@@ -229,7 +237,7 @@ extension Grpc_Health_V1_Health.ClientProtocol {
             body
         )
     }
-
+    
     package func watch<R>(
         request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
         options: CallOptions = .defaults,
@@ -251,11 +259,11 @@ extension Grpc_Health_V1_Health.ClientProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 package struct Grpc_Health_V1_HealthClient: Grpc_Health_V1_Health.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
-    package init(client: GRPCCore.GRPCClient) {
+    
+    package init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
-
+    
     /// Check gets the health of the specified service. If the requested service
     /// is unknown, the call will fail with status NOT_FOUND. If the caller does
     /// not specify a service name, the server should respond with its overall
@@ -283,7 +291,7 @@ package struct Grpc_Health_V1_HealthClient: Grpc_Health_V1_Health.ClientProtocol
             handler: body
         )
     }
-
+    
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
     /// serving status.  It will then subsequently send a new message whenever

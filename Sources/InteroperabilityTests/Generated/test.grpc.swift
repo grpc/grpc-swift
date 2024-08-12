@@ -28,12 +28,13 @@ import GRPCCore
 import GRPCProtobuf
 
 public enum Grpc_Testing_ReconnectService {
+    public static let descriptor = ServiceDescriptor.grpc_testing_ReconnectService
     public enum Method {
         public enum Start {
             public typealias Input = Grpc_Testing_ReconnectParams
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.ReconnectService",
+                service: Grpc_Testing_ReconnectService.descriptor.fullyQualifiedService,
                 method: "Start"
             )
         }
@@ -41,7 +42,7 @@ public enum Grpc_Testing_ReconnectService {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_ReconnectInfo
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.ReconnectService",
+                service: Grpc_Testing_ReconnectService.descriptor.fullyQualifiedService,
                 method: "Stop"
             )
         }
@@ -60,13 +61,21 @@ public enum Grpc_Testing_ReconnectService {
     public typealias Client = Grpc_Testing_ReconnectServiceClient
 }
 
+extension ServiceDescriptor {
+    public static let grpc_testing_ReconnectService = Self(
+        package: "grpc.testing",
+        service: "ReconnectService"
+    )
+}
+
 public enum Grpc_Testing_TestService {
+    public static let descriptor = ServiceDescriptor.grpc_testing_TestService
     public enum Method {
         public enum EmptyCall {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "EmptyCall"
             )
         }
@@ -74,7 +83,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_SimpleRequest
             public typealias Output = Grpc_Testing_SimpleResponse
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "UnaryCall"
             )
         }
@@ -82,7 +91,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_SimpleRequest
             public typealias Output = Grpc_Testing_SimpleResponse
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "CacheableUnaryCall"
             )
         }
@@ -90,7 +99,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingOutputCallRequest
             public typealias Output = Grpc_Testing_StreamingOutputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "StreamingOutputCall"
             )
         }
@@ -98,7 +107,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingInputCallRequest
             public typealias Output = Grpc_Testing_StreamingInputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "StreamingInputCall"
             )
         }
@@ -106,7 +115,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingOutputCallRequest
             public typealias Output = Grpc_Testing_StreamingOutputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "FullDuplexCall"
             )
         }
@@ -114,7 +123,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_StreamingOutputCallRequest
             public typealias Output = Grpc_Testing_StreamingOutputCallResponse
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "HalfDuplexCall"
             )
         }
@@ -122,7 +131,7 @@ public enum Grpc_Testing_TestService {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.TestService",
+                service: Grpc_Testing_TestService.descriptor.fullyQualifiedService,
                 method: "UnimplementedCall"
             )
         }
@@ -147,13 +156,21 @@ public enum Grpc_Testing_TestService {
     public typealias Client = Grpc_Testing_TestServiceClient
 }
 
+extension ServiceDescriptor {
+    public static let grpc_testing_TestService = Self(
+        package: "grpc.testing",
+        service: "TestService"
+    )
+}
+
 public enum Grpc_Testing_UnimplementedService {
+    public static let descriptor = ServiceDescriptor.grpc_testing_UnimplementedService
     public enum Method {
         public enum UnimplementedCall {
             public typealias Input = Grpc_Testing_Empty
             public typealias Output = Grpc_Testing_Empty
             public static let descriptor = MethodDescriptor(
-                service: "grpc.testing.UnimplementedService",
+                service: Grpc_Testing_UnimplementedService.descriptor.fullyQualifiedService,
                 method: "UnimplementedCall"
             )
         }
@@ -171,40 +188,47 @@ public enum Grpc_Testing_UnimplementedService {
     public typealias Client = Grpc_Testing_UnimplementedServiceClient
 }
 
+extension ServiceDescriptor {
+    public static let grpc_testing_UnimplementedService = Self(
+        package: "grpc.testing",
+        service: "UnimplementedService"
+    )
+}
+
 /// A simple service to test the various types of RPCs and experiment with
 /// performance with various types of payload.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_TestServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// One empty request followed by one empty response.
     func emptyCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty>
-
+    
     /// One request followed by one response.
     func unaryCall(request: ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// One request followed by one response. Response has cache control
     /// headers set such that a caching HTTP proxy (such as GFE) can
     /// satisfy subsequent requests.
     func cacheableUnaryCall(request: ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// One request followed by a sequence of responses (streamed download).
     /// The server returns the payload with client desired type and sizes.
     func streamingOutputCall(request: ServerRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>
-
+    
     /// A sequence of requests followed by one response (streamed upload).
     /// The server returns the aggregated size of client payload as the result.
     func streamingInputCall(request: ServerRequest.Stream<Grpc_Testing_StreamingInputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingInputCallResponse>
-
+    
     /// A sequence of requests with each request served by the server immediately.
     /// As one request could lead to multiple responses, this interface
     /// demonstrates the idea of full duplexing.
     func fullDuplexCall(request: ServerRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>
-
+    
     /// A sequence of requests followed by a sequence of responses.
     /// The server buffers all the client requests and then serves them in order. A
     /// stream of responses are returned to the client when the server starts with
     /// first request.
     func halfDuplexCall(request: ServerRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>
-
+    
     /// The test server will not implement this method. It will be used
     /// to test the behavior when clients call unimplemented methods.
     func unimplementedCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty>
@@ -288,34 +312,34 @@ extension Grpc_Testing_TestService.StreamingServiceProtocol {
 public protocol Grpc_Testing_TestServiceServiceProtocol: Grpc_Testing_TestService.StreamingServiceProtocol {
     /// One empty request followed by one empty response.
     func emptyCall(request: ServerRequest.Single<Grpc_Testing_Empty>) async throws -> ServerResponse.Single<Grpc_Testing_Empty>
-
+    
     /// One request followed by one response.
     func unaryCall(request: ServerRequest.Single<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Single<Grpc_Testing_SimpleResponse>
-
+    
     /// One request followed by one response. Response has cache control
     /// headers set such that a caching HTTP proxy (such as GFE) can
     /// satisfy subsequent requests.
     func cacheableUnaryCall(request: ServerRequest.Single<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Single<Grpc_Testing_SimpleResponse>
-
+    
     /// One request followed by a sequence of responses (streamed download).
     /// The server returns the payload with client desired type and sizes.
     func streamingOutputCall(request: ServerRequest.Single<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>
-
+    
     /// A sequence of requests followed by one response (streamed upload).
     /// The server returns the aggregated size of client payload as the result.
     func streamingInputCall(request: ServerRequest.Stream<Grpc_Testing_StreamingInputCallRequest>) async throws -> ServerResponse.Single<Grpc_Testing_StreamingInputCallResponse>
-
+    
     /// A sequence of requests with each request served by the server immediately.
     /// As one request could lead to multiple responses, this interface
     /// demonstrates the idea of full duplexing.
     func fullDuplexCall(request: ServerRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>
-
+    
     /// A sequence of requests followed by a sequence of responses.
     /// The server buffers all the client requests and then serves them in order. A
     /// stream of responses are returned to the client when the server starts with
     /// first request.
     func halfDuplexCall(request: ServerRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>
-
+    
     /// The test server will not implement this method. It will be used
     /// to test the behavior when clients call unimplemented methods.
     func unimplementedCall(request: ServerRequest.Single<Grpc_Testing_Empty>) async throws -> ServerResponse.Single<Grpc_Testing_Empty>
@@ -328,27 +352,27 @@ extension Grpc_Testing_TestService.ServiceProtocol {
         let response = try await self.emptyCall(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-
+    
     public func unaryCall(request: ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_SimpleResponse> {
         let response = try await self.unaryCall(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-
+    
     public func cacheableUnaryCall(request: ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_SimpleResponse> {
         let response = try await self.cacheableUnaryCall(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-
+    
     public func streamingOutputCall(request: ServerRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingOutputCallResponse> {
         let response = try await self.streamingOutputCall(request: ServerRequest.Single(stream: request))
         return response
     }
-
+    
     public func streamingInputCall(request: ServerRequest.Stream<Grpc_Testing_StreamingInputCallRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_StreamingInputCallResponse> {
         let response = try await self.streamingInputCall(request: request)
         return ServerResponse.Stream(single: response)
     }
-
+    
     public func unimplementedCall(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty> {
         let response = try await self.unimplementedCall(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
@@ -400,7 +424,7 @@ extension Grpc_Testing_UnimplementedService.ServiceProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_ReconnectServiceStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     func start(request: ServerRequest.Stream<Grpc_Testing_ReconnectParams>) async throws -> ServerResponse.Stream<Grpc_Testing_Empty>
-
+    
     func stop(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_ReconnectInfo>
 }
 
@@ -432,7 +456,7 @@ extension Grpc_Testing_ReconnectService.StreamingServiceProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol Grpc_Testing_ReconnectServiceServiceProtocol: Grpc_Testing_ReconnectService.StreamingServiceProtocol {
     func start(request: ServerRequest.Single<Grpc_Testing_ReconnectParams>) async throws -> ServerResponse.Single<Grpc_Testing_Empty>
-
+    
     func stop(request: ServerRequest.Single<Grpc_Testing_Empty>) async throws -> ServerResponse.Single<Grpc_Testing_ReconnectInfo>
 }
 
@@ -443,7 +467,7 @@ extension Grpc_Testing_ReconnectService.ServiceProtocol {
         let response = try await self.start(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-
+    
     public func stop(request: ServerRequest.Stream<Grpc_Testing_Empty>) async throws -> ServerResponse.Stream<Grpc_Testing_ReconnectInfo> {
         let response = try await self.stop(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
@@ -462,7 +486,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// One request followed by one response.
     func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
@@ -471,7 +495,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// One request followed by one response. Response has cache control
     /// headers set such that a caching HTTP proxy (such as GFE) can
     /// satisfy subsequent requests.
@@ -482,7 +506,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// One request followed by a sequence of responses (streamed download).
     /// The server returns the payload with client desired type and sizes.
     func streamingOutputCall<R>(
@@ -492,7 +516,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// A sequence of requests followed by one response (streamed upload).
     /// The server returns the aggregated size of client payload as the result.
     func streamingInputCall<R>(
@@ -502,7 +526,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_StreamingInputCallResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// A sequence of requests with each request served by the server immediately.
     /// As one request could lead to multiple responses, this interface
     /// demonstrates the idea of full duplexing.
@@ -513,7 +537,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// A sequence of requests followed by a sequence of responses.
     /// The server buffers all the client requests and then serves them in order. A
     /// stream of responses are returned to the client when the server starts with
@@ -525,7 +549,7 @@ public protocol Grpc_Testing_TestServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Testing_StreamingOutputCallResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// The test server will not implement this method. It will be used
     /// to test the behavior when clients call unimplemented methods.
     func unimplementedCall<R>(
@@ -554,7 +578,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
         options: CallOptions = .defaults,
@@ -570,7 +594,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func cacheableUnaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
         options: CallOptions = .defaults,
@@ -586,7 +610,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func streamingOutputCall<R>(
         request: ClientRequest.Single<Grpc_Testing_StreamingOutputCallRequest>,
         options: CallOptions = .defaults,
@@ -600,7 +624,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func streamingInputCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_StreamingInputCallRequest>,
         options: CallOptions = .defaults,
@@ -616,7 +640,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func fullDuplexCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>,
         options: CallOptions = .defaults,
@@ -630,7 +654,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func halfDuplexCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_StreamingOutputCallRequest>,
         options: CallOptions = .defaults,
@@ -644,7 +668,7 @@ extension Grpc_Testing_TestService.ClientProtocol {
             body
         )
     }
-
+    
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
@@ -667,11 +691,11 @@ extension Grpc_Testing_TestService.ClientProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
-    public init(client: GRPCCore.GRPCClient) {
+    
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
-
+    
     /// One empty request followed by one empty response.
     public func emptyCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
@@ -691,7 +715,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// One request followed by one response.
     public func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
@@ -711,7 +735,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// One request followed by one response. Response has cache control
     /// headers set such that a caching HTTP proxy (such as GFE) can
     /// satisfy subsequent requests.
@@ -733,7 +757,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// One request followed by a sequence of responses (streamed download).
     /// The server returns the payload with client desired type and sizes.
     public func streamingOutputCall<R>(
@@ -752,7 +776,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// A sequence of requests followed by one response (streamed upload).
     /// The server returns the aggregated size of client payload as the result.
     public func streamingInputCall<R>(
@@ -773,7 +797,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// A sequence of requests with each request served by the server immediately.
     /// As one request could lead to multiple responses, this interface
     /// demonstrates the idea of full duplexing.
@@ -793,7 +817,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// A sequence of requests followed by a sequence of responses.
     /// The server buffers all the client requests and then serves them in order. A
     /// stream of responses are returned to the client when the server starts with
@@ -814,7 +838,7 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
             handler: body
         )
     }
-
+    
     /// The test server will not implement this method. It will be used
     /// to test the behavior when clients call unimplemented methods.
     public func unimplementedCall<R>(
@@ -875,11 +899,11 @@ extension Grpc_Testing_UnimplementedService.ClientProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
-    public init(client: GRPCCore.GRPCClient) {
+    
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
-
+    
     /// A call that no server should implement
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
@@ -911,7 +935,7 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     func stop<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         serializer: some MessageSerializer<Grpc_Testing_Empty>,
@@ -938,7 +962,7 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
             body
         )
     }
-
+    
     public func stop<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
@@ -960,11 +984,11 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
-    public init(client: GRPCCore.GRPCClient) {
+    
+    public init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
-
+    
     public func start<R>(
         request: ClientRequest.Single<Grpc_Testing_ReconnectParams>,
         serializer: some MessageSerializer<Grpc_Testing_ReconnectParams>,
@@ -983,7 +1007,7 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
             handler: body
         )
     }
-
+    
     public func stop<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         serializer: some MessageSerializer<Grpc_Testing_Empty>,

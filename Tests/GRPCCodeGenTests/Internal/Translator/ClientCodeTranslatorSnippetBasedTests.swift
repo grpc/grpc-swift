@@ -77,7 +77,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          public init(client: GRPCCore.GRPCClient) {
+          public init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
           
@@ -162,7 +162,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          public init(client: GRPCCore.GRPCClient) {
+          public init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
           
@@ -245,7 +245,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          public init(client: GRPCCore.GRPCClient) {
+          public init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
           
@@ -326,7 +326,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          public init(client: GRPCCore.GRPCClient) {
+          public init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
           
@@ -440,7 +440,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       package struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          package init(client: GRPCCore.GRPCClient) {
+          package init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
           
@@ -543,7 +543,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       internal struct ServiceAClient: ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          internal init(client: GRPCCore.GRPCClient) {
+          internal init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
           
@@ -610,7 +610,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public struct NamespaceA_ServiceAClient: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          public init(client: GRPCCore.GRPCClient) {
+          public init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
       }
@@ -629,7 +629,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       public struct ServiceBClient: ServiceB.ClientProtocol {
           private let client: GRPCCore.GRPCClient
           
-          public init(client: GRPCCore.GRPCClient) {
+          public init(wrapping client: GRPCCore.GRPCClient) {
               self.client = client
           }
       }

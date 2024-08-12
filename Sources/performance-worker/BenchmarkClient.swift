@@ -93,7 +93,7 @@ struct BenchmarkClient {
   }
 
   internal func run() async throws {
-    let benchmarkClient = Grpc_Testing_BenchmarkServiceClient(client: self.client)
+    let benchmarkClient = Grpc_Testing_BenchmarkServiceClient(wrapping: self.client)
     return try await withThrowingTaskGroup(of: Void.self) { clientGroup in
       // Start the client.
       clientGroup.addTask {

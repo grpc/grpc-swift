@@ -171,6 +171,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       @_spi(Secret) import enum Foo.Bar
 
       public enum NamespaceA_ServiceA {
+          public static let descriptor = ServiceDescriptor.namespaceA_ServiceA
           public enum Method {
               public static let descriptors: [MethodDescriptor] = []
           }
@@ -178,6 +179,13 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
           public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+      }
+
+      extension ServiceDescriptor {
+          public static let namespaceA_ServiceA = Self(
+              package: "namespaceA",
+              service: "ServiceA"
+          )
       }
 
       /// Documentation for AService
