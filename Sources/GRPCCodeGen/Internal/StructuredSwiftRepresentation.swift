@@ -174,6 +174,16 @@ enum LiteralDescription: Equatable, Codable {
   ///
   /// For example `["hello", 42]`.
   case array([Expression])
+
+  /// A dictionary literal.
+  ///
+  /// For example: `["hello": "42"]`
+  case dictionary([KeyValue])
+
+  struct KeyValue: Codable, Equatable {
+    var key: Expression
+    var value: Expression
+  }
 }
 
 /// A description of an identifier, such as a variable name.

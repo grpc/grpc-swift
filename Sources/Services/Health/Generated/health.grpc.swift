@@ -253,6 +253,69 @@ extension Grpc_Health_V1_Health.ClientProtocol {
     }
 }
 
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Grpc_Health_V1_Health.ClientProtocol {
+    /// Check gets the health of the specified service. If the requested service
+    /// is unknown, the call will fail with status NOT_FOUND. If the caller does
+    /// not specify a service name, the server should respond with its overall
+    /// health status.
+    ///
+    /// Clients should set a deadline when calling Check, and can declare the
+    /// server unhealthy if they do not receive a timely response.
+    ///
+    /// Check implementations should be idempotent and side effect free.
+    package func check<Result>(
+        _ message: Grpc_Health_V1_HealthCheckRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.check(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    /// Performs a watch for the serving status of the requested service.
+    /// The server will immediately send back a message indicating the current
+    /// serving status.  It will then subsequently send a new message whenever
+    /// the service's serving status changes.
+    ///
+    /// If the requested service is unknown when the call is received, the
+    /// server will send a message setting the serving status to
+    /// SERVICE_UNKNOWN but will *not* terminate the call.  If at some
+    /// future point, the serving status of the service becomes known, the
+    /// server will send a new message with the service's serving status.
+    ///
+    /// If the call terminates with status UNIMPLEMENTED, then clients
+    /// should assume this method is not supported and should not retry the
+    /// call.  If the call terminates with any other status (including OK),
+    /// clients should retry the call with appropriate exponential backoff.
+    package func watch<Result>(
+        _ message: Grpc_Health_V1_HealthCheckRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watch(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+}
+
 /// Health is gRPC's mechanism for checking whether a server is able to handle
 /// RPCs. Its semantics are documented in
 /// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.

@@ -119,6 +119,29 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             }
         }
 
+        @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+        extension Hello_World_Greeter.ClientProtocol {
+            /// Sends a greeting.
+            internal func sayHello<Result>(
+                _ message: Hello_World_HelloRequest,
+                metadata: GRPCCore.Metadata = [:],
+                options: GRPCCore.CallOptions = .defaults,
+                onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Hello_World_HelloReply>) async throws -> Result = {
+                    try $0.message
+                }
+            ) async throws -> Result where Result: Sendable {
+                let request = GRPCCore.ClientRequest.Single<Hello_World_HelloRequest>(
+                    message: message,
+                    metadata: metadata
+                )
+                return try await self.sayHello(
+                    request: request,
+                    options: options,
+                    handleResponse
+                )
+            }
+        }
+
         /// The greeting service definition.
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         internal struct Hello_World_GreeterClient: Hello_World_Greeter.ClientProtocol {
@@ -392,6 +415,29 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           }
         }
 
+        @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+        extension Greeter.ClientProtocol {
+          /// Sends a greeting.
+          package func sayHello<Result>(
+            _ message: HelloRequest,
+            metadata: GRPCCore.Metadata = [:],
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<HelloReply>) async throws -> Result = {
+              try $0.message
+            }
+          ) async throws -> Result where Result: Sendable {
+            let request = GRPCCore.ClientRequest.Single<HelloRequest>(
+              message: message,
+              metadata: metadata
+            )
+            return try await self.sayHello(
+              request: request,
+              options: options,
+              handleResponse
+            )
+          }
+        }
+
         /// The greeting service definition.
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         package struct GreeterClient: Greeter.ClientProtocol {
@@ -431,7 +477,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     visibility: SourceGenerator.Configuration.AccessLevel,
     client: Bool,
     server: Bool,
-    expectedCode: String
+    expectedCode: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
   ) throws {
     let configs = SourceGenerator.Configuration(
       accessLevel: visibility,
@@ -471,7 +519,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
         extraModuleImports: ["ExtraModule"]
       ),
-      expectedCode
+      expectedCode,
+      file: file,
+      line: line
     )
   }
 }

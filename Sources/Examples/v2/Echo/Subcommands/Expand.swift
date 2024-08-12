@@ -42,9 +42,9 @@ struct Expand: AsyncParsableCommand {
       for _ in 0 ..< self.arguments.repetitions {
         let message = Echo_EchoRequest.with { $0.text = self.arguments.message }
         print("expand → \(message.text)")
-        try await echo.expand(request: ClientRequest.Single(message: message)) { response in
+        try await echo.expand(message) { response in
           for try await message in response.messages {
-            print("get ← \(message.text)")
+            print("expand ← \(message.text)")
           }
         }
       }
