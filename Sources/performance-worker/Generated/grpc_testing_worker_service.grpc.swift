@@ -28,12 +28,12 @@ internal import GRPCCore
 internal import GRPCProtobuf
 
 internal enum Grpc_Testing_WorkerService {
-    internal static let descriptor = ServiceDescriptor.grpc_testing_WorkerService
+    internal static let descriptor = GRPCCore.ServiceDescriptor.grpc_testing_WorkerService
     internal enum Method {
         internal enum RunServer {
             internal typealias Input = Grpc_Testing_ServerArgs
             internal typealias Output = Grpc_Testing_ServerStatus
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "RunServer"
             )
@@ -41,7 +41,7 @@ internal enum Grpc_Testing_WorkerService {
         internal enum RunClient {
             internal typealias Input = Grpc_Testing_ClientArgs
             internal typealias Output = Grpc_Testing_ClientStatus
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "RunClient"
             )
@@ -49,7 +49,7 @@ internal enum Grpc_Testing_WorkerService {
         internal enum CoreCount {
             internal typealias Input = Grpc_Testing_CoreRequest
             internal typealias Output = Grpc_Testing_CoreResponse
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "CoreCount"
             )
@@ -57,12 +57,12 @@ internal enum Grpc_Testing_WorkerService {
         internal enum QuitWorker {
             internal typealias Input = Grpc_Testing_Void
             internal typealias Output = Grpc_Testing_Void
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Grpc_Testing_WorkerService.descriptor.fullyQualifiedService,
                 method: "QuitWorker"
             )
         }
-        internal static let descriptors: [MethodDescriptor] = [
+        internal static let descriptors: [GRPCCore.MethodDescriptor] = [
             RunServer.descriptor,
             RunClient.descriptor,
             CoreCount.descriptor,
@@ -75,7 +75,7 @@ internal enum Grpc_Testing_WorkerService {
     internal typealias ServiceProtocol = Grpc_Testing_WorkerServiceServiceProtocol
 }
 
-extension ServiceDescriptor {
+extension GRPCCore.ServiceDescriptor {
     internal static let grpc_testing_WorkerService = Self(
         package: "grpc.testing",
         service: "WorkerService"
@@ -90,7 +90,7 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
     /// stats. Closing the stream will initiate shutdown of the test server
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
-    func runServer(request: ServerRequest.Stream<Grpc_Testing_ServerArgs>) async throws -> ServerResponse.Stream<Grpc_Testing_ServerStatus>
+    func runServer(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ServerArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ServerStatus>
     
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
@@ -98,13 +98,13 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
     /// stats. Closing the stream will initiate shutdown of the test client
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
-    func runClient(request: ServerRequest.Stream<Grpc_Testing_ClientArgs>) async throws -> ServerResponse.Stream<Grpc_Testing_ClientStatus>
+    func runClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ClientArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ClientStatus>
     
     /// Just return the core count - unary call
-    func coreCount(request: ServerRequest.Stream<Grpc_Testing_CoreRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_CoreResponse>
+    func coreCount(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_CoreRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_CoreResponse>
     
     /// Quit this worker
-    func quitWorker(request: ServerRequest.Stream<Grpc_Testing_Void>) async throws -> ServerResponse.Stream<Grpc_Testing_Void>
+    func quitWorker(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_Void>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_Void>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -114,32 +114,32 @@ extension Grpc_Testing_WorkerService.StreamingServiceProtocol {
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Testing_WorkerService.Method.RunServer.descriptor,
-            deserializer: ProtobufDeserializer<Grpc_Testing_ServerArgs>(),
-            serializer: ProtobufSerializer<Grpc_Testing_ServerStatus>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Testing_ServerArgs>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Testing_ServerStatus>(),
             handler: { request in
                 try await self.runServer(request: request)
             }
         )
         router.registerHandler(
             forMethod: Grpc_Testing_WorkerService.Method.RunClient.descriptor,
-            deserializer: ProtobufDeserializer<Grpc_Testing_ClientArgs>(),
-            serializer: ProtobufSerializer<Grpc_Testing_ClientStatus>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Testing_ClientArgs>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Testing_ClientStatus>(),
             handler: { request in
                 try await self.runClient(request: request)
             }
         )
         router.registerHandler(
             forMethod: Grpc_Testing_WorkerService.Method.CoreCount.descriptor,
-            deserializer: ProtobufDeserializer<Grpc_Testing_CoreRequest>(),
-            serializer: ProtobufSerializer<Grpc_Testing_CoreResponse>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Testing_CoreRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Testing_CoreResponse>(),
             handler: { request in
                 try await self.coreCount(request: request)
             }
         )
         router.registerHandler(
             forMethod: Grpc_Testing_WorkerService.Method.QuitWorker.descriptor,
-            deserializer: ProtobufDeserializer<Grpc_Testing_Void>(),
-            serializer: ProtobufSerializer<Grpc_Testing_Void>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Testing_Void>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Testing_Void>(),
             handler: { request in
                 try await self.quitWorker(request: request)
             }
@@ -155,7 +155,7 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
     /// stats. Closing the stream will initiate shutdown of the test server
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
-    func runServer(request: ServerRequest.Stream<Grpc_Testing_ServerArgs>) async throws -> ServerResponse.Stream<Grpc_Testing_ServerStatus>
+    func runServer(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ServerArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ServerStatus>
     
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
@@ -163,25 +163,25 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
     /// stats. Closing the stream will initiate shutdown of the test client
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
-    func runClient(request: ServerRequest.Stream<Grpc_Testing_ClientArgs>) async throws -> ServerResponse.Stream<Grpc_Testing_ClientStatus>
+    func runClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ClientArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ClientStatus>
     
     /// Just return the core count - unary call
-    func coreCount(request: ServerRequest.Single<Grpc_Testing_CoreRequest>) async throws -> ServerResponse.Single<Grpc_Testing_CoreResponse>
+    func coreCount(request: GRPCCore.ServerRequest.Single<Grpc_Testing_CoreRequest>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_CoreResponse>
     
     /// Quit this worker
-    func quitWorker(request: ServerRequest.Single<Grpc_Testing_Void>) async throws -> ServerResponse.Single<Grpc_Testing_Void>
+    func quitWorker(request: GRPCCore.ServerRequest.Single<Grpc_Testing_Void>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_Void>
 }
 
 /// Partial conformance to `Grpc_Testing_WorkerServiceStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Testing_WorkerService.ServiceProtocol {
-    internal func coreCount(request: ServerRequest.Stream<Grpc_Testing_CoreRequest>) async throws -> ServerResponse.Stream<Grpc_Testing_CoreResponse> {
-        let response = try await self.coreCount(request: ServerRequest.Single(stream: request))
-        return ServerResponse.Stream(single: response)
+    internal func coreCount(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_CoreRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_CoreResponse> {
+        let response = try await self.coreCount(request: GRPCCore.ServerRequest.Single(stream: request))
+        return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    internal func quitWorker(request: ServerRequest.Stream<Grpc_Testing_Void>) async throws -> ServerResponse.Stream<Grpc_Testing_Void> {
-        let response = try await self.quitWorker(request: ServerRequest.Single(stream: request))
-        return ServerResponse.Stream(single: response)
+    internal func quitWorker(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_Void>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_Void> {
+        let response = try await self.quitWorker(request: GRPCCore.ServerRequest.Single(stream: request))
+        return GRPCCore.ServerResponse.Stream(single: response)
     }
 }

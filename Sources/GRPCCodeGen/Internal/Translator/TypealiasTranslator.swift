@@ -22,13 +22,13 @@
 /// a representation for the following generated code:
 /// ```swift
 /// public enum Echo_Echo {
-///   public static let descriptor = ServiceDescriptor.echo_Echo
+///   public static let descriptor = GRPCCore.ServiceDescriptor.echo_Echo
 ///
 ///   public enum Method {
 ///     public enum Get {
 ///       public typealias Input = Echo_EchoRequest
 ///       public typealias Output = Echo_EchoResponse
-///       public static let descriptor = MethodDescriptor(
+///       public static let descriptor = GRPCCore.MethodDescriptor(
 ///         service: Echo_Echo.descriptor.fullyQualifiedService,
 ///         method: "Get"
 ///       )
@@ -37,14 +37,14 @@
 ///     public enum Collect {
 ///       public typealias Input = Echo_EchoRequest
 ///       public typealias Output = Echo_EchoResponse
-///       public static let descriptor = MethodDescriptor(
+///       public static let descriptor = GRPCCore.MethodDescriptor(
 ///         service: Echo_Echo.descriptor.fullyQualifiedService,
 ///         method: "Collect"
 ///       )
 ///     }
 ///     // ...
 ///
-///     public static let descriptors: [MethodDescriptor] = [
+///     public static let descriptors: [GRPCCore.MethodDescriptor] = [
 ///       Get.descriptor,
 ///       Collect.descriptor,
 ///       // ...
@@ -58,7 +58,7 @@
 ///
 /// }
 ///
-/// extension ServiceDescriptor {
+/// extension GRPCCore.ServiceDescriptor {
 ///   public static let echo_Echo = Self(
 ///     package: "echo",
 ///     service: "Echo"
@@ -199,7 +199,7 @@ extension TypealiasTranslator {
     let descriptorDeclarationLeft = Expression.identifier(.pattern("descriptor"))
     let descriptorDeclarationRight = Expression.functionCall(
       FunctionCallDescription(
-        calledExpression: .identifierType(.member("MethodDescriptor")),
+        calledExpression: .identifierType(.member(["GRPCCore", "MethodDescriptor"])),
         arguments: [
           FunctionArgumentDescription(
             label: "service",
@@ -245,7 +245,7 @@ extension TypealiasTranslator {
       isStatic: true,
       kind: .let,
       left: .identifier(.pattern("descriptors")),
-      type: .array(.member("MethodDescriptor")),
+      type: .array(.member(["GRPCCore", "MethodDescriptor"])),
       right: .literal(.array(methodDescriptors))
     )
   }
@@ -326,7 +326,7 @@ extension TypealiasTranslator {
       left: .identifierPattern("descriptor"),
       right: .memberAccess(
         MemberAccessDescription(
-          left: .identifierPattern("ServiceDescriptor"),
+          left: .identifierPattern("GRPCCore.ServiceDescriptor"),
           right: serviceIdentifier
         )
       )
@@ -356,7 +356,7 @@ extension TypealiasTranslator {
 
     return .extension(
       ExtensionDescription(
-        onType: "ServiceDescriptor",
+        onType: "GRPCCore.ServiceDescriptor",
         declarations: [
           .variable(
             VariableDescription(

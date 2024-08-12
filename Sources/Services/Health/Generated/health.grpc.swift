@@ -28,12 +28,12 @@ package import GRPCCore
 internal import GRPCProtobuf
 
 package enum Grpc_Health_V1_Health {
-    package static let descriptor = ServiceDescriptor.grpc_health_v1_Health
+    package static let descriptor = GRPCCore.ServiceDescriptor.grpc_health_v1_Health
     package enum Method {
         package enum Check {
             package typealias Input = Grpc_Health_V1_HealthCheckRequest
             package typealias Output = Grpc_Health_V1_HealthCheckResponse
-            package static let descriptor = MethodDescriptor(
+            package static let descriptor = GRPCCore.MethodDescriptor(
                 service: Grpc_Health_V1_Health.descriptor.fullyQualifiedService,
                 method: "Check"
             )
@@ -41,12 +41,12 @@ package enum Grpc_Health_V1_Health {
         package enum Watch {
             package typealias Input = Grpc_Health_V1_HealthCheckRequest
             package typealias Output = Grpc_Health_V1_HealthCheckResponse
-            package static let descriptor = MethodDescriptor(
+            package static let descriptor = GRPCCore.MethodDescriptor(
                 service: Grpc_Health_V1_Health.descriptor.fullyQualifiedService,
                 method: "Watch"
             )
         }
-        package static let descriptors: [MethodDescriptor] = [
+        package static let descriptors: [GRPCCore.MethodDescriptor] = [
             Check.descriptor,
             Watch.descriptor
         ]
@@ -61,7 +61,7 @@ package enum Grpc_Health_V1_Health {
     package typealias Client = Grpc_Health_V1_HealthClient
 }
 
-extension ServiceDescriptor {
+extension GRPCCore.ServiceDescriptor {
     package static let grpc_health_v1_Health = Self(
         package: "grpc.health.v1",
         service: "Health"
@@ -82,7 +82,7 @@ package protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.Registr
     /// server unhealthy if they do not receive a timely response.
     ///
     /// Check implementations should be idempotent and side effect free.
-    func check(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
+    func check(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
     
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
@@ -99,7 +99,7 @@ package protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.Registr
     /// should assume this method is not supported and should not retry the
     /// call.  If the call terminates with any other status (including OK),
     /// clients should retry the call with appropriate exponential backoff.
-    func watch(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
+    func watch(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -109,16 +109,16 @@ extension Grpc_Health_V1_Health.StreamingServiceProtocol {
     package func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Grpc_Health_V1_Health.Method.Check.descriptor,
-            deserializer: ProtobufDeserializer<Grpc_Health_V1_HealthCheckRequest>(),
-            serializer: ProtobufSerializer<Grpc_Health_V1_HealthCheckResponse>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Health_V1_HealthCheckRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Health_V1_HealthCheckResponse>(),
             handler: { request in
                 try await self.check(request: request)
             }
         )
         router.registerHandler(
             forMethod: Grpc_Health_V1_Health.Method.Watch.descriptor,
-            deserializer: ProtobufDeserializer<Grpc_Health_V1_HealthCheckRequest>(),
-            serializer: ProtobufSerializer<Grpc_Health_V1_HealthCheckResponse>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Health_V1_HealthCheckRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Health_V1_HealthCheckResponse>(),
             handler: { request in
                 try await self.watch(request: request)
             }
@@ -140,7 +140,7 @@ package protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.Str
     /// server unhealthy if they do not receive a timely response.
     ///
     /// Check implementations should be idempotent and side effect free.
-    func check(request: ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Single<Grpc_Health_V1_HealthCheckResponse>
+    func check(request: GRPCCore.ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Health_V1_HealthCheckResponse>
     
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
@@ -157,19 +157,19 @@ package protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.Str
     /// should assume this method is not supported and should not retry the
     /// call.  If the call terminates with any other status (including OK),
     /// clients should retry the call with appropriate exponential backoff.
-    func watch(request: ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
+    func watch(request: GRPCCore.ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
 }
 
 /// Partial conformance to `Grpc_Health_V1_HealthStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Health_V1_Health.ServiceProtocol {
-    package func check(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
-        let response = try await self.check(request: ServerRequest.Single(stream: request))
-        return ServerResponse.Stream(single: response)
+    package func check(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
+        let response = try await self.check(request: GRPCCore.ServerRequest.Single(stream: request))
+        return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    package func watch(request: ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
-        let response = try await self.watch(request: ServerRequest.Single(stream: request))
+    package func watch(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
+        let response = try await self.watch(request: GRPCCore.ServerRequest.Single(stream: request))
         return response
     }
 }
@@ -189,11 +189,11 @@ package protocol Grpc_Health_V1_HealthClientProtocol: Sendable {
     ///
     /// Check implementations should be idempotent and side effect free.
     func check<R>(
-        request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
-        serializer: some MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
-        deserializer: some MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
-        options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        serializer: some GRPCCore.MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
+        deserializer: some GRPCCore.MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
+        options: GRPCCore.CallOptions,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
     ) async throws -> R where R: Sendable
     
     /// Performs a watch for the serving status of the requested service.
@@ -212,41 +212,41 @@ package protocol Grpc_Health_V1_HealthClientProtocol: Sendable {
     /// call.  If the call terminates with any other status (including OK),
     /// clients should retry the call with appropriate exponential backoff.
     func watch<R>(
-        request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
-        serializer: some MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
-        deserializer: some MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
-        options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        serializer: some GRPCCore.MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
+        deserializer: some GRPCCore.MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
+        options: GRPCCore.CallOptions,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
     ) async throws -> R where R: Sendable
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Health_V1_Health.ClientProtocol {
     package func check<R>(
-        request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R = {
+        request: GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
         try await self.check(
             request: request,
-            serializer: ProtobufSerializer<Grpc_Health_V1_HealthCheckRequest>(),
-            deserializer: ProtobufDeserializer<Grpc_Health_V1_HealthCheckResponse>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Health_V1_HealthCheckRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Health_V1_HealthCheckResponse>(),
             options: options,
             body
         )
     }
     
     package func watch<R>(
-        request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.watch(
             request: request,
-            serializer: ProtobufSerializer<Grpc_Health_V1_HealthCheckRequest>(),
-            deserializer: ProtobufDeserializer<Grpc_Health_V1_HealthCheckResponse>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Health_V1_HealthCheckRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Health_V1_HealthCheckResponse>(),
             options: options,
             body
         )
@@ -337,11 +337,11 @@ package struct Grpc_Health_V1_HealthClient: Grpc_Health_V1_Health.ClientProtocol
     ///
     /// Check implementations should be idempotent and side effect free.
     package func check<R>(
-        request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
-        serializer: some MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
-        deserializer: some MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R = {
+        request: GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        serializer: some GRPCCore.MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
+        deserializer: some GRPCCore.MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -371,11 +371,11 @@ package struct Grpc_Health_V1_HealthClient: Grpc_Health_V1_Health.ClientProtocol
     /// call.  If the call terminates with any other status (including OK),
     /// clients should retry the call with appropriate exponential backoff.
     package func watch<R>(
-        request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
-        serializer: some MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
-        deserializer: some MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        serializer: some GRPCCore.MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
+        deserializer: some GRPCCore.MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.serverStreaming(
             request: request,

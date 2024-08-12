@@ -26,12 +26,12 @@ internal import GRPCCore
 internal import GRPCProtobuf
 
 internal enum Control {
-    internal static let descriptor = ServiceDescriptor.Control
+    internal static let descriptor = GRPCCore.ServiceDescriptor.Control
     internal enum Method {
         internal enum Unary {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Control.descriptor.fullyQualifiedService,
                 method: "Unary"
             )
@@ -39,7 +39,7 @@ internal enum Control {
         internal enum ServerStream {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Control.descriptor.fullyQualifiedService,
                 method: "ServerStream"
             )
@@ -47,7 +47,7 @@ internal enum Control {
         internal enum ClientStream {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Control.descriptor.fullyQualifiedService,
                 method: "ClientStream"
             )
@@ -55,12 +55,12 @@ internal enum Control {
         internal enum BidiStream {
             internal typealias Input = ControlInput
             internal typealias Output = ControlOutput
-            internal static let descriptor = MethodDescriptor(
+            internal static let descriptor = GRPCCore.MethodDescriptor(
                 service: Control.descriptor.fullyQualifiedService,
                 method: "BidiStream"
             )
         }
-        internal static let descriptors: [MethodDescriptor] = [
+        internal static let descriptors: [GRPCCore.MethodDescriptor] = [
             Unary.descriptor,
             ServerStream.descriptor,
             ClientStream.descriptor,
@@ -77,7 +77,7 @@ internal enum Control {
     internal typealias Client = ControlClient
 }
 
-extension ServiceDescriptor {
+extension GRPCCore.ServiceDescriptor {
     internal static let Control = Self(
         package: "",
         service: "Control"
@@ -90,13 +90,13 @@ extension ServiceDescriptor {
 /// the output.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-    func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
+    func unary(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func serverStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
+    func serverStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
+    func clientStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func bidiStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
+    func bidiStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -106,32 +106,32 @@ extension Control.StreamingServiceProtocol {
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Control.Method.Unary.descriptor,
-            deserializer: ProtobufDeserializer<ControlInput>(),
-            serializer: ProtobufSerializer<ControlOutput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.unary(request: request)
             }
         )
         router.registerHandler(
             forMethod: Control.Method.ServerStream.descriptor,
-            deserializer: ProtobufDeserializer<ControlInput>(),
-            serializer: ProtobufSerializer<ControlOutput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.serverStream(request: request)
             }
         )
         router.registerHandler(
             forMethod: Control.Method.ClientStream.descriptor,
-            deserializer: ProtobufDeserializer<ControlInput>(),
-            serializer: ProtobufSerializer<ControlOutput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.clientStream(request: request)
             }
         )
         router.registerHandler(
             forMethod: Control.Method.BidiStream.descriptor,
-            deserializer: ProtobufDeserializer<ControlInput>(),
-            serializer: ProtobufSerializer<ControlOutput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
             handler: { request in
                 try await self.bidiStream(request: request)
             }
@@ -145,31 +145,31 @@ extension Control.StreamingServiceProtocol {
 /// the output.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlServiceProtocol: Control.StreamingServiceProtocol {
-    func unary(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
+    func unary(request: GRPCCore.ServerRequest.Single<ControlInput>) async throws -> GRPCCore.ServerResponse.Single<ControlOutput>
     
-    func serverStream(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
+    func serverStream(request: GRPCCore.ServerRequest.Single<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
+    func clientStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Single<ControlOutput>
     
-    func bidiStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
+    func bidiStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
 }
 
 /// Partial conformance to `ControlStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Control.ServiceProtocol {
-    internal func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
-        let response = try await self.unary(request: ServerRequest.Single(stream: request))
-        return ServerResponse.Stream(single: response)
+    internal func unary(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
+        let response = try await self.unary(request: GRPCCore.ServerRequest.Single(stream: request))
+        return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    internal func serverStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
-        let response = try await self.serverStream(request: ServerRequest.Single(stream: request))
+    internal func serverStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
+        let response = try await self.serverStream(request: GRPCCore.ServerRequest.Single(stream: request))
         return response
     }
     
-    internal func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
+    internal func clientStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
         let response = try await self.clientStream(request: request)
-        return ServerResponse.Stream(single: response)
+        return GRPCCore.ServerResponse.Stream(single: response)
     }
 }
 
@@ -180,95 +180,95 @@ extension Control.ServiceProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlClientProtocol: Sendable {
     func unary<R>(
-        request: ClientRequest.Single<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
     
     func serverStream<R>(
-        request: ClientRequest.Single<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
     
     func clientStream<R>(
-        request: ClientRequest.Stream<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Stream<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
     
     func bidiStream<R>(
-        request: ClientRequest.Stream<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions,
-        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Stream<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Control.ClientProtocol {
     internal func unary<R>(
-        request: ClientRequest.Single<ControlInput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+        request: GRPCCore.ClientRequest.Single<ControlInput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
         try await self.unary(
             request: request,
-            serializer: ProtobufSerializer<ControlInput>(),
-            deserializer: ProtobufDeserializer<ControlOutput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlInput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
     }
     
     internal func serverStream<R>(
-        request: ClientRequest.Single<ControlInput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<ControlInput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.serverStream(
             request: request,
-            serializer: ProtobufSerializer<ControlInput>(),
-            deserializer: ProtobufDeserializer<ControlOutput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlInput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
     }
     
     internal func clientStream<R>(
-        request: ClientRequest.Stream<ControlInput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+        request: GRPCCore.ClientRequest.Stream<ControlInput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
         try await self.clientStream(
             request: request,
-            serializer: ProtobufSerializer<ControlInput>(),
-            deserializer: ProtobufDeserializer<ControlOutput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlInput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
     }
     
     internal func bidiStream<R>(
-        request: ClientRequest.Stream<ControlInput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Stream<ControlInput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.bidiStream(
             request: request,
-            serializer: ProtobufSerializer<ControlInput>(),
-            deserializer: ProtobufDeserializer<ControlOutput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<ControlInput>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<ControlOutput>(),
             options: options,
             body
         )
@@ -363,11 +363,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
     
     internal func unary<R>(
-        request: ClientRequest.Single<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+        request: GRPCCore.ClientRequest.Single<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -382,11 +382,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
     
     internal func serverStream<R>(
-        request: ClientRequest.Single<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Single<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.serverStreaming(
             request: request,
@@ -399,11 +399,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
     
     internal func clientStream<R>(
-        request: ClientRequest.Stream<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+        request: GRPCCore.ClientRequest.Stream<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<ControlOutput>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -418,11 +418,11 @@ internal struct ControlClient: Control.ClientProtocol {
     }
     
     internal func bidiStream<R>(
-        request: ClientRequest.Stream<ControlInput>,
-        serializer: some MessageSerializer<ControlInput>,
-        deserializer: some MessageDeserializer<ControlOutput>,
-        options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
+        request: GRPCCore.ClientRequest.Stream<ControlInput>,
+        serializer: some GRPCCore.MessageSerializer<ControlInput>,
+        deserializer: some GRPCCore.MessageDeserializer<ControlOutput>,
+        options: GRPCCore.CallOptions = .defaults,
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
             request: request,

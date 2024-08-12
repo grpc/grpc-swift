@@ -63,10 +63,10 @@ internal struct ProtobufCodeGenParser {
 
       """
     let lookupSerializer: (String) -> String = { messageType in
-      "ProtobufSerializer<\(messageType)>()"
+      "GRPCProtobuf.ProtobufSerializer<\(messageType)>()"
     }
     let lookupDeserializer: (String) -> String = { messageType in
-      "ProtobufDeserializer<\(messageType)>()"
+      "GRPCProtobuf.ProtobufDeserializer<\(messageType)>()"
     }
     let services = self.input.services.map {
       CodeGenerationRequest.ServiceDescriptor(

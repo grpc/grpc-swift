@@ -25,9 +25,9 @@ public import GRPCCore
 internal import GRPCProtobuf
 
 public enum Grpc_Testing_EmptyService {
-    public static let descriptor = ServiceDescriptor.grpc_testing_EmptyService
+    public static let descriptor = GRPCCore.ServiceDescriptor.grpc_testing_EmptyService
     public enum Method {
-        public static let descriptors: [MethodDescriptor] = []
+        public static let descriptors: [GRPCCore.MethodDescriptor] = []
     }
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     public typealias StreamingServiceProtocol = Grpc_Testing_EmptyServiceStreamingServiceProtocol
@@ -39,7 +39,7 @@ public enum Grpc_Testing_EmptyService {
     public typealias Client = Grpc_Testing_EmptyServiceClient
 }
 
-extension ServiceDescriptor {
+extension GRPCCore.ServiceDescriptor {
     public static let grpc_testing_EmptyService = Self(
         package: "grpc.testing",
         service: "EmptyService"
