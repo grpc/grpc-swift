@@ -340,7 +340,11 @@ extension Target {
         .nioFileSystem,
         .argumentParser
       ],
-      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        .swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -538,7 +542,10 @@ extension Target {
         .grpcCore,
         .grpcProtobuf
       ],
-      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        .swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny")
+      ]
     )
   }
 
@@ -694,7 +701,11 @@ extension Target {
         .nioSSL, if: includeNIOSSL
       ),
       path: "Sources/Examples/v2/Echo",
-      swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
+      swiftSettings: [
+        .swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 

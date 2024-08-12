@@ -30,10 +30,9 @@ struct IDLToStructuredSwiftTranslator: Translator {
       server: server,
       accessLevel: accessLevel
     )
-
     let topComment = Comment.preFormatted(codeGenerationRequest.leadingTrivia)
     let imports = try codeGenerationRequest.dependencies.reduce(
-      into: [ImportDescription(moduleName: "GRPCCore")]
+      into: [ImportDescription(accessLevel: AccessModifier(accessLevel), moduleName: "GRPCCore")]
     ) { partialResult, newDependency in
       try partialResult.append(translateImport(dependency: newDependency))
     }
@@ -68,11 +67,24 @@ struct IDLToStructuredSwiftTranslator: Translator {
   }
 }
 
+extension AccessModifier {
+  fileprivate init(_ accessLevel: SourceGenerator.Configuration.AccessLevel) {
+    switch accessLevel.level {
+    case .internal: self = .internal
+    case .package: self = .package
+    case .public: self = .public
+    }
+  }
+}
+
 extension IDLToStructuredSwiftTranslator {
   private func translateImport(
     dependency: CodeGenerationRequest.Dependency
   ) throws -> ImportDescription {
-    var importDescription = ImportDescription(moduleName: dependency.module)
+    var importDescription = ImportDescription(
+      accessLevel: AccessModifier(dependency.accessLevel),
+      moduleName: dependency.module
+    )
     if let item = dependency.item {
       if let matchedKind = ImportDescription.Kind(rawValue: item.kind.value.rawValue) {
         importDescription.item = ImportDescription.Item(kind: matchedKind, name: item.name)

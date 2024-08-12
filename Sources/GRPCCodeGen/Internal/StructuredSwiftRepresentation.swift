@@ -31,6 +31,13 @@
 ///
 /// For example: `import Foo`.
 struct ImportDescription: Equatable, Codable {
+  /// The access level of the imported module.
+  ///
+  /// For example, the `public` in `public import Foo`.
+  ///
+  /// - Note: This is optional, as explicit access-level modifiers are not required on `import` statements.
+  var accessLevel: AccessModifier? = nil
+
   /// The name of the imported module.
   ///
   /// For example, the `Foo` in `import Foo`.

@@ -19,6 +19,7 @@ internal import SwiftProtobuf
 internal import SwiftProtobufPluginLibrary
 
 internal import struct GRPCCodeGen.CodeGenerationRequest
+internal import struct GRPCCodeGen.SourceGenerator
 
 /// Parses a ``FileDescriptor`` object into a ``CodeGenerationRequest`` object.
 internal struct ProtobufCodeGenParser {
@@ -26,11 +27,13 @@ internal struct ProtobufCodeGenParser {
   let namer: SwiftProtobufNamer
   let extraModuleImports: [String]
   let protoToModuleMappings: ProtoFileToModuleMappings
+  let accessLevel: SourceGenerator.Configuration.AccessLevel
 
   internal init(
     input: FileDescriptor,
     protoFileModuleMappings: ProtoFileToModuleMappings,
-    extraModuleImports: [String]
+    extraModuleImports: [String],
+    accessLevel: SourceGenerator.Configuration.AccessLevel
   ) {
     self.input = input
     self.extraModuleImports = extraModuleImports
@@ -39,6 +42,7 @@ internal struct ProtobufCodeGenParser {
       currentFile: input,
       protoFileToModuleMappings: protoFileModuleMappings
     )
+    self.accessLevel = accessLevel
   }
 
   internal func parse() throws -> CodeGenerationRequest {
@@ -86,18 +90,20 @@ internal struct ProtobufCodeGenParser {
 
 extension ProtobufCodeGenParser {
   fileprivate var codeDependencies: [CodeGenerationRequest.Dependency] {
-    var codeDependencies: [CodeGenerationRequest.Dependency] = [.init(module: "GRPCProtobuf")]
+    var codeDependencies: [CodeGenerationRequest.Dependency] = [
+      .init(module: "GRPCProtobuf", accessLevel: .internal)
+    ]
     // Adding as dependencies the modules containing generated code or types for
     // '.proto' files imported in the '.proto' file we are parsing.
     codeDependencies.append(
       contentsOf: (self.protoToModuleMappings.neededModules(forFile: self.input) ?? []).map {
-        CodeGenerationRequest.Dependency(module: $0)
+        CodeGenerationRequest.Dependency(module: $0, accessLevel: self.accessLevel)
       }
     )
     // Adding extra imports passed in as an option to the plugin.
     codeDependencies.append(
       contentsOf: self.extraModuleImports.sorted().map {
-        CodeGenerationRequest.Dependency(module: $0)
+        CodeGenerationRequest.Dependency(module: $0, accessLevel: self.accessLevel)
       }
     )
     return codeDependencies
