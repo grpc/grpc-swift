@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import GRPCHTTP2Core
-import NIOCore
-import NIOHPACK
-import NIOHTTP2
-import NIOPosix
+internal import GRPCHTTP2Core
+private import NIOCore
+private import NIOHPACK
+private import NIOHTTP2
+private import NIOPosix
 
 /// An HTTP/2 test server which only responds to request headers by sending response headers and
 /// then closing. Each stream will be closed with the ":status" set to the value of the

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+internal import GRPCCore
 
 @available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {

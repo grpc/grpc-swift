@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import GRPCCore
-import GRPCHTTP2Core
-import GRPCHTTP2TransportNIOPosix
-import GRPCHTTP2TransportNIOTransportServices
-import GRPCProtobuf
-import XCTest
+internal import GRPCCore
+private import GRPCHTTP2Core
+private import GRPCHTTP2TransportNIOPosix
+private import GRPCHTTP2TransportNIOTransportServices
+private import GRPCProtobuf
+internal import XCTest
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class HTTP2TransportTests: XCTestCase {

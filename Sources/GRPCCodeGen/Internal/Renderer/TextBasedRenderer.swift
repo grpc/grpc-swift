@@ -198,7 +198,7 @@ struct TextBasedRenderer: RendererProtocol {
     func render(preconcurrency: Bool) {
       let spiPrefix = description.spi.map { "@_spi(\($0)) " } ?? ""
       let preconcurrencyPrefix = preconcurrency ? "@preconcurrency " : ""
-      let accessLevel = "\(description.accessLevel) "
+      let accessLevel = description.accessLevel.map { "\($0) " } ?? ""
 
       if let item = description.item {
         writer.writeLine(

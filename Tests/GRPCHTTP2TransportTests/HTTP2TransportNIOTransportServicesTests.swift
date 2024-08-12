@@ -15,10 +15,10 @@
  */
 
 #if canImport(Network)
-import GRPCCore
-import GRPCHTTP2Core
-import GRPCHTTP2TransportNIOTransportServices
-import XCTest
+private import GRPCCore
+private import GRPCHTTP2Core
+internal import GRPCHTTP2TransportNIOTransportServices
+internal import XCTest
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class HTTP2TransportNIOTransportServicesTests: XCTestCase {

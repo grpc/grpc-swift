@@ -90,8 +90,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       /// Some really exciting license header 2023.
 
       public import GRPCCore
-      internal import Foo
-      package import typealias Foo.Bar
+      public import Foo
+      internal import typealias Foo.Bar
       package import struct Foo.Baz
       package import class Foo.Bac
       package import enum Foo.Bap
@@ -136,7 +136,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Some really exciting license header 2023.
 
-      import GRPCCore
+      public import GRPCCore
       @preconcurrency internal import Foo
       @preconcurrency internal import enum Foo.Bar
       #if os(Deq) || os(Der)
@@ -171,7 +171,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Some really exciting license header 2023.
 
-      internal import GRPCCore
+      public import GRPCCore
       @_spi(Secret) internal import Foo
       @_spi(Secret) internal import enum Foo.Bar
 
@@ -212,9 +212,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Some really exciting license header 2023.
 
-      import GRPCCore
-      @_spi(Secret) import Foo
-      @_spi(Secret) import enum Foo.Bar
+      public import GRPCCore
+      @_spi(Secret) internal import Foo
+      @_spi(Secret) internal import enum Foo.Bar
 
       public enum NamespaceA_ServiceA {
           public static let descriptor = ServiceDescriptor.namespaceA_ServiceA

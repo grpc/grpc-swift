@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import GRPCCore
+public import GRPCCore
 
 /// ``Health`` is gRPC’s mechanism for checking whether a server is able to handle RPCs. Its semantics are documented in
 /// https://github.com/grpc/grpc/blob/master/doc/health-checking.md.
