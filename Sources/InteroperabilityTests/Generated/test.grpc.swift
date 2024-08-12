@@ -566,7 +566,9 @@ extension Grpc_Testing_TestService.ClientProtocol {
     public func emptyCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.emptyCall(
             request: request,
@@ -580,7 +582,9 @@ extension Grpc_Testing_TestService.ClientProtocol {
     public func unaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.unaryCall(
             request: request,
@@ -594,7 +598,9 @@ extension Grpc_Testing_TestService.ClientProtocol {
     public func cacheableUnaryCall<R>(
         request: ClientRequest.Single<Grpc_Testing_SimpleRequest>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.cacheableUnaryCall(
             request: request,
@@ -622,7 +628,9 @@ extension Grpc_Testing_TestService.ClientProtocol {
     public func streamingInputCall<R>(
         request: ClientRequest.Stream<Grpc_Testing_StreamingInputCallRequest>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_StreamingInputCallResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_StreamingInputCallResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.streamingInputCall(
             request: request,
@@ -664,7 +672,9 @@ extension Grpc_Testing_TestService.ClientProtocol {
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.unimplementedCall(
             request: request,
@@ -692,7 +702,9 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         serializer: some MessageSerializer<Grpc_Testing_Empty>,
         deserializer: some MessageDeserializer<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -710,7 +722,9 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         serializer: some MessageSerializer<Grpc_Testing_SimpleRequest>,
         deserializer: some MessageDeserializer<Grpc_Testing_SimpleResponse>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -730,7 +744,9 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         serializer: some MessageSerializer<Grpc_Testing_SimpleRequest>,
         deserializer: some MessageDeserializer<Grpc_Testing_SimpleResponse>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -768,7 +784,9 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         serializer: some MessageSerializer<Grpc_Testing_StreamingInputCallRequest>,
         deserializer: some MessageDeserializer<Grpc_Testing_StreamingInputCallResponse>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_StreamingInputCallResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_StreamingInputCallResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
             request: request,
@@ -828,7 +846,9 @@ public struct Grpc_Testing_TestServiceClient: Grpc_Testing_TestService.ClientPro
         serializer: some MessageSerializer<Grpc_Testing_Empty>,
         deserializer: some MessageDeserializer<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -860,7 +880,9 @@ extension Grpc_Testing_UnimplementedService.ClientProtocol {
     public func unimplementedCall<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.unimplementedCall(
             request: request,
@@ -888,7 +910,9 @@ public struct Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimplemente
         serializer: some MessageSerializer<Grpc_Testing_Empty>,
         deserializer: some MessageDeserializer<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -926,7 +950,9 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
     public func start<R>(
         request: ClientRequest.Single<Grpc_Testing_ReconnectParams>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.start(
             request: request,
@@ -940,7 +966,9 @@ extension Grpc_Testing_ReconnectService.ClientProtocol {
     public func stop<R>(
         request: ClientRequest.Single<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectInfo>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectInfo>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.stop(
             request: request,
@@ -966,7 +994,9 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
         serializer: some MessageSerializer<Grpc_Testing_ReconnectParams>,
         deserializer: some MessageDeserializer<Grpc_Testing_Empty>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_Empty>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -983,7 +1013,9 @@ public struct Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectService
         serializer: some MessageSerializer<Grpc_Testing_Empty>,
         deserializer: some MessageDeserializer<Grpc_Testing_ReconnectInfo>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectInfo>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Testing_ReconnectInfo>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,

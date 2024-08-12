@@ -217,7 +217,9 @@ extension Control.ClientProtocol {
     internal func unary<R>(
         request: ClientRequest.Single<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.unary(
             request: request,
@@ -245,7 +247,9 @@ extension Control.ClientProtocol {
     internal func clientStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.clientStream(
             request: request,
@@ -288,7 +292,9 @@ internal struct ControlClient: Control.ClientProtocol {
         serializer: some MessageSerializer<ControlInput>,
         deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -322,7 +328,9 @@ internal struct ControlClient: Control.ClientProtocol {
         serializer: some MessageSerializer<ControlInput>,
         deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
             request: request,

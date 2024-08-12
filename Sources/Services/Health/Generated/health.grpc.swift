@@ -225,7 +225,9 @@ extension Grpc_Health_V1_Health.ClientProtocol {
     package func check<R>(
         request: ClientRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.check(
             request: request,
@@ -276,7 +278,9 @@ package struct Grpc_Health_V1_HealthClient: Grpc_Health_V1_Health.ClientProtocol
         serializer: some MessageSerializer<Grpc_Health_V1_HealthCheckRequest>,
         deserializer: some MessageDeserializer<Grpc_Health_V1_HealthCheckResponse>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Grpc_Health_V1_HealthCheckResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,

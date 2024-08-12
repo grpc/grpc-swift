@@ -59,7 +59,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           public func methodA<R>(
               request: ClientRequest.Single<NamespaceA_ServiceARequest>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
@@ -85,7 +87,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.client.unary(
                   request: request,
@@ -140,7 +144,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           public func methodA<R>(
               request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
@@ -166,7 +172,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.client.clientStreaming(
                   request: request,
@@ -400,7 +408,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           package func methodA<R>(
               request: ClientRequest.Stream<NamespaceA_ServiceARequest>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
@@ -440,7 +450,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               serializer: some MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<NamespaceA_ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.client.clientStreaming(
                   request: request,
@@ -513,7 +525,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           internal func methodA<R>(
               request: ClientRequest.Single<ServiceARequest>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.methodA(
                   request: request,
@@ -539,7 +553,9 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               serializer: some MessageSerializer<ServiceARequest>,
               deserializer: some MessageDeserializer<ServiceAResponse>,
               options: CallOptions = .defaults,
-              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R
+              _ body: @Sendable @escaping (ClientResponse.Single<ServiceAResponse>) async throws -> R = {
+                  try $0.message
+              }
           ) async throws -> R where R: Sendable {
               try await self.client.unary(
                   request: request,

@@ -216,7 +216,9 @@ extension Echo_Echo.ClientProtocol {
     internal func get<R>(
         request: ClientRequest.Single<Echo_EchoRequest>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.get(
             request: request,
@@ -244,7 +246,9 @@ extension Echo_Echo.ClientProtocol {
     internal func collect<R>(
         request: ClientRequest.Stream<Echo_EchoRequest>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.collect(
             request: request,
@@ -284,7 +288,9 @@ internal struct Echo_EchoClient: Echo_Echo.ClientProtocol {
         serializer: some MessageSerializer<Echo_EchoRequest>,
         deserializer: some MessageDeserializer<Echo_EchoResponse>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -320,7 +326,9 @@ internal struct Echo_EchoClient: Echo_Echo.ClientProtocol {
         serializer: some MessageSerializer<Echo_EchoRequest>,
         deserializer: some MessageDeserializer<Echo_EchoResponse>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
             request: request,
