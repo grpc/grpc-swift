@@ -100,20 +100,20 @@ internal protocol Grpc_Testing_BenchmarkServiceStreamingServiceProtocol: GRPCCor
     /// One request followed by one response.
     /// The server returns the client payload as-is.
     func unaryCall(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// Repeated sequence of one request followed by one response.
     /// Should be called streaming ping-pong
     /// The server returns the client payload as-is on each response
     func streamingCall(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// Single-sided unbounded streaming from client to server
     /// The server returns the client payload as-is once the client does WritesDone
     func streamingFromClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// Single-sided unbounded streaming from server to client
     /// The server repeatedly returns the client payload as-is
     func streamingFromServer(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// Two-sided unbounded streaming between server to client
     /// Both sides send the content of their own choice to the other
     func streamingBothWays(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
@@ -172,20 +172,20 @@ internal protocol Grpc_Testing_BenchmarkServiceServiceProtocol: Grpc_Testing_Ben
     /// One request followed by one response.
     /// The server returns the client payload as-is.
     func unaryCall(request: GRPCCore.ServerRequest.Single<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_SimpleResponse>
-
+    
     /// Repeated sequence of one request followed by one response.
     /// Should be called streaming ping-pong
     /// The server returns the client payload as-is on each response
     func streamingCall(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// Single-sided unbounded streaming from client to server
     /// The server returns the client payload as-is once the client does WritesDone
     func streamingFromClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_SimpleResponse>
-
+    
     /// Single-sided unbounded streaming from server to client
     /// The server repeatedly returns the client payload as-is
     func streamingFromServer(request: GRPCCore.ServerRequest.Single<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
-
+    
     /// Two-sided unbounded streaming between server to client
     /// Both sides send the content of their own choice to the other
     func streamingBothWays(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse>
@@ -198,12 +198,12 @@ extension Grpc_Testing_BenchmarkService.ServiceProtocol {
         let response = try await self.unaryCall(request: GRPCCore.ServerRequest.Single(stream: request))
         return GRPCCore.ServerResponse.Stream(single: response)
     }
-
+    
     internal func streamingFromClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse> {
         let response = try await self.streamingFromClient(request: request)
         return GRPCCore.ServerResponse.Stream(single: response)
     }
-
+    
     internal func streamingFromServer(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_SimpleRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_SimpleResponse> {
         let response = try await self.streamingFromServer(request: GRPCCore.ServerRequest.Single(stream: request))
         return response
@@ -221,7 +221,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         options: GRPCCore.CallOptions,
         _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// Repeated sequence of one request followed by one response.
     /// Should be called streaming ping-pong
     /// The server returns the client payload as-is on each response
@@ -232,7 +232,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         options: GRPCCore.CallOptions,
         _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Testing_SimpleResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// Single-sided unbounded streaming from client to server
     /// The server returns the client payload as-is once the client does WritesDone
     func streamingFromClient<R>(
@@ -242,7 +242,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         options: GRPCCore.CallOptions,
         _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// Single-sided unbounded streaming from server to client
     /// The server repeatedly returns the client payload as-is
     func streamingFromServer<R>(
@@ -252,7 +252,7 @@ internal protocol Grpc_Testing_BenchmarkServiceClientProtocol: Sendable {
         options: GRPCCore.CallOptions,
         _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Testing_SimpleResponse>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     /// Two-sided unbounded streaming between server to client
     /// Both sides send the content of their own choice to the other
     func streamingBothWays<R>(
@@ -269,7 +269,9 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
     internal func unaryCall<R>(
         request: GRPCCore.ClientRequest.Single<Grpc_Testing_SimpleRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.unaryCall(
             request: request,
@@ -279,7 +281,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             body
         )
     }
-
+    
     internal func streamingCall<R>(
         request: GRPCCore.ClientRequest.Stream<Grpc_Testing_SimpleRequest>,
         options: GRPCCore.CallOptions = .defaults,
@@ -293,11 +295,13 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             body
         )
     }
-
+    
     internal func streamingFromClient<R>(
         request: GRPCCore.ClientRequest.Stream<Grpc_Testing_SimpleRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.streamingFromClient(
             request: request,
@@ -307,7 +311,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             body
         )
     }
-
+    
     internal func streamingFromServer<R>(
         request: GRPCCore.ClientRequest.Single<Grpc_Testing_SimpleRequest>,
         options: GRPCCore.CallOptions = .defaults,
@@ -321,7 +325,7 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
             body
         )
     }
-
+    
     internal func streamingBothWays<R>(
         request: GRPCCore.ClientRequest.Stream<Grpc_Testing_SimpleRequest>,
         options: GRPCCore.CallOptions = .defaults,
@@ -338,13 +342,116 @@ extension Grpc_Testing_BenchmarkService.ClientProtocol {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Grpc_Testing_BenchmarkService.ClientProtocol {
+    /// One request followed by one response.
+    /// The server returns the client payload as-is.
+    internal func unaryCall<Result>(
+        _ message: Grpc_Testing_SimpleRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<Grpc_Testing_SimpleRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unaryCall(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    /// Repeated sequence of one request followed by one response.
+    /// Should be called streaming ping-pong
+    /// The server returns the client payload as-is on each response
+    internal func streamingCall<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Grpc_Testing_SimpleRequest>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Testing_SimpleResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<Grpc_Testing_SimpleRequest>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.streamingCall(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    /// Single-sided unbounded streaming from client to server
+    /// The server returns the client payload as-is once the client does WritesDone
+    internal func streamingFromClient<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Grpc_Testing_SimpleRequest>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> Result = {
+            try $0.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<Grpc_Testing_SimpleRequest>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.streamingFromClient(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    /// Single-sided unbounded streaming from server to client
+    /// The server repeatedly returns the client payload as-is
+    internal func streamingFromServer<Result>(
+        _ message: Grpc_Testing_SimpleRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Testing_SimpleResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Single<Grpc_Testing_SimpleRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.streamingFromServer(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+    
+    /// Two-sided unbounded streaming between server to client
+    /// Both sides send the content of their own choice to the other
+    internal func streamingBothWays<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Grpc_Testing_SimpleRequest>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Grpc_Testing_SimpleResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest.Stream<Grpc_Testing_SimpleRequest>(
+            metadata: metadata,
+            producer: requestProducer
+        )
+        return try await self.streamingBothWays(
+            request: request,
+            options: options,
+            handleResponse
+        )
+    }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkService.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
+    
     internal init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
-
+    
     /// One request followed by one response.
     /// The server returns the client payload as-is.
     internal func unaryCall<R>(
@@ -352,7 +459,9 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         serializer: some GRPCCore.MessageSerializer<Grpc_Testing_SimpleRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Grpc_Testing_SimpleResponse>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -363,7 +472,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             handler: body
         )
     }
-
+    
     /// Repeated sequence of one request followed by one response.
     /// Should be called streaming ping-pong
     /// The server returns the client payload as-is on each response
@@ -383,7 +492,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             handler: body
         )
     }
-
+    
     /// Single-sided unbounded streaming from client to server
     /// The server returns the client payload as-is once the client does WritesDone
     internal func streamingFromClient<R>(
@@ -391,7 +500,9 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
         serializer: some GRPCCore.MessageSerializer<Grpc_Testing_SimpleRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Grpc_Testing_SimpleResponse>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Grpc_Testing_SimpleResponse>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
             request: request,
@@ -402,7 +513,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             handler: body
         )
     }
-
+    
     /// Single-sided unbounded streaming from server to client
     /// The server repeatedly returns the client payload as-is
     internal func streamingFromServer<R>(
@@ -421,7 +532,7 @@ internal struct Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServi
             handler: body
         )
     }
-
+    
     /// Two-sided unbounded streaming between server to client
     /// Both sides send the content of their own choice to the other
     internal func streamingBothWays<R>(

@@ -91,7 +91,7 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runServer(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ServerArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ServerStatus>
-
+    
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -99,10 +99,10 @@ internal protocol Grpc_Testing_WorkerServiceStreamingServiceProtocol: GRPCCore.R
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ClientArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ClientStatus>
-
+    
     /// Just return the core count - unary call
     func coreCount(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_CoreRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_CoreResponse>
-
+    
     /// Quit this worker
     func quitWorker(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_Void>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_Void>
 }
@@ -156,7 +156,7 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runServer(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ServerArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ServerStatus>
-
+    
     /// Start client with specified workload.
     /// First request sent specifies the ClientConfig followed by ClientStatus
     /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -164,10 +164,10 @@ internal protocol Grpc_Testing_WorkerServiceServiceProtocol: Grpc_Testing_Worker
     /// and once the shutdown has finished, the OK status is sent to terminate
     /// this RPC.
     func runClient(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_ClientArgs>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_ClientStatus>
-
+    
     /// Just return the core count - unary call
     func coreCount(request: GRPCCore.ServerRequest.Single<Grpc_Testing_CoreRequest>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_CoreResponse>
-
+    
     /// Quit this worker
     func quitWorker(request: GRPCCore.ServerRequest.Single<Grpc_Testing_Void>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Testing_Void>
 }
@@ -179,7 +179,7 @@ extension Grpc_Testing_WorkerService.ServiceProtocol {
         let response = try await self.coreCount(request: GRPCCore.ServerRequest.Single(stream: request))
         return GRPCCore.ServerResponse.Stream(single: response)
     }
-
+    
     internal func quitWorker(request: GRPCCore.ServerRequest.Stream<Grpc_Testing_Void>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Testing_Void> {
         let response = try await self.quitWorker(request: GRPCCore.ServerRequest.Single(stream: request))
         return GRPCCore.ServerResponse.Stream(single: response)

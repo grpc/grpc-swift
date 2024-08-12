@@ -105,7 +105,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             internal func sayHello<R>(
                 request: GRPCCore.ClientRequest.Single<Hello_World_HelloRequest>,
                 options: GRPCCore.CallOptions = .defaults,
-                _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Hello_World_HelloReply>) async throws -> R
+                _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Hello_World_HelloReply>) async throws -> R = {
+                    try $0.message
+                }
             ) async throws -> R where R: Sendable {
                 try await self.sayHello(
                     request: request,
@@ -113,6 +115,29 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                     deserializer: GRPCProtobuf.ProtobufDeserializer<Hello_World_HelloReply>(),
                     options: options,
                     body
+                )
+            }
+        }
+
+        @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+        extension Hello_World_Greeter.ClientProtocol {
+            /// Sends a greeting.
+            internal func sayHello<Result>(
+                _ message: Hello_World_HelloRequest,
+                metadata: GRPCCore.Metadata = [:],
+                options: GRPCCore.CallOptions = .defaults,
+                onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Hello_World_HelloReply>) async throws -> Result = {
+                    try $0.message
+                }
+            ) async throws -> Result where Result: Sendable {
+                let request = GRPCCore.ClientRequest.Single<Hello_World_HelloRequest>(
+                    message: message,
+                    metadata: metadata
+                )
+                return try await self.sayHello(
+                    request: request,
+                    options: options,
+                    handleResponse
                 )
             }
         }
@@ -132,7 +157,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
                 serializer: some GRPCCore.MessageSerializer<Hello_World_HelloRequest>,
                 deserializer: some GRPCCore.MessageDeserializer<Hello_World_HelloReply>,
                 options: GRPCCore.CallOptions = .defaults,
-                _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Hello_World_HelloReply>) async throws -> R
+                _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Hello_World_HelloReply>) async throws -> R = {
+                    try $0.message
+                }
             ) async throws -> R where R: Sendable {
                 try await self.client.unary(
                     request: request,
@@ -374,7 +401,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
           package func sayHello<R>(
             request: GRPCCore.ClientRequest.Single<HelloRequest>,
             options: GRPCCore.CallOptions = .defaults,
-            _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<HelloReply>) async throws -> R
+            _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<HelloReply>) async throws -> R = {
+              try $0.message
+            }
           ) async throws -> R where R: Sendable {
             try await self.sayHello(
               request: request,
@@ -382,6 +411,29 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
               deserializer: GRPCProtobuf.ProtobufDeserializer<HelloReply>(),
               options: options,
               body
+            )
+          }
+        }
+
+        @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+        extension Greeter.ClientProtocol {
+          /// Sends a greeting.
+          package func sayHello<Result>(
+            _ message: HelloRequest,
+            metadata: GRPCCore.Metadata = [:],
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<HelloReply>) async throws -> Result = {
+              try $0.message
+            }
+          ) async throws -> Result where Result: Sendable {
+            let request = GRPCCore.ClientRequest.Single<HelloRequest>(
+              message: message,
+              metadata: metadata
+            )
+            return try await self.sayHello(
+              request: request,
+              options: options,
+              handleResponse
             )
           }
         }
@@ -401,7 +453,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
             serializer: some GRPCCore.MessageSerializer<HelloRequest>,
             deserializer: some GRPCCore.MessageDeserializer<HelloReply>,
             options: GRPCCore.CallOptions = .defaults,
-            _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<HelloReply>) async throws -> R
+            _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<HelloReply>) async throws -> R = {
+              try $0.message
+            }
           ) async throws -> R where R: Sendable {
             try await self.client.unary(
               request: request,
@@ -423,7 +477,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     visibility: SourceGenerator.Configuration.AccessLevel,
     client: Bool,
     server: Bool,
-    expectedCode: String
+    expectedCode: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
   ) throws {
     let configs = SourceGenerator.Configuration(
       accessLevel: visibility,
@@ -463,7 +519,9 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
         extraModuleImports: ["ExtraModule"]
       ),
-      expectedCode
+      expectedCode,
+      file: file,
+      line: line
     )
   }
 }
