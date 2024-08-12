@@ -91,11 +91,11 @@ extension ServiceDescriptor {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     func unary(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
-
+    
     func serverStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
-
+    
     func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
-
+    
     func bidiStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 }
 
@@ -146,11 +146,11 @@ extension Control.StreamingServiceProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlServiceProtocol: Control.StreamingServiceProtocol {
     func unary(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
-
+    
     func serverStream(request: ServerRequest.Single<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
-
+    
     func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Single<ControlOutput>
-
+    
     func bidiStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput>
 }
 
@@ -161,12 +161,12 @@ extension Control.ServiceProtocol {
         let response = try await self.unary(request: ServerRequest.Single(stream: request))
         return ServerResponse.Stream(single: response)
     }
-
+    
     internal func serverStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
         let response = try await self.serverStream(request: ServerRequest.Single(stream: request))
         return response
     }
-
+    
     internal func clientStream(request: ServerRequest.Stream<ControlInput>) async throws -> ServerResponse.Stream<ControlOutput> {
         let response = try await self.clientStream(request: request)
         return ServerResponse.Stream(single: response)
@@ -186,7 +186,7 @@ internal protocol ControlClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     func serverStream<R>(
         request: ClientRequest.Single<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,
@@ -194,7 +194,7 @@ internal protocol ControlClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Stream<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     func clientStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,
@@ -202,7 +202,7 @@ internal protocol ControlClientProtocol: Sendable {
         options: CallOptions,
         _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
     ) async throws -> R where R: Sendable
-
+    
     func bidiStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,
@@ -217,7 +217,9 @@ extension Control.ClientProtocol {
     internal func unary<R>(
         request: ClientRequest.Single<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.unary(
             request: request,
@@ -227,7 +229,7 @@ extension Control.ClientProtocol {
             body
         )
     }
-
+    
     internal func serverStream<R>(
         request: ClientRequest.Single<ControlInput>,
         options: CallOptions = .defaults,
@@ -241,11 +243,13 @@ extension Control.ClientProtocol {
             body
         )
     }
-
+    
     internal func clientStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.clientStream(
             request: request,
@@ -255,7 +259,7 @@ extension Control.ClientProtocol {
             body
         )
     }
-
+    
     internal func bidiStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         options: CallOptions = .defaults,
@@ -353,17 +357,19 @@ extension Control.ClientProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct ControlClient: Control.ClientProtocol {
     private let client: GRPCCore.GRPCClient
-
+    
     internal init(wrapping client: GRPCCore.GRPCClient) {
         self.client = client
     }
-
+    
     internal func unary<R>(
         request: ClientRequest.Single<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,
         deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.unary(
             request: request,
@@ -374,7 +380,7 @@ internal struct ControlClient: Control.ClientProtocol {
             handler: body
         )
     }
-
+    
     internal func serverStream<R>(
         request: ClientRequest.Single<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,
@@ -391,13 +397,15 @@ internal struct ControlClient: Control.ClientProtocol {
             handler: body
         )
     }
-
+    
     internal func clientStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,
         deserializer: some MessageDeserializer<ControlOutput>,
         options: CallOptions = .defaults,
-        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R
+        _ body: @Sendable @escaping (ClientResponse.Single<ControlOutput>) async throws -> R = {
+            try $0.message
+        }
     ) async throws -> R where R: Sendable {
         try await self.client.clientStreaming(
             request: request,
@@ -408,7 +416,7 @@ internal struct ControlClient: Control.ClientProtocol {
             handler: body
         )
     }
-
+    
     internal func bidiStream<R>(
         request: ClientRequest.Stream<ControlInput>,
         serializer: some MessageSerializer<ControlInput>,

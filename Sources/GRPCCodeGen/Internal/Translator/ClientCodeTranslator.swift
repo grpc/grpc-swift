@@ -37,7 +37,9 @@
 ///   public func baz<R>(
 ///     request: ClientRequest.Single<Foo_Bar_Input>,
 ///     options: CallOptions = .defaults,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R = {
+///       try $0.message
+///     }
 ///   ) async throws -> R where R: Sendable {
 ///     try await self.baz(
 ///       request: request,
@@ -58,7 +60,9 @@
 ///     serializer: some MessageSerializer<Foo_Bar_Input>,
 ///     deserializer: some MessageDeserializer<Foo_Bar_Output>,
 ///     options: CallOptions = .defaults,
-///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///     _ body: @Sendable @escaping (ClientResponse.Single<Foo_Bar_Output>) async throws -> R = {
+///       try $0.message
+///     }
 ///   ) async throws -> R where R: Sendable {
 ///     try await self.client.unary(
 ///       request: request,
@@ -385,7 +389,8 @@ extension ClientCodeTranslator {
       from: codeGenerationRequest,
       // The serializer/deserializer for the protocol extension method will be auto-generated.
       includeSerializationParameters: !isProtocolExtension,
-      includeDefaultCallOptions: includeDefaultCallOptions
+      includeDefaultCallOptions: includeDefaultCallOptions,
+      includeDefaultResponseHandler: isProtocolExtension && !method.isOutputStreaming
     )
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
@@ -454,7 +459,8 @@ extension ClientCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
     includeSerializationParameters: Bool,
-    includeDefaultCallOptions: Bool
+    includeDefaultCallOptions: Bool,
+    includeDefaultResponseHandler: Bool
   ) -> [ParameterDescription] {
     var parameters = [ParameterDescription]()
 
@@ -471,7 +477,13 @@ extension ClientCodeTranslator {
           ? .memberAccess(MemberAccessDescription(right: "defaults")) : nil
       )
     )
-    parameters.append(self.bodyParameter(for: method, in: service))
+    parameters.append(
+      self.bodyParameter(
+        for: method,
+        in: service,
+        includeDefaultResponseHandler: includeDefaultResponseHandler
+      )
+    )
     return parameters
   }
   private func clientRequestParameter(
@@ -521,7 +533,8 @@ extension ClientCodeTranslator {
 
   private func bodyParameter(
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    in service: CodeGenerationRequest.ServiceDescriptor,
+    includeDefaultResponseHandler: Bool
   ) -> ParameterDescription {
     let clientStreaming = method.isOutputStreaming ? "Stream" : "Single"
     let closureParameterType = ExistingTypeDescription.generic(
@@ -536,7 +549,22 @@ extension ClientCodeTranslator {
       sendable: true,
       escaping: true
     )
-    return ParameterDescription(name: "body", type: .closure(bodyClosure))
+
+    var defaultResponseHandler: Expression? = nil
+
+    if includeDefaultResponseHandler {
+      defaultResponseHandler = .closureInvocation(
+        ClosureInvocationDescription(
+          body: [.expression(.try(.identifierPattern("$0").dot("message")))]
+        )
+      )
+    }
+
+    return ParameterDescription(
+      name: "body",
+      type: .closure(bodyClosure),
+      defaultValue: defaultResponseHandler
+    )
   }
 
   private func makeClientStruct(
@@ -615,7 +643,8 @@ extension ClientCodeTranslator {
       in: service,
       from: codeGenerationRequest,
       includeSerializationParameters: true,
-      includeDefaultCallOptions: true
+      includeDefaultCallOptions: true,
+      includeDefaultResponseHandler: !method.isOutputStreaming
     )
     let grpcMethodName = self.clientMethod(
       isInputStreaming: method.isInputStreaming,
