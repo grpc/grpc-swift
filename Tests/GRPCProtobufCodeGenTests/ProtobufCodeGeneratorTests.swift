@@ -54,10 +54,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         // For information on using the generated types, please see the documentation:
         //   https://github.com/grpc/grpc-swift
 
-        import GRPCCore
-        import GRPCProtobuf
-        import DifferentModule
-        import ExtraModule
+        internal import GRPCCore
+        internal import GRPCProtobuf
+        internal import DifferentModule
+        internal import ExtraModule
 
         internal enum Hello_World_Greeter {
             internal static let descriptor = ServiceDescriptor.hello_world_Greeter
@@ -204,10 +204,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         // For information on using the generated types, please see the documentation:
         //   https://github.com/grpc/grpc-swift
 
-        import GRPCCore
-        import GRPCProtobuf
-        import DifferentModule
-        import ExtraModule
+        public import GRPCCore
+        internal import GRPCProtobuf
+        public import DifferentModule
+        public import ExtraModule
 
         public enum Helloworld_Greeter {
           public static let descriptor = ServiceDescriptor.helloworld_Greeter
@@ -307,10 +307,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         // For information on using the generated types, please see the documentation:
         //   https://github.com/grpc/grpc-swift
 
-        import GRPCCore
-        import GRPCProtobuf
-        import DifferentModule
-        import ExtraModule
+        package import GRPCCore
+        internal import GRPCProtobuf
+        package import DifferentModule
+        package import ExtraModule
 
         package enum Greeter {
           package static let descriptor = ServiceDescriptor.Greeter

@@ -27,46 +27,78 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
   func testImports() throws {
     var dependencies = [CodeGenerationRequest.Dependency]()
-    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo"))
+    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", accessLevel: .public))
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .typealias, name: "Bar"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .typealias, name: "Bar"),
+        module: "Foo",
+        accessLevel: .internal
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .struct, name: "Baz"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .struct, name: "Baz"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .class, name: "Bac"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .class, name: "Bac"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .enum, name: "Bap"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .enum, name: "Bap"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .protocol, name: "Bat"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .protocol, name: "Bat"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .let, name: "Baq"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .let, name: "Baq"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .var, name: "Bag"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .var, name: "Bag"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(item: .init(kind: .func, name: "Bak"), module: "Foo")
+      CodeGenerationRequest.Dependency(
+        item: .init(kind: .func, name: "Bak"),
+        module: "Foo",
+        accessLevel: .package
+      )
     )
 
     let expectedSwift =
       """
       /// Some really exciting license header 2023.
 
-      import GRPCCore
-      import Foo
-      import typealias Foo.Bar
-      import struct Foo.Baz
-      import class Foo.Bac
-      import enum Foo.Bap
-      import protocol Foo.Bat
-      import let Foo.Baq
-      import var Foo.Bag
-      import func Foo.Bak
+      public import GRPCCore
+      public import Foo
+      internal import typealias Foo.Bar
+      package import struct Foo.Baz
+      package import class Foo.Bac
+      package import enum Foo.Bap
+      package import protocol Foo.Bat
+      package import let Foo.Baq
+      package import var Foo.Bag
+      package import func Foo.Bak
 
       """
     try self.assertIDLToStructuredSwiftTranslation(
@@ -78,31 +110,39 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
   func testPreconcurrencyImports() throws {
     var dependencies = [CodeGenerationRequest.Dependency]()
-    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", preconcurrency: .required))
+    dependencies.append(
+      CodeGenerationRequest.Dependency(
+        module: "Foo",
+        preconcurrency: .required,
+        accessLevel: .internal
+      )
+    )
     dependencies.append(
       CodeGenerationRequest.Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
-        preconcurrency: .required
+        preconcurrency: .required,
+        accessLevel: .internal
       )
     )
     dependencies.append(
       CodeGenerationRequest.Dependency(
         module: "Baz",
-        preconcurrency: .requiredOnOS(["Deq", "Der"])
+        preconcurrency: .requiredOnOS(["Deq", "Der"]),
+        accessLevel: .internal
       )
     )
     let expectedSwift =
       """
       /// Some really exciting license header 2023.
 
-      import GRPCCore
-      @preconcurrency import Foo
-      @preconcurrency import enum Foo.Bar
+      public import GRPCCore
+      @preconcurrency internal import Foo
+      @preconcurrency internal import enum Foo.Bar
       #if os(Deq) || os(Der)
-      @preconcurrency import Baz
+      @preconcurrency internal import Baz
       #else
-      import Baz
+      internal import Baz
       #endif
 
       """
@@ -115,12 +155,15 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
   func testSPIImports() throws {
     var dependencies = [CodeGenerationRequest.Dependency]()
-    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret"))
+    dependencies.append(
+      CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
+    )
     dependencies.append(
       CodeGenerationRequest.Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
-        spi: "Secret"
+        spi: "Secret",
+        accessLevel: .internal
       )
     )
 
@@ -128,9 +171,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Some really exciting license header 2023.
 
-      import GRPCCore
-      @_spi(Secret) import Foo
-      @_spi(Secret) import enum Foo.Bar
+      public import GRPCCore
+      @_spi(Secret) internal import Foo
+      @_spi(Secret) internal import enum Foo.Bar
 
       """
     try self.assertIDLToStructuredSwiftTranslation(
@@ -142,12 +185,15 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
   func testGeneration() throws {
     var dependencies = [CodeGenerationRequest.Dependency]()
-    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret"))
+    dependencies.append(
+      CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
+    )
     dependencies.append(
       CodeGenerationRequest.Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
-        spi: "Secret"
+        spi: "Secret",
+        accessLevel: .internal
       )
     )
 
@@ -166,9 +212,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Some really exciting license header 2023.
 
-      import GRPCCore
-      @_spi(Secret) import Foo
-      @_spi(Secret) import enum Foo.Bar
+      public import GRPCCore
+      @_spi(Secret) internal import Foo
+      @_spi(Secret) internal import enum Foo.Bar
 
       public enum NamespaceA_ServiceA {
           public static let descriptor = ServiceDescriptor.namespaceA_ServiceA

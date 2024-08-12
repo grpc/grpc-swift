@@ -21,8 +21,8 @@
 // For information on using the generated types, please see the documentation:
 //   https://github.com/grpc/grpc-swift
 
-import GRPCCore
-import GRPCProtobuf
+public import GRPCCore
+internal import GRPCProtobuf
 
 public enum Grpc_Testing_EmptyService {
     public static let descriptor = ServiceDescriptor.grpc_testing_EmptyService

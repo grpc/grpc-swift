@@ -55,7 +55,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
     let parsedCodeGenRequest = try ProtobufCodeGenParser(
       input: fileDescriptor,
       protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
-      extraModuleImports: ["ExtraModule"]
+      extraModuleImports: ["ExtraModule"],
+      accessLevel: .internal
     ).parse()
 
     self.testCommonHelloworldParsedRequestFields(for: parsedCodeGenRequest)
@@ -136,7 +137,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
     let parsedCodeGenRequest = try ProtobufCodeGenParser(
       input: fileDescriptor,
       protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
-      extraModuleImports: ["ExtraModule"]
+      extraModuleImports: ["ExtraModule"],
+      accessLevel: .internal
     ).parse()
 
     self.testCommonHelloworldParsedRequestFields(for: parsedCodeGenRequest)
@@ -217,7 +219,8 @@ final class ProtobufCodeGenParserTests: XCTestCase {
     let parsedCodeGenRequest = try ProtobufCodeGenParser(
       input: fileDescriptor,
       protoFileModuleMappings: ProtoFileToModuleMappings(moduleMappingsProto: moduleMappings),
-      extraModuleImports: ["ExtraModule"]
+      extraModuleImports: ["ExtraModule"],
+      accessLevel: .internal
     ).parse()
 
     self.testCommonHelloworldParsedRequestFields(for: parsedCodeGenRequest)

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import NIOPosix
-import XCTest
+private import NIOPosix
+internal import XCTest
 
 extension XCTestCase {
   func vsockAvailable() -> Bool {

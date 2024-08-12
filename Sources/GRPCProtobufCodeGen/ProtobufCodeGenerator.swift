@@ -34,7 +34,8 @@ public struct ProtobufCodeGenerator {
     let parser = ProtobufCodeGenParser(
       input: fileDescriptor,
       protoFileModuleMappings: protoFileModuleMappings,
-      extraModuleImports: extraModuleImports
+      extraModuleImports: extraModuleImports,
+      accessLevel: self.configuration.accessLevel
     )
     let sourceGenerator = SourceGenerator(configuration: self.configuration)
 

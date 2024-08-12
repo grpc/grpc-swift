@@ -110,11 +110,24 @@ final class Test_TextBasedRenderer: XCTestCase {
   func testImports() throws {
     try _test(nil, renderedBy: { $0.renderImports(_:) }, rendersAs: "")
     try _test(
-      [ImportDescription(moduleName: "Foo"), ImportDescription(moduleName: "Bar")],
+      [
+        ImportDescription(moduleName: "Foo"),
+        ImportDescription(moduleName: "Bar"),
+        ImportDescription(accessLevel: .fileprivate, moduleName: "BazFileprivate"),
+        ImportDescription(accessLevel: .private, moduleName: "BazPrivate"),
+        ImportDescription(accessLevel: .internal, moduleName: "BazInternal"),
+        ImportDescription(accessLevel: .package, moduleName: "BazPackage"),
+        ImportDescription(accessLevel: .public, moduleName: "BazPublic"),
+      ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
         import Foo
         import Bar
+        fileprivate import BazFileprivate
+        private import BazPrivate
+        internal import BazInternal
+        package import BazPackage
+        public import BazPublic
         """#
     )
     try _test(
@@ -125,7 +138,12 @@ final class Test_TextBasedRenderer: XCTestCase {
         """#
     )
     try _test(
-      [ImportDescription(moduleName: "Foo", preconcurrency: .onOS(["Bar", "Baz"]))],
+      [
+        ImportDescription(
+          moduleName: "Foo",
+          preconcurrency: .onOS(["Bar", "Baz"])
+        )
+      ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
         #if os(Bar) || os(Baz)
@@ -138,7 +156,11 @@ final class Test_TextBasedRenderer: XCTestCase {
     try _test(
       [
         ImportDescription(moduleName: "Foo", preconcurrency: .always),
-        ImportDescription(moduleName: "Bar", spi: "Secret", preconcurrency: .always),
+        ImportDescription(
+          moduleName: "Bar",
+          spi: "Secret",
+          preconcurrency: .always
+        ),
       ],
       renderedBy: { $0.renderImports(_:) },
       rendersAs: #"""
@@ -169,8 +191,14 @@ final class Test_TextBasedRenderer: XCTestCase {
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .protocol, name: "Bat")
         ),
-        ImportDescription(moduleName: "Foo", item: ImportDescription.Item(kind: .let, name: "Bam")),
-        ImportDescription(moduleName: "Foo", item: ImportDescription.Item(kind: .var, name: "Bag")),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .let, name: "Bam")
+        ),
+        ImportDescription(
+          moduleName: "Foo",
+          item: ImportDescription.Item(kind: .var, name: "Bag")
+        ),
         ImportDescription(
           moduleName: "Foo",
           item: ImportDescription.Item(kind: .func, name: "Bak")
@@ -952,7 +980,6 @@ final class Test_TextBasedRenderer: XCTestCase {
 }
 
 extension Test_TextBasedRenderer {
-
   func _test<Input>(
     _ input: Input,
     renderedBy renderClosure: (TextBasedRenderer) -> ((Input) -> String),
