@@ -330,7 +330,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       ],
       privateKeySource: .bytes(Array(Self.samplePemKey.utf8), format: .pem)
     )
-    grpcTLSConfig.clientCertificateVerificationMode = .fullVerification
+    grpcTLSConfig.clientCertificateVerification = .fullVerification
     let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
 
     XCTAssertEqual(

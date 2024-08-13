@@ -17,7 +17,7 @@
 import NIOSSL
 
 extension NIOSSLSerializationFormats {
-  fileprivate init(_ format: HTTP2Transport.Config.TLS.SerializationFormat) {
+  fileprivate init(_ format: TLSConfig.SerializationFormat) {
     switch format.wrapped {
     case .pem:
       self = .pem
@@ -27,7 +27,7 @@ extension NIOSSLSerializationFormats {
   }
 }
 
-extension Sequence<HTTP2Transport.Config.TLS.CertificateSource> {
+extension Sequence<TLSConfig.CertificateSource> {
   func sslCertificateSources() throws -> [NIOSSLCertificateSource] {
     var certificateSources: [NIOSSLCertificateSource] = []
     for source in self {
@@ -67,7 +67,7 @@ extension Sequence<HTTP2Transport.Config.TLS.CertificateSource> {
 
 extension NIOSSLPrivateKey {
   fileprivate convenience init(
-    privateKeySource source: HTTP2Transport.Config.TLS.PrivateKeySource
+    privateKey source: TLSConfig.PrivateKeySource
   ) throws {
     switch source.wrapped {
     case .file(let path, let serializationFormat):
@@ -85,7 +85,7 @@ extension NIOSSLPrivateKey {
 }
 
 extension NIOSSLTrustRoots {
-  fileprivate init(_ trustRoots: HTTP2ServerTransport.Config.TLS.TrustRootsSource) throws {
+  fileprivate init(_ trustRoots: TLSConfig.TrustRootsSource) throws {
     switch trustRoots.wrapped {
     case .certificates(let certificateSources):
       let certificates = try certificateSources.map { source in
@@ -112,7 +112,7 @@ extension NIOSSLTrustRoots {
 
 extension CertificateVerification {
   fileprivate init(
-    _ verificationMode: HTTP2ServerTransport.Config.TLS.ClientCertificateVerificationMode
+    _ verificationMode: TLSConfig.CertificateVerification
   ) {
     switch verificationMode.wrapped {
     case .doNotVerify:
@@ -127,8 +127,8 @@ extension CertificateVerification {
 
 extension TLSConfiguration {
   package init(_ tlsConfig: HTTP2ServerTransport.Config.TLS) throws {
-    let certificateChain = try tlsConfig.certificateChainSources.sslCertificateSources()
-    let privateKey = try NIOSSLPrivateKey(privateKeySource: tlsConfig.privateKeySource)
+    let certificateChain = try tlsConfig.certificateChain.sslCertificateSources()
+    let privateKey = try NIOSSLPrivateKey(privateKey: tlsConfig.privateKey)
 
     var tlsConfiguration = TLSConfiguration.makeServerConfiguration(
       certificateChain: certificateChain,
@@ -136,7 +136,7 @@ extension TLSConfiguration {
     )
     tlsConfiguration.minimumTLSVersion = .tlsv12
     tlsConfiguration.certificateVerification = CertificateVerification(
-      tlsConfig.clientCertificateVerificationMode
+      tlsConfig.clientCertificateVerification
     )
     tlsConfiguration.trustRoots = try NIOSSLTrustRoots(tlsConfig.trustRoots)
     tlsConfiguration.applicationProtocols = ["grpc-exp", "h2"]

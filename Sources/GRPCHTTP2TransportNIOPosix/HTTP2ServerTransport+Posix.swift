@@ -187,8 +187,9 @@ extension HTTP2ServerTransport {
         do {
           nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
         } catch {
-          throw HTTP2Transport.Error(
-            message: "There was a problem setting up TLS: check the TLS configuration",
+          throw RuntimeError(
+            code: .transportError,
+            message: "Couldn't create SSL context, check your TLS configuration.",
             cause: error
           )
         }
