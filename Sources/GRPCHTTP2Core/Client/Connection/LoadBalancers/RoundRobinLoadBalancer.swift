@@ -15,6 +15,7 @@
  */
 
 package import GRPCCore
+internal import Synchronization
 
 /// A load-balancer which maintains to a set of subchannels and uses round-robin to pick a
 /// subchannel when picking a subchannel to use.
@@ -57,8 +58,8 @@ package import GRPCCore
 ///   }
 /// }
 /// ```
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-package struct RoundRobinLoadBalancer {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+package final class RoundRobinLoadBalancer: Sendable {
   enum Input: Sendable, Hashable {
     /// Update the addresses used by the load balancer to the following endpoints.
     case updateAddresses([Endpoint])
@@ -103,7 +104,7 @@ package struct RoundRobinLoadBalancer {
   private let input: (stream: AsyncStream<Input>, continuation: AsyncStream<Input>.Continuation)
 
   /// The state of the load balancer.
-  private let state: LockedValueBox<State>
+  private let state: Mutex<State>
 
   /// A connector, capable of creating connections.
   private let connector: any HTTP2Connector
@@ -134,7 +135,7 @@ package struct RoundRobinLoadBalancer {
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
-    self.state = LockedValueBox(.active(State.Active()))
+    self.state = Mutex(.active(State.Active()))
 
     // The load balancer starts in the idle state.
     self.event.continuation.yield(.connectivityStateChanged(.idle))
@@ -182,7 +183,7 @@ package struct RoundRobinLoadBalancer {
   ///
   /// - Returns: A subchannel, or `nil` if there aren't any ready subchannels.
   package func pickSubchannel() -> Subchannel? {
-    switch self.state.withLockedValue({ $0.pickSubchannel() }) {
+    switch self.state.withLock({ $0.pickSubchannel() }) {
     case .picked(let subchannel):
       return subchannel
 
@@ -196,7 +197,7 @@ package struct RoundRobinLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RoundRobinLoadBalancer {
   /// Handles an update in endpoints.
   ///
@@ -217,7 +218,7 @@ extension RoundRobinLoadBalancer {
     // Compute the keys for each endpoint.
     let newEndpoints = Set(endpoints.map { EndpointKey($0) })
 
-    let (added, removed, newState) = self.state.withLockedValue { state in
+    let (added, removed, newState) = self.state.withLock { state in
       state.updateSubchannels(newEndpoints: newEndpoints) { endpoint, id in
         Subchannel(
           endpoint: endpoint,
@@ -278,7 +279,7 @@ extension RoundRobinLoadBalancer {
     _ connectivityState: ConnectivityState,
     key: EndpointKey
   ) {
-    let onChange = self.state.withLockedValue { state in
+    let onChange = self.state.withLock { state in
       state.updateSubchannelConnectivityState(connectivityState, key: key)
     }
 
@@ -304,7 +305,7 @@ extension RoundRobinLoadBalancer {
   }
 
   private func handleSubchannelGoingAway(key: EndpointKey) {
-    switch self.state.withLockedValue({ $0.parkSubchannel(withKey: key) }) {
+    switch self.state.withLock({ $0.parkSubchannel(withKey: key) }) {
     case .closeAndUpdateState(let subchannel, let connectivityState):
       subchannel.shutDown()
       if let connectivityState = connectivityState {
@@ -316,7 +317,7 @@ extension RoundRobinLoadBalancer {
   }
 
   private func handleCloseInput() {
-    switch self.state.withLockedValue({ $0.close() }) {
+    switch self.state.withLock({ $0.close() }) {
     case .closeSubchannels(let subchannels):
       // Publish a new shutdown state, this LB is no longer usable for new RPCs.
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
@@ -338,7 +339,7 @@ extension RoundRobinLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RoundRobinLoadBalancer {
   private enum State {
     case active(Active)

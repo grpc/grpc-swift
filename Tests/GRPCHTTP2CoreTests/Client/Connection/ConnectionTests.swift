@@ -17,14 +17,13 @@
 import DequeModule
 import GRPCCore
 import GRPCHTTP2Core
-import NIOConcurrencyHelpers
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
 import NIOPosix
 import XCTest
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class ConnectionTests: XCTestCase {
   func testConnectThenClose() async throws {
     try await ConnectionTest.run(connector: .posix()) { context, event in

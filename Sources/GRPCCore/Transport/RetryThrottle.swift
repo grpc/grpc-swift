@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+internal import Synchronization
+
 /// A throttle used to rate-limit retries and hedging attempts.
 ///
 /// gRPC prevents servers from being overloaded by retries and hedging by using a token-based
@@ -28,13 +30,14 @@
 /// the server.
 ///
 /// See also [gRFC A6: client retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
-public struct RetryThrottle: Sendable {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+public final class RetryThrottle: Sendable {
   // Note: only three figures after the decimal point from the original token ratio are used so
   //   all computation is done a scaled number of tokens (tokens * 1000). This allows us to do all
   //   computation in integer space.
 
   /// The number of tokens available, multiplied by 1000.
-  private let scaledTokensAvailable: LockedValueBox<Int>
+  private let scaledTokensAvailable: Mutex<Int>
   /// The number of tokens, multiplied by 1000.
   private let scaledTokenRatio: Int
   /// The maximum number of tokens, multiplied by 1000.
@@ -66,14 +69,14 @@ public struct RetryThrottle: Sendable {
   /// If this value is less than or equal to the retry threshold (defined as `maximumTokens / 2`)
   /// then RPCs will not be retried and hedging will be disabled.
   public var tokens: Double {
-    self.scaledTokensAvailable.withLockedValue {
+    self.scaledTokensAvailable.withLock {
       Double($0) / 1000
     }
   }
 
   /// Returns whether retries and hedging are permitted at this time.
   public var isRetryPermitted: Bool {
-    self.scaledTokensAvailable.withLockedValue {
+    self.scaledTokensAvailable.withLock {
       $0 > self.scaledRetryThreshold
     }
   }
@@ -100,21 +103,20 @@ public struct RetryThrottle: Sendable {
     self.scaledMaximumTokens = scaledTokens
     self.scaledRetryThreshold = scaledTokens / 2
     self.scaledTokenRatio = scaledTokenRatio
-    self.scaledTokensAvailable = LockedValueBox(scaledTokens)
+    self.scaledTokensAvailable = Mutex(scaledTokens)
   }
 
   /// Create a new throttle.
   ///
   /// - Parameter policy: The policy to use to configure the throttle.
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public init(policy: ServiceConfig.RetryThrottling) {
+  public convenience init(policy: ServiceConfig.RetryThrottling) {
     self.init(maximumTokens: policy.maxTokens, tokenRatio: policy.tokenRatio)
   }
 
   /// Records a success, adding a token to the throttle.
   @usableFromInline
   func recordSuccess() {
-    self.scaledTokensAvailable.withLockedValue { value in
+    self.scaledTokensAvailable.withLock { value in
       value = min(self.scaledMaximumTokens, value &+ self.scaledTokenRatio)
     }
   }
@@ -124,7 +126,7 @@ public struct RetryThrottle: Sendable {
   @usableFromInline
   @discardableResult
   func recordFailure() -> Bool {
-    self.scaledTokensAvailable.withLockedValue { value in
+    self.scaledTokensAvailable.withLock { value in
       value = max(0, value &- 1000)
       return value <= self.scaledRetryThreshold
     }

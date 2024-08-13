@@ -15,6 +15,7 @@
  */
 
 public import GRPCCore
+internal import Synchronization
 
 /// An in-process implementation of a ``ClientTransport``.
 ///
@@ -34,7 +35,7 @@ public import GRPCCore
 ///
 /// - SeeAlso: ``ClientTransport``
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-public struct InProcessClientTransport: ClientTransport {
+public final class InProcessClientTransport: ClientTransport {
   private enum State: Sendable {
     struct UnconnectedState {
       var serverTransport: InProcessServerTransport
@@ -101,7 +102,7 @@ public struct InProcessClientTransport: ClientTransport {
   public let retryThrottle: RetryThrottle?
 
   private let methodConfig: MethodConfigs
-  private let state: LockedValueBox<State>
+  private let state: Mutex<State>
 
   /// Creates a new in-process client transport.
   ///
@@ -114,7 +115,7 @@ public struct InProcessClientTransport: ClientTransport {
   ) {
     self.retryThrottle = serviceConfig.retryThrottling.map { RetryThrottle(policy: $0) }
     self.methodConfig = MethodConfigs(serviceConfig: serviceConfig)
-    self.state = LockedValueBox(.unconnected(.init(serverTransport: server)))
+    self.state = Mutex(.unconnected(.init(serverTransport: server)))
   }
 
   /// Establish and maintain a connection to the remote destination.
@@ -129,7 +130,7 @@ public struct InProcessClientTransport: ClientTransport {
   /// task this function runs in.
   public func connect() async throws {
     let (stream, continuation) = AsyncStream<Void>.makeStream()
-    try self.state.withLockedValue { state in
+    try self.state.withLock { state in
       switch state {
       case .unconnected(let unconnectedState):
         state = .connected(
@@ -164,7 +165,7 @@ public struct InProcessClientTransport: ClientTransport {
 
     // If at this point there are any open streams, it's because Cancellation
     // occurred and all open streams must now be closed.
-    let openStreams = self.state.withLockedValue { state in
+    let openStreams = self.state.withLock { state in
       switch state {
       case .unconnected:
         // We have transitioned to connected, and we can't transition back.
@@ -190,7 +191,7 @@ public struct InProcessClientTransport: ClientTransport {
   ///
   /// If you want to forcefully cancel all active streams then cancel the task running ``connect()``.
   public func close() {
-    let maybeContinuation: AsyncStream<Void>.Continuation? = self.state.withLockedValue { state in
+    let maybeContinuation: AsyncStream<Void>.Continuation? = self.state.withLock { state in
       switch state {
       case .unconnected:
         state = .closed(.init())
@@ -250,7 +251,7 @@ public struct InProcessClientTransport: ClientTransport {
       outbound: response.writer
     )
 
-    let waitForConnectionStream: AsyncStream<Void>? = self.state.withLockedValue { state in
+    let waitForConnectionStream: AsyncStream<Void>? = self.state.withLock { state in
       if case .unconnected(var unconnectedState) = state {
         let (stream, continuation) = AsyncStream<Void>.makeStream()
         unconnectedState.pendingStreams.append(continuation)
@@ -268,7 +269,7 @@ public struct InProcessClientTransport: ClientTransport {
       try Task.checkCancellation()
     }
 
-    let streamID = try self.state.withLockedValue { state in
+    let streamID = try self.state.withLock { state in
       switch state {
       case .unconnected:
         // The state cannot be unconnected because if it was, then the above
@@ -309,7 +310,7 @@ public struct InProcessClientTransport: ClientTransport {
     defer {
       clientStream.outbound.finish()
 
-      let maybeEndContinuation = self.state.withLockedValue { state in
+      let maybeEndContinuation = self.state.withLock { state in
         switch state {
         case .unconnected:
           // The state cannot be unconnected at this point, because if we made
