@@ -33,7 +33,7 @@ extension ServerRequest {
     ///
     /// - Parameters:
     ///   - metadata: Metadata received from the client.
-    ///   - messages: The message received from the client.
+    ///   - message: The message received from the client.
     public init(metadata: Metadata, message: Message) {
       self.metadata = metadata
       self.message = message

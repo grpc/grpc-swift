@@ -28,12 +28,12 @@ extension HTTP2ClientTransport.Config {
   public struct Compression: Sendable {
     /// The default algorithm used for compressing outbound messages.
     ///
-    /// This can be overridden on a per-call basis via ``CallOptions``.
+    /// This can be overridden on a per-call basis via `CallOptions`.
     public var algorithm: CompressionAlgorithm
 
     /// Compression algorithms enabled for inbound messages.
     ///
-    /// - Note: ``CompressionAlgorithm/none`` is always supported, even if it isn't set here.
+    /// - Note: `CompressionAlgorithm.none` is always supported, even if it isn't set here.
     public var enabledAlgorithms: CompressionAlgorithmSet
 
     /// Creates a new compression configuration.

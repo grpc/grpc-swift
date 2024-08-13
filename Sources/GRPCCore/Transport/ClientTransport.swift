@@ -40,8 +40,9 @@ public protocol ClientTransport: Sendable {
 
   /// Signal to the transport that no new streams may be created.
   ///
-  /// Existing streams may run to completion naturally but calling ``withStream(descriptor:_:)``
-  /// should result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
+  /// Existing streams may run to completion naturally but calling
+  /// ``ClientTransport/withStream(descriptor:options:_:)`` should result in an ``RPCError`` with
+  /// code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
   /// If you want to forcefully cancel all active streams then cancel the task
   /// running ``connect()``.

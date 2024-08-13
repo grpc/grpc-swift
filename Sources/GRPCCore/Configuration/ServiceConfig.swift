@@ -34,11 +34,12 @@ public struct ServiceConfig: Hashable, Sendable {
   /// and hedged RPCs when the client's ratio of failures to successes exceeds a threshold.
   ///
   /// For each server name, the gRPC client will maintain a `token_count` which is initially set
-  /// to ``maxTokens``. Every outgoing RPC (regardless of service or method invoked) will change
-  /// `token_count` as follows:
+  /// to ``RetryThrottling-swift.struct/maxTokens``. Every outgoing RPC (regardless of service or
+  /// method invoked) will change `token_count` as follows:
   ///
   ///   - Every failed RPC will decrement the `token_count` by 1.
-  ///   - Every successful RPC will increment the `token_count` by ``tokenRatio``.
+  ///   - Every successful RPC will increment the `token_count` by
+  ///   ``RetryThrottling-swift.struct/tokenRatio``.
   ///
   /// If `token_count` is less than or equal to `max_tokens / 2`, then RPCs will not be retried
   /// and hedged RPCs will not be sent.

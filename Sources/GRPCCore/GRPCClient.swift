@@ -21,10 +21,10 @@ internal import Atomics
 /// A ``GRPCClient`` communicates to a server via a ``ClientTransport``.
 ///
 /// You can start RPCs to the server by calling the corresponding method:
-/// - ``unary(request:descriptor:serializer:deserializer:handler:)``
-/// - ``clientStreaming(request:descriptor:serializer:deserializer:handler:)``
-/// - ``serverStreaming(request:descriptor:serializer:deserializer:handler:)``
-/// - ``bidirectionalStreaming(request:descriptor:serializer:deserializer:handler:)``
+/// - ``unary(request:descriptor:serializer:deserializer:options:handler:)``
+/// - ``clientStreaming(request:descriptor:serializer:deserializer:options:handler:)``
+/// - ``serverStreaming(request:descriptor:serializer:deserializer:options:handler:)``
+/// - ``bidirectionalStreaming(request:descriptor:serializer:deserializer:options:handler:)``
 ///
 /// However, in most cases you should prefer wrapping the ``GRPCClient`` with a generated stub.
 ///
@@ -163,7 +163,7 @@ public struct GRPCClient: Sendable {
   /// If you need to abruptly stop all work you should cancel the task executing this method.
   ///
   /// The client, and by extension this function, can only be run once. If the client is already
-  /// running or has already been closed then a ``ClientError`` is thrown.
+  /// running or has already been closed then a ``RuntimeError`` is thrown.
   public func run() async throws {
     let (wasNotStarted, original) = self.state.compareExchange(
       expected: .notStarted,
