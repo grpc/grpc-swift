@@ -199,7 +199,7 @@ extension HTTP2ServerTransport.Config {
     /// How to verify the client certificate, if one is presented.
     public var clientCertificateVerification: TLSConfig.CertificateVerification
 
-    /// Custom trust roots to be used when verifying client certificates.
+    /// The trust roots to be used when verifying client certificates.
     public var trustRoots: TLSConfig.TrustRootsSource
 
     /// Whether ALPN is required.
@@ -217,12 +217,12 @@ extension HTTP2ServerTransport.Config {
     ///   - privateKeySource: The private key associated with the leaf certificate.
     /// - Returns: A new ``HTTP2ServerTransport/Config/TLS.
     public static func defaults(
-      certificateChainSources: [TLSConfig.CertificateSource],
-      privateKeySource: TLSConfig.PrivateKeySource
+      certificateChain: [TLSConfig.CertificateSource],
+      privateKey: TLSConfig.PrivateKeySource
     ) -> Self {
       Self.init(
-        certificateChain: certificateChainSources,
-        privateKey: privateKeySource,
+        certificateChain: certificateChain,
+        privateKey: privateKey,
         clientCertificateVerification: .noVerification,
         trustRoots: .systemDefault,
         requireALPN: false
@@ -240,12 +240,12 @@ extension HTTP2ServerTransport.Config {
     ///   - privateKeySource: The private key associated with the leaf certificate.
     /// - Returns: A new ``HTTP2ServerTransport/Config/TLS.
     public static func mTLS(
-      certificateChainSources: [TLSConfig.CertificateSource],
-      privateKeySource: TLSConfig.PrivateKeySource
+      certificateChain: [TLSConfig.CertificateSource],
+      privateKey: TLSConfig.PrivateKeySource
     ) -> Self {
       Self.init(
-        certificateChain: certificateChainSources,
-        privateKey: privateKeySource,
+        certificateChain: certificateChain,
+        privateKey: privateKey,
         clientCertificateVerification: .noHostnameVerification,
         trustRoots: .systemDefault,
         requireALPN: false

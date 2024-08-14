@@ -29,7 +29,7 @@ public enum TLSConfig {
   }
 
   /// A description of where a certificate is coming from: either a byte array or a file.
-  /// The serialization format is specified by ``HTTP2Transport/Config/TLS/SerializationFormat``.
+  /// The serialization format is specified by ``TLSConfig/SerializationFormat``.
   public struct CertificateSource: Sendable {
     package enum Wrapped {
       case file(path: String, format: SerializationFormat)
@@ -38,12 +38,20 @@ public enum TLSConfig {
 
     package let wrapped: Wrapped
 
-    /// The certificate will be provided via a file.
+    /// The certificate's source is a file.
+    /// - Parameters:
+    ///   - path: The file path containing the certificate.
+    ///   - format: The certificate's format, as a ``TLSConfig/SerializationFormat``.
+    /// - Returns: A source describing the certificate source is the given file.
     public static func file(path: String, format: SerializationFormat) -> Self {
       Self(wrapped: .file(path: path, format: format))
     }
 
-    /// The certificate will be provided as an array of bytes.
+    /// The certificate's source is an array of bytes.
+    /// - Parameters:
+    ///   - bytes: The array of bytes making up the certificate.
+    ///   - format: The certificate's format, as a ``TLSConfig/SerializationFormat``.
+    /// - Returns: A source describing the certificate source is the given bytes.
     public static func bytes(_ bytes: [UInt8], format: SerializationFormat) -> Self {
       Self(wrapped: .bytes(bytes: bytes, format: format))
     }
@@ -59,12 +67,20 @@ public enum TLSConfig {
 
     package let wrapped: Wrapped
 
-    /// The private key will be provided via a file.
+    /// The private key's source is a file.
+    /// - Parameters:
+    ///   - path: The file path containing the private key.
+    ///   - format: The private key's format, as a ``TLSConfig/SerializationFormat``.
+    /// - Returns: A source describing the private key source is the given file.
     public static func file(path: String, format: SerializationFormat) -> Self {
       Self(wrapped: .file(path: path, format: format))
     }
 
-    /// The private key will be provided as an array of bytes.
+    /// The private key's source is an array of bytes.
+    /// - Parameters:
+    ///   - bytes: The array of bytes making up the private key.
+    ///   - format: The private key's format, as a ``TLSConfig/SerializationFormat``.
+    /// - Returns: A source describing the private key source is the given bytes.
     public static func bytes(
       _ bytes: [UInt8],
       format: SerializationFormat
@@ -84,6 +100,8 @@ public enum TLSConfig {
 
     /// A list of ``HTTP2ServerTransport/Config/TLS/CertificateSource``s making up the
     /// chain of trust.
+    /// - Parameter certificateSources: The sources for the certificates that make up the chain of trust.
+    /// - Returns: A trust root for the given chain of trust.
     public static func certificates(
       _ certificateSources: [CertificateSource]
     ) -> Self {
