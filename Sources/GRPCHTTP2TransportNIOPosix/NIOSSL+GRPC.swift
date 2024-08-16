@@ -126,7 +126,7 @@ extension CertificateVerification {
 }
 
 extension TLSConfiguration {
-  package init(_ tlsConfig: HTTP2ServerTransport.Config.TLS) throws {
+  package init(_ tlsConfig: TLSConfig) throws {
     let certificateChain = try tlsConfig.certificateChain.sslCertificateSources()
     let privateKey = try NIOSSLPrivateKey(privateKey: tlsConfig.privateKey)
 
