@@ -82,7 +82,7 @@ function generate_echo_v1_example {
 
 function generate_echo_v2_example {
   local proto="$here/examples/echo/echo.proto"
-  local output="$root/Sources/Examples/v2/Echo/Generated"
+  local output="$root/Sources/Examples/v2/echo/Generated"
 
   generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
@@ -96,12 +96,20 @@ function generate_routeguide_example {
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
 }
 
-function generate_helloworld_example {
+function generate_helloworld_v1_example {
   local proto="$here/upstream/grpc/examples/helloworld.proto"
   local output="$root/Sources/Examples/v1/HelloWorld/Model"
 
   generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
+}
+
+function generate_helloworld_v2_example {
+  local proto="$here/upstream/grpc/examples/helloworld.proto"
+  local output="$root/Sources/Examples/v2/hello-world/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
 }
 
 function generate_reflection_service {
@@ -254,7 +262,8 @@ function generate_health_service {
 generate_echo_v1_example
 generate_echo_v2_example
 generate_routeguide_example
-generate_helloworld_example
+generate_helloworld_v1_example
+generate_helloworld_v2_example
 generate_reflection_data_example
 
 # Reflection service and tests
