@@ -40,7 +40,7 @@ public import GRPCCore
 ///   forService: .bar_Foo
 /// )
 /// ```
-@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct Health: Sendable {
   /// An implementation of the `grpc.health.v1.Health` service.
   public let service: Health.Service
@@ -58,7 +58,7 @@ public struct Health: Sendable {
   }
 }
 
-@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Health {
   /// An implementation of the `grpc.health.v1.Health` service.
   public struct Service: RegistrableRPCService, Sendable {

@@ -16,7 +16,7 @@
 
 internal import GRPCCore
 
-@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {
   private let state = HealthService.State()
 
@@ -65,7 +65,7 @@ internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {
   }
 }
 
-@available(macOS 15.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HealthService {
   private struct State: Sendable {
     // The state of each service keyed by the fully qualified service name.
