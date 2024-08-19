@@ -177,8 +177,8 @@ extension HTTP2ServerTransport.Posix.Config {
     /// - `requireALPN` equals `false`
     ///
     /// - Parameters:
-    ///   - certificateChainSources: The certificates the server will offer during negotiation.
-    ///   - privateKeySource: The private key associated with the leaf certificate.
+    ///   - certificateChain: The certificates the server will offer during negotiation.
+    ///   - privateKey: The private key associated with the leaf certificate.
     /// - Returns: A new HTTP2 NIO Posix transport TLS config.
     public static func defaults(
       certificateChain: [TLSConfig.CertificateSource],
@@ -200,8 +200,8 @@ extension HTTP2ServerTransport.Posix.Config {
     /// - `requireALPN` equals `false`
     ///
     /// - Parameters:
-    ///   - certificateChainSources: The certificates the server will offer during negotiation.
-    ///   - privateKeySource: The private key associated with the leaf certificate.
+    ///   - certificateChain: The certificates the server will offer during negotiation.
+    ///   - privateKey: The private key associated with the leaf certificate.
     /// - Returns: A new HTTP2 NIO Posix transport TLS config.
     public static func mTLS(
       certificateChain: [TLSConfig.CertificateSource],
