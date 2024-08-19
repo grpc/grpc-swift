@@ -1456,16 +1456,6 @@ extension GRPCStreamStateMachine {
         )
       }
 
-      guard let te = headers.firstString(forKey: .te), te == "trailers" else {
-        self.state = closeServer(from: state, endStream: endStream)
-        return .rejectRPC_serverOnly(
-          trailers: .trailersOnly(
-            code: .invalidArgument,
-            message: "\"te\" header is expected to be present and have a value of \"trailers\"."
-          )
-        )
-      }
-
       // Firstly, find out if we support the client's chosen encoding, and reject
       // the RPC if we don't.
       let inboundEncoding: CompressionAlgorithm

@@ -201,45 +201,6 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
   }
 
-  func testClientInitialMetadataWithoutTEResultsInRejectedRPC() throws {
-    let channel = EmbeddedChannel()
-    let handler = GRPCServerStreamHandler(
-      scheme: .http,
-      acceptedEncodings: [],
-      maximumPayloadSize: 1,
-      methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
-    )
-    try channel.pipeline.syncOperations.addHandler(handler)
-
-    // Receive client's initial metadata without TE
-    let clientInitialMetadata: HPACKHeaders = [
-      GRPCHTTP2Keys.path.rawValue: "/test/test",
-      GRPCHTTP2Keys.scheme.rawValue: "http",
-      GRPCHTTP2Keys.method.rawValue: "POST",
-      GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
-    ]
-    XCTAssertNoThrow(
-      try channel.writeInbound(
-        HTTP2Frame.FramePayload.headers(.init(headers: clientInitialMetadata))
-      )
-    )
-
-    // Make sure we have sent a trailers-only response
-    let writtenTrailersOnlyResponse = try channel.assertReadHeadersOutbound()
-
-    XCTAssertEqual(
-      writtenTrailersOnlyResponse.headers,
-      [
-        GRPCHTTP2Keys.status.rawValue: "200",
-        GRPCHTTP2Keys.contentType.rawValue: "application/grpc",
-        GRPCHTTP2Keys.grpcStatus.rawValue: String(Status.Code.invalidArgument.rawValue),
-        GRPCHTTP2Keys.grpcStatusMessage.rawValue:
-          "\"te\" header is expected to be present and have a value of \"trailers\".",
-      ]
-    )
-    XCTAssertTrue(writtenTrailersOnlyResponse.endStream)
-  }
-
   func testNotAcceptedEncodingResultsInRejectedRPC() throws {
     let channel = EmbeddedChannel()
     let handler = GRPCServerStreamHandler(
