@@ -126,7 +126,8 @@ extension CertificateVerification {
 }
 
 extension TLSConfiguration {
-  package init(_ tlsConfig: TLSConfig) throws {
+  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+  package init(_ tlsConfig: HTTP2ServerTransport.Posix.Config.TLS) throws {
     let certificateChain = try tlsConfig.certificateChain.sslCertificateSources()
     let privateKey = try NIOSSLPrivateKey(privateKey: tlsConfig.privateKey)
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-public struct TLSConfig: Sendable {
+public enum TLSConfig: Sendable {
   /// The serialization format of the provided certificates and private keys.
   public struct SerializationFormat: Sendable, Equatable {
     package enum Wrapped {
@@ -58,7 +58,7 @@ public struct TLSConfig: Sendable {
   }
 
   /// A description of where the private key is coming from: either a byte array or a file.
-  /// The serialization format is specified by ``HTTP2Transport/Config/TLS/SerializationFormat``.
+  /// The serialization format is specified by ``TLSConfig/SerializationFormat``.
   public struct PrivateKeySource: Sendable {
     package enum Wrapped {
       case file(path: String, format: SerializationFormat)
@@ -98,7 +98,7 @@ public struct TLSConfig: Sendable {
 
     package let wrapped: Wrapped
 
-    /// A list of ``HTTP2ServerTransport/Config/TLS/CertificateSource``s making up the
+    /// A list of ``TLSConfig/CertificateSource``s making up the
     /// chain of trust.
     /// - Parameter certificateSources: The sources for the certificates that make up the chain of trust.
     /// - Returns: A trust root for the given chain of trust.
@@ -131,66 +131,89 @@ public struct TLSConfig: Sendable {
     /// Certificates will be validated against the trust store and checked against the hostname of the service we are contacting.
     public static let fullVerification: Self = Self(wrapped: .fullVerification)
   }
+}
 
-  /// The certificates the server will offer during negotiation.
-  public var certificateChain: [CertificateSource]
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension HTTP2ServerTransport.Posix.Config {
+  /// The security configuration for this connection.
+  public struct TransportSecurity: Sendable {
+    package enum Wrapped: Sendable {
+      case plaintext
+      case tls(TLS)
+    }
 
-  /// The private key associated with the leaf certificate.
-  public var privateKey: PrivateKeySource
+    package let wrapped: Wrapped
 
-  /// How to verify the client certificate, if one is presented.
-  public var clientCertificateVerification: CertificateVerification
+    /// This connection is plaintext: no encryption will take place.
+    public static let plaintext = Self(wrapped: .plaintext)
 
-  /// The trust roots to be used when verifying client certificates.
-  public var trustRoots: TrustRootsSource
-
-  /// Whether ALPN is required.
-  ///
-  /// If this is set to `true` but the client does not support ALPN, then the connection will be rejected.
-  public var requireALPN: Bool
-
-  /// Create a new ``HTTP2ServerTransport/Config/TLS`` with some values defaulted:
-  /// - `clientCertificateVerificationMode` equals `doNotVerify`
-  /// - `trustRoots` equals `systemDefault`
-  /// - `requireALPN` equals `false`
-  ///
-  /// - Parameters:
-  ///   - certificateChainSources: The certificates the server will offer during negotiation.
-  ///   - privateKeySource: The private key associated with the leaf certificate.
-  /// - Returns: A new ``HTTP2ServerTransport/Config/TLS.
-  public static func defaults(
-    certificateChain: [CertificateSource],
-    privateKey: PrivateKeySource
-  ) -> Self {
-    Self.init(
-      certificateChain: certificateChain,
-      privateKey: privateKey,
-      clientCertificateVerification: .noVerification,
-      trustRoots: .systemDefault,
-      requireALPN: false
-    )
+    /// This connection will use TLS.
+    public static func tls(_ tls: TLS) -> Self {
+      Self(wrapped: .tls(tls))
+    }
   }
 
-  /// Create a new ``HTTP2ServerTransport/Config/TLS`` with some values defaulted to match
-  /// the requirements of mTLS:
-  /// - `clientCertificateVerificationMode` equals `noHostnameVerification`
-  /// - `trustRoots` equals `systemDefault`
-  /// - `requireALPN` equals `false`
-  ///
-  /// - Parameters:
-  ///   - certificateChainSources: The certificates the server will offer during negotiation.
-  ///   - privateKeySource: The private key associated with the leaf certificate.
-  /// - Returns: A new ``HTTP2ServerTransport/Config/TLS.
-  public static func mTLS(
-    certificateChain: [CertificateSource],
-    privateKey: PrivateKeySource
-  ) -> Self {
-    Self.init(
-      certificateChain: certificateChain,
-      privateKey: privateKey,
-      clientCertificateVerification: .noHostnameVerification,
-      trustRoots: .systemDefault,
-      requireALPN: false
-    )
+  public struct TLS: Sendable {
+    /// The certificates the server will offer during negotiation.
+    public var certificateChain: [TLSConfig.CertificateSource]
+
+    /// The private key associated with the leaf certificate.
+    public var privateKey: TLSConfig.PrivateKeySource
+
+    /// How to verify the client certificate, if one is presented.
+    public var clientCertificateVerification: TLSConfig.CertificateVerification
+
+    /// The trust roots to be used when verifying client certificates.
+    public var trustRoots: TLSConfig.TrustRootsSource
+
+    /// Whether ALPN is required.
+    ///
+    /// If this is set to `true` but the client does not support ALPN, then the connection will be rejected.
+    public var requireALPN: Bool
+
+    /// Create a new HTTP2 NIO Posix transport TLS config, with some values defaulted:
+    /// - `clientCertificateVerificationMode` equals `doNotVerify`
+    /// - `trustRoots` equals `systemDefault`
+    /// - `requireALPN` equals `false`
+    ///
+    /// - Parameters:
+    ///   - certificateChainSources: The certificates the server will offer during negotiation.
+    ///   - privateKeySource: The private key associated with the leaf certificate.
+    /// - Returns: A new HTTP2 NIO Posix transport TLS config.
+    public static func defaults(
+      certificateChain: [TLSConfig.CertificateSource],
+      privateKey: TLSConfig.PrivateKeySource
+    ) -> Self {
+      Self.init(
+        certificateChain: certificateChain,
+        privateKey: privateKey,
+        clientCertificateVerification: .noVerification,
+        trustRoots: .systemDefault,
+        requireALPN: false
+      )
+    }
+
+    /// Create a new HTTP2 NIO Posix transport TLS config, with some values defaulted to match
+    /// the requirements of mTLS:
+    /// - `clientCertificateVerificationMode` equals `noHostnameVerification`
+    /// - `trustRoots` equals `systemDefault`
+    /// - `requireALPN` equals `false`
+    ///
+    /// - Parameters:
+    ///   - certificateChainSources: The certificates the server will offer during negotiation.
+    ///   - privateKeySource: The private key associated with the leaf certificate.
+    /// - Returns: A new HTTP2 NIO Posix transport TLS config.
+    public static func mTLS(
+      certificateChain: [TLSConfig.CertificateSource],
+      privateKey: TLSConfig.PrivateKeySource
+    ) -> Self {
+      Self.init(
+        certificateChain: certificateChain,
+        privateKey: privateKey,
+        clientCertificateVerification: .noHostnameVerification,
+        trustRoots: .systemDefault,
+        requireALPN: false
+      )
+    }
   }
 }

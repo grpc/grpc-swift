@@ -264,7 +264,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     """
 
   func testTLSConfig_Defaults() throws {
-    let grpcTLSConfig = TLSConfig.defaults(
+    let grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.defaults(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],
@@ -294,7 +294,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testTLSConfig_mTLS() throws {
-    let grpcTLSConfig = TLSConfig.mTLS(
+    let grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.mTLS(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],
@@ -324,7 +324,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testTLSConfig_FullVerifyClient() throws {
-    var grpcTLSConfig = TLSConfig.defaults(
+    var grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.defaults(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],
@@ -355,7 +355,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testTLSConfig_CustomTrustRoots() throws {
-    var grpcTLSConfig = TLSConfig.defaults(
+    var grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.defaults(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
       ],

@@ -337,23 +337,6 @@ extension HTTP2ServerTransport {
 extension HTTP2ServerTransport.Posix {
   /// Config for the `Posix` transport.
   public struct Config: Sendable {
-    public struct TransportSecurity: Sendable {
-      package enum Wrapped: Sendable {
-        case plaintext
-        case tls(TLSConfig)
-      }
-
-      package let wrapped: Wrapped
-
-      /// This connection is plaintext: no encryption will take place.
-      public static let plaintext = Self(wrapped: .plaintext)
-
-      /// This connection will use TLS.
-      public static func tls(_ tls: TLSConfig) -> Self {
-        Self(wrapped: .tls(tls))
-      }
-    }
-
     /// Compression configuration.
     public var compression: HTTP2ServerTransport.Config.Compression
     /// Connection configuration.
