@@ -1843,40 +1843,14 @@ final class GRPCStreamServerStateMachineTests: XCTestCase {
       endStream: false
     )
 
-    self.assertRejectedRPC(action) { trailers in
-      XCTAssertEqual(
-        trailers,
-        [
-          ":status": "200",
-          "content-type": "application/grpc",
-          "grpc-status": "3",
-          "grpc-message":
-            "\"te\" header is expected to be present and have a value of \"trailers\".",
-        ]
-      )
-    }
-  }
-
-  func testReceiveMetadataWhenClientIdleAndServerIdle_InvalidTE() throws {
-    var stateMachine = self.makeServerStateMachine(targetState: .clientIdleServerIdle)
-
-    let action = try stateMachine.receive(
-      headers: .receivedWithInvalidTE,
-      endStream: false
-    )
-
-    self.assertRejectedRPC(action) { trailers in
-      XCTAssertEqual(
-        trailers,
-        [
-          ":status": "200",
-          "content-type": "application/grpc",
-          "grpc-status": "3",
-          "grpc-message":
-            "\"te\" header is expected to be present and have a value of \"trailers\".",
-        ]
-      )
-    }
+    let metadata: Metadata = [
+      ":path": "/test/test",
+      ":scheme": "http",
+      ":method": "POST",
+      "content-type": "application/grpc",
+    ]
+    let descriptor = MethodDescriptor(service: "test", method: "test")
+    XCTAssertEqual(action, .receivedMetadata(metadata, descriptor))
   }
 
   func testReceiveMetadataWhenClientIdleAndServerIdle_MissingMethod() throws {
