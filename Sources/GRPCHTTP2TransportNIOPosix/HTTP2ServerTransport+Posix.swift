@@ -21,6 +21,10 @@ internal import NIOExtras
 internal import NIOHTTP2
 public import NIOPosix  // has to be public because of default argument value in init
 
+#if canImport(NIOSSL)
+import NIOSSL
+#endif
+
 extension HTTP2ServerTransport {
   /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -150,7 +154,7 @@ extension HTTP2ServerTransport {
     ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
     public init(
       address: GRPCHTTP2Core.SocketAddress,
-      config: Config = .defaults,
+      config: Config,
       eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) {
       self.address = address
@@ -174,6 +178,24 @@ extension HTTP2ServerTransport {
         }
       }
 
+      #if canImport(NIOSSL)
+      let nioSSLContext: NIOSSLContext?
+      switch self.config.transportSecurity.wrapped {
+      case .plaintext:
+        nioSSLContext = nil
+      case .tls(let tlsConfig):
+        do {
+          nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+        } catch {
+          throw RuntimeError(
+            code: .transportError,
+            message: "Couldn't create SSL context, check your TLS configuration.",
+            cause: error
+          )
+        }
+      }
+      #endif
+
       let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
         .serverChannelOption(
           ChannelOptions.socketOption(.so_reuseaddr),
@@ -187,13 +209,33 @@ extension HTTP2ServerTransport {
         }
         .bind(to: self.address) { channel in
           channel.eventLoop.makeCompletedFuture {
+            #if canImport(NIOSSL)
+            if let nioSSLContext {
+              try channel.pipeline.syncOperations.addHandler(
+                NIOSSLServerHandler(context: nioSSLContext)
+              )
+            }
+            #endif
+
+            let requireALPN: Bool
+            let scheme: Scheme
+            switch self.config.transportSecurity.wrapped {
+            case .plaintext:
+              requireALPN = false
+              scheme = .http
+            case .tls(let tlsConfig):
+              requireALPN = tlsConfig.requireALPN
+              scheme = .https
+            }
+
             return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
               channel: channel,
               compressionConfig: self.config.compression,
               connectionConfig: self.config.connection,
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
-              useTLS: false
+              requireALPN: requireALPN,
+              scheme: scheme
             )
           }
         }
@@ -289,7 +331,6 @@ extension HTTP2ServerTransport {
       self.serverQuiescingHelper.initiateShutdown(promise: nil)
     }
   }
-
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -304,6 +345,8 @@ extension HTTP2ServerTransport.Posix {
     public var http2: HTTP2ServerTransport.Config.HTTP2
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
+    /// The transport's security.
+    public var transportSecurity: TransportSecurity
 
     /// Construct a new `Config`.
     /// - Parameters:
@@ -311,25 +354,31 @@ extension HTTP2ServerTransport.Posix {
     ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
+    ///   - transportSecurity: The transport's security configuration.
     public init(
       compression: HTTP2ServerTransport.Config.Compression,
       connection: HTTP2ServerTransport.Config.Connection,
       http2: HTTP2ServerTransport.Config.HTTP2,
-      rpc: HTTP2ServerTransport.Config.RPC
+      rpc: HTTP2ServerTransport.Config.RPC,
+      transportSecurity: TransportSecurity
     ) {
       self.compression = compression
       self.connection = connection
       self.http2 = http2
       self.rpc = rpc
+      self.transportSecurity = transportSecurity
     }
 
     /// Default values for the different configurations.
-    public static var defaults: Self {
+    public static func defaults(
+      transportSecurity: TransportSecurity
+    ) -> Self {
       Self(
         compression: .defaults,
         connection: .defaults,
         http2: .defaults,
-        rpc: .defaults
+        rpc: .defaults,
+        transportSecurity: transportSecurity
       )
     }
   }

@@ -38,7 +38,9 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
     var port: Int
 
     func run() async throws {
-      var transportConfig = HTTP2ServerTransport.Posix.Config.defaults
+      var transportConfig = HTTP2ServerTransport.Posix.Config.defaults(
+        transportSecurity: .plaintext
+      )
       transportConfig.compression.enabledAlgorithms = .all
       let transport = HTTP2ServerTransport.Posix(
         address: .ipv4(host: "0.0.0.0", port: self.port),

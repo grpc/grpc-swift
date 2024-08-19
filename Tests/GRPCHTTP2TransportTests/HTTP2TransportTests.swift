@@ -144,7 +144,7 @@ final class HTTP2TransportTests: XCTestCase {
 
     switch kind {
     case .posix:
-      var config = HTTP2ServerTransport.Posix.Config.defaults
+      var config = HTTP2ServerTransport.Posix.Config.defaults(transportSecurity: .plaintext)
       config.compression.enabledAlgorithms = compression
       let transport = HTTP2ServerTransport.Posix(
         address: .ipv4(host: "127.0.0.1", port: 0),
