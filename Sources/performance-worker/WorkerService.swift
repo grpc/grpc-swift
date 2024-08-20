@@ -453,9 +453,13 @@ extension WorkerService {
 
     var clients = [BenchmarkClient]()
     for _ in 0 ..< config.clientChannels {
-      let transport = try HTTP2ClientTransport.Posix(target: target)
       let client = BenchmarkClient(
-        client: GRPCClient(transport: transport),
+        client: GRPCClient(
+          transport: try .http2NIOPosix(
+            target: target,
+            config: .defaults()
+          )
+        ),
         concurrentRPCs: Int(config.outstandingRpcsPerChannel),
         rpcType: rpcType,
         messagesPerStream: Int(config.messagesPerStream),

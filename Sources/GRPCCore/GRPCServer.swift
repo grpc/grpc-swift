@@ -74,7 +74,7 @@ public struct GRPCServer: Sendable {
   typealias Stream = RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
 
   /// The ``ServerTransport`` implementation that the server uses to listen for new requests.
-  private let transport: any ServerTransport
+  public let transport: any ServerTransport
 
   /// The services registered which the server is serving.
   private let router: RPCRouter
