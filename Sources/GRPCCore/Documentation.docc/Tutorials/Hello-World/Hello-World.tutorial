@@ -2,7 +2,7 @@
   @XcodeRequirement(
     title: "Xcode 16 Beta 5+",
     destination: "https://developer.apple.com/download/"
-   )
+  )
 
   @Intro(title: "Quick Start: Hello, World!") {
     This tutorial walks you through the canonical "Hello, World!" program for gRPC Swift. You'll
@@ -76,12 +76,15 @@
   }
 
   @Section(title: "Update and run the application") {
-    You need to regenerate the stubs as the service definition has changed. You'll learn how to do
-    this in another tutorial.
+    You need to regenerate the stubs as the service definition has changed. To do this run the
+    following command from the root of the checked out repository:
 
-    To update the stubs run `Protos/generate.sh` from the root of the checked out repository. This
-    However, you still need to implement and call the new method in the human-written parts
-    of your application.
+    ```console
+    Protos/generate.sh
+    ```
+
+    You'll learn how to do this manually in another tutorial. Now that the stubs have been updated
+    you need to implement and call the new method in the human-written parts of your application.
 
     @Steps {
       @Step {
