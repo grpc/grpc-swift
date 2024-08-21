@@ -27,7 +27,7 @@ in:
 
 > `GRPCSwiftPlugin` _only_ generates gRPC stubs, it doesn't generate messages. You must generate
 > messages in addition to the gRPC Stubs. The [Swift Protobuf](https://github.com/apple/swift-protobuf)
-> project provides an equivalent build plugin this, `SwiftProtobufPlugin`, for this.
+> project provides an equivalent build plugin, `SwiftProtobufPlugin`, for this.
 
 #### Configuring the build plugin
 
