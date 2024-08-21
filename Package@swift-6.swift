@@ -655,7 +655,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/Echo/Model",
+      path: "Examples/v1/Echo/Model",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -670,7 +670,7 @@ extension Target {
         .nioHTTP2,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/Echo/Implementation",
+      path: "Examples/v1/Echo/Implementation",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -690,7 +690,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      path: "Sources/Examples/v1/Echo/Runtime",
+      path: "Examples/v1/Echo/Runtime",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -707,7 +707,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      path: "Sources/Examples/v2/echo",
+      path: "Examples/v2/echo",
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
@@ -724,7 +724,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/HelloWorld/Model",
+      path: "Examples/v1/HelloWorld/Model",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -739,7 +739,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/HelloWorld/Client",
+      path: "Examples/v1/HelloWorld/Client",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -754,7 +754,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/HelloWorld/Server",
+      path: "Examples/v1/HelloWorld/Server",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -767,7 +767,7 @@ extension Target {
         .grpcHTTP2Transport,
         .argumentParser,
       ],
-      path: "Sources/Examples/v2/hello-world",
+      path: "Examples/v2/hello-world",
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
@@ -784,7 +784,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/RouteGuide/Model",
+      path: "Examples/v1/RouteGuide/Model",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -799,7 +799,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/RouteGuide/Client",
+      path: "Examples/v1/RouteGuide/Client",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -815,7 +815,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/RouteGuide/Server",
+      path: "Examples/v1/RouteGuide/Server",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -831,7 +831,7 @@ extension Target {
         .nioExtras,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/PacketCapture",
+      path: "Examples/v1/PacketCapture",
       exclude: [
         "README.md",
       ],
@@ -865,7 +865,7 @@ extension Target {
         .echoModel,
         .echoImplementation
       ],
-      path: "Sources/Examples/v1/ReflectionService",
+      path: "Examples/v1/ReflectionService",
       resources: [
         .copy("Generated")
       ],
