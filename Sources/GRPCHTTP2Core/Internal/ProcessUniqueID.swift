@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-internal import Atomics
+private import Synchronization
 
 /// An ID which is unique within this process.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ProcessUniqueID: Hashable, Sendable, CustomStringConvertible {
-  private static let source = ManagedAtomic(UInt64(0))
+  private static let source = Atomic(UInt64(0))
   private let rawValue: UInt64
 
   init() {
-    self.rawValue = Self.source.loadThenWrappingIncrement(ordering: .relaxed)
+    let (_, newValue) = Self.source.add(1, ordering: .relaxed)
+    self.rawValue = newValue
   }
 
   var description: String {
@@ -31,6 +33,7 @@ struct ProcessUniqueID: Hashable, Sendable, CustomStringConvertible {
 }
 
 /// A process-unique ID for a subchannel.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 package struct SubchannelID: Hashable, Sendable, CustomStringConvertible {
   private let id = ProcessUniqueID()
   package init() {}
@@ -40,6 +43,7 @@ package struct SubchannelID: Hashable, Sendable, CustomStringConvertible {
 }
 
 /// A process-unique ID for a load-balancer.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct LoadBalancerID: Hashable, Sendable, CustomStringConvertible {
   private let id = ProcessUniqueID()
   var description: String {
@@ -48,6 +52,7 @@ struct LoadBalancerID: Hashable, Sendable, CustomStringConvertible {
 }
 
 /// A process-unique ID for an entry in a queue.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct QueueEntryID: Hashable, Sendable, CustomStringConvertible {
   private let id = ProcessUniqueID()
   var description: String {

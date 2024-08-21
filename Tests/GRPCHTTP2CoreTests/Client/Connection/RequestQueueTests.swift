@@ -15,7 +15,7 @@
  */
 
 import GRPCCore
-import Synchronization
+private import Synchronization
 import XCTest
 
 @testable import GRPCHTTP2Core

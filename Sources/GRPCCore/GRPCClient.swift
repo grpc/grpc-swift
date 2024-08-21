@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-internal import Atomics
+private import Synchronization
 
 /// A gRPC client.
 ///
@@ -110,7 +110,7 @@ internal import Atomics
 /// additional resources that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-public struct GRPCClient: Sendable {
+public final class GRPCClient: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
   private let transport: any ClientTransport
 
@@ -123,10 +123,10 @@ public struct GRPCClient: Sendable {
   private let interceptors: [any ClientInterceptor]
 
   /// The current state of the client.
-  private let state: ManagedAtomic<State>
+  private let state: Mutex<State>
 
   /// The state of the client.
-  private enum State: UInt8, AtomicValue {
+  private enum State: Sendable {
     /// The client hasn't been started yet. Can transition to `running` or `stopped`.
     case notStarted
     /// The client is running and can send RPCs. Can transition to `stopping`.
@@ -137,6 +137,56 @@ public struct GRPCClient: Sendable {
     /// The client has stopped, no RPCs are in flight and no more will be accepted. This state
     /// is terminal.
     case stopped
+
+    mutating func run() throws {
+      switch self {
+      case .notStarted:
+        self = .running
+
+      case .running:
+        throw RuntimeError(
+          code: .clientIsAlreadyRunning,
+          message: "The client is already running and can only be started once."
+        )
+
+      case .stopping, .stopped:
+        throw RuntimeError(
+          code: .clientIsStopped,
+          message: "The client has stopped and can only be started once."
+        )
+      }
+    }
+
+    mutating func stopped() {
+      self = .stopped
+    }
+
+    mutating func beginGracefulShutdown() -> Bool {
+      switch self {
+      case .notStarted:
+        self = .stopped
+        return false
+      case .running:
+        self = .stopping
+        return true
+      case .stopping, .stopped:
+        return false
+      }
+    }
+
+    func checkExecutable() throws {
+      switch self {
+      case .notStarted, .running:
+        // Allow .notStarted as making a request can race with 'run()'. Transports should tolerate
+        // queuing the request if not yet started.
+        ()
+      case .stopping, .stopped:
+        throw RuntimeError(
+          code: .clientIsStopped,
+          message: "Client has been stopped. Can't make any more RPCs."
+        )
+      }
+    }
   }
 
   /// Creates a new client with the given transport, interceptors and configuration.
@@ -154,7 +204,7 @@ public struct GRPCClient: Sendable {
   ) {
     self.transport = transport
     self.interceptors = interceptors
-    self.state = ManagedAtomic(.notStarted)
+    self.state = Mutex(.notStarted)
   }
 
   /// Start the client.
@@ -165,33 +215,11 @@ public struct GRPCClient: Sendable {
   /// The client, and by extension this function, can only be run once. If the client is already
   /// running or has already been closed then a ``RuntimeError`` is thrown.
   public func run() async throws {
-    let (wasNotStarted, original) = self.state.compareExchange(
-      expected: .notStarted,
-      desired: .running,
-      ordering: .sequentiallyConsistent
-    )
+    try self.state.withLock { try $0.run() }
 
-    guard wasNotStarted else {
-      switch original {
-      case .notStarted:
-        // The value wasn't exchanged so the original value can't be 'notStarted'.
-        fatalError()
-      case .running:
-        throw RuntimeError(
-          code: .clientIsAlreadyRunning,
-          message: "The client is already running and can only be started once."
-        )
-      case .stopping, .stopped:
-        throw RuntimeError(
-          code: .clientIsStopped,
-          message: "The client has stopped and can only be started once."
-        )
-      }
-    }
-
-    // When we exit this function we must have stopped.
+    // When this function exits the client must have stopped.
     defer {
-      self.state.store(.stopped, ordering: .sequentiallyConsistent)
+      self.state.withLock { $0.stopped() }
     }
 
     do {
@@ -211,50 +239,9 @@ public struct GRPCClient: Sendable {
   /// in-flight RPCs to finish executing, but no new RPCs will be accepted. You can cancel the task
   /// executing ``run()`` if you want to abruptly stop in-flight RPCs.
   public func close() {
-    while true {
-      let (wasRunning, actualState) = self.state.compareExchange(
-        expected: .running,
-        desired: .stopping,
-        ordering: .sequentiallyConsistent
-      )
-
-      // Transition from running to stopping: close the transport.
-      if wasRunning {
-        self.transport.close()
-        return
-      }
-
-      // The expected state wasn't 'running'. There are two options:
-      // 1. The client isn't running yet.
-      // 2. The client is already stopping or stopped.
-      switch actualState {
-      case .notStarted:
-        // Not started: try going straight to stopped.
-        let (wasNotStarted, _) = self.state.compareExchange(
-          expected: .notStarted,
-          desired: .stopped,
-          ordering: .sequentiallyConsistent
-        )
-
-        // If the exchange happened then just return: the client wasn't started so there's no
-        // transport to start.
-        //
-        // If the exchange didn't happen then continue looping: the client must've been started by
-        // another thread.
-        if wasNotStarted {
-          return
-        } else {
-          continue
-        }
-
-      case .running:
-        // Unreachable: the value was exchanged and this was the expected value.
-        fatalError()
-
-      case .stopping, .stopped:
-        // No exchange happened but the client is already stopping.
-        return
-      }
+    let wasRunning = self.state.withLock { $0.beginGracefulShutdown() }
+    if wasRunning {
+      self.transport.close()
     }
   }
 
@@ -371,18 +358,7 @@ public struct GRPCClient: Sendable {
     options: CallOptions,
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
-    switch self.state.load(ordering: .sequentiallyConsistent) {
-    case .notStarted, .running:
-      // Allow .notStarted as making a request can race with 'run()'. Transports should tolerate
-      // queuing the request if not yet started.
-      ()
-    case .stopping, .stopped:
-      throw RuntimeError(
-        code: .clientIsStopped,
-        message: "Client has been stopped. Can't make any more RPCs."
-      )
-    }
-
+    try self.state.withLock { try $0.checkExecutable() }
     let methodConfig = self.transport.configuration(forMethod: descriptor)
     var options = options
     options.formUnion(with: methodConfig)

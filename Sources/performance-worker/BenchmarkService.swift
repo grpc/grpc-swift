@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-private import Atomics
 internal import GRPCCore
+private import Synchronization
 
 import struct Foundation.Data
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
+final class BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   /// Used to check if the server can be streaming responses.
-  private let working = ManagedAtomic<Bool>(true)
+  private let working = Atomic<Bool>(true)
 
   /// One request followed by one response.
   /// The server returns a client payload with the size requested by the client.
@@ -127,8 +127,24 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
       }
     }
 
+    final class InboundStreamingSignal: Sendable {
+      private let _isStreaming: Atomic<Bool>
+
+      init() {
+        self._isStreaming = Atomic(true)
+      }
+
+      var isStreaming: Bool {
+        self._isStreaming.load(ordering: .relaxed)
+      }
+
+      func stop() {
+        self._isStreaming.store(false, ordering: .relaxed)
+      }
+    }
+
     // Marks if the inbound streaming is ongoing or finished.
-    let inboundStreaming = ManagedAtomic<Bool>(true)
+    let inbound = InboundStreamingSignal()
 
     return ServerResponse.Stream { writer in
       try await withThrowingTaskGroup(of: Void.self) { group in
@@ -138,13 +154,11 @@ struct BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
               try self.checkOkStatus(message.responseStatus)
             }
           }
-          inboundStreaming.store(false, ordering: .relaxed)
+          inbound.stop()
         }
 
         group.addTask {
-          while inboundStreaming.load(ordering: .relaxed)
-            && self.working.load(ordering: .acquiring)
-          {
+          while inbound.isStreaming && self.working.load(ordering: .acquiring) {
             try await writer.write(response)
           }
         }

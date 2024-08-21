@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-internal import Atomics
-internal import DequeModule
+private import DequeModule
 package import GRPCCore
 private import Synchronization
 

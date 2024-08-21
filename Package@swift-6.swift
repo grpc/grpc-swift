@@ -192,7 +192,6 @@ extension Target {
       name: "GRPCCore",
       dependencies: [
         .dequeModule,
-        .atomics
       ],
       path: "Sources/GRPCCore",
       swiftSettings: [
@@ -242,7 +241,6 @@ extension Target {
         .nioTLS,
         .cgrpcZlib,
         .dequeModule,
-        .atomics
       ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
@@ -401,7 +399,6 @@ extension Target {
         .grpcCore,
         .grpcInProcessTransport,
         .dequeModule,
-        .atomics,
         .protobuf,
       ],
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]

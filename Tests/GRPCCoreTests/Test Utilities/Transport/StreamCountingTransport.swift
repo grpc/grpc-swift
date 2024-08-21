@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
 
 @testable import GRPCCore
 
@@ -23,20 +22,22 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
   private let transport: AnyClientTransport
-  private let _streamsOpened = ManagedAtomic(0)
-  private let _streamFailures = ManagedAtomic(0)
+  private let _streamsOpened: AtomicCounter
+  private let _streamFailures: AtomicCounter
 
   var streamsOpened: Int {
-    self._streamsOpened.load(ordering: .sequentiallyConsistent)
+    self._streamsOpened.value
   }
 
   var streamFailures: Int {
-    self._streamFailures.load(ordering: .sequentiallyConsistent)
+    self._streamFailures.value
   }
 
   init<Transport: ClientTransport>(wrapping transport: Transport)
   where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
     self.transport = AnyClientTransport(wrapping: transport)
+    self._streamsOpened = AtomicCounter()
+    self._streamFailures = AtomicCounter()
   }
 
   var retryThrottle: RetryThrottle? {
@@ -61,11 +62,11 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
         descriptor: descriptor,
         options: options
       ) { stream in
-        self._streamsOpened.wrappingIncrement(ordering: .sequentiallyConsistent)
+        self._streamsOpened.increment()
         return try await closure(stream)
       }
     } catch {
-      self._streamFailures.wrappingIncrement(ordering: .sequentiallyConsistent)
+      self._streamFailures.increment()
       throw error
     }
   }
@@ -83,21 +84,22 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
   private let transport: AnyServerTransport
-  private let _acceptedStreams = ManagedAtomic(0)
+  private let _acceptedStreams: AtomicCounter
 
   var acceptedStreamsCount: Int {
-    self._acceptedStreams.load(ordering: .sequentiallyConsistent)
+    self._acceptedStreams.value
   }
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
     self.transport = AnyServerTransport(wrapping: transport)
+    self._acceptedStreams = AtomicCounter()
   }
 
   func listen(
     _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
   ) async throws {
     try await self.transport.listen { stream in
-      self._acceptedStreams.wrappingIncrement(ordering: .sequentiallyConsistent)
+      self._acceptedStreams.increment()
       await streamHandler(stream)
     }
   }

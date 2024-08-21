@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
+
 import XCTest
 
 @testable import GRPCCore
@@ -104,10 +104,10 @@ extension ClientRPCExecutorTestHarness.ServerStreamHandler {
   }
 
   static func attemptBased(_ onAttempt: @Sendable @escaping (_ attempt: Int) -> Self) -> Self {
-    let attempts = ManagedAtomic(1)
+    let attempts = AtomicCounter(1)
     return Self { stream in
-      let attempt = attempts.loadThenWrappingIncrement(ordering: .sequentiallyConsistent)
-      let handler = onAttempt(attempt)
+      let (oldAttemptCount, _) = attempts.increment()
+      let handler = onAttempt(oldAttemptCount)
       try await handler.handle(stream: stream)
     }
   }
