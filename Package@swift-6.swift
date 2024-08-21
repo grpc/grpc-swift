@@ -768,6 +768,9 @@ extension Target {
         .argumentParser,
       ],
       path: "Examples/v2/hello-world",
+      exclude: [
+        "HelloWorld.proto"
+      ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
@@ -817,6 +820,26 @@ extension Target {
       ],
       path: "Examples/v1/RouteGuide/Server",
       swiftSettings: [.swiftLanguageMode(.v5)]
+    )
+  }
+
+  static var routeGuide_v2: Target {
+    .executableTarget(
+      name: "route-guide",
+      dependencies: [
+        .grpcProtobuf,
+        .grpcHTTP2Transport,
+        .argumentParser,
+      ],
+      path: "Examples/v2/route-guide",
+      resources: [
+        .copy("route_guide_db.json")
+      ],
+      swiftSettings: [
+        .swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -1088,6 +1111,7 @@ let package = Package(
     // v2 examples
     .echo_v2,
     .helloWorld_v2,
+    .routeGuide_v2,
   ]
 )
 

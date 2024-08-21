@@ -88,12 +88,20 @@ function generate_echo_v2_example {
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
 }
 
-function generate_routeguide_example {
+function generate_routeguide_v1_example {
   local proto="$here/examples/route_guide/route_guide.proto"
   local output="$root/Examples/v1/RouteGuide/Model"
 
   generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
+}
+
+function generate_routeguide_v2_example {
+  local proto="$here/examples/route_guide/route_guide.proto"
+  local output="$root/Examples/v2/route-guide/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
 }
 
 function generate_helloworld_v1_example {
@@ -261,7 +269,8 @@ function generate_health_service {
 # Examples
 generate_echo_v1_example
 generate_echo_v2_example
-generate_routeguide_example
+generate_routeguide_v1_example
+generate_routeguide_v2_example
 generate_helloworld_v1_example
 generate_helloworld_v2_example
 generate_reflection_data_example
