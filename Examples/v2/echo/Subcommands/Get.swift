@@ -41,7 +41,7 @@ struct Get: AsyncParsableCommand {
         let message = Echo_EchoRequest.with { $0.text = self.arguments.message }
         print("get → \(message.text)")
         let response = try await echo.get(message)
-        print("get ← \(message.text)")
+        print("get ← \(response.text)")
       }
 
       client.close()
