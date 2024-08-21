@@ -25,6 +25,10 @@ contains products of this package:
 
 - <doc:Hello-World>
 
+### Essentials
+
+- <doc:Generating-stubs>
+
 ### Getting involved
 
 Resources for developers working on gRPC Swift:
