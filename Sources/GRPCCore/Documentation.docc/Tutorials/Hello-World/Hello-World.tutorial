@@ -60,7 +60,7 @@
 
     @Steps {
       @Step {
-        Open `HelloWorld.proto` in the `Sources/Examples/v2/hello-world` directory to see how the
+        Open `HelloWorld.proto` in the `Examples/v2/hello-world` directory to see how the
         service is defined.
 
         @Code(name: "HelloWorld.proto", file: "hello-world-sec03-step01.proto")
@@ -88,7 +88,7 @@
 
     @Steps {
       @Step {
-        Open `Serve.swift` in the `Sources/Examples/v2/hello-world/Subcommands` directory.
+        Open `Serve.swift` in the `Examples/v2/hello-world/Subcommands` directory.
 
         @Code(name: "Serve.swift", file: "hello-world-sec04-step01.swift")
       }
@@ -101,7 +101,7 @@
 
       @Step {
         Let's update the client now. Open `Greet.swift` in the
-        `Sources/Examples/v2/hello-world/Subcommands` directory.
+        `Examples/v2/hello-world/Subcommands` directory.
 
         @Code(name: "Greet.swift", file: "hello-world-sec04-step03.swift")
       }
