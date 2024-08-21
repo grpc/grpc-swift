@@ -1,1 +1,1 @@
-../../Examples/v1/Echo/Model/echo.pb.swift
+../../../Examples/v1/Echo/Model/echo.pb.swift
