@@ -88,15 +88,9 @@ The plugins are available from [homebrew](https://brew.sh) and can be installed 
 
 ## Examples
 
-gRPC Swift has a number of tutorials and examples available. They are split
-across two directories:
-
-- [`/Sources/Examples`][examples-in-source] contains examples which do not
-  require additional dependencies and may be built using the Swift Package
-  Manager.
-- [`/Examples`][examples-out-of-source] contains examples which rely on
-  external dependencies or may not be built by the Swift Package Manager (such
-  as an iOS app).
+gRPC Swift has a number of tutorials and examples available. The
+[`Examples/v1`][examples] directory contains examples which do not require
+additional dependencies and may be built using the Swift Package Manager.
 
 Some of the examples are accompanied by tutorials, including:
 - A [quick start guide][docs-quickstart] for creating and running your first
@@ -130,5 +124,4 @@ Some of the examples are accompanied by tutorials, including:
 [xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
 [branch-new]: https://github.com/grpc/grpc-swift/tree/main
 [branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
-[examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/main/Examples
-[examples-in-source]: https://github.com/grpc/grpc-swift/tree/main/Sources/Examples
+[examples]: https://github.com/grpc/grpc-swift/tree/main/Examples/v1

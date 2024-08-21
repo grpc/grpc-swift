@@ -294,7 +294,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/v1/Echo/Model"
+    path: "Examples/v1/Echo/Model"
   )
 
   static let echoImplementation: Target = .target(
@@ -306,7 +306,7 @@ extension Target {
       .nioHTTP2,
       .protobuf,
     ],
-    path: "Sources/Examples/v1/Echo/Implementation"
+    path: "Examples/v1/Echo/Implementation"
   )
 
   static let echo: Target = .executableTarget(
@@ -323,7 +323,7 @@ extension Target {
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
-    path: "Sources/Examples/v1/Echo/Runtime"
+    path: "Examples/v1/Echo/Runtime"
   )
 
   static let helloWorldModel: Target = .target(
@@ -333,7 +333,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/v1/HelloWorld/Model"
+    path: "Examples/v1/HelloWorld/Model"
   )
 
   static let helloWorldClient: Target = .executableTarget(
@@ -345,7 +345,7 @@ extension Target {
       .nioPosix,
       .argumentParser,
     ],
-    path: "Sources/Examples/v1/HelloWorld/Client"
+    path: "Examples/v1/HelloWorld/Client"
   )
 
   static let helloWorldServer: Target = .executableTarget(
@@ -357,7 +357,7 @@ extension Target {
       .nioPosix,
       .argumentParser,
     ],
-    path: "Sources/Examples/v1/HelloWorld/Server"
+    path: "Examples/v1/HelloWorld/Server"
   )
 
   static let routeGuideModel: Target = .target(
@@ -367,7 +367,7 @@ extension Target {
       .nio,
       .protobuf,
     ],
-    path: "Sources/Examples/v1/RouteGuide/Model"
+    path: "Examples/v1/RouteGuide/Model"
   )
 
   static let routeGuideClient: Target = .executableTarget(
@@ -379,7 +379,7 @@ extension Target {
       .nioPosix,
       .argumentParser,
     ],
-    path: "Sources/Examples/v1/RouteGuide/Client"
+    path: "Examples/v1/RouteGuide/Client"
   )
 
   static let routeGuideServer: Target = .executableTarget(
@@ -392,7 +392,7 @@ extension Target {
       .nioPosix,
       .argumentParser,
     ],
-    path: "Sources/Examples/v1/RouteGuide/Server"
+    path: "Examples/v1/RouteGuide/Server"
   )
 
   static let packetCapture: Target = .executableTarget(
@@ -405,7 +405,7 @@ extension Target {
       .nioExtras,
       .argumentParser,
     ],
-    path: "Sources/Examples/v1/PacketCapture",
+    path: "Examples/v1/PacketCapture",
     exclude: [
       "README.md",
     ]
@@ -433,7 +433,7 @@ extension Target {
       .echoModel,
       .echoImplementation
     ],
-    path: "Sources/Examples/v1/ReflectionService",
+    path: "Examples/v1/ReflectionService",
     resources: [
       .copy("Generated")
     ]
