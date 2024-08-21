@@ -152,6 +152,7 @@ extension Target.Dependency {
   static var grpcInProcessTransport: Self { .target(name: "GRPCInProcessTransport") }
   static var grpcInterceptors: Self { .target(name: "GRPCInterceptors") }
   static var grpcHTTP2Core: Self { .target(name: "GRPCHTTP2Core") }
+  static var grpcHTTP2Transport: Self { .target(name: "GRPCHTTP2Transport") }
   static var grpcHTTP2TransportNIOPosix: Self { .target(name: "GRPCHTTP2TransportNIOPosix") }
   static var grpcHTTP2TransportNIOTransportServices: Self { .target(name: "GRPCHTTP2TransportNIOTransportServices") }
   static var grpcHealth: Self { .target(name: "GRPCHealth") }
@@ -238,6 +239,7 @@ extension Target {
         .grpcCore,
         .nioCore,
         .nioHTTP2,
+        .nioTLS,
         .cgrpcZlib,
         .dequeModule,
         .atomics
@@ -258,7 +260,10 @@ extension Target {
         .grpcHTTP2Core,
         .nioPosix,
         .nioExtras
-      ],
+      ].appending(
+        .nioSSL,
+        if: includeNIOSSL
+      ),
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
@@ -449,7 +454,9 @@ extension Target {
         .grpcHTTP2TransportNIOPosix,
         .grpcHTTP2TransportNIOTransportServices,
         .grpcProtobuf
-      ],
+      ].appending(
+        .nioSSL, if: includeNIOSSL
+      ),
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
@@ -648,7 +655,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/Echo/Model",
+      path: "Examples/v1/Echo/Model",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -663,7 +670,7 @@ extension Target {
         .nioHTTP2,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/Echo/Implementation",
+      path: "Examples/v1/Echo/Implementation",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -683,7 +690,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      path: "Sources/Examples/v1/Echo/Runtime",
+      path: "Examples/v1/Echo/Runtime",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -700,7 +707,7 @@ extension Target {
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
-      path: "Sources/Examples/v2/Echo",
+      path: "Examples/v2/echo",
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
@@ -717,7 +724,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/HelloWorld/Model",
+      path: "Examples/v1/HelloWorld/Model",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -732,7 +739,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/HelloWorld/Client",
+      path: "Examples/v1/HelloWorld/Client",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -747,8 +754,25 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/HelloWorld/Server",
+      path: "Examples/v1/HelloWorld/Server",
       swiftSettings: [.swiftLanguageMode(.v5)]
+    )
+  }
+
+  static var helloWorld_v2: Target {
+    .executableTarget(
+      name: "hello-world",
+      dependencies: [
+        .grpcProtobuf,
+        .grpcHTTP2Transport,
+        .argumentParser,
+      ],
+      path: "Examples/v2/hello-world",
+      swiftSettings: [
+        .swiftLanguageMode(.v6),
+        .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("InternalImportsByDefault")
+      ]
     )
   }
 
@@ -760,7 +784,7 @@ extension Target {
         .nio,
         .protobuf,
       ],
-      path: "Sources/Examples/v1/RouteGuide/Model",
+      path: "Examples/v1/RouteGuide/Model",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -775,7 +799,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/RouteGuide/Client",
+      path: "Examples/v1/RouteGuide/Client",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -791,7 +815,7 @@ extension Target {
         .nioPosix,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/RouteGuide/Server",
+      path: "Examples/v1/RouteGuide/Server",
       swiftSettings: [.swiftLanguageMode(.v5)]
     )
   }
@@ -807,7 +831,7 @@ extension Target {
         .nioExtras,
         .argumentParser,
       ],
-      path: "Sources/Examples/v1/PacketCapture",
+      path: "Examples/v1/PacketCapture",
       exclude: [
         "README.md",
       ],
@@ -841,7 +865,7 @@ extension Target {
         .echoModel,
         .echoImplementation
       ],
-      path: "Sources/Examples/v1/ReflectionService",
+      path: "Examples/v1/ReflectionService",
       resources: [
         .copy("Generated")
       ],
@@ -1063,6 +1087,7 @@ let package = Package(
 
     // v2 examples
     .echo_v2,
+    .helloWorld_v2,
   ]
 )
 
