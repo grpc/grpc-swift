@@ -20,7 +20,7 @@ import ArgumentParser
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct RouteGuide: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
-    commandName: "route-guide-v2",
+    commandName: "route-guide",
     subcommands: [Serve.self, GetFeature.self, ListFeatures.self, RecordRoute.self, RouteChat.self]
   )
 }
