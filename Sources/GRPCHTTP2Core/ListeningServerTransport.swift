@@ -28,7 +28,7 @@ public protocol ListeningServerTransport: ServerTransport {
 extension GRPCServer {
   /// Returns the listening address of the server transport once it has started.
   ///
-  /// This will `nil` if the transport doesn't conform to ``ListeningServerTransport``.
+  /// This will be `nil` if the transport doesn't conform to ``ListeningServerTransport``.
   public var listeningAddress: SocketAddress? {
     get async throws {
       if let listener = self.transport as? (any ListeningServerTransport) {
