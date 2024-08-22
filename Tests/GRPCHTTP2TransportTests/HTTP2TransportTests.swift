@@ -145,7 +145,7 @@ final class HTTP2TransportTests: XCTestCase {
     switch kind {
     case .posix:
       let server = GRPCServer(
-        transport: try .http2NIO(
+        transport: .http2NIOPosix(
           address: .ipv4(host: "127.0.0.1", port: 0),
           config: .defaults(transportSecurity: .plaintext) {
             $0.compression.enabledAlgorithms = compression
