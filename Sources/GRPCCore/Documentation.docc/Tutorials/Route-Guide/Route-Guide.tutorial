@@ -1,0 +1,499 @@
+@Tutorial(time: 30) {
+  @XcodeRequirement(
+    title: "Xcode 16 Beta 6+",
+    destination: "https://developer.apple.com/download/"
+  )
+
+  @Intro(title: "The Basics: Route Guide") {
+    Follow this tutorial to learn how to create a gRPC service and client from scratch. You'll
+    learn how to define a service in a `.proto` file, generate server and client code using the
+    Protocol Buffer compiler, and use gRPC Swift to write a simple client and server for your
+    service.
+
+    This tutorial assumes that you have read the [Overview](https://grpc.io/docs) and are familiar
+    with [Protocol Buffers](https://developers.google.com/protocol-buffers/docs/proto3).
+
+    If you're looking for a simpler starting point, try the <doc:Hello-World> tutorial.
+  }
+
+  @Section(title: "Setup") {
+    Before we can write any code we need to create a new Swift Package and configure it
+    to depend on gRPC Swift.
+
+    @Steps {
+      @Step {
+        Create a new directory called for the package called `RouteGuide`.
+
+        @Code(name: "Console.txt", file: "route-guide-sec01-step01-mkdir.txt")
+      }
+
+      @Step {
+        All subsequent commands used in this tutorial assume that you're working from the directory
+        you just created so change to it now.
+
+        @Code(name: "Console.txt", file: "route-guide-sec01-step02-cd.txt")
+      }
+
+      @Step {
+        We need to create a few more directories, one for our source code and another for the
+        Protocol Buffers files.
+
+        @Code(name: "Console.txt", file: "route-guide-sec01-step03-mkdir.txt")
+      }
+
+      @Step {
+        Now we'll create a manifest for our Swift Package. Create a new empty file
+        called `Package.swift`.
+
+        The first line in the file is a directive indicating what tool version is required to build
+        the package. For gRPC Swift v2, the tools version must be 6.0 or newer.
+
+        @Code(name: "Package.swift", file: "route-guide-sec01-step04-tools-version.swift")
+      }
+
+      @Step {
+        Import the `PackageDescription` module so we can describe our package.
+
+        @Code(name: "Package.swift", file: "route-guide-sec01-step05-import.swift")
+      }
+
+      @Step {
+        Create an empty package object called `RouteGuide`.
+
+        @Code(name: "Package.swift", file: "route-guide-sec01-step06-description.swift")
+      }
+
+      @Step {
+        We need to add a dependency on the gRPC Swift and Swift Protobuf packages. As gRPC Swift v2
+        hasn't yet been released the dependency must be on the `main` branch.
+
+        Note that we also add `.macOS(.v15)` to platforms, this is the earliest version supported by
+        gRPC Swift v2.
+
+        @Code(name: "Package.swift", file: "route-guide-sec01-step07-description.swift")
+      }
+
+      @Step {
+        Next we can add a target. In this tutorial we'll create a single executable target which
+        can act as both a client and a server.
+
+        We require two gRPC targets: `_GRPCHTTP2Transport"` provides an implementation of an HTTP/2
+        client and server, while `_GRPCProtobuf` provides the necessary components to serialize
+        and deserialize `SwiftProtobuf` messages.
+
+        > Because gRPC Swift v2 hasn't been released yet the product names are prefixed
+        > with an `"_"`; this indicates that they aren't yet considered as stable public API.
+
+        @Code(name: "Package.swift", file: "route-guide-sec01-step08-description.swift")
+      }
+    }
+  }
+
+  @Section(title: "Defining the service") {
+    Our next step is to define our gRPC *service* and its *request* and *response* types using
+    Protocol Buffers.
+
+    @Steps {
+      @Step {
+        Create a new empty file in the `Protos` directory called `route_guide.proto`. We'll use
+        the "proto3" syntax and our service will be part of the "routeguide" package.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step01-import.proto")
+      }
+
+      @Step {
+        To define a service we create a named `service` in the `.proto` file.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step02-service.proto")
+      }
+
+      @Step {
+        Then we define `rpc` methods inside our service definition, specifying their
+        request and response types. gRPC lets you define four kinds of service methods,
+        all of which are used in the `RouteGuide` service.
+
+        A *unary RPC* where the client sends a request to the server using the stub
+        and waits for a response to come back, just like a normal function call.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step03-unary.proto")
+      }
+
+      @Step {
+        A *server-side streaming RPC* where the client sends a request to the server
+        and gets a stream to read a sequence of messages back. The client reads from
+        the returned stream until there are no more messages. As you can see in our
+        example, you specify a server-side streaming method by placing the `stream`
+        keyword before the *response* type.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step04-server-streaming.proto")
+      }
+
+      @Step {
+        A *client-side streaming RPC* where the client writes a sequence of messages
+        and sends them to the server, again using a provided stream. Once the client
+        has finished writing the messages, it waits for the server to read them all
+        and return its response. You specify a client-side streaming method by placing
+        the `stream` keyword before the *request* type.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step05-client-streaming.proto")
+      }
+
+      @Step {
+        A *bidirectional streaming RPC* where both sides send a sequence of messages
+        using a read-write stream. The two streams operate independently, so clients
+        and servers can read and write in whatever order they like: for example, the
+        server could wait to receive all the client messages before writing its
+        responses, or it could alternately read a message then write a message, or
+        some other combination of reads and writes. The order of messages in each
+        stream is preserved. You specify this type of method by placing the `stream`
+        keyword before both the request and the response.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step06-bidi-streaming.proto")
+      }
+
+      @Step {
+        The `.proto` file also contains the Protocol Buffers message type definitions for all
+        request and response messages used by the service.
+
+        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step07-messages.proto")
+      }
+    }
+  }
+
+  @Section(title: "Generating client and server code") {
+    Next we need to generate the gRPC client and server interfaces from our `.proto`
+    service definition. We do this using the Protocol Buffer compiler, `protoc`, with
+    two plugins: one with support for Swift (via [Swift Protobuf](https://github.com/apple/swift-protobuf))
+    and the other for gRPC. This section assumes you already have `protoc` installed.
+
+    To learn more about generating code check out the <doc:Generating-stubs> article.
+
+    @Steps {
+      @Step {
+        First we need to build the two plugins for `protoc`, `protoc-gen-swift` and
+        `protoc-gen-grpc-swift`.
+
+        @Code(name: "Console", file: "route-guide-sec03-step01-protoc-plugins.txt")
+      }
+
+      @Step {
+        We'll generate the code into a separate directory within `Sources` called `Generated` which
+        we need to create first.
+
+        @Code(name: "Console", file: "route-guide-sec03-step02-mkdir.txt")
+      }
+
+      @Step {
+        Now run `protoc` to generate the messages. This will create
+        `Sources/Generated/route_guide.pb.swift`.
+
+        @Code(name: "Console", file: "route-guide-sec03-step03-gen-messages.txt")
+      }
+
+      @Step {
+        Run `protoc` again to generate the service code. This will create
+        `Sources/Generated/route_guide.grpc.swift`.
+
+        > `protoc-gen-grpc-swift` is currently shared with v1 so the `_V2=true` option is required.
+        > This will be removed when v2 is released.
+
+        @Code(name: "Console", file: "route-guide-sec03-step04-gen-grpc.txt")
+      }
+    }
+  }
+
+  @Section(title: "Creating the service") {
+    Now that we've generated the service stubs and messages we can create a server. If you're only
+    interested in creating gRPC clients you can skip this section (although you might find it
+    interesting anyway!)
+
+    There are two parts to making our service do its job:
+    1. Implementing the service protocol generated from our service definition, doing the
+       actual "work" of our service.
+    2. Running a gRPC server to listen for requests from clients and return the service responses.
+
+    This section explains how to implement the service protocol.
+
+    @Steps {
+      @Step {
+        Create a new empty file in `Sources` called  `RouteGuideService.swift`. To implement
+        the service we need to conform a type to the generated service protocol. The name
+        of the protocol will be `<package>_<service>.ServiceProtocol` where `<package>` and
+        `<service>` are both taken from the `.proto` file.
+
+        Create a `struct` called `RouteGuideService` which conforms to
+        the `Routeguide_RouteGuide.ServiceProtocol`.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step01-struct.swift")
+      }
+
+      @Step {
+        The compiler will produce an error because the requirements of the protocol haven't yet been
+        met. It should also suggest a fix-it to generate the methods for you. Apply it so that you
+        get empty function definitions. They should look like this:
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step02-unimplemented.swift")
+      }
+
+      @Step {
+        To implement the unary `getFeature` method the service needs a way to get features. We'll
+        just store the features in an array which is passed to the service when it's initialized.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step03-features.swift")
+      }
+
+      @Step {
+        `GetFeature` is a unary RPC which takes a single point as input and returns a single
+        feature back to the client. Its generated method, `getFeature`, has one parameter:
+        `ServerRequest.Single<Routeguide_Point>` describing the request. To return our response to
+        the client and complete the call we must first lookup a feature at the given point.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step04-unary.swift")
+      }
+
+      @Step {
+        Then create and return an appropriate `ServerResponse.Single<Routeguide_Feature>` to the
+        client.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step05-unary.swift")
+      }
+
+      @Step {
+        Next, let's look at one of our streaming RPCs. Like the unary RPC, this method gets a
+        request object, `ServerRequest.Single<Routeguide_Rectangle>`, which has a message describing
+        the area in which the client wants to list features. As this is a server-side streaming RPC
+        we can send back multiple `Routeguide_Feature` messages to our client.
+
+        To implement the method we must return a `ServerResponse.Stream` which is initialized with
+        a closure to produce messages. The closure is passed a writer allowing you to write back
+        messages. We can write back a message for each feature we find in the rectangle.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step06-server-streaming.swift")
+      }
+
+      @Step {
+        You can also send metadata to the client once the RPC has finished, in this case we don't
+        have any to send back so return the empty `Metadata` collection.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step07-server-streaming.swift")
+      }
+
+      @Step {
+        Now let's look at something a little more complicated: the client-side streaming
+        method `RecordRoute`, where we get a stream of `Routeguide_Point`s from the client and
+        return a single `Routeguide_RouteSummary` with information about their trip.
+
+        As you can see our method gets a `ServerRequest.Stream<Routeguide_Point>` parameter and
+        returns a `ServerResponse.Single<Routeguide_RouteSummary>`. In the method we iterate over
+        the asynchronous stream of points sent by the client. For each point we check if there's
+        a feature at that point and calculate the distance between that and the last point we saw.
+        After the *client* has finished sending points we populate a `Routeguide_RouteSummary` which
+        we return in the response.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step08-client-streaming.swift")
+      }
+
+      @Step {
+        Finally, let's look at our bidirectional streaming RPC `RouteChat`. Here we receive a stream
+        of `Routeguide_RouteNote`s and return a stream of `Routeguide_RouteNote`s. For this RPC we
+        also need to modify the state of our service to store notes sent by the client. We'll do
+        this with a helper class to store the notes.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step09-bidi-streaming.swift")
+      }
+
+      @Step {
+        To implement the RPC we return a `ServerResponse.Stream<Routeguide_RouteNote>`. Like in the
+        server-side streaming RPC it's initialized with a closure for writing back messages. In
+        the body of the closure we iterate the request messages and for each one call our helper
+        class to record the note and get all other notes recorded in the same location. We then
+        write each of those notes back to the client.
+
+        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step10-bidi-streaming.swift")
+      }
+    }
+  }
+
+  @Section(title: "Creating the server") {
+    Now that we've created the service we can create a server.
+
+    @Steps {
+      @Step {
+        First we need to download a database of known features for the service. Copy
+        `route_guide_db.json` from the [gRPC Swift repository](https://github.com/grpc/grpc-swift/tree/main/Examples/v2/route-guide)
+        and place it in the `Sources` directory.
+      }
+
+      @Step {
+        Next, we need to add it as a resource to the target. Open `Package.swift`.
+
+        @Code(name: "Package.swift", file: "route-guide-sec05-step00-package.swift")
+      }
+
+      @Step {
+        Now add a `resouces` argument to copy the `route_guide_db.json` database.
+
+        @Code(name: "Package.swift", file: "route-guide-sec05-step01-package.swift")
+      }
+
+      @Step {
+        We'll also need to add a dependency on Swift Argument Parser to the package and target.
+
+        @Code(name: "Package.swift", file: "route-guide-sec05-step02-package.swift")
+      }
+
+      @Step {
+        With that done we can now create a new file in `Sources` called `RouteGuide.swift` with the
+        following code in.
+
+        `@main` indicates that the type contains the entry point to the program. In this case,
+        because `RouteGuide` conforms to `AsyncParseableCommand`, the entry point to our program
+        is the `run()` method.
+
+        @Code(name: "Sources/RouteGuide.swift", file: "route-guide-sec05-step03-main.swift")
+      }
+
+      @Step {
+        We'll also add a helper to load the features from the resource we added in the package
+        manifest. Let's call `runServer` if the `server` flag is set. We'll define
+        the `runServer` method next.
+
+        @Code(name: "Sources/RouteGuide.swift", file: "route-guide-sec05-step04-load-features.swift")
+      }
+
+      @Step {
+        Create a new file in `Sources` called `RouteGuide+Server.swift`, we'll use this for all of
+        the server specific code.
+
+        @Code(name: "Sources/RouteGuide+Server.swift", file: "route-guide-sec05-step05-run-server.swift")
+      }
+
+      @Step {
+        Next, let's load the features and instantiate our service.
+
+        @Code(name: "Sources/RouteGuide+Server.swift", file: "route-guide-sec05-step06-init-service.swift")
+      }
+
+      @Step {
+        The server is instantiated with a transport which provides the communication with a remote
+        peer.
+
+        We'll use an HTTP/2 transport provided by the `GRPCHTTP2Transport` module which is
+        implemented on top of SwiftNIO's Posix sockets abstraction. The server is configured to
+        bind to "127.0.0.1:31415" and use the default configuration. The `.plaintext` transport
+        security means that the connections won't use TLS and will be unencrypted.
+
+        @Code(name: "Sources/RouteGuide+Server.swift", file: "route-guide-sec05-step07-server.swift")
+      }
+
+      @Step {
+        Finally, we start the server and then print out it's listening address when it's started.
+
+        @Code(name: "Sources/RouteGuide+Server.swift", file: "route-guide-sec05-step08-run.swift")
+      }
+    }
+  }
+
+  @Section(title: "Creating the client") {
+    In this section, we'll look at creating a Swift client for our `RouteGuide` service.
+
+    To call service methods, we first need to create a *stub*. All generated Swift stubs
+    are *asynchronous*.
+
+    @Steps {
+      @Step {
+        Like for the server we'll add a method to run the client RPCs. Open `RouteGuide.swift`
+        again and add a call to `runClient`.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step01-call-run-client.swift")
+      }
+
+      @Step {
+        Create a new file in `Sources` called `RouteGuide+Client.swift` and define the
+        `runClient` function.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step02-add-run-client.swift")
+      }
+
+      @Step {
+        First we need to create a gRPC client for our stub, we're not using TLS so we
+        use the `.plaintext` security transport and specify the server address and port
+        we want to connect to.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step03-create-client.swift")
+      }
+
+      @Step {
+        To make RPCs using the client it needs to be running. Running the client will resolve the
+        target address, start a load balancer and then maintain connections to the server.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step04-run-client.swift")
+      }
+
+      @Step {
+        We can now instantiate the stub with our `client` and call service methods.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step05-stub.swift")
+      }
+
+      @Step {
+        Calling the unary RPC `GetFeature` is straightforward, we create a
+        `Routeguide_Point` and pass it to the `getFeature` method and it returns
+        a `Routeguide_Feature`.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step06-get-feature.swift")
+      }
+
+      @Step {
+        Next, let's look at a server-side streaming call to `ListFeatures` which returns a stream of
+        features within a bounding rectangle. It's very similar to the unary RPC we just looked at
+        except that we must pass a response handling closure to `listFeatures`. Inside the closure
+        we can iterate the stream of features returned from the server.
+
+        The response handling closure makes the lifetime of the RPC clear: only once the closure
+        returns does the `listFeature` return, at which point any resources used by gRPC to execute
+        the RPC will have been cleaned up.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step07-list-features.swift")
+      }
+
+      @Step {
+        Now for something a little more complicated: the client-side streaming method `RecordRoute`,
+        where we send a stream of `Routeguide_Point`s to the server and get back a
+        single `Routeguide_RouteSummary`. The `recordRoute` method takes a closure which is passed
+        a writer which we can use to send messages to the server. Once the closure returns the
+        server knows that the client is done sending messages and can return a summary to the
+        client.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step08-record-route.swift")
+      }
+
+      @Step {
+        Finally, let's look at our bidirectional stream `RouteChat` RPC. As with our client-side
+        streaming example, we have a closure for writing notes, and like the server-side streaming
+        example another closure to handle the response.
+
+        @Code(name: "Sources/RouteGuide+Client.swift", file: "route-guide-sec06-step09-route-chat.swift")
+      }
+    }
+  }
+
+  @Section(title: "Try it out!") {
+    Now that you've implemented the service and created a client to call the various RPCs
+    we can try running it.
+
+    @Steps {
+      @Step {
+        In one a terminal run `swift run RouteGuide --server` to start the server.
+
+        @Code(name: "Console", file: "route-guide-sec07-step01-server.txt")
+      }
+
+      @Step {
+        In another terminal run `swift run RouteGuide` to run the client program.
+
+        @Code(name: "Console", file: "route-guide-sec07-step02-client.txt")
+      }
+    }
+  }
+}

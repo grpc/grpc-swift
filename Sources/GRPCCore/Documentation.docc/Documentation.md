@@ -24,6 +24,7 @@ contains products of this package:
 ### Tutorials
 
 - <doc:Hello-World>
+- <doc:Route-Guide>
 
 ### Essentials
 
