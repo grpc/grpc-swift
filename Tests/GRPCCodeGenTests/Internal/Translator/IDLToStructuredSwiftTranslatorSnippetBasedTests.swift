@@ -275,6 +275,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     let structuredSwift = try translator.translate(
       codeGenerationRequest: codeGenerationRequest,
       accessLevel: accessLevel,
+      accessLevelOnImports: true,
       client: false,
       server: server
     )
@@ -299,6 +300,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -339,6 +341,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -374,6 +377,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -421,6 +425,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .internal,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -466,6 +471,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -519,6 +525,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -572,6 +579,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
@@ -618,6 +626,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       try translator.translate(
         codeGenerationRequest: codeGenerationRequest,
         accessLevel: .public,
+        accessLevelOnImports: true,
         client: true,
         server: true
       )
