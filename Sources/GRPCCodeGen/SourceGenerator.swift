@@ -37,6 +37,14 @@ public struct SourceGenerator: Sendable {
     /// Whether or not server code should be generated.
     public var server: Bool
 
+    /// Creates a new configuration.
+    ///
+    /// - Parameters:
+    ///   - accessLevel: The access level the generated code will have.
+    ///   - accessLevelOnImports: Whether imports have explicit access levels.
+    ///   - client: Whether or not client code should be generated.
+    ///   - server: Whether or not server code should be generated.
+    ///   - indentation: The indentation of the generated code as the number of spaces.
     public init(
       accessLevel: AccessLevel,
       accessLevelOnImports: Bool,
