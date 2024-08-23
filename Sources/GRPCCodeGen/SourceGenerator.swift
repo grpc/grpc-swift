@@ -28,6 +28,8 @@ public struct SourceGenerator: Sendable {
   public struct Configuration: Sendable {
     /// The access level the generated code will have.
     public var accessLevel: AccessLevel
+    /// Whether imports have explicit access levels.
+    public var accessLevelOnImports: Bool
     /// The indentation of the generated code as the number of spaces.
     public var indentation: Int
     /// Whether or not client code should be generated.
@@ -35,8 +37,15 @@ public struct SourceGenerator: Sendable {
     /// Whether or not server code should be generated.
     public var server: Bool
 
-    public init(accessLevel: AccessLevel, client: Bool, server: Bool, indentation: Int = 4) {
+    public init(
+      accessLevel: AccessLevel,
+      accessLevelOnImports: Bool,
+      client: Bool,
+      server: Bool,
+      indentation: Int = 4
+    ) {
       self.accessLevel = accessLevel
+      self.accessLevelOnImports = accessLevelOnImports
       self.indentation = indentation
       self.client = client
       self.server = server
@@ -65,16 +74,17 @@ public struct SourceGenerator: Sendable {
   /// The function that transforms a ``CodeGenerationRequest`` object  into a ``SourceFile`` object containing
   /// the generated code, in accordance to the configurations set by the user for the ``SourceGenerator``.
   public func generate(
-    _ serviceRepresentation: CodeGenerationRequest
+    _ request: CodeGenerationRequest
   ) throws -> SourceFile {
     let translator = IDLToStructuredSwiftTranslator()
     let textRenderer = TextBasedRenderer(indentation: self.configuration.indentation)
 
     let structuredSwiftRepresentation = try translator.translate(
-      codeGenerationRequest: serviceRepresentation,
+      codeGenerationRequest: request,
       accessLevel: self.configuration.accessLevel,
-      client: configuration.client,
-      server: configuration.server
+      accessLevelOnImports: self.configuration.accessLevelOnImports,
+      client: self.configuration.client,
+      server: self.configuration.server
     )
     let sourceFile = try textRenderer.render(structured: structuredSwiftRepresentation)
 
