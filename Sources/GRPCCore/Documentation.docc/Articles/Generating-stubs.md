@@ -170,6 +170,7 @@ protoc \
 | `Client`                  | `True`, `False`                            | `True`     | Generate client stubs                                    |
 | `FileNaming`              | `FullPath`, `PathToUnderscore`, `DropPath` | `FullPath` | How generated source files should be named. (See below.) |
 | `ProtoPathModuleMappings` |                                            |            | Path to module map `.asciipb` file. (See below.)         |
+| `AccessLevelOnImports`    | `True`, `False`                            | `True`     | Whether imports should have explicit access levels.      |
 
 > The `protoc-gen-grpc-swift` binary is currently shared between gRPC Swift v1.x and v2.x. To
 > generate stubs for v2.x you _must_ specify `_V2=True`.
