@@ -50,12 +50,13 @@ struct PerformanceWorker: AsyncParsableCommand {
       print("[WARNING] performance-worker built in DEBUG mode, results won't be representative.")
     }
 
-    let transport = HTTP2ServerTransport.Posix(
-      address: .ipv4(host: "127.0.0.1", port: self.driverPort),
-      config: .defaults(transportSecurity: .plaintext)
+    let server = GRPCServer(
+      transport: .http2NIOPosix(
+        address: .ipv4(host: "127.0.0.1", port: self.driverPort),
+        config: .defaults(transportSecurity: .plaintext)
+      ),
+      services: [WorkerService()]
     )
-
-    let server = GRPCServer(transport: transport, services: [WorkerService()])
     try await server.run()
   }
 }

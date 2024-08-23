@@ -26,7 +26,7 @@ internal import NIOHTTP2
 extension HTTP2ServerTransport {
   /// A NIO Transport Services-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public struct TransportServices: ServerTransport {
+  public struct TransportServices: ServerTransport, ListeningServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
     private let config: Config
     private let eventLoopGroup: NIOTSEventLoopGroup
@@ -145,7 +145,7 @@ extension HTTP2ServerTransport {
     ///   - eventLoopGroup: The ELG from which to get ELs to run this transport.
     public init(
       address: GRPCHTTP2Core.SocketAddress,
-      config: Config = .defaults,
+      config: Config,
       eventLoopGroup: NIOTSEventLoopGroup = .singletonNIOTSEventLoopGroup
     ) {
       self.address = address
@@ -282,7 +282,6 @@ extension HTTP2ServerTransport {
       self.serverQuiescingHelper.initiateShutdown(promise: nil)
     }
   }
-
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -317,13 +316,18 @@ extension HTTP2ServerTransport.TransportServices {
     }
 
     /// Default values for the different configurations.
-    public static var defaults: Self {
-      Self(
+    ///
+    /// - Parameter configure: A closure which allows you to modify the defaults before
+    ///     returning them.
+    public static func defaults(configure: (_ config: inout Self) -> Void = { _ in }) -> Self {
+      var config = Self(
         compression: .defaults,
         connection: .defaults,
         http2: .defaults,
         rpc: .defaults
       )
+      configure(&config)
+      return config
     }
   }
 }
@@ -366,6 +370,28 @@ extension NIOTSListenerBootstrap {
         childChannelInitializer: childChannelInitializer
       )
     }
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension ServerTransport where Self == HTTP2ServerTransport.TransportServices {
+  /// Create a new `TransportServices` based HTTP/2 server transport.
+  ///
+  /// - Parameters:
+  ///   - address: The address to which the server should be bound.
+  ///   - config: The transport configuration.
+  ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to the server on. This must
+  ///       be a `NIOTSEventLoopGroup` or an `EventLoop` from a `NIOTSEventLoopGroup`.
+  public static func http2NIOTS(
+    address: GRPCHTTP2Core.SocketAddress,
+    config: HTTP2ServerTransport.TransportServices.Config,
+    eventLoopGroup: NIOTSEventLoopGroup = .singletonNIOTSEventLoopGroup
+  ) -> Self {
+    return HTTP2ServerTransport.TransportServices(
+      address: address,
+      config: config,
+      eventLoopGroup: eventLoopGroup
+    )
   }
 }
 #endif

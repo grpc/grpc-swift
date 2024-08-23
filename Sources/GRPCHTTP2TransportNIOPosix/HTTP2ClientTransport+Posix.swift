@@ -59,8 +59,8 @@ extension HTTP2ClientTransport {
     ///
     /// - Parameters:
     ///   - target: A target to resolve.
-    ///   - resolverRegistry: A registry of resolver factories.
     ///   - config: Configuration for the transport.
+    ///   - resolverRegistry: A registry of resolver factories.
     ///   - serviceConfig: Service config controlling how the transport should establish and
     ///       load-balance connections.
     ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to run connections on. This must
@@ -69,8 +69,8 @@ extension HTTP2ClientTransport {
     /// - Throws: When no suitable resolver could be found for the `target`.
     public init(
       target: any ResolvableTarget,
+      config: Config,
       resolverRegistry: NameResolverRegistry = .defaults,
-      config: Config = .defaults,
       serviceConfig: ServiceConfig = ServiceConfig(),
       eventLoopGroup: any EventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) throws {
@@ -180,13 +180,18 @@ extension HTTP2ClientTransport.Posix {
     }
 
     /// Default values.
-    public static var defaults: Self {
-      Self(
+    ///
+    /// - Parameters:
+    ///   - configure: A closure which allows you to modify the defaults before returning them.
+    public static func defaults(_ configure: (_ config: inout Self) -> Void = { _ in }) -> Self {
+      var config = Self(
         http2: .defaults,
         backoff: .defaults,
         connection: .defaults,
         compression: .defaults
       )
+      configure(&config)
+      return config
     }
   }
 }
@@ -199,6 +204,37 @@ extension GRPCChannel.Config {
       backoff: posix.backoff,
       connection: posix.connection,
       compression: posix.compression
+    )
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension ClientTransport where Self == HTTP2ClientTransport.Posix {
+  /// Creates a new Posix based HTTP/2 client transport.
+  ///
+  /// - Parameters:
+  ///   - target: A target to resolve.
+  ///   - config: Configuration for the transport.
+  ///   - resolverRegistry: A registry of resolver factories.
+  ///   - serviceConfig: Service config controlling how the transport should establish and
+  ///       load-balance connections.
+  ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to run connections on. This must
+  ///       be a `MultiThreadedEventLoopGroup` or an `EventLoop` from
+  ///       a `MultiThreadedEventLoopGroup`.
+  /// - Throws: When no suitable resolver could be found for the `target`.
+  public static func http2NIOPosix(
+    target: any ResolvableTarget,
+    config: HTTP2ClientTransport.Posix.Config,
+    resolverRegistry: NameResolverRegistry = .defaults,
+    serviceConfig: ServiceConfig = ServiceConfig(),
+    eventLoopGroup: any EventLoopGroup = .singletonMultiThreadedEventLoopGroup
+  ) throws -> Self {
+    return try HTTP2ClientTransport.Posix(
+      target: target,
+      config: config,
+      resolverRegistry: resolverRegistry,
+      serviceConfig: serviceConfig,
+      eventLoopGroup: eventLoopGroup
     )
   }
 }
