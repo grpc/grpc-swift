@@ -348,7 +348,8 @@
 
         `@main` indicates that the type contains the entry point to the program. In this case,
         because `RouteGuide` conforms to `AsyncParseableCommand`, the entry point to our program
-        is the `run()` method.
+        is the `run()` method. The `@Flag` annotation marks `server` as a flag to the argument
+        parser so that you can specify `--server` when running the program.
 
         @Code(name: "Sources/RouteGuide.swift", file: "route-guide-sec05-step03-main.swift")
       }
