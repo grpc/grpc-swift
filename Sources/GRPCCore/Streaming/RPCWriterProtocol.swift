@@ -86,6 +86,6 @@ extension AsyncThrowingStream.Continuation: ClosableRPCWriterProtocol where Fail
   }
 
   public func finish(throwing error: any Error) {
-    self.finish(throwing: error as (any Error)?)
+    self.finish(throwing: .some(error))
   }
 }
