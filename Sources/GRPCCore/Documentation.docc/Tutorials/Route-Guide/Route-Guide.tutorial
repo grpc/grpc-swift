@@ -45,7 +45,7 @@
         Now we'll create a manifest for our Swift Package. Create a new empty file
         called `Package.swift`.
 
-        The first line in the file is a directive indicating what tool version is required to build
+        The first line in the file is a directive indicating what tools version is required to build
         the package. For gRPC Swift v2, the tools version must be 6.0 or newer.
 
         @Code(name: "Package.swift", file: "route-guide-sec01-step04-tools-version.swift")
@@ -67,7 +67,7 @@
         We need to add a dependency on the gRPC Swift and Swift Protobuf packages. As gRPC Swift v2
         hasn't yet been released the dependency must be on the `main` branch.
 
-        Note that we also add `.macOS(.v15)` to platforms, this is the earliest version supported by
+        Note that we also add `.macOS(.v15)` to platforms, this is the earliest macOS version supported by
         gRPC Swift v2.
 
         @Code(name: "Package.swift", file: "route-guide-sec01-step07-description.swift")
@@ -77,7 +77,7 @@
         Next we can add a target. In this tutorial we'll create a single executable target which
         can act as both a client and a server.
 
-        We require two gRPC targets: `_GRPCHTTP2Transport"` provides an implementation of an HTTP/2
+        We require two gRPC dependencies: `_GRPCHTTP2Transport"` provides an implementation of an HTTP/2
         client and server, while `_GRPCProtobuf` provides the necessary components to serialize
         and deserialize `SwiftProtobuf` messages.
 
@@ -387,7 +387,7 @@
       }
 
       @Step {
-        Finally, we start the server and then print out it's listening address when it's started.
+        Finally, we start the server and then print out its listening address when it's started.
 
         @Code(name: "Sources/RouteGuide+Server.swift", file: "route-guide-sec05-step08-run.swift")
       }
@@ -484,7 +484,7 @@
 
     @Steps {
       @Step {
-        In one a terminal run `swift run RouteGuide --server` to start the server.
+        In one terminal run `swift run RouteGuide --server` to start the server.
 
         @Code(name: "Console", file: "route-guide-sec07-step01-server.txt")
       }
