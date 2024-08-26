@@ -27,4 +27,4 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 
 [gh-grpc]: https://github.com/grpc/grpc
 [grpcio]: https://grpc.io
-[spi-grpc-swift-main]: https://swiftpackageindex.com/grpc/grpc-swift/main/documentation/grpc
+[spi-grpc-swift-main]: https://swiftpackageindex.com/grpc/grpc-swift/main/documentation/grpccore
