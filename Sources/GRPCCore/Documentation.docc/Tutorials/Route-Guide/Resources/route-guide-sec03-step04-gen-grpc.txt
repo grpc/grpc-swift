@@ -1,0 +1,6 @@
+$ protoc --plugin=.build/debug/protoc-gen-grpc-swift \
+  -I Protos \
+  --grpc-swift_out=Sources/Generated \
+  --grpc-swift_opt=_V2=true \
+  --grpc-swift_opt=UseAccessLevelOnImports=false \
+  Protos/route_guide.proto
