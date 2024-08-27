@@ -144,36 +144,40 @@ final class HTTP2TransportTests: XCTestCase {
 
     switch kind {
     case .posix:
-      var config = HTTP2ServerTransport.Posix.Config.defaults(transportSecurity: .plaintext)
-      config.compression.enabledAlgorithms = compression
-      let transport = HTTP2ServerTransport.Posix(
-        address: .ipv4(host: "127.0.0.1", port: 0),
-        config: config
+      let server = GRPCServer(
+        transport: .http2NIOPosix(
+          address: .ipv4(host: "127.0.0.1", port: 0),
+          config: .defaults(transportSecurity: .plaintext) {
+            $0.compression.enabledAlgorithms = compression
+          }
+        ),
+        services: services
       )
 
-      let server = GRPCServer(transport: transport, services: services)
       group.addTask {
         try await server.run()
       }
 
-      let address = try await transport.listeningAddress
+      let address = try await server.listeningAddress!
       return (server, address)
 
     case .niots:
       #if canImport(Network)
-      var config = HTTP2ServerTransport.TransportServices.Config.defaults
-      config.compression.enabledAlgorithms = compression
-      let transport = HTTP2ServerTransport.TransportServices(
-        address: .ipv4(host: "127.0.0.1", port: 0),
-        config: config
+      let server = GRPCServer(
+        transport: .http2NIOTS(
+          address: .ipv4(host: "127.0.0.1", port: 0),
+          config: .defaults {
+            $0.compression.enabledAlgorithms = compression
+          }
+        ),
+        services: services
       )
 
-      let server = GRPCServer(transport: transport, services: services)
       group.addTask {
         try await server.run()
       }
 
-      let address = try await transport.listeningAddress
+      let address = try await server.listeningAddress!
       return (server, address)
       #else
       throw XCTSkip("Transport not supported on this platform")
@@ -191,14 +195,14 @@ final class HTTP2TransportTests: XCTestCase {
 
     switch kind {
     case .posix:
-      var config = HTTP2ClientTransport.Posix.Config.defaults
-      config.compression.algorithm = compression
-      config.compression.enabledAlgorithms = enabledCompression
       var serviceConfig = ServiceConfig()
       serviceConfig.loadBalancingConfig = [.roundRobin]
       transport = try HTTP2ClientTransport.Posix(
         target: target,
-        config: config,
+        config: .defaults {
+          $0.compression.algorithm = compression
+          $0.compression.enabledAlgorithms = enabledCompression
+        },
         serviceConfig: serviceConfig
       )
 

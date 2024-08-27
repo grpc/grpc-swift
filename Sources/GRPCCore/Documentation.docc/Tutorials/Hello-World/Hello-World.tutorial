@@ -83,8 +83,10 @@
     Protos/generate.sh
     ```
 
-    You'll learn how to do this manually in another tutorial. Now that the stubs have been updated
-    you need to implement and call the new method in the human-written parts of your application.
+    To learn how to generate stubs check out the <doc:Generating-stubs> article.
+
+    Now that the stubs have been updated you need to implement and call the new method in the
+    human-written parts of your application.
 
     @Steps {
       @Step {

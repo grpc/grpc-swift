@@ -30,8 +30,12 @@ struct Greet: AsyncParsableCommand {
 
   func run() async throws {
     try await withThrowingDiscardingTaskGroup { group in
-      let http2 = try HTTP2ClientTransport.Posix(target: .ipv4(host: "127.0.0.1", port: self.port))
-      let client = GRPCClient(transport: http2)
+      let client = GRPCClient(
+        transport: try .http2NIOPosix(
+          target: .ipv4(host: "127.0.0.1", port: self.port),
+          config: .defaults()
+        )
+      )
 
       group.addTask {
         try await client.run()

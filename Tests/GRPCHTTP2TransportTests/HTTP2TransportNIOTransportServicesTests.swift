@@ -24,7 +24,8 @@ internal import XCTest
 final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_IPv4() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .ipv4(host: "0.0.0.0", port: 0)
+      address: .ipv4(host: "0.0.0.0", port: 0),
+      config: .defaults()
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -43,7 +44,8 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
   func testGetListeningAddress_IPv6() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .ipv6(host: "::1", port: 0)
+      address: .ipv6(host: "::1", port: 0),
+      config: .defaults()
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -62,7 +64,8 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
   func testGetListeningAddress_UnixDomainSocket() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .unixDomainSocket(path: "/tmp/niots-uds-test")
+      address: .unixDomainSocket(path: "/tmp/niots-uds-test"),
+      config: .defaults()
     )
     defer {
       // NIOTS does not unlink the UDS on close.
@@ -87,7 +90,8 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
   func testGetListeningAddress_InvalidAddress() async {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .unixDomainSocket(path: "/this/should/be/an/invalid/path")
+      address: .unixDomainSocket(path: "/this/should/be/an/invalid/path"),
+      config: .defaults()
     )
 
     try? await withThrowingDiscardingTaskGroup { group in
@@ -115,7 +119,8 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
   func testGetListeningAddress_StoppedListening() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
-      address: .ipv4(host: "0.0.0.0", port: 0)
+      address: .ipv4(host: "0.0.0.0", port: 0),
+      config: .defaults()
     )
 
     try? await withThrowingDiscardingTaskGroup { group in

@@ -10,4 +10,12 @@
 
     @TutorialReference(tutorial: "doc:Hello-World")
   }
+  
+  @Chapter(name: "The Basics") {
+    Follow the basic tutorial to learn how to create a gRPC service and client from scratch.
+
+    @Image(source: "image.png")
+
+    @TutorialReference(tutorial: "doc:Route-Guide")
+  }
 }

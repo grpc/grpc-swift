@@ -21,6 +21,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
     accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevelOnImports: Bool,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
@@ -30,11 +31,23 @@ struct IDLToStructuredSwiftTranslator: Translator {
       server: server,
       accessLevel: accessLevel
     )
+
     let topComment = Comment.preFormatted(codeGenerationRequest.leadingTrivia)
-    let imports = try codeGenerationRequest.dependencies.reduce(
-      into: [ImportDescription(accessLevel: AccessModifier(accessLevel), moduleName: "GRPCCore")]
-    ) { partialResult, newDependency in
-      try partialResult.append(translateImport(dependency: newDependency))
+
+    var imports: [ImportDescription] = []
+    imports.append(
+      ImportDescription(
+        accessLevel: accessLevelOnImports ? AccessModifier(accessLevel) : nil,
+        moduleName: "GRPCCore"
+      )
+    )
+
+    for dependency in codeGenerationRequest.dependencies {
+      let importDescription = try self.translateImport(
+        dependency: dependency,
+        accessLevelOnImports: accessLevelOnImports
+      )
+      imports.append(importDescription)
     }
 
     var codeBlocks = [CodeBlock]()
@@ -79,10 +92,11 @@ extension AccessModifier {
 
 extension IDLToStructuredSwiftTranslator {
   private func translateImport(
-    dependency: CodeGenerationRequest.Dependency
+    dependency: CodeGenerationRequest.Dependency,
+    accessLevelOnImports: Bool
   ) throws -> ImportDescription {
     var importDescription = ImportDescription(
-      accessLevel: AccessModifier(dependency.accessLevel),
+      accessLevel: accessLevelOnImports ? AccessModifier(dependency.accessLevel) : nil,
       moduleName: dependency.module
     )
     if let item = dependency.item {
