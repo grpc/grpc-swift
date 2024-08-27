@@ -27,8 +27,12 @@ struct Get: AsyncParsableCommand {
   var arguments: ClientArguments
 
   func run() async throws {
-    let transport = try HTTP2ClientTransport.Posix(target: self.arguments.target)
-    let client = GRPCClient(transport: transport)
+    let client = GRPCClient(
+      transport: try .http2NIOPosix(
+        target: self.arguments.target,
+        config: .defaults()
+      )
+    )
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {

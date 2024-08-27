@@ -1,0 +1,4 @@
+$ protoc --plugin=.build/debug/protoc-gen-swift \
+  -I Protos \
+  --swift_out=Sources/Generated \
+  Protos/route_guide.proto
