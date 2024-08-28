@@ -29,7 +29,7 @@ bin_path=$(swift build -c release --show-bin-path)
 protoc_gen_swift="$bin_path/protoc-gen-swift"
 protoc_generate_grpc_swift="$bin_path/protoc-gen-grpc-swift"
 
-# Genreates gRPC by invoking protoc with the gRPC Swift plugin.
+# Generates gRPC by invoking protoc with the gRPC Swift plugin.
 # Parameters:
 # - $1: .proto file
 # - $2: proto path
@@ -46,7 +46,7 @@ function generate_grpc {
   invoke_protoc "${args[@]}" "$proto"
 }
 
-# Genreates messages by invoking protoc with the Swift plugin.
+# Generates messages by invoking protoc with the Swift plugin.
 # Parameters:
 # - $1: .proto file
 # - $2: proto path
@@ -228,7 +228,7 @@ function generate_service_messages_interop_tests {
   local output="$root/Sources/InteroperabilityTests/Generated"
 
   for proto in "${protos[@]}"; do
-    generate_message "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "FileNaming=DropPath"
+    generate_message "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "FileNaming=DropPath" "UseAccessLevelOnImports=true"
     generate_grpc "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "Server=true" "_V2=true" "FileNaming=DropPath"
   done
 }
@@ -260,7 +260,7 @@ function generate_health_service {
   local proto="$here/upstream/grpc/health/v1/health.proto"
   local output="$root/Sources/Services/Health/Generated"
 
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Package"
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "UseAccessLevelOnImports=true"
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "Client=true" "Server=true" "_V2=true"
 }
 

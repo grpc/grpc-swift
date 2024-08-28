@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import GRPCCore
-
-import struct Foundation.Data
+internal import GRPCCore
+private import struct Foundation.Data
 
 /// This test verifies that implementations support zero-size messages. Ideally, client
 /// implementations would verify that the request and response were zero bytes serialized, but
