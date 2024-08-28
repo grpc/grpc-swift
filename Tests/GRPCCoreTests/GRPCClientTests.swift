@@ -347,9 +347,9 @@ final class GRPCClientTests: XCTestCase {
 
       let task = Task {
         try await client.clientStreaming(
-          request: .init(producer: { writer in
+          request: ClientRequest.Stream { writer in
             try await Task.sleep(for: .seconds(5))
-          }),
+          },
           descriptor: BinaryEcho.Methods.collect,
           serializer: IdentitySerializer(),
           deserializer: IdentityDeserializer(),
