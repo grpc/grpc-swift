@@ -33,7 +33,7 @@ struct Greet: AsyncParsableCommand {
       let client = GRPCClient(
         transport: try .http2NIOPosix(
           target: .ipv4(host: "127.0.0.1", port: self.port),
-          config: .defaults()
+          config: .defaults(transportSecurity: .plaintext)
         )
       )
 

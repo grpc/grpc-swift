@@ -19,14 +19,18 @@ public import GRPCHTTP2Core  // should be @usableFromInline
 public import NIOCore
 public import NIOPosix  // has to be public because of default argument value in init
 
+#if canImport(NIOSSL)
+import NIOSSL
+#endif
+
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport {
-  /// A `ClientTransport` using HTTP/2 built on top of `NIOPosix`.
+  /// A ``GRPCCore/ClientTransport`` using HTTP/2 built on top of `NIOPosix`.
   ///
   /// This transport builds on top of SwiftNIO's Posix networking layer and is suitable for use
   /// on Linux and Darwin based platform (macOS, iOS, etc.) However, it's *strongly* recommended
   /// that if you are targeting Darwin platforms then you should use the `NIOTS` variant of
-  /// the `HTTP2ClientTransport`.
+  /// the ``GRPCHTTP2Core/HTTP2ClientTransport``.
   ///
   /// To use this transport you need to provide a 'target' to connect to which will be resolved
   /// by an appropriate resolver from the resolver registry. By default the resolver registry can
@@ -34,16 +38,19 @@ extension HTTP2ClientTransport {
   /// targets. If you use a custom target you must also provide an appropriately configured
   /// registry.
   ///
-  /// You can control various aspects of connection creation, management and RPC behavior via the
-  /// ``Config``. Load balancing policies and other RPC specific behavior can be configured via
+  /// You can control various aspects of connection creation, management, security and RPC behavior via
+  /// the ``Config``. Load balancing policies and other RPC specific behavior can be configured via
   /// the ``ServiceConfig`` (if it isn't provided by a resolver).
   ///
   /// Beyond creating the transport you don't need to interact with it directly, instead, pass it
   /// to a `GRPCClient`:
   ///
   /// ```swift
-  /// try await withThrowingDiscardingTaskGroup {
-  ///   let transport = try HTTP2ClientTransport.Posix(target: .dns(host: "example.com"))
+  /// try await withThrowingDiscardingTaskGroup { group in
+  ///   let transport = try HTTP2ClientTransport.Posix(
+  ///     target: .ipv4(host: "example.com"),
+  ///     config: .defaults(transportSecurity: someTransportSecurity)
+  ///   )
   ///   let client = GRPCClient(transport: transport)
   ///   group.addTask {
   ///     try await client.run()
@@ -133,11 +140,37 @@ extension HTTP2ClientTransport.Posix {
     func establishConnection(
       to address: GRPCHTTP2Core.SocketAddress
     ) async throws -> HTTP2Connection {
+      #if canImport(NIOSSL)
+      let nioSSLContext: NIOSSLContext?
+      switch self.config.transportSecurity.wrapped {
+      case .plaintext:
+        nioSSLContext = nil
+      case .tls(let tlsConfig):
+        do {
+          nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+        } catch {
+          throw RuntimeError(
+            code: .transportError,
+            message: "Couldn't create SSL context, check your TLS configuration.",
+            cause: error
+          )
+        }
+      }
+      #endif
+
       let (channel, multiplexer) = try await ClientBootstrap(
         group: self.eventLoopGroup
       ).connect(to: address) { channel in
         channel.eventLoop.makeCompletedFuture {
-          try channel.pipeline.syncOperations.configureGRPCClientPipeline(
+          #if canImport(NIOSSL)
+          if let nioSSLContext {
+            try channel.pipeline.syncOperations.addHandler(
+              NIOSSLServerHandler(context: nioSSLContext)
+            )
+          }
+          #endif
+
+          return try channel.pipeline.syncOperations.configureGRPCClientPipeline(
             channel: channel,
             config: GRPCChannel.Config(posix: self.config)
           )
@@ -164,31 +197,48 @@ extension HTTP2ClientTransport.Posix {
     /// Compression configuration.
     public var compression: HTTP2ClientTransport.Config.Compression
 
+    /// The transport's security.
+    public var transportSecurity: TransportSecurity
+
     /// Creates a new connection configuration.
     ///
-    /// See also ``defaults``.
+    /// - Parameters:
+    ///   - http2: HTTP2 configuration.
+    ///   - backoff: Backoff configuration.
+    ///   - connection: Connection configuration.
+    ///   - compression: Compression configuration.
+    ///   - transportSecurity: The transport's security configuration.
+    ///
+    /// - SeeAlso: ``defaults(_:)``.
     public init(
       http2: HTTP2ClientTransport.Config.HTTP2,
       backoff: HTTP2ClientTransport.Config.Backoff,
       connection: HTTP2ClientTransport.Config.Connection,
-      compression: HTTP2ClientTransport.Config.Compression
+      compression: HTTP2ClientTransport.Config.Compression,
+      transportSecurity: TransportSecurity
     ) {
       self.http2 = http2
       self.connection = connection
       self.backoff = backoff
       self.compression = compression
+      self.transportSecurity = transportSecurity
     }
 
     /// Default values.
     ///
     /// - Parameters:
+    ///   - transportSecurity: The security settings applied to the transport.
     ///   - configure: A closure which allows you to modify the defaults before returning them.
-    public static func defaults(_ configure: (_ config: inout Self) -> Void = { _ in }) -> Self {
+    public static func defaults(
+      transportSecurity: TransportSecurity,
+      configure: (_ config: inout Self) -> Void = { _ in }
+    ) -> Self {
       var config = Self(
         http2: .defaults,
         backoff: .defaults,
         connection: .defaults,
-        compression: .defaults
+        compression: .defaults,
+        transportSecurity: transportSecurity
       )
       configure(&config)
       return config
