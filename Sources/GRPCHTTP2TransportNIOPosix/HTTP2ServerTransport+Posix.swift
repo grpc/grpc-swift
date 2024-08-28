@@ -15,7 +15,7 @@
  */
 
 public import GRPCCore
-public import GRPCHTTP2Core // should be @usableFromInline
+public import GRPCHTTP2Core  // should be @usableFromInline
 internal import NIOCore
 internal import NIOExtras
 internal import NIOHTTP2
@@ -380,7 +380,7 @@ extension HTTP2ServerTransport.Posix {
     public var transportSecurity: TransportSecurity
 
     /// Construct a new `Config`.
-    /// 
+    ///
     /// - Parameters:
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
