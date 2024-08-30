@@ -19,9 +19,10 @@ public import GRPCCore
 public import NIOTransportServices  // has to be public because of default argument value in init
 public import GRPCHTTP2Core
 
-internal import NIOCore
-internal import NIOExtras
-internal import NIOHTTP2
+private import NIOCore
+private import NIOExtras
+private import NIOHTTP2
+private import Network
 
 private import Synchronization
 
@@ -171,7 +172,51 @@ extension HTTP2ServerTransport {
         }
       }
 
-      let serverChannel = try await NIOTSListenerBootstrap(group: self.eventLoopGroup)
+      let bootstrap: NIOTSListenerBootstrap
+
+      let requireALPN: Bool
+      let scheme: Scheme
+      switch self.config.transportSecurity.wrapped {
+      case .plaintext:
+        requireALPN = false
+        scheme = .http
+        bootstrap = NIOTSListenerBootstrap(group: self.eventLoopGroup)
+
+      case .tls(let tlsConfig):
+        requireALPN = tlsConfig.requireALPN
+        scheme = .https
+
+        let nwTLSOptions = NWProtocolTLS.Options()
+        sec_protocol_options_set_local_identity(
+          nwTLSOptions.securityProtocolOptions,
+          sec_identity_create(tlsConfig.identity)!
+        )
+
+        sec_protocol_options_set_min_tls_protocol_version(
+          nwTLSOptions.securityProtocolOptions,
+          .TLSv12
+        )
+
+        if let hostnameOverride = tlsConfig.hostnameOverride {
+          sec_protocol_options_set_tls_server_name(
+            nwTLSOptions.securityProtocolOptions,
+            hostnameOverride
+          )
+        }
+
+        for `protocol` in ["grpc-exp", "h2"] {
+          sec_protocol_options_add_tls_application_protocol(
+            nwTLSOptions.securityProtocolOptions,
+            `protocol`
+          )
+        }
+
+        bootstrap = NIOTSListenerBootstrap(group: self.eventLoopGroup)
+          .tlsOptions(nwTLSOptions)
+      }
+
+      let serverChannel =
+        try await bootstrap
         .serverChannelOption(
           ChannelOptions.socketOption(.so_reuseaddr),
           value: 1
@@ -190,8 +235,8 @@ extension HTTP2ServerTransport {
               connectionConfig: self.config.connection,
               http2Config: self.config.http2,
               rpcConfig: self.config.rpc,
-              requireALPN: false,
-              scheme: .http
+              requireALPN: requireALPN,
+              scheme: scheme
             )
           }
         }
@@ -292,12 +337,18 @@ extension HTTP2ServerTransport.TransportServices {
   public struct Config: Sendable {
     /// Compression configuration.
     public var compression: HTTP2ServerTransport.Config.Compression
+
     /// Connection configuration.
     public var connection: HTTP2ServerTransport.Config.Connection
+
     /// HTTP2 configuration.
     public var http2: HTTP2ServerTransport.Config.HTTP2
+
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
+
+    /// The transport's security.
+    public var transportSecurity: TransportSecurity
 
     /// Construct a new `Config`.
     /// - Parameters:
@@ -305,28 +356,36 @@ extension HTTP2ServerTransport.TransportServices {
     ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
+    ///   - transportSecurity: The transport's security configuration.
     public init(
       compression: HTTP2ServerTransport.Config.Compression,
       connection: HTTP2ServerTransport.Config.Connection,
       http2: HTTP2ServerTransport.Config.HTTP2,
-      rpc: HTTP2ServerTransport.Config.RPC
+      rpc: HTTP2ServerTransport.Config.RPC,
+      transportSecurity: TransportSecurity
     ) {
       self.compression = compression
       self.connection = connection
       self.http2 = http2
       self.rpc = rpc
+      self.transportSecurity = transportSecurity
     }
 
     /// Default values for the different configurations.
     ///
-    /// - Parameter configure: A closure which allows you to modify the defaults before
-    ///     returning them.
-    public static func defaults(configure: (_ config: inout Self) -> Void = { _ in }) -> Self {
+    /// - Parameters:
+    ///   - transportSecurity: The transport's security configuration.
+    ///   - configure: A closure which allows you to modify the defaults before returning them.
+    public static func defaults(
+      transportSecurity: TransportSecurity,
+      configure: (_ config: inout Self) -> Void = { _ in }
+    ) -> Self {
       var config = Self(
         compression: .defaults,
         connection: .defaults,
         http2: .defaults,
-        rpc: .defaults
+        rpc: .defaults,
+        transportSecurity: transportSecurity
       )
       configure(&config)
       return config

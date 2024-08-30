@@ -22,10 +22,52 @@ import XCTest
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
+  private var identity: SecIdentity!
+
+  private static let p12bundleURL = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()  // (this file)
+    .deletingLastPathComponent()  // GRPCHTTP2TransportTests
+    .deletingLastPathComponent()  // Tests
+    .appendingPathComponent("Sources")
+    .appendingPathComponent("GRPCSampleData")
+    .appendingPathComponent("bundle")
+    .appendingPathExtension("p12")
+
+  override func setUp() async throws {
+    try await super.setUp()
+
+    self.identity = try self.loadIdentity()
+    XCTAssertNotNil(
+      self.identity,
+      "Unable to load identity from '\(Self.p12bundleURL)'"
+    )
+  }
+
+  private func loadIdentity() throws -> SecIdentity? {
+    let data = try Data(contentsOf: Self.p12bundleURL)
+    let options = [kSecImportExportPassphrase as String: "password"]
+
+    var rawItems: CFArray?
+    let status = SecPKCS12Import(data as CFData, options as CFDictionary, &rawItems)
+
+    switch status {
+    case errSecSuccess:
+      ()
+    case errSecInteractionNotAllowed:
+      throw XCTSkip("Unable to import PKCS12 bundle: no interaction allowed")
+    default:
+      XCTFail("SecPKCS12Import: failed with status \(status)")
+      return nil
+    }
+
+    let items = rawItems! as! [[String: Any]]
+    return items.first?[kSecImportItemIdentity as String] as! SecIdentity?
+  }
+
   func testGetListeningAddress_IPv4() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .ipv4(host: "0.0.0.0", port: 0),
-      config: .defaults()
+      config: .defaults(transportSecurity: .plaintext)
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -45,7 +87,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_IPv6() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .ipv6(host: "::1", port: 0),
-      config: .defaults()
+      config: .defaults(transportSecurity: .plaintext)
     )
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -65,7 +107,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_UnixDomainSocket() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .unixDomainSocket(path: "/tmp/niots-uds-test"),
-      config: .defaults()
+      config: .defaults(transportSecurity: .plaintext)
     )
     defer {
       // NIOTS does not unlink the UDS on close.
@@ -91,7 +133,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_InvalidAddress() async {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .unixDomainSocket(path: "/this/should/be/an/invalid/path"),
-      config: .defaults()
+      config: .defaults(transportSecurity: .plaintext)
     )
 
     try? await withThrowingDiscardingTaskGroup { group in
@@ -120,7 +162,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   func testGetListeningAddress_StoppedListening() async throws {
     let transport = GRPCHTTP2Core.HTTP2ServerTransport.TransportServices(
       address: .ipv4(host: "0.0.0.0", port: 0),
-      config: .defaults()
+      config: .defaults(transportSecurity: .plaintext)
     )
 
     try? await withThrowingDiscardingTaskGroup { group in
@@ -148,6 +190,24 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
         transport.beginGracefulShutdown()
       }
     }
+  }
+
+  func testTLSConfig_Defaults() throws {
+    let grpcTLSConfig = HTTP2ServerTransport.TransportServices.Config.TLS.defaults(
+      identity: self.identity
+    )
+    XCTAssertEqual(grpcTLSConfig.identity, self.identity)
+    XCTAssertEqual(grpcTLSConfig.hostnameOverride, nil)
+    XCTAssertEqual(grpcTLSConfig.requireALPN, false)
+  }
+
+  func testTLSConfig_mTLS() throws {
+    let grpcTLSConfig = HTTP2ServerTransport.TransportServices.Config.TLS.mTLS(
+      identity: self.identity
+    )
+    XCTAssertEqual(grpcTLSConfig.identity, self.identity)
+    XCTAssertEqual(grpcTLSConfig.hostnameOverride, "")
+    XCTAssertEqual(grpcTLSConfig.requireALPN, false)
   }
 }
 #endif

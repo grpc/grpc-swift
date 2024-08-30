@@ -166,7 +166,7 @@ final class HTTP2TransportTests: XCTestCase {
       let server = GRPCServer(
         transport: .http2NIOTS(
           address: .ipv4(host: "127.0.0.1", port: 0),
-          config: .defaults {
+          config: .defaults(transportSecurity: .plaintext) {
             $0.compression.enabledAlgorithms = compression
           }
         ),
