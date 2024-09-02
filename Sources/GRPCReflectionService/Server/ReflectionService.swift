@@ -40,6 +40,8 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// - Parameter fileURLs: The URLs of the files containing serialized reflection data.
   /// - Parameter version: The version of the reflection service to create.
   ///
+  /// - Note: Reflection data for well-known-types must be provided if any of your reflection data depends
+  ///   on them.
   /// - Throws: When a file can't be read from disk or parsed.
   public convenience init(reflectionDataFileURLs fileURLs: [URL], version: Version) throws {
     let filePaths: [String]
@@ -64,6 +66,8 @@ public final class ReflectionService: CallHandlerProvider, Sendable {
   /// - Parameter filePaths: The paths to files containing serialized reflection data.
   /// - Parameter version: The version of the reflection service to create.
   ///
+  /// - Note: Reflection data for well-known-types must be provided if any of your reflection data depends
+  ///   on them.
   /// - Throws: When a file can't be read from disk or parsed.
   public init(reflectionDataFilePaths filePaths: [String], version: Version) throws {
     let fileDescriptorProtos = try ReflectionService.readSerializedFileDescriptorProtos(
@@ -218,12 +222,14 @@ internal struct ReflectionServiceData: Sendable {
         let serializedFileDescriptorProto = protoData.serializedFileDescriptorProto
         serializedFileDescriptorProtos.append(serializedFileDescriptorProto)
       } else {
-        return .failure(
-          GRPCStatus(
-            code: .notFound,
-            message: "The provided file or a dependency of the provided file could not be found."
-          )
-        )
+        let base = "No reflection data for '\(currentFileName)'"
+        let message: String
+        if fileName == currentFileName {
+          message = base + "."
+        } else {
+          message = base + " which is a dependency of '\(fileName)'."
+        }
+        return .failure(GRPCStatus(code: .notFound, message: message))
       }
       visited.insert(currentFileName)
     }
