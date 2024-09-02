@@ -38,15 +38,15 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
     var port: Int
 
     func run() async throws {
-      var transportConfig = HTTP2ServerTransport.Posix.Config.defaults(
-        transportSecurity: .plaintext
+      let server = GRPCServer(
+        transport: .http2NIOPosix(
+          address: .ipv4(host: "0.0.0.0", port: self.port),
+          config: .defaults(transportSecurity: .plaintext) {
+            $0.compression.enabledAlgorithms = .all
+          }
+        ),
+        services: [TestService()]
       )
-      transportConfig.compression.enabledAlgorithms = .all
-      let transport = HTTP2ServerTransport.Posix(
-        address: .ipv4(host: "0.0.0.0", port: self.port),
-        config: transportConfig
-      )
-      let server = GRPCServer(transport: transport, services: [TestService()])
       try await server.run()
     }
   }
@@ -102,15 +102,16 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
     }
 
     private func buildClient(host: String, port: Int) throws -> GRPCClient {
-      var transportConfig = HTTP2ClientTransport.Posix.Config.defaults
-      transportConfig.compression.enabledAlgorithms = .all
       let serviceConfig = ServiceConfig(loadBalancingConfig: [.roundRobin])
-      let transport = try HTTP2ClientTransport.Posix(
-        target: .ipv4(host: host, port: port),
-        config: transportConfig,
-        serviceConfig: serviceConfig
+      return GRPCClient(
+        transport: try .http2NIOPosix(
+          target: .ipv4(host: host, port: port),
+          config: .defaults {
+            $0.compression.enabledAlgorithms = .all
+          },
+          serviceConfig: serviceConfig
+        )
       )
-      return GRPCClient(transport: transport)
     }
 
     private func runTest(

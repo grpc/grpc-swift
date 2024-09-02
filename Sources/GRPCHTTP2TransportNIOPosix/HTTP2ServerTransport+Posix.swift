@@ -29,7 +29,7 @@ import NIOSSL
 extension HTTP2ServerTransport {
   /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public final class Posix: ServerTransport {
+  public final class Posix: ServerTransport, ListeningServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
     private let config: Config
     private let eventLoopGroup: MultiThreadedEventLoopGroup
@@ -371,16 +371,23 @@ extension HTTP2ServerTransport.Posix {
     }
 
     /// Default values for the different configurations.
+    ///
+    /// - Parameters:
+    ///   - transportSecurity: The security settings applied to the transport.
+    ///   - configure: A closure which allows you to modify the defaults before returning them.
     public static func defaults(
-      transportSecurity: TransportSecurity
+      transportSecurity: TransportSecurity,
+      configure: (_ config: inout Self) -> Void = { _ in }
     ) -> Self {
-      Self(
+      var config = Self(
         compression: .defaults,
         connection: .defaults,
         http2: .defaults,
         rpc: .defaults,
         transportSecurity: transportSecurity
       )
+      configure(&config)
+      return config
     }
   }
 }
@@ -420,5 +427,28 @@ extension ServerBootstrap {
         childChannelInitializer: childChannelInitializer
       )
     }
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension ServerTransport where Self == HTTP2ServerTransport.Posix {
+  /// Create a new `Posix` based HTTP/2 server transport.
+  ///
+  /// - Parameters:
+  ///   - address: The address to which the server should be bound.
+  ///   - config: The transport configuration.
+  ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to the server on. This must
+  ///       be a `MultiThreadedEventLoopGroup` or an `EventLoop` from
+  ///       a `MultiThreadedEventLoopGroup`.
+  public static func http2NIOPosix(
+    address: GRPCHTTP2Core.SocketAddress,
+    config: HTTP2ServerTransport.Posix.Config,
+    eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
+  ) -> Self {
+    return HTTP2ServerTransport.Posix(
+      address: address,
+      config: config,
+      eventLoopGroup: eventLoopGroup
+    )
   }
 }

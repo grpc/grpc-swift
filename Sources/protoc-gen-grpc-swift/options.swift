@@ -71,6 +71,7 @@ final class GeneratorOptions {
   #if compiler(>=6.0)
   private(set) var v2 = false
   #endif
+  private(set) var useAccessLevelOnImports = true
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -165,6 +166,13 @@ final class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
       #endif
+
+      case "UseAccessLevelOnImports":
+        if let value = Bool(pair.value) {
+          self.useAccessLevelOnImports = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
 
       default:
         throw GenerationError.unknownParameter(name: pair.key)

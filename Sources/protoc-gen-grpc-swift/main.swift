@@ -221,6 +221,7 @@ extension SourceGenerator.Configuration {
     }
     self.init(
       accessLevel: accessLevel,
+      accessLevelOnImports: options.useAccessLevelOnImports,
       client: options.generateClient,
       server: options.generateServer
     )

@@ -287,7 +287,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       XCTAssertEqual(message.errorResponse.errorCode, Int32(GRPCStatus.Code.notFound.rawValue))
       XCTAssertEqual(
         message.errorResponse.errorMessage,
-        "The provided file or a dependency of the provided file could not be found."
+        "No reflection data for 'invalidFileName.proto'."
       )
     }
   }
