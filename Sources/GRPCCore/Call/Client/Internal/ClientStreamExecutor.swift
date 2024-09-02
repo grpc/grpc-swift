@@ -132,14 +132,18 @@ internal enum ClientStreamExecutor {
         return .failed(error)
 
       case .none:
-        let error = RPCError(
-          code: .internalError,
-          message: """
-            Invalid stream. The transport returned an empty stream. This is likely to be \
-            a transport-specific bug.
-            """
-        )
-        return .failed(error)
+        if Task.isCancelled {
+          throw CancellationError()
+        } else {
+          let error = RPCError(
+            code: .internalError,
+            message: """
+              Invalid stream. The transport returned an empty stream. This is likely to be \
+              a transport-specific bug.
+              """
+          )
+          return .failed(error)
+        }
       }
     }.castError(to: RPCError.self) { error in
       RPCError(
