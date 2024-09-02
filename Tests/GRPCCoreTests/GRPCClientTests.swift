@@ -343,25 +343,6 @@ final class GRPCClientTests: XCTestCase {
       }
 
       // Wait for client and server to be running.
-      try await Task.sleep(for: .milliseconds(10))
-
-      let task = Task {
-        try await client.clientStreaming(
-          request: .init(producer: { writer in
-            try await Task.sleep(for: .seconds(5))
-          }),
-          descriptor: BinaryEcho.Methods.collect,
-          serializer: IdentitySerializer(),
-          deserializer: IdentityDeserializer(),
-          options: .defaults
-        ) { response in
-          XCTAssertRejected(response) { error in
-            XCTAssertEqual(error.code, .unknown)
-          }
-        }
-      }
-
-      // Check requests are getting through.
       try await client.unary(
         request: .init(message: [3, 1, 4, 1, 5]),
         descriptor: BinaryEcho.Methods.collect,
@@ -371,6 +352,22 @@ final class GRPCClientTests: XCTestCase {
       ) { response in
         let message = try response.message
         XCTAssertEqual(message, [3, 1, 4, 1, 5])
+      }
+
+      let task = Task {
+        try await client.clientStreaming(
+          request: ClientRequest.Stream { writer in
+            try await Task.sleep(for: .seconds(5))
+          },
+          descriptor: BinaryEcho.Methods.collect,
+          serializer: IdentitySerializer(),
+          deserializer: IdentityDeserializer(),
+          options: .defaults
+        ) { response in
+          XCTAssertRejected(response) { error in
+            XCTAssertEqual(error.code, .unknown)
+          }
+        }
       }
 
       task.cancel()
