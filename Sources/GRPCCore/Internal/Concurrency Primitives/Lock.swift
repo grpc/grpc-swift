@@ -237,17 +237,17 @@ extension UnsafeMutablePointer {
 }
 
 @usableFromInline
-package struct LockedValueBox<Value> {
+struct LockedValueBox<Value> {
   @usableFromInline
   let storage: LockStorage<Value>
 
   @inlinable
-  package init(_ value: Value) {
+  init(_ value: Value) {
     self.storage = .create(value: value)
   }
 
   @inlinable
-  package func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
+  func withLockedValue<T>(_ mutate: (inout Value) throws -> T) rethrows -> T {
     return try self.storage.withLockedValue(mutate)
   }
 
@@ -255,30 +255,30 @@ package struct LockedValueBox<Value> {
   ///
   /// Prefer ``withLockedValue(_:)`` where possible.
   @usableFromInline
-  package var unsafe: Unsafe {
+  var unsafe: Unsafe {
     Unsafe(storage: self.storage)
   }
 
   @usableFromInline
-  package struct Unsafe {
+  struct Unsafe {
     @usableFromInline
     let storage: LockStorage<Value>
 
     /// Manually acquire the lock.
     @inlinable
-    package func lock() {
+    func lock() {
       self.storage.lock()
     }
 
     /// Manually release the lock.
     @inlinable
-    package func unlock() {
+    func unlock() {
       self.storage.unlock()
     }
 
     /// Mutate the value, assuming the lock has been acquired manually.
     @inlinable
-    package func withValueAssumingLockIsAcquired<T>(
+    func withValueAssumingLockIsAcquired<T>(
       _ mutate: (inout Value) throws -> T
     ) rethrows -> T {
       return try self.storage.withUnsafeMutablePointerToHeader { value in

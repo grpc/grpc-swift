@@ -15,31 +15,31 @@
  */
 
 import GRPCCore
-import NIOConcurrencyHelpers
 import NIOCore
 import NIOHTTP2
 import NIOPosix
+import Synchronization
 import XCTest
 
 @testable import GRPCHTTP2Core
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class TestServer: Sendable {
   private let eventLoopGroup: any EventLoopGroup
   private typealias Stream = NIOAsyncChannel<RPCRequestPart, RPCResponsePart>
   private typealias Multiplexer = NIOHTTP2AsyncSequence<Stream>
 
-  private let connected: NIOLockedValueBox<[any Channel]>
+  private let connected: Mutex<[any Channel]>
 
   typealias Inbound = NIOAsyncChannelInboundStream<RPCRequestPart>
   typealias Outbound = NIOAsyncChannelOutboundWriter<RPCResponsePart>
 
-  private let server: NIOLockedValueBox<NIOAsyncChannel<Multiplexer, Never>?>
+  private let server: Mutex<NIOAsyncChannel<Multiplexer, Never>?>
 
   init(eventLoopGroup: any EventLoopGroup) {
     self.eventLoopGroup = eventLoopGroup
-    self.server = NIOLockedValueBox(nil)
-    self.connected = NIOLockedValueBox([])
+    self.server = Mutex(nil)
+    self.connected = Mutex([])
   }
 
   enum Target {
@@ -48,20 +48,20 @@ final class TestServer: Sendable {
   }
 
   var clients: [any Channel] {
-    return self.connected.withLockedValue { $0 }
+    return self.connected.withLock { $0 }
   }
 
   func bind(to target: Target = .localhost) async throws -> GRPCHTTP2Core.SocketAddress {
-    precondition(self.server.withLockedValue { $0 } == nil)
+    precondition(self.server.withLock { $0 } == nil)
 
     @Sendable
     func configure(_ channel: any Channel) -> EventLoopFuture<Multiplexer> {
-      self.connected.withLockedValue {
+      self.connected.withLock {
         $0.append(channel)
       }
 
       channel.closeFuture.whenSuccess {
-        self.connected.withLockedValue { connected in
+        self.connected.withLock { connected in
           guard let index = connected.firstIndex(where: { $0 === channel }) else { return }
           connected.remove(at: index)
         }
@@ -112,12 +112,12 @@ final class TestServer: Sendable {
       address = .unixDomainSocket(path: server.channel.localAddress!.pathname!)
     }
 
-    self.server.withLockedValue { $0 = server }
+    self.server.withLock { $0 = server }
     return address
   }
 
   func run(_ handle: @Sendable @escaping (Inbound, Outbound) async throws -> Void) async throws {
-    guard let server = self.server.withLockedValue({ $0 }) else {
+    guard let server = self.server.withLock({ $0 }) else {
       fatalError("bind() must be called first")
     }
 
@@ -145,7 +145,7 @@ final class TestServer: Sendable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension TestServer {
   enum RunHandler {
     case echo

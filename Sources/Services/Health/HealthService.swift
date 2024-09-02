@@ -15,6 +15,7 @@
  */
 
 internal import GRPCCore
+private import Synchronization
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {
@@ -67,21 +68,21 @@ internal struct HealthService: Grpc_Health_V1_HealthServiceProtocol {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HealthService {
-  private struct State: Sendable {
+  private final class State: Sendable {
     // The state of each service keyed by the fully qualified service name.
-    private let lockedStorage = LockedValueBox([String: ServiceState]())
+    private let lockedStorage = Mutex([String: ServiceState]())
 
     fileprivate func currentStatus(
       ofService service: String
     ) -> Grpc_Health_V1_HealthCheckResponse.ServingStatus? {
-      return self.lockedStorage.withLockedValue { $0[service]?.currentStatus }
+      return self.lockedStorage.withLock { $0[service]?.currentStatus }
     }
 
     fileprivate func updateStatus(
       _ status: Grpc_Health_V1_HealthCheckResponse.ServingStatus,
       forService service: String
     ) {
-      self.lockedStorage.withLockedValue { storage in
+      self.lockedStorage.withLock { storage in
         storage[service, default: ServiceState(status: status)].updateStatus(status)
       }
     }
@@ -90,7 +91,7 @@ extension HealthService {
       _ continuation: AsyncStream<Grpc_Health_V1_HealthCheckResponse.ServingStatus>.Continuation,
       forService service: String
     ) {
-      self.lockedStorage.withLockedValue { storage in
+      self.lockedStorage.withLock { storage in
         storage[service, default: ServiceState(status: .serviceUnknown)]
           .addContinuation(continuation)
       }

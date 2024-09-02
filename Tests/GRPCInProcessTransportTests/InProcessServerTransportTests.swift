@@ -39,20 +39,17 @@ final class InProcessServerTransportTests: XCTestCase {
       outbound: RPCWriter.Closable(wrapping: outbound.continuation)
     )
 
-    let messages = LockedValueBox<[RPCRequestPart]?>(nil)
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await transport.listen { stream in
           let partValue = try? await stream.inbound.reduce(into: []) { $0.append($1) }
-          messages.withLockedValue { $0 = partValue }
+          XCTAssertEqual(partValue, [.message([42])])
           transport.stopListening()
         }
       }
 
       try transport.acceptStream(stream)
     }
-
-    XCTAssertEqual(messages.withLockedValue { $0 }, [.message([42])])
   }
 
   func testStopListening() async throws {
