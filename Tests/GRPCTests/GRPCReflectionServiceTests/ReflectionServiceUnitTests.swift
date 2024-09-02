@@ -349,7 +349,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         status,
         GRPCStatus(
           code: .notFound,
-          message: "The provided file or a dependency of the provided file could not be found."
+          message: "No reflection data for 'invalid.proto'."
         )
       )
     }
@@ -368,7 +368,8 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
         status,
         GRPCStatus(
           code: .notFound,
-          message: "The provided file or a dependency of the provided file could not be found."
+          message:
+            "No reflection data for 'invalidDependency' which is a dependency of 'bar1.proto'."
         )
       )
     }
