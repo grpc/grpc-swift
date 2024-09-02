@@ -80,31 +80,24 @@ struct ServerRPCExecutorTestHarness {
       RPCAsyncSequence<RPCResponsePart, any Error>
     ) async throws -> Void
   ) async throws {
-    let input = RPCAsyncSequence.makeBackpressuredStream(
-      of: RPCRequestPart.self,
-      watermarks: (16, 32)
-    )
-
-    let output = RPCAsyncSequence.makeBackpressuredStream(
-      of: RPCResponsePart.self,
-      watermarks: (16, 32)
-    )
+    let input = AsyncThrowingStream.makeStream(of: RPCRequestPart.self)
+    let output = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await producer(input.writer)
+        try await producer(RPCWriter.Closable(wrapping: input.continuation))
       }
 
       group.addTask {
-        try await consumer(output.stream)
+        try await consumer(RPCAsyncSequence(wrapping: output.stream))
       }
 
       group.addTask {
         await ServerRPCExecutor.execute(
           stream: RPCStream(
             descriptor: MethodDescriptor(service: "foo", method: "bar"),
-            inbound: input.stream,
-            outbound: output.writer
+            inbound: RPCAsyncSequence(wrapping: input.stream),
+            outbound: RPCWriter.Closable(wrapping: output.continuation)
           ),
           deserializer: deserializer,
           serializer: serializer,

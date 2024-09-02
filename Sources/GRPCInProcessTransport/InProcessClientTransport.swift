@@ -232,23 +232,19 @@ public final class InProcessClientTransport: ClientTransport {
     options: CallOptions,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
-    let request = RPCAsyncSequence<RPCRequestPart, any Error>.makeBackpressuredStream(
-      watermarks: (16, 32)
-    )
-    let response = RPCAsyncSequence<RPCResponsePart, any Error>.makeBackpressuredStream(
-      watermarks: (16, 32)
-    )
+    let request = AsyncThrowingStream.makeStream(of: RPCRequestPart.self)
+    let response = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
 
     let clientStream = RPCStream(
       descriptor: descriptor,
-      inbound: response.stream,
-      outbound: request.writer
+      inbound: RPCAsyncSequence(wrapping: response.stream),
+      outbound: RPCWriter.Closable(wrapping: request.continuation)
     )
 
     let serverStream = RPCStream(
       descriptor: descriptor,
-      inbound: request.stream,
-      outbound: response.writer
+      inbound: RPCAsyncSequence(wrapping: request.stream),
+      outbound: RPCWriter.Closable(wrapping: response.continuation)
     )
 
     let waitForConnectionStream: AsyncStream<Void>? = self.state.withLock { state in

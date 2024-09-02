@@ -23,6 +23,8 @@ import XCTest
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessServerTransport()
+
+    let outbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
     let stream = RPCStream<
       RPCAsyncSequence<RPCRequestPart, any Error>,
       RPCWriter<RPCResponsePart>.Closable
@@ -34,11 +36,7 @@ final class InProcessServerTransportTests: XCTestCase {
           $0.finish()
         }
       ),
-      outbound: .init(
-        wrapping: BufferedStream.Source(
-          storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
-        )
-      )
+      outbound: RPCWriter.Closable(wrapping: outbound.continuation)
     )
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -56,6 +54,8 @@ final class InProcessServerTransportTests: XCTestCase {
 
   func testStopListening() async throws {
     let transport = InProcessServerTransport()
+
+    let firstStreamOutbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
     let firstStream = RPCStream<
       RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
     >(
@@ -66,11 +66,7 @@ final class InProcessServerTransportTests: XCTestCase {
           $0.finish()
         }
       ),
-      outbound: .init(
-        wrapping: BufferedStream.Source(
-          storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
-        )
-      )
+      outbound: RPCWriter.Closable(wrapping: firstStreamOutbound.continuation)
     )
 
     try transport.acceptStream(firstStream)
@@ -83,6 +79,7 @@ final class InProcessServerTransportTests: XCTestCase {
 
       transport.stopListening()
 
+      let secondStreamOutbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
       let secondStream = RPCStream<
         RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
       >(
@@ -93,11 +90,7 @@ final class InProcessServerTransportTests: XCTestCase {
             $0.finish()
           }
         ),
-        outbound: .init(
-          wrapping: BufferedStream.Source(
-            storage: .init(backPressureStrategy: .watermark(.init(low: 1, high: 1)))
-          )
-        )
+        outbound: RPCWriter.Closable(wrapping: secondStreamOutbound.continuation)
       )
 
       XCTAssertThrowsError(ofType: RPCError.self) {
