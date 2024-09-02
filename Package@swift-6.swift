@@ -179,6 +179,7 @@ extension Target {
         .logging,
         .protobuf,
         .dequeModule,
+        .atomics
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
@@ -381,7 +382,8 @@ extension Target {
         .nioEmbedded,
         .nioTransportServices,
         .logging,
-        .reflectionService
+        .reflectionService,
+        .atomics
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
