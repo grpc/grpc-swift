@@ -20,7 +20,7 @@ internal import NIOCore
 internal import NIOExtras
 internal import NIOHTTP2
 public import NIOPosix  // has to be public because of default argument value in init
-internal import Synchronization
+private import Synchronization
 
 #if canImport(NIOSSL)
 import NIOSSL

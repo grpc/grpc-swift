@@ -23,7 +23,7 @@ internal import NIOCore
 internal import NIOExtras
 internal import NIOHTTP2
 
-internal import Synchronization
+private import Synchronization
 
 extension HTTP2ServerTransport {
   /// A NIO Transport Services-backed implementation of a server transport.

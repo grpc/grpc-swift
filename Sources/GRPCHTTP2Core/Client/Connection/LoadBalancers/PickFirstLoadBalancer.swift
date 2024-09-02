@@ -15,7 +15,7 @@
  */
 
 package import GRPCCore
-internal import Synchronization
+private import Synchronization
 
 /// A load-balancer which has a single subchannel.
 ///

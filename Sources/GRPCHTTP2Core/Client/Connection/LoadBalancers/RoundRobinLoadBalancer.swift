@@ -15,7 +15,7 @@
  */
 
 package import GRPCCore
-internal import NIOConcurrencyHelpers
+private import NIOConcurrencyHelpers
 
 /// A load-balancer which maintains to a set of subchannels and uses round-robin to pick a
 /// subchannel when picking a subchannel to use.

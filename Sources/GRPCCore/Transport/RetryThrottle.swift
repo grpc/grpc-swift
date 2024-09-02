@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-internal import Synchronization
+private import Synchronization
 
 /// A throttle used to rate-limit retries and hedging attempts.
 ///

@@ -15,7 +15,7 @@
  */
 
 public import GRPCCore
-internal import Synchronization
+private import Synchronization
 
 /// An in-process implementation of a ``ClientTransport``.
 ///
