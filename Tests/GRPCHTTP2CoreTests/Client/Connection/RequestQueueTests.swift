@@ -15,11 +15,12 @@
  */
 
 import GRPCCore
+import Synchronization
 import XCTest
 
 @testable import GRPCHTTP2Core
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class RequestQueueTests: XCTestCase {
   struct AnErrorToAvoidALeak: Error {}
 
@@ -45,7 +46,7 @@ final class RequestQueueTests: XCTestCase {
 
   func testPopFirstMultiple() async {
     await withTaskGroup(of: QueueEntryID.self) { group in
-      let queue = LockedValueBox(RequestQueue())
+      let queue = SharedRequestQueue()
       let signal1 = AsyncStream.makeStream(of: Void.self)
       let signal2 = AsyncStream.makeStream(of: Void.self)
 
@@ -54,7 +55,7 @@ final class RequestQueueTests: XCTestCase {
 
       group.addTask {
         _ = try? await withCheckedThrowingContinuation { continuation in
-          queue.withLockedValue {
+          queue.withQueue {
             $0.append(continuation: continuation, waitForReady: false, id: id1)
           }
 
@@ -70,7 +71,7 @@ final class RequestQueueTests: XCTestCase {
         for await _ in signal1.stream {}
 
         _ = try? await withCheckedThrowingContinuation { continuation in
-          queue.withLockedValue {
+          queue.withQueue {
             $0.append(continuation: continuation, waitForReady: false, id: id2)
           }
 
@@ -85,7 +86,7 @@ final class RequestQueueTests: XCTestCase {
       for await _ in signal2.stream {}
 
       for id in [id1, id2] {
-        let continuation = queue.withLockedValue { $0.popFirst() }
+        let continuation = queue.withQueue { $0.popFirst() }
         continuation?.resume(throwing: AnErrorToAvoidALeak())
         let actual = await group.next()
         XCTAssertEqual(id, actual)
@@ -110,7 +111,7 @@ final class RequestQueueTests: XCTestCase {
 
   func testRemoveEntryByIDMultiple() async {
     await withTaskGroup(of: QueueEntryID.self) { group in
-      let queue = LockedValueBox(RequestQueue())
+      let queue = SharedRequestQueue()
       let signal1 = AsyncStream.makeStream(of: Void.self)
       let signal2 = AsyncStream.makeStream(of: Void.self)
 
@@ -119,7 +120,7 @@ final class RequestQueueTests: XCTestCase {
 
       group.addTask {
         _ = try? await withCheckedThrowingContinuation { continuation in
-          queue.withLockedValue {
+          queue.withQueue {
             $0.append(continuation: continuation, waitForReady: false, id: id1)
           }
 
@@ -135,7 +136,7 @@ final class RequestQueueTests: XCTestCase {
         for await _ in signal1.stream {}
 
         _ = try? await withCheckedThrowingContinuation { continuation in
-          queue.withLockedValue {
+          queue.withQueue {
             $0.append(continuation: continuation, waitForReady: false, id: id2)
           }
 
@@ -150,7 +151,7 @@ final class RequestQueueTests: XCTestCase {
       for await _ in signal2.stream {}
 
       for id in [id1, id2] {
-        let continuation = queue.withLockedValue { $0.removeEntry(withID: id) }
+        let continuation = queue.withQueue { $0.removeEntry(withID: id) }
         continuation?.resume(throwing: AnErrorToAvoidALeak())
         let actual = await group.next()
         XCTAssertEqual(id, actual)
@@ -159,7 +160,7 @@ final class RequestQueueTests: XCTestCase {
   }
 
   func testRemoveFastFailingEntries() async throws {
-    let queue = LockedValueBox(RequestQueue())
+    let queue = SharedRequestQueue()
     let enqueued = AsyncStream.makeStream(of: Void.self)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -177,7 +178,7 @@ final class RequestQueueTests: XCTestCase {
           group.addTask {
             do {
               _ = try await withCheckedThrowingContinuation { continuation in
-                queue.withLockedValue {
+                queue.withQueue {
                   $0.append(continuation: continuation, waitForReady: waitForReady, id: id)
                 }
                 enqueued.continuation.yield()
@@ -199,7 +200,7 @@ final class RequestQueueTests: XCTestCase {
       }
 
       // Remove all fast-failing continuations.
-      let continuations = queue.withLockedValue {
+      let continuations = queue.withQueue {
         $0.removeFastFailingEntries()
       }
 
@@ -208,13 +209,13 @@ final class RequestQueueTests: XCTestCase {
       }
 
       for id in failFastIDs {
-        queue.withLockedValue {
+        queue.withQueue {
           XCTAssertNil($0.removeEntry(withID: id))
         }
       }
 
       for id in waitForReadyIDs {
-        let maybeContinuation = queue.withLockedValue { $0.removeEntry(withID: id) }
+        let maybeContinuation = queue.withQueue { $0.removeEntry(withID: id) }
         let continuation = try XCTUnwrap(maybeContinuation)
         continuation.resume(throwing: AnErrorToAvoidALeak())
       }
@@ -222,14 +223,14 @@ final class RequestQueueTests: XCTestCase {
   }
 
   func testRemoveAll() async throws {
-    let queue = LockedValueBox(RequestQueue())
+    let queue = SharedRequestQueue()
     let enqueued = AsyncStream.makeStream(of: Void.self)
 
     await withThrowingTaskGroup(of: Void.self) { group in
       for _ in 0 ..< 10 {
         group.addTask {
           _ = try await withCheckedThrowingContinuation { continuation in
-            queue.withLockedValue {
+            queue.withQueue {
               $0.append(continuation: continuation, waitForReady: false, id: QueueEntryID())
             }
 
@@ -247,12 +248,26 @@ final class RequestQueueTests: XCTestCase {
         }
       }
 
-      let continuations = queue.withLockedValue { $0.removeAll() }
+      let continuations = queue.withQueue { $0.removeAll() }
       XCTAssertEqual(continuations.count, 10)
-      XCTAssertNil(queue.withLockedValue { $0.popFirst() })
+      XCTAssertNil(queue.withQueue { $0.popFirst() })
 
       for continuation in continuations {
         continuation.resume(throwing: AnErrorToAvoidALeak())
+      }
+    }
+  }
+
+  final class SharedRequestQueue: Sendable {
+    private let protectedQueue: Mutex<RequestQueue>
+
+    init() {
+      self.protectedQueue = Mutex(RequestQueue())
+    }
+
+    func withQueue<T>(_ body: @Sendable (inout RequestQueue) throws -> T) rethrows -> T {
+      try self.protectedQueue.withLock {
+        try body(&$0)
       }
     }
   }

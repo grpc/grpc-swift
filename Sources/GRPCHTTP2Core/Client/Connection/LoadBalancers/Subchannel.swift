@@ -15,7 +15,7 @@
  */
 
 package import GRPCCore
-internal import NIOConcurrencyHelpers
+private import Synchronization
 
 /// A ``Subchannel`` provides communication to a single ``Endpoint``.
 ///
@@ -43,8 +43,8 @@ internal import NIOConcurrencyHelpers
 ///   }
 /// }
 /// ```
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-package struct Subchannel {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+package final class Subchannel: Sendable {
   package enum Event: Sendable, Hashable {
     /// The connection received a GOAWAY and will close soon. No new streams
     /// should be opened on this connection.
@@ -73,7 +73,7 @@ package struct Subchannel {
   private let input: (stream: AsyncStream<Input>, continuation: AsyncStream<Input>.Continuation)
 
   /// The state of the subchannel.
-  private let state: NIOLockedValueBox<State>
+  private let state: Mutex<State>
 
   /// The endpoint this subchannel is targeting.
   let endpoint: Endpoint
@@ -103,7 +103,7 @@ package struct Subchannel {
   ) {
     assert(!endpoint.addresses.isEmpty, "endpoint.addresses mustn't be empty")
 
-    self.state = NIOLockedValueBox(.notConnected(.initial))
+    self.state = Mutex(.notConnected(.initial))
     self.endpoint = endpoint
     self.id = id
     self.connector = connector
@@ -117,7 +117,7 @@ package struct Subchannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Subchannel {
   /// A stream of events which can happen to the subchannel.
   package var events: AsyncStream<Event> {
@@ -173,7 +173,7 @@ extension Subchannel {
     descriptor: MethodDescriptor,
     options: CallOptions
   ) async throws -> Connection.Stream {
-    let connection: Connection? = self.state.withLockedValue { state in
+    let connection: Connection? = self.state.withLock { state in
       switch state {
       case .notConnected, .connecting, .goingAway, .shuttingDown, .shutDown:
         return nil
@@ -190,10 +190,10 @@ extension Subchannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Subchannel {
   private func handleConnectInput(in group: inout DiscardingTaskGroup) {
-    let connection = self.state.withLockedValue { state in
+    let connection = self.state.withLock { state in
       state.makeConnection(
         to: self.endpoint.addresses,
         using: self.connector,
@@ -214,7 +214,7 @@ extension Subchannel {
   }
 
   private func handleBackedOffInput(in group: inout DiscardingTaskGroup) {
-    switch self.state.withLockedValue({ $0.backedOff() }) {
+    switch self.state.withLock({ $0.backedOff() }) {
     case .none:
       ()
 
@@ -230,7 +230,7 @@ extension Subchannel {
   }
 
   private func handleShutDownInput(in group: inout DiscardingTaskGroup) {
-    switch self.state.withLockedValue({ $0.shutDown() }) {
+    switch self.state.withLock({ $0.shutDown() }) {
     case .none:
       ()
 
@@ -269,7 +269,7 @@ extension Subchannel {
   }
 
   private func handleConnectSucceededEvent() {
-    switch self.state.withLockedValue({ $0.connectSucceeded() }) {
+    switch self.state.withLock({ $0.connectSucceeded() }) {
     case .updateStateToReady:
       // Emit a connectivity state change: the load balancer can now use this subchannel.
       self.event.continuation.yield(.connectivityStateChanged(.ready))
@@ -286,7 +286,7 @@ extension Subchannel {
   }
 
   private func handleConnectFailedEvent(in group: inout DiscardingTaskGroup) {
-    let onConnectFailed = self.state.withLockedValue { $0.connectFailed(connector: self.connector) }
+    let onConnectFailed = self.state.withLock { $0.connectFailed(connector: self.connector) }
     switch onConnectFailed {
     case .connect(let connection):
       // Try the next address.
@@ -316,7 +316,7 @@ extension Subchannel {
   }
 
   private func handleGoingAwayEvent() {
-    let isGoingAway = self.state.withLockedValue { $0.goingAway() }
+    let isGoingAway = self.state.withLock { $0.goingAway() }
     guard isGoingAway else { return }
 
     // Notify the load balancer that the subchannel is going away to stop it from being used.
@@ -330,7 +330,7 @@ extension Subchannel {
     _ reason: Connection.CloseReason,
     in group: inout DiscardingTaskGroup
   ) {
-    switch self.state.withLockedValue({ $0.closed(reason: reason) }) {
+    switch self.state.withLock({ $0.closed(reason: reason) }) {
     case .nothing:
       ()
 
@@ -368,7 +368,7 @@ extension Subchannel {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Subchannel {
   ///            ┌───────────────┐
   ///   ┌───────▶│ NOT CONNECTED │───────────shutDown─────────────┐

@@ -15,6 +15,7 @@
  */
 
 package import GRPCCore
+private import NIOConcurrencyHelpers
 
 /// A load-balancer which maintains to a set of subchannels and uses round-robin to pick a
 /// subchannel when picking a subchannel to use.
@@ -57,8 +58,8 @@ package import GRPCCore
 ///   }
 /// }
 /// ```
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-package struct RoundRobinLoadBalancer {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+package final class RoundRobinLoadBalancer: Sendable {
   enum Input: Sendable, Hashable {
     /// Update the addresses used by the load balancer to the following endpoints.
     case updateAddresses([Endpoint])
@@ -102,8 +103,9 @@ package struct RoundRobinLoadBalancer {
   /// Inputs which this load balancer should react to.
   private let input: (stream: AsyncStream<Input>, continuation: AsyncStream<Input>.Continuation)
 
+  // Uses NIOLockedValueBox to workaround: https://github.com/swiftlang/swift/issues/76007
   /// The state of the load balancer.
-  private let state: LockedValueBox<State>
+  private let state: NIOLockedValueBox<State>
 
   /// A connector, capable of creating connections.
   private let connector: any HTTP2Connector
@@ -134,7 +136,7 @@ package struct RoundRobinLoadBalancer {
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
-    self.state = LockedValueBox(.active(State.Active()))
+    self.state = NIOLockedValueBox(.active(State.Active()))
 
     // The load balancer starts in the idle state.
     self.event.continuation.yield(.connectivityStateChanged(.idle))
@@ -196,7 +198,7 @@ package struct RoundRobinLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RoundRobinLoadBalancer {
   /// Handles an update in endpoints.
   ///
@@ -338,7 +340,7 @@ extension RoundRobinLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RoundRobinLoadBalancer {
   private enum State {
     case active(Active)

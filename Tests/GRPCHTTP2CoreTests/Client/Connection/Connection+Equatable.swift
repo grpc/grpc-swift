@@ -19,15 +19,15 @@ import GRPCHTTP2Core
 
 // Equatable conformance for these types is 'best effort', this is sufficient for testing but not
 // for general use.
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Connection.Event: Equatable {}
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Connection.CloseReason: Equatable {}
 
 extension ClientConnectionEvent: Equatable {}
 extension ClientConnectionEvent.CloseReason: Equatable {}
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Connection.Event {
   package static func == (lhs: Connection.Event, rhs: Connection.Event) -> Bool {
     switch (lhs, rhs) {
@@ -47,7 +47,7 @@ extension Connection.Event {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Connection.CloseReason {
   package static func == (lhs: Connection.CloseReason, rhs: Connection.CloseReason) -> Bool {
     switch (lhs, rhs) {

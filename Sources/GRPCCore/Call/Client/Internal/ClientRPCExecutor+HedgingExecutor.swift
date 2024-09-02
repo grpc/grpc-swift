@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+public import Synchronization  // would be internal but for usableFromInline
+
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor {
   @usableFromInline
@@ -176,10 +178,10 @@ extension ClientRPCExecutor.HedgingExecutor {
       // of this. To avoid this each attempt goes via a state check before yielding to the sequence
       // ensuring that only one response is used. (If this wasn't the case the response handler
       // could be invoked more than once.)
-      let state = LockedValueBox(State(policy: self.policy))
+      let state = SharedState(policy: self.policy)
 
       // There's always a first attempt, safe to '!'.
-      let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() })!
+      let (attempt, scheduleNext) = state.withState({ $0.nextAttemptNumber() })!
 
       group.addTask {
         let result = await self._startAttempt(
@@ -210,7 +212,7 @@ extension ClientRPCExecutor.HedgingExecutor {
           switch outcome {
           case .ran:
             // Start a new attempt and possibly schedule the next.
-            if let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() }) {
+            if let (attempt, scheduleNext) = state.withState({ $0.nextAttemptNumber() }) {
               group.addTask {
                 let result = await self._startAttempt(
                   request: request,
@@ -263,7 +265,7 @@ extension ClientRPCExecutor.HedgingExecutor {
 
               nextScheduledAttempt.cancel()
 
-              if let (attempt, scheduleNext) = state.withLockedValue({ $0.nextAttemptNumber() }) {
+              if let (attempt, scheduleNext) = state.withState({ $0.nextAttemptNumber() }) {
                 group.addTask {
                   let result = await self._startAttempt(
                     request: request,
@@ -317,7 +319,7 @@ extension ClientRPCExecutor.HedgingExecutor {
     method: MethodDescriptor,
     options: CallOptions,
     attempt: Int,
-    state: LockedValueBox<State>,
+    state: SharedState,
     picker: (stream: BroadcastAsyncSequence<Int>, continuation: BroadcastAsyncSequence<Int>.Source),
     responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
   ) async -> _HedgingAttemptTaskResult<R, Output>.AttemptResult {
@@ -364,7 +366,7 @@ extension ClientRPCExecutor.HedgingExecutor {
               case .success:
                 self.transport.retryThrottle?.recordSuccess()
 
-                if state.withLockedValue({ $0.receivedUsableResponse() }) {
+                if state.withState({ $0.receivedUsableResponse() }) {
                   try? await picker.continuation.write(attempt)
                   picker.continuation.finish()
                   let result = await Result { try await responseHandler(response) }
@@ -385,7 +387,7 @@ extension ClientRPCExecutor.HedgingExecutor {
                   // A fatal error code counts as a success to the throttle.
                   self.transport.retryThrottle?.recordSuccess()
 
-                  if state.withLockedValue({ $0.receivedUsableResponse() }) {
+                  if state.withState({ $0.receivedUsableResponse() }) {
                     try! await picker.continuation.write(attempt)
                     picker.continuation.finish()
                     let result = await Result { try await responseHandler(response) }
@@ -425,6 +427,24 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
     } catch {
       return .noStreamAvailable(error)
+    }
+  }
+
+  @usableFromInline
+  final class SharedState {
+    @usableFromInline
+    let state: Mutex<State>
+
+    @inlinable
+    init(policy: HedgingPolicy) {
+      self.state = Mutex(State(policy: policy))
+    }
+
+    @inlinable
+    func withState<ReturnType>(_ body: @Sendable (inout State) -> ReturnType) -> ReturnType {
+      self.state.withLock {
+        body(&$0)
+      }
     }
   }
 

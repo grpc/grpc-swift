@@ -20,6 +20,7 @@ internal import NIOCore
 internal import NIOExtras
 internal import NIOHTTP2
 public import NIOPosix  // has to be public because of default argument value in init
+private import Synchronization
 
 #if canImport(NIOSSL)
 import NIOSSL
@@ -28,7 +29,7 @@ import NIOSSL
 extension HTTP2ServerTransport {
   /// A NIOPosix-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public struct Posix: ServerTransport, ListeningServerTransport {
+  public final class Posix: ServerTransport, ListeningServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
     private let config: Config
     private let eventLoopGroup: MultiThreadedEventLoopGroup
@@ -129,7 +130,7 @@ extension HTTP2ServerTransport {
       }
     }
 
-    private let listeningAddressState: LockedValueBox<State>
+    private let listeningAddressState: Mutex<State>
 
     /// The listening address for this server transport.
     ///
@@ -141,7 +142,7 @@ extension HTTP2ServerTransport {
     public var listeningAddress: GRPCHTTP2Core.SocketAddress {
       get async throws {
         try await self.listeningAddressState
-          .withLockedValue { try $0.listeningAddressFuture }
+          .withLock { try $0.listeningAddressFuture }
           .get()
       }
     }
@@ -163,14 +164,14 @@ extension HTTP2ServerTransport {
       self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
 
       let eventLoop = eventLoopGroup.any()
-      self.listeningAddressState = LockedValueBox(.idle(eventLoop.makePromise()))
+      self.listeningAddressState = Mutex(.idle(eventLoop.makePromise()))
     }
 
     public func listen(
       _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
       defer {
-        switch self.listeningAddressState.withLockedValue({ $0.close() }) {
+        switch self.listeningAddressState.withLock({ $0.close() }) {
         case .failPromise(let promise, let error):
           promise.fail(error)
         case .doNothing:
@@ -240,7 +241,7 @@ extension HTTP2ServerTransport {
           }
         }
 
-      let action = self.listeningAddressState.withLockedValue {
+      let action = self.listeningAddressState.withLock {
         $0.addressBound(
           serverChannel.channel.localAddress,
           userProvidedAddress: self.address

@@ -15,9 +15,9 @@
  */
 
 package import GRPCCore
-internal import NIOConcurrencyHelpers
 package import NIOCore
 package import NIOHTTP2
+private import Synchronization
 
 /// A `Connection` provides communication to a single remote peer.
 ///
@@ -43,8 +43,8 @@ package import NIOHTTP2
 ///   }
 /// }
 /// ```
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-package struct Connection: Sendable {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+package final class Connection: Sendable {
   /// Events which can happen over the lifetime of the connection.
   package enum Event: Sendable {
     /// The connect attempt succeeded and the connection is ready to use.
@@ -96,7 +96,7 @@ package struct Connection: Sendable {
   private let http2Connector: any HTTP2Connector
 
   /// The state of the connection.
-  private let state: NIOLockedValueBox<State>
+  private let state: Mutex<State>
 
   /// The default max request message size in bytes, 4 MiB.
   private static var defaultMaxRequestMessageSizeBytes: Int {
@@ -120,7 +120,7 @@ package struct Connection: Sendable {
     self.http2Connector = http2Connector
     self.event = AsyncStream.makeStream(of: Event.self)
     self.input = AsyncStream.makeStream(of: Input.self)
-    self.state = NIOLockedValueBox(.notConnected)
+    self.state = Mutex(.notConnected)
   }
 
   /// Connect and run the connection.
@@ -135,7 +135,7 @@ package struct Connection: Sendable {
     switch connectResult {
     case .success(let connected):
       // Connected successfully, update state and report the event.
-      self.state.withLockedValue { state in
+      self.state.withLock { state in
         state.connected(connected)
       }
 
@@ -151,7 +151,7 @@ package struct Connection: Sendable {
         for await input in self.input.stream {
           switch input {
           case .close:
-            let asyncChannel = self.state.withLockedValue { $0.beginClosing() }
+            let asyncChannel = self.state.withLock { $0.beginClosing() }
             if let channel = asyncChannel?.channel {
               let event = ClientConnectionHandler.OutboundEvent.closeGracefully
               channel.triggerUserOutboundEvent(event, promise: nil)
@@ -162,7 +162,7 @@ package struct Connection: Sendable {
 
     case .failure(let error):
       // Connect failed, this connection is no longer useful.
-      self.state.withLockedValue { $0.closed() }
+      self.state.withLock { $0.closed() }
       self.finishStreams(withEvent: .connectFailed(error))
     }
   }
@@ -180,7 +180,7 @@ package struct Connection: Sendable {
     descriptor: MethodDescriptor,
     options: CallOptions
   ) async throws -> Stream {
-    let (multiplexer, scheme) = try self.state.withLockedValue { state in
+    let (multiplexer, scheme) = try self.state.withLock { state in
       switch state {
       case .connected(let connected):
         return (connected.multiplexer, connected.scheme)
@@ -259,7 +259,7 @@ package struct Connection: Sendable {
           self.event.continuation.yield(.connectSucceeded)
 
         case .closing(let reason):
-          self.state.withLockedValue { $0.closing() }
+          self.state.withLock { $0.closing() }
 
           switch reason {
           case .goAway(let errorCode, let reason):
@@ -282,7 +282,7 @@ package struct Connection: Sendable {
 
       let finalEvent: Event
       if isReady {
-        let connectionCloseReason: Self.CloseReason
+        let connectionCloseReason: CloseReason
         switch channelCloseReason {
         case .keepaliveExpired:
           connectionCloseReason = .keepaliveTimeout
@@ -323,7 +323,7 @@ package struct Connection: Sendable {
       }
 
       // The connection events sequence has finished: the connection is now closed.
-      self.state.withLockedValue { $0.closed() }
+      self.state.withLock { $0.closed() }
       self.finishStreams(withEvent: finalEvent)
     } catch {
       let finalEvent: Event
@@ -338,7 +338,7 @@ package struct Connection: Sendable {
         finalEvent = .connectFailed(makeNeverReadyError(cause: error))
       }
 
-      self.state.withLockedValue { $0.closed() }
+      self.state.withLock { $0.closed() }
       self.finishStreams(withEvent: finalEvent)
     }
   }
@@ -350,7 +350,7 @@ package struct Connection: Sendable {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Connection {
   package struct Stream {
     package typealias Inbound = NIOAsyncChannelInboundStream<RPCResponsePart>
@@ -412,7 +412,7 @@ extension Connection {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Connection {
   private enum State: Sendable {
     /// The connection is idle or connecting.

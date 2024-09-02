@@ -15,6 +15,7 @@
  */
 
 package import GRPCCore
+private import Synchronization
 
 /// A load-balancer which has a single subchannel.
 ///
@@ -55,8 +56,8 @@ package import GRPCCore
 ///   }
 /// }
 /// ```
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
-package struct PickFirstLoadBalancer {
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+package final class PickFirstLoadBalancer: Sendable {
   enum Input: Sendable, Hashable {
     /// Update the addresses used by the load balancer to the following endpoints.
     case updateEndpoint(Endpoint)
@@ -87,7 +88,7 @@ package struct PickFirstLoadBalancer {
   private let enabledCompression: CompressionAlgorithmSet
 
   /// The state of the load-balancer.
-  private let state: LockedValueBox<State>
+  private let state: Mutex<State>
 
   /// The ID of this load balancer.
   internal let id: LoadBalancerID
@@ -103,7 +104,7 @@ package struct PickFirstLoadBalancer {
     self.defaultCompression = defaultCompression
     self.enabledCompression = enabledCompression
     self.id = LoadBalancerID()
-    self.state = LockedValueBox(State())
+    self.state = Mutex(State())
 
     self.event = AsyncStream.makeStream(of: LoadBalancerEvent.self)
     self.input = AsyncStream.makeStream(of: Input.self)
@@ -153,7 +154,7 @@ package struct PickFirstLoadBalancer {
   ///
   /// - Returns: A subchannel, or `nil` if there aren't any ready subchannels.
   package func pickSubchannel() -> Subchannel? {
-    let onPickSubchannel = self.state.withLockedValue { $0.pickSubchannel() }
+    let onPickSubchannel = self.state.withLock { $0.pickSubchannel() }
     switch onPickSubchannel {
     case .picked(let subchannel):
       return subchannel
@@ -164,12 +165,12 @@ package struct PickFirstLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension PickFirstLoadBalancer {
   private func handleUpdateEndpoint(_ endpoint: Endpoint, in group: inout DiscardingTaskGroup) {
     if endpoint.addresses.isEmpty { return }
 
-    let onUpdate = self.state.withLockedValue { state in
+    let onUpdate = self.state.withLock { state in
       state.updateEndpoint(endpoint) { endpoint, id in
         Subchannel(
           endpoint: endpoint,
@@ -220,7 +221,7 @@ extension PickFirstLoadBalancer {
     _ connectivityState: ConnectivityState,
     id: SubchannelID
   ) {
-    let onUpdateState = self.state.withLockedValue {
+    let onUpdateState = self.state.withLock {
       $0.updateSubchannelConnectivityState(connectivityState, id: id)
     }
 
@@ -241,13 +242,13 @@ extension PickFirstLoadBalancer {
   }
 
   private func handleGoAway(id: SubchannelID) {
-    self.state.withLockedValue { state in
+    self.state.withLock { state in
       state.receivedGoAway(id: id)
     }
   }
 
   private func handleCloseInput() {
-    let onClose = self.state.withLockedValue { $0.close() }
+    let onClose = self.state.withLock { $0.close() }
     switch onClose {
     case .closeSubchannels(let subchannel1, let subchannel2):
       self.event.continuation.yield(.connectivityStateChanged(.shutdown))
@@ -265,7 +266,7 @@ extension PickFirstLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension PickFirstLoadBalancer {
   enum State: Sendable {
     case active(Active)
@@ -278,7 +279,7 @@ extension PickFirstLoadBalancer {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension PickFirstLoadBalancer.State {
   struct Active: Sendable {
     var endpoint: Endpoint?
@@ -307,7 +308,7 @@ extension PickFirstLoadBalancer.State {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension PickFirstLoadBalancer.State.Active {
   mutating func updateEndpoint(
     _ endpoint: Endpoint,
@@ -470,7 +471,7 @@ extension PickFirstLoadBalancer.State.Active {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension PickFirstLoadBalancer.State.Closing {
   mutating func updateSubchannelConnectivityState(
     _ connectivityState: ConnectivityState,
@@ -511,7 +512,7 @@ extension PickFirstLoadBalancer.State.Closing {
   }
 }
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension PickFirstLoadBalancer.State {
   enum OnUpdateEndpoint {
     case connect(Subchannel, close: Subchannel?)
