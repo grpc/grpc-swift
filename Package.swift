@@ -123,6 +123,7 @@ extension Target.Dependency {
     name: "SwiftProtobufPluginLibrary",
     package: "swift-protobuf"
   )
+  static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
   static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
 }
 
