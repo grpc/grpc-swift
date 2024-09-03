@@ -112,6 +112,7 @@ final class GenerateGRPC: CodeGenerator {
     try outputs.add(fileName: fileName, contents: fileGenerator.code)
   }
 
+  #if compiler(>=6.0)
   private func generateV2Stubs(
     _ descriptor: FileDescriptor,
     options: GeneratorOptions,
@@ -132,6 +133,7 @@ final class GenerateGRPC: CodeGenerator {
 
     try outputs.add(fileName: fileName, contents: contents)
   }
+  #endif
 }
 
 extension GenerateGRPC {
