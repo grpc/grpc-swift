@@ -138,9 +138,9 @@ package final class GRPCChannel: ClientTransport {
             for try await result in self.resolver.names {
               self.input.continuation.yield(.handleResolutionResult(result))
             }
-            self.close()
+            self.beginGracefulShutdown()
           } catch {
-            self.close()
+            self.beginGracefulShutdown()
           }
         }
 
@@ -183,7 +183,7 @@ package final class GRPCChannel: ClientTransport {
 
   /// Signal to the transport that no new streams may be created and that connections should be
   /// closed when all streams are closed.
-  package func close() {
+  package func beginGracefulShutdown() {
     self.input.continuation.yield(.close)
   }
 
@@ -393,7 +393,7 @@ extension GRPCChannel {
       self.updateLoadBalancer(serviceConfig: config, endpoints: result.endpoints, in: &group)
 
     case .failure:
-      self.close()
+      self.beginGracefulShutdown()
     }
   }
 
@@ -567,10 +567,10 @@ extension GRPCChannel {
       if let result = try await iterator.next() {
         self.handleNameResolutionResult(result, in: &group)
       } else {
-        self.close()
+        self.beginGracefulShutdown()
       }
     } catch {
-      self.close()
+      self.beginGracefulShutdown()
     }
   }
 }

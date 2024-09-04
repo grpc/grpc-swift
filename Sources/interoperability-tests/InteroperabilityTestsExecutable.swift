@@ -47,7 +47,7 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
         ),
         services: [TestService()]
       )
-      try await server.run()
+      try await server.serve()
     }
   }
 
@@ -97,7 +97,7 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
           await self.runTest(testCase, using: client)
         }
 
-        client.close()
+        client.beginGracefulShutdown()
       }
     }
 

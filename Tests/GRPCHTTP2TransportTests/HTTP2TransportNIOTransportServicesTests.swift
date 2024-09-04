@@ -37,7 +37,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
         let address = try await transport.listeningAddress
         let ipv4Address = try XCTUnwrap(address.ipv4)
         XCTAssertNotEqual(ipv4Address.port, 0)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -57,7 +57,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
         let address = try await transport.listeningAddress
         let ipv6Address = try XCTUnwrap(address.ipv6)
         XCTAssertNotEqual(ipv6Address.port, 0)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -83,7 +83,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
           address.unixDomainSocket,
           GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/niots-uds-test")
         )
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -145,7 +145,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
       group.addTask {
         let address = try await transport.listeningAddress
         XCTAssertNotNil(address.ipv4)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }

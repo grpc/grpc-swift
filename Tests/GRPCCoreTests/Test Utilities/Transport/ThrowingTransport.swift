@@ -32,7 +32,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
     // no-op
   }
 
-  func close() {
+  func beginGracefulShutdown() {
     // no-op
   }
 
@@ -60,7 +60,7 @@ struct ThrowOnRunServerTransport: ServerTransport {
     )
   }
 
-  func stopListening() {
+  func beginGracefulShutdown() {
     // no-op
   }
 }
@@ -84,7 +84,7 @@ struct ThrowOnSignalServerTransport: ServerTransport {
     )
   }
 
-  func stopListening() {
+  func beginGracefulShutdown() {
     // no-op
   }
 }

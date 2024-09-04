@@ -42,7 +42,7 @@ struct Greet: AsyncParsableCommand {
       }
 
       defer {
-        client.close()
+        client.beginGracefulShutdown()
       }
 
       let greeter = Helloworld_GreeterClient(wrapping: client)

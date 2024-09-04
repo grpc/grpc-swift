@@ -96,7 +96,7 @@ final class GRPCChannelTests: XCTestCase {
           XCTAssertEqual(throttle.tokenRatio, 0.1)
 
           // Now close.
-          channel.close()
+          channel.beginGracefulShutdown()
 
         default:
           ()
@@ -176,7 +176,7 @@ final class GRPCChannelTests: XCTestCase {
             return noConfigForGet && configForUpdate && noThrottle
           }
 
-          channel.close()
+          channel.beginGracefulShutdown()
 
         default:
           ()
@@ -362,7 +362,7 @@ final class GRPCChannelTests: XCTestCase {
         switch part1 {
         case .metadata:
           // Got metadata, close the channel.
-          channel.close()
+          channel.beginGracefulShutdown()
         case .message, .status, .none:
           XCTFail("Expected metadata, got \(String(describing: part1))")
         }
@@ -472,7 +472,7 @@ final class GRPCChannelTests: XCTestCase {
 
           // All RPCs done, close the channel and cancel the group to stop the server.
           if outstandingRPCs == 0 {
-            channel.close()
+            channel.beginGracefulShutdown()
             group.cancelAll()
           }
 
@@ -537,7 +537,7 @@ final class GRPCChannelTests: XCTestCase {
 
           // All RPCs done, close the channel and cancel the group to stop the server.
           if outstandingRPCs == 0 {
-            channel.close()
+            channel.beginGracefulShutdown()
             group.cancelAll()
           }
 
@@ -616,7 +616,7 @@ final class GRPCChannelTests: XCTestCase {
             server1.clients.count == 0 && server2.clients.count == 0 && server3.clients.count == 1
           }
 
-          channel.close()
+          channel.beginGracefulShutdown()
 
         case .shutdown:
           group.cancelAll()
@@ -683,7 +683,7 @@ final class GRPCChannelTests: XCTestCase {
                 break
               }
             }
-            channel.close()
+            channel.beginGracefulShutdown()
           default:
             ()
           }
@@ -737,7 +737,7 @@ final class GRPCChannelTests: XCTestCase {
             server1.clients.count == 1 && server2.clients.count == 0
           }
 
-          channel.close()
+          channel.beginGracefulShutdown()
 
         default:
           ()
@@ -776,7 +776,7 @@ final class GRPCChannelTests: XCTestCase {
             // Sleep a little to increase the chances of the stream being queued before the channel
             // reacts to the close.
             try await Task.sleep(for: .milliseconds(10))
-            channel.close()
+            channel.beginGracefulShutdown()
           }
 
           // Try to open a new stream.

@@ -143,8 +143,8 @@ struct ClientRPCExecutorTestHarness {
       )
 
       // Close the client so the server can finish.
-      self.clientTransport.close()
-      self.serverTransport.stopListening()
+      self.clientTransport.beginGracefulShutdown()
+      self.serverTransport.beginGracefulShutdown()
       group.cancelAll()
     }
   }

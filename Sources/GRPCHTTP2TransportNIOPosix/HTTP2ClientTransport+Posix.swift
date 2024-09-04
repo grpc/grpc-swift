@@ -105,8 +105,8 @@ extension HTTP2ClientTransport {
       self.channel.configuration(forMethod: descriptor)
     }
 
-    public func close() {
-      self.channel.close()
+    public func beginGracefulShutdown() {
+      self.channel.beginGracefulShutdown()
     }
 
     public func withStream<T: Sendable>(

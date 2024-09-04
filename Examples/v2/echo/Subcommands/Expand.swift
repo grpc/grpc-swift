@@ -53,7 +53,7 @@ struct Expand: AsyncParsableCommand {
         }
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }
