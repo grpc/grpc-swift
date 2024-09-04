@@ -19,7 +19,19 @@ public import Synchronization  // should be @usableFromInline
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 /// An `AsyncSequence` which wraps an existing async iterator.
-final class AsyncIteratorSequence<Base: AsyncIteratorProtocol>: AsyncSequence {
+final class UncheckedAsyncIteratorSequence<
+  Base: AsyncIteratorProtocol
+>: AsyncSequence, @unchecked Sendable {
+  // This is '@unchecked Sendable' because iterators are typically marked as not being Sendable
+  // to avoid multiple iterators being created. This is done to avoid multiple concurrent consumers
+  // of a single async sequence.
+  //
+  // However, gRPC needs to read the first message in a sequence of inbound request/response parts
+  // to check how the RPC should be handled. To do this it creates an async iterator and waits for
+  // the first value and then decides what to do. If it continues processing the RPC it uses this
+  // wrapper type to turn the iterator back into an async sequence and then drops the iterator on
+  // the floor so that there is only a single consumer of the original source.
+
   @usableFromInline
   typealias Element = Base.Element
 

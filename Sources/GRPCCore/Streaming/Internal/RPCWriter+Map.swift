@@ -16,7 +16,11 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-struct MapRPCWriter<Value, Mapped, Base: RPCWriterProtocol<Mapped>>: RPCWriterProtocol {
+struct MapRPCWriter<
+  Value: Sendable,
+  Mapped: Sendable,
+  Base: RPCWriterProtocol<Mapped>
+>: RPCWriterProtocol {
   @usableFromInline
   typealias Element = Value
 

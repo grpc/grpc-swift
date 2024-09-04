@@ -58,7 +58,7 @@ extension TaskGroup {
   }
 
   @usableFromInline
-  enum _ResultOrCancelled {
+  enum _ResultOrCancelled: Sendable {
     case result(ChildTaskResult)
     case cancelled
   }

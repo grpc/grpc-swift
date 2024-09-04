@@ -17,7 +17,7 @@ internal import GRPCCore
 internal import Tracing
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-struct HookedWriter<Element>: RPCWriterProtocol {
+struct HookedWriter<Element: Sendable>: RPCWriterProtocol {
   private let writer: any RPCWriterProtocol<Element>
   private let beforeEachWrite: @Sendable () -> Void
   private let afterEachWrite: @Sendable () -> Void

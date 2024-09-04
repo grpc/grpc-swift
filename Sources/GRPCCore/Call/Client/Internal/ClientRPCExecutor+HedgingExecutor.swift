@@ -21,14 +21,11 @@ extension ClientRPCExecutor {
   @usableFromInline
   struct HedgingExecutor<
     Transport: ClientTransport,
+    Input: Sendable,
+    Output: Sendable,
     Serializer: MessageSerializer,
     Deserializer: MessageDeserializer
-  > {
-    @usableFromInline
-    typealias Input = Serializer.Message
-    @usableFromInline
-    typealias Output = Deserializer.Message
-
+  >: Sendable where Serializer.Message == Input, Deserializer.Message == Output {
     @usableFromInline
     let transport: Transport
     @usableFromInline
@@ -181,14 +178,14 @@ extension ClientRPCExecutor.HedgingExecutor {
       let state = SharedState(policy: self.policy)
 
       // There's always a first attempt, safe to '!'.
-      let (attempt, scheduleNext) = state.withState({ $0.nextAttemptNumber() })!
+      let result = state.withState { $0.nextAttemptNumber()! }
 
       group.addTask {
         let result = await self._startAttempt(
           request: request,
           method: method,
           options: options,
-          attempt: attempt,
+          attempt: result.nextAttempt,
           state: state,
           picker: picker,
           responseHandler: responseHandler
@@ -199,7 +196,7 @@ extension ClientRPCExecutor.HedgingExecutor {
 
       // Schedule the second attempt.
       var nextScheduledAttempt = ScheduledState()
-      if scheduleNext {
+      if result.scheduleNext {
         nextScheduledAttempt.schedule(in: &group, pushback: false, delay: self.policy.hedgingDelay)
       }
 
@@ -212,13 +209,13 @@ extension ClientRPCExecutor.HedgingExecutor {
           switch outcome {
           case .ran:
             // Start a new attempt and possibly schedule the next.
-            if let (attempt, scheduleNext) = state.withState({ $0.nextAttemptNumber() }) {
+            if let result = state.withState({ $0.nextAttemptNumber() }) {
               group.addTask {
                 let result = await self._startAttempt(
                   request: request,
                   method: method,
                   options: options,
-                  attempt: attempt,
+                  attempt: result.nextAttempt,
                   state: state,
                   picker: picker,
                   responseHandler: responseHandler
@@ -227,7 +224,7 @@ extension ClientRPCExecutor.HedgingExecutor {
               }
 
               // Schedule the next attempt.
-              if scheduleNext {
+              if result.scheduleNext {
                 nextScheduledAttempt.schedule(
                   in: &group,
                   pushback: false,
@@ -265,13 +262,13 @@ extension ClientRPCExecutor.HedgingExecutor {
 
               nextScheduledAttempt.cancel()
 
-              if let (attempt, scheduleNext) = state.withState({ $0.nextAttemptNumber() }) {
+              if let result = state.withState({ $0.nextAttemptNumber() }) {
                 group.addTask {
                   let result = await self._startAttempt(
                     request: request,
                     method: method,
                     options: options,
-                    attempt: attempt,
+                    attempt: result.nextAttempt,
                     state: state,
                     picker: picker,
                     responseHandler: responseHandler
@@ -280,7 +277,7 @@ extension ClientRPCExecutor.HedgingExecutor {
                 }
 
                 // Schedule the next retry.
-                if scheduleNext {
+                if result.scheduleNext {
                   nextScheduledAttempt.schedule(
                     in: &group,
                     pushback: true,
@@ -314,7 +311,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   }
 
   @inlinable
-  func _startAttempt<R>(
+  func _startAttempt<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     options: CallOptions,
@@ -431,7 +428,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   }
 
   @usableFromInline
-  final class SharedState {
+  final class SharedState: Sendable {
     @usableFromInline
     let state: Mutex<State>
 
@@ -441,7 +438,7 @@ extension ClientRPCExecutor.HedgingExecutor {
     }
 
     @inlinable
-    func withState<ReturnType>(_ body: @Sendable (inout State) -> ReturnType) -> ReturnType {
+    func withState<ReturnType: Sendable>(_ body: (inout State) -> ReturnType) -> ReturnType {
       self.state.withLock {
         body(&$0)
       }
@@ -449,7 +446,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   }
 
   @usableFromInline
-  struct State {
+  struct State: Sendable {
     @usableFromInline
     let _maximumAttempts: Int
     @usableFromInline
@@ -474,14 +471,31 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
     }
 
+    @usableFromInline
+    struct NextAttemptResult: Sendable {
+      @usableFromInline
+      var nextAttempt: Int
+      @usableFromInline
+      var scheduleNext: Bool
+
+      @inlinable
+      init(nextAttempt: Int, scheduleNext: Bool) {
+        self.nextAttempt = nextAttempt
+        self.scheduleNext = scheduleNext
+      }
+    }
+
     @inlinable
-    mutating func nextAttemptNumber() -> (Int, Bool)? {
+    mutating func nextAttemptNumber() -> NextAttemptResult? {
       if self.hasUsableResponse || self.attempt > self._maximumAttempts {
         return nil
       } else {
         let attempt = self.attempt
         self.attempt += 1
-        return (attempt, self.attempt <= self._maximumAttempts)
+        return NextAttemptResult(
+          nextAttempt: attempt,
+          scheduleNext: self.attempt <= self._maximumAttempts
+        )
       }
     }
   }
@@ -533,7 +547,7 @@ extension ClientRPCExecutor.HedgingExecutor {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
-enum _HedgingTaskResult<R> {
+enum _HedgingTaskResult<R: Sendable>: Sendable {
   case rpcHandled(Result<R, any Error>)
   case finishedRequest(Result<Void, any Error>)
   case timedOut(Result<Void, any Error>)
@@ -541,20 +555,20 @@ enum _HedgingTaskResult<R> {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
-enum _HedgingAttemptTaskResult<R, Output> {
+enum _HedgingAttemptTaskResult<R: Sendable, Output: Sendable>: Sendable {
   case attemptPicked(Bool)
   case attemptCompleted(AttemptResult)
   case scheduledAttemptFired(ScheduleEvent)
 
   @usableFromInline
-  enum AttemptResult {
+  enum AttemptResult: Sendable {
     case unusableResponse(ClientResponse.Stream<Output>, Metadata.RetryPushback?)
     case usableResponse(Result<R, any Error>)
     case noStreamAvailable(any Error)
   }
 
   @usableFromInline
-  enum ScheduleEvent {
+  enum ScheduleEvent: Sendable {
     case ran
     case cancelled
   }

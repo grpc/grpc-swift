@@ -168,7 +168,7 @@ struct ServerRPCExecutor {
       ServerRequest.Stream<Input>
     ) async throws -> ServerResponse.Stream<Output>
   ) async {
-    let messages = AsyncIteratorSequence(inbound.wrappedValue).map { part throws -> Input in
+    let messages = UncheckedAsyncIteratorSequence(inbound.wrappedValue).map { part in
       switch part {
       case .message(let bytes):
         return try deserializer.deserialize(bytes)
@@ -284,7 +284,7 @@ struct ServerRPCExecutor {
   }
 
   @usableFromInline
-  enum ServerExecutorTask {
+  enum ServerExecutorTask: Sendable {
     case timedOut(Result<Void, any Error>)
     case executed
   }

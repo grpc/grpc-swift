@@ -60,17 +60,19 @@ public struct Status: @unchecked Sendable, Hashable {
   public init(code: Code, message: String) {
     if code == .ok, message.isEmpty {
       // Avoid a heap allocation for the common case.
-      self.storage = Storage.okWithNoMessage
+      self = .ok
     } else {
       self.storage = Storage(code: code, message: message)
     }
   }
 
-  /// A status with code ``Code-swift.struct/ok`` and an empty message.
-  @inlinable
-  internal static var ok: Self {
-    Status(code: .ok, message: "")
+  private init(storage: Storage) {
+    self.storage = storage
   }
+
+  /// A status with code ``Code-swift.struct/ok`` and an empty message.
+  @usableFromInline
+  internal static let ok = Status(storage: Storage(code: .ok, message: ""))
 }
 
 extension Status: CustomStringConvertible {
@@ -81,8 +83,6 @@ extension Status: CustomStringConvertible {
 
 extension Status {
   private final class Storage: Hashable {
-    static let okWithNoMessage = Storage(code: .ok, message: "")
-
     var code: Status.Code
     var message: String
 

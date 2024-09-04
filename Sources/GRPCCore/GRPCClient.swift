@@ -256,7 +256,7 @@ public final class GRPCClient: Sendable {
   ///   - handler: A unary response handler.
   ///
   /// - Returns: The return value from the `handler`.
-  public func unary<Request, Response, ReturnValue>(
+  public func unary<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest.Single<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
@@ -287,7 +287,7 @@ public final class GRPCClient: Sendable {
   ///   - handler: A unary response handler.
   ///
   /// - Returns: The return value from the `handler`.
-  public func clientStreaming<Request, Response, ReturnValue>(
+  public func clientStreaming<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest.Stream<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
@@ -318,7 +318,7 @@ public final class GRPCClient: Sendable {
   ///   - handler: A response stream handler.
   ///
   /// - Returns: The return value from the `handler`.
-  public func serverStreaming<Request, Response, ReturnValue>(
+  public func serverStreaming<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest.Single<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
@@ -350,7 +350,7 @@ public final class GRPCClient: Sendable {
   ///   - handler: A response stream handler.
   ///
   /// - Returns: The return value from the `handler`.
-  public func bidirectionalStreaming<Request, Response, ReturnValue>(
+  public func bidirectionalStreaming<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest.Stream<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,

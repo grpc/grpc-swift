@@ -16,7 +16,9 @@
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
-struct MessageToRPCResponsePartWriter<Serializer: MessageSerializer>: RPCWriterProtocol {
+struct MessageToRPCResponsePartWriter<
+  Serializer: MessageSerializer
+>: RPCWriterProtocol where Serializer.Message: Sendable {
   @usableFromInline
   typealias Element = Serializer.Message
 

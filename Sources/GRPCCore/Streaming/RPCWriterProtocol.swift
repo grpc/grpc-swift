@@ -18,7 +18,7 @@
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public protocol RPCWriterProtocol<Element>: Sendable {
   /// The type of value written.
-  associatedtype Element
+  associatedtype Element: Sendable
 
   /// Writes a single element.
   ///
@@ -64,28 +64,4 @@ public protocol ClosableRPCWriterProtocol<Element>: RPCWriterProtocol {
   /// All writes after ``finish(throwing:)`` has been called should result in an error
   /// being thrown.
   func finish(throwing error: any Error) async
-}
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension AsyncThrowingStream.Continuation: RPCWriterProtocol {
-  public func write(_ element: Element) async throws {
-    self.yield(element)
-  }
-
-  public func write(contentsOf elements: some Sequence<Element>) async throws {
-    for element in elements {
-      self.yield(element)
-    }
-  }
-}
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension AsyncThrowingStream.Continuation: ClosableRPCWriterProtocol where Failure == any Error {
-  public func finish() {
-    self.finish(throwing: nil)
-  }
-
-  public func finish(throwing error: any Error) {
-    self.finish(throwing: .some(error))
-  }
 }
