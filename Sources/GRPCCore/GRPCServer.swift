@@ -60,11 +60,11 @@ private import Synchronization
 ///
 /// ```swift
 /// // Start running the server.
-/// try await server.run()
+/// try await server.serve()
 /// ```
 ///
 /// The ``run()`` method won't return until the server has finished handling all requests. You can
-/// signal to the server that it should stop accepting new requests by calling ``stopListening()``.
+/// signal to the server that it should stop accepting new requests by calling ``beginGracefulShutdown()``.
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
 /// you can cancel the task running your server. If your application requires additional resources
 /// that need their lifecycles managed you should consider using [Swift Service
@@ -191,13 +191,13 @@ public final class GRPCServer: Sendable {
   ///
   /// This function returns when the configured transport has stopped listening and all requests have been
   /// handled. You can signal to the transport that it should stop listening by calling
-  /// ``stopListening()``. The server will continue to process existing requests.
+  /// ``beginGracefulShutdown()``. The server will continue to process existing requests.
   ///
   /// To stop the server more abruptly you can cancel the task that this function is running in.
   ///
   /// - Note: You can only call this function once, repeated calls will result in a
   ///   ``RuntimeError`` being thrown.
-  public func run() async throws {
+  public func serve() async throws {
     try self.state.withLock { try $0.startServing() }
 
     // When we exit this function the server must have stopped.
@@ -224,10 +224,10 @@ public final class GRPCServer: Sendable {
   /// against this server. Once the server has processed all requests the ``run()`` method returns.
   ///
   /// Calling this on a server which is already stopping or has stopped has no effect.
-  public func stopListening() {
+  public func beginGracefulShutdown() {
     let wasRunning = self.state.withLock { $0.beginGracefulShutdown() }
     if wasRunning {
-      self.transport.stopListening()
+      self.transport.beginGracefulShutdown()
     }
   }
 }

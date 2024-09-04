@@ -45,7 +45,7 @@ struct Serve: AsyncParsableCommand {
 
     let server = GRPCServer(transport: transport, services: [RouteGuideService(features: features)])
     try await withThrowingDiscardingTaskGroup { group in
-      group.addTask { try await server.run() }
+      group.addTask { try await server.serve() }
       let address = try await transport.listeningAddress
       print("server listening on \(address)")
     }

@@ -31,7 +31,7 @@ final class HealthTests: XCTestCase {
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await server.run()
+        try await server.serve()
       }
 
       group.addTask {

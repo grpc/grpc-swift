@@ -68,7 +68,7 @@ struct RecordRoute: AsyncParsableCommand {
         """
       print(text)
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }

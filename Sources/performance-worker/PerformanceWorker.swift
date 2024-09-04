@@ -57,7 +57,7 @@ struct PerformanceWorker: AsyncParsableCommand {
       ),
       services: [WorkerService()]
     )
-    try await server.run()
+    try await server.serve()
   }
 }
 

@@ -45,7 +45,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     }
 
     self._close = {
-      transport.close()
+      transport.beginGracefulShutdown()
     }
 
     self._configuration = { descriptor in
@@ -61,7 +61,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     try await self._connect()
   }
 
-  func close() {
+  func beginGracefulShutdown() {
     self._close()
   }
 
@@ -94,7 +94,7 @@ struct AnyServerTransport: ServerTransport, Sendable {
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
     self._listen = { streamHandler in try await transport.listen(streamHandler) }
-    self._stopListening = { transport.stopListening() }
+    self._stopListening = { transport.beginGracefulShutdown() }
   }
 
   func listen(
@@ -103,7 +103,7 @@ struct AnyServerTransport: ServerTransport, Sendable {
     try await self._listen(streamHandler)
   }
 
-  func stopListening() {
+  func beginGracefulShutdown() {
     self._stopListening()
   }
 }

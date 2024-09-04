@@ -34,7 +34,7 @@ public protocol ClientTransport: Sendable {
   ///
   /// Implementations of this function will typically create a long-lived task group which
   /// maintains connections. The function exits when all open streams have been closed and new connections
-  /// are no longer required by the caller who signals this by calling ``close()``, or by cancelling the
+  /// are no longer required by the caller who signals this by calling ``beginGracefulShutdown()``, or by cancelling the
   /// task this function runs in.
   func connect() async throws
 
@@ -46,7 +46,7 @@ public protocol ClientTransport: Sendable {
   ///
   /// If you want to forcefully cancel all active streams then cancel the task
   /// running ``connect()``.
-  func close()
+  func beginGracefulShutdown()
 
   /// Opens a stream using the transport, and uses it as input into a user-provided closure.
   ///

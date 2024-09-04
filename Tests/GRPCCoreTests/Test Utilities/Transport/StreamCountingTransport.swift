@@ -48,8 +48,8 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     try await self.transport.connect()
   }
 
-  func close() {
-    self.transport.close()
+  func beginGracefulShutdown() {
+    self.transport.beginGracefulShutdown()
   }
 
   func withStream<T>(
@@ -104,7 +104,7 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
     }
   }
 
-  func stopListening() {
-    self.transport.stopListening()
+  func beginGracefulShutdown() {
+    self.transport.beginGracefulShutdown()
   }
 }

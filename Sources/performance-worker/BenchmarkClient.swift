@@ -120,7 +120,7 @@ final class BenchmarkClient: Sendable {
         try await rpcsGroup.waitForAll()
       }
 
-      self.client.close()
+      self.client.beginGracefulShutdown()
       try await clientGroup.next()
     }
   }
@@ -237,6 +237,6 @@ final class BenchmarkClient: Sendable {
 
   internal func shutdown() {
     self._isShuttingDown.store(true, ordering: .relaxed)
-    self.client.close()
+    self.client.beginGracefulShutdown()
   }
 }

@@ -53,7 +53,7 @@ struct Collect: AsyncParsableCommand {
         print("collect ← \(message.text)")
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }

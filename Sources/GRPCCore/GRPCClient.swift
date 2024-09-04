@@ -99,12 +99,12 @@ private import Synchronization
 ///   }
 ///
 ///   // The RPC has completed, close the client.
-///   client.close()
+///   client.beginGracefulShutdown()
 /// }
 /// ```
 ///
 /// The ``run()`` method won't return until the client has finished handling all requests. You can
-/// signal to the client that it should stop creating new request streams by calling ``close()``.
+/// signal to the client that it should stop creating new request streams by calling ``beginGracefulShutdown()``.
 /// This gives the client enough time to drain any requests already in flight. To stop the client
 /// more abruptly you can cancel the task running your client. If your application requires
 /// additional resources that need their lifecycles managed you should consider using [Swift Service
@@ -209,7 +209,7 @@ public final class GRPCClient: Sendable {
 
   /// Start the client.
   ///
-  /// This returns once ``close()`` has been called and all in-flight RPCs have finished executing.
+  /// This returns once ``beginGracefulShutdown()`` has been called and all in-flight RPCs have finished executing.
   /// If you need to abruptly stop all work you should cancel the task executing this method.
   ///
   /// The client, and by extension this function, can only be run once. If the client is already
@@ -238,10 +238,10 @@ public final class GRPCClient: Sendable {
   /// The transport will be closed: this means that it will be given enough time to wait for
   /// in-flight RPCs to finish executing, but no new RPCs will be accepted. You can cancel the task
   /// executing ``run()`` if you want to abruptly stop in-flight RPCs.
-  public func close() {
+  public func beginGracefulShutdown() {
     let wasRunning = self.state.withLock { $0.beginGracefulShutdown() }
     if wasRunning {
-      self.transport.close()
+      self.transport.beginGracefulShutdown()
     }
   }
 
@@ -338,7 +338,7 @@ public final class GRPCClient: Sendable {
 
   /// Start a bidirectional streaming RPC.
   ///
-  /// - Note: ``run()`` must have been called and still executing, and ``close()`` mustn't
+  /// - Note: ``run()`` must have been called and still executing, and ``beginGracefulShutdown()`` mustn't
   /// have been called.
   ///
   /// - Parameters:
