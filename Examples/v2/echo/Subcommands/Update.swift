@@ -56,7 +56,7 @@ struct Update: AsyncParsableCommand {
         }
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }

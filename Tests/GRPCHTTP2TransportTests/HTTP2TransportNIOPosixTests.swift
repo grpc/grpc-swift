@@ -40,7 +40,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         let address = try await transport.listeningAddress
         let ipv4Address = try XCTUnwrap(address.ipv4)
         XCTAssertNotEqual(ipv4Address.port, 0)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -60,7 +60,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
         let address = try await transport.listeningAddress
         let ipv6Address = try XCTUnwrap(address.ipv6)
         XCTAssertNotEqual(ipv6Address.port, 0)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -82,7 +82,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
           address.unixDomainSocket,
           GRPCHTTP2Core.SocketAddress.UnixDomainSocket(path: "/tmp/posix-uds-test")
         )
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -103,7 +103,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       group.addTask {
         let address = try await transport.listeningAddress
         XCTAssertNotNil(address.virtualSocket)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }
@@ -165,7 +165,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       group.addTask {
         let address = try await transport.listeningAddress
         XCTAssertNotNil(address.ipv4)
-        transport.stopListening()
+        transport.beginGracefulShutdown()
       }
     }
   }

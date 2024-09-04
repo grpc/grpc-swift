@@ -280,7 +280,7 @@ extension HTTP2ServerTransport {
       }
     }
 
-    public func stopListening() {
+    public func beginGracefulShutdown() {
       self.serverQuiescingHelper.initiateShutdown(promise: nil)
     }
   }

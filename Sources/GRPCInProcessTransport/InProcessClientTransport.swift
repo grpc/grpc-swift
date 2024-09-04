@@ -190,7 +190,7 @@ public final class InProcessClientTransport: ClientTransport {
   /// will result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
   ///
   /// If you want to forcefully cancel all active streams then cancel the task running ``connect()``.
-  public func close() {
+  public func beginGracefulShutdown() {
     let maybeContinuation: AsyncStream<Void>.Continuation? = self.state.withLock { state in
       switch state {
       case .unconnected:

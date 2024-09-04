@@ -44,7 +44,7 @@ final class InProcessServerTransportTests: XCTestCase {
         try await transport.listen { stream in
           let partValue = try? await stream.inbound.reduce(into: []) { $0.append($1) }
           XCTAssertEqual(partValue, [.message([42])])
-          transport.stopListening()
+          transport.beginGracefulShutdown()
         }
       }
 
@@ -77,7 +77,7 @@ final class InProcessServerTransportTests: XCTestCase {
       }
       XCTAssertEqual(firstStreamMessages, [.message([42])])
 
-      transport.stopListening()
+      transport.beginGracefulShutdown()
 
       let secondStreamOutbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
       let secondStream = RPCStream<

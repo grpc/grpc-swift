@@ -31,7 +31,7 @@ final class GRPCClientTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await server.run()
+        try await server.serve()
       }
 
       group.addTask {
@@ -41,8 +41,8 @@ final class GRPCClientTests: XCTestCase {
       // Make sure both server and client are running
       try await Task.sleep(for: .milliseconds(100))
       try await body(client, server)
-      client.close()
-      server.stopListening()
+      client.beginGracefulShutdown()
+      server.beginGracefulShutdown()
     }
   }
 
@@ -273,7 +273,7 @@ final class GRPCClientTests: XCTestCase {
       }
 
       // New RPCs should fail immediately after this.
-      client.close()
+      client.beginGracefulShutdown()
 
       // RPC should fail now.
       await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
@@ -296,7 +296,7 @@ final class GRPCClientTests: XCTestCase {
         request: .init(producer: { writer in
 
           // Close the client once this RCP has been started.
-          client.close()
+          client.beginGracefulShutdown()
 
           // Attempts to start a new RPC should fail.
           await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
@@ -335,7 +335,7 @@ final class GRPCClientTests: XCTestCase {
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         let server = GRPCServer(transport: inProcess.server, services: [BinaryEcho()])
-        try await server.run()
+        try await server.serve()
       }
 
       group.addTask {

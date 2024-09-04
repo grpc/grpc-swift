@@ -26,7 +26,7 @@ public protocol ServerTransport: Sendable {
   /// and start accepting new connections. Each accepted inbound RPC stream will be handed over to
   /// the provided `streamHandler` to handle accordingly.
   ///
-  /// You can call ``stopListening()`` to stop the transport from accepting new streams. Existing
+  /// You can call ``beginGracefulShutdown()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
   /// period after which any open streams may be cancelled. You can also cancel the task running
   /// ``listen(_:)`` to abruptly close connections and streams.
@@ -38,5 +38,5 @@ public protocol ServerTransport: Sendable {
   ///
   /// Existing streams are permitted to run to completion. However, the transport may also enforce
   /// a grace period, after which remaining streams are cancelled.
-  func stopListening()
+  func beginGracefulShutdown()
 }
