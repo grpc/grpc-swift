@@ -77,7 +77,11 @@ struct GeneratorOptions {
   #if compiler(>=6.0)
   private(set) var v2 = false
   #endif
+  #if swift(>=6.0)
   private(set) var useAccessLevelOnImports = true
+  #else
+  private(set) var useAccessLevelOnImports = false
+  #endif
 
   init(parameter: any CodeGeneratorParameter) throws {
     try self.init(pairs: parameter.parsedPairs)
