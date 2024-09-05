@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
+
 import GRPCCore
 import GRPCInProcessTransport
 import XCTest
@@ -230,8 +230,8 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testInterceptorsAreAppliedInOrder() async throws {
-    let counter1 = ManagedAtomic(0)
-    let counter2 = ManagedAtomic(0)
+    let counter1 = AtomicCounter()
+    let counter2 = AtomicCounter()
 
     try await self.withInProcessConnectedClient(
       services: [BinaryEcho()],
@@ -254,8 +254,8 @@ final class GRPCClientTests: XCTestCase {
       }
     }
 
-    XCTAssertEqual(counter1.load(ordering: .sequentiallyConsistent), 1)
-    XCTAssertEqual(counter2.load(ordering: .sequentiallyConsistent), 0)
+    XCTAssertEqual(counter1.value, 1)
+    XCTAssertEqual(counter2.value, 0)
   }
 
   func testNoNewRPCsAfterClientClose() async throws {

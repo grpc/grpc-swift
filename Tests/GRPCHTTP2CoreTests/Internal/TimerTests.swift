@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Atomics
 import GRPCCore
 import GRPCHTTP2Core
 import NIOEmbedded
@@ -62,25 +61,25 @@ internal final class TimerTests: XCTestCase {
     let loop = EmbeddedEventLoop()
     defer { try! loop.close() }
 
-    let value = Atomic(0)
+    let counter = AtomicCounter()
     var timer = Timer(delay: .seconds(1), repeat: true)
     timer.schedule(on: loop) {
-      value.add(1, ordering: .releasing)
+      counter.increment()
     }
 
     loop.advanceTime(by: .milliseconds(999))
-    XCTAssertEqual(value.load(ordering: .acquiring), 0)
+    XCTAssertEqual(counter.value, 0)
     loop.advanceTime(by: .milliseconds(1))
-    XCTAssertEqual(value.load(ordering: .acquiring), 1)
+    XCTAssertEqual(counter.value, 1)
 
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(value.load(ordering: .acquiring), 2)
+    XCTAssertEqual(counter.value, 2)
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(value.load(ordering: .acquiring), 3)
+    XCTAssertEqual(counter.value, 3)
 
     timer.cancel()
     loop.advanceTime(by: .seconds(1))
-    XCTAssertEqual(value.load(ordering: .acquiring), 3)
+    XCTAssertEqual(counter.value, 3)
   }
 
   func testCancelRepeatedTimer() {

@@ -51,6 +51,10 @@ let packageDependencies: [Package.Dependency] = [
     from: "1.0.5"
   ),
   .package(
+    url: "https://github.com/apple/swift-atomics.git",
+    from: "1.2.0"
+  ),
+  .package(
     url: "https://github.com/apple/swift-protobuf.git",
     from: "1.27.0"
   ),
@@ -123,6 +127,7 @@ extension Target.Dependency {
     name: "SwiftProtobufPluginLibrary",
     package: "swift-protobuf"
   )
+  static let atomics: Self = .product(name: "Atomics", package: "swift-atomics")
   static let dequeModule: Self = .product(name: "DequeModule", package: "swift-collections")
 }
 
@@ -146,6 +151,7 @@ extension Target {
       .logging,
       .protobuf,
       .dequeModule,
+      .atomics
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
@@ -198,7 +204,8 @@ extension Target {
       .nioEmbedded,
       .nioTransportServices,
       .logging,
-      .reflectionService
+      .reflectionService,
+      .atomics
     ].appending(
       .nioSSL, if: includeNIOSSL
     ),
