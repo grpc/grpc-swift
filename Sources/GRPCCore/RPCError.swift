@@ -107,6 +107,25 @@ extension RPCError {
     public var description: String {
       String(describing: self.wrapped)
     }
+
+    package static let all: [Self] = [
+      .cancelled,
+      .unknown,
+      .invalidArgument,
+      .deadlineExceeded,
+      .notFound,
+      .alreadyExists,
+      .permissionDenied,
+      .resourceExhausted,
+      .failedPrecondition,
+      .aborted,
+      .outOfRange,
+      .unimplemented,
+      .internalError,
+      .unavailable,
+      .dataLoss,
+      .unauthenticated,
+    ]
   }
 }
 

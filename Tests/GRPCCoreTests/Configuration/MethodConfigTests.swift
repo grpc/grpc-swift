@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPCCore
-import XCTest
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-final class MethodConfigTests: XCTestCase {
-  func testRetryPolicyClampsMaxAttempts() {
+import GRPCCore
+import Testing
+
+struct MethodConfigTests {
+  @Test("RetryPolicy clamps max attempts")
+  func retryPolicyClampsMaxAttempts() {
     var policy = RetryPolicy(
       maximumAttempts: 10,
       initialBackoff: .seconds(1),
@@ -28,13 +29,14 @@ final class MethodConfigTests: XCTestCase {
     )
 
     // Should be clamped on init
-    XCTAssertEqual(policy.maximumAttempts, 5)
+    #expect(policy.maximumAttempts == 5)
     // and when modifying
     policy.maximumAttempts = 10
-    XCTAssertEqual(policy.maximumAttempts, 5)
+    #expect(policy.maximumAttempts == 5)
   }
 
-  func testHedgingPolicyClampsMaxAttempts() {
+  @Test("HedgingPolicy clamps max attempts")
+  func hedgingPolicyClampsMaxAttempts() {
     var policy = HedgingPolicy(
       maximumAttempts: 10,
       hedgingDelay: .seconds(1),
@@ -42,9 +44,9 @@ final class MethodConfigTests: XCTestCase {
     )
 
     // Should be clamped on init
-    XCTAssertEqual(policy.maximumAttempts, 5)
+    #expect(policy.maximumAttempts == 5)
     // and when modifying
     policy.maximumAttempts = 10
-    XCTAssertEqual(policy.maximumAttempts, 5)
+    #expect(policy.maximumAttempts == 5)
   }
 }

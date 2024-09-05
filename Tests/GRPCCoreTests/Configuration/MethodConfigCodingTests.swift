@@ -16,415 +16,397 @@
 
 import Foundation
 import SwiftProtobuf
-import XCTest
+import Testing
 
 @testable import GRPCCore
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-internal final class MethodConfigCodingTests: XCTestCase {
-  private let encoder = JSONEncoder()
-  private let decoder = JSONDecoder()
-
-  private func testDecodeThrowsRuntimeError<D: Decodable>(json: String, as: D.Type) throws {
-    XCTAssertThrowsError(
-      ofType: RuntimeError.self,
-      try self.decoder.decode(D.self, from: Data(json.utf8))
-    ) { error in
-      XCTAssertEqual(error.code, .invalidArgument)
+@Suite("MethodConfig coding tests")
+struct MethodConfigCodingTests {
+  @Suite("Encoding")
+  struct Encoding {
+    private func encodeToJSON(_ value: some Encodable) throws -> String {
+      let encoder = JSONEncoder()
+      encoder.outputFormatting = .sortedKeys
+      let encoded = try encoder.encode(value)
+      let json = String(decoding: encoded, as: UTF8.self)
+      return json
     }
-  }
 
-  func testDecodeMethodConfigName() throws {
-    let inputs: [(String, MethodConfig.Name)] = [
-      (#"{"service": "foo.bar", "method": "baz"}"#, .init(service: "foo.bar", method: "baz")),
-      (#"{"service": "foo.bar"}"#, .init(service: "foo.bar", method: "")),
-      (#"{}"#, .init(service: "", method: "")),
-    ]
-
-    for (json, expected) in inputs {
-      let decoded = try self.decoder.decode(MethodConfig.Name.self, from: Data(json.utf8))
-      XCTAssertEqual(decoded, expected)
+    @Test(
+      "Name",
+      arguments: [
+        (
+          MethodConfig.Name(service: "foo.bar", method: "baz"),
+          #"{"method":"baz","service":"foo.bar"}"#
+        ),
+        (MethodConfig.Name(service: "foo.bar", method: ""), #"{"method":"","service":"foo.bar"}"#),
+        (MethodConfig.Name(service: "", method: ""), #"{"method":"","service":""}"#),
+      ] as [(MethodConfig.Name, String)]
+    )
+    func methodConfigName(name: MethodConfig.Name, expected: String) throws {
+      let json = try self.encodeToJSON(name)
+      #expect(json == expected)
     }
-  }
 
-  func testEncodeDecodeMethodConfigName() throws {
-    let inputs: [MethodConfig.Name] = [
-      MethodConfig.Name(service: "foo.bar", method: "baz"),
-      MethodConfig.Name(service: "foo.bar", method: ""),
-      MethodConfig.Name(service: "", method: ""),
-    ]
-
-    // We can't do encode-only tests as the output is non-deterministic (the ordering of
-    // service/method in the JSON object)
-    for name in inputs {
-      let encoded = try self.encoder.encode(name)
-      let decoded = try self.decoder.decode(MethodConfig.Name.self, from: encoded)
-      XCTAssertEqual(decoded, name)
+    @Test(
+      "GoogleProtobufDuration",
+      arguments: [
+        (.seconds(1), #""1.0s""#),
+        (.zero, #""0.0s""#),
+        (.milliseconds(100_123), #""100.123s""#),
+      ] as [(Duration, String)]
+    )
+    func protobufDuration(duration: Duration, expected: String) throws {
+      let json = try self.encodeToJSON(GoogleProtobufDuration(duration: duration))
+      #expect(json == expected)
     }
-  }
 
-  func testDecodeProtobufDuration() throws {
-    let inputs: [(String, Duration)] = [
-      ("1.0s", .seconds(1)),
-      ("1s", .seconds(1)),
-      ("1.000000s", .seconds(1)),
-      ("0s", .zero),
-      ("100.123s", .milliseconds(100_123)),
-    ]
+    @Test(
+      "GoogleRPCCode",
+      arguments: [
+        (.ok, #""OK""#),
+        (.cancelled, #""CANCELLED""#),
+        (.unknown, #""UNKNOWN""#),
+        (.invalidArgument, #""INVALID_ARGUMENT""#),
+        (.deadlineExceeded, #""DEADLINE_EXCEEDED""#),
+        (.notFound, #""NOT_FOUND""#),
+        (.alreadyExists, #""ALREADY_EXISTS""#),
+        (.permissionDenied, #""PERMISSION_DENIED""#),
+        (.resourceExhausted, #""RESOURCE_EXHAUSTED""#),
+        (.failedPrecondition, #""FAILED_PRECONDITION""#),
+        (.aborted, #""ABORTED""#),
+        (.outOfRange, #""OUT_OF_RANGE""#),
+        (.unimplemented, #""UNIMPLEMENTED""#),
+        (.internalError, #""INTERNAL""#),
+        (.unavailable, #""UNAVAILABLE""#),
+        (.dataLoss, #""DATA_LOSS""#),
+        (.unauthenticated, #""UNAUTHENTICATED""#),
+      ] as [(Status.Code, String)]
+    )
+    func rpcCode(code: Status.Code, expected: String) throws {
+      let json = try self.encodeToJSON(GoogleRPCCode(code: code))
+      #expect(json == expected)
+    }
 
-    for (input, expected) in inputs {
-      let json = "\"\(input)\""
-      let protoDuration = try self.decoder.decode(
-        GoogleProtobufDuration.self,
-        from: Data(json.utf8)
+    @Test("RetryPolicy")
+    func retryPolicy() throws {
+      let policy = RetryPolicy(
+        maximumAttempts: 3,
+        initialBackoff: .seconds(1),
+        maximumBackoff: .seconds(3),
+        backoffMultiplier: 1.6,
+        retryableStatusCodes: [.aborted]
       )
-      let components = protoDuration.duration.components
+
+      let json = try self.encodeToJSON(policy)
+      let expected =
+        #"{"backoffMultiplier":1.6,"initialBackoff":"1.0s","maxAttempts":3,"maxBackoff":"3.0s","retryableStatusCodes":["ABORTED"]}"#
+      #expect(json == expected)
+    }
+
+    @Test("HedgingPolicy")
+    func hedgingPolicy() throws {
+      let policy = HedgingPolicy(
+        maximumAttempts: 3,
+        hedgingDelay: .seconds(1),
+        nonFatalStatusCodes: [.aborted]
+      )
+
+      let json = try self.encodeToJSON(policy)
+      let expected = #"{"hedgingDelay":"1.0s","maxAttempts":3,"nonFatalStatusCodes":["ABORTED"]}"#
+      #expect(json == expected)
+    }
+  }
+
+  @Suite("Decoding")
+  struct Decoding {
+    private func decodeFromFile<Decoded: Decodable>(
+      _ name: String,
+      as: Decoded.Type
+    ) throws -> Decoded {
+      let input = Bundle.module.url(
+        forResource: name,
+        withExtension: "json",
+        subdirectory: "Inputs"
+      )
+
+      let url = try #require(input)
+      let data = try Data(contentsOf: url)
+
+      let decoder = JSONDecoder()
+      return try decoder.decode(Decoded.self, from: data)
+    }
+
+    private func decodeFromJSONString<Decoded: Decodable>(
+      _ json: String,
+      as: Decoded.Type
+    ) throws -> Decoded {
+      let data = Data(json.utf8)
+      let decoder = JSONDecoder()
+      return try decoder.decode(Decoded.self, from: data)
+    }
+
+    private static let codeNames: [String] = [
+      "OK",
+      "CANCELLED",
+      "UNKNOWN",
+      "INVALID_ARGUMENT",
+      "DEADLINE_EXCEEDED",
+      "NOT_FOUND",
+      "ALREADY_EXISTS",
+      "PERMISSION_DENIED",
+      "RESOURCE_EXHAUSTED",
+      "FAILED_PRECONDITION",
+      "ABORTED",
+      "OUT_OF_RANGE",
+      "UNIMPLEMENTED",
+      "INTERNAL",
+      "UNAVAILABLE",
+      "DATA_LOSS",
+      "UNAUTHENTICATED",
+    ]
+
+    @Test(
+      "Name",
+      arguments: [
+        ("method_config.name.full", MethodConfig.Name(service: "foo.bar", method: "baz")),
+        ("method_config.name.service_only", MethodConfig.Name(service: "foo.bar", method: "")),
+        ("method_config.name.empty", MethodConfig.Name(service: "", method: "")),
+      ] as [(String, MethodConfig.Name)]
+    )
+    func name(_ fileName: String, expected: MethodConfig.Name) throws {
+      let decoded = try self.decodeFromFile(fileName, as: MethodConfig.Name.self)
+      #expect(decoded == expected)
+    }
+
+    @Test(
+      "GoogleProtobufDuration",
+      arguments: [
+        ("1.0s", .seconds(1)),
+        ("1s", .seconds(1)),
+        ("1.000000s", .seconds(1)),
+        ("0s", .zero),
+        ("100.123s", .milliseconds(100_123)),
+      ] as [(String, Duration)]
+    )
+    func googleProtobufDuration(duration: String, expectedDuration: Duration) throws {
+      let json = "\"\(duration)\""
+      let decoded = try self.decodeFromJSONString(json, as: GoogleProtobufDuration.self)
 
       // Conversion is lossy as we go from floating point seconds to integer seconds and
       // attoseconds. Allow for millisecond precision.
       let divisor: Int64 = 1_000_000_000_000_000
 
-      XCTAssertEqual(components.seconds, expected.components.seconds)
-      XCTAssertEqual(components.attoseconds / divisor, expected.components.attoseconds / divisor)
+      let duration = decoded.duration.components
+      let expected = expectedDuration.components
+
+      #expect(duration.seconds == expected.seconds)
+      #expect(duration.attoseconds / divisor == expected.attoseconds / divisor)
     }
-  }
 
-  func testEncodeProtobufDuration() throws {
-    let inputs: [(Duration, String)] = [
-      (.seconds(1), "\"1.0s\""),
-      (.zero, "\"0.0s\""),
-      (.milliseconds(100_123), "\"100.123s\""),
-    ]
-
-    for (input, expected) in inputs {
-      let duration = GoogleProtobufDuration(duration: input)
-      let encoded = try self.encoder.encode(duration)
-      let json = String(decoding: encoded, as: UTF8.self)
-      XCTAssertEqual(json, expected)
+    @Test("Invalid GoogleProtobufDuration", arguments: ["1", "1ss", "1S", "1.0S"])
+    func googleProtobufDuration(invalidDuration: String) throws {
+      let json = "\"\(invalidDuration)\""
+      #expect {
+        try self.decodeFromJSONString(json, as: GoogleProtobufDuration.self)
+      } throws: { error in
+        guard let error = error as? RuntimeError else { return false }
+        return error.code == .invalidArgument
+      }
     }
-  }
 
-  func testDecodeInvalidProtobufDuration() throws {
-    for timestamp in ["1", "1ss", "1S", "1.0S"] {
-      let json = "\"\(timestamp)\""
-      try self.testDecodeThrowsRuntimeError(json: json, as: GoogleProtobufDuration.self)
-    }
-  }
-
-  func testDecodeRPCCodeFromCaseName() throws {
-    let inputs: [(String, Status.Code)] = [
-      ("OK", .ok),
-      ("CANCELLED", .cancelled),
-      ("UNKNOWN", .unknown),
-      ("INVALID_ARGUMENT", .invalidArgument),
-      ("DEADLINE_EXCEEDED", .deadlineExceeded),
-      ("NOT_FOUND", .notFound),
-      ("ALREADY_EXISTS", .alreadyExists),
-      ("PERMISSION_DENIED", .permissionDenied),
-      ("RESOURCE_EXHAUSTED", .resourceExhausted),
-      ("FAILED_PRECONDITION", .failedPrecondition),
-      ("ABORTED", .aborted),
-      ("OUT_OF_RANGE", .outOfRange),
-      ("UNIMPLEMENTED", .unimplemented),
-      ("INTERNAL", .internalError),
-      ("UNAVAILABLE", .unavailable),
-      ("DATA_LOSS", .dataLoss),
-      ("UNAUTHENTICATED", .unauthenticated),
-    ]
-
-    for (name, expected) in inputs {
+    @Test("GoogleRPCCode from case name", arguments: zip(Self.codeNames, Status.Code.all))
+    func rpcCode(name: String, expected: Status.Code) throws {
       let json = "\"\(name)\""
-      let code = try self.decoder.decode(GoogleRPCCode.self, from: Data(json.utf8))
-      XCTAssertEqual(code.code, expected)
+      let decoded = try self.decodeFromJSONString(json, as: GoogleRPCCode.self)
+      #expect(decoded.code == expected)
     }
-  }
 
-  func testDecodeRPCCodeFromRawValue() throws {
-    let inputs: [(Int, Status.Code)] = [
-      (0, .ok),
-      (1, .cancelled),
-      (2, .unknown),
-      (3, .invalidArgument),
-      (4, .deadlineExceeded),
-      (5, .notFound),
-      (6, .alreadyExists),
-      (7, .permissionDenied),
-      (8, .resourceExhausted),
-      (9, .failedPrecondition),
-      (10, .aborted),
-      (11, .outOfRange),
-      (12, .unimplemented),
-      (13, .internalError),
-      (14, .unavailable),
-      (15, .dataLoss),
-      (16, .unauthenticated),
-    ]
-
-    for (rawValue, expected) in inputs {
+    @Test("GoogleRPCCode from rawValue", arguments: zip(0 ... 16, Status.Code.all))
+    func rpcCode(rawValue: Int, expected: Status.Code) throws {
       let json = "\(rawValue)"
-      let code = try self.decoder.decode(GoogleRPCCode.self, from: Data(json.utf8))
-      XCTAssertEqual(code.code, expected)
+      let decoded = try self.decodeFromJSONString(json, as: GoogleRPCCode.self)
+      #expect(decoded.code == expected)
     }
-  }
 
-  func testEncodeDecodeRPCCode() throws {
-    let codes: [Status.Code] = [
-      .ok,
-      .cancelled,
-      .unknown,
-      .invalidArgument,
-      .deadlineExceeded,
-      .notFound,
-      .alreadyExists,
-      .permissionDenied,
-      .resourceExhausted,
-      .failedPrecondition,
-      .aborted,
-      .outOfRange,
-      .unimplemented,
-      .internalError,
-      .unavailable,
-      .dataLoss,
-      .unauthenticated,
-    ]
-
-    for code in codes {
-      let encoded = try self.encoder.encode(GoogleRPCCode(code: code))
-      let decoded = try self.decoder.decode(GoogleRPCCode.self, from: encoded)
-      XCTAssertEqual(decoded.code, code)
+    @Test("RetryPolicy")
+    func retryPolicy() throws {
+      let decoded = try self.decodeFromFile("method_config.retry_policy", as: RetryPolicy.self)
+      let expected = RetryPolicy(
+        maximumAttempts: 3,
+        initialBackoff: .seconds(1),
+        maximumBackoff: .seconds(3),
+        backoffMultiplier: 1.6,
+        retryableStatusCodes: [.aborted, .unavailable]
+      )
+      #expect(decoded == expected)
     }
-  }
 
-  func testDecodeRetryPolicy() throws {
-    let json = """
-      {
-        "maxAttempts": 3,
-        "initialBackoff": "1s",
-        "maxBackoff": "3s",
-        "backoffMultiplier": 1.6,
-        "retryableStatusCodes": ["ABORTED", "UNAVAILABLE"]
-      }
-      """
-
-    let expected = RetryPolicy(
-      maximumAttempts: 3,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(3),
-      backoffMultiplier: 1.6,
-      retryableStatusCodes: [.aborted, .unavailable]
-    )
-
-    let decoded = try self.decoder.decode(RetryPolicy.self, from: Data(json.utf8))
-    XCTAssertEqual(decoded, expected)
-  }
-
-  func testEncodeDecodeRetryPolicy() throws {
-    let policy = RetryPolicy(
-      maximumAttempts: 3,
-      initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(3),
-      backoffMultiplier: 1.6,
-      retryableStatusCodes: [.aborted]
-    )
-
-    let encoded = try self.encoder.encode(policy)
-    let decoded = try self.decoder.decode(RetryPolicy.self, from: encoded)
-    XCTAssertEqual(decoded, policy)
-  }
-
-  func testDecodeRetryPolicyWithInvalidRetryMaxAttempts() throws {
-    let cases = ["-1", "0", "1"]
-    for maxAttempts in cases {
-      let json = """
-        {
-          "maxAttempts": \(maxAttempts),
-          "initialBackoff": "1s",
-          "maxBackoff": "3s",
-          "backoffMultiplier": 1.6,
-          "retryableStatusCodes": ["ABORTED"]
-        }
-        """
-
-      try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
-    }
-  }
-
-  func testDecodeRetryPolicyWithInvalidInitialBackoff() throws {
-    let cases = ["0s", "-1s"]
-    for backoff in cases {
-      let json = """
-        {
-          "maxAttempts": 3,
-          "initialBackoff": "\(backoff)",
-          "maxBackoff": "3s",
-          "backoffMultiplier": 1.6,
-          "retryableStatusCodes": ["ABORTED"]
-        }
-        """
-      try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
-    }
-  }
-
-  func testDecodeRetryPolicyWithInvalidMaxBackoff() throws {
-    let cases = ["0s", "-1s"]
-    for backoff in cases {
-      let json = """
-        {
-          "maxAttempts": 3,
-          "initialBackoff": "1s",
-          "maxBackoff": "\(backoff)",
-          "backoffMultiplier": 1.6,
-          "retryableStatusCodes": ["ABORTED"]
-        }
-        """
-      try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
-    }
-  }
-
-  func testDecodeRetryPolicyWithInvalidBackoffMultiplier() throws {
-    let cases = ["0", "-1.5"]
-    for multiplier in cases {
-      let json = """
-        {
-          "maxAttempts": 3,
-          "initialBackoff": "1s",
-          "maxBackoff": "3s",
-          "backoffMultiplier": \(multiplier),
-          "retryableStatusCodes": ["ABORTED"]
-        }
-        """
-      try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
-    }
-  }
-
-  func testDecodeRetryPolicyWithEmptyRetryableStatusCodes() throws {
-    let json = """
-      {
-        "maxAttempts": 3,
-        "initialBackoff": "1s",
-        "maxBackoff": "3s",
-        "backoffMultiplier": 1,
-        "retryableStatusCodes": []
-      }
-      """
-    try self.testDecodeThrowsRuntimeError(json: json, as: RetryPolicy.self)
-  }
-
-  func testDecodeHedgingPolicy() throws {
-    let json = """
-      {
-        "maxAttempts": 3,
-        "hedgingDelay": "1s",
-        "nonFatalStatusCodes": ["ABORTED"]
-      }
-      """
-
-    let expected = HedgingPolicy(
-      maximumAttempts: 3,
-      hedgingDelay: .seconds(1),
-      nonFatalStatusCodes: [.aborted]
-    )
-
-    let decoded = try self.decoder.decode(HedgingPolicy.self, from: Data(json.utf8))
-    XCTAssertEqual(decoded, expected)
-  }
-
-  func testEncodeDecodeHedgingPolicy() throws {
-    let policy = HedgingPolicy(
-      maximumAttempts: 3,
-      hedgingDelay: .seconds(1),
-      nonFatalStatusCodes: [.aborted]
-    )
-
-    let encoded = try self.encoder.encode(policy)
-    let decoded = try self.decoder.decode(HedgingPolicy.self, from: encoded)
-    XCTAssertEqual(decoded, policy)
-  }
-
-  func testMethodConfigDecodeFromJSON() throws {
-    let config = Grpc_ServiceConfig_MethodConfig.with {
-      $0.name = [
-        .with {
-          $0.service = "echo.Echo"
-          $0.method = "Get"
-        }
+    @Test(
+      "RetryPolicy with invalid values",
+      arguments: [
+        "method_config.retry_policy.invalid.backoff_multiplier",
+        "method_config.retry_policy.invalid.initial_backoff",
+        "method_config.retry_policy.invalid.max_backoff",
+        "method_config.retry_policy.invalid.max_attempts",
+        "method_config.retry_policy.invalid.retryable_status_codes",
       ]
-
-      $0.waitForReady = true
-
-      $0.timeout = .with {
-        $0.seconds = 1
-        $0.nanos = 0
-      }
-
-      $0.maxRequestMessageBytes = 1024
-      $0.maxResponseMessageBytes = 2048
-    }
-
-    // Test the 'regular' config.
-    do {
-      let jsonConfig = try config.jsonUTF8Data()
-      let decoded = try self.decoder.decode(MethodConfig.self, from: jsonConfig)
-      XCTAssertEqual(decoded.names, [MethodConfig.Name(service: "echo.Echo", method: "Get")])
-      XCTAssertEqual(decoded.waitForReady, true)
-      XCTAssertEqual(decoded.timeout, Duration(secondsComponent: 1, attosecondsComponent: 0))
-      XCTAssertEqual(decoded.maxRequestMessageBytes, 1024)
-      XCTAssertEqual(decoded.maxResponseMessageBytes, 2048)
-      XCTAssertNil(decoded.executionPolicy)
-    }
-
-    // Test the hedging policy.
-    do {
-      var config = config
-      config.hedgingPolicy = .with {
-        $0.maxAttempts = 3
-        $0.hedgingDelay = .with { $0.seconds = 42 }
-        $0.nonFatalStatusCodes = [
-          .aborted,
-          .unimplemented,
-        ]
-      }
-
-      let jsonConfig = try config.jsonUTF8Data()
-      let decoded = try self.decoder.decode(MethodConfig.self, from: jsonConfig)
-
-      switch decoded.executionPolicy?.wrapped {
-      case let .some(.hedge(policy)):
-        XCTAssertEqual(policy.maximumAttempts, 3)
-        XCTAssertEqual(policy.hedgingDelay, .seconds(42))
-        XCTAssertEqual(policy.nonFatalStatusCodes, [.aborted, .unimplemented])
-      default:
-        XCTFail("Expected hedging policy")
+    )
+    func invalidRetryPolicy(fileName: String) throws {
+      #expect(throws: RuntimeError.self) {
+        try self.decodeFromFile(fileName, as: RetryPolicy.self)
       }
     }
 
-    // Test the retry policy.
-    do {
-      var config = config
-      config.retryPolicy = .with {
-        $0.maxAttempts = 3
-        $0.initialBackoff = .with { $0.seconds = 1 }
-        $0.maxBackoff = .with { $0.seconds = 3 }
-        $0.backoffMultiplier = 1.6
-        $0.retryableStatusCodes = [
-          .aborted,
-          .unimplemented,
-        ]
-      }
+    @Test("HedgingPolicy")
+    func hedgingPolicy() throws {
+      let decoded = try self.decodeFromFile("method_config.hedging_policy", as: HedgingPolicy.self)
+      let expected = HedgingPolicy(
+        maximumAttempts: 3,
+        hedgingDelay: .seconds(1),
+        nonFatalStatusCodes: [.aborted]
+      )
+      #expect(decoded == expected)
+    }
 
-      let jsonConfig = try config.jsonUTF8Data()
-      let decoded = try self.decoder.decode(MethodConfig.self, from: jsonConfig)
-
-      switch decoded.executionPolicy?.wrapped {
-      case let .some(.retry(policy)):
-        XCTAssertEqual(policy.maximumAttempts, 3)
-        XCTAssertEqual(policy.initialBackoff, .seconds(1))
-        XCTAssertEqual(policy.maximumBackoff, .seconds(3))
-        XCTAssertEqual(policy.backoffMultiplier, 1.6)
-        XCTAssertEqual(policy.retryableStatusCodes, [.aborted, .unimplemented])
-      default:
-        XCTFail("Expected hedging policy")
+    @Test(
+      "HedgingPolicy with invalid values",
+      arguments: [
+        "method_config.hedging_policy.invalid.max_attempts"
+      ]
+    )
+    func invalidHedgingPolicy(fileName: String) throws {
+      #expect(throws: RuntimeError.self) {
+        try self.decodeFromFile(fileName, as: HedgingPolicy.self)
       }
+    }
+
+    @Test("MethodConfig")
+    func methodConfig() throws {
+      let expected = MethodConfig(
+        names: [
+          MethodConfig.Name(
+            service: "echo.Echo",
+            method: "Get"
+          )
+        ],
+        waitForReady: true,
+        timeout: .seconds(1),
+        maxRequestMessageBytes: 1024,
+        maxResponseMessageBytes: 2048
+      )
+
+      let decoded = try self.decodeFromFile("method_config", as: MethodConfig.self)
+      #expect(decoded == expected)
+    }
+
+    @Test("MethodConfig with hedging")
+    func methodConfigWithHedging() throws {
+      let expected = MethodConfig(
+        names: [
+          MethodConfig.Name(
+            service: "echo.Echo",
+            method: "Get"
+          )
+        ],
+        waitForReady: true,
+        timeout: .seconds(1),
+        maxRequestMessageBytes: 1024,
+        maxResponseMessageBytes: 2048,
+        executionPolicy: .hedge(
+          HedgingPolicy(
+            maximumAttempts: 3,
+            hedgingDelay: .seconds(42),
+            nonFatalStatusCodes: [.aborted, .unimplemented]
+          )
+        )
+      )
+
+      let decoded = try self.decodeFromFile("method_config.with_hedging", as: MethodConfig.self)
+      #expect(decoded == expected)
+    }
+
+    @Test("MethodConfig with retries")
+    func methodConfigWithRetries() throws {
+      let expected = MethodConfig(
+        names: [
+          MethodConfig.Name(
+            service: "echo.Echo",
+            method: "Get"
+          )
+        ],
+        waitForReady: true,
+        timeout: .seconds(1),
+        maxRequestMessageBytes: 1024,
+        maxResponseMessageBytes: 2048,
+        executionPolicy: .retry(
+          RetryPolicy(
+            maximumAttempts: 3,
+            initialBackoff: .seconds(1),
+            maximumBackoff: .seconds(3),
+            backoffMultiplier: 1.6,
+            retryableStatusCodes: [.aborted, .unimplemented]
+          )
+        )
+      )
+
+      let decoded = try self.decodeFromFile("method_config.with_retries", as: MethodConfig.self)
+      #expect(decoded == expected)
+    }
+  }
+
+  @Suite("Round-trip tests")
+  struct RoundTrip {
+    private func decodeFromFile<Decoded: Decodable>(
+      _ name: String,
+      as: Decoded.Type
+    ) throws -> Decoded {
+      let input = Bundle.module.url(
+        forResource: name,
+        withExtension: "json",
+        subdirectory: "Inputs"
+      )
+
+      let url = try #require(input)
+      let data = try Data(contentsOf: url)
+
+      let decoder = JSONDecoder()
+      return try decoder.decode(Decoded.self, from: data)
+    }
+
+    private func decodeFromJSONString<Decoded: Decodable>(
+      _ json: String,
+      as: Decoded.Type
+    ) throws -> Decoded {
+      let data = Data(json.utf8)
+      let decoder = JSONDecoder()
+      return try decoder.decode(Decoded.self, from: data)
+    }
+
+    private func encodeToJSON(_ value: some Encodable) throws -> String {
+      let encoder = JSONEncoder()
+      let encoded = try encoder.encode(value)
+      let json = String(decoding: encoded, as: UTF8.self)
+      return json
+    }
+
+    private func roundTrip<T: Codable & Equatable>(type: T.Type = T.self, fileName: String) throws {
+      let decoded = try self.decodeFromFile(fileName, as: T.self)
+      let encoded = try self.encodeToJSON(decoded)
+      let decodedAgain = try self.decodeFromJSONString(encoded, as: T.self)
+      #expect(decoded == decodedAgain)
+    }
+
+    @Test(
+      "MethodConfig",
+      arguments: [
+        "method_config",
+        "method_config.with_retries",
+        "method_config.with_hedging",
+      ]
+    )
+    func roundTripCodingAndDecoding(fileName: String) throws {
+      try self.roundTrip(type: MethodConfig.self, fileName: fileName)
     }
   }
 }
