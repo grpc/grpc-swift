@@ -18,7 +18,7 @@ import GRPCCore
 import NIOCore
 import NIOHTTP2
 import NIOPosix
-private import Synchronization
+import Synchronization
 import XCTest
 
 @testable import GRPCHTTP2Core
