@@ -184,7 +184,7 @@ extension HTTP2ServerTransport.Posix.Config {
       certificateChain: [TLSConfig.CertificateSource],
       privateKey: TLSConfig.PrivateKeySource
     ) -> Self {
-      Self.init(
+      Self(
         certificateChain: certificateChain,
         privateKey: privateKey,
         clientCertificateVerification: .noVerification,
@@ -207,7 +207,7 @@ extension HTTP2ServerTransport.Posix.Config {
       certificateChain: [TLSConfig.CertificateSource],
       privateKey: TLSConfig.PrivateKeySource
     ) -> Self {
-      Self.init(
+      Self(
         certificateChain: certificateChain,
         privateKey: privateKey,
         clientCertificateVerification: .noHostnameVerification,
@@ -251,19 +251,24 @@ extension HTTP2ClientTransport.Posix.Config {
     /// The trust roots to be used when verifying server certificates.
     public var trustRoots: TLSConfig.TrustRootsSource
 
+    /// An optional server hostname to use when verifying certificates.
+    public var serverHostname: String?
+
     /// Create a new HTTP2 NIO Posix transport TLS config, with some values defaulted:
-    /// - `certificateChain` is `[]`
-    /// - `privateKey` is `nil`
+    /// - `certificateChain` equals `[]`
+    /// - `privateKey` equals `nil`
     /// - `serverCertificateVerification` equals `fullVerification`
     /// - `trustRoots` equals `systemDefault`
+    /// - `serverHostname` equals `nil`
     ///
     /// - Returns: A new HTTP2 NIO Posix transport TLS config.
-    public static func defaults() -> Self {
-      Self.init(
+    public static var defaults: Self {
+      Self(
         certificateChain: [],
         privateKey: nil,
         serverCertificateVerification: .fullVerification,
-        trustRoots: .systemDefault
+        trustRoots: .systemDefault,
+        serverHostname: nil
       )
     }
   }

@@ -44,7 +44,7 @@ extension HTTP2ServerTransport {
   /// try await withThrowingDiscardingTaskGroup { group in
   ///   let transport = HTTP2ServerTransport.Posix(
   ///     address: .ipv4(.init(host: "127.0.0.1", port: 0)),
-  ///     config: .defaults(transportSecurity: someTransportSecurity)
+  ///     config: .defaults(transportSecurity: .plaintext)
   ///   )
   ///   let server = GRPCServer(transport: transport, services: someServices)
   ///   group.addTask {

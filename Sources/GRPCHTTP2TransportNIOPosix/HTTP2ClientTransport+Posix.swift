@@ -49,7 +49,7 @@ extension HTTP2ClientTransport {
   /// try await withThrowingDiscardingTaskGroup { group in
   ///   let transport = try HTTP2ClientTransport.Posix(
   ///     target: .ipv4(host: "example.com"),
-  ///     config: .defaults(transportSecurity: someTransportSecurity)
+  ///     config: .defaults(transportSecurity: .plaintext)
   ///   )
   ///   let client = GRPCClient(transport: transport)
   ///   group.addTask {
@@ -142,12 +142,15 @@ extension HTTP2ClientTransport.Posix {
     ) async throws -> HTTP2Connection {
       #if canImport(NIOSSL)
       let nioSSLContext: NIOSSLContext?
+      let serverHostname: String?
       switch self.config.transportSecurity.wrapped {
       case .plaintext:
         nioSSLContext = nil
+        serverHostname = nil
       case .tls(let tlsConfig):
         do {
           nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+          serverHostname = tlsConfig.serverHostname
         } catch {
           throw RuntimeError(
             code: .transportError,
@@ -165,7 +168,10 @@ extension HTTP2ClientTransport.Posix {
           #if canImport(NIOSSL)
           if let nioSSLContext {
             try channel.pipeline.syncOperations.addHandler(
-              NIOSSLServerHandler(context: nioSSLContext)
+              NIOSSLClientHandler(
+                context: nioSSLContext,
+                serverHostname: serverHostname
+              )
             )
           }
           #endif
