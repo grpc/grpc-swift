@@ -61,7 +61,7 @@ internal final class TimerTests: XCTestCase {
     let loop = EmbeddedEventLoop()
     defer { try! loop.close() }
 
-    let counter = AtomicCounter(0)
+    let counter = AtomicCounter()
     var timer = Timer(delay: .seconds(1), repeat: true)
     timer.schedule(on: loop) {
       counter.increment()

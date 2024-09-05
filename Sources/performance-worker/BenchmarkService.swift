@@ -22,7 +22,7 @@ import struct Foundation.Data
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class BenchmarkService: Grpc_Testing_BenchmarkService.ServiceProtocol {
   /// Used to check if the server can be streaming responses.
-  private let working = Atomic<Bool>(true)
+  private let working = Atomic(true)
 
   /// One request followed by one response.
   /// The server returns a client payload with the size requested by the client.
