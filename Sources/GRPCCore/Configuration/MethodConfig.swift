@@ -453,6 +453,7 @@ extension MethodConfig: Codable {
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(self.names, forKey: .name)
+    try container.encodeIfPresent(self.waitForReady, forKey: .waitForReady)
     try container.encodeIfPresent(
       self.timeout.map { GoogleProtobufDuration(duration: $0) },
       forKey: .timeout
