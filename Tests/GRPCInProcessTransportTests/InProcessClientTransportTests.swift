@@ -163,7 +163,7 @@ final class InProcessClientTransportTests: XCTestCase {
           options: .defaults
         ) { stream in
           try await stream.outbound.write(.message([1]))
-          stream.outbound.finish()
+          await stream.outbound.finish()
           let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
 
           XCTAssertEqual(receivedMessages, [.message([42])])
@@ -174,7 +174,7 @@ final class InProcessClientTransportTests: XCTestCase {
         try await server.listen { stream in
           let receivedMessages = try? await stream.inbound.reduce(into: []) { $0.append($1) }
           try? await stream.outbound.write(RPCResponsePart.message([42]))
-          stream.outbound.finish()
+          await stream.outbound.finish()
 
           XCTAssertEqual(receivedMessages, [.message([1])])
         }

@@ -179,8 +179,8 @@ public final class InProcessClientTransport: ClientTransport {
     }
 
     for (clientStream, serverStream) in openStreams {
-      clientStream.outbound.finish(throwing: CancellationError())
-      serverStream.outbound.finish(throwing: CancellationError())
+      await clientStream.outbound.finish(throwing: CancellationError())
+      await serverStream.outbound.finish(throwing: CancellationError())
     }
   }
 
@@ -265,7 +265,7 @@ public final class InProcessClientTransport: ClientTransport {
       try Task.checkCancellation()
     }
 
-    let streamID = try self.state.withLock { state in
+    let acceptStream: Result<Int, RPCError> = self.state.withLock { state in
       switch state {
       case .unconnected:
         // The state cannot be unconnected because if it was, then the above
@@ -281,56 +281,64 @@ public final class InProcessClientTransport: ClientTransport {
           connectedState.openStreams[streamID] = (clientStream, serverStream)
           connectedState.nextStreamID += 1
           state = .connected(connectedState)
+          return .success(streamID)
         } catch let acceptStreamError as RPCError {
-          serverStream.outbound.finish(throwing: acceptStreamError)
-          clientStream.outbound.finish(throwing: acceptStreamError)
-          throw acceptStreamError
+          return .failure(acceptStreamError)
         } catch {
-          serverStream.outbound.finish(throwing: error)
-          clientStream.outbound.finish(throwing: error)
-          throw RPCError(code: .unknown, message: "Unknown error: \(error).")
+          return .failure(RPCError(code: .unknown, message: "Unknown error: \(error)."))
         }
-        return streamID
 
       case .closed:
-        let error = RPCError(
-          code: .failedPrecondition,
-          message: "The client transport is closed."
-        )
-        serverStream.outbound.finish(throwing: error)
-        clientStream.outbound.finish(throwing: error)
-        throw error
+        let error = RPCError(code: .failedPrecondition, message: "The client transport is closed.")
+        return .failure(error)
       }
     }
 
-    defer {
-      clientStream.outbound.finish()
+    switch acceptStream {
+    case .success(let streamID):
+      let streamHandlingResult: Result<T, any Error>
+      do {
+        let result = try await closure(clientStream)
+        streamHandlingResult = .success(result)
+      } catch {
+        streamHandlingResult = .failure(error)
+      }
 
-      let maybeEndContinuation = self.state.withLock { state in
-        switch state {
-        case .unconnected:
-          // The state cannot be unconnected at this point, because if we made
-          // it this far, it's because the transport was connected.
-          // Once connected, it's impossible to transition back to unconnected,
-          // so this is an invalid state.
-          fatalError("Invalid state")
-        case .connected(var connectedState):
-          connectedState.openStreams.removeValue(forKey: streamID)
-          state = .connected(connectedState)
-        case .closed(var closedState):
-          closedState.openStreams.removeValue(forKey: streamID)
-          state = .closed(closedState)
-          if closedState.openStreams.isEmpty {
-            // This was the last open stream: signal the closure of the client.
-            return closedState.signalEndContinuation
-          }
+      await clientStream.outbound.finish()
+      self.removeStream(id: streamID)
+
+      return try streamHandlingResult.get()
+
+    case .failure(let error):
+      await serverStream.outbound.finish(throwing: error)
+      await clientStream.outbound.finish(throwing: error)
+      throw error
+    }
+  }
+
+  private func removeStream(id streamID: Int) {
+    let maybeEndContinuation = self.state.withLock { state in
+      switch state {
+      case .unconnected:
+        // The state cannot be unconnected at this point, because if we made
+        // it this far, it's because the transport was connected.
+        // Once connected, it's impossible to transition back to unconnected,
+        // so this is an invalid state.
+        fatalError("Invalid state")
+      case .connected(var connectedState):
+        connectedState.openStreams.removeValue(forKey: streamID)
+        state = .connected(connectedState)
+      case .closed(var closedState):
+        closedState.openStreams.removeValue(forKey: streamID)
+        state = .closed(closedState)
+        if closedState.openStreams.isEmpty {
+          // This was the last open stream: signal the closure of the client.
+          return closedState.signalEndContinuation
         }
-        return nil
       }
-      maybeEndContinuation?.finish()
+      return nil
     }
-
-    return try await closure(clientStream)
+    maybeEndContinuation?.finish()
   }
 
   /// Returns the execution configuration for a given method.

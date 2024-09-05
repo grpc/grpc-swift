@@ -25,7 +25,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(handler: .echo) { inbound in
       try await inbound.write(.metadata(["foo": "bar"]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(
@@ -43,7 +43,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     try await harness.execute(handler: .echo) { inbound in
       try await inbound.write(.metadata(["foo": "bar"]))
       try await inbound.write(.message([0]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(
@@ -64,7 +64,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       try await inbound.write(.message([0]))
       try await inbound.write(.message([1]))
       try await inbound.write(.message([2]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(
@@ -95,7 +95,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     } producer: { inbound in
       try await inbound.write(.metadata(["foo": "bar"]))
       try await inbound.write(.message(Array("\"hello\"".utf8)))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(
@@ -126,7 +126,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       try await inbound.write(.metadata(["foo": "bar"]))
       try await inbound.write(.message(Array("\"hello\"".utf8)))
       try await inbound.write(.message(Array("\"world\"".utf8)))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(
@@ -152,7 +152,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       }
     } producer: { inbound in
       try await inbound.write(.metadata(["foo": "bar"]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(
@@ -168,7 +168,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testEmptyInbound() async throws {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(handler: .echo) { inbound in
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, _ in
@@ -181,7 +181,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(handler: .echo) { inbound in
       try await inbound.write(.message([0]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, _ in
@@ -193,7 +193,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testInboundStreamThrows() async throws {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(handler: .echo) { inbound in
-      inbound.finish(throwing: RPCError(code: .aborted, message: ""))
+      await inbound.finish(throwing: RPCError(code: .aborted, message: ""))
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, _ in
@@ -207,7 +207,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(handler: .throwing(SomeError())) { inbound in
       try await inbound.write(.metadata([:]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, _ in
@@ -221,7 +221,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(handler: .throwing(error)) { inbound in
       try await inbound.write(.metadata([:]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, metadata in
@@ -248,7 +248,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       return ServerResponse.Stream(error: RPCError(code: .failedPrecondition, message: ""))
     } producer: { inbound in
       try await inbound.write(.metadata(["grpc-timeout": "1000n"]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, _ in
@@ -278,7 +278,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       )
     } producer: { inbound in
       try await inbound.write(.metadata([:]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, metadata in
@@ -303,7 +303,7 @@ final class ServerRPCExecutorTests: XCTestCase {
 
     try await harness.execute(handler: .echo) { inbound in
       try await inbound.write(.metadata([:]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(parts, [.metadata([:]), .status(.ok, [:])])
@@ -328,7 +328,7 @@ final class ServerRPCExecutorTests: XCTestCase {
 
     try await harness.execute(handler: .echo) { inbound in
       try await inbound.write(.metadata([:]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(parts, [.status(Status(code: .unavailable, message: ""), [:])])
@@ -346,7 +346,7 @@ final class ServerRPCExecutorTests: XCTestCase {
 
     try await harness.execute(handler: .echo) { inbound in
       try await inbound.write(.metadata([:]))
-      inbound.finish()
+      await inbound.finish()
     } consumer: { outbound in
       let parts = try await outbound.collect()
       XCTAssertEqual(parts, [.status(Status(code: .unavailable, message: "Unavailable"), [:])])

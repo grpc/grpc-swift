@@ -55,8 +55,8 @@ extension RPCWriter {
     /// All writes after ``finish()`` has been called should result in an error
     /// being thrown.
     @inlinable
-    public func finish() {
-      self.writer.finish()
+    public func finish() async {
+      await self.writer.finish()
     }
 
     /// Indicate to the writer that no more writes are to be accepted because an error occurred.
@@ -64,8 +64,8 @@ extension RPCWriter {
     /// All writes after ``finish(throwing:)`` has been called should result in an error
     /// being thrown.
     @inlinable
-    public func finish(throwing error: any Error) {
-      self.writer.finish(throwing: error)
+    public func finish(throwing error: any Error) async {
+      await self.writer.finish(throwing: error)
     }
   }
 }

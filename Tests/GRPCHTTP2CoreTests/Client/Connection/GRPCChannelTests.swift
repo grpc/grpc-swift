@@ -371,7 +371,7 @@ final class GRPCChannelTests: XCTestCase {
           switch state {
           case .shutdown:
             // Happens when shutting-down has been initiated, so finish the RPC.
-            stream.outbound.finish()
+            await stream.outbound.finish()
 
             let part2 = try await iterator.next()
             switch part2 {
@@ -444,7 +444,7 @@ final class GRPCChannelTests: XCTestCase {
         group.addTask {
           try await channel.withStream(descriptor: .echoGet, options: .defaults) { stream in
             try await stream.outbound.write(.metadata([:]))
-            stream.outbound.finish()
+            await stream.outbound.finish()
 
             for try await part in stream.inbound {
               switch part {
@@ -824,7 +824,7 @@ extension GRPCChannel {
       options: .defaults
     ) { stream in
       try await stream.outbound.write(.metadata([:]))
-      stream.outbound.finish()
+      await stream.outbound.finish()
 
       for try await part in stream.inbound {
         switch part {

@@ -155,7 +155,7 @@ extension RPCRouter {
       // If this throws then the stream must be closed which we can't do anything about, so ignore
       // any error.
       try? await stream.outbound.write(.status(.rpcNotImplemented, [:]))
-      stream.outbound.finish()
+      await stream.outbound.finish()
     }
   }
 }
