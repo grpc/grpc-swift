@@ -28,9 +28,7 @@ final class SerializationTests: GRPCTestCase {
       .deletingLastPathComponent().appendingPathComponent("echo.grpc.reflection")
     let base64EncodedData = try! Data(contentsOf: binaryFileURL)
     let binaryData = Data(base64Encoded: base64EncodedData)!
-    self
-      .fileDescriptorProto =
-      try! Google_Protobuf_FileDescriptorProto(serializedData: binaryData)
+    self.fileDescriptorProto = try! Google_Protobuf_FileDescriptorProto(serializedBytes: binaryData)
   }
 
   func testFileDescriptorMetadata() throws {

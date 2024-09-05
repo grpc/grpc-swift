@@ -178,7 +178,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch serializedFileDescriptorProtosResult {
     case .success(let serializedFileDescriptorProtos):
       let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+        try Google_Protobuf_FileDescriptorProto(serializedBytes: $0)
       }
       // Tests that the functions returns all the transitive dependencies, with their services and
       // methods, together with the initial proto, as serialized data.
@@ -233,7 +233,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch serializedFileDescriptorProtosResult {
     case .success(let serializedFileDescriptorProtos):
       let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+        try Google_Protobuf_FileDescriptorProto(serializedBytes: $0)
       }
       // Tests that the functions returns all the tranzitive dependencies, with their services and
       // methods, together with the initial proto, as serialized data.
@@ -292,7 +292,7 @@ final class ReflectionServiceUnitTests: GRPCTestCase {
     switch serializedFileDescriptorProtosResult {
     case .success(let serializedFileDescriptorProtos):
       let fileDescriptorProtos = try serializedFileDescriptorProtos.map {
-        try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+        try Google_Protobuf_FileDescriptorProto(serializedBytes: $0)
       }
       // Test that we get only 4 serialized File Descriptor Protos as response.
       XCTAssertEqual(fileDescriptorProtos.count, 4)

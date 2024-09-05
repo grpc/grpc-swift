@@ -76,7 +76,7 @@ public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDeser
     var buffer = byteBuffer
     // '!' is okay; we can always read 'readableBytes'.
     let data = buffer.readData(length: buffer.readableBytes)!
-    return try Message(serializedData: data)
+    return try Message(serializedBytes: data)
   }
 }
 
