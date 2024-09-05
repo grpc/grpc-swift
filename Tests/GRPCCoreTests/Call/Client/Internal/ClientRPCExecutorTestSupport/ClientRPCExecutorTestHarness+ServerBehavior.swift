@@ -74,7 +74,7 @@ extension ClientRPCExecutorTestHarness.ServerStreamHandler {
 
       try await stream.outbound.write(contentsOf: response)
       try await stream.outbound.write(.status(Status(code: .ok, message: ""), [:]))
-      stream.outbound.finish()
+      await stream.outbound.finish()
     }
   }
 
@@ -90,7 +90,7 @@ extension ClientRPCExecutorTestHarness.ServerStreamHandler {
       // All error codes are valid status codes, '!' is safe.
       let status = Status(code: Status.Code(error.code), message: error.message)
       try await stream.outbound.write(.status(status, error.metadata))
-      stream.outbound.finish()
+      await stream.outbound.finish()
     }
   }
 
@@ -99,7 +99,7 @@ extension ClientRPCExecutorTestHarness.ServerStreamHandler {
       XCTFail("Server accepted unexpected stream")
       let status = Status(code: .unknown, message: "Unexpected stream")
       try await stream.outbound.write(.status(status, [:]))
-      stream.outbound.finish()
+      await stream.outbound.finish()
     }
   }
 

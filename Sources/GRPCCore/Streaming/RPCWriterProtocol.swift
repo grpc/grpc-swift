@@ -57,13 +57,13 @@ public protocol ClosableRPCWriterProtocol<Element>: RPCWriterProtocol {
   ///
   /// All writes after ``finish()`` has been called should result in an error
   /// being thrown.
-  func finish()
+  func finish() async
 
   /// Indicate to the writer that no more writes are to be accepted because an error occurred.
   ///
   /// All writes after ``finish(throwing:)`` has been called should result in an error
   /// being thrown.
-  func finish(throwing error: any Error)
+  func finish(throwing error: any Error) async
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)

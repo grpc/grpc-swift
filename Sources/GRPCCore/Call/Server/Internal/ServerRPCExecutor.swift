@@ -58,7 +58,7 @@ struct ServerRPCExecutor {
       // Stream can't be handled; write an error status and close.
       let status = Status(code: Status.Code(error.code), message: error.message)
       try? await stream.outbound.write(.status(status, error.metadata))
-      stream.outbound.finish()
+      await stream.outbound.finish()
     }
   }
 
@@ -231,7 +231,7 @@ struct ServerRPCExecutor {
     }
 
     try? await outbound.write(.status(status, metadata))
-    outbound.finish()
+    await outbound.finish()
   }
 
   @inlinable

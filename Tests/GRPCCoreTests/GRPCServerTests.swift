@@ -55,7 +55,7 @@ final class GRPCServerTests: XCTestCase {
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         var responseParts = stream.inbound.makeAsyncIterator()
         let metadata = try await responseParts.next()
@@ -86,7 +86,7 @@ final class GRPCServerTests: XCTestCase {
         try await stream.outbound.write(.message([4]))
         try await stream.outbound.write(.message([1]))
         try await stream.outbound.write(.message([5]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         var responseParts = stream.inbound.makeAsyncIterator()
         let metadata = try await responseParts.next()
@@ -113,7 +113,7 @@ final class GRPCServerTests: XCTestCase {
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         var responseParts = stream.inbound.makeAsyncIterator()
         let metadata = try await responseParts.next()
@@ -144,7 +144,7 @@ final class GRPCServerTests: XCTestCase {
         for byte in [3, 1, 4, 1, 5] as [UInt8] {
           try await stream.outbound.write(.message([byte]))
         }
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         var responseParts = stream.inbound.makeAsyncIterator()
         let metadata = try await responseParts.next()
@@ -172,7 +172,7 @@ final class GRPCServerTests: XCTestCase {
         options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         var responseParts = stream.inbound.makeAsyncIterator()
         let status = try await responseParts.next()
@@ -194,7 +194,7 @@ final class GRPCServerTests: XCTestCase {
             ) { stream in
               try await stream.outbound.write(.metadata([:]))
               try await stream.outbound.write(.message([i]))
-              stream.outbound.finish()
+              await stream.outbound.finish()
 
               var responseParts = stream.inbound.makeAsyncIterator()
               let metadata = try await responseParts.next()
@@ -231,7 +231,7 @@ final class GRPCServerTests: XCTestCase {
         options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         let parts = try await stream.inbound.collect()
         XCTAssertStatus(parts.first) { status, _ in
@@ -256,7 +256,7 @@ final class GRPCServerTests: XCTestCase {
         options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         let parts = try await stream.inbound.collect()
         XCTAssertStatus(parts.first) { status, _ in
@@ -306,7 +306,7 @@ final class GRPCServerTests: XCTestCase {
         server.beginGracefulShutdown()
 
         try await stream.outbound.write(.message([0]))
-        stream.outbound.finish()
+        await stream.outbound.finish()
 
         let message = try await iterator.next()
         XCTAssertMessage(message) { XCTAssertEqual($0, [0]) }
@@ -368,7 +368,7 @@ final class GRPCServerTests: XCTestCase {
     ) { stream in
       try await stream.outbound.write(.metadata([:]))
       try await stream.outbound.write(.message([0]))
-      stream.outbound.finish()
+      await stream.outbound.finish()
       // Don't need to validate the response, just that the server is running.
       let parts = try await stream.inbound.collect()
       XCTAssertEqual(parts.count, 3)

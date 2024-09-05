@@ -95,9 +95,9 @@ internal enum ClientStreamExecutor {
 
     switch result {
     case .success:
-      stream.finish()
+      await stream.finish()
     case .failure(let error):
-      stream.finish(throwing: error)
+      await stream.finish(throwing: error)
     }
   }
 
