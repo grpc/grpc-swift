@@ -366,7 +366,7 @@ extension ReflectionService {
           """
       )
     }
-    return try Google_Protobuf_FileDescriptorProto(serializedData: serializedData)
+    return try Google_Protobuf_FileDescriptorProto(serializedBytes: serializedData)
   }
 
   static func readSerializedFileDescriptorProtos(
