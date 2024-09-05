@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Atomics
 import XCTest
 
 @testable import GRPCCore
@@ -290,8 +289,8 @@ final class ServerRPCExecutorTests: XCTestCase {
   }
 
   func testMultipleInterceptorsAreCalled() async throws {
-    let counter1 = ManagedAtomic(0)
-    let counter2 = ManagedAtomic(0)
+    let counter1 = AtomicCounter()
+    let counter2 = AtomicCounter()
 
     // The interceptor skips the handler altogether.
     let harness = ServerRPCExecutorTestHarness(
@@ -309,13 +308,13 @@ final class ServerRPCExecutorTests: XCTestCase {
       XCTAssertEqual(parts, [.metadata([:]), .status(.ok, [:])])
     }
 
-    XCTAssertEqual(counter1.load(ordering: .sequentiallyConsistent), 1)
-    XCTAssertEqual(counter2.load(ordering: .sequentiallyConsistent), 1)
+    XCTAssertEqual(counter1.value, 1)
+    XCTAssertEqual(counter2.value, 1)
   }
 
   func testInterceptorsAreCalledInOrder() async throws {
-    let counter1 = ManagedAtomic(0)
-    let counter2 = ManagedAtomic(0)
+    let counter1 = AtomicCounter()
+    let counter2 = AtomicCounter()
 
     // The interceptor skips the handler altogether.
     let harness = ServerRPCExecutorTestHarness(
@@ -334,9 +333,9 @@ final class ServerRPCExecutorTests: XCTestCase {
       XCTAssertEqual(parts, [.status(Status(code: .unavailable, message: ""), [:])])
     }
 
-    XCTAssertEqual(counter1.load(ordering: .sequentiallyConsistent), 1)
+    XCTAssertEqual(counter1.value, 1)
     // Zero because the RPC should've been rejected by the second interceptor.
-    XCTAssertEqual(counter2.load(ordering: .sequentiallyConsistent), 0)
+    XCTAssertEqual(counter2.value, 0)
   }
 
   func testThrowingInterceptor() async throws {

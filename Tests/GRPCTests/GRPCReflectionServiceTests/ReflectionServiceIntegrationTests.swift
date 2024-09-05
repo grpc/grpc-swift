@@ -128,8 +128,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       // response can't be nil as we just checked it.
       let receivedFileDescriptorProto =
         try Google_Protobuf_FileDescriptorProto(
-          serializedData: (message.fileDescriptorResponse
-            .fileDescriptorProto[0])
+          serializedBytes: message.fileDescriptorResponse.fileDescriptorProto[0]
         )
 
       XCTAssertEqual(receivedFileDescriptorProto.name, "bar1.proto")
@@ -177,7 +176,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       let receivedData: [Google_Protobuf_FileDescriptorProto]
       do {
         receivedData = try message.fileDescriptorResponse.fileDescriptorProto.map {
-          try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+          try Google_Protobuf_FileDescriptorProto(serializedBytes: $0)
         }
       } catch {
         return XCTFail("Could not serialize data received as a message.")
@@ -221,7 +220,7 @@ final class ReflectionServiceIntegrationTests: GRPCTestCase {
       let receivedData: [Google_Protobuf_FileDescriptorProto]
       do {
         receivedData = try message.fileDescriptorResponse.fileDescriptorProto.map {
-          try Google_Protobuf_FileDescriptorProto(serializedData: $0)
+          try Google_Protobuf_FileDescriptorProto(serializedBytes: $0)
         }
       } catch {
         return XCTFail("Could not serialize data received as a message.")

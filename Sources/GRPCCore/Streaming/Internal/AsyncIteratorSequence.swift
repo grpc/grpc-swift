@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-public import Atomics  // should be @usableFromInline
+public import Synchronization  // should be @usableFromInline
 
-@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 /// An `AsyncSequence` which wraps an existing async iterator.
-struct AsyncIteratorSequence<Base: AsyncIteratorProtocol>: AsyncSequence {
+final class AsyncIteratorSequence<Base: AsyncIteratorProtocol>: AsyncSequence {
   @usableFromInline
   typealias Element = Base.Element
 
@@ -29,7 +29,7 @@ struct AsyncIteratorSequence<Base: AsyncIteratorProtocol>: AsyncSequence {
 
   /// Set to `true` when an iterator has been made.
   @usableFromInline
-  let _hasMadeIterator = ManagedAtomic(false)
+  let _hasMadeIterator = Atomic(false)
 
   @inlinable
   init(_ base: Base) {

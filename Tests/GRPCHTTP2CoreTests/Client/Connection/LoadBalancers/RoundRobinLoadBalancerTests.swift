@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Atomics
 import GRPCCore
 import GRPCHTTP2Core
 import NIOHTTP2
@@ -322,8 +321,8 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
   }
 
   func testPickOnIdleLoadBalancerTriggersConnect() async throws {
-    let idle = ManagedAtomic(0)
-    let ready = ManagedAtomic(0)
+    let idle = AtomicCounter()
+    let ready = AtomicCounter()
 
     try await LoadBalancerTest.roundRobin(
       servers: 1,
@@ -331,9 +330,9 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
     ) { context, event in
       switch event {
       case .connectivityStateChanged(.idle):
-        let idleCount = idle.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent)
+        let (_, newIdleCount) = idle.increment()
 
-        switch idleCount {
+        switch newIdleCount {
         case 1:
           // The first idle happens when the load balancer in started, give it a set of addresses
           // which it will connect to. Wait for it to be ready and then idle again.
@@ -354,9 +353,9 @@ final class RoundRobinLoadBalancerTests: XCTestCase {
         }
 
       case .connectivityStateChanged(.ready):
-        let readyCount = ready.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent)
+        let (_, newReadyCount) = ready.increment()
 
-        if readyCount == 2 {
+        if newReadyCount == 2 {
           XCTAssertNotNil(context.loadBalancer.pickSubchannel())
         }
 

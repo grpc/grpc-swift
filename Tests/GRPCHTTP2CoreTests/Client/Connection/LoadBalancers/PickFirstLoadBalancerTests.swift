@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Atomics
 import GRPCCore
 import GRPCHTTP2Core
 import NIOHTTP2
@@ -194,7 +193,7 @@ final class PickFirstLoadBalancerTests: XCTestCase {
   func testPickOnIdleTriggersConnect() async throws {
     // Tests that picking a subchannel when the load balancer is idle triggers a reconnect and
     // becomes ready again. Uses a very short idle time to re-enter the idle state.
-    let idle = ManagedAtomic(0)
+    let idle = AtomicCounter()
 
     try await LoadBalancerTest.pickFirst(
       servers: 1,
@@ -202,7 +201,7 @@ final class PickFirstLoadBalancerTests: XCTestCase {
     ) { context, event in
       switch event {
       case .connectivityStateChanged(.idle):
-        let idleCount = idle.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent)
+        let (_, idleCount) = idle.increment()
 
         switch idleCount {
         case 1:
@@ -242,12 +241,13 @@ final class PickFirstLoadBalancerTests: XCTestCase {
   func testPickFirstConnectionDropReturnsToIdle() async throws {
     // Checks that when the load balancers connection is unexpectedly dropped when there are no
     // open streams that it returns to the idle state.
-    let idleCount = ManagedAtomic(0)
+    let idleCount = AtomicCounter()
 
     try await LoadBalancerTest.pickFirst(servers: 1, connector: .posix()) { context, event in
       switch event {
       case .connectivityStateChanged(.idle):
-        switch idleCount.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent) {
+        let (_, newIdleCount) = idleCount.increment()
+        switch newIdleCount {
         case 1:
           let endpoint = Endpoint(addresses: context.servers.map { $0.address })
           context.pickFirst!.updateEndpoint(endpoint)
@@ -277,11 +277,12 @@ final class PickFirstLoadBalancerTests: XCTestCase {
   }
 
   func testPickFirstReceivesGoAway() async throws {
-    let idleCount = ManagedAtomic(0)
+    let idleCount = AtomicCounter()
     try await LoadBalancerTest.pickFirst(servers: 2, connector: .posix()) { context, event in
       switch event {
       case .connectivityStateChanged(.idle):
-        switch idleCount.wrappingIncrementThenLoad(ordering: .sequentiallyConsistent) {
+        let (_, newIdleCount) = idleCount.increment()
+        switch newIdleCount {
         case 1:
           // Provide the address of the first server.
           context.pickFirst!.updateEndpoint(Endpoint(context.servers[0].address))
@@ -293,7 +294,7 @@ final class PickFirstLoadBalancerTests: XCTestCase {
         }
 
       case .connectivityStateChanged(.ready):
-        switch idleCount.load(ordering: .sequentiallyConsistent) {
+        switch idleCount.value {
         case 1:
           // Must be connected to server 1, send a GOAWAY frame.
           let channel = context.servers[0].server.clients.first!

@@ -56,7 +56,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-protobuf.git",
-    from: "1.27.0"
+    from: "1.28.1"
   ),
   .package(
     url: "https://github.com/apple/swift-log.git",
@@ -179,6 +179,7 @@ extension Target {
         .logging,
         .protobuf,
         .dequeModule,
+        .atomics
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
@@ -192,7 +193,6 @@ extension Target {
       name: "GRPCCore",
       dependencies: [
         .dequeModule,
-        .atomics
       ],
       path: "Sources/GRPCCore",
       swiftSettings: [
@@ -242,7 +242,6 @@ extension Target {
         .nioTLS,
         .cgrpcZlib,
         .dequeModule,
-        .atomics
       ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
@@ -383,7 +382,8 @@ extension Target {
         .nioEmbedded,
         .nioTransportServices,
         .logging,
-        .reflectionService
+        .reflectionService,
+        .atomics
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
@@ -401,7 +401,6 @@ extension Target {
         .grpcCore,
         .grpcInProcessTransport,
         .dequeModule,
-        .atomics,
         .protobuf,
       ],
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
