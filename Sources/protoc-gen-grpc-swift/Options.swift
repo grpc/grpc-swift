@@ -36,7 +36,13 @@ enum GenerationError: Error {
   }
 }
 
-final class GeneratorOptions {
+enum FileNaming: String {
+  case fullPath = "FullPath"
+  case pathToUnderscores = "PathToUnderscores"
+  case dropPath = "DropPath"
+}
+
+struct GeneratorOptions {
   enum Visibility: String {
     case `internal` = "Internal"
     case `public` = "Public"
@@ -63,7 +69,7 @@ final class GeneratorOptions {
 
   private(set) var keepMethodCasing = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
-  private(set) var fileNaming = FileNaming.FullPath
+  private(set) var fileNaming = FileNaming.fullPath
   private(set) var extraModuleImports: [String] = []
   private(set) var gRPCModuleName = "GRPC"
   private(set) var swiftProtobufModuleName = "SwiftProtobuf"
@@ -73,8 +79,12 @@ final class GeneratorOptions {
   #endif
   private(set) var useAccessLevelOnImports = true
 
-  init(parameter: String?) throws {
-    for pair in GeneratorOptions.parseParameter(string: parameter) {
+  init(parameter: any CodeGeneratorParameter) throws {
+    try self.init(pairs: parameter.parsedPairs)
+  }
+
+  init(pairs: [(key: String, value: String)]) throws {
+    for pair in pairs {
       switch pair.key {
       case "Visibility":
         if let value = Visibility(rawValue: pair.value) {
