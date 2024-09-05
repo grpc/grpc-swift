@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
+
 import GRPCCore
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -29,7 +29,7 @@ extension ServerInterceptor where Self == RejectAllServerInterceptor {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerInterceptor where Self == RequestCountingServerInterceptor {
-  static func requestCounter(_ counter: ManagedAtomic<Int>) -> Self {
+  static func requestCounter(_ counter: AtomicCounter) -> Self {
     return RequestCountingServerInterceptor(counter: counter)
   }
 }
@@ -67,9 +67,9 @@ struct RejectAllServerInterceptor: ServerInterceptor {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct RequestCountingServerInterceptor: ServerInterceptor {
   /// The number of requests made.
-  let counter: ManagedAtomic<Int>
+  let counter: AtomicCounter
 
-  init(counter: ManagedAtomic<Int>) {
+  init(counter: AtomicCounter) {
     self.counter = counter
   }
 
@@ -81,7 +81,7 @@ struct RequestCountingServerInterceptor: ServerInterceptor {
       ServerInterceptorContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async throws -> ServerResponse.Stream<Output> {
-    self.counter.wrappingIncrement(ordering: .sequentiallyConsistent)
+    self.counter.increment()
     return try await next(request, context)
   }
 }

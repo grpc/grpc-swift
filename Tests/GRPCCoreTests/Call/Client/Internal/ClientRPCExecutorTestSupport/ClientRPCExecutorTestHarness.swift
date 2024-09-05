@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
+
 import GRPCInProcessTransport
 import XCTest
 
@@ -143,8 +143,8 @@ struct ClientRPCExecutorTestHarness {
       )
 
       // Close the client so the server can finish.
-      self.clientTransport.close()
-      self.serverTransport.stopListening()
+      self.clientTransport.beginGracefulShutdown()
+      self.serverTransport.beginGracefulShutdown()
       group.cancelAll()
     }
   }

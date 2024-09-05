@@ -79,7 +79,7 @@ struct ListFeatures: AsyncParsableCommand {
         }
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
 
   }

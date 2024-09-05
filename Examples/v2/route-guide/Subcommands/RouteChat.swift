@@ -68,7 +68,7 @@ struct RouteChat: AsyncParsableCommand {
         }
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }

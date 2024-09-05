@@ -179,6 +179,7 @@ extension Target {
         .logging,
         .protobuf,
         .dequeModule,
+        .atomics
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
@@ -192,7 +193,6 @@ extension Target {
       name: "GRPCCore",
       dependencies: [
         .dequeModule,
-        .atomics
       ],
       path: "Sources/GRPCCore",
       swiftSettings: [
@@ -242,7 +242,6 @@ extension Target {
         .nioTLS,
         .cgrpcZlib,
         .dequeModule,
-        .atomics
       ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
@@ -383,7 +382,8 @@ extension Target {
         .nioEmbedded,
         .nioTransportServices,
         .logging,
-        .reflectionService
+        .reflectionService,
+        .atomics
       ].appending(
         .nioSSL, if: includeNIOSSL
       ),
@@ -401,7 +401,6 @@ extension Target {
         .grpcCore,
         .grpcInProcessTransport,
         .dequeModule,
-        .atomics,
         .protobuf,
       ],
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]

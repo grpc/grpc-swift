@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-private import Atomics
 private import Foundation
 internal import GRPCCore
 private import NIOConcurrencyHelpers
+private import Synchronization
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct BenchmarkClient {
-  private let _isShuttingDown = ManagedAtomic(false)
+final class BenchmarkClient: Sendable {
+  private let _isShuttingDown = Atomic(false)
 
   /// Whether the benchmark client is shutting down. Used to control when to stop sending messages
   /// or creating new RPCs.
@@ -30,17 +30,17 @@ struct BenchmarkClient {
   }
 
   /// The underlying client.
-  private var client: GRPCClient
+  private let client: GRPCClient
 
   /// The number of concurrent RPCs to run.
-  private var concurrentRPCs: Int
+  private let concurrentRPCs: Int
 
   /// The type of RPC to make against the server.
-  private var rpcType: RPCType
+  private let rpcType: RPCType
 
   /// The max number of messages to send on a stream before replacing the RPC with a new one. A
   /// value of zero means there is no limit.
-  private var messagesPerStream: Int
+  private let messagesPerStream: Int
   private var noMessageLimit: Bool { self.messagesPerStream == 0 }
 
   /// The message to send for all RPC types to the server.
@@ -120,7 +120,7 @@ struct BenchmarkClient {
         try await rpcsGroup.waitForAll()
       }
 
-      self.client.close()
+      self.client.beginGracefulShutdown()
       try await clientGroup.next()
     }
   }
@@ -206,7 +206,7 @@ struct BenchmarkClient {
             let nanos = now.uptimeNanoseconds - lastMessageSendTime.uptimeNanoseconds
             lastMessageSendTime = now
             self.record(latencyNanos: Double(nanos), errorCode: nil)
-            try await writer.write(message)
+            try await writer.write(self.message)
           } else {
             break
           }
@@ -237,6 +237,6 @@ struct BenchmarkClient {
 
   internal func shutdown() {
     self._isShuttingDown.store(true, ordering: .relaxed)
-    self.client.close()
+    self.client.beginGracefulShutdown()
   }
 }

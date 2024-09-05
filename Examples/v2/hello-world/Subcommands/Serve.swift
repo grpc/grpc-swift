@@ -35,7 +35,7 @@ struct Serve: AsyncParsableCommand {
     )
 
     try await withThrowingDiscardingTaskGroup { group in
-      group.addTask { try await server.run() }
+      group.addTask { try await server.serve() }
       if let address = try await server.listeningAddress {
         print("Greeter listening on \(address)")
       }

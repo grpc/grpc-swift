@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Atomics
+
 import GRPCCore
 import GRPCInProcessTransport
 import XCTest
@@ -34,7 +34,7 @@ final class GRPCServerTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await server.run()
+        try await server.serve()
       }
 
       group.addTask {
@@ -42,8 +42,8 @@ final class GRPCServerTests: XCTestCase {
       }
 
       try await body(inProcess.client, server)
-      inProcess.client.close()
-      server.stopListening()
+      inProcess.client.beginGracefulShutdown()
+      server.beginGracefulShutdown()
     }
   }
 
@@ -215,8 +215,8 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testInterceptorsAreAppliedInOrder() async throws {
-    let counter1 = ManagedAtomic(0)
-    let counter2 = ManagedAtomic(0)
+    let counter1 = AtomicCounter()
+    let counter2 = AtomicCounter()
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
@@ -240,12 +240,12 @@ final class GRPCServerTests: XCTestCase {
       }
     }
 
-    XCTAssertEqual(counter1.load(ordering: .sequentiallyConsistent), 1)
-    XCTAssertEqual(counter2.load(ordering: .sequentiallyConsistent), 0)
+    XCTAssertEqual(counter1.value, 1)
+    XCTAssertEqual(counter2.value, 0)
   }
 
   func testInterceptorsAreNotAppliedToUnimplementedMethods() async throws {
-    let counter = ManagedAtomic(0)
+    let counter = AtomicCounter()
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
@@ -265,7 +265,7 @@ final class GRPCServerTests: XCTestCase {
       }
     }
 
-    XCTAssertEqual(counter.load(ordering: .sequentiallyConsistent), 0)
+    XCTAssertEqual(counter.value, 0)
   }
 
   func testNoNewRPCsAfterServerStopListening() async throws {
@@ -274,7 +274,7 @@ final class GRPCServerTests: XCTestCase {
       try await self.doEchoGet(using: client)
 
       // New streams should fail immediately after this.
-      server.stopListening()
+      server.beginGracefulShutdown()
 
       // RPC should fail now.
       await XCTAssertThrowsRPCErrorAsync {
@@ -303,7 +303,7 @@ final class GRPCServerTests: XCTestCase {
         XCTAssertMetadata(metadata)
 
         // New streams should fail immediately after this.
-        server.stopListening()
+        server.beginGracefulShutdown()
 
         try await stream.outbound.write(.message([0]))
         stream.outbound.finish()
@@ -320,7 +320,7 @@ final class GRPCServerTests: XCTestCase {
     let inProcess = InProcessTransport.makePair()
     let task = Task {
       let server = GRPCServer(transport: inProcess.server, services: [BinaryEcho()])
-      try await server.run()
+      try await server.serve()
     }
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -340,13 +340,13 @@ final class GRPCServerTests: XCTestCase {
   func testTestRunStoppedServer() async throws {
     let server = GRPCServer(transport: InProcessServerTransport(), services: [])
     // Run the server.
-    let task = Task { try await server.run() }
+    let task = Task { try await server.serve() }
     task.cancel()
     try await task.value
 
     // Server is stopped, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await server.run()
+      try await server.serve()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .serverIsStopped)
     }
@@ -355,7 +355,7 @@ final class GRPCServerTests: XCTestCase {
   func testRunServerWhenTransportThrows() async throws {
     let server = GRPCServer(transport: ThrowOnRunServerTransport(), services: [])
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await server.run()
+      try await server.serve()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .transportError)
     }

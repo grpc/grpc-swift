@@ -239,7 +239,7 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
       }
 
     case .shutDownServer(let server):
-      server.stopListening()
+      server.beginGracefulShutdown()
     }
 
     return ServerResponse.Single(message: Grpc_Testing_Void())
@@ -269,7 +269,7 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
               let result: Result<Void, any Error>
 
               do {
-                try await server.run()
+                try await server.serve()
                 result = .success(())
               } catch {
                 result = .failure(error)
@@ -317,7 +317,7 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
         // shutdown its ELG.
         switch self.state.withLockedValue({ $0.stopListening() }) {
         case .stopListening(let server):
-          server.stopListening()
+          server.beginGracefulShutdown()
         case .nothing:
           ()
         }
@@ -409,7 +409,7 @@ extension WorkerService {
     case .runServer:
       return (server, transport)
     case .invalidState(let error):
-      server.stopListening()
+      server.beginGracefulShutdown()
       try await eventLoopGroup.shutdownGracefully()
       throw error
     }

@@ -94,8 +94,8 @@ final class HTTP2TransportTests: XCTestCase {
           XCTFail("Unexpected error: '\(error)' (\(pair))")
         }
 
-        server.stopListening()
-        client.close()
+        server.beginGracefulShutdown()
+        client.beginGracefulShutdown()
       }
     }
   }
@@ -155,7 +155,7 @@ final class HTTP2TransportTests: XCTestCase {
       )
 
       group.addTask {
-        try await server.run()
+        try await server.serve()
       }
 
       let address = try await server.listeningAddress!
@@ -174,7 +174,7 @@ final class HTTP2TransportTests: XCTestCase {
       )
 
       group.addTask {
-        try await server.run()
+        try await server.serve()
       }
 
       let address = try await server.listeningAddress!

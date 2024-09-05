@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-internal import Atomics
+private import Synchronization
 
 /// A gRPC server.
 ///
@@ -60,17 +60,17 @@ internal import Atomics
 ///
 /// ```swift
 /// // Start running the server.
-/// try await server.run()
+/// try await server.serve()
 /// ```
 ///
 /// The ``run()`` method won't return until the server has finished handling all requests. You can
-/// signal to the server that it should stop accepting new requests by calling ``stopListening()``.
+/// signal to the server that it should stop accepting new requests by calling ``beginGracefulShutdown()``.
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
 /// you can cancel the task running your server. If your application requires additional resources
 /// that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-public struct GRPCServer: Sendable {
+public final class GRPCServer: Sendable {
   typealias Stream = RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
 
   /// The ``ServerTransport`` implementation that the server uses to listen for new requests.
@@ -88,9 +88,9 @@ public struct GRPCServer: Sendable {
   private let interceptors: [any ServerInterceptor]
 
   /// The state of the server.
-  private let state: ManagedAtomic<State>
+  private let state: Mutex<State>
 
-  private enum State: UInt8, AtomicValue {
+  private enum State: Sendable {
     /// The server hasn't been started yet. Can transition to `running` or `stopped`.
     case notStarted
     /// The server is running and accepting RPCs. Can transition to `stopping`.
@@ -101,6 +101,43 @@ public struct GRPCServer: Sendable {
     /// The server has stopped, no RPCs are in flight and no more will be accepted. This state
     /// is terminal.
     case stopped
+
+    mutating func startServing() throws {
+      switch self {
+      case .notStarted:
+        self = .running
+
+      case .running:
+        throw RuntimeError(
+          code: .serverIsAlreadyRunning,
+          message: "The server is already running and can only be started once."
+        )
+
+      case .stopping, .stopped:
+        throw RuntimeError(
+          code: .serverIsStopped,
+          message: "The server has stopped and can only be started once."
+        )
+      }
+    }
+
+    mutating func beginGracefulShutdown() -> Bool {
+      switch self {
+      case .notStarted:
+        self = .stopped
+        return false
+      case .running:
+        self = .stopping
+        return true
+      case .stopping, .stopped:
+        // Already stopping/stopped, ignore.
+        return false
+      }
+    }
+
+    mutating func stopped() {
+      self = .stopped
+    }
   }
 
   /// Creates a new server with no resources.
@@ -113,7 +150,7 @@ public struct GRPCServer: Sendable {
   ///       are called. The first interceptor added will be the first interceptor to intercept each
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
-  public init(
+  public convenience init(
     transport: any ServerTransport,
     services: [any RegistrableRPCService],
     interceptors: [any ServerInterceptor] = []
@@ -141,7 +178,7 @@ public struct GRPCServer: Sendable {
     router: RPCRouter,
     interceptors: [any ServerInterceptor] = []
   ) {
-    self.state = ManagedAtomic(.notStarted)
+    self.state = Mutex(.notStarted)
     self.transport = transport
     self.router = router
     self.interceptors = interceptors
@@ -154,40 +191,18 @@ public struct GRPCServer: Sendable {
   ///
   /// This function returns when the configured transport has stopped listening and all requests have been
   /// handled. You can signal to the transport that it should stop listening by calling
-  /// ``stopListening()``. The server will continue to process existing requests.
+  /// ``beginGracefulShutdown()``. The server will continue to process existing requests.
   ///
   /// To stop the server more abruptly you can cancel the task that this function is running in.
   ///
   /// - Note: You can only call this function once, repeated calls will result in a
   ///   ``RuntimeError`` being thrown.
-  public func run() async throws {
-    let (wasNotStarted, actualState) = self.state.compareExchange(
-      expected: .notStarted,
-      desired: .running,
-      ordering: .sequentiallyConsistent
-    )
+  public func serve() async throws {
+    try self.state.withLock { try $0.startServing() }
 
-    guard wasNotStarted else {
-      switch actualState {
-      case .notStarted:
-        fatalError()
-      case .running:
-        throw RuntimeError(
-          code: .serverIsAlreadyRunning,
-          message: "The server is already running and can only be started once."
-        )
-
-      case .stopping, .stopped:
-        throw RuntimeError(
-          code: .serverIsStopped,
-          message: "The server has stopped and can only be started once."
-        )
-      }
-    }
-
-    // When we exit this function we must have stopped.
+    // When we exit this function the server must have stopped.
     defer {
-      self.state.store(.stopped, ordering: .sequentiallyConsistent)
+      self.state.withLock { $0.stopped() }
     }
 
     do {
@@ -209,37 +224,10 @@ public struct GRPCServer: Sendable {
   /// against this server. Once the server has processed all requests the ``run()`` method returns.
   ///
   /// Calling this on a server which is already stopping or has stopped has no effect.
-  public func stopListening() {
-    let (wasRunning, actual) = self.state.compareExchange(
-      expected: .running,
-      desired: .stopping,
-      ordering: .sequentiallyConsistent
-    )
-
+  public func beginGracefulShutdown() {
+    let wasRunning = self.state.withLock { $0.beginGracefulShutdown() }
     if wasRunning {
-      self.transport.stopListening()
-    } else {
-      switch actual {
-      case .notStarted:
-        let (exchanged, _) = self.state.compareExchange(
-          expected: .notStarted,
-          desired: .stopped,
-          ordering: .sequentiallyConsistent
-        )
-
-        // Lost a race with 'run()', try again.
-        if !exchanged {
-          self.stopListening()
-        }
-
-      case .running:
-        // Unreachable, this branch only happens when the initial exchange didn't take place.
-        fatalError()
-
-      case .stopping, .stopped:
-        // Already stopping/stopped, ignore.
-        ()
-      }
+      self.transport.beginGracefulShutdown()
     }
   }
 }

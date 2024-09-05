@@ -23,7 +23,7 @@ public import GRPCCore
 ///
 /// To use this server, you call ``listen(_:)`` and iterate over the returned `AsyncSequence` to get all
 /// RPC requests made from clients (as ``RPCStream``s).
-/// To stop listening to new requests, call ``stopListening()``.
+/// To stop listening to new requests, call ``beginGracefulShutdown()``.
 ///
 /// - SeeAlso: ``ClientTransport``
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -44,7 +44,7 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   ///
   /// - Parameter stream: The new ``RPCStream`` to publish.
   /// - Throws: ``RPCError`` with code ``RPCError/Code-swift.struct/failedPrecondition``
-  /// if the server transport stopped listening to new streams (i.e., if ``stopListening()`` has been called).
+  /// if the server transport stopped listening to new streams (i.e., if ``beginGracefulShutdown()`` has been called).
   internal func acceptStream(_ stream: RPCStream<Inbound, Outbound>) throws {
     let yieldResult = self.newStreamsContinuation.yield(stream)
     if case .terminated = yieldResult {
@@ -70,7 +70,7 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   /// Stop listening to any new ``RPCStream`` publications.
   ///
   /// - SeeAlso: ``ServerTransport``
-  public func stopListening() {
+  public func beginGracefulShutdown() {
     self.newStreamsContinuation.finish()
   }
 }

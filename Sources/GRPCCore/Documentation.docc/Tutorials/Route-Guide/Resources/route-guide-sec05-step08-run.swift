@@ -14,7 +14,7 @@ extension RouteGuide {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await server.run()
+        try await server.serve()
       }
 
       if let address = try await server.listeningAddress {

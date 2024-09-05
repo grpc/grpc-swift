@@ -63,7 +63,7 @@ struct GetFeature: AsyncParsableCommand {
         print("Found '\(feature.name)' at (\(self.latitude), \(self.longitude))")
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }

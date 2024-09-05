@@ -48,7 +48,7 @@ struct Get: AsyncParsableCommand {
         print("get ← \(response.text)")
       }
 
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 }

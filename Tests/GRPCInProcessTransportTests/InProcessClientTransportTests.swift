@@ -46,7 +46,7 @@ final class InProcessClientTransportTests: XCTestCase {
   func testConnectWhenClosed() async {
     let client = makeClient()
 
-    client.close()
+    client.beginGracefulShutdown()
 
     await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
       try await client.connect()
@@ -80,14 +80,14 @@ final class InProcessClientTransportTests: XCTestCase {
   func testCloseWhenUnconnected() {
     let client = makeClient()
 
-    XCTAssertNoThrow(client.close())
+    XCTAssertNoThrow(client.beginGracefulShutdown())
   }
 
   func testCloseWhenClosed() {
     let client = makeClient()
-    client.close()
+    client.beginGracefulShutdown()
 
-    XCTAssertNoThrow(client.close())
+    XCTAssertNoThrow(client.beginGracefulShutdown())
   }
 
   func testConnectSuccessfullyAndThenClose() async throws {
@@ -102,7 +102,7 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       try await group.next()
-      client.close()
+      client.beginGracefulShutdown()
     }
   }
 
@@ -118,7 +118,7 @@ final class InProcessClientTransportTests: XCTestCase {
           // Once the pending stream is opened, close the client to new connections,
           // so that, once this closure is executed and this stream is closed,
           // the client will return from `connect()`.
-          client.close()
+          client.beginGracefulShutdown()
         }
       }
 
@@ -136,7 +136,7 @@ final class InProcessClientTransportTests: XCTestCase {
   func testOpenStreamWhenClosed() async {
     let client = makeClient()
 
-    client.close()
+    client.beginGracefulShutdown()
 
     await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
       try await client.withStream(
@@ -182,7 +182,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
       group.addTask {
         try await Task.sleep(for: .milliseconds(100))
-        client.close()
+        client.beginGracefulShutdown()
       }
 
       try await group.next()
@@ -277,7 +277,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
       group.addTask {
         try await Task.sleep(for: .milliseconds(50))
-        client.close()
+        client.beginGracefulShutdown()
       }
 
       try await group.next()
