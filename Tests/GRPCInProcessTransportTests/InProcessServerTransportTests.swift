@@ -24,7 +24,7 @@ final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessServerTransport()
 
-    let outbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+    let outbound = InProcessStream.makeStream(of: RPCResponsePart.self)
     let stream = RPCStream<
       RPCAsyncSequence<RPCRequestPart, any Error>,
       RPCWriter<RPCResponsePart>.Closable
@@ -55,7 +55,7 @@ final class InProcessServerTransportTests: XCTestCase {
   func testStopListening() async throws {
     let transport = InProcessServerTransport()
 
-    let firstStreamOutbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+    let firstStreamOutbound = InProcessStream.makeStream(of: RPCResponsePart.self)
     let firstStream = RPCStream<
       RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
     >(
@@ -79,7 +79,7 @@ final class InProcessServerTransportTests: XCTestCase {
 
       transport.beginGracefulShutdown()
 
-      let secondStreamOutbound = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+      let secondStreamOutbound = InProcessStream.makeStream(of: RPCResponsePart.self)
       let secondStream = RPCStream<
         RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
       >(

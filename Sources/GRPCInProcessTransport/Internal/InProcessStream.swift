@@ -22,13 +22,13 @@ internal import GRPCCore
 // 'AsyncThrowingStream.Continuation' isn't possible because 'Sendable' is a marker protocol.)
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
-  typealias Element = Element
-  typealias Failure = any Error
+package struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
+  package typealias Element = Element
+  package typealias Failure = any Error
 
   private let base: AsyncThrowingStream<Element, any Error>
 
-  static func makeStream(
+  package static func makeStream(
     of: Element.Type = Element.self
   ) -> (stream: Self, continuation: Self.Continuation) {
     let base = AsyncThrowingStream.makeStream(of: Element.self)
@@ -41,7 +41,7 @@ struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
     self.base = base
   }
 
-  struct Continuation: Sendable {
+  package struct Continuation: Sendable {
     private let base: AsyncThrowingStream<Element, any Error>.Continuation
 
     fileprivate init(base: AsyncThrowingStream<Element, any Error>.Continuation) {
@@ -57,22 +57,22 @@ struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
     }
   }
 
-  func makeAsyncIterator() -> AsyncIterator {
+  package func makeAsyncIterator() -> AsyncIterator {
     AsyncIterator(base: self.base.makeAsyncIterator())
   }
 
-  struct AsyncIterator: AsyncIteratorProtocol {
+  package struct AsyncIterator: AsyncIteratorProtocol {
     private var base: AsyncThrowingStream<Element, any Error>.AsyncIterator
 
     fileprivate init(base: AsyncThrowingStream<Element, any Error>.AsyncIterator) {
       self.base = base
     }
 
-    mutating func next() async throws(any Error) -> Element? {
+    package mutating func next() async throws(any Error) -> Element? {
       try await self.next(isolation: nil)
     }
 
-    mutating func next(isolation actor: isolated (any Actor)?) async throws(any Error) -> Element? {
+    package mutating func next(isolation actor: isolated (any Actor)?) async throws(any Error) -> Element? {
       try await self.base.next(isolation: `actor`)
     }
   }
@@ -80,11 +80,11 @@ struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension InProcessStream.Continuation: RPCWriterProtocol {
-  func write(_ element: Element) async throws {
+  package func write(_ element: Element) async throws {
     self.yield(element)
   }
 
-  func write(contentsOf elements: some Sequence<Element>) async throws {
+  package func write(contentsOf elements: some Sequence<Element>) async throws {
     for element in elements {
       self.yield(element)
     }
@@ -93,11 +93,11 @@ extension InProcessStream.Continuation: RPCWriterProtocol {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension InProcessStream.Continuation: ClosableRPCWriterProtocol {
-  func finish() {
+  package func finish() async {
     self.finish(throwing: nil)
   }
 
-  func finish(throwing error: any Error) {
+  package func finish(throwing error: any Error) async {
     self.finish(throwing: .some(error))
   }
 }
