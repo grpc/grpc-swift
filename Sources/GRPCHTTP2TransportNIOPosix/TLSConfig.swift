@@ -271,5 +271,25 @@ extension HTTP2ClientTransport.Posix.Config {
         serverHostname: nil
       )
     }
+
+    /// Create a new HTTP2 NIO Posix transport TLS config, with some values defaulted to match
+    /// the requirements of mTLS:
+    /// - `trustRoots` equals `systemDefault`
+    ///
+    /// - Parameters:
+    ///   - certificateChain: The certificates the client will offer during negotiation.
+    ///   - privateKey: The private key associated with the leaf certificate.
+    /// - Returns: A new HTTP2 NIO Posix transport TLS config.
+    public static func mTLS(
+      certificateChain: [TLSConfig.CertificateSource],
+      privateKey: TLSConfig.PrivateKeySource
+    ) -> Self {
+      Self(
+        certificateChain: certificateChain,
+        privateKey: privateKey,
+        serverCertificateVerification: .fullVerification,
+        trustRoots: .systemDefault
+      )
+    }
   }
 }
