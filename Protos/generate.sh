@@ -229,7 +229,7 @@ function generate_service_messages_interop_tests {
 
   for proto in "${protos[@]}"; do
     generate_message "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "FileNaming=DropPath" "UseAccessLevelOnImports=true"
-    generate_grpc "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "Server=true" "_V2=true" "FileNaming=DropPath"
+    generate_grpc "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "Server=true" "_V2=true" "FileNaming=DropPath" "UseAccessLevelOnImports=true"
   done
 }
 
@@ -261,7 +261,7 @@ function generate_health_service {
   local output="$root/Sources/Services/Health/Generated"
 
   generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "UseAccessLevelOnImports=true"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "Client=true" "Server=true" "_V2=true"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "Client=true" "Server=true" "_V2=true" "UseAccessLevelOnImports=true"
 }
 
 #------------------------------------------------------------------------------

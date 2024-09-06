@@ -74,10 +74,12 @@ struct GeneratorOptions {
   private(set) var gRPCModuleName = "GRPC"
   private(set) var swiftProtobufModuleName = "SwiftProtobuf"
   private(set) var generateReflectionData = false
+
   #if compiler(>=6.0)
   private(set) var v2 = false
   #endif
-  #if swift(>=6.0)
+
+  #if compiler(>=6.0)
   private(set) var useAccessLevelOnImports = true
   #else
   private(set) var useAccessLevelOnImports = false
