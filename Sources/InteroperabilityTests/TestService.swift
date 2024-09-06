@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import Foundation
-import GRPCCore
+private import Foundation
+public import GRPCCore
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct TestService: Grpc_Testing_TestService.ServiceProtocol {
