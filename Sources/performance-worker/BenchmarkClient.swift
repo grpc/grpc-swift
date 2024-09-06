@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-private import Foundation
-internal import GRPCCore
-private import NIOConcurrencyHelpers
-private import Synchronization
+import Foundation
+import GRPCCore
+import NIOConcurrencyHelpers
+import Synchronization
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class BenchmarkClient: Sendable {

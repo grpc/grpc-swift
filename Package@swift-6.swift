@@ -346,8 +346,7 @@ extension Target {
       ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault")
+        .enableUpcomingFeature("ExistentialAny")
       ]
     )
   }
@@ -710,8 +709,7 @@ extension Target {
       path: "Examples/v2/echo",
       swiftSettings: [
         .swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault")
+        .enableUpcomingFeature("ExistentialAny")
       ]
     )
   }
@@ -773,8 +771,7 @@ extension Target {
       ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault")
+        .enableUpcomingFeature("ExistentialAny")
       ]
     )
   }
@@ -837,8 +834,7 @@ extension Target {
       ],
       swiftSettings: [
         .swiftLanguageMode(.v6),
-        .enableUpcomingFeature("ExistentialAny"),
-        .enableUpcomingFeature("InternalImportsByDefault")
+        .enableUpcomingFeature("ExistentialAny")
       ]
     )
   }

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-internal import GRPCCore
-private import Synchronization
+import GRPCCore
+import Synchronization
 
 import struct Foundation.Data
 

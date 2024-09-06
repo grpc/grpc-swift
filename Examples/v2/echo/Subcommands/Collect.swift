@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-internal import ArgumentParser
-private import GRPCCore
-private import GRPCHTTP2Core
-private import GRPCHTTP2TransportNIOPosix
+import ArgumentParser
+import GRPCCore
+import GRPCHTTP2Core
+import GRPCHTTP2TransportNIOPosix
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct Collect: AsyncParsableCommand {
