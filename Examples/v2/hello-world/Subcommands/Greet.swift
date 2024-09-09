@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-internal import ArgumentParser
-internal import GRPCHTTP2Transport
-internal import GRPCProtobuf
+import ArgumentParser
+import GRPCHTTP2Transport
+import GRPCProtobuf
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct Greet: AsyncParsableCommand {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-private import XCTest
+import XCTest
 
 func XCTAssertThrowsError<T, E: Error>(
   ofType: E.Type,
