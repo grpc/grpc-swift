@@ -43,12 +43,12 @@ extension HTTP2ServerTransport {
   /// ```swift
   /// try await withThrowingDiscardingTaskGroup { group in
   ///   let transport = HTTP2ServerTransport.Posix(
-  ///     address: .ipv4(.init(host: "127.0.0.1", port: 0)),
+  ///     address: .ipv4(host: "127.0.0.1", port: 0),
   ///     config: .defaults(transportSecurity: .plaintext)
   ///   )
   ///   let server = GRPCServer(transport: transport, services: someServices)
   ///   group.addTask {
-  ///     try await server.run()
+  ///     try await server.serve()
   ///   }
   ///
   ///   // ...
