@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-internal import GRPCCore
+import GRPCCore
 
 import struct Foundation.Data
 

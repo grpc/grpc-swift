@@ -21,8 +21,8 @@
 // For information on using the generated types, please see the documentation:
 //   https://github.com/grpc/grpc-swift
 
-internal import GRPCCore
-internal import GRPCProtobuf
+import GRPCCore
+import GRPCProtobuf
 
 internal enum Routeguide_RouteGuide {
     internal static let descriptor = GRPCCore.ServiceDescriptor.routeguide_RouteGuide

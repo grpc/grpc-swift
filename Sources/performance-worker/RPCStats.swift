@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-private import Foundation
-internal import GRPCCore
-internal import NIOConcurrencyHelpers
+import Foundation
+import GRPCCore
+import NIOConcurrencyHelpers
 
 /// Stores the real time latency histogram and error code count dictionary,
 /// for the RPCs made by a particular GRPCClient. It gets updated after
