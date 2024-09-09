@@ -166,6 +166,26 @@ extension Status {
     public var description: String {
       String(describing: self.wrapped)
     }
+
+    package static let all: [Self] = [
+      .ok,
+      .cancelled,
+      .unknown,
+      .invalidArgument,
+      .deadlineExceeded,
+      .notFound,
+      .alreadyExists,
+      .permissionDenied,
+      .resourceExhausted,
+      .failedPrecondition,
+      .aborted,
+      .outOfRange,
+      .unimplemented,
+      .internalError,
+      .unavailable,
+      .dataLoss,
+      .unauthenticated,
+    ]
   }
 }
 

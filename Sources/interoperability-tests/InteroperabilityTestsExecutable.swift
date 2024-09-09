@@ -106,7 +106,7 @@ struct InteroperabilityTestsExecutable: AsyncParsableCommand {
       return GRPCClient(
         transport: try .http2NIOPosix(
           target: .ipv4(host: host, port: port),
-          config: .defaults {
+          config: .defaults(transportSecurity: .plaintext) {
             $0.compression.enabledAlgorithms = .all
           },
           serviceConfig: serviceConfig

@@ -131,18 +131,34 @@ extension TLSConfiguration {
     let certificateChain = try tlsConfig.certificateChain.sslCertificateSources()
     let privateKey = try NIOSSLPrivateKey(privateKey: tlsConfig.privateKey)
 
-    var tlsConfiguration = TLSConfiguration.makeServerConfiguration(
+    self = TLSConfiguration.makeServerConfiguration(
       certificateChain: certificateChain,
       privateKey: .privateKey(privateKey)
     )
-    tlsConfiguration.minimumTLSVersion = .tlsv12
-    tlsConfiguration.certificateVerification = CertificateVerification(
+    self.minimumTLSVersion = .tlsv12
+    self.certificateVerification = CertificateVerification(
       tlsConfig.clientCertificateVerification
     )
-    tlsConfiguration.trustRoots = try NIOSSLTrustRoots(tlsConfig.trustRoots)
-    tlsConfiguration.applicationProtocols = ["grpc-exp", "h2"]
+    self.trustRoots = try NIOSSLTrustRoots(tlsConfig.trustRoots)
+    self.applicationProtocols = ["grpc-exp", "h2"]
+  }
 
-    self = tlsConfiguration
+  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+  package init(_ tlsConfig: HTTP2ClientTransport.Posix.Config.TLS) throws {
+    self = TLSConfiguration.makeClientConfiguration()
+    self.certificateChain = try tlsConfig.certificateChain.sslCertificateSources()
+
+    if let privateKey = tlsConfig.privateKey {
+      let privateKeySource = try NIOSSLPrivateKey(privateKey: privateKey)
+      self.privateKey = .privateKey(privateKeySource)
+    }
+
+    self.minimumTLSVersion = .tlsv12
+    self.certificateVerification = CertificateVerification(
+      tlsConfig.serverCertificateVerification
+    )
+    self.trustRoots = try NIOSSLTrustRoots(tlsConfig.trustRoots)
+    self.applicationProtocols = ["grpc-exp", "h2"]
   }
 }
 #endif

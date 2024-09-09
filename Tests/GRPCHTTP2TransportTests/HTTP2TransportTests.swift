@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-internal import GRPCCore
-private import GRPCHTTP2Core
-private import GRPCHTTP2TransportNIOPosix
-private import GRPCHTTP2TransportNIOTransportServices
-private import GRPCProtobuf
-internal import XCTest
+import GRPCCore
+import GRPCHTTP2Core
+import GRPCHTTP2TransportNIOPosix
+import GRPCHTTP2TransportNIOTransportServices
+import GRPCProtobuf
+import XCTest
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class HTTP2TransportTests: XCTestCase {
@@ -199,7 +199,7 @@ final class HTTP2TransportTests: XCTestCase {
       serviceConfig.loadBalancingConfig = [.roundRobin]
       transport = try HTTP2ClientTransport.Posix(
         target: target,
-        config: .defaults {
+        config: .defaults(transportSecurity: .plaintext) {
           $0.compression.algorithm = compression
           $0.compression.enabledAlgorithms = enabledCompression
         },

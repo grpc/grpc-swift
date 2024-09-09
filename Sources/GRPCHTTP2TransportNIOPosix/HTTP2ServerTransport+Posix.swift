@@ -15,7 +15,7 @@
  */
 
 public import GRPCCore
-public import GRPCHTTP2Core
+public import GRPCHTTP2Core  // should be @usableFromInline
 internal import NIOCore
 internal import NIOExtras
 internal import NIOHTTP2
@@ -27,7 +27,33 @@ import NIOSSL
 #endif
 
 extension HTTP2ServerTransport {
-  /// A NIOPosix-backed implementation of a server transport.
+  /// A ``GRPCCore/ServerTransport`` using HTTP/2 built on top of `NIOPosix`.
+  ///
+  /// This transport builds on top of SwiftNIO's Posix networking layer and is suitable for use
+  /// on Linux and Darwin based platform (macOS, iOS, etc.) However, it's *strongly* recommended
+  /// that if you are targeting Darwin platforms then you should use the `NIOTS` variant of
+  /// the ``GRPCHTTP2Core/HTTP2ServerTransport``.
+  ///
+  /// You can control various aspects of connection creation, management, security and RPC behavior via
+  /// the ``Config``.
+  ///
+  /// Beyond creating the transport you don't need to interact with it directly, instead, pass it
+  /// to a `GRPCServer`:
+  ///
+  /// ```swift
+  /// try await withThrowingDiscardingTaskGroup { group in
+  ///   let transport = HTTP2ServerTransport.Posix(
+  ///     address: .ipv4(host: "127.0.0.1", port: 0),
+  ///     config: .defaults(transportSecurity: .plaintext)
+  ///   )
+  ///   let server = GRPCServer(transport: transport, services: someServices)
+  ///   group.addTask {
+  ///     try await server.serve()
+  ///   }
+  ///
+  ///   // ...
+  /// }
+  /// ```
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   public final class Posix: ServerTransport, ListeningServerTransport {
     private let address: GRPCHTTP2Core.SocketAddress
@@ -340,27 +366,34 @@ extension HTTP2ServerTransport.Posix {
   public struct Config: Sendable {
     /// Compression configuration.
     public var compression: HTTP2ServerTransport.Config.Compression
+
     /// Connection configuration.
     public var connection: HTTP2ServerTransport.Config.Connection
+
     /// HTTP2 configuration.
     public var http2: HTTP2ServerTransport.Config.HTTP2
+
     /// RPC configuration.
     public var rpc: HTTP2ServerTransport.Config.RPC
+
     /// The transport's security.
     public var transportSecurity: TransportSecurity
 
     /// Construct a new `Config`.
+    ///
     /// - Parameters:
-    ///   - compression: Compression configuration.
-    ///   - connection: Connection configuration.
     ///   - http2: HTTP2 configuration.
     ///   - rpc: RPC configuration.
+    ///   - connection: Connection configuration.
+    ///   - compression: Compression configuration.
     ///   - transportSecurity: The transport's security configuration.
+    ///
+    /// - SeeAlso: ``defaults(transportSecurity:configure:)``
     public init(
-      compression: HTTP2ServerTransport.Config.Compression,
-      connection: HTTP2ServerTransport.Config.Connection,
       http2: HTTP2ServerTransport.Config.HTTP2,
       rpc: HTTP2ServerTransport.Config.RPC,
+      connection: HTTP2ServerTransport.Config.Connection,
+      compression: HTTP2ServerTransport.Config.Compression,
       transportSecurity: TransportSecurity
     ) {
       self.compression = compression
@@ -380,10 +413,10 @@ extension HTTP2ServerTransport.Posix {
       configure: (_ config: inout Self) -> Void = { _ in }
     ) -> Self {
       var config = Self(
-        compression: .defaults,
-        connection: .defaults,
         http2: .defaults,
         rpc: .defaults,
+        connection: .defaults,
+        compression: .defaults,
         transportSecurity: transportSecurity
       )
       configure(&config)
