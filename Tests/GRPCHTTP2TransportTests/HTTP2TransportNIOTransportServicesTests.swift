@@ -22,8 +22,6 @@ import XCTest
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
-  private var identity: SecIdentity!
-
   private static let p12bundleURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()  // (this file)
     .deletingLastPathComponent()  // GRPCHTTP2TransportTests
@@ -33,18 +31,8 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     .appendingPathComponent("bundle")
     .appendingPathExtension("p12")
 
-  override func setUp() async throws {
-    try await super.setUp()
-
-    self.identity = try self.loadIdentity()
-    XCTAssertNotNil(
-      self.identity,
-      "Unable to load identity from '\(Self.p12bundleURL)'"
-    )
-  }
-
-  private func loadIdentity() throws -> SecIdentity? {
-    let data = try Data(contentsOf: Self.p12bundleURL)
+  @Sendable private static func loadIdentity() -> SecIdentity {
+    let data = try! Data(contentsOf: Self.p12bundleURL)
 
     var externalFormat = SecExternalFormat.formatUnknown
     var externalItemType = SecExternalItemType.itemTypeUnknown
@@ -65,11 +53,19 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     )
 
     if status != errSecSuccess {
-      XCTFail("SecItemImport failed with status \(status)")
-      return nil
+      XCTFail(
+        """
+        Unable to load identity from '\(Self.p12bundleURL)'. \
+        SecItemImport failed with status \(status)
+        """
+      )
     } else if items == nil {
-      XCTFail("SecItemImport failed.")
-      return nil
+      XCTFail(
+        """
+        Unable to load identity from '\(Self.p12bundleURL)'. \
+        SecItemImport failed.
+        """
+      )
     }
 
     return ((items! as NSArray)[0] as! SecIdentity)
@@ -204,10 +200,11 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
   }
 
   func testTLSConfig_Defaults() throws {
+    let identityProvider = Self.loadIdentity
     let grpcTLSConfig = HTTP2ServerTransport.TransportServices.Config.TLS.defaults(
-      identity: self.identity
+      identityProvider: identityProvider
     )
-    XCTAssertEqual(grpcTLSConfig.identity, self.identity)
+    XCTAssertEqual(grpcTLSConfig.identityProvider(), identityProvider())
     XCTAssertEqual(grpcTLSConfig.requireALPN, false)
   }
 }

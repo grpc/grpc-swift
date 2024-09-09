@@ -435,7 +435,7 @@ extension NWProtocolTLS.Options {
   convenience init(_ tlsConfig: HTTP2ServerTransport.TransportServices.Config.TLS) throws {
     self.init()
 
-    guard let sec_identity = sec_identity_create(tlsConfig.identity) else {
+    guard let sec_identity = sec_identity_create(tlsConfig.identityProvider()) else {
       throw RuntimeError(
         code: .transportError,
         message: """
