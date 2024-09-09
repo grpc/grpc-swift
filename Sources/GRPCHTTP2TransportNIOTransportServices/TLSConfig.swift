@@ -38,7 +38,7 @@ extension HTTP2ServerTransport.TransportServices.Config {
   }
 
   public struct TLS: Sendable {
-    /// The `SecIdentity` to be used when setting up TLS.
+    /// A provider for the `SecIdentity` to be used when setting up TLS.
     public var identityProvider: @Sendable () throws -> SecIdentity
 
     /// Whether ALPN is required.
