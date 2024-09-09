@@ -158,7 +158,7 @@ extension HTTP2ClientTransport.Posix {
           )
         }
       }
-    #endif
+      #endif
     }
 
     func establishConnection(

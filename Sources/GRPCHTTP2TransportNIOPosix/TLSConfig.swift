@@ -152,7 +152,7 @@ extension HTTP2ServerTransport.Posix.Config {
     public static func tls(_ tls: TLS) -> Self {
       Self(wrapped: .tls(tls))
     }
-    #endif  
+    #endif
   }
 
   public struct TLS: Sendable {
