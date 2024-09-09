@@ -94,7 +94,7 @@ extension HTTP2ClientTransport {
       // Configure a connector.
       self.channel = GRPCChannel(
         resolver: resolver,
-        connector: Connector(eventLoopGroup: eventLoopGroup, config: config),
+        connector: try Connector(eventLoopGroup: eventLoopGroup, config: config),
         config: GRPCChannel.Config(posix: config),
         defaultServiceConfig: serviceConfig
       )
@@ -132,25 +132,24 @@ extension HTTP2ClientTransport.Posix {
     private let config: HTTP2ClientTransport.Posix.Config
     private let eventLoopGroup: any EventLoopGroup
 
-    init(eventLoopGroup: any EventLoopGroup, config: HTTP2ClientTransport.Posix.Config) {
+    #if canImport(NIOSSL)
+    private let nioSSLContext: NIOSSLContext?
+    private let serverHostname: String?
+    #endif
+
+    init(eventLoopGroup: any EventLoopGroup, config: HTTP2ClientTransport.Posix.Config) throws {
       self.eventLoopGroup = eventLoopGroup
       self.config = config
-    }
 
-    func establishConnection(
-      to address: GRPCHTTP2Core.SocketAddress
-    ) async throws -> HTTP2Connection {
       #if canImport(NIOSSL)
-      let nioSSLContext: NIOSSLContext?
-      let serverHostname: String?
       switch self.config.transportSecurity.wrapped {
       case .plaintext:
-        nioSSLContext = nil
-        serverHostname = nil
+        self.nioSSLContext = nil
+        self.serverHostname = nil
       case .tls(let tlsConfig):
         do {
-          nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
-          serverHostname = tlsConfig.serverHostname
+          self.nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+          self.serverHostname = tlsConfig.serverHostname
         } catch {
           throw RuntimeError(
             code: .transportError,
@@ -159,18 +158,22 @@ extension HTTP2ClientTransport.Posix {
           )
         }
       }
-      #endif
+    #endif
+    }
 
+    func establishConnection(
+      to address: GRPCHTTP2Core.SocketAddress
+    ) async throws -> HTTP2Connection {
       let (channel, multiplexer) = try await ClientBootstrap(
         group: self.eventLoopGroup
       ).connect(to: address) { channel in
         channel.eventLoop.makeCompletedFuture {
           #if canImport(NIOSSL)
-          if let nioSSLContext {
+          if let nioSSLContext = self.nioSSLContext {
             try channel.pipeline.syncOperations.addHandler(
               NIOSSLClientHandler(
                 context: nioSSLContext,
-                serverHostname: serverHostname
+                serverHostname: self.serverHostname
               )
             )
           }
