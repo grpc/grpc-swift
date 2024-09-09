@@ -72,6 +72,10 @@ let packageDependencies: [Package.Dependency] = [
     url: "https://github.com/apple/swift-distributed-tracing.git",
     from: "1.0.0"
   ),
+  .package(
+    url: "https://github.com/swiftlang/swift-testing.git",
+    branch: "release/6.0"
+  ),
 ].appending(
   .package(
     url: "https://github.com/apple/swift-nio-ssl.git",
@@ -147,6 +151,13 @@ extension Target.Dependency {
   static var dequeModule: Self { .product(name: "DequeModule", package: "swift-collections") }
   static var atomics: Self { .product(name: "Atomics", package: "swift-atomics") }
   static var tracing: Self { .product(name: "Tracing", package: "swift-distributed-tracing") }
+  static var testing: Self {
+    .product(
+      name: "Testing",
+      package: "swift-testing",
+      condition: .when(platforms: [.linux]) // Already included in the toolchain on Darwin
+    )
+  }
 
   static var grpcCore: Self { .target(name: "GRPCCore") }
   static var grpcInProcessTransport: Self { .target(name: "GRPCInProcessTransport") }
@@ -401,6 +412,7 @@ extension Target {
         .grpcInProcessTransport,
         .dequeModule,
         .protobuf,
+        .testing,
       ],
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
