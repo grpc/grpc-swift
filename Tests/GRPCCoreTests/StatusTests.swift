@@ -13,105 +13,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import GRPCCore
-import XCTest
+import Testing
 
-final class StatusTests: XCTestCase {
-  private static let statusCodeRawValue: [(Status.Code, Int)] = [
-    (.ok, 0),
-    (.cancelled, 1),
-    (.unknown, 2),
-    (.invalidArgument, 3),
-    (.deadlineExceeded, 4),
-    (.notFound, 5),
-    (.alreadyExists, 6),
-    (.permissionDenied, 7),
-    (.resourceExhausted, 8),
-    (.failedPrecondition, 9),
-    (.aborted, 10),
-    (.outOfRange, 11),
-    (.unimplemented, 12),
-    (.internalError, 13),
-    (.unavailable, 14),
-    (.dataLoss, 15),
-    (.unauthenticated, 16),
-  ]
-
-  func testCustomStringConvertible() {
-    XCTAssertDescription(Status(code: .ok, message: ""), #"ok: """#)
-    XCTAssertDescription(Status(code: .dataLoss, message: "message"), #"dataLoss: "message""#)
-    XCTAssertDescription(Status(code: .unknown, message: "message"), #"unknown: "message""#)
-    XCTAssertDescription(Status(code: .aborted, message: "message"), #"aborted: "message""#)
-  }
-
-  func testStatusCodeRawValues() {
-    for (code, expected) in Self.statusCodeRawValue {
-      XCTAssertEqual(code.rawValue, expected, "\(code) had unexpected raw value")
+@Suite("Status")
+struct StatusTests {
+  @Suite("Code")
+  struct Code {
+    @Test("rawValue", arguments: zip(Status.Code.all, 0 ... 16))
+    func rawValueOfStatusCodes(code: Status.Code, expected: Int) {
+      #expect(code.rawValue == expected)
     }
-  }
 
-  func testStatusCodeFromErrorCode() throws {
-    XCTAssertEqual(Status.Code(RPCError.Code.cancelled), .cancelled)
-    XCTAssertEqual(Status.Code(RPCError.Code.unknown), .unknown)
-    XCTAssertEqual(Status.Code(RPCError.Code.invalidArgument), .invalidArgument)
-    XCTAssertEqual(Status.Code(RPCError.Code.deadlineExceeded), .deadlineExceeded)
-    XCTAssertEqual(Status.Code(RPCError.Code.notFound), .notFound)
-    XCTAssertEqual(Status.Code(RPCError.Code.alreadyExists), .alreadyExists)
-    XCTAssertEqual(Status.Code(RPCError.Code.permissionDenied), .permissionDenied)
-    XCTAssertEqual(Status.Code(RPCError.Code.resourceExhausted), .resourceExhausted)
-    XCTAssertEqual(Status.Code(RPCError.Code.failedPrecondition), .failedPrecondition)
-    XCTAssertEqual(Status.Code(RPCError.Code.aborted), .aborted)
-    XCTAssertEqual(Status.Code(RPCError.Code.outOfRange), .outOfRange)
-    XCTAssertEqual(Status.Code(RPCError.Code.unimplemented), .unimplemented)
-    XCTAssertEqual(Status.Code(RPCError.Code.internalError), .internalError)
-    XCTAssertEqual(Status.Code(RPCError.Code.unavailable), .unavailable)
-    XCTAssertEqual(Status.Code(RPCError.Code.dataLoss), .dataLoss)
-    XCTAssertEqual(Status.Code(RPCError.Code.unauthenticated), .unauthenticated)
-  }
-
-  func testStatusCodeFromValidRawValue() {
-    for (expected, rawValue) in Self.statusCodeRawValue {
-      XCTAssertEqual(
-        Status.Code(rawValue: rawValue),
-        expected,
-        "\(rawValue) didn't convert to expected code \(expected)"
+    @Test(
+      "Initialize from RPCError.Code",
+      arguments: zip(
+        RPCError.Code.all,
+        Status.Code.all.dropFirst()  // Drop '.ok', there is no '.ok' error code.
       )
+    )
+    func initFromRPCErrorCode(errorCode: RPCError.Code, expected: Status.Code) {
+      #expect(Status.Code(errorCode) == expected)
+    }
+
+    @Test("Initialize from rawValue", arguments: zip(0 ... 16, Status.Code.all))
+    func initFromRawValue(rawValue: Int, expected: Status.Code) {
+      #expect(Status.Code(rawValue: rawValue) == expected)
+    }
+
+    @Test("Initialize from invalid rawValue", arguments: [-1, 17, 100, .max])
+    func initFromInvalidRawValue(rawValue: Int) {
+      #expect(Status.Code(rawValue: rawValue) == nil)
     }
   }
 
-  func testStatusCodeFromInvalidRawValue() {
-    // Internally represented as a `UInt8`; try all other values.
-    for rawValue in UInt8(17) ... UInt8.max {
-      XCTAssertNil(Status.Code(rawValue: Int(rawValue)))
-    }
-
-    // API accepts `Int` so try invalid `Int` values too.
-    XCTAssertNil(Status.Code(rawValue: -1))
-    XCTAssertNil(Status.Code(rawValue: 1000))
-    XCTAssertNil(Status.Code(rawValue: .max))
+  @Test("CustomStringConvertible conformance")
+  func customStringConvertible() {
+    #expect("\(Status(code: .ok, message: ""))" == #"ok: """#)
+    #expect("\(Status(code: .dataLoss, message: "oh no"))" == #"dataLoss: "oh no""#)
   }
 
-  func testEquatableConformance() {
-    XCTAssertEqual(Status(code: .ok, message: ""), Status(code: .ok, message: ""))
-    XCTAssertEqual(Status(code: .ok, message: "message"), Status(code: .ok, message: "message"))
+  @Test("Equatable conformance")
+  func equatable() {
+    let ok = Status(code: .ok, message: "")
+    let okWithMessage = Status(code: .ok, message: "message")
+    let internalError = Status(code: .internalError, message: "")
 
-    XCTAssertNotEqual(
-      Status(code: .ok, message: ""),
-      Status(code: .ok, message: "message")
-    )
-
-    XCTAssertNotEqual(
-      Status(code: .ok, message: "message"),
-      Status(code: .internalError, message: "message")
-    )
-
-    XCTAssertNotEqual(
-      Status(code: .ok, message: "message"),
-      Status(code: .ok, message: "different message")
-    )
+    #expect(ok == ok)
+    #expect(ok != okWithMessage)
+    #expect(ok != internalError)
   }
 
-  func testFitsInExistentialContainer() {
-    XCTAssertLessThanOrEqual(MemoryLayout<Status>.size, 24)
+  @Test("Fits in existential container")
+  func fitsInExistentialContainer() {
+    #expect(MemoryLayout<Status>.size <= 24)
   }
 }
