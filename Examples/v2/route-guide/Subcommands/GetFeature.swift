@@ -39,7 +39,7 @@ struct GetFeature: AsyncParsableCommand {
   func run() async throws {
     let transport = try HTTP2ClientTransport.Posix(
       target: .ipv4(host: "127.0.0.1", port: self.port),
-      config: .defaults()
+      config: .defaults(transportSecurity: .plaintext)
     )
     let client = GRPCClient(transport: transport)
 
