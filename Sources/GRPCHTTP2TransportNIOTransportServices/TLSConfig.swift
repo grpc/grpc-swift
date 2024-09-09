@@ -41,9 +41,6 @@ extension HTTP2ServerTransport.TransportServices.Config {
     /// The `SecIdentity` to be used when setting up TLS.
     public var identity: SecIdentity
 
-    /// An optional hostname override to use during certificate verification.
-    public var hostnameOverride: String?
-
     /// Whether ALPN is required.
     ///
     /// If this is set to `true` but the client does not support ALPN, then the connection will be rejected.
@@ -51,7 +48,6 @@ extension HTTP2ServerTransport.TransportServices.Config {
 
     /// Create a new HTTP2 NIO Transport Services transport TLS config, with some values defaulted:
     /// - `requireALPN` equals `false`
-    /// - `hostnameOverride` equals `nil`
     ///
     /// - Returns: A new HTTP2 NIO Transport Services transport TLS config.
     public static func defaults(
@@ -59,23 +55,6 @@ extension HTTP2ServerTransport.TransportServices.Config {
     ) -> Self {
       Self(
         identity: identity,
-        hostnameOverride: nil,
-        requireALPN: false
-      )
-    }
-
-    /// Create a new HTTP2 NIO Transport Services transport TLS config, with some values defaulted to match
-    /// the requirements of mTLS:
-    /// - `requireALPN` equals `false`
-    /// - `hostnameOverride` equals `""`
-    ///
-    /// - Returns: A new HTTP2 NIO Transport Services transport TLS config.
-    public static func mTLS(
-      identity: SecIdentity
-    ) -> Self {
-      Self(
-        identity: identity,
-        hostnameOverride: "",
         requireALPN: false
       )
     }

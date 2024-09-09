@@ -208,16 +208,6 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
       identity: self.identity
     )
     XCTAssertEqual(grpcTLSConfig.identity, self.identity)
-    XCTAssertEqual(grpcTLSConfig.hostnameOverride, nil)
-    XCTAssertEqual(grpcTLSConfig.requireALPN, false)
-  }
-
-  func testTLSConfig_mTLS() throws {
-    let grpcTLSConfig = HTTP2ServerTransport.TransportServices.Config.TLS.mTLS(
-      identity: self.identity
-    )
-    XCTAssertEqual(grpcTLSConfig.identity, self.identity)
-    XCTAssertEqual(grpcTLSConfig.hostnameOverride, "")
     XCTAssertEqual(grpcTLSConfig.requireALPN, false)
   }
 }

@@ -455,13 +455,6 @@ extension NWProtocolTLS.Options {
       .TLSv12
     )
 
-    if let hostnameOverride = tlsConfig.hostnameOverride {
-      sec_protocol_options_set_tls_server_name(
-        self.securityProtocolOptions,
-        hostnameOverride
-      )
-    }
-
     for `protocol` in ["grpc-exp", "h2"] {
       sec_protocol_options_add_tls_application_protocol(
         self.securityProtocolOptions,
