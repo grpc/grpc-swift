@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPCCore
-import XCTest
 
-final class MetadataTests: XCTestCase {
-  func testInitFromSequence() {
+import GRPCCore
+import Testing
+
+@Suite("Metadata")
+struct MetadataTests {
+  @Test("Initialize from Sequence")
+  func initFromSequence() {
     let elements: [Metadata.Element] = [
       (key: "key1", value: "value1"),
       (key: "key2", value: "value2"),
@@ -26,218 +29,227 @@ final class MetadataTests: XCTestCase {
 
     let metadata = Metadata(elements)
     let expected: Metadata = ["key1": "value1", "key2": "value2", "key3": "value3"]
-
-    XCTAssertEqual(metadata, expected)
+    #expect(metadata == expected)
   }
 
-  func testAddStringValue() {
+  @Test("Add string Value")
+  func addStringValue() {
     var metadata = Metadata()
-    XCTAssertTrue(metadata.isEmpty)
+    #expect(metadata.isEmpty)
 
     metadata.addString("testValue", forKey: "testString")
-    XCTAssertEqual(metadata.count, 1)
+    #expect(metadata.count == 1)
 
     let sequence = metadata[stringValues: "testString"]
     var iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), "testValue")
-    XCTAssertNil(iterator.next())
+    #expect(iterator.next() == "testValue")
+    #expect(iterator.next() == nil)
   }
 
-  func testAddBinaryValue() {
+  @Test("Add binary value")
+  func addBinaryValue() {
     var metadata = Metadata()
-    XCTAssertTrue(metadata.isEmpty)
+    #expect(metadata.isEmpty)
 
     metadata.addBinary(Array("base64encodedString".utf8), forKey: "testBinary-bin")
-    XCTAssertEqual(metadata.count, 1)
+    #expect(metadata.count == 1)
 
     let sequence = metadata[binaryValues: "testBinary-bin"]
     var iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), Array("base64encodedString".utf8))
-    XCTAssertNil(iterator.next())
+    #expect(iterator.next() == Array("base64encodedString".utf8))
+    #expect(iterator.next() == nil)
   }
 
-  func testCreateFromDictionaryLiteral() {
+  @Test("Initialize from dictionary literal")
+  func initFromDictionaryLiteral() {
     let metadata: Metadata = [
       "testKey": "stringValue",
       "testKey-bin": .binary(Array("base64encodedString".utf8)),
     ]
-    XCTAssertEqual(metadata.count, 2)
+    #expect(metadata.count == 2)
 
     let stringSequence = metadata[stringValues: "testKey"]
     var stringIterator = stringSequence.makeIterator()
-    XCTAssertEqual(stringIterator.next(), "stringValue")
-    XCTAssertNil(stringIterator.next())
+    #expect(stringIterator.next() == "stringValue")
+    #expect(stringIterator.next() == nil)
 
     let binarySequence = metadata[binaryValues: "testKey-bin"]
     var binaryIterator = binarySequence.makeIterator()
-    XCTAssertEqual(binaryIterator.next(), Array("base64encodedString".utf8))
-    XCTAssertNil(binaryIterator.next())
+    #expect(binaryIterator.next() == Array("base64encodedString".utf8))
+    #expect(binaryIterator.next() == nil)
   }
 
-  func testReplaceOrAddValue() {
-    var metadata: Metadata = [
-      "testKey": "value1",
-      "testKey": "value2",
-    ]
-    XCTAssertEqual(metadata.count, 2)
+  @Suite("Replace or add value")
+  struct ReplaceOrAdd {
+    @Suite("String")
+    struct StringValues {
+      var metadata: Metadata = [
+        "key1": "value1",
+        "key1": "value2",
+      ]
 
-    var sequence = metadata[stringValues: "testKey"]
-    var iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), "value1")
-    XCTAssertEqual(iterator.next(), "value2")
-    XCTAssertNil(iterator.next())
+      @Test("Add different key")
+      mutating func addNewKey() async throws {
+        self.metadata.replaceOrAddString("value3", forKey: "key2")
+        #expect(Array(self.metadata[stringValues: "key1"]) == ["value1", "value2"])
+        #expect(Array(self.metadata[stringValues: "key2"]) == ["value3"])
+        #expect(self.metadata.count == 3)
+      }
 
-    metadata.replaceOrAddString("anotherValue", forKey: "testKey2")
-    XCTAssertEqual(metadata.count, 3)
-    sequence = metadata[stringValues: "testKey"]
-    iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), "value1")
-    XCTAssertEqual(iterator.next(), "value2")
-    XCTAssertNil(iterator.next())
-    sequence = metadata[stringValues: "testKey2"]
-    iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), "anotherValue")
-    XCTAssertNil(iterator.next())
+      @Test("Replace values for existing key")
+      mutating func replaceValues() async throws {
+        self.metadata.replaceOrAddString("value3", forKey: "key1")
+        #expect(Array(self.metadata[stringValues: "key1"]) == ["value3"])
+        #expect(self.metadata.count == 1)
+      }
+    }
 
-    metadata.replaceOrAddString("newValue", forKey: "testKey")
-    XCTAssertEqual(metadata.count, 2)
-    sequence = metadata[stringValues: "testKey"]
-    iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), "newValue")
-    XCTAssertNil(iterator.next())
-    sequence = metadata[stringValues: "testKey2"]
-    iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), "anotherValue")
-    XCTAssertNil(iterator.next())
+    @Suite("Binary")
+    struct BinaryValues {
+      var metadata: Metadata = [
+        "key1-bin": [0],
+        "key1-bin": [1],
+      ]
+
+      @Test("Add different key")
+      mutating func addNewKey() async throws {
+        self.metadata.replaceOrAddBinary([2], forKey: "key2-bin")
+        #expect(Array(self.metadata[binaryValues: "key1-bin"]) == [[0], [1]])
+        #expect(Array(self.metadata[binaryValues: "key2-bin"]) == [[2]])
+        #expect(self.metadata.count == 3)
+      }
+
+      @Test("Replace values for existing key")
+      mutating func replaceValues() async throws {
+        self.metadata.replaceOrAddBinary([2], forKey: "key1-bin")
+        #expect(Array(self.metadata[binaryValues: "key1-bin"]) == [[2]])
+        #expect(self.metadata.count == 1)
+      }
+    }
   }
 
-  func testReserveCapacity() {
+  @Test("Reserve more capacity increases capacity")
+  func reserveMoreCapacity() {
     var metadata = Metadata()
-    XCTAssertEqual(metadata.capacity, 0)
+    #expect(metadata.capacity == 0)
 
     metadata.reserveCapacity(10)
-    XCTAssertEqual(metadata.capacity, 10)
+    #expect(metadata.capacity == 10)
   }
 
-  func testValuesIteration() {
-    let metadata: Metadata = [
-      "testKey-bin": "string1",
-      "testKey-bin": .binary(.init("data1".utf8)),
-      "testKey-bin": "string2",
-      "testKey-bin": .binary(.init("data2".utf8)),
-      "testKey-bin": "string3",
-      "testKey-bin": .binary(.init("data3".utf8)),
-    ]
-    XCTAssertEqual(metadata.count, 6)
-
-    let sequence = metadata["testKey-bin"]
-    var iterator = sequence.makeIterator()
-    XCTAssertEqual(iterator.next(), .string("string1"))
-    XCTAssertEqual(iterator.next(), .binary(.init("data1".utf8)))
-    XCTAssertEqual(iterator.next(), .string("string2"))
-    XCTAssertEqual(iterator.next(), .binary(.init("data2".utf8)))
-    XCTAssertEqual(iterator.next(), .string("string3"))
-    XCTAssertEqual(iterator.next(), .binary(.init("data3".utf8)))
-    XCTAssertNil(iterator.next())
+  @Test("Reserve less capacity doesn't reduce capacity")
+  func reserveCapacity() {
+    var metadata = Metadata()
+    #expect(metadata.capacity == 0)
+    metadata.reserveCapacity(10)
+    #expect(metadata.capacity == 10)
+    metadata.reserveCapacity(0)
+    #expect(metadata.capacity == 10)
   }
 
-  func testStringValuesIteration() {
+  @Test("Iterate over all values for a key")
+  func iterateOverValuesForKey() {
     let metadata: Metadata = [
-      "testKey-bin": "string1",
-      "testKey-bin": .binary(.init("data1".utf8)),
-      "testKey-bin": "string2",
-      "testKey-bin": .binary(.init("data2".utf8)),
-      "testKey-bin": "string3",
-      "testKey-bin": .binary(.init("data3".utf8)),
+      "key-bin": "1",
+      "key-bin": [1],
+      "key-bin": "2",
+      "key-bin": [2],
+      "key-bin": "3",
+      "key-bin": [3],
     ]
-    XCTAssertEqual(metadata.count, 6)
 
-    let stringSequence = metadata[stringValues: "testKey-bin"]
-    var stringIterator = stringSequence.makeIterator()
-    XCTAssertEqual(stringIterator.next(), "string1")
-    XCTAssertEqual(stringIterator.next(), "string2")
-    XCTAssertEqual(stringIterator.next(), "string3")
-    XCTAssertNil(stringIterator.next())
+    #expect(Array(metadata["key-bin"]) == ["1", [1], "2", [2], "3", [3]])
   }
 
-  func testBinaryValuesIteration_InvalidBase64EncodedStrings() {
+  @Test("Iterate over string values for a key")
+  func iterateOverStringsForKey() {
     let metadata: Metadata = [
-      "testKey-bin": "invalidBase64-1",
-      "testKey-bin": .binary(.init("data1".utf8)),
-      "testKey-bin": "invalidBase64-2",
-      "testKey-bin": .binary(.init("data2".utf8)),
-      "testKey-bin": "invalidBase64-3",
-      "testKey-bin": .binary(.init("data3".utf8)),
+      "key-bin": "1",
+      "key-bin": [1],
+      "key-bin": "2",
+      "key-bin": [2],
+      "key-bin": "3",
+      "key-bin": [3],
     ]
-    XCTAssertEqual(metadata.count, 6)
 
-    let binarySequence = metadata[binaryValues: "testKey-bin"]
-    var binaryIterator = binarySequence.makeIterator()
-    XCTAssertEqual(binaryIterator.next(), Array("data1".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("data2".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("data3".utf8))
-    XCTAssertNil(binaryIterator.next())
+    #expect(Array(metadata[stringValues: "key-bin"]) == ["1", "2", "3"])
   }
 
-  func testBinaryValuesIteration_ValidBase64EncodedStrings() {
+  @Test("Iterate over binary values for a key")
+  func iterateOverBinaryForKey() {
     let metadata: Metadata = [
-      "testKey-bin": "c3RyaW5nMQ==",
-      "testKey-bin": .binary(.init("data1".utf8)),
-      "testKey-bin": "c3RyaW5nMg==",
-      "testKey-bin": .binary(.init("data2".utf8)),
-      "testKey-bin": "c3RyaW5nMw==",
-      "testKey-bin": .binary(.init("data3".utf8)),
+      "key-bin": "1",
+      "key-bin": [1],
+      "key-bin": "2",
+      "key-bin": [2],
+      "key-bin": "3",
+      "key-bin": [3],
     ]
-    XCTAssertEqual(metadata.count, 6)
 
-    let binarySequence = metadata[binaryValues: "testKey-bin"]
-    var binaryIterator = binarySequence.makeIterator()
-    XCTAssertEqual(binaryIterator.next(), Array("string1".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("data1".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("string2".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("data2".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("string3".utf8))
-    XCTAssertEqual(binaryIterator.next(), Array("data3".utf8))
-    XCTAssertNil(binaryIterator.next())
+    #expect(Array(metadata[binaryValues: "key-bin"]) == [[1], [2], [3]])
   }
 
-  func testKeysAreCaseInsensitive() {
+  @Test("Iterate over base64 encoded binary values for a key")
+  func iterateOverBase64BinaryEncodedValuesForKey() {
     let metadata: Metadata = [
-      "testkey1": "value1",
-      "TESTKEY2": "value2",
+      "key-bin": "c3RyaW5nMQ==",
+      "key-bin": .binary(.init("data1".utf8)),
+      "key-bin": "c3RyaW5nMg==",
+      "key-bin": .binary(.init("data2".utf8)),
+      "key-bin": "c3RyaW5nMw==",
+      "key-bin": .binary(.init("data3".utf8)),
     ]
-    XCTAssertEqual(metadata.count, 2)
 
-    var stringSequence = metadata[stringValues: "TESTKEY1"]
-    var stringIterator = stringSequence.makeIterator()
-    XCTAssertEqual(stringIterator.next(), "value1")
-    XCTAssertNil(stringIterator.next())
+    let expected: [[UInt8]] = [
+      Array("string1".utf8),
+      Array("data1".utf8),
+      Array("string2".utf8),
+      Array("data2".utf8),
+      Array("string3".utf8),
+      Array("data3".utf8),
+    ]
 
-    stringSequence = metadata[stringValues: "testkey2"]
-    stringIterator = stringSequence.makeIterator()
-    XCTAssertEqual(stringIterator.next(), "value2")
-    XCTAssertNil(stringIterator.next())
+    #expect(Array(metadata[binaryValues: "key-bin"]) == expected)
   }
 
-  func testRemoveAllWhere() {
+  @Test("Subscripts are case-insensitive")
+  func subscriptIsCaseInsensitive() {
     let metadata: Metadata = [
-      "testKey1": "value1",
-      "testKey2": "value2",
-      "testKey3": "value1",
+      "key1": "value1",
+      "KEY2": "value2",
     ]
 
-    var metadata1 = metadata
-    metadata1.removeAll { _, value in
-      value == "value1"
+    #expect(Array(metadata[stringValues: "key1"]) == ["value1"])
+    #expect(Array(metadata[stringValues: "KEY1"]) == ["value1"])
+
+    #expect(Array(metadata[stringValues: "key2"]) == ["value2"])
+    #expect(Array(metadata[stringValues: "KEY2"]) == ["value2"])
+  }
+
+  @Suite("Remove all")
+  struct RemoveAll {
+    var metadata: Metadata = [
+      "key1": "value1",
+      "key2": "value2",
+      "key3": "value1",
+    ]
+
+    @Test("Where value matches")
+    mutating func removeAllWhereValueMatches() async throws {
+      self.metadata.removeAll { _, value in
+        value == "value1"
+      }
+
+      #expect(self.metadata == ["key2": "value2"])
     }
 
-    XCTAssertEqual(metadata1, ["testKey2": "value2"])
+    @Test("Where key matches")
+    mutating func removeAllWhereKeyMatches() async throws {
+      self.metadata.removeAll { key, _ in
+        key == "key2"
+      }
 
-    var metadata2 = metadata
-    metadata2.removeAll { key, _ in
-      key == "testKey2"
+      #expect(self.metadata == ["key1": "value1", "key3": "value1"])
     }
-
-    XCTAssertEqual(metadata2, ["testKey1": "value1", "testKey3": "value1"])
   }
 }
