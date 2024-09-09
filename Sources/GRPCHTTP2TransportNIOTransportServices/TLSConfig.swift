@@ -39,7 +39,7 @@ extension HTTP2ServerTransport.TransportServices.Config {
 
   public struct TLS: Sendable {
     /// The `SecIdentity` to be used when setting up TLS.
-    public var identityProvider: @Sendable () -> SecIdentity
+    public var identityProvider: @Sendable () throws -> SecIdentity
 
     /// Whether ALPN is required.
     ///
@@ -51,7 +51,7 @@ extension HTTP2ServerTransport.TransportServices.Config {
     ///
     /// - Returns: A new HTTP2 NIO Transport Services transport TLS config.
     public static func defaults(
-      identityProvider: @Sendable @escaping () -> SecIdentity
+      identityProvider: @Sendable @escaping () throws -> SecIdentity
     ) -> Self {
       Self(
         identityProvider: identityProvider,

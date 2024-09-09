@@ -31,8 +31,8 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     .appendingPathComponent("bundle")
     .appendingPathExtension("p12")
 
-  @Sendable private static func loadIdentity() -> SecIdentity {
-    let data = try! Data(contentsOf: Self.p12bundleURL)
+  @Sendable private static func loadIdentity() throws -> SecIdentity {
+    let data = try Data(contentsOf: Self.p12bundleURL)
 
     var externalFormat = SecExternalFormat.formatUnknown
     var externalItemType = SecExternalItemType.itemTypeUnknown
@@ -204,7 +204,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     let grpcTLSConfig = HTTP2ServerTransport.TransportServices.Config.TLS.defaults(
       identityProvider: identityProvider
     )
-    XCTAssertEqual(grpcTLSConfig.identityProvider(), identityProvider())
+    XCTAssertEqual(try grpcTLSConfig.identityProvider(), try identityProvider())
     XCTAssertEqual(grpcTLSConfig.requireALPN, false)
   }
 }
