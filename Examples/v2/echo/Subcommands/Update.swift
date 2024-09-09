@@ -32,7 +32,7 @@ struct Update: AsyncParsableCommand {
     let client = GRPCClient(
       transport: try .http2NIOPosix(
         target: self.arguments.target,
-        config: .defaults()
+        config: .defaults(transportSecurity: .plaintext)
       )
     )
 

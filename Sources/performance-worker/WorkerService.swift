@@ -457,7 +457,7 @@ extension WorkerService {
         client: GRPCClient(
           transport: try .http2NIOPosix(
             target: target,
-            config: .defaults()
+            config: .defaults(transportSecurity: .plaintext)
           )
         ),
         concurrentRPCs: Int(config.outstandingRpcsPerChannel),

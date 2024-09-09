@@ -199,7 +199,7 @@ final class HTTP2TransportTests: XCTestCase {
       serviceConfig.loadBalancingConfig = [.roundRobin]
       transport = try HTTP2ClientTransport.Posix(
         target: target,
-        config: .defaults {
+        config: .defaults(transportSecurity: .plaintext) {
           $0.compression.algorithm = compression
           $0.compression.enabledAlgorithms = enabledCompression
         },

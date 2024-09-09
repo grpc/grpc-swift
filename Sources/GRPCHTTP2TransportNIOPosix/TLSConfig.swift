@@ -147,10 +147,12 @@ extension HTTP2ServerTransport.Posix.Config {
     /// This connection is plaintext: no encryption will take place.
     public static let plaintext = Self(wrapped: .plaintext)
 
+    #if canImport(NIOSSL)
     /// This connection will use TLS.
     public static func tls(_ tls: TLS) -> Self {
       Self(wrapped: .tls(tls))
     }
+    #endif
   }
 
   public struct TLS: Sendable {
@@ -184,7 +186,7 @@ extension HTTP2ServerTransport.Posix.Config {
       certificateChain: [TLSConfig.CertificateSource],
       privateKey: TLSConfig.PrivateKeySource
     ) -> Self {
-      Self.init(
+      Self(
         certificateChain: certificateChain,
         privateKey: privateKey,
         clientCertificateVerification: .noVerification,
@@ -207,12 +209,90 @@ extension HTTP2ServerTransport.Posix.Config {
       certificateChain: [TLSConfig.CertificateSource],
       privateKey: TLSConfig.PrivateKeySource
     ) -> Self {
-      Self.init(
+      Self(
         certificateChain: certificateChain,
         privateKey: privateKey,
         clientCertificateVerification: .noHostnameVerification,
         trustRoots: .systemDefault,
         requireALPN: false
+      )
+    }
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension HTTP2ClientTransport.Posix.Config {
+  /// The security configuration for this connection.
+  public struct TransportSecurity: Sendable {
+    package enum Wrapped: Sendable {
+      case plaintext
+      case tls(TLS)
+    }
+
+    package let wrapped: Wrapped
+
+    /// This connection is plaintext: no encryption will take place.
+    public static let plaintext = Self(wrapped: .plaintext)
+
+    #if canImport(NIOSSL)
+    /// This connection will use TLS.
+    public static func tls(_ tls: TLS) -> Self {
+      Self(wrapped: .tls(tls))
+    }
+    #endif
+  }
+
+  public struct TLS: Sendable {
+    /// The certificates the client will offer during negotiation.
+    public var certificateChain: [TLSConfig.CertificateSource]
+
+    /// The private key associated with the leaf certificate.
+    public var privateKey: TLSConfig.PrivateKeySource?
+
+    /// How to verify the server certificate, if one is presented.
+    public var serverCertificateVerification: TLSConfig.CertificateVerification
+
+    /// The trust roots to be used when verifying server certificates.
+    public var trustRoots: TLSConfig.TrustRootsSource
+
+    /// An optional server hostname to use when verifying certificates.
+    public var serverHostname: String?
+
+    /// Create a new HTTP2 NIO Posix transport TLS config, with some values defaulted:
+    /// - `certificateChain` equals `[]`
+    /// - `privateKey` equals `nil`
+    /// - `serverCertificateVerification` equals `fullVerification`
+    /// - `trustRoots` equals `systemDefault`
+    /// - `serverHostname` equals `nil`
+    ///
+    /// - Returns: A new HTTP2 NIO Posix transport TLS config.
+    public static var defaults: Self {
+      Self(
+        certificateChain: [],
+        privateKey: nil,
+        serverCertificateVerification: .fullVerification,
+        trustRoots: .systemDefault,
+        serverHostname: nil
+      )
+    }
+
+    /// Create a new HTTP2 NIO Posix transport TLS config, with some values defaulted to match
+    /// the requirements of mTLS:
+    /// - `trustRoots` equals `systemDefault`
+    ///
+    /// - Parameters:
+    ///   - certificateChain: The certificates the client will offer during negotiation.
+    ///   - privateKey: The private key associated with the leaf certificate.
+    /// - Returns: A new HTTP2 NIO Posix transport TLS config.
+    public static func mTLS(
+      certificateChain: [TLSConfig.CertificateSource],
+      privateKey: TLSConfig.PrivateKeySource
+    ) -> Self {
+      Self(
+        certificateChain: certificateChain,
+        privateKey: privateKey,
+        serverCertificateVerification: .fullVerification,
+        trustRoots: .systemDefault
       )
     }
   }

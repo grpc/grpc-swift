@@ -263,7 +263,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     -----END RSA PRIVATE KEY-----
     """
 
-  func testTLSConfig_Defaults() throws {
+  func testServerTLSConfig_Defaults() throws {
     let grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.defaults(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
@@ -293,7 +293,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
   }
 
-  func testTLSConfig_mTLS() throws {
+  func testServerTLSConfig_mTLS() throws {
     let grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.mTLS(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
@@ -323,7 +323,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
   }
 
-  func testTLSConfig_FullVerifyClient() throws {
+  func testServerTLSConfig_FullVerifyClient() throws {
     var grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.defaults(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
@@ -354,7 +354,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
   }
 
-  func testTLSConfig_CustomTrustRoots() throws {
+  func testServerTLSConfig_CustomTrustRoots() throws {
     var grpcTLSConfig = HTTP2ServerTransport.Posix.Config.TLS.defaults(
       certificateChain: [
         .bytes(Array(Self.samplePemCert.utf8), format: .pem)
@@ -385,6 +385,76 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
       nioSSLTLSConfig.trustRoots,
       .certificates(try NIOSSLCertificate.fromPEMBytes(Array(Self.samplePemCert.utf8)))
     )
+    XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
+  }
+
+  func testClientTLSConfig_Defaults() throws {
+    let grpcTLSConfig = HTTP2ClientTransport.Posix.Config.TLS.defaults
+    let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
+
+    XCTAssertEqual(nioSSLTLSConfig.certificateChain, [])
+    XCTAssertNil(nioSSLTLSConfig.privateKey)
+    XCTAssertEqual(nioSSLTLSConfig.minimumTLSVersion, .tlsv12)
+    XCTAssertEqual(nioSSLTLSConfig.certificateVerification, .fullVerification)
+    XCTAssertEqual(nioSSLTLSConfig.trustRoots, .default)
+    XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
+  }
+
+  func testClientTLSConfig_CustomCertificateChainAndPrivateKey() throws {
+    var grpcTLSConfig = HTTP2ClientTransport.Posix.Config.TLS.defaults
+    grpcTLSConfig.certificateChain = [
+      .bytes(Array(Self.samplePemCert.utf8), format: .pem)
+    ]
+    grpcTLSConfig.privateKey = .bytes(Array(Self.samplePemKey.utf8), format: .pem)
+    let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
+
+    XCTAssertEqual(
+      nioSSLTLSConfig.certificateChain,
+      [
+        .certificate(
+          try NIOSSLCertificate(
+            bytes: Array(Self.samplePemCert.utf8),
+            format: .pem
+          )
+        )
+      ]
+    )
+    XCTAssertEqual(
+      nioSSLTLSConfig.privateKey,
+      .privateKey(try NIOSSLPrivateKey(bytes: Array(Self.samplePemKey.utf8), format: .pem))
+    )
+    XCTAssertEqual(nioSSLTLSConfig.minimumTLSVersion, .tlsv12)
+    XCTAssertEqual(nioSSLTLSConfig.certificateVerification, .fullVerification)
+    XCTAssertEqual(nioSSLTLSConfig.trustRoots, .default)
+    XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
+  }
+
+  func testClientTLSConfig_CustomTrustRoots() throws {
+    var grpcTLSConfig = HTTP2ClientTransport.Posix.Config.TLS.defaults
+    grpcTLSConfig.trustRoots = .certificates([.bytes(Array(Self.samplePemCert.utf8), format: .pem)])
+    let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
+
+    XCTAssertEqual(nioSSLTLSConfig.certificateChain, [])
+    XCTAssertNil(nioSSLTLSConfig.privateKey)
+    XCTAssertEqual(nioSSLTLSConfig.minimumTLSVersion, .tlsv12)
+    XCTAssertEqual(nioSSLTLSConfig.certificateVerification, .fullVerification)
+    XCTAssertEqual(
+      nioSSLTLSConfig.trustRoots,
+      .certificates(try NIOSSLCertificate.fromPEMBytes(Array(Self.samplePemCert.utf8)))
+    )
+    XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
+  }
+
+  func testClientTLSConfig_CustomCertificateVerification() throws {
+    var grpcTLSConfig = HTTP2ClientTransport.Posix.Config.TLS.defaults
+    grpcTLSConfig.serverCertificateVerification = .noHostnameVerification
+    let nioSSLTLSConfig = try TLSConfiguration(grpcTLSConfig)
+
+    XCTAssertEqual(nioSSLTLSConfig.certificateChain, [])
+    XCTAssertNil(nioSSLTLSConfig.privateKey)
+    XCTAssertEqual(nioSSLTLSConfig.minimumTLSVersion, .tlsv12)
+    XCTAssertEqual(nioSSLTLSConfig.certificateVerification, .noHostnameVerification)
+    XCTAssertEqual(nioSSLTLSConfig.trustRoots, .default)
     XCTAssertEqual(nioSSLTLSConfig.applicationProtocols, ["grpc-exp", "h2"])
   }
   #endif
