@@ -147,10 +147,12 @@ extension HTTP2ServerTransport.Posix.Config {
     /// This connection is plaintext: no encryption will take place.
     public static let plaintext = Self(wrapped: .plaintext)
 
+    #if canImport(NIOSSL)
     /// This connection will use TLS.
     public static func tls(_ tls: TLS) -> Self {
       Self(wrapped: .tls(tls))
     }
+    #endif  
   }
 
   public struct TLS: Sendable {
@@ -232,10 +234,12 @@ extension HTTP2ClientTransport.Posix.Config {
     /// This connection is plaintext: no encryption will take place.
     public static let plaintext = Self(wrapped: .plaintext)
 
+    #if canImport(NIOSSL)
     /// This connection will use TLS.
     public static func tls(_ tls: TLS) -> Self {
       Self(wrapped: .tls(tls))
     }
+    #endif
   }
 
   public struct TLS: Sendable {
