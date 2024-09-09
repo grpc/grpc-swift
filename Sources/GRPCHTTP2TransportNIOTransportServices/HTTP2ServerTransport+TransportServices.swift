@@ -439,9 +439,9 @@ extension NWProtocolTLS.Options {
       throw RuntimeError(
         code: .transportError,
         message: """
-        There was an issue creating the SecIdentity required to set up TLS. \
-        Please check your TLS configuration.
-        """
+          There was an issue creating the SecIdentity required to set up TLS. \
+          Please check your TLS configuration.
+          """
       )
     }
 
