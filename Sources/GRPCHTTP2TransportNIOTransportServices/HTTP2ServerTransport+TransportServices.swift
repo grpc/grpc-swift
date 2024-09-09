@@ -185,34 +185,8 @@ extension HTTP2ServerTransport {
       case .tls(let tlsConfig):
         requireALPN = tlsConfig.requireALPN
         scheme = .https
-
-        let nwTLSOptions = NWProtocolTLS.Options()
-        sec_protocol_options_set_local_identity(
-          nwTLSOptions.securityProtocolOptions,
-          sec_identity_create(tlsConfig.identity)!
-        )
-
-        sec_protocol_options_set_min_tls_protocol_version(
-          nwTLSOptions.securityProtocolOptions,
-          .TLSv12
-        )
-
-        if let hostnameOverride = tlsConfig.hostnameOverride {
-          sec_protocol_options_set_tls_server_name(
-            nwTLSOptions.securityProtocolOptions,
-            hostnameOverride
-          )
-        }
-
-        for `protocol` in ["grpc-exp", "h2"] {
-          sec_protocol_options_add_tls_application_protocol(
-            nwTLSOptions.securityProtocolOptions,
-            `protocol`
-          )
-        }
-
         bootstrap = NIOTSListenerBootstrap(group: self.eventLoopGroup)
-          .tlsOptions(nwTLSOptions)
+          .tlsOptions(try NWProtocolTLS.Options(tlsConfig))
       }
 
       let serverChannel =
@@ -453,6 +427,47 @@ extension ServerTransport where Self == HTTP2ServerTransport.TransportServices {
       config: config,
       eventLoopGroup: eventLoopGroup
     )
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension NWProtocolTLS.Options {
+  convenience init(_ tlsConfig: HTTP2ServerTransport.TransportServices.Config.TLS) throws {
+    self.init()
+
+    guard let sec_identity = sec_identity_create(tlsConfig.identity) else {
+      throw RuntimeError(
+        code: .transportError,
+        message: """
+        There was an issue creating the SecIdentity required to set up TLS. \
+        Please check your TLS configuration.
+        """
+      )
+    }
+
+    sec_protocol_options_set_local_identity(
+      self.securityProtocolOptions,
+      sec_identity
+    )
+
+    sec_protocol_options_set_min_tls_protocol_version(
+      self.securityProtocolOptions,
+      .TLSv12
+    )
+
+    if let hostnameOverride = tlsConfig.hostnameOverride {
+      sec_protocol_options_set_tls_server_name(
+        self.securityProtocolOptions,
+        hostnameOverride
+      )
+    }
+
+    for `protocol` in ["grpc-exp", "h2"] {
+      sec_protocol_options_add_tls_application_protocol(
+        self.securityProtocolOptions,
+        `protocol`
+      )
+    }
   }
 }
 #endif

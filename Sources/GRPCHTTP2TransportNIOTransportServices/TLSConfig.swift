@@ -57,7 +57,7 @@ extension HTTP2ServerTransport.TransportServices.Config {
     public static func defaults(
       identity: SecIdentity
     ) -> Self {
-      Self.init(
+      Self(
         identity: identity,
         hostnameOverride: nil,
         requireALPN: false
@@ -73,7 +73,7 @@ extension HTTP2ServerTransport.TransportServices.Config {
     public static func mTLS(
       identity: SecIdentity
     ) -> Self {
-      Self.init(
+      Self(
         identity: identity,
         hostnameOverride: "",
         requireALPN: false

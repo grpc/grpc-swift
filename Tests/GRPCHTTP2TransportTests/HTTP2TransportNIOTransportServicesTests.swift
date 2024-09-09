@@ -45,23 +45,34 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
   private func loadIdentity() throws -> SecIdentity? {
     let data = try Data(contentsOf: Self.p12bundleURL)
-    let options = [kSecImportExportPassphrase as String: "password"]
 
-    var rawItems: CFArray?
-    let status = SecPKCS12Import(data as CFData, options as CFDictionary, &rawItems)
+    var externalFormat = SecExternalFormat.formatUnknown
+    var externalItemType = SecExternalItemType.itemTypeUnknown
+    let passphrase = "password" as CFTypeRef
+    var exportKeyParams = SecItemImportExportKeyParameters()
+    exportKeyParams.passphrase = Unmanaged.passUnretained(passphrase)
+    var items: CFArray?
 
-    switch status {
-    case errSecSuccess:
-      ()
-    case errSecInteractionNotAllowed:
-      throw XCTSkip("Unable to import PKCS12 bundle: no interaction allowed")
-    default:
-      XCTFail("SecPKCS12Import: failed with status \(status)")
+    let status = SecItemImport(
+      data as CFData,
+      "bundle.p12" as CFString,
+      &externalFormat,
+      &externalItemType,
+      SecItemImportExportFlags(rawValue: 0),
+      &exportKeyParams,
+      nil,
+      &items
+    )
+
+    if status != errSecSuccess {
+      XCTFail("SecItemImport failed with status \(status)")
+      return nil
+    } else if items == nil {
+      XCTFail("SecItemImport failed.")
       return nil
     }
 
-    let items = rawItems! as! [[String: Any]]
-    return items.first?[kSecImportItemIdentity as String] as! SecIdentity?
+    return ((items! as NSArray)[0] as! SecIdentity)
   }
 
   func testGetListeningAddress_IPv4() async throws {
