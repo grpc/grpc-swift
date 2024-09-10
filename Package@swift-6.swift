@@ -207,7 +207,7 @@ extension Target {
       ],
       path: "Sources/GRPCCore",
       swiftSettings: [
-        .swiftLanguageMode(.v5),
+        .swiftLanguageMode(.v6),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault")
       ]

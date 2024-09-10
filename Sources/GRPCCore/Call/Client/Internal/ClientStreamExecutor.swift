@@ -55,7 +55,7 @@ internal enum ClientStreamExecutor {
       }
 
       let bodyParts = RawBodyPartToMessageSequence(
-        base: AsyncIteratorSequence(iterator.wrappedValue),
+        base: UncheckedAsyncIteratorSequence(iterator.wrappedValue),
         deserializer: deserializer
       )
 
@@ -168,7 +168,7 @@ internal enum ClientStreamExecutor {
     Message: Sendable,
     Deserializer: MessageDeserializer<Message>,
     Failure: Error
-  >: AsyncSequence {
+  >: AsyncSequence, Sendable where Base: Sendable {
     @usableFromInline
     typealias Element = AsyncIterator.Element
 

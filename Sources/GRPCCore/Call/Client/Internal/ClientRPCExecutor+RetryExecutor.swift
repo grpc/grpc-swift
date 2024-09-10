@@ -19,14 +19,11 @@ extension ClientRPCExecutor {
   @usableFromInline
   struct RetryExecutor<
     Transport: ClientTransport,
+    Input: Sendable,
+    Output: Sendable,
     Serializer: MessageSerializer,
     Deserializer: MessageDeserializer
-  > {
-    @usableFromInline
-    typealias Input = Serializer.Message
-    @usableFromInline
-    typealias Output = Deserializer.Message
-
+  >: Sendable where Serializer.Message == Input, Deserializer.Message == Output {
     @usableFromInline
     let transport: Transport
     @usableFromInline
@@ -198,7 +195,7 @@ extension ClientRPCExecutor.RetryExecutor {
   }
 
   @inlinable
-  func executeAttempt<R>(
+  func executeAttempt<R: Sendable>(
     stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>,
     metadata: Metadata,
     retryStream: BroadcastAsyncSequence<Input>,
@@ -307,7 +304,7 @@ extension ClientRPCExecutor.RetryExecutor {
 
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
-enum _RetryExecutorTask<R> {
+enum _RetryExecutorTask<R: Sendable>: Sendable {
   case timedOut(Result<Void, any Error>)
   case handledResponse(Result<R, any Error>)
   case retry(Duration?)
