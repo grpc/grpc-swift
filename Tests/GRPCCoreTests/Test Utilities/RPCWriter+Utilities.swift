@@ -30,7 +30,7 @@ extension RPCWriter {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-private struct FailOnWrite<Element>: RPCWriterProtocol {
+private struct FailOnWrite<Element: Sendable>: RPCWriterProtocol {
   func write(_ element: Element) async throws {
     XCTFail("Unexpected write")
   }

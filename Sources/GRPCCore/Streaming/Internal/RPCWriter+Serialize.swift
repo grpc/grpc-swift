@@ -19,7 +19,7 @@
 struct SerializingRPCWriter<
   Base: RPCWriterProtocol<[UInt8]>,
   Serializer: MessageSerializer
->: RPCWriterProtocol {
+>: RPCWriterProtocol where Serializer.Message: Sendable {
   @usableFromInline
   typealias Element = Serializer.Message
 

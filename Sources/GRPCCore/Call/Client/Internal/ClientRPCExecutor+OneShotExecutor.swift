@@ -21,14 +21,11 @@ extension ClientRPCExecutor {
   @usableFromInline
   struct OneShotExecutor<
     Transport: ClientTransport,
+    Input: Sendable,
+    Output: Sendable,
     Serializer: MessageSerializer,
     Deserializer: MessageDeserializer
-  > {
-    @usableFromInline
-    typealias Input = Serializer.Message
-    @usableFromInline
-    typealias Output = Deserializer.Message
-
+  >: Sendable where Serializer.Message == Input, Deserializer.Message == Output {
     @usableFromInline
     let transport: Transport
     @usableFromInline
@@ -60,7 +57,7 @@ extension ClientRPCExecutor {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
-  func execute<R>(
+  func execute<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     options: CallOptions,
@@ -71,9 +68,10 @@ extension ClientRPCExecutor.OneShotExecutor {
     if let deadline = self.deadline {
       var request = request
       request.metadata.timeout = ContinuousClock.now.duration(to: deadline)
+      let immutableRequest = request
       result = await withDeadline(deadline) {
         await self._execute(
-          request: request,
+          request: immutableRequest,
           method: method,
           options: options,
           responseHandler: responseHandler
@@ -95,7 +93,7 @@ extension ClientRPCExecutor.OneShotExecutor {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
-  func _execute<R>(
+  func _execute<R: Sendable>(
     request: ClientRequest.Stream<Input>,
     method: MethodDescriptor,
     options: CallOptions,
@@ -133,9 +131,9 @@ extension ClientRPCExecutor.OneShotExecutor {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @inlinable
-func withDeadline<Result>(
+func withDeadline<Result: Sendable>(
   _ deadline: ContinuousClock.Instant,
-  execute: @escaping () async -> Result
+  execute: @Sendable @escaping () async -> Result
 ) async -> Result {
   return await withTaskGroup(of: _DeadlineChildTaskResult<Result>.self) { group in
     group.addTask {
@@ -173,7 +171,7 @@ func withDeadline<Result>(
 }
 
 @usableFromInline
-enum _DeadlineChildTaskResult<Value> {
+enum _DeadlineChildTaskResult<Value: Sendable>: Sendable {
   case deadlinePassed
   case timeoutCancelled
   case taskCompleted(Value)
