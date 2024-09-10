@@ -232,8 +232,8 @@ public final class InProcessClientTransport: ClientTransport {
     options: CallOptions,
     _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
-    let request = InProcessStream.makeStream(of: RPCRequestPart.self)
-    let response = InProcessStream.makeStream(of: RPCResponsePart.self)
+    let request = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart.self)
+    let response = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
 
     let clientStream = RPCStream(
       descriptor: descriptor,

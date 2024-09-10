@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-internal import GRPCCore
-
 // This exists to provide a version of 'AsyncThrowingStream' which is constrained to 'Sendable'
 // elements. This is required in order for the continuation to be compatible with
 // 'RPCWriterProtocol'. (Adding a constrained conformance to 'RPCWriterProtocol' on
 // 'AsyncThrowingStream.Continuation' isn't possible because 'Sendable' is a marker protocol.)
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-package struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
+package struct GRPCAsyncThrowingStream<Element: Sendable>: AsyncSequence, Sendable {
   package typealias Element = Element
   package typealias Failure = any Error
 
@@ -32,8 +30,8 @@ package struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
     of: Element.Type = Element.self
   ) -> (stream: Self, continuation: Self.Continuation) {
     let base = AsyncThrowingStream.makeStream(of: Element.self)
-    let stream = InProcessStream(base: base.stream)
-    let continuation = InProcessStream.Continuation(base: base.continuation)
+    let stream = GRPCAsyncThrowingStream(base: base.stream)
+    let continuation = GRPCAsyncThrowingStream.Continuation(base: base.continuation)
     return (stream, continuation)
   }
 
@@ -81,7 +79,7 @@ package struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension InProcessStream.Continuation: RPCWriterProtocol {
+extension GRPCAsyncThrowingStream.Continuation: RPCWriterProtocol {
   package func write(_ element: Element) async throws {
     self.yield(element)
   }
@@ -94,7 +92,7 @@ extension InProcessStream.Continuation: RPCWriterProtocol {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension InProcessStream.Continuation: ClosableRPCWriterProtocol {
+extension GRPCAsyncThrowingStream.Continuation: ClosableRPCWriterProtocol {
   package func finish() async {
     self.finish(throwing: nil)
   }

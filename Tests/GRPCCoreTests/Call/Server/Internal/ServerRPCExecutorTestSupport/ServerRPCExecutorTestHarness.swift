@@ -80,8 +80,8 @@ struct ServerRPCExecutorTestHarness {
       RPCAsyncSequence<RPCResponsePart, any Error>
     ) async throws -> Void
   ) async throws {
-    let input = AsyncThrowingStream.makeStream(of: RPCRequestPart.self)
-    let output = AsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+    let input = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart.self)
+    let output = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
