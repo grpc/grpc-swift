@@ -72,7 +72,9 @@ package struct InProcessStream<Element: Sendable>: AsyncSequence, Sendable {
       try await self.next(isolation: nil)
     }
 
-    package mutating func next(isolation actor: isolated (any Actor)?) async throws(any Error) -> Element? {
+    package mutating func next(
+      isolation actor: isolated (any Actor)?
+    ) async throws(any Error) -> Element? {
       try await self.base.next(isolation: `actor`)
     }
   }
