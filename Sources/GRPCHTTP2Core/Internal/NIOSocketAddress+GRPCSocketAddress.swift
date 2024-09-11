@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package import NIOCore
 private import GRPCCore
+package import NIOCore
 
 extension GRPCHTTP2Core.SocketAddress {
   package init(_ nioSocketAddress: NIOCore.SocketAddress) {

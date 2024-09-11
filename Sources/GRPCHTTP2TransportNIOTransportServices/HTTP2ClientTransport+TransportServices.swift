@@ -18,7 +18,7 @@
 public import GRPCCore
 public import GRPCHTTP2Core
 public import NIOTransportServices  // has to be public because of default argument value in init
-public import NIOCore // has to be public because of EventLoopGroup param in init
+public import NIOCore  // has to be public because of EventLoopGroup param in init
 
 private import Network
 

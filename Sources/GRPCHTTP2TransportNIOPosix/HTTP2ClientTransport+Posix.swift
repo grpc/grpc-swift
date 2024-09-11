@@ -16,7 +16,7 @@
 
 public import GRPCCore
 public import GRPCHTTP2Core  // should be @usableFromInline
-public import NIOCore // has to be public because of EventLoopGroup param in init
+public import NIOCore  // has to be public because of EventLoopGroup param in init
 public import NIOPosix  // has to be public because of default argument value in init
 
 #if canImport(NIOSSL)
