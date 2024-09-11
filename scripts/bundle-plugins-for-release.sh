@@ -44,6 +44,8 @@ stage=$(mktemp -d)
 stage_bin="${stage}/bin"
 mkdir -p "${stage_bin}"
 
+# Make sure dependencies are up-to-date
+swift package update
 # Make the plugins.
 swift build -c release --arch arm64 --arch x86_64 --product protoc-gen-grpc-swift
 swift build -c release --arch arm64 --arch x86_64 --product protoc-gen-swift

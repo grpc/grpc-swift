@@ -170,6 +170,28 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
     }
   }
 
+  func testServerConfig_Defaults() throws {
+    let grpcConfig = HTTP2ServerTransport.Posix.Config.defaults(
+      transportSecurity: .plaintext
+    )
+
+    XCTAssertEqual(grpcConfig.compression, HTTP2ServerTransport.Config.Compression.defaults)
+    XCTAssertEqual(grpcConfig.connection, HTTP2ServerTransport.Config.Connection.defaults)
+    XCTAssertEqual(grpcConfig.http2, HTTP2ServerTransport.Config.HTTP2.defaults)
+    XCTAssertEqual(grpcConfig.rpc, HTTP2ServerTransport.Config.RPC.defaults)
+  }
+
+  func testClientConfig_Defaults() throws {
+    let grpcConfig = HTTP2ClientTransport.Posix.Config.defaults(
+      transportSecurity: .plaintext
+    )
+
+    XCTAssertEqual(grpcConfig.compression, HTTP2ClientTransport.Config.Compression.defaults)
+    XCTAssertEqual(grpcConfig.connection, HTTP2ClientTransport.Config.Connection.defaults)
+    XCTAssertEqual(grpcConfig.http2, HTTP2ClientTransport.Config.HTTP2.defaults)
+    XCTAssertEqual(grpcConfig.backoff, HTTP2ClientTransport.Config.Backoff.defaults)
+  }
+
   #if canImport(NIOSSL)
   static let samplePemCert = """
     -----BEGIN CERTIFICATE-----
