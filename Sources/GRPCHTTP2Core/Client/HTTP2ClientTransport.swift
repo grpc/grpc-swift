@@ -25,7 +25,7 @@ extension HTTP2ClientTransport {
 }
 
 extension HTTP2ClientTransport.Config {
-  public struct Compression: Sendable {
+  public struct Compression: Sendable, Hashable {
     /// The default algorithm used for compressing outbound messages.
     ///
     /// This can be overridden on a per-call basis via `CallOptions`.
@@ -51,7 +51,7 @@ extension HTTP2ClientTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Keepalive: Sendable {
+  public struct Keepalive: Sendable, Hashable {
     /// The amount of time to wait after reading data before sending a keepalive ping.
     ///
     /// - Note: The transport may choose to increase this value if it is less than 10 seconds.
@@ -73,7 +73,7 @@ extension HTTP2ClientTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Connection: Sendable {
+  public struct Connection: Sendable, Hashable {
     /// The maximum amount of time a connection may be idle before it's closed.
     ///
     /// Connections are considered idle when there are no open streams on them. Idle connections
@@ -103,7 +103,7 @@ extension HTTP2ClientTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Backoff: Sendable {
+  public struct Backoff: Sendable, Hashable {
     /// The initial duration to wait before reattempting to establish a connection.
     public var initial: Duration
 
@@ -135,7 +135,7 @@ extension HTTP2ClientTransport.Config {
     }
   }
 
-  public struct HTTP2: Sendable {
+  public struct HTTP2: Sendable, Hashable {
     /// The max frame size, in bytes.
     ///
     /// The actual value used is clamped to `(1 << 14) ... (1 << 24) - 1` (the min and max values

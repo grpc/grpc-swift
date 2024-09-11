@@ -60,4 +60,35 @@ extension HTTP2ServerTransport.TransportServices.Config {
     }
   }
 }
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension HTTP2ClientTransport.TransportServices.Config {
+  /// The security configuration for this connection.
+  public struct TransportSecurity: Sendable {
+    package enum Wrapped: Sendable {
+      case plaintext
+      case tls(TLS)
+    }
+
+    package let wrapped: Wrapped
+
+    /// This connection is plaintext: no encryption will take place.
+    public static let plaintext = Self(wrapped: .plaintext)
+
+    /// This connection will use TLS.
+    public static func tls(_ tls: TLS) -> Self {
+      Self(wrapped: .tls(tls))
+    }
+  }
+
+  public struct TLS: Sendable {
+    /// A provider for the `SecIdentity` to be used when setting up TLS.
+    public var identityProvider: @Sendable () throws -> SecIdentity
+
+    /// Create a new HTTP2 NIO Transport Services transport TLS config.
+    public init(identityProvider: @Sendable @escaping () throws -> SecIdentity) {
+      self.identityProvider = identityProvider
+    }
+  }
+}
 #endif

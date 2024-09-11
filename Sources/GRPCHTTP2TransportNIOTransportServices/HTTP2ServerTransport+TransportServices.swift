@@ -367,24 +367,6 @@ extension HTTP2ServerTransport.TransportServices {
   }
 }
 
-extension NIOCore.SocketAddress {
-  fileprivate init(_ socketAddress: GRPCHTTP2Core.SocketAddress) throws {
-    if let ipv4 = socketAddress.ipv4 {
-      self = try Self(ipv4)
-    } else if let ipv6 = socketAddress.ipv6 {
-      self = try Self(ipv6)
-    } else if let unixDomainSocket = socketAddress.unixDomainSocket {
-      self = try Self(unixDomainSocket)
-    } else {
-      throw RPCError(
-        code: .internalError,
-        message:
-          "Unsupported mapping to NIOCore/SocketAddress for GRPCHTTP2Core/SocketAddress: \(socketAddress)."
-      )
-    }
-  }
-}
-
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension NIOTSListenerBootstrap {
   fileprivate func bind<Output: Sendable>(

@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
+#if canImport(Network)
 public import GRPCCore
-public import GRPCHTTP2Core  // should be @usableFromInline
+public import GRPCHTTP2Core
+public import NIOTransportServices  // has to be public because of default argument value in init
 public import NIOCore  // has to be public because of EventLoopGroup param in init
-public import NIOPosix  // has to be public because of default argument value in init
 
-#if canImport(NIOSSL)
-private import NIOSSL
-#endif
+private import Network
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport {
-  /// A ``GRPCCore/ClientTransport`` using HTTP/2 built on top of `NIOPosix`.
+  /// A ``GRPCCore/ClientTransport`` using HTTP/2 built on top of `NIOTransportServices`.
   ///
-  /// This transport builds on top of SwiftNIO's Posix networking layer and is suitable for use
-  /// on Linux and Darwin based platforms (macOS, iOS, etc.). However, it's *strongly* recommended
-  /// that if you are targeting Darwin platforms then you should use the `NIOTS` variant of
+  /// This transport builds on top of SwiftNIO's Transport Services networking layer and is the recommended
+  /// variant for use on Darwin-based platforms (macOS, iOS, etc.).
+  /// If you are targeting Linux platforms then you should use the `NIOPosix` variant of
   /// the ``GRPCHTTP2Core/HTTP2ClientTransport``.
   ///
   /// To use this transport you need to provide a 'target' to connect to which will be resolved
   /// by an appropriate resolver from the resolver registry. By default the resolver registry can
-  /// resolve DNS targets, IPv4 and IPv6 targets, Unix domain socket targets, and Virtual Socket
-  /// targets. If you use a custom target you must also provide an appropriately configured
-  /// registry.
+  /// resolve DNS targets, IPv4 and IPv6 targets, and Unix domain socket targets. Virtual Socket
+  /// targets are not supported with this transport. If you use a custom target you must also provide an
+  /// appropriately configured registry.
   ///
   /// You can control various aspects of connection creation, management, security and RPC behavior via
   /// the ``Config``. Load balancing policies and other RPC specific behavior can be configured via
@@ -47,7 +46,7 @@ extension HTTP2ClientTransport {
   ///
   /// ```swift
   /// try await withThrowingDiscardingTaskGroup { group in
-  ///   let transport = try HTTP2ClientTransport.Posix(
+  ///   let transport = try HTTP2ClientTransport.TransportServices(
   ///     target: .ipv4(host: "example.com"),
   ///     config: .defaults(transportSecurity: .plaintext)
   ///   )
@@ -59,10 +58,14 @@ extension HTTP2ClientTransport {
   ///   // ...
   /// }
   /// ```
-  public struct Posix: ClientTransport {
+  public struct TransportServices: ClientTransport {
     private let channel: GRPCChannel
 
-    /// Creates a new NIOPosix-based HTTP/2 client transport.
+    public var retryThrottle: RetryThrottle? {
+      self.channel.retryThrottle
+    }
+
+    /// Creates a new NIOTransportServices-based HTTP/2 client transport.
     ///
     /// - Parameters:
     ///   - target: A target to resolve.
@@ -79,7 +82,7 @@ extension HTTP2ClientTransport {
       config: Config,
       resolverRegistry: NameResolverRegistry = .defaults,
       serviceConfig: ServiceConfig = ServiceConfig(),
-      eventLoopGroup: any EventLoopGroup = .singletonMultiThreadedEventLoopGroup
+      eventLoopGroup: any EventLoopGroup = .singletonNIOTSEventLoopGroup
     ) throws {
       guard let resolver = resolverRegistry.makeResolver(for: target) else {
         throw RuntimeError(
@@ -93,22 +96,14 @@ extension HTTP2ClientTransport {
 
       self.channel = GRPCChannel(
         resolver: resolver,
-        connector: try Connector(eventLoopGroup: eventLoopGroup, config: config),
-        config: GRPCChannel.Config(posix: config),
+        connector: Connector(eventLoopGroup: eventLoopGroup, config: config),
+        config: GRPCChannel.Config(transportServices: config),
         defaultServiceConfig: serviceConfig
       )
     }
 
-    public var retryThrottle: RetryThrottle? {
-      self.channel.retryThrottle
-    }
-
-    public func connect() async {
+    public func connect() async throws {
       await self.channel.connect()
-    }
-
-    public func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
-      self.channel.configuration(forMethod: descriptor)
     }
 
     public func beginGracefulShutdown() {
@@ -122,76 +117,64 @@ extension HTTP2ClientTransport {
     ) async throws -> T {
       try await self.channel.withStream(descriptor: descriptor, options: options, closure)
     }
+
+    public func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
+      self.channel.configuration(forMethod: descriptor)
+    }
   }
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension HTTP2ClientTransport.Posix {
+extension HTTP2ClientTransport.TransportServices {
   struct Connector: HTTP2Connector {
-    private let config: HTTP2ClientTransport.Posix.Config
+    private let config: HTTP2ClientTransport.TransportServices.Config
     private let eventLoopGroup: any EventLoopGroup
 
-    #if canImport(NIOSSL)
-    private let nioSSLContext: NIOSSLContext?
-    private let serverHostname: String?
-    #endif
-
-    init(eventLoopGroup: any EventLoopGroup, config: HTTP2ClientTransport.Posix.Config) throws {
+    init(
+      eventLoopGroup: any EventLoopGroup,
+      config: HTTP2ClientTransport.TransportServices.Config
+    ) {
       self.eventLoopGroup = eventLoopGroup
       self.config = config
-
-      #if canImport(NIOSSL)
-      switch self.config.transportSecurity.wrapped {
-      case .plaintext:
-        self.nioSSLContext = nil
-        self.serverHostname = nil
-      case .tls(let tlsConfig):
-        do {
-          self.nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
-          self.serverHostname = tlsConfig.serverHostname
-        } catch {
-          throw RuntimeError(
-            code: .transportError,
-            message: "Couldn't create SSL context, check your TLS configuration.",
-            cause: error
-          )
-        }
-      }
-      #endif
     }
 
     func establishConnection(
       to address: GRPCHTTP2Core.SocketAddress
     ) async throws -> HTTP2Connection {
-      let (channel, multiplexer) = try await ClientBootstrap(
-        group: self.eventLoopGroup
-      ).connect(to: address) { channel in
-        channel.eventLoop.makeCompletedFuture {
-          #if canImport(NIOSSL)
-          if let nioSSLContext = self.nioSSLContext {
-            try channel.pipeline.syncOperations.addHandler(
-              NIOSSLClientHandler(
-                context: nioSSLContext,
-                serverHostname: self.serverHostname
-              )
-            )
-          }
-          #endif
+      let bootstrap: NIOTSConnectionBootstrap
+      let isPlainText: Bool
+      switch self.config.transportSecurity.wrapped {
+      case .plaintext:
+        isPlainText = true
+        bootstrap = NIOTSConnectionBootstrap(group: self.eventLoopGroup)
 
-          return try channel.pipeline.syncOperations.configureGRPCClientPipeline(
+      case .tls(let tlsConfig):
+        isPlainText = false
+        bootstrap = NIOTSConnectionBootstrap(group: self.eventLoopGroup)
+          .tlsOptions(try NWProtocolTLS.Options(tlsConfig))
+      }
+
+      let (channel, multiplexer) = try await bootstrap.connect(to: address) { channel in
+        channel.eventLoop.makeCompletedFuture {
+          try channel.pipeline.syncOperations.configureGRPCClientPipeline(
             channel: channel,
-            config: GRPCChannel.Config(posix: self.config)
+            config: GRPCChannel.Config(transportServices: self.config)
           )
         }
       }
 
-      return HTTP2Connection(channel: channel, multiplexer: multiplexer, isPlaintext: true)
+      return HTTP2Connection(
+        channel: channel,
+        multiplexer: multiplexer,
+        isPlaintext: isPlainText
+      )
     }
   }
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension HTTP2ClientTransport.Posix {
+extension HTTP2ClientTransport.TransportServices {
+  /// Configuration for the `TransportServices` transport.
   public struct Config: Sendable {
     /// Configuration for HTTP/2 connections.
     public var http2: HTTP2ClientTransport.Config.HTTP2
@@ -256,19 +239,42 @@ extension HTTP2ClientTransport.Posix {
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCChannel.Config {
-  init(posix: HTTP2ClientTransport.Posix.Config) {
+  init(transportServices config: HTTP2ClientTransport.TransportServices.Config) {
     self.init(
-      http2: posix.http2,
-      backoff: posix.backoff,
-      connection: posix.connection,
-      compression: posix.compression
+      http2: config.http2,
+      backoff: config.backoff,
+      connection: config.connection,
+      compression: config.compression
     )
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+extension NIOTSConnectionBootstrap {
+  fileprivate func connect<Output: Sendable>(
+    to address: GRPCHTTP2Core.SocketAddress,
+    childChannelInitializer: @escaping @Sendable (any Channel) -> EventLoopFuture<Output>
+  ) async throws -> Output {
+    if address.virtualSocket != nil {
+      throw RuntimeError(
+        code: .transportError,
+        message: """
+            Virtual sockets are not supported by 'HTTP2ClientTransport.TransportServices'. \
+            Please use the 'HTTP2ClientTransport.Posix' transport.
+          """
+      )
+    } else {
+      return try await self.connect(
+        to: NIOCore.SocketAddress(address),
+        channelInitializer: childChannelInitializer
+      )
+    }
+  }
+}
+
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ClientTransport where Self == HTTP2ClientTransport.Posix {
-  /// Creates a new Posix based HTTP/2 client transport.
+extension ClientTransport where Self == HTTP2ClientTransport.TransportServices {
+  /// Create a new `TransportServices` based HTTP/2 client transport.
   ///
   /// - Parameters:
   ///   - target: A target to resolve.
@@ -277,17 +283,17 @@ extension ClientTransport where Self == HTTP2ClientTransport.Posix {
   ///   - serviceConfig: Service config controlling how the transport should establish and
   ///       load-balance connections.
   ///   - eventLoopGroup: The underlying NIO `EventLoopGroup` to run connections on. This must
-  ///       be a `MultiThreadedEventLoopGroup` or an `EventLoop` from
-  ///       a `MultiThreadedEventLoopGroup`.
+  ///       be a `NIOTSEventLoopGroup` or an `EventLoop` from
+  ///       a `NIOTSEventLoopGroup`.
   /// - Throws: When no suitable resolver could be found for the `target`.
-  public static func http2NIOPosix(
+  public static func http2NIOTS(
     target: any ResolvableTarget,
-    config: HTTP2ClientTransport.Posix.Config,
+    config: HTTP2ClientTransport.TransportServices.Config,
     resolverRegistry: NameResolverRegistry = .defaults,
     serviceConfig: ServiceConfig = ServiceConfig(),
-    eventLoopGroup: any EventLoopGroup = .singletonMultiThreadedEventLoopGroup
+    eventLoopGroup: any EventLoopGroup = .singletonNIOTSEventLoopGroup
   ) throws -> Self {
-    return try HTTP2ClientTransport.Posix(
+    try HTTP2ClientTransport.TransportServices(
       target: target,
       config: config,
       resolverRegistry: resolverRegistry,
@@ -296,3 +302,38 @@ extension ClientTransport where Self == HTTP2ClientTransport.Posix {
     )
   }
 }
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension NWProtocolTLS.Options {
+  convenience init(_ tlsConfig: HTTP2ClientTransport.TransportServices.Config.TLS) throws {
+    self.init()
+
+    guard let sec_identity = sec_identity_create(try tlsConfig.identityProvider()) else {
+      throw RuntimeError(
+        code: .transportError,
+        message: """
+          There was an issue creating the SecIdentity required to set up TLS. \
+          Please check your TLS configuration.
+          """
+      )
+    }
+
+    sec_protocol_options_set_local_identity(
+      self.securityProtocolOptions,
+      sec_identity
+    )
+
+    sec_protocol_options_set_min_tls_protocol_version(
+      self.securityProtocolOptions,
+      .TLSv12
+    )
+
+    for `protocol` in ["grpc-exp", "h2"] {
+      sec_protocol_options_add_tls_application_protocol(
+        self.securityProtocolOptions,
+        `protocol`
+      )
+    }
+  }
+}
+#endif

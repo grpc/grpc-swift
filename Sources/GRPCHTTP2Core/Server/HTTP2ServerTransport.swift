@@ -26,7 +26,7 @@ extension HTTP2ServerTransport {
 }
 
 extension HTTP2ServerTransport.Config {
-  public struct Compression: Sendable {
+  public struct Compression: Sendable, Hashable {
     /// Compression algorithms enabled for inbound messages.
     ///
     /// - Note: `CompressionAlgorithm.none` is always supported, even if it isn't set here.
@@ -46,7 +46,7 @@ extension HTTP2ServerTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Keepalive: Sendable {
+  public struct Keepalive: Sendable, Hashable {
     /// The amount of time to wait after reading data before sending a keepalive ping.
     public var time: Duration
 
@@ -80,7 +80,7 @@ extension HTTP2ServerTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct ClientKeepaliveBehavior: Sendable {
+  public struct ClientKeepaliveBehavior: Sendable, Hashable {
     /// The minimum allowed interval the client is allowed to send keep-alive pings.
     /// Pings more frequent than this interval count as 'strikes' and the connection is closed if there are
     /// too many strikes.
@@ -107,7 +107,7 @@ extension HTTP2ServerTransport.Config {
   }
 
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public struct Connection: Sendable {
+  public struct Connection: Sendable, Hashable {
     /// The maximum amount of time a connection may exist before being gracefully closed.
     public var maxAge: Duration?
 
@@ -142,7 +142,7 @@ extension HTTP2ServerTransport.Config {
     }
   }
 
-  public struct HTTP2: Sendable {
+  public struct HTTP2: Sendable, Hashable {
     /// The maximum frame size to be used in an HTTP/2 connection.
     public var maxFrameSize: Int
 
@@ -175,7 +175,7 @@ extension HTTP2ServerTransport.Config {
     }
   }
 
-  public struct RPC: Sendable {
+  public struct RPC: Sendable, Hashable {
     /// The maximum request payload size.
     public var maxRequestPayloadSize: Int
 
