@@ -27,7 +27,7 @@ extension HTTP2ClientTransport {
   /// A ``GRPCCore/ClientTransport`` using HTTP/2 built on top of `NIOTransportServices`.
   ///
   /// This transport builds on top of SwiftNIO's Transport Services networking layer and is the recommended
-  /// variant for use for use on Darwin-based platforms **only** (macOS, iOS, etc.).
+  /// variant for use on Darwin-based platforms (macOS, iOS, etc.).
   /// If you are targeting Linux platforms then you should use the `NIOPosix` variant of
   /// the ``GRPCHTTP2Core/HTTP2ClientTransport``.
   ///

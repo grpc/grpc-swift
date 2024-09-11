@@ -101,7 +101,7 @@ final class HTTP2TransportTests: XCTestCase {
   }
 
   func forEachClientAndHTTPStatusCodeServer(
-    _ kind: [Transport.Kind] = [.posix],
+    _ kind: [Transport.Kind] = [.posix, .niots],
     _ execute: (ControlClient, Transport.Kind) async throws -> Void
   ) async throws {
     for clientKind in kind {
@@ -207,7 +207,20 @@ final class HTTP2TransportTests: XCTestCase {
       )
 
     case .niots:
-      fatalError("NIOTS isn't supported yet")
+      #if canImport(Network)
+      var serviceConfig = ServiceConfig()
+      serviceConfig.loadBalancingConfig = [.roundRobin]
+      transport = try HTTP2ClientTransport.TransportServices(
+        target: target,
+        config: .defaults(transportSecurity: .plaintext) {
+          $0.compression.algorithm = compression
+          $0.compression.enabledAlgorithms = enabledCompression
+        },
+        serviceConfig: serviceConfig
+      )
+      #else
+      throw XCTSkip("Transport not supported on this platform")
+      #endif
     }
 
     return GRPCClient(transport: transport)
@@ -1421,7 +1434,9 @@ final class HTTP2TransportTests: XCTestCase {
 extension [HTTP2TransportTests.Transport] {
   static let supported = [
     HTTP2TransportTests.Transport(server: .posix, client: .posix),
+    HTTP2TransportTests.Transport(server: .niots, client: .niots),
     HTTP2TransportTests.Transport(server: .niots, client: .posix),
+    HTTP2TransportTests.Transport(server: .posix, client: .niots),
   ]
 }
 
