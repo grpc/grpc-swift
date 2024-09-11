@@ -199,13 +199,37 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
     }
   }
 
-  func testTLSConfig_Defaults() throws {
+  func testServerConfig_Defaults() throws {
     let identityProvider = Self.loadIdentity
     let grpcTLSConfig = HTTP2ServerTransport.TransportServices.Config.TLS.defaults(
       identityProvider: identityProvider
     )
+    let grpcConfig = HTTP2ServerTransport.TransportServices.Config.defaults(
+      transportSecurity: .tls(grpcTLSConfig)
+    )
+
+    XCTAssertEqual(grpcConfig.compression, HTTP2ServerTransport.Config.Compression.defaults)
+    XCTAssertEqual(grpcConfig.connection, HTTP2ServerTransport.Config.Connection.defaults)
+    XCTAssertEqual(grpcConfig.http2, HTTP2ServerTransport.Config.HTTP2.defaults)
+    XCTAssertEqual(grpcConfig.rpc, HTTP2ServerTransport.Config.RPC.defaults)
     XCTAssertEqual(try grpcTLSConfig.identityProvider(), try identityProvider())
     XCTAssertEqual(grpcTLSConfig.requireALPN, false)
+  }
+
+  func testClientConfig_Defaults() throws {
+    let identityProvider = Self.loadIdentity
+    let grpcTLSConfig = HTTP2ClientTransport.TransportServices.Config.TLS(
+      identityProvider: identityProvider
+    )
+    let grpcConfig = HTTP2ClientTransport.TransportServices.Config.defaults(
+      transportSecurity: .tls(grpcTLSConfig)
+    )
+
+    XCTAssertEqual(grpcConfig.compression, HTTP2ClientTransport.Config.Compression.defaults)
+    XCTAssertEqual(grpcConfig.connection, HTTP2ClientTransport.Config.Connection.defaults)
+    XCTAssertEqual(grpcConfig.http2, HTTP2ClientTransport.Config.HTTP2.defaults)
+    XCTAssertEqual(grpcConfig.backoff, HTTP2ClientTransport.Config.Backoff.defaults)
+    XCTAssertEqual(try grpcTLSConfig.identityProvider(), try identityProvider())
   }
 }
 #endif
