@@ -182,7 +182,7 @@ final class HTTP2TransportNIOPosixTests: XCTestCase {
   }
 
   func testClientConfig_Defaults() throws {
-    let grpcConfig = HTTP2ClientTransport.TransportServices.Config.defaults(
+    let grpcConfig = HTTP2ClientTransport.Posix.Config.defaults(
       transportSecurity: .plaintext
     )
 
