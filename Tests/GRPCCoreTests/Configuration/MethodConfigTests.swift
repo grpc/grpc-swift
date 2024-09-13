@@ -21,32 +21,32 @@ struct MethodConfigTests {
   @Test("RetryPolicy clamps max attempts")
   func retryPolicyClampsMaxAttempts() {
     var policy = RetryPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
 
     // Should be clamped on init
-    #expect(policy.maximumAttempts == 5)
+    #expect(policy.maxAttempts == 5)
     // and when modifying
-    policy.maximumAttempts = 10
-    #expect(policy.maximumAttempts == 5)
+    policy.maxAttempts = 10
+    #expect(policy.maxAttempts == 5)
   }
 
   @Test("HedgingPolicy clamps max attempts")
   func hedgingPolicyClampsMaxAttempts() {
     var policy = HedgingPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
 
     // Should be clamped on init
-    #expect(policy.maximumAttempts == 5)
+    #expect(policy.maxAttempts == 5)
     // and when modifying
-    policy.maximumAttempts = 10
-    #expect(policy.maximumAttempts == 5)
+    policy.maxAttempts = 10
+    #expect(policy.maxAttempts == 5)
   }
 }

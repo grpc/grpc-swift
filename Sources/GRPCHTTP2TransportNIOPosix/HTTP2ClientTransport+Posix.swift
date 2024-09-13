@@ -107,8 +107,8 @@ extension HTTP2ClientTransport {
       await self.channel.connect()
     }
 
-    public func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
-      self.channel.configuration(forMethod: descriptor)
+    public func config(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
+      self.channel.config(forMethod: descriptor)
     }
 
     public func beginGracefulShutdown() {

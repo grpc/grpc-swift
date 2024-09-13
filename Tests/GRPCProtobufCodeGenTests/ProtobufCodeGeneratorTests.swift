@@ -501,7 +501,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
   func testCodeGeneration(
     proto: Google_Protobuf_FileDescriptorProto,
     indentation: Int,
-    visibility: SourceGenerator.Configuration.AccessLevel,
+    visibility: SourceGenerator.Config.AccessLevel,
     client: Bool,
     server: Bool,
     accessLevelOnImports: Bool = true,
@@ -509,7 +509,7 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
     file: StaticString = #filePath,
     line: UInt = #line
   ) throws {
-    let config = SourceGenerator.Configuration(
+    let config = SourceGenerator.Config(
       accessLevel: visibility,
       accessLevelOnImports: accessLevelOnImports,
       client: client,

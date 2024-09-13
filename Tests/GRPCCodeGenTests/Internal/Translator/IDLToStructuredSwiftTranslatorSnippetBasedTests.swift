@@ -268,7 +268,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   private func assertIDLToStructuredSwiftTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     server: Bool = false
   ) throws {
     let translator = IDLToStructuredSwiftTranslator()

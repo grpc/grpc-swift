@@ -18,14 +18,14 @@
 public struct SourceGenerator: Sendable {
   /// The options regarding the access level, indentation for the generated code
   /// and whether to generate server and client code.
-  public var configuration: Configuration
+  public var config: Config
 
-  public init(configuration: Configuration) {
-    self.configuration = configuration
+  public init(config: Config) {
+    self.config = config
   }
 
   /// User options for the CodeGeneration.
-  public struct Configuration: Sendable {
+  public struct Config: Sendable {
     /// The access level the generated code will have.
     public var accessLevel: AccessLevel
     /// Whether imports have explicit access levels.
@@ -85,14 +85,14 @@ public struct SourceGenerator: Sendable {
     _ request: CodeGenerationRequest
   ) throws -> SourceFile {
     let translator = IDLToStructuredSwiftTranslator()
-    let textRenderer = TextBasedRenderer(indentation: self.configuration.indentation)
+    let textRenderer = TextBasedRenderer(indentation: self.config.indentation)
 
     let structuredSwiftRepresentation = try translator.translate(
       codeGenerationRequest: request,
-      accessLevel: self.configuration.accessLevel,
-      accessLevelOnImports: self.configuration.accessLevelOnImports,
-      client: self.configuration.client,
-      server: self.configuration.server
+      accessLevel: self.config.accessLevel,
+      accessLevelOnImports: self.config.accessLevelOnImports,
+      client: self.config.client,
+      server: self.config.server
     )
     let sourceFile = try textRenderer.render(structured: structuredSwiftRepresentation)
 

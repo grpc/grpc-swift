@@ -58,9 +58,9 @@
 /// }
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
-  var accessLevel: SourceGenerator.Configuration.AccessLevel
+  var accessLevel: SourceGenerator.Config.AccessLevel
 
-  init(accessLevel: SourceGenerator.Configuration.AccessLevel) {
+  init(accessLevel: SourceGenerator.Config.AccessLevel) {
     self.accessLevel = accessLevel
   }
 

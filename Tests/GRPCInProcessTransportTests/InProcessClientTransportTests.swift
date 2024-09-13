@@ -192,7 +192,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
   func testExecutionConfiguration() {
     let policy = HedgingPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
@@ -215,14 +215,14 @@ final class InProcessClientTransportTests: XCTestCase {
 
     let firstDescriptor = MethodDescriptor(service: "test", method: "first")
     XCTAssertEqual(
-      client.configuration(forMethod: firstDescriptor),
+      client.config(forMethod: firstDescriptor),
       serviceConfig.methodConfig.first
     )
 
     let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
@@ -239,11 +239,11 @@ final class InProcessClientTransportTests: XCTestCase {
 
     let secondDescriptor = MethodDescriptor(service: "test", method: "second")
     XCTAssertEqual(
-      client.configuration(forMethod: firstDescriptor),
+      client.config(forMethod: firstDescriptor),
       serviceConfig.methodConfig.first
     )
     XCTAssertEqual(
-      client.configuration(forMethod: secondDescriptor),
+      client.config(forMethod: secondDescriptor),
       serviceConfig.methodConfig.last
     )
   }
@@ -288,9 +288,9 @@ final class InProcessClientTransportTests: XCTestCase {
     server: InProcessServerTransport = InProcessServerTransport()
   ) -> InProcessClientTransport {
     let defaultPolicy = RetryPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )

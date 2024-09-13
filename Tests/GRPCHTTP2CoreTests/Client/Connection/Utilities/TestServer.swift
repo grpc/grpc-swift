@@ -74,7 +74,7 @@ final class TestServer: Sendable {
             let handler = GRPCServerStreamHandler(
               scheme: .http,
               acceptedEncodings: .all,
-              maximumPayloadSize: .max,
+              maxPayloadSize: .max,
               methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
             )
 

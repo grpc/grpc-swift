@@ -448,7 +448,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   @usableFromInline
   struct State: Sendable {
     @usableFromInline
-    let _maximumAttempts: Int
+    let _maxAttempts: Int
     @usableFromInline
     private(set) var attempt: Int
     @usableFromInline
@@ -456,7 +456,7 @@ extension ClientRPCExecutor.HedgingExecutor {
 
     @inlinable
     init(policy: HedgingPolicy) {
-      self._maximumAttempts = policy.maximumAttempts
+      self._maxAttempts = policy.maxAttempts
       self.attempt = 1
       self.hasUsableResponse = false
     }
@@ -487,14 +487,14 @@ extension ClientRPCExecutor.HedgingExecutor {
 
     @inlinable
     mutating func nextAttemptNumber() -> NextAttemptResult? {
-      if self.hasUsableResponse || self.attempt > self._maximumAttempts {
+      if self.hasUsableResponse || self.attempt > self._maxAttempts {
         return nil
       } else {
         let attempt = self.attempt
         self.attempt += 1
         return NextAttemptResult(
           nextAttempt: attempt,
-          scheduleNext: self.attempt <= self._maximumAttempts
+          scheduleNext: self.attempt <= self._maxAttempts
         )
       }
     }

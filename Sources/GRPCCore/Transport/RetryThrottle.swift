@@ -41,7 +41,7 @@ public final class RetryThrottle: Sendable {
   /// The number of tokens, multiplied by 1000.
   private let scaledTokenRatio: Int
   /// The maximum number of tokens, multiplied by 1000.
-  private let scaledMaximumTokens: Int
+  private let scaledMaxTokens: Int
   /// The retry threshold, multiplied by 1000. If ``scaledTokensAvailable`` is above this then
   /// retries are permitted.
   private let scaledRetryThreshold: Int
@@ -60,13 +60,13 @@ public final class RetryThrottle: Sendable {
   }
 
   /// The maximum number of tokens the throttle may hold.
-  public var maximumTokens: Int {
-    self.scaledMaximumTokens / 1000
+  public var maxTokens: Int {
+    self.scaledMaxTokens / 1000
   }
 
   /// The number of tokens the throttle currently has.
   ///
-  /// If this value is less than or equal to the retry threshold (defined as `maximumTokens / 2`)
+  /// If this value is less than or equal to the retry threshold (defined as `maxTokens / 2`)
   /// then RPCs will not be retried and hedging will be disabled.
   public var tokens: Double {
     self.scaledTokensAvailable.withLock {
@@ -84,23 +84,23 @@ public final class RetryThrottle: Sendable {
   /// Create a new throttle.
   ///
   /// - Parameters:
-  ///   - maximumTokens: The maximum number of tokens available. Must be in the range `1...1000`.
+  ///   - maxTokens: The maximum number of tokens available. Must be in the range `1...1000`.
   ///   - tokenRatio: The number of tokens to increment the available tokens by for successful
   ///       responses. See the documentation on this type for a description of what counts as a
   ///       successful response. Note that only three decimal places are used from this value.
-  /// - Precondition: `maximumTokens` must be in the range `1...1000`.
+  /// - Precondition: `maxTokens` must be in the range `1...1000`.
   /// - Precondition: `tokenRatio` must be `>= 0.001`.
-  public init(maximumTokens: Int, tokenRatio: Double) {
+  public init(maxTokens: Int, tokenRatio: Double) {
     precondition(
-      (1 ... 1000).contains(maximumTokens),
-      "maximumTokens must be in the range 1...1000 (is \(maximumTokens))"
+      (1 ... 1000).contains(maxTokens),
+      "maxTokens must be in the range 1...1000 (is \(maxTokens))"
     )
 
     let scaledTokenRatio = Int(tokenRatio * 1000)
     precondition(scaledTokenRatio > 0, "tokenRatio must be >= 0.001 (is \(tokenRatio))")
 
-    let scaledTokens = maximumTokens * 1000
-    self.scaledMaximumTokens = scaledTokens
+    let scaledTokens = maxTokens * 1000
+    self.scaledMaxTokens = scaledTokens
     self.scaledRetryThreshold = scaledTokens / 2
     self.scaledTokenRatio = scaledTokenRatio
     self.scaledTokensAvailable = Mutex(scaledTokens)
@@ -110,14 +110,14 @@ public final class RetryThrottle: Sendable {
   ///
   /// - Parameter policy: The policy to use to configure the throttle.
   public convenience init(policy: ServiceConfig.RetryThrottling) {
-    self.init(maximumTokens: policy.maxTokens, tokenRatio: policy.tokenRatio)
+    self.init(maxTokens: policy.maxTokens, tokenRatio: policy.tokenRatio)
   }
 
   /// Records a success, adding a token to the throttle.
   @usableFromInline
   func recordSuccess() {
     self.scaledTokensAvailable.withLock { value in
-      value = min(self.scaledMaximumTokens, value &+ self.scaledTokenRatio)
+      value = min(self.scaledMaxTokens, value &+ self.scaledTokenRatio)
     }
   }
 

@@ -118,8 +118,8 @@ extension HTTP2ClientTransport {
       try await self.channel.withStream(descriptor: descriptor, options: options, closure)
     }
 
-    public func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
-      self.channel.configuration(forMethod: descriptor)
+    public func config(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
+      self.channel.config(forMethod: descriptor)
     }
   }
 }

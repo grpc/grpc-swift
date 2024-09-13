@@ -85,7 +85,7 @@ extension ChannelPipeline.SynchronousOperations {
         let streamHandler = GRPCServerStreamHandler(
           scheme: scheme,
           acceptedEncodings: compressionConfig.enabledAlgorithms,
-          maximumPayloadSize: rpcConfig.maxRequestPayloadSize,
+          maxPayloadSize: rpcConfig.maxRequestPayloadSize,
           methodDescriptorPromise: methodDescriptorPromise
         )
         try streamChannel.pipeline.syncOperations.addHandler(streamHandler)

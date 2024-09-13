@@ -49,13 +49,13 @@ package final class GRPCServerStreamHandler: ChannelDuplexHandler, RemovableChan
   package init(
     scheme: Scheme,
     acceptedEncodings: CompressionAlgorithmSet,
-    maximumPayloadSize: Int,
+    maxPayloadSize: Int,
     methodDescriptorPromise: EventLoopPromise<MethodDescriptor>,
     skipStateMachineAssertions: Bool = false
   ) {
     self.stateMachine = .init(
       configuration: .server(.init(scheme: scheme, acceptedEncodings: acceptedEncodings)),
-      maximumPayloadSize: maximumPayloadSize,
+      maxPayloadSize: maxPayloadSize,
       skipAssertions: skipStateMachineAssertions
     )
     self.methodDescriptorPromise = methodDescriptorPromise

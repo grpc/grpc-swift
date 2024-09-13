@@ -541,7 +541,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   private func assertServerCodeTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
-    accessLevel: SourceGenerator.Configuration.AccessLevel
+    accessLevel: SourceGenerator.Config.AccessLevel
   ) throws {
     let translator = ServerCodeTranslator(accessLevel: accessLevel)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)

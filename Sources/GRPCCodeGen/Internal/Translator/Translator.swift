@@ -29,7 +29,7 @@ protocol Translator {
   /// - Throws: An error if there are issues translating the codeGenerationRequest.
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool,
     client: Bool,
     server: Bool

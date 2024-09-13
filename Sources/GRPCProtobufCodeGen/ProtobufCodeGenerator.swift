@@ -18,10 +18,10 @@ public import GRPCCodeGen
 public import SwiftProtobufPluginLibrary
 
 public struct ProtobufCodeGenerator {
-  internal var configuration: SourceGenerator.Configuration
+  internal var configuration: SourceGenerator.Config
 
   public init(
-    configuration: SourceGenerator.Configuration
+    configuration: SourceGenerator.Config
   ) {
     self.configuration = configuration
   }
@@ -37,7 +37,7 @@ public struct ProtobufCodeGenerator {
       extraModuleImports: extraModuleImports,
       accessLevel: self.configuration.accessLevel
     )
-    let sourceGenerator = SourceGenerator(configuration: self.configuration)
+    let sourceGenerator = SourceGenerator(config: self.configuration)
 
     let codeGenerationRequest = try parser.parse()
     let sourceFile = try sourceGenerator.generate(codeGenerationRequest)

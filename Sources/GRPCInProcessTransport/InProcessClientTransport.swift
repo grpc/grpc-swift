@@ -345,7 +345,7 @@ public final class InProcessClientTransport: ClientTransport {
   ///
   /// - Parameter descriptor: The method to lookup configuration for.
   /// - Returns: Execution configuration for the method, if it exists.
-  public func configuration(
+  public func config(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfig? {
     self.methodConfig[descriptor]
