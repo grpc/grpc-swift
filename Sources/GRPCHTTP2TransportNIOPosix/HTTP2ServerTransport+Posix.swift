@@ -55,7 +55,7 @@ extension HTTP2ServerTransport {
   /// }
   /// ```
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public final class Posix: ServerTransport, ListeningServerTransport {
+  public struct Posix: ServerTransport, ListeningServerTransport {
     private struct ListenerFactory: HTTP2ListenerFactory {
       let config: Config
 

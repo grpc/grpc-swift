@@ -29,7 +29,7 @@ private import Synchronization
 extension HTTP2ServerTransport {
   /// A NIO Transport Services-backed implementation of a server transport.
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public final class TransportServices: ServerTransport, ListeningServerTransport {
+  public struct TransportServices: ServerTransport, ListeningServerTransport {
     private struct ListenerFactory: HTTP2ListenerFactory {
       let config: Config
 
