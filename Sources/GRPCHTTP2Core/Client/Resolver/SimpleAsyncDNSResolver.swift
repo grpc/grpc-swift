@@ -85,7 +85,7 @@ package enum SimpleAsyncDNSResolver {
       let addressBytes = UnsafeRawPointer(result.pointee.ai_addr)
       let socketAddress: SocketAddress?
 
-      switch result.pointee.ai_family {  // Enum with two cases
+      switch result.pointee.ai_family {
       case AF_INET:  // IPv4 address
         let ipv4NetworkAddressStructure = addressBytes!.load(as: sockaddr_in.self)
         let ipv4PresentationAddress = Self.convertFromNetworkToPresentationFormat(
