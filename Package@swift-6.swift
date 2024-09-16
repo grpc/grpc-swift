@@ -251,6 +251,7 @@ extension Target {
         .nioCore,
         .nioHTTP2,
         .nioTLS,
+        .nioExtras,
         .cgrpcZlib,
         .dequeModule,
       ],

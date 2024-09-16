@@ -55,108 +55,78 @@ extension HTTP2ServerTransport {
   /// }
   /// ```
   @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public final class Posix: ServerTransport, ListeningServerTransport {
-    private let address: GRPCHTTP2Core.SocketAddress
-    private let config: Config
-    private let eventLoopGroup: MultiThreadedEventLoopGroup
-    private let serverQuiescingHelper: ServerQuiescingHelper
+  public struct Posix: ServerTransport, ListeningServerTransport {
+    private struct ListenerFactory: HTTP2ListenerFactory {
+      let config: Config
 
-    private enum State {
-      case idle(EventLoopPromise<GRPCHTTP2Core.SocketAddress>)
-      case listening(EventLoopFuture<GRPCHTTP2Core.SocketAddress>)
-      case closedOrInvalidAddress(RuntimeError)
+      func makeListeningChannel(
+        eventLoopGroup: any EventLoopGroup,
+        address: GRPCHTTP2Core.SocketAddress,
+        serverQuiescingHelper: ServerQuiescingHelper
+      ) async throws -> NIOAsyncChannel<AcceptedChannel, Never> {
+        #if canImport(NIOSSL)
+        let sslContext: NIOSSLContext?
 
-      var listeningAddressFuture: EventLoopFuture<GRPCHTTP2Core.SocketAddress> {
-        get throws {
-          switch self {
-          case .idle(let eventLoopPromise):
-            return eventLoopPromise.futureResult
-          case .listening(let eventLoopFuture):
-            return eventLoopFuture
-          case .closedOrInvalidAddress(let runtimeError):
-            throw runtimeError
-          }
-        }
-      }
-
-      enum OnBound {
-        case succeedPromise(
-          _ promise: EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
-          address: GRPCHTTP2Core.SocketAddress
-        )
-        case failPromise(
-          _ promise: EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
-          error: RuntimeError
-        )
-      }
-
-      mutating func addressBound(
-        _ address: NIOCore.SocketAddress?,
-        userProvidedAddress: GRPCHTTP2Core.SocketAddress
-      ) -> OnBound {
-        switch self {
-        case .idle(let listeningAddressPromise):
-          if let address {
-            self = .listening(listeningAddressPromise.futureResult)
-            return .succeedPromise(
-              listeningAddressPromise,
-              address: GRPCHTTP2Core.SocketAddress(address)
-            )
-
-          } else if userProvidedAddress.virtualSocket != nil {
-            self = .listening(listeningAddressPromise.futureResult)
-            return .succeedPromise(listeningAddressPromise, address: userProvidedAddress)
-
-          } else {
-            assertionFailure("Unknown address type")
-            let invalidAddressError = RuntimeError(
+        switch self.config.transportSecurity.wrapped {
+        case .plaintext:
+          sslContext = nil
+        case .tls(let tlsConfig):
+          do {
+            sslContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
+          } catch {
+            throw RuntimeError(
               code: .transportError,
-              message: "Unknown address type returned by transport."
+              message: "Couldn't create SSL context, check your TLS configuration.",
+              cause: error
             )
-            self = .closedOrInvalidAddress(invalidAddressError)
-            return .failPromise(listeningAddressPromise, error: invalidAddressError)
+          }
+        }
+        #endif
+
+        let serverChannel = try await ServerBootstrap(group: eventLoopGroup)
+          .serverChannelOption(.socketOption(.so_reuseaddr), value: 1)
+          .serverChannelInitializer { channel in
+            let quiescingHandler = serverQuiescingHelper.makeServerChannelHandler(channel: channel)
+            return channel.pipeline.addHandler(quiescingHandler)
+          }
+          .bind(to: address) { channel in
+            channel.eventLoop.makeCompletedFuture {
+              #if canImport(NIOSSL)
+              if let sslContext {
+                try channel.pipeline.syncOperations.addHandler(
+                  NIOSSLServerHandler(context: sslContext)
+                )
+              }
+              #endif
+
+              let requireALPN: Bool
+              let scheme: Scheme
+              switch self.config.transportSecurity.wrapped {
+              case .plaintext:
+                requireALPN = false
+                scheme = .http
+              case .tls(let tlsConfig):
+                requireALPN = tlsConfig.requireALPN
+                scheme = .https
+              }
+
+              return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
+                channel: channel,
+                compressionConfig: self.config.compression,
+                connectionConfig: self.config.connection,
+                http2Config: self.config.http2,
+                rpcConfig: self.config.rpc,
+                requireALPN: requireALPN,
+                scheme: scheme
+              )
+            }
           }
 
-        case .listening, .closedOrInvalidAddress:
-          fatalError(
-            "Invalid state: addressBound should only be called once and when in idle state"
-          )
-        }
-      }
-
-      enum OnClose {
-        case failPromise(
-          EventLoopPromise<GRPCHTTP2Core.SocketAddress>,
-          error: RuntimeError
-        )
-        case doNothing
-      }
-
-      mutating func close() -> OnClose {
-        let serverStoppedError = RuntimeError(
-          code: .serverIsStopped,
-          message: """
-            There is no listening address bound for this server: there may have been \
-            an error which caused the transport to close, or it may have shut down.
-            """
-        )
-
-        switch self {
-        case .idle(let listeningAddressPromise):
-          self = .closedOrInvalidAddress(serverStoppedError)
-          return .failPromise(listeningAddressPromise, error: serverStoppedError)
-
-        case .listening:
-          self = .closedOrInvalidAddress(serverStoppedError)
-          return .doNothing
-
-        case .closedOrInvalidAddress:
-          return .doNothing
-        }
+        return serverChannel
       }
     }
 
-    private let listeningAddressState: Mutex<State>
+    private let underlyingTransport: CommonHTTP2ServerTransport<ListenerFactory>
 
     /// The listening address for this server transport.
     ///
@@ -167,9 +137,7 @@ extension HTTP2ServerTransport {
     /// invalid address.
     public var listeningAddress: GRPCHTTP2Core.SocketAddress {
       get async throws {
-        try await self.listeningAddressState
-          .withLock { try $0.listeningAddressFuture }
-          .get()
+        try await self.underlyingTransport.listeningAddress
       }
     }
 
@@ -184,178 +152,24 @@ extension HTTP2ServerTransport {
       config: Config,
       eventLoopGroup: MultiThreadedEventLoopGroup = .singletonMultiThreadedEventLoopGroup
     ) {
-      self.address = address
-      self.config = config
-      self.eventLoopGroup = eventLoopGroup
-      self.serverQuiescingHelper = ServerQuiescingHelper(group: self.eventLoopGroup)
-
-      let eventLoop = eventLoopGroup.any()
-      self.listeningAddressState = Mutex(.idle(eventLoop.makePromise()))
+      let factory = ListenerFactory(config: config)
+      let helper = ServerQuiescingHelper(group: eventLoopGroup)
+      self.underlyingTransport = CommonHTTP2ServerTransport(
+        address: address,
+        eventLoopGroup: eventLoopGroup,
+        quiescingHelper: helper,
+        listenerFactory: factory
+      )
     }
 
     public func listen(
       _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
     ) async throws {
-      defer {
-        switch self.listeningAddressState.withLock({ $0.close() }) {
-        case .failPromise(let promise, let error):
-          promise.fail(error)
-        case .doNothing:
-          ()
-        }
-      }
-
-      #if canImport(NIOSSL)
-      let nioSSLContext: NIOSSLContext?
-      switch self.config.transportSecurity.wrapped {
-      case .plaintext:
-        nioSSLContext = nil
-      case .tls(let tlsConfig):
-        do {
-          nioSSLContext = try NIOSSLContext(configuration: TLSConfiguration(tlsConfig))
-        } catch {
-          throw RuntimeError(
-            code: .transportError,
-            message: "Couldn't create SSL context, check your TLS configuration.",
-            cause: error
-          )
-        }
-      }
-      #endif
-
-      let serverChannel = try await ServerBootstrap(group: self.eventLoopGroup)
-        .serverChannelOption(
-          ChannelOptions.socketOption(.so_reuseaddr),
-          value: 1
-        )
-        .serverChannelInitializer { channel in
-          let quiescingHandler = self.serverQuiescingHelper.makeServerChannelHandler(
-            channel: channel
-          )
-          return channel.pipeline.addHandler(quiescingHandler)
-        }
-        .bind(to: self.address) { channel in
-          channel.eventLoop.makeCompletedFuture {
-            #if canImport(NIOSSL)
-            if let nioSSLContext {
-              try channel.pipeline.syncOperations.addHandler(
-                NIOSSLServerHandler(context: nioSSLContext)
-              )
-            }
-            #endif
-
-            let requireALPN: Bool
-            let scheme: Scheme
-            switch self.config.transportSecurity.wrapped {
-            case .plaintext:
-              requireALPN = false
-              scheme = .http
-            case .tls(let tlsConfig):
-              requireALPN = tlsConfig.requireALPN
-              scheme = .https
-            }
-
-            return try channel.pipeline.syncOperations.configureGRPCServerPipeline(
-              channel: channel,
-              compressionConfig: self.config.compression,
-              connectionConfig: self.config.connection,
-              http2Config: self.config.http2,
-              rpcConfig: self.config.rpc,
-              requireALPN: requireALPN,
-              scheme: scheme
-            )
-          }
-        }
-
-      let action = self.listeningAddressState.withLock {
-        $0.addressBound(
-          serverChannel.channel.localAddress,
-          userProvidedAddress: self.address
-        )
-      }
-      switch action {
-      case .succeedPromise(let promise, let address):
-        promise.succeed(address)
-      case .failPromise(let promise, let error):
-        promise.fail(error)
-      }
-
-      try await serverChannel.executeThenClose { inbound in
-        try await withThrowingDiscardingTaskGroup { group in
-          for try await (connectionChannel, streamMultiplexer) in inbound {
-            group.addTask {
-              try await self.handleConnection(
-                connectionChannel,
-                multiplexer: streamMultiplexer,
-                streamHandler: streamHandler
-              )
-            }
-          }
-        }
-      }
-    }
-
-    private func handleConnection(
-      _ connection: NIOAsyncChannel<HTTP2Frame, HTTP2Frame>,
-      multiplexer: ChannelPipeline.SynchronousOperations.HTTP2StreamMultiplexer,
-      streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
-    ) async throws {
-      try await connection.executeThenClose { inbound, _ in
-        await withDiscardingTaskGroup { group in
-          group.addTask {
-            do {
-              for try await _ in inbound {}
-            } catch {
-              // We don't want to close the channel if one connection throws.
-              return
-            }
-          }
-
-          do {
-            for try await (stream, descriptor) in multiplexer.inbound {
-              group.addTask {
-                await self.handleStream(stream, handler: streamHandler, descriptor: descriptor)
-              }
-            }
-          } catch {
-            return
-          }
-        }
-      }
-    }
-
-    private func handleStream(
-      _ stream: NIOAsyncChannel<RPCRequestPart, RPCResponsePart>,
-      handler streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void,
-      descriptor: EventLoopFuture<MethodDescriptor>
-    ) async {
-      // It's okay to ignore these errors:
-      // - If we get an error because the http2Stream failed to close, then there's nothing we can do
-      // - If we get an error because the inner closure threw, then the only possible scenario in which
-      // that could happen is if methodDescriptor.get() throws - in which case, it means we never got
-      // the RPC metadata, which means we can't do anything either and it's okay to just kill the stream.
-      try? await stream.executeThenClose { inbound, outbound in
-        guard let descriptor = try? await descriptor.get() else {
-          return
-        }
-
-        let rpcStream = RPCStream(
-          descriptor: descriptor,
-          inbound: RPCAsyncSequence(wrapping: inbound),
-          outbound: RPCWriter.Closable(
-            wrapping: ServerConnection.Stream.Outbound(
-              responseWriter: outbound,
-              http2Stream: stream
-            )
-          )
-        )
-
-        await streamHandler(rpcStream)
-      }
+      try await self.underlyingTransport.listen(streamHandler)
     }
 
     public func beginGracefulShutdown() {
-      self.serverQuiescingHelper.initiateShutdown(promise: nil)
+      self.underlyingTransport.beginGracefulShutdown()
     }
   }
 }
