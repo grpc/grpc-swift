@@ -206,8 +206,8 @@ public final class GRPCServer: Sendable {
     }
 
     do {
-      try await transport.listen { stream in
-        await self.router.handle(stream: stream, interceptors: self.interceptors)
+      try await transport.listen { stream, context in
+        await self.router.handle(stream: stream, context: context, interceptors: self.interceptors)
       }
     } catch {
       throw RuntimeError(

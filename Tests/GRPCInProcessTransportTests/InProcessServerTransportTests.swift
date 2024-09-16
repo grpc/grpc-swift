@@ -41,7 +41,7 @@ final class InProcessServerTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await transport.listen { stream in
+        try await transport.listen { stream, context in
           let partValue = try? await stream.inbound.reduce(into: []) { $0.append($1) }
           XCTAssertEqual(partValue, [.message([42])])
           transport.beginGracefulShutdown()
@@ -71,7 +71,7 @@ final class InProcessServerTransportTests: XCTestCase {
 
     try transport.acceptStream(firstStream)
 
-    try await transport.listen { stream in
+    try await transport.listen { stream, context in
       let firstStreamMessages = try? await stream.inbound.reduce(into: []) {
         $0.append($1)
       }

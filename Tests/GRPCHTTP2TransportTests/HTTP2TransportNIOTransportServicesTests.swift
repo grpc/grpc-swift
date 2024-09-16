@@ -79,7 +79,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await transport.listen { _ in }
+        try await transport.listen { _, _ in }
       }
 
       group.addTask {
@@ -99,7 +99,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await transport.listen { _ in }
+        try await transport.listen { _, _ in }
       }
 
       group.addTask {
@@ -123,7 +123,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
     try await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await transport.listen { _ in }
+        try await transport.listen { _, _ in }
       }
 
       group.addTask {
@@ -145,7 +145,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
     try? await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await transport.listen { _ in }
+        try await transport.listen { _, _ in }
       }
 
       group.addTask {
@@ -174,7 +174,7 @@ final class HTTP2TransportNIOTransportServicesTests: XCTestCase {
 
     try? await withThrowingDiscardingTaskGroup { group in
       group.addTask {
-        try await transport.listen { _ in }
+        try await transport.listen { _, _ in }
 
         do {
           _ = try await transport.listeningAddress

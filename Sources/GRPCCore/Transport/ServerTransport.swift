@@ -29,9 +29,12 @@ public protocol ServerTransport: Sendable {
   /// You can call ``beginGracefulShutdown()`` to stop the transport from accepting new streams. Existing
   /// streams must be allowed to complete naturally. However, transports may also enforce a grace
   /// period after which any open streams may be cancelled. You can also cancel the task running
-  /// ``listen(_:)`` to abruptly close connections and streams.
+  /// ``listen(streamHandler:)`` to abruptly close connections and streams.
   func listen(
-    _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+    streamHandler: @escaping @Sendable (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void
   ) async throws
 
   /// Indicates to the transport that no new streams should be accepted.

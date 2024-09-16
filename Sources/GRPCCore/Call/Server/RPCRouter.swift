@@ -43,6 +43,7 @@ public struct RPCRouter: Sendable {
           RPCAsyncSequence<RPCRequestPart, any Error>,
           RPCWriter<RPCResponsePart>.Closable
         >,
+        _ context: ServerContext,
         _ interceptors: [any ServerInterceptor]
       ) async -> Void
 
@@ -52,11 +53,13 @@ public struct RPCRouter: Sendable {
       deserializer: some MessageDeserializer<Input>,
       serializer: some MessageSerializer<Output>,
       handler: @Sendable @escaping (
-        _ request: ServerRequest.Stream<Input>
+        _ request: ServerRequest.Stream<Input>,
+        _ context: ServerContext
       ) async throws -> ServerResponse.Stream<Output>
     ) {
-      self._fn = { stream, interceptors in
+      self._fn = { stream, context, interceptors in
         await ServerRPCExecutor.execute(
+          context: context,
           stream: stream,
           deserializer: deserializer,
           serializer: serializer,
@@ -72,9 +75,10 @@ public struct RPCRouter: Sendable {
         RPCAsyncSequence<RPCRequestPart, any Error>,
         RPCWriter<RPCResponsePart>.Closable
       >,
+      context: ServerContext,
       interceptors: [any ServerInterceptor]
     ) async {
-      await self._fn(stream, interceptors)
+      await self._fn(stream, context, interceptors)
     }
   }
 
@@ -119,7 +123,8 @@ public struct RPCRouter: Sendable {
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: @Sendable @escaping (
-      _ request: ServerRequest.Stream<Input>
+      _ request: ServerRequest.Stream<Input>,
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) {
     self.handlers[descriptor] = RPCHandler(
@@ -147,10 +152,11 @@ extension RPCRouter {
       RPCAsyncSequence<RPCRequestPart, any Error>,
       RPCWriter<RPCResponsePart>.Closable
     >,
+    context: ServerContext,
     interceptors: [any ServerInterceptor]
   ) async {
     if let handler = self.handlers[stream.descriptor] {
-      await handler.handle(stream: stream, interceptors: interceptors)
+      await handler.handle(stream: stream, context: context, interceptors: interceptors)
     } else {
       // If this throws then the stream must be closed which we can't do anything about, so ignore
       // any error.

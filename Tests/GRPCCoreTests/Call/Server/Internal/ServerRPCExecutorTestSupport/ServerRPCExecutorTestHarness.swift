@@ -93,16 +93,20 @@ struct ServerRPCExecutorTestHarness {
       }
 
       group.addTask {
+        let context = ServerContext(descriptor: MethodDescriptor(service: "foo", method: "bar"))
         await ServerRPCExecutor.execute(
+          context: context,
           stream: RPCStream(
-            descriptor: MethodDescriptor(service: "foo", method: "bar"),
+            descriptor: context.descriptor,
             inbound: RPCAsyncSequence(wrapping: input.stream),
             outbound: RPCWriter.Closable(wrapping: output.continuation)
           ),
           deserializer: deserializer,
           serializer: serializer,
           interceptors: self.interceptors,
-          handler: { try await handler.handle($0) }
+          handler: { stream, context in
+            try await handler.handle(stream)
+          }
         )
       }
 
