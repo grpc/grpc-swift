@@ -90,13 +90,25 @@ extension GRPCCore.ServiceDescriptor {
 /// the output.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-    func unary(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
+    func unary(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func serverStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
+    func serverStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func clientStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
+    func clientStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func bidiStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
+    func bidiStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -108,32 +120,44 @@ extension Control.StreamingServiceProtocol {
             forMethod: Control.Method.Unary.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
             serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
-            handler: { request in
-                try await self.unary(request: request)
+            handler: { request, context in
+                try await self.unary(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Control.Method.ServerStream.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
             serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
-            handler: { request in
-                try await self.serverStream(request: request)
+            handler: { request, context in
+                try await self.serverStream(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Control.Method.ClientStream.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
             serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
-            handler: { request in
-                try await self.clientStream(request: request)
+            handler: { request, context in
+                try await self.clientStream(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Control.Method.BidiStream.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<ControlInput>(),
             serializer: GRPCProtobuf.ProtobufSerializer<ControlOutput>(),
-            handler: { request in
-                try await self.bidiStream(request: request)
+            handler: { request, context in
+                try await self.bidiStream(
+                    request: request,
+                    context: context
+                )
             }
         )
     }
@@ -145,30 +169,60 @@ extension Control.StreamingServiceProtocol {
 /// the output.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol ControlServiceProtocol: Control.StreamingServiceProtocol {
-    func unary(request: GRPCCore.ServerRequest.Single<ControlInput>) async throws -> GRPCCore.ServerResponse.Single<ControlOutput>
+    func unary(
+        request: GRPCCore.ServerRequest.Single<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<ControlOutput>
     
-    func serverStream(request: GRPCCore.ServerRequest.Single<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
+    func serverStream(
+        request: GRPCCore.ServerRequest.Single<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
     
-    func clientStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Single<ControlOutput>
+    func clientStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<ControlOutput>
     
-    func bidiStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
+    func bidiStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput>
 }
 
 /// Partial conformance to `ControlStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Control.ServiceProtocol {
-    internal func unary(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
-        let response = try await self.unary(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func unary(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
+        let response = try await self.unary(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    internal func serverStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
-        let response = try await self.serverStream(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func serverStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
+        let response = try await self.serverStream(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return response
     }
     
-    internal func clientStream(request: GRPCCore.ServerRequest.Stream<ControlInput>) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
-        let response = try await self.clientStream(request: request)
+    internal func clientStream(
+        request: GRPCCore.ServerRequest.Stream<ControlInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<ControlOutput> {
+        let response = try await self.clientStream(
+            request: request,
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
 }
