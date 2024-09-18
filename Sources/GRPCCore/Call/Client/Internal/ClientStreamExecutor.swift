@@ -29,7 +29,7 @@ internal enum ClientStreamExecutor {
   static func execute<Input: Sendable, Output: Sendable>(
     in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
-    context: ClientInterceptorContext,
+    context: ClientContext,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
