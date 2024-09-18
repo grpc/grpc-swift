@@ -415,6 +415,9 @@ extension Target {
         .protobuf,
         .testing,
       ],
+      resources: [
+        .copy("Configuration/Inputs")
+      ],
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }

@@ -1,0 +1,12 @@
+{
+  "name": [
+    {
+      "service": "echo.Echo",
+      "method": "Get"
+    }
+  ],
+  "waitForReady": true,
+  "timeout": "1s",
+  "maxRequestMessageBytes": 1024,
+  "maxResponseMessageBytes": 2048
+}
