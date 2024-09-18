@@ -7,17 +7,36 @@ A gRPC library for Swift written natively in Swift.
 
 ## Package structure
 
-gRPC Swift is made up of a number of modules, each of which is documented separately. However this
-module – ``GRPCCore`` – includes higher level documentation such as tutorials. The following list
-contains products of this package:
+gRPC Swift is distributed across multiple Swift packages these are:
 
-- ``GRPCCore`` contains core types and abstractions and is the 'base' module for the project.
-- `GRPCInProcessTransport` contains an implementation of an in-process transport.
-- `GRPCHTTP2TransportNIOPosix` provides client and server implementations of HTTP/2 transports built
-  on top of SwiftNIO's POSIX Sockets abstractions.
-- `GRPCHTTP2TransportNIOTransportServices` provides client and server implementations of HTTP/2
-  transports built on top of SwiftNIO's Network.framework abstraction, `NIOTransportServices`.
-- `GRPCProtobuf` provides serialization and deserialization components for `SwiftProtobuf`.
+- `grpc-swift` (this package) containing core gRPC abstractions and an in-process transport.
+  - GitHub repository: [`grpc/grpc-swift`](https://github.com/grpc/grpc-swift)
+  - Documentation: hosted on the [Swift Package
+    Index](https://swiftpackageindex.com/grpc/grpc-swift/documentation)
+- `grpc-swift-nio-transport` contains high-performance HTTP/2 transports built on top of SwiftNIO.
+  - GitHub repository: [`grpc/grpc-swift-nio-transport`](https://github.com/grpc/grpc-swift-nio-transport)
+  - Documentation: hosted on the [Swift Package
+    Index](https://swiftpackageindex.com/grpc/grpc-swift-nio-transport/documentation)
+- `grpc-swift-protobuf` contains runtime serialization components to interoperate with SwiftProtobuf
+  as well as a plugin for the Protocol Buffers compiler, `protoc`.
+  - GitHub repository: [`grpc/grpc-swift-protobuf`](https://github.com/grpc/grpc-swift-protobuf)
+  - Documentation: hosted on the [Swift Package
+    Index](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation)
+- `grpc-swift-extras` contains optional runtime components and integrations with other packages.
+  - GitHub repository: [`grpc/grpc-swift-extras`](https://github.com/grpc/grpc-swift-extras)
+  - Documentation: hosted on the [Swift Package
+    Index](https://swiftpackageindex.com/grpc/grpc-swift-extras/documentation)
+
+This package, and this module (``GRPCCore``) in particular, include higher level documentation such
+as tutorials.
+
+## Modules in this package
+
+- ``GRPCCore`` (this module) contains core abstractions, currency types and runtime components
+  for gRPC Swift.
+- `GRPCInProcessTransport` contains an in-process implementation of the ``ClientTransport`` and
+  ``ServerTransport`` protocols.
+- `GRPCodeGen` contains components for building a code generator.
 
 ## Topics
 

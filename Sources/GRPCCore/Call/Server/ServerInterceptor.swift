@@ -23,10 +23,8 @@
 ///
 /// Interceptors are registered with the server apply to all RPCs. If you need to modify the
 /// behavior of an interceptor on a per-RPC basis then you can use the
-/// ``ServerInterceptorContext/descriptor`` to determine which RPC is being called and
+/// ``ServerContext/descriptor`` to determine which RPC is being called and
 /// conditionalise behavior accordingly.
-///
-/// - TODO: Update example and documentation to show how to register an interceptor.
 ///
 /// ## RPC filtering
 ///

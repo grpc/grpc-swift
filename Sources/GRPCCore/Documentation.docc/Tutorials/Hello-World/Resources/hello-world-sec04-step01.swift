@@ -1,6 +1,7 @@
 struct Greeter: Helloworld_GreeterServiceProtocol {
   func sayHello(
-    request: ServerRequest.Single<Helloworld_HelloRequest>
+    request: ServerRequest.Single<Helloworld_HelloRequest>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Helloworld_HelloReply> {
     var reply = Helloworld_HelloReply()
     let recipient = request.message.name.isEmpty ? "stranger" : request.message.name

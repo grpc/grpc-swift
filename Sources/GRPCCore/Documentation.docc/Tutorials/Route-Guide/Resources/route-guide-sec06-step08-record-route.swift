@@ -1,4 +1,4 @@
-import GRPCHTTP2Transport
+import GRPCNIOTransportHTTP2
 
 extension RouteGuide {
   func runClient() async throws {
