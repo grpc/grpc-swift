@@ -1,0 +1,22 @@
+{
+  "name": [
+    {
+      "service": "echo.Echo",
+      "method": "Get"
+    }
+  ],
+  "waitForReady": true,
+  "timeout": "1s",
+  "maxRequestMessageBytes": 1024,
+  "maxResponseMessageBytes": 2048,
+  "retryPolicy": {
+    "maxAttempts": 3,
+    "initialBackoff": "1s",
+    "maxBackoff": "3s",
+    "backoffMultiplier": 1.6,
+    "retryableStatusCodes": [
+      "ABORTED",
+      "UNIMPLEMENTED"
+    ]
+  }
+}

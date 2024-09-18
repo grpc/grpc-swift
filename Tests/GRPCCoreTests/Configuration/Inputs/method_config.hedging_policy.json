@@ -1,0 +1,5 @@
+{
+  "maxAttempts": 3,
+  "hedgingDelay": "1s",
+  "nonFatalStatusCodes": ["ABORTED"]
+}

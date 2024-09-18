@@ -403,6 +403,9 @@ extension Target {
         .dequeModule,
         .protobuf,
       ],
+      resources: [
+        .copy("Configuration/Inputs")
+      ],
       swiftSettings: [.swiftLanguageMode(.v6), .enableUpcomingFeature("ExistentialAny")]
     )
   }
