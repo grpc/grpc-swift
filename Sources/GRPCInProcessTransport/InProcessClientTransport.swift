@@ -26,7 +26,7 @@ private import Synchronization
 /// as a ``ServiceConfig``.
 ///
 /// Once you have a client, you must keep a long-running task executing ``connect()``, which
-/// will return only once all streams have been finished and ``close()`` has been called on this client; or
+/// will return only once all streams have been finished and ``beginGracefulShutdown()`` has been called on this client; or
 /// when the containing task is cancelled.
 ///
 /// To execute requests using this client, use ``withStream(descriptor:options:_:)``. If this function is
@@ -126,7 +126,7 @@ public final class InProcessClientTransport: ClientTransport {
   ///
   /// Implementations of this function will typically create a long-lived task group which
   /// maintains connections. The function exits when all open streams have been closed and new connections
-  /// are no longer required by the caller who signals this by calling ``close()``, or by cancelling the
+  /// are no longer required by the caller who signals this by calling ``beginGracefulShutdown()``, or by cancelling the
   /// task this function runs in.
   public func connect() async throws {
     let (stream, continuation) = AsyncStream<Void>.makeStream()

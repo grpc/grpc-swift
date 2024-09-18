@@ -54,7 +54,7 @@ private import Synchronization
 ///
 /// ## Starting and stopping the server
 ///
-/// Once you have configured the server call ``run()`` to start it. Calling ``run()`` starts the server's
+/// Once you have configured the server call ``serve()`` to start it. Calling ``serve()`` starts the server's
 /// transport too. A ``RuntimeError`` is thrown if the transport can't be started or encounters some other
 /// runtime error.
 ///
@@ -63,7 +63,7 @@ private import Synchronization
 /// try await server.serve()
 /// ```
 ///
-/// The ``run()`` method won't return until the server has finished handling all requests. You can
+/// The ``serve()`` method won't return until the server has finished handling all requests. You can
 /// signal to the server that it should stop accepting new requests by calling ``beginGracefulShutdown()``.
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
 /// you can cancel the task running your server. If your application requires additional resources
@@ -221,7 +221,7 @@ public final class GRPCServer: Sendable {
   /// Signal to the server that it should stop listening for new requests.
   ///
   /// By calling this function you indicate to clients that they mustn't start new requests
-  /// against this server. Once the server has processed all requests the ``run()`` method returns.
+  /// against this server. Once the server has processed all requests the ``serve()`` method returns.
   ///
   /// Calling this on a server which is already stopping or has stopped has no effect.
   public func beginGracefulShutdown() {

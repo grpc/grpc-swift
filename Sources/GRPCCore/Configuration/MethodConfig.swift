@@ -259,7 +259,7 @@ public struct RetryPolicy: Hashable, Sendable {
   ///   - maxAttempts: The maximum number of attempts allowed for the RPC.
   ///   - initialBackoff: The initial backoff period for the first retry attempt. Must be
   ///       greater than zero.
-  ///   - maximumBackoff: The maximum period of time to wait between attempts. Must be greater than
+  ///   - maxBackoff: The maximum period of time to wait between attempts. Must be greater than
   ///       zero.
   ///   - backoffMultiplier: The exponential backoff multiplier. Must be greater than zero.
   ///   - retryableStatusCodes: The set of status codes which may be retried. Must not be empty.

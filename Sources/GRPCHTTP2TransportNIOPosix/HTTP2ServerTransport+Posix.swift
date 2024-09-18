@@ -27,12 +27,12 @@ import NIOSSL
 #endif
 
 extension HTTP2ServerTransport {
-  /// A ``GRPCCore/ServerTransport`` using HTTP/2 built on top of `NIOPosix`.
+  /// A `ServerTransport` using HTTP/2 built on top of `NIOPosix`.
   ///
   /// This transport builds on top of SwiftNIO's Posix networking layer and is suitable for use
   /// on Linux and Darwin based platform (macOS, iOS, etc.) However, it's *strongly* recommended
   /// that if you are targeting Darwin platforms then you should use the `NIOTS` variant of
-  /// the ``GRPCHTTP2Core/HTTP2ServerTransport``.
+  /// the `HTTP2ServerTransport`.
   ///
   /// You can control various aspects of connection creation, management, security and RPC behavior via
   /// the ``Config``.
