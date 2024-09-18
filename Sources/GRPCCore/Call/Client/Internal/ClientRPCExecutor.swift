@@ -124,7 +124,7 @@ extension ClientRPCExecutor {
     interceptors: [any ClientInterceptor],
     stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
   ) async -> ClientResponse.Stream<Output> {
-    let context = ClientInterceptorContext(descriptor: method)
+    let context = ClientContext(descriptor: method)
 
     if interceptors.isEmpty {
       return await ClientStreamExecutor.execute(
@@ -160,12 +160,12 @@ extension ClientRPCExecutor {
   static func _intercept<Input, Output>(
     in group: inout TaskGroup<Void>,
     request: ClientRequest.Stream<Input>,
-    context: ClientInterceptorContext,
+    context: ClientContext,
     iterator: Array<any ClientInterceptor>.Iterator,
     finally: (
       _ group: inout TaskGroup<Void>,
       _ request: ClientRequest.Stream<Input>,
-      _ context: ClientInterceptorContext
+      _ context: ClientContext
     ) async -> ClientResponse.Stream<Output>
   ) async -> ClientResponse.Stream<Output> {
     var iterator = iterator

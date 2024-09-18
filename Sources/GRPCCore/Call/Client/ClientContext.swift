@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, gRPC Authors All rights reserved.
+ * Copyright 2024, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-internal enum Version {
-  /// The major version.
-  internal static let major = 1
+/// A context passed to the client containing additional information about the RPC.
+public struct ClientContext: Sendable {
+  /// A description of the method being called.
+  public var descriptor: MethodDescriptor
 
-  /// The minor version.
-  internal static let minor = 23
-
-  /// The patch version.
-  internal static let patch = 1
-
-  /// The version string.
-  internal static let versionString = "\(major).\(minor).\(patch)"
+  /// Create a new client interceptor context.
+  public init(descriptor: MethodDescriptor) {
+    self.descriptor = descriptor
+  }
 }
