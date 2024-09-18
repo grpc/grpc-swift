@@ -42,6 +42,7 @@ final class InProcessServerTransportTests: XCTestCase {
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
         try await transport.listen { stream, context in
+          XCTAssertEqual(context.descriptor, stream.descriptor)
           let partValue = try? await stream.inbound.reduce(into: []) { $0.append($1) }
           XCTAssertEqual(partValue, [.message([42])])
           transport.beginGracefulShutdown()
