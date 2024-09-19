@@ -82,7 +82,10 @@ package protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.Registr
     /// server unhealthy if they do not receive a timely response.
     ///
     /// Check implementations should be idempotent and side effect free.
-    func check(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
+    func check(
+        request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
     
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
@@ -99,7 +102,10 @@ package protocol Grpc_Health_V1_HealthStreamingServiceProtocol: GRPCCore.Registr
     /// should assume this method is not supported and should not retry the
     /// call.  If the call terminates with any other status (including OK),
     /// clients should retry the call with appropriate exponential backoff.
-    func watch(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
+    func watch(
+        request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -111,16 +117,22 @@ extension Grpc_Health_V1_Health.StreamingServiceProtocol {
             forMethod: Grpc_Health_V1_Health.Method.Check.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Health_V1_HealthCheckRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Health_V1_HealthCheckResponse>(),
-            handler: { request in
-                try await self.check(request: request)
+            handler: { request, context in
+                try await self.check(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Grpc_Health_V1_Health.Method.Watch.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Grpc_Health_V1_HealthCheckRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Grpc_Health_V1_HealthCheckResponse>(),
-            handler: { request in
-                try await self.watch(request: request)
+            handler: { request, context in
+                try await self.watch(
+                    request: request,
+                    context: context
+                )
             }
         )
     }
@@ -140,7 +152,10 @@ package protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.Str
     /// server unhealthy if they do not receive a timely response.
     ///
     /// Check implementations should be idempotent and side effect free.
-    func check(request: GRPCCore.ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Single<Grpc_Health_V1_HealthCheckResponse>
+    func check(
+        request: GRPCCore.ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<Grpc_Health_V1_HealthCheckResponse>
     
     /// Performs a watch for the serving status of the requested service.
     /// The server will immediately send back a message indicating the current
@@ -157,19 +172,34 @@ package protocol Grpc_Health_V1_HealthServiceProtocol: Grpc_Health_V1_Health.Str
     /// should assume this method is not supported and should not retry the
     /// call.  If the call terminates with any other status (including OK),
     /// clients should retry the call with appropriate exponential backoff.
-    func watch(request: GRPCCore.ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
+    func watch(
+        request: GRPCCore.ServerRequest.Single<Grpc_Health_V1_HealthCheckRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse>
 }
 
 /// Partial conformance to `Grpc_Health_V1_HealthStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Grpc_Health_V1_Health.ServiceProtocol {
-    package func check(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
-        let response = try await self.check(request: GRPCCore.ServerRequest.Single(stream: request))
+    package func check(
+        request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
+        let response = try await self.check(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    package func watch(request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
-        let response = try await self.watch(request: GRPCCore.ServerRequest.Single(stream: request))
+    package func watch(
+        request: GRPCCore.ServerRequest.Stream<Grpc_Health_V1_HealthCheckRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Grpc_Health_V1_HealthCheckResponse> {
+        let response = try await self.watch(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return response
     }
 }

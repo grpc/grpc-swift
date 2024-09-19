@@ -60,7 +60,7 @@
 /// }
 /// ```
 ///
-/// For server-side interceptors see ``ClientInterceptor``.
+/// For client-side interceptors see ``ClientInterceptor``.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol ServerInterceptor: Sendable {
   /// Intercept a request object.
@@ -74,21 +74,10 @@ public protocol ServerInterceptor: Sendable {
   /// - Returns: A response object.
   func intercept<Input: Sendable, Output: Sendable>(
     request: ServerRequest.Stream<Input>,
-    context: ServerInterceptorContext,
+    context: ServerContext,
     next: @Sendable (
       _ request: ServerRequest.Stream<Input>,
-      _ context: ServerInterceptorContext
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async throws -> ServerResponse.Stream<Output>
-}
-
-/// A context passed to client interceptors containing additional information about the RPC.
-public struct ServerInterceptorContext: Sendable {
-  /// A description of the method being called.
-  public var descriptor: MethodDescriptor
-
-  /// Create a new client interceptor context.
-  public init(descriptor: MethodDescriptor) {
-    self.descriptor = descriptor
-  }
 }

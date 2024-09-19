@@ -144,7 +144,10 @@ package final class CommonHTTP2ServerTransport<
   }
 
   package func listen(
-    _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+    streamHandler: @escaping @Sendable (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void
   ) async throws {
     defer {
       switch self.listeningAddressState.withLock({ $0.close() }) {
@@ -192,7 +195,10 @@ package final class CommonHTTP2ServerTransport<
   private func handleConnection(
     _ connection: NIOAsyncChannel<HTTP2Frame, HTTP2Frame>,
     multiplexer: ChannelPipeline.SynchronousOperations.HTTP2StreamMultiplexer,
-    streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+    streamHandler: @escaping @Sendable (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void
   ) async throws {
     try await connection.executeThenClose { inbound, _ in
       await withDiscardingTaskGroup { group in
@@ -220,7 +226,10 @@ package final class CommonHTTP2ServerTransport<
 
   private func handleStream(
     _ stream: NIOAsyncChannel<RPCRequestPart, RPCResponsePart>,
-    handler streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void,
+    handler streamHandler: @escaping @Sendable (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void,
     descriptor: EventLoopFuture<MethodDescriptor>
   ) async {
     // It's okay to ignore these errors:
@@ -244,7 +253,8 @@ package final class CommonHTTP2ServerTransport<
         )
       )
 
-      await streamHandler(rpcStream)
+      let context = ServerContext(descriptor: descriptor)
+      await streamHandler(rpcStream, context)
     }
   }
 

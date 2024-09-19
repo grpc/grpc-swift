@@ -44,8 +44,8 @@ public struct ServerTracingInterceptor: ServerInterceptor {
   /// that has been configured when bootstrapping `swift-distributed-tracing` in your application.
   public func intercept<Input, Output>(
     request: ServerRequest.Stream<Input>,
-    context: ServerInterceptorContext,
-    next: @Sendable (ServerRequest.Stream<Input>, ServerInterceptorContext) async throws ->
+    context: ServerContext,
+    next: @Sendable (ServerRequest.Stream<Input>, ServerContext) async throws ->
       ServerResponse.Stream<Output>
   ) async throws -> ServerResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var serviceContext = ServiceContext.topLevel

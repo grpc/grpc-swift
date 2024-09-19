@@ -86,16 +86,28 @@ extension GRPCCore.ServiceDescriptor {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Echo_EchoStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Immediately returns an echo of a request.
-    func get(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    func get(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
     
     /// Splits a request into words and returns each word in a stream of messages.
-    func expand(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    func expand(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
     
     /// Collects a stream of messages and returns them concatenated when the caller closes.
-    func collect(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    func collect(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
     
     /// Streams back messages as they are received in an input stream.
-    func update(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    func update(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -107,32 +119,44 @@ extension Echo_Echo.StreamingServiceProtocol {
             forMethod: Echo_Echo.Method.Get.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoResponse>(),
-            handler: { request in
-                try await self.get(request: request)
+            handler: { request, context in
+                try await self.get(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Echo_Echo.Method.Expand.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoResponse>(),
-            handler: { request in
-                try await self.expand(request: request)
+            handler: { request, context in
+                try await self.expand(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Echo_Echo.Method.Collect.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoResponse>(),
-            handler: { request in
-                try await self.collect(request: request)
+            handler: { request, context in
+                try await self.collect(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Echo_Echo.Method.Update.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoResponse>(),
-            handler: { request in
-                try await self.update(request: request)
+            handler: { request, context in
+                try await self.update(
+                    request: request,
+                    context: context
+                )
             }
         )
     }
@@ -141,33 +165,63 @@ extension Echo_Echo.StreamingServiceProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Echo_EchoServiceProtocol: Echo_Echo.StreamingServiceProtocol {
     /// Immediately returns an echo of a request.
-    func get(request: GRPCCore.ServerRequest.Single<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Single<Echo_EchoResponse>
+    func get(
+        request: GRPCCore.ServerRequest.Single<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<Echo_EchoResponse>
     
     /// Splits a request into words and returns each word in a stream of messages.
-    func expand(request: GRPCCore.ServerRequest.Single<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    func expand(
+        request: GRPCCore.ServerRequest.Single<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
     
     /// Collects a stream of messages and returns them concatenated when the caller closes.
-    func collect(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Single<Echo_EchoResponse>
+    func collect(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<Echo_EchoResponse>
     
     /// Streams back messages as they are received in an input stream.
-    func update(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    func update(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
 }
 
 /// Partial conformance to `Echo_EchoStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Echo_Echo.ServiceProtocol {
-    internal func get(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
-        let response = try await self.get(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func get(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
+        let response = try await self.get(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    internal func expand(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
-        let response = try await self.expand(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func expand(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
+        let response = try await self.expand(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return response
     }
     
-    internal func collect(request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
-        let response = try await self.collect(request: request)
+    internal func collect(
+        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
+        let response = try await self.collect(
+            request: request,
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
 }

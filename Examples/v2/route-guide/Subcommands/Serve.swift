@@ -103,7 +103,8 @@ struct RouteGuideService {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   func getFeature(
-    request: ServerRequest.Single<Routeguide_Point>
+    request: ServerRequest.Single<Routeguide_Point>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Routeguide_Feature> {
     let feature = self.findFeature(
       latitude: request.message.latitude,
@@ -126,7 +127,8 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func listFeatures(
-    request: ServerRequest.Single<Routeguide_Rectangle>
+    request: ServerRequest.Single<Routeguide_Rectangle>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Routeguide_Feature> {
     return ServerResponse.Stream { writer in
       let featuresWithinBounds = self.features.filter { feature in 
@@ -139,7 +141,8 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func recordRoute(
-    request: ServerRequest.Stream<Routeguide_Point>
+    request: ServerRequest.Stream<Routeguide_Point>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Routeguide_RouteSummary> {
     let startTime = ContinuousClock.now
     var pointsVisited = 0
@@ -173,7 +176,8 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func routeChat(
-    request: ServerRequest.Stream<Routeguide_RouteNote>
+    request: ServerRequest.Stream<Routeguide_RouteNote>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Routeguide_RouteNote> {
     return ServerResponse.Stream { writer in
       for try await note in request.messages {

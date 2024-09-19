@@ -60,7 +60,10 @@ extension GRPCCore.ServiceDescriptor {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Sends a greeting
-    func sayHello(request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply>
+    func sayHello(
+        request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -72,8 +75,11 @@ extension Helloworld_Greeter.StreamingServiceProtocol {
             forMethod: Helloworld_Greeter.Method.SayHello.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Helloworld_HelloRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Helloworld_HelloReply>(),
-            handler: { request in
-                try await self.sayHello(request: request)
+            handler: { request, context in
+                try await self.sayHello(
+                    request: request,
+                    context: context
+                )
             }
         )
     }
@@ -83,14 +89,23 @@ extension Helloworld_Greeter.StreamingServiceProtocol {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 internal protocol Helloworld_GreeterServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
     /// Sends a greeting
-    func sayHello(request: GRPCCore.ServerRequest.Single<Helloworld_HelloRequest>) async throws -> GRPCCore.ServerResponse.Single<Helloworld_HelloReply>
+    func sayHello(
+        request: GRPCCore.ServerRequest.Single<Helloworld_HelloRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<Helloworld_HelloReply>
 }
 
 /// Partial conformance to `Helloworld_GreeterStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Helloworld_Greeter.ServiceProtocol {
-    internal func sayHello(request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply> {
-        let response = try await self.sayHello(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func sayHello(
+        request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply> {
+        let response = try await self.sayHello(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
 }

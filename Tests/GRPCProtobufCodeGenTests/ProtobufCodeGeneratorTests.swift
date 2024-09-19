@@ -241,7 +241,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         public protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-          func sayHello(request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply>
+          func sayHello(
+            request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
+            context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply>
         }
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -253,8 +256,11 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
               forMethod: Helloworld_Greeter.Method.SayHello.descriptor,
               deserializer: GRPCProtobuf.ProtobufDeserializer<Helloworld_HelloRequest>(),
               serializer: GRPCProtobuf.ProtobufSerializer<Helloworld_HelloReply>(),
-              handler: { request in
-                try await self.sayHello(request: request)
+              handler: { request, context in
+                try await self.sayHello(
+                  request: request,
+                  context: context
+                )
               }
             )
           }
@@ -264,19 +270,29 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         public protocol Helloworld_GreeterServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-          func sayHello(request: GRPCCore.ServerRequest.Single<Helloworld_HelloRequest>) async throws -> GRPCCore.ServerResponse.Single<Helloworld_HelloReply>
+          func sayHello(
+            request: GRPCCore.ServerRequest.Single<Helloworld_HelloRequest>,
+            context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse.Single<Helloworld_HelloReply>
         }
 
         /// Partial conformance to `Helloworld_GreeterStreamingServiceProtocol`.
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         extension Helloworld_Greeter.ServiceProtocol {
-          public func sayHello(request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply> {
-            let response = try await self.sayHello(request: GRPCCore.ServerRequest.Single(stream: request))
+          public func sayHello(
+            request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
+            context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply> {
+            let response = try await self.sayHello(
+              request: GRPCCore.ServerRequest.Single(stream: request),
+              context: context
+            )
             return GRPCCore.ServerResponse.Stream(single: response)
           }
         }
         """
     )
+
     try testCodeGeneration(
       proto: Google_Protobuf_FileDescriptorProto.helloWorldEmptyPackage,
       indentation: 2,
@@ -348,7 +364,10 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         package protocol GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Sends a greeting.
-          func sayHello(request: GRPCCore.ServerRequest.Stream<HelloRequest>) async throws -> GRPCCore.ServerResponse.Stream<HelloReply>
+          func sayHello(
+            request: GRPCCore.ServerRequest.Stream<HelloRequest>,
+            context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse.Stream<HelloReply>
         }
 
         /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -360,8 +379,11 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
               forMethod: Greeter.Method.SayHello.descriptor,
               deserializer: GRPCProtobuf.ProtobufDeserializer<HelloRequest>(),
               serializer: GRPCProtobuf.ProtobufSerializer<HelloReply>(),
-              handler: { request in
-                try await self.sayHello(request: request)
+              handler: { request, context in
+                try await self.sayHello(
+                  request: request,
+                  context: context
+                )
               }
             )
           }
@@ -371,14 +393,23 @@ final class ProtobufCodeGeneratorTests: XCTestCase {
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         package protocol GreeterServiceProtocol: Greeter.StreamingServiceProtocol {
           /// Sends a greeting.
-          func sayHello(request: GRPCCore.ServerRequest.Single<HelloRequest>) async throws -> GRPCCore.ServerResponse.Single<HelloReply>
+          func sayHello(
+            request: GRPCCore.ServerRequest.Single<HelloRequest>,
+            context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse.Single<HelloReply>
         }
 
         /// Partial conformance to `GreeterStreamingServiceProtocol`.
         @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
         extension Greeter.ServiceProtocol {
-          package func sayHello(request: GRPCCore.ServerRequest.Stream<HelloRequest>) async throws -> GRPCCore.ServerResponse.Stream<HelloReply> {
-            let response = try await self.sayHello(request: GRPCCore.ServerRequest.Single(stream: request))
+          package func sayHello(
+            request: GRPCCore.ServerRequest.Stream<HelloRequest>,
+            context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse.Stream<HelloReply> {
+            let response = try await self.sayHello(
+              request: GRPCCore.ServerRequest.Single(stream: request),
+              context: context
+            )
             return GRPCCore.ServerResponse.Stream(single: response)
           }
         }
