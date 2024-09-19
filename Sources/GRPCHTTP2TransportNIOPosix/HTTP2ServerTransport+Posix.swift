@@ -163,9 +163,12 @@ extension HTTP2ServerTransport {
     }
 
     public func listen(
-      _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+      streamHandler: @escaping @Sendable (
+        _ stream: RPCStream<Inbound, Outbound>,
+        _ context: ServerContext
+      ) async -> Void
     ) async throws {
-      try await self.underlyingTransport.listen(streamHandler)
+      try await self.underlyingTransport.listen(streamHandler: streamHandler)
     }
 
     public func beginGracefulShutdown() {

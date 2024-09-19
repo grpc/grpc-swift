@@ -21,25 +21,29 @@ import struct Foundation.Data
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ControlService: ControlStreamingServiceProtocol {
   func unary(
-    request: ServerRequest.Stream<Control.Method.Unary.Input>
+    request: ServerRequest.Stream<Control.Method.Unary.Input>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Control.Method.Unary.Output> {
     try await self.handle(request: request)
   }
 
   func serverStream(
-    request: ServerRequest.Stream<Control.Method.ServerStream.Input>
+    request: ServerRequest.Stream<Control.Method.ServerStream.Input>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Control.Method.ServerStream.Output> {
     try await self.handle(request: request)
   }
 
   func clientStream(
-    request: ServerRequest.Stream<Control.Method.ClientStream.Input>
+    request: ServerRequest.Stream<Control.Method.ClientStream.Input>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Control.Method.ClientStream.Output> {
     try await self.handle(request: request)
   }
 
   func bidiStream(
-    request: ServerRequest.Stream<Control.Method.BidiStream.Input>
+    request: ServerRequest.Stream<Control.Method.BidiStream.Input>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Control.Method.BidiStream.Output> {
     try await self.handle(request: request)
   }

@@ -225,7 +225,8 @@ final class WorkerService: Sendable {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   func quitWorker(
-    request: ServerRequest.Single<Grpc_Testing_Void>
+    request: ServerRequest.Single<Grpc_Testing_Void>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Grpc_Testing_Void> {
     let onQuit = self.state.withLockedValue { $0.quit() }
 
@@ -246,7 +247,8 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   }
 
   func coreCount(
-    request: ServerRequest.Single<Grpc_Testing_CoreRequest>
+    request: ServerRequest.Single<Grpc_Testing_CoreRequest>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Grpc_Testing_CoreResponse> {
     let coreCount = System.coreCount
     return ServerResponse.Single(
@@ -257,7 +259,8 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   }
 
   func runServer(
-    request: ServerRequest.Stream<Grpc_Testing_ServerArgs>
+    request: ServerRequest.Stream<Grpc_Testing_ServerArgs>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Grpc_Testing_ServerStatus> {
     return ServerResponse.Stream { writer in
       try await withThrowingTaskGroup(of: Void.self) { group in
@@ -328,7 +331,8 @@ extension WorkerService: Grpc_Testing_WorkerService.ServiceProtocol {
   }
 
   func runClient(
-    request: ServerRequest.Stream<Grpc_Testing_ClientArgs>
+    request: ServerRequest.Stream<Grpc_Testing_ClientArgs>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Grpc_Testing_ClientStatus> {
     return ServerResponse.Stream { writer in
       try await withThrowingTaskGroup(of: Void.self) { group in

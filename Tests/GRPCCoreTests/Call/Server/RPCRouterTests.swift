@@ -34,7 +34,7 @@ final class RPCRouterTests: XCTestCase {
       forMethod: method,
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
-    ) { _ in
+    ) { _, _ in
       throw RPCError(code: .failedPrecondition, message: "Shouldn't be called")
     }
 
@@ -50,7 +50,7 @@ final class RPCRouterTests: XCTestCase {
       forMethod: method,
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
-    ) { _ in
+    ) { _, _ in
       throw RPCError(code: .failedPrecondition, message: "Shouldn't be called")
     }
 

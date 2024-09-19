@@ -92,7 +92,10 @@ internal protocol Routeguide_RouteGuideStreamingServiceProtocol: GRPCCore.Regist
     ///
     /// A feature with an empty name is returned if there's no feature at the given
     /// position.
-    func getFeature(request: GRPCCore.ServerRequest.Stream<Routeguide_Point>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature>
+    func getFeature(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Point>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature>
     
     /// A server-to-client streaming RPC.
     ///
@@ -100,19 +103,28 @@ internal protocol Routeguide_RouteGuideStreamingServiceProtocol: GRPCCore.Regist
     /// streamed rather than returned at once (e.g. in a response message with a
     /// repeated field), as the rectangle may cover a large area and contain a
     /// huge number of features.
-    func listFeatures(request: GRPCCore.ServerRequest.Stream<Routeguide_Rectangle>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature>
+    func listFeatures(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Rectangle>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature>
     
     /// A client-to-server streaming RPC.
     ///
     /// Accepts a stream of Points on a route being traversed, returning a
     /// RouteSummary when traversal is completed.
-    func recordRoute(request: GRPCCore.ServerRequest.Stream<Routeguide_Point>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteSummary>
+    func recordRoute(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Point>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteSummary>
     
     /// A Bidirectional streaming RPC.
     ///
     /// Accepts a stream of RouteNotes sent while a route is being traversed,
     /// while receiving other RouteNotes (e.g. from other users).
-    func routeChat(request: GRPCCore.ServerRequest.Stream<Routeguide_RouteNote>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteNote>
+    func routeChat(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_RouteNote>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteNote>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -124,32 +136,44 @@ extension Routeguide_RouteGuide.StreamingServiceProtocol {
             forMethod: Routeguide_RouteGuide.Method.GetFeature.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Routeguide_Point>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Routeguide_Feature>(),
-            handler: { request in
-                try await self.getFeature(request: request)
+            handler: { request, context in
+                try await self.getFeature(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Routeguide_RouteGuide.Method.ListFeatures.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Routeguide_Rectangle>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Routeguide_Feature>(),
-            handler: { request in
-                try await self.listFeatures(request: request)
+            handler: { request, context in
+                try await self.listFeatures(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Routeguide_RouteGuide.Method.RecordRoute.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Routeguide_Point>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Routeguide_RouteSummary>(),
-            handler: { request in
-                try await self.recordRoute(request: request)
+            handler: { request, context in
+                try await self.recordRoute(
+                    request: request,
+                    context: context
+                )
             }
         )
         router.registerHandler(
             forMethod: Routeguide_RouteGuide.Method.RouteChat.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Routeguide_RouteNote>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Routeguide_RouteNote>(),
-            handler: { request in
-                try await self.routeChat(request: request)
+            handler: { request, context in
+                try await self.routeChat(
+                    request: request,
+                    context: context
+                )
             }
         )
     }
@@ -164,7 +188,10 @@ internal protocol Routeguide_RouteGuideServiceProtocol: Routeguide_RouteGuide.St
     ///
     /// A feature with an empty name is returned if there's no feature at the given
     /// position.
-    func getFeature(request: GRPCCore.ServerRequest.Single<Routeguide_Point>) async throws -> GRPCCore.ServerResponse.Single<Routeguide_Feature>
+    func getFeature(
+        request: GRPCCore.ServerRequest.Single<Routeguide_Point>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<Routeguide_Feature>
     
     /// A server-to-client streaming RPC.
     ///
@@ -172,36 +199,63 @@ internal protocol Routeguide_RouteGuideServiceProtocol: Routeguide_RouteGuide.St
     /// streamed rather than returned at once (e.g. in a response message with a
     /// repeated field), as the rectangle may cover a large area and contain a
     /// huge number of features.
-    func listFeatures(request: GRPCCore.ServerRequest.Single<Routeguide_Rectangle>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature>
+    func listFeatures(
+        request: GRPCCore.ServerRequest.Single<Routeguide_Rectangle>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature>
     
     /// A client-to-server streaming RPC.
     ///
     /// Accepts a stream of Points on a route being traversed, returning a
     /// RouteSummary when traversal is completed.
-    func recordRoute(request: GRPCCore.ServerRequest.Stream<Routeguide_Point>) async throws -> GRPCCore.ServerResponse.Single<Routeguide_RouteSummary>
+    func recordRoute(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Point>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Single<Routeguide_RouteSummary>
     
     /// A Bidirectional streaming RPC.
     ///
     /// Accepts a stream of RouteNotes sent while a route is being traversed,
     /// while receiving other RouteNotes (e.g. from other users).
-    func routeChat(request: GRPCCore.ServerRequest.Stream<Routeguide_RouteNote>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteNote>
+    func routeChat(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_RouteNote>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteNote>
 }
 
 /// Partial conformance to `Routeguide_RouteGuideStreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Routeguide_RouteGuide.ServiceProtocol {
-    internal func getFeature(request: GRPCCore.ServerRequest.Stream<Routeguide_Point>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature> {
-        let response = try await self.getFeature(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func getFeature(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Point>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature> {
+        let response = try await self.getFeature(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
     
-    internal func listFeatures(request: GRPCCore.ServerRequest.Stream<Routeguide_Rectangle>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature> {
-        let response = try await self.listFeatures(request: GRPCCore.ServerRequest.Single(stream: request))
+    internal func listFeatures(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Rectangle>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_Feature> {
+        let response = try await self.listFeatures(
+            request: GRPCCore.ServerRequest.Single(stream: request),
+            context: context
+        )
         return response
     }
     
-    internal func recordRoute(request: GRPCCore.ServerRequest.Stream<Routeguide_Point>) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteSummary> {
-        let response = try await self.recordRoute(request: request)
+    internal func recordRoute(
+        request: GRPCCore.ServerRequest.Stream<Routeguide_Point>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteSummary> {
+        let response = try await self.recordRoute(
+            request: request,
+            context: context
+        )
         return GRPCCore.ServerResponse.Stream(single: response)
     }
 }
