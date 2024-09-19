@@ -31,7 +31,7 @@ struct GRPCMessageFramer {
   /// frames with messages over 64KB can still be written.
   /// - Note: This is expressed as the power of 2 closer to 64KB (i.e., 64KiB) because `ByteBuffer`
   /// reserves capacity in powers of 2. This way, we can take advantage of the whole buffer.
-  static let maximumWriteBufferLength = 65_536
+  static let maxWriteBufferLength = 65_536
 
   private var pendingMessages: OneOrManyQueue<(bytes: [UInt8], promise: EventLoopPromise<Void>?)>
 
@@ -64,8 +64,8 @@ struct GRPCMessageFramer {
 
     defer {
       // To avoid holding an excessively large buffer, if its size is larger than
-      // our threshold (`maximumWriteBufferLength`), then reset it to a new `ByteBuffer`.
-      if self.writeBuffer.capacity > Self.maximumWriteBufferLength {
+      // our threshold (`maxWriteBufferLength`), then reset it to a new `ByteBuffer`.
+      if self.writeBuffer.capacity > Self.maxWriteBufferLength {
         self.writeBuffer = ByteBuffer()
       }
     }

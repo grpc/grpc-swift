@@ -56,8 +56,8 @@ struct RetryDelaySequence: Sequence {
     }
 
     @inlinable
-    var _maximumBackoffSeconds: Double {
-      Self._durationToTimeInterval(self.policy.maximumBackoff)
+    var _maxBackoffSeconds: Double {
+      Self._durationToTimeInterval(self.policy.maxBackoff)
     }
 
     @inlinable
@@ -65,10 +65,10 @@ struct RetryDelaySequence: Sequence {
       defer { self.n += 1 }
 
       /// The nth retry will happen after a randomly chosen delay between zero and
-      /// `min(initialBackoff * backoffMultiplier^(n-1), maximumBackoff)`.
+      /// `min(initialBackoff * backoffMultiplier^(n-1), maxBackoff)`.
       let factor = pow(self.policy.backoffMultiplier, Double(self.n - 1))
       let computedBackoff = self._initialBackoffSeconds * factor
-      let clampedBackoff = Swift.min(computedBackoff, self._maximumBackoffSeconds)
+      let clampedBackoff = Swift.min(computedBackoff, self._maxBackoffSeconds)
       let randomisedBackoff = Double.random(in: 0.0 ... clampedBackoff)
 
       return Self._timeIntervalToDuration(randomisedBackoff)

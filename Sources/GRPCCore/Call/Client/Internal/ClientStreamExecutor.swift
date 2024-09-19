@@ -19,11 +19,14 @@
 internal enum ClientStreamExecutor {
   /// Execute a request on the stream executor.
   ///
-  /// The ``run()`` method must be running at the same time as this method.
-  ///
   /// - Parameters:
   ///   - request: A streaming request.
   ///   - method: A description of the method to call.
+  ///   - context: The client context.
+  ///   - attempt: The attempt number for the RPC that will be executed.
+  ///   - serializer: A request serializer.
+  ///   - deserializer: A response deserializer.
+  ///   - stream: The stream to excecute the RPC on.
   /// - Returns: A streamed response.
   @inlinable
   static func execute<Input: Sendable, Output: Sendable>(

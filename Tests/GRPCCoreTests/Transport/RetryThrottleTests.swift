@@ -21,21 +21,21 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class RetryThrottleTests: XCTestCase {
   func testThrottleOnInit() {
-    let throttle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+    let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
     // Start with max tokens, so permitted.
     XCTAssertTrue(throttle.isRetryPermitted)
-    XCTAssertEqual(throttle.maximumTokens, 10)
+    XCTAssertEqual(throttle.maxTokens, 10)
     XCTAssertEqual(throttle.tokens, 10)
     XCTAssertEqual(throttle.tokenRatio, 0.1)
   }
 
   func testThrottleIgnoresMoreThanThreeDecimals() {
-    let throttle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1239)
+    let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1239)
     XCTAssertEqual(throttle.tokenRatio, 0.123)
   }
 
   func testFailureReducesTokens() {
-    let throttle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+    let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
     XCTAssertEqual(throttle.tokens, 10)
     XCTAssert(throttle.isRetryPermitted)
 
@@ -62,7 +62,7 @@ final class RetryThrottleTests: XCTestCase {
   }
 
   func testTokensCantDropBelowZero() {
-    let throttle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+    let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
     for _ in 0 ..< 1000 {
       throttle.recordFailure()
       XCTAssertGreaterThanOrEqual(throttle.tokens, 0)
@@ -71,7 +71,7 @@ final class RetryThrottleTests: XCTestCase {
   }
 
   func testSuccessIncreasesTokens() {
-    let throttle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+    let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
 
     // Drop to zero.
     for _ in 0 ..< 10 {
@@ -91,7 +91,7 @@ final class RetryThrottleTests: XCTestCase {
   }
 
   func testTokensCantRiseAboveMax() {
-    let throttle = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+    let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
     XCTAssertEqual(throttle.tokens, 10)
     throttle.recordSuccess()
     XCTAssertEqual(throttle.tokens, 10)

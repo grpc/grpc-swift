@@ -224,9 +224,9 @@ extension ClientRPCExecutorTests {
     )
 
     let retryPolicy = RetryPolicy(
-      maximumAttempts: 5,
+      maxAttempts: 5,
       initialBackoff: .seconds(60),
-      maximumBackoff: .seconds(50),
+      maxBackoff: .seconds(50),
       backoffMultiplier: 1,
       retryableStatusCodes: [.unavailable]
     )
@@ -261,9 +261,9 @@ extension ClientRPCExecutorTests {
       )
 
       let retryPolicy = RetryPolicy(
-        maximumAttempts: 5,
+        maxAttempts: 5,
         initialBackoff: .seconds(60),
-        maximumBackoff: .seconds(50),
+        maxBackoff: .seconds(50),
         backoffMultiplier: 1,
         retryableStatusCodes: [.unavailable]
       )
@@ -305,9 +305,9 @@ extension CallOptions {
     timeout: Duration? = nil
   ) -> Self {
     let policy = RetryPolicy(
-      maximumAttempts: maximumAttempts,
+      maxAttempts: maximumAttempts,
       initialBackoff: .milliseconds(10),
-      maximumBackoff: .milliseconds(100),
+      maxBackoff: .milliseconds(100),
       backoffMultiplier: 1.6,
       retryableStatusCodes: codes
     )

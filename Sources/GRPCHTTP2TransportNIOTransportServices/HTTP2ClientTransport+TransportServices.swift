@@ -24,12 +24,12 @@ private import Network
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension HTTP2ClientTransport {
-  /// A ``GRPCCore/ClientTransport`` using HTTP/2 built on top of `NIOTransportServices`.
+  /// A `ClientTransport` using HTTP/2 built on top of `NIOTransportServices`.
   ///
   /// This transport builds on top of SwiftNIO's Transport Services networking layer and is the recommended
   /// variant for use on Darwin-based platforms (macOS, iOS, etc.).
   /// If you are targeting Linux platforms then you should use the `NIOPosix` variant of
-  /// the ``GRPCHTTP2Core/HTTP2ClientTransport``.
+  /// the `HTTP2ClientTransport`.
   ///
   /// To use this transport you need to provide a 'target' to connect to which will be resolved
   /// by an appropriate resolver from the resolver registry. By default the resolver registry can
@@ -39,7 +39,7 @@ extension HTTP2ClientTransport {
   ///
   /// You can control various aspects of connection creation, management, security and RPC behavior via
   /// the ``Config``. Load balancing policies and other RPC specific behavior can be configured via
-  /// the ``ServiceConfig`` (if it isn't provided by a resolver).
+  /// the `ServiceConfig` (if it isn't provided by a resolver).
   ///
   /// Beyond creating the transport you don't need to interact with it directly, instead, pass it
   /// to a `GRPCClient`:
@@ -118,8 +118,8 @@ extension HTTP2ClientTransport {
       try await self.channel.withStream(descriptor: descriptor, options: options, closure)
     }
 
-    public func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
-      self.channel.configuration(forMethod: descriptor)
+    public func config(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
+      self.channel.config(forMethod: descriptor)
     }
   }
 }
@@ -200,7 +200,7 @@ extension HTTP2ClientTransport.TransportServices {
     ///   - compression: Compression configuration.
     ///   - transportSecurity: The transport's security configuration.
     ///
-    /// - SeeAlso: ``defaults(_:)``.
+    /// - SeeAlso: ``defaults(transportSecurity:configure:)``
     public init(
       http2: HTTP2ClientTransport.Config.HTTP2,
       backoff: HTTP2ClientTransport.Config.Backoff,

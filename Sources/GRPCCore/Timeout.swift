@@ -77,7 +77,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   /// - Important: It's not possible to know with what precision the duration was created: that is,
   /// it's not possible to know whether `Duration.seconds(value)` or `Duration.milliseconds(value)`
   /// was used. For this reason, the unit chosen for the ``Timeout`` (and thus the wire encoding) may be
-  /// different from the one originally used to create the ``Duration``. Despite this, we guarantee that
+  /// different from the one originally used to create the `Duration`. Despite this, we guarantee that
   /// both durations will be equivalent if there was no loss in precision during the transformation.
   /// For example, `Duration.hours(123)` will yield a ``Timeout`` with `wireEncoding` equal to
   /// `"442800S"`, which is in seconds. However, 442800 seconds and 123 hours are equivalent.

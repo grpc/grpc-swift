@@ -114,7 +114,7 @@ package final class GRPCChannel: ClientTransport {
   ///
   /// - Parameter descriptor: The method to lookup configuration for.
   /// - Returns: Configuration for the method, if it exists.
-  package func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
+  package func config(forMethod descriptor: MethodDescriptor) -> MethodConfig? {
     self._methodConfig.withLock { $0[descriptor] }
   }
 
@@ -193,7 +193,7 @@ package final class GRPCChannel: ClientTransport {
     _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
   ) async throws -> T {
     // Merge options from the call with those from the service config.
-    let methodConfig = self.configuration(forMethod: descriptor)
+    let methodConfig = self.config(forMethod: descriptor)
     var options = options
     options.formUnion(with: methodConfig)
 
@@ -306,7 +306,7 @@ extension GRPCChannel {
       return .tryAgain(RPCError(code: .unavailable, message: "channel isn't ready"))
     }
 
-    let methodConfig = self.configuration(forMethod: descriptor)
+    let methodConfig = self.config(forMethod: descriptor)
     var options = options
     options.formUnion(with: methodConfig)
 

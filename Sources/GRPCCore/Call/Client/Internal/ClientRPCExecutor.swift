@@ -22,7 +22,7 @@ enum ClientRPCExecutor {
   /// - Parameters:
   ///   - request: The request to execute.
   ///   - method: A description of the method to execute the request against.
-  ///   - configuration: The execution configuration.
+  ///   - options: RPC options.
   ///   - serializer: A serializer to convert input messages to bytes.
   ///   - deserializer: A deserializer to convert bytes to output messages.
   ///   - transport: The transport to execute the request on.

@@ -206,7 +206,7 @@ package final class Connection: Sendable {
             scheme: scheme,
             outboundEncoding: compression,
             acceptedEncodings: self.enabledCompression,
-            maximumPayloadSize: maxRequestSize
+            maxPayloadSize: maxRequestSize
           )
           try channel.pipeline.syncOperations.addHandler(streamHandler)
 

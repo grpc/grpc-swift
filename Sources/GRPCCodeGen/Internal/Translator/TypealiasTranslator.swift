@@ -71,9 +71,9 @@
 struct TypealiasTranslator: SpecializedTranslator {
   let client: Bool
   let server: Bool
-  let accessLevel: SourceGenerator.Configuration.AccessLevel
+  let accessLevel: SourceGenerator.Config.AccessLevel
 
-  init(client: Bool, server: Bool, accessLevel: SourceGenerator.Configuration.AccessLevel) {
+  init(client: Bool, server: Bool, accessLevel: SourceGenerator.Config.AccessLevel) {
     self.client = client
     self.server = server
     self.accessLevel = accessLevel

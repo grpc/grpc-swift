@@ -725,7 +725,7 @@ extension TypealiasTranslatorSnippetBasedTests {
     expectedSwift: String,
     client: Bool,
     server: Bool,
-    accessLevel: SourceGenerator.Configuration.AccessLevel
+    accessLevel: SourceGenerator.Config.AccessLevel
   ) throws {
     let translator = TypealiasTranslator(client: client, server: server, accessLevel: accessLevel)
     let codeBlocks = try translator.translate(from: codeGenerationRequest)

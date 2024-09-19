@@ -20,18 +20,18 @@ import XCTest
 final class MethodConfigsTests: XCTestCase {
   func testGetConfigurationForKnownMethod() async throws {
     let policy = HedgingPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigs()
-    configurations.setDefaultConfiguration(defaultConfiguration)
+    configurations.setDefaultConfig(defaultConfiguration)
     let descriptor = MethodDescriptor(service: "test", method: "first")
     let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
@@ -43,18 +43,18 @@ final class MethodConfigsTests: XCTestCase {
 
   func testGetConfigurationForUnknownMethodButServiceOverride() {
     let policy = HedgingPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigs()
-    configurations.setDefaultConfiguration(defaultConfiguration)
+    configurations.setDefaultConfig(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test", method: "")
     let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )
@@ -67,18 +67,18 @@ final class MethodConfigsTests: XCTestCase {
 
   func testGetConfigurationForUnknownMethodDefaultValue() {
     let policy = HedgingPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: []
     )
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigs()
-    configurations.setDefaultConfiguration(defaultConfiguration)
+    configurations.setDefaultConfig(defaultConfiguration)
     let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
     let retryPolicy = RetryPolicy(
-      maximumAttempts: 10,
+      maxAttempts: 10,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.0,
       retryableStatusCodes: [.unavailable]
     )

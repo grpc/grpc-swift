@@ -118,7 +118,7 @@ extension ConnectionTest {
               let handler = GRPCServerStreamHandler(
                 scheme: .http,
                 acceptedEncodings: .none,
-                maximumPayloadSize: .max,
+                maxPayloadSize: .max,
                 methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
               )
 

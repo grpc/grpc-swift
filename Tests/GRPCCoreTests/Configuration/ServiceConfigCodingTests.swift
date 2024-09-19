@@ -229,7 +229,7 @@ final class ServiceConfigCodingTests: XCTestCase {
           maxResponseMessageBytes: 4096,
           executionPolicy: .hedge(
             HedgingPolicy(
-              maximumAttempts: 3,
+              maxAttempts: 3,
               hedgingDelay: .seconds(1),
               nonFatalStatusCodes: [.aborted]
             )

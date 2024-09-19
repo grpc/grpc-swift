@@ -91,9 +91,9 @@ struct MethodConfigCodingTests {
     @Test("RetryPolicy")
     func retryPolicy() throws {
       let policy = RetryPolicy(
-        maximumAttempts: 3,
+        maxAttempts: 3,
         initialBackoff: .seconds(1),
-        maximumBackoff: .seconds(3),
+        maxBackoff: .seconds(3),
         backoffMultiplier: 1.6,
         retryableStatusCodes: [.aborted]
       )
@@ -107,7 +107,7 @@ struct MethodConfigCodingTests {
     @Test("HedgingPolicy")
     func hedgingPolicy() throws {
       let policy = HedgingPolicy(
-        maximumAttempts: 3,
+        maxAttempts: 3,
         hedgingDelay: .seconds(1),
         nonFatalStatusCodes: [.aborted]
       )
@@ -233,9 +233,9 @@ struct MethodConfigCodingTests {
     func retryPolicy() throws {
       let decoded = try self.decodeFromFile("method_config.retry_policy", as: RetryPolicy.self)
       let expected = RetryPolicy(
-        maximumAttempts: 3,
+        maxAttempts: 3,
         initialBackoff: .seconds(1),
-        maximumBackoff: .seconds(3),
+        maxBackoff: .seconds(3),
         backoffMultiplier: 1.6,
         retryableStatusCodes: [.aborted, .unavailable]
       )
@@ -262,7 +262,7 @@ struct MethodConfigCodingTests {
     func hedgingPolicy() throws {
       let decoded = try self.decodeFromFile("method_config.hedging_policy", as: HedgingPolicy.self)
       let expected = HedgingPolicy(
-        maximumAttempts: 3,
+        maxAttempts: 3,
         hedgingDelay: .seconds(1),
         nonFatalStatusCodes: [.aborted]
       )
@@ -315,7 +315,7 @@ struct MethodConfigCodingTests {
         maxResponseMessageBytes: 2048,
         executionPolicy: .hedge(
           HedgingPolicy(
-            maximumAttempts: 3,
+            maxAttempts: 3,
             hedgingDelay: .seconds(42),
             nonFatalStatusCodes: [.aborted, .unimplemented]
           )
@@ -341,9 +341,9 @@ struct MethodConfigCodingTests {
         maxResponseMessageBytes: 2048,
         executionPolicy: .retry(
           RetryPolicy(
-            maximumAttempts: 3,
+            maxAttempts: 3,
             initialBackoff: .seconds(1),
-            maximumBackoff: .seconds(3),
+            maxBackoff: .seconds(3),
             backoffMultiplier: 1.6,
             retryableStatusCodes: [.aborted, .unimplemented]
           )

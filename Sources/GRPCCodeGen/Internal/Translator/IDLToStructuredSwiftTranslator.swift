@@ -20,7 +20,7 @@
 struct IDLToStructuredSwiftTranslator: Translator {
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool,
     client: Bool,
     server: Bool
@@ -63,7 +63,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 
   private func makeImports(
     dependencies: [CodeGenerationRequest.Dependency],
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool
   ) throws -> [ImportDescription] {
     var imports: [ImportDescription] = []
@@ -87,7 +87,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 }
 
 extension AccessModifier {
-  fileprivate init(_ accessLevel: SourceGenerator.Configuration.AccessLevel) {
+  fileprivate init(_ accessLevel: SourceGenerator.Config.AccessLevel) {
     switch accessLevel.level {
     case .internal: self = .internal
     case .package: self = .package

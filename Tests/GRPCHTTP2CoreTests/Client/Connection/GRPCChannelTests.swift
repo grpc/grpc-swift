@@ -38,11 +38,11 @@ final class GRPCChannelTests: XCTestCase {
       defaultServiceConfig: serviceConfig
     )
 
-    XCTAssertNotNil(channel.configuration(forMethod: .echoGet))
-    XCTAssertNil(channel.configuration(forMethod: .echoUpdate))
+    XCTAssertNotNil(channel.config(forMethod: .echoGet))
+    XCTAssertNil(channel.config(forMethod: .echoUpdate))
 
     let throttle = try XCTUnwrap(channel.retryThrottle)
-    XCTAssertEqual(throttle.maximumTokens, 100)
+    XCTAssertEqual(throttle.maxTokens, 100)
     XCTAssertEqual(throttle.tokenRatio, 0.1)
   }
 
@@ -71,8 +71,8 @@ final class GRPCChannelTests: XCTestCase {
     )
 
     // Not resolved yet so the default (empty) service config is used.
-    XCTAssertNil(channel.configuration(forMethod: .echoGet))
-    XCTAssertNil(channel.configuration(forMethod: .echoUpdate))
+    XCTAssertNil(channel.config(forMethod: .echoGet))
+    XCTAssertNil(channel.config(forMethod: .echoUpdate))
     XCTAssertNil(channel.retryThrottle)
 
     try await withThrowingDiscardingTaskGroup { group in
@@ -88,11 +88,11 @@ final class GRPCChannelTests: XCTestCase {
         switch event {
         case .ready:
           // When the channel is ready it must have the service config from the resolver.
-          XCTAssertNotNil(channel.configuration(forMethod: .echoGet))
-          XCTAssertNil(channel.configuration(forMethod: .echoUpdate))
+          XCTAssertNotNil(channel.config(forMethod: .echoGet))
+          XCTAssertNil(channel.config(forMethod: .echoUpdate))
 
           let throttle = try XCTUnwrap(channel.retryThrottle)
-          XCTAssertEqual(throttle.maximumTokens, 100)
+          XCTAssertEqual(throttle.maxTokens, 100)
           XCTAssertEqual(throttle.tokenRatio, 0.1)
 
           // Now close.
@@ -124,8 +124,8 @@ final class GRPCChannelTests: XCTestCase {
     )
 
     // Not resolved yet so the default (empty) service config is used.
-    XCTAssertNil(channel.configuration(forMethod: .echoGet))
-    XCTAssertNil(channel.configuration(forMethod: .echoUpdate))
+    XCTAssertNil(channel.config(forMethod: .echoGet))
+    XCTAssertNil(channel.config(forMethod: .echoUpdate))
     XCTAssertNil(channel.retryThrottle)
 
     // Yield the first address list and service config.
@@ -155,10 +155,10 @@ final class GRPCChannelTests: XCTestCase {
         switch event {
         case .ready:
           // When the channel it must have the service config from the resolver.
-          XCTAssertNotNil(channel.configuration(forMethod: .echoGet))
-          XCTAssertNil(channel.configuration(forMethod: .echoUpdate))
+          XCTAssertNotNil(channel.config(forMethod: .echoGet))
+          XCTAssertNil(channel.config(forMethod: .echoUpdate))
           let throttle = try XCTUnwrap(channel.retryThrottle)
-          XCTAssertEqual(throttle.maximumTokens, 100)
+          XCTAssertEqual(throttle.maxTokens, 100)
           XCTAssertEqual(throttle.tokenRatio, 0.1)
 
           // Now yield a new service config with the same addresses.
@@ -170,8 +170,8 @@ final class GRPCChannelTests: XCTestCase {
 
           // This should be propagated quickly.
           try await XCTPoll(every: .milliseconds(10)) {
-            let noConfigForGet = channel.configuration(forMethod: .echoGet) == nil
-            let configForUpdate = channel.configuration(forMethod: .echoUpdate) != nil
+            let noConfigForGet = channel.config(forMethod: .echoGet) == nil
+            let configForUpdate = channel.config(forMethod: .echoUpdate) != nil
             let noThrottle = channel.retryThrottle == nil
             return noConfigForGet && configForUpdate && noThrottle
           }

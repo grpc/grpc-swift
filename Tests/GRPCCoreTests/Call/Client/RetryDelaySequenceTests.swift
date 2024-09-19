@@ -21,9 +21,9 @@ import XCTest
 final class RetryDelaySequenceTests: XCTestCase {
   func testSequence() {
     let policy = RetryPolicy(
-      maximumAttempts: 3,  // ignored here
+      maxAttempts: 3,  // ignored here
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(8),
+      maxBackoff: .seconds(8),
       backoffMultiplier: 2.0,
       retryableStatusCodes: [.aborted]  // ignored here
     )
@@ -41,9 +41,9 @@ final class RetryDelaySequenceTests: XCTestCase {
 
   func testSequenceSupportsMultipleIteration() {
     let policy = RetryPolicy(
-      maximumAttempts: 3,  // ignored here
+      maxAttempts: 3,  // ignored here
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(8),
+      maxBackoff: .seconds(8),
       backoffMultiplier: 2.0,
       retryableStatusCodes: [.aborted]  // ignored here
     )

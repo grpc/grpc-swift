@@ -44,12 +44,12 @@ final class GRPCMessageDecoderTests: XCTestCase {
         (firstMessage, [Array(repeating: UInt8(42), count: 16)]),
         (secondMessage, [Array(repeating: UInt8(43), count: 8)]),
       ]) {
-        GRPCMessageDecoder(maximumPayloadSize: .max)
+        GRPCMessageDecoder(maxPayloadSize: .max)
       }
   }
 
   func testReadMessageOverSizeLimitWithoutCompression() throws {
-    let deframer = GRPCMessageDecoder(maximumPayloadSize: 100)
+    let deframer = GRPCMessageDecoder(maxPayloadSize: 100)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
 
     var buffer = ByteBuffer()
@@ -72,7 +72,7 @@ final class GRPCMessageDecoderTests: XCTestCase {
   }
 
   func testReadMessageOverSizeLimitButWithoutActualMessageBytes() throws {
-    let deframer = GRPCMessageDecoder(maximumPayloadSize: 100)
+    let deframer = GRPCMessageDecoder(maxPayloadSize: 100)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
 
     var buffer = ByteBuffer()
@@ -97,7 +97,7 @@ final class GRPCMessageDecoderTests: XCTestCase {
   }
 
   func testCompressedMessageWithoutConfiguringDecompressor() throws {
-    let deframer = GRPCMessageDecoder(maximumPayloadSize: 100)
+    let deframer = GRPCMessageDecoder(maxPayloadSize: 100)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
 
     var buffer = ByteBuffer()
@@ -143,7 +143,7 @@ final class GRPCMessageDecoderTests: XCTestCase {
         (firstMessage.bytes, [Array(repeating: 42, count: 100)]),
         (secondMessage.bytes, [Array(repeating: 43, count: 110)]),
       ]) {
-        GRPCMessageDecoder(maximumPayloadSize: 1000, decompressor: decompressor)
+        GRPCMessageDecoder(maxPayloadSize: 1000, decompressor: decompressor)
       }
   }
 
@@ -156,7 +156,7 @@ final class GRPCMessageDecoderTests: XCTestCase {
   }
 
   func testReadCompressedMessageOverSizeLimitBeforeDecompressing() throws {
-    let deframer = GRPCMessageDecoder(maximumPayloadSize: 1)
+    let deframer = GRPCMessageDecoder(maxPayloadSize: 1)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
     let compressor = Zlib.Compressor(method: .gzip)
     var framer = GRPCMessageFramer()
@@ -186,7 +186,7 @@ final class GRPCMessageDecoderTests: XCTestCase {
 
   private func testReadDecompressedMessageOverSizeLimit(method: Zlib.Method) throws {
     let decompressor = Zlib.Decompressor(method: method)
-    let deframer = GRPCMessageDecoder(maximumPayloadSize: 100, decompressor: decompressor)
+    let deframer = GRPCMessageDecoder(maxPayloadSize: 100, decompressor: decompressor)
     let processor = NIOSingleStepByteToMessageProcessor(deframer)
     let compressor = Zlib.Compressor(method: method)
     var framer = GRPCMessageFramer()

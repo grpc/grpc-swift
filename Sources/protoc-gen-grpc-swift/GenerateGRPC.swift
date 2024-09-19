@@ -123,7 +123,7 @@ final class GenerateGRPC: CodeGenerator {
       fileNamingOption: options.fileNaming
     )
 
-    let config = SourceGenerator.Configuration(options: options)
+    let config = SourceGenerator.Config(options: options)
     let fileGenerator = ProtobufCodeGenerator(configuration: config)
     let contents = try fileGenerator.generateCode(
       from: descriptor,
@@ -212,9 +212,9 @@ private func splitPath(pathname: String) -> (dir: String, base: String, suffix: 
 }
 
 #if compiler(>=6.0)
-extension SourceGenerator.Configuration {
+extension SourceGenerator.Config {
   init(options: GeneratorOptions) {
-    let accessLevel: SourceGenerator.Configuration.AccessLevel
+    let accessLevel: SourceGenerator.Config.AccessLevel
     switch options.visibility {
     case .internal:
       accessLevel = .internal

@@ -28,19 +28,19 @@ struct GRPCMessageDecoder: NIOSingleStepByteToMessageDecoder {
   typealias InboundOut = [UInt8]
 
   private let decompressor: Zlib.Decompressor?
-  private let maximumPayloadSize: Int
+  private let maxPayloadSize: Int
 
   /// Create a new ``GRPCMessageDeframer``.
   /// - Parameters:
-  ///   - maximumPayloadSize: The maximum size a message payload can be.
+  ///   - maxPayloadSize: The maximum size a message payload can be.
   ///   - decompressor: A `Zlib.Decompressor` to use when decompressing compressed gRPC messages.
   /// - Important: You must call `end()` on the `decompressor` when you're done using it, to clean
   /// up any resources allocated by `Zlib`.
   init(
-    maximumPayloadSize: Int,
+    maxPayloadSize: Int,
     decompressor: Zlib.Decompressor? = nil
   ) {
-    self.maximumPayloadSize = maximumPayloadSize
+    self.maxPayloadSize = maxPayloadSize
     self.decompressor = decompressor
   }
 
@@ -60,12 +60,12 @@ struct GRPCMessageDecoder: NIOSingleStepByteToMessageDecoder {
     let isMessageCompressed = buffer.readInteger(as: UInt8.self)! == 1
     let messageLength = buffer.readInteger(as: UInt32.self)!
 
-    if messageLength > self.maximumPayloadSize {
+    if messageLength > self.maxPayloadSize {
       throw RPCError(
         code: .resourceExhausted,
         message: """
           Message has exceeded the configured maximum payload size \
-          (max: \(self.maximumPayloadSize), actual: \(messageLength))
+          (max: \(self.maxPayloadSize), actual: \(messageLength))
           """
       )
     }
@@ -90,7 +90,7 @@ struct GRPCMessageDecoder: NIOSingleStepByteToMessageDecoder {
           message: "Received a compressed message payload, but no decompressor has been configured."
         )
       }
-      return try decompressor.decompress(&message, limit: self.maximumPayloadSize)
+      return try decompressor.decompress(&message, limit: self.maxPayloadSize)
     } else {
       return Array(buffer: message)
     }
@@ -111,14 +111,14 @@ package struct GRPCMessageDeframer {
 
   init(maxPayloadSize: Int, decompressor: Zlib.Decompressor?) {
     self.decoder = GRPCMessageDecoder(
-      maximumPayloadSize: maxPayloadSize,
+      maxPayloadSize: maxPayloadSize,
       decompressor: decompressor
     )
     self.buffer = nil
   }
 
   package init(maxPayloadSize: Int) {
-    self.decoder = GRPCMessageDecoder(maximumPayloadSize: maxPayloadSize, decompressor: nil)
+    self.decoder = GRPCMessageDecoder(maxPayloadSize: maxPayloadSize, decompressor: nil)
     self.buffer = nil
   }
 

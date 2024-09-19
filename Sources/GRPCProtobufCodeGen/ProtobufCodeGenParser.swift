@@ -27,13 +27,13 @@ internal struct ProtobufCodeGenParser {
   let namer: SwiftProtobufNamer
   let extraModuleImports: [String]
   let protoToModuleMappings: ProtoFileToModuleMappings
-  let accessLevel: SourceGenerator.Configuration.AccessLevel
+  let accessLevel: SourceGenerator.Config.AccessLevel
 
   internal init(
     input: FileDescriptor,
     protoFileModuleMappings: ProtoFileToModuleMappings,
     extraModuleImports: [String],
-    accessLevel: SourceGenerator.Configuration.AccessLevel
+    accessLevel: SourceGenerator.Config.AccessLevel
   ) {
     self.input = input
     self.extraModuleImports = extraModuleImports

@@ -18,8 +18,8 @@
 ///
 /// When creating a new instance, no overrides and no default will be set for using when getting
 /// a configuration for a method that has not been given a specific override.
-/// Use ``setDefaultConfiguration(_:forService:)`` to set a specific override for a whole
-/// service, or set a default configuration for all methods by calling ``setDefaultConfiguration(_:)``.
+/// Use ``setDefaultConfig(_:forService:)`` to set a specific override for a whole
+/// service, or set a default configuration for all methods by calling ``setDefaultConfig(_:)``.
 ///
 /// Use the subscript to get and set configurations for specific methods.
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -42,7 +42,7 @@ package struct MethodConfigs: Sendable, Hashable {
   /// Get or set the corresponding ``MethodConfig`` for the given ``MethodDescriptor``.
   ///
   /// Configuration is hierarchical and can be set per-method, per-service
-  /// (``setDefaultConfiguration(_:forService:)``) and globally (``setDefaultConfiguration(_:)``).
+  /// (``setDefaultConfig(_:forService:)``) and globally (``setDefaultConfig(_:)``).
   /// This subscript sets the per-method configuration but retrieves a configuration respecting
   /// the hierarchy. If no per-method configuration is present, the per-service configuration is
   /// checked and returned if present. If the per-service configuration isn't present then the
@@ -78,10 +78,10 @@ package struct MethodConfigs: Sendable, Hashable {
 
   /// Set a default configuration for all methods that have no overrides.
   ///
-  /// - Parameter configuration: The default configuration.
-  package mutating func setDefaultConfiguration(_ configuration: MethodConfig?) {
+  /// - Parameter config: The default configuration.
+  package mutating func setDefaultConfig(_ config: MethodConfig?) {
     let name = MethodConfig.Name(service: "", method: "")
-    self.elements[name] = configuration
+    self.elements[name] = config
   }
 
   /// Set a default configuration for a service.
@@ -91,13 +91,13 @@ package struct MethodConfigs: Sendable, Hashable {
   /// this instance of ``MethodConfigs``.
   ///
   /// - Parameters:
-  ///   - configuration: The default configuration for the service.
+  ///   - config: The default configuration for the service.
   ///   - service: The name of the service for which this override applies.
-  package mutating func setDefaultConfiguration(
-    _ configuration: MethodConfig?,
+  package mutating func setDefaultConfig(
+    _ config: MethodConfig?,
     forService service: String
   ) {
     let name = MethodConfig.Name(service: "", method: "")
-    self.elements[name] = configuration
+    self.elements[name] = config
   }
 }

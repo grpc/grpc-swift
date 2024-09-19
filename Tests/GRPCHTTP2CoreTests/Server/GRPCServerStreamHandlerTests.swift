@@ -30,7 +30,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -60,7 +60,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -90,7 +90,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -129,7 +129,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -168,7 +168,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -206,7 +206,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -248,7 +248,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -317,7 +317,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 1,
+      maxPayloadSize: 1,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self),
       skipStateMachineAssertions: true
     )
@@ -383,7 +383,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 42,
+      maxPayloadSize: 42,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self),
       skipStateMachineAssertions: true
     )
@@ -493,7 +493,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -589,7 +589,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -629,7 +629,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -707,7 +707,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: channel.eventLoop.makePromise(of: MethodDescriptor.self)
     )
     try channel.pipeline.syncOperations.addHandler(handler)
@@ -789,7 +789,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: promise,
       skipStateMachineAssertions: true
     )
@@ -828,7 +828,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: promise,
       skipStateMachineAssertions: true
     )
@@ -851,7 +851,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: promise,
       skipStateMachineAssertions: true
     )
@@ -886,7 +886,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: promise,
       skipStateMachineAssertions: true
     )
@@ -941,7 +941,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: promise,
       skipStateMachineAssertions: true
     )
@@ -996,7 +996,7 @@ final class GRPCServerStreamHandlerTests: XCTestCase {
     let handler = GRPCServerStreamHandler(
       scheme: .http,
       acceptedEncodings: [],
-      maximumPayloadSize: 100,
+      maxPayloadSize: 100,
       methodDescriptorPromise: promise,
       skipStateMachineAssertions: true
     )

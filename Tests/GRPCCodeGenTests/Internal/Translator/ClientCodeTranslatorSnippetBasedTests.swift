@@ -797,7 +797,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   private func assertClientCodeTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     file: StaticString = #filePath,
     line: UInt = #line
   ) throws {

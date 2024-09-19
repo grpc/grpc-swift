@@ -204,13 +204,13 @@ public struct RPCExecutionPolicy: Hashable, Sendable {
 /// first responds with metadata and later responds with a retryable status code then the RPC
 /// won't be retried.
 ///
-/// Execution attempts are limited by ``maximumAttempts`` which includes the original attempt. The
+/// Execution attempts are limited by ``maxAttempts`` which includes the original attempt. The
 /// maximum number of attempts is limited to five.
 ///
 /// Subsequent attempts are executed after some delay. The first _retry_, or second attempt, will
 /// be started after a randomly chosen delay between zero and ``initialBackoff``. More generally,
 /// the nth retry will happen after a randomly chosen delay between zero
-/// and `min(initialBackoff * backoffMultiplier^(n-1), maximumBackoff)`.
+/// and `min(initialBackoff * backoffMultiplier^(n-1), maxBackoff)`.
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
@@ -219,8 +219,8 @@ public struct RetryPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
   /// Must be greater than one, values greater than five are treated as five.
-  public var maximumAttempts: Int {
-    didSet { self.maximumAttempts = try! validateMaxAttempts(self.maximumAttempts) }
+  public var maxAttempts: Int {
+    didSet { self.maxAttempts = try! validateMaxAttempts(self.maxAttempts) }
   }
 
   /// The initial backoff duration.
@@ -235,7 +235,7 @@ public struct RetryPolicy: Hashable, Sendable {
   /// The maximum amount of time to backoff for.
   ///
   /// - Precondition: Must be greater than zero.
-  public var maximumBackoff: Duration {
+  public var maxBackoff: Duration {
     willSet { try! Self.validateMaxBackoff(newValue) }
   }
 
@@ -256,30 +256,30 @@ public struct RetryPolicy: Hashable, Sendable {
   /// Create a new retry policy.
   ///
   /// - Parameters:
-  ///   - maximumAttempts: The maximum number of attempts allowed for the RPC.
+  ///   - maxAttempts: The maximum number of attempts allowed for the RPC.
   ///   - initialBackoff: The initial backoff period for the first retry attempt. Must be
   ///       greater than zero.
-  ///   - maximumBackoff: The maximum period of time to wait between attempts. Must be greater than
+  ///   - maxBackoff: The maximum period of time to wait between attempts. Must be greater than
   ///       zero.
   ///   - backoffMultiplier: The exponential backoff multiplier. Must be greater than zero.
   ///   - retryableStatusCodes: The set of status codes which may be retried. Must not be empty.
-  /// - Precondition: `maximumAttempts`, `initialBackoff`, `maximumBackoff` and `backoffMultiplier`
+  /// - Precondition: `maxAttempts`, `initialBackoff`, `maxBackoff` and `backoffMultiplier`
   ///     must be greater than zero.
   /// - Precondition: `retryableStatusCodes` must not be empty.
   public init(
-    maximumAttempts: Int,
+    maxAttempts: Int,
     initialBackoff: Duration,
-    maximumBackoff: Duration,
+    maxBackoff: Duration,
     backoffMultiplier: Double,
     retryableStatusCodes: Set<Status.Code>
   ) {
-    self.maximumAttempts = try! validateMaxAttempts(maximumAttempts)
+    self.maxAttempts = try! validateMaxAttempts(maxAttempts)
 
     try! Self.validateInitialBackoff(initialBackoff)
     self.initialBackoff = initialBackoff
 
-    try! Self.validateMaxBackoff(maximumBackoff)
-    self.maximumBackoff = maximumBackoff
+    try! Self.validateMaxBackoff(maxBackoff)
+    self.maxBackoff = maxBackoff
 
     try! Self.validateBackoffMultiplier(backoffMultiplier)
     self.backoffMultiplier = backoffMultiplier
@@ -301,7 +301,7 @@ public struct RetryPolicy: Hashable, Sendable {
     if value <= .zero {
       throw RuntimeError(
         code: .invalidArgument,
-        message: "maximumBackoff must be greater than zero"
+        message: "maxBackoff must be greater than zero"
       )
     }
   }
@@ -327,7 +327,7 @@ public struct RetryPolicy: Hashable, Sendable {
 /// Hedged RPCs may execute more than once on a server so only idempotent methods should
 /// be hedged.
 ///
-/// gRPC executes the RPC at most ``maximumAttempts`` times, staggering each attempt
+/// gRPC executes the RPC at most ``maxAttempts`` times, staggering each attempt
 /// by ``hedgingDelay``.
 ///
 /// For more information see [gRFC A6 Client
@@ -339,8 +339,8 @@ public struct HedgingPolicy: Hashable, Sendable {
   /// Values greater than five are treated as five.
   ///
   /// - Precondition: Must be greater than one.
-  public var maximumAttempts: Int {
-    didSet { self.maximumAttempts = try! validateMaxAttempts(self.maximumAttempts) }
+  public var maxAttempts: Int {
+    didSet { self.maxAttempts = try! validateMaxAttempts(self.maxAttempts) }
   }
 
   /// The first RPC will be sent immediately, but each subsequent RPC will be sent at intervals
@@ -359,17 +359,17 @@ public struct HedgingPolicy: Hashable, Sendable {
   /// Create a new hedging policy.
   ///
   /// - Parameters:
-  ///   - maximumAttempts: The maximum number of attempts allowed for the RPC.
+  ///   - maxAttempts: The maximum number of attempts allowed for the RPC.
   ///   - hedgingDelay: The delay between each hedged RPC.
   ///   - nonFatalStatusCodes: The set of status codes which indicate other hedged RPCs may still
   ///       succeed.
-  /// - Precondition: `maximumAttempts` must be greater than zero.
+  /// - Precondition: `maxAttempts` must be greater than zero.
   public init(
-    maximumAttempts: Int,
+    maxAttempts: Int,
     hedgingDelay: Duration,
     nonFatalStatusCodes: Set<Status.Code>
   ) {
-    self.maximumAttempts = try! validateMaxAttempts(maximumAttempts)
+    self.maxAttempts = try! validateMaxAttempts(maxAttempts)
 
     try! Self.validateHedgingDelay(hedgingDelay)
     self.hedgingDelay = hedgingDelay
@@ -512,15 +512,15 @@ extension RetryPolicy: Codable {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
     let maxAttempts = try container.decode(Int.self, forKey: .maxAttempts)
-    self.maximumAttempts = try validateMaxAttempts(maxAttempts)
+    self.maxAttempts = try validateMaxAttempts(maxAttempts)
 
     let initialBackoff = try container.decode(String.self, forKey: .initialBackoff)
     self.initialBackoff = try Duration(googleProtobufDuration: initialBackoff)
     try Self.validateInitialBackoff(self.initialBackoff)
 
     let maxBackoff = try container.decode(String.self, forKey: .maxBackoff)
-    self.maximumBackoff = try Duration(googleProtobufDuration: maxBackoff)
-    try Self.validateMaxBackoff(self.maximumBackoff)
+    self.maxBackoff = try Duration(googleProtobufDuration: maxBackoff)
+    try Self.validateMaxBackoff(self.maxBackoff)
 
     self.backoffMultiplier = try container.decode(Double.self, forKey: .backoffMultiplier)
     try Self.validateBackoffMultiplier(self.backoffMultiplier)
@@ -532,12 +532,12 @@ extension RetryPolicy: Codable {
 
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(self.maximumAttempts, forKey: .maxAttempts)
+    try container.encode(self.maxAttempts, forKey: .maxAttempts)
     try container.encode(
       GoogleProtobufDuration(duration: self.initialBackoff),
       forKey: .initialBackoff
     )
-    try container.encode(GoogleProtobufDuration(duration: self.maximumBackoff), forKey: .maxBackoff)
+    try container.encode(GoogleProtobufDuration(duration: self.maxBackoff), forKey: .maxBackoff)
     try container.encode(self.backoffMultiplier, forKey: .backoffMultiplier)
     try container.encode(
       self.retryableStatusCodes.map { $0.googleRPCCode },
@@ -558,7 +558,7 @@ extension HedgingPolicy: Codable {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
     let maxAttempts = try container.decode(Int.self, forKey: .maxAttempts)
-    self.maximumAttempts = try validateMaxAttempts(maxAttempts)
+    self.maxAttempts = try validateMaxAttempts(maxAttempts)
 
     let delay = try container.decode(String.self, forKey: .hedgingDelay)
     self.hedgingDelay = try Duration(googleProtobufDuration: delay)
@@ -569,7 +569,7 @@ extension HedgingPolicy: Codable {
 
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(self.maximumAttempts, forKey: .maxAttempts)
+    try container.encode(self.maxAttempts, forKey: .maxAttempts)
     try container.encode(GoogleProtobufDuration(duration: self.hedgingDelay), forKey: .hedgingDelay)
     try container.encode(
       self.nonFatalStatusCodes.map { $0.googleRPCCode },

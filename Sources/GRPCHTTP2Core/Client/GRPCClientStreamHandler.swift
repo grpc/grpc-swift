@@ -36,7 +36,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
     scheme: Scheme,
     outboundEncoding: CompressionAlgorithm,
     acceptedEncodings: CompressionAlgorithmSet,
-    maximumPayloadSize: Int,
+    maxPayloadSize: Int,
     skipStateMachineAssertions: Bool = false
   ) {
     self.stateMachine = .init(
@@ -48,7 +48,7 @@ final class GRPCClientStreamHandler: ChannelDuplexHandler {
           acceptedEncodings: acceptedEncodings
         )
       ),
-      maximumPayloadSize: maximumPayloadSize,
+      maxPayloadSize: maxPayloadSize,
       skipAssertions: skipStateMachineAssertions
     )
   }
