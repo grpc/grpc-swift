@@ -45,10 +45,10 @@ public struct ClientTracingInterceptor: ClientInterceptor {
   /// that has been configured when bootstrapping `swift-distributed-tracing` in your application.
   public func intercept<Input, Output>(
     request: ClientRequest.Stream<Input>,
-    context: ClientInterceptorContext,
+    context: ClientContext,
     next: (
       ClientRequest.Stream<Input>,
-      ClientInterceptorContext
+      ClientContext
     ) async throws -> ClientResponse.Stream<Output>
   ) async throws -> ClientResponse.Stream<Output> where Input: Sendable, Output: Sendable {
     var request = request
