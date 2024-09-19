@@ -63,7 +63,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 
   private func makeImports(
     dependencies: [CodeGenerationRequest.Dependency],
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool
   ) throws -> [ImportDescription] {
     var imports: [ImportDescription] = []
