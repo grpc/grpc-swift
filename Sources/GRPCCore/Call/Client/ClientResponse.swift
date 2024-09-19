@@ -29,7 +29,7 @@
 /// an ``RPCError`` describing why the RPC failed, including an error code, error message and any
 /// metadata sent by the server.
 ///
-/// ### Using ``Single`` responses
+/// ### Using responses
 ///
 /// Each response has a ``accepted`` property which contains all RPC information. You can create
 /// one by calling ``init(accepted:)`` or one of the two convenience initializers:
@@ -153,7 +153,7 @@ public struct ClientResponse<Message: Sendable>: Sendable {
 /// to execute the request. The failure case contains an ``RPCError`` describing why the RPC
 /// failed, including an error code, error message and any metadata sent by the server.
 ///
-/// ### Using ``Stream`` responses
+/// ### Using streaming responses
 ///
 /// Each response has a ``accepted`` property which contains RPC information. You can create
 /// one by calling ``init(accepted:)`` or one of the two convenience initializers:
