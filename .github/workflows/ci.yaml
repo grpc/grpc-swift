@@ -19,7 +19,7 @@ jobs:
       run: apt update && apt install -y protobuf-compiler
     - name: "Formatting, License Headers, and Generated Code check"
       run: |
-        ./scripts/sanity.sh
+        ./dev/sanity.sh
   unit-tests:
     strategy:
       fail-fast: false
@@ -29,12 +29,6 @@ jobs:
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
           - image: swift:6.0-jammy
-            # No TSAN because of: https://github.com/apple/swift/issues/59068
-            # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.10.1-noble
-            # No TSAN because of: https://github.com/apple/swift/issues/59068
-            # swift-test-flags: "--sanitize=thread"
-          - image: swift:5.9-jammy
             # No TSAN because of: https://github.com/apple/swift/issues/59068
             # swift-test-flags: "--sanitize=thread"
     name: Build and Test on ${{ matrix.image }}
@@ -56,104 +50,15 @@ jobs:
         include:
           - image: swiftlang/swift:nightly-jammy
             swift-version: 'main'
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
           - image: swift:6.0-jammy
             swift-version: '6.0'
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.10.1-noble
-            swift-version: '5.10'
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.9-jammy
-            swift-version: 5.9
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
     name: Performance Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@v4
-    - name: 🧮 Allocation Counting Tests
-      run: ./Performance/allocations/test-allocation-counts.sh
-      env: ${{ matrix.env }}
-      timeout-minutes: 20
-    - name: Install jemalloc for benchmarking
-      if: ${{ matrix.swift-version == '6.0' || matrix.swift-version == 'main' }}
-      run: apt update && apt-get install -y libjemalloc-dev
-      timeout-minutes: 20
     - name: Run Benchmarks
-      if: ${{ matrix.swift-version == '6.0' || matrix.swift-version == 'main' }}
-      working-directory: ./Performance/Benchmarks
+      working-directory: "./IntegrationTests/Benchmarks"
       run: swift package benchmark baseline check --no-progress --check-absolute-path Thresholds/${{ matrix.swift-version }}/
-      timeout-minutes: 20
-  integration-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: swiftlang/swift:nightly-jammy
-            swift-tools-version: '6.0'
-            supports-v2: true
-          - image: swift:6.0-jammy
-            swift-tools-version: '6.0'
-            supports-v2: true
-          - image: swift:5.10.1-noble
-            swift-tools-version: '5.10'
-            supports-v2: false
-          - image: swift:5.9-jammy
-            swift-tools-version: '5.9'
-            supports-v2: false
-    name: Integration Tests on ${{ matrix.image }}
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ matrix.image }}
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install protoc
-      run: apt update && apt install -y protobuf-compiler
-    - name: SwiftPM plugin test (v1)
-      run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }} "v1"
-    - name: SwiftPM plugin test (v2)
-      if: ${{ matrix.supports-v2 }}
-      run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }} "v2"
-    - name: Build without NIOSSL
-      run: swift build
-      env:
-        GRPC_NO_NIO_SSL: 1
-      timeout-minutes: 20
-    - name: Test without NIOSSL
-      run: swift test
-      env:
-        GRPC_NO_NIO_SSL: 1
       timeout-minutes: 20
