@@ -24,7 +24,7 @@ here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Re-generate everything.
 log "Regenerating protos..."
-"$here"/Protos/generate.sh
+"$here"/protos/generate.sh
 
 # Check for changes.
 GIT_PAGER='' git diff --exit-code '*.swift'

@@ -159,6 +159,9 @@ message HttpKeyBuilder {
   // for example if you are suppressing a lot of information from the URL, but
   // need to separately cache and request URLs with that content.
   map<string, string> constant_keys = 5;
+
+  // If specified, the HTTP method/verb will be extracted under this key name.
+  string method = 6;
 }
 
 message RouteLookupConfig {

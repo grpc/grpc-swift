@@ -221,6 +221,9 @@ struct Grpc_Lookup_V1_HttpKeyBuilder: Sendable {
   /// need to separately cache and request URLs with that content.
   var constantKeys: Dictionary<String,String> = [:]
 
+  /// If specified, the HTTP method/verb will be extracted under this key name.
+  var method: String = String()
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -528,6 +531,7 @@ extension Grpc_Lookup_V1_HttpKeyBuilder: SwiftProtobuf.Message, SwiftProtobuf._M
     3: .standard(proto: "query_parameters"),
     4: .same(proto: "headers"),
     5: .standard(proto: "constant_keys"),
+    6: .same(proto: "method"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -541,6 +545,7 @@ extension Grpc_Lookup_V1_HttpKeyBuilder: SwiftProtobuf.Message, SwiftProtobuf._M
       case 3: try { try decoder.decodeRepeatedMessageField(value: &self.queryParameters) }()
       case 4: try { try decoder.decodeRepeatedMessageField(value: &self.headers) }()
       case 5: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.constantKeys) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.method) }()
       default: break
       }
     }
@@ -562,6 +567,9 @@ extension Grpc_Lookup_V1_HttpKeyBuilder: SwiftProtobuf.Message, SwiftProtobuf._M
     if !self.constantKeys.isEmpty {
       try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: self.constantKeys, fieldNumber: 5)
     }
+    if !self.method.isEmpty {
+      try visitor.visitSingularStringField(value: self.method, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -571,6 +579,7 @@ extension Grpc_Lookup_V1_HttpKeyBuilder: SwiftProtobuf.Message, SwiftProtobuf._M
     if lhs.queryParameters != rhs.queryParameters {return false}
     if lhs.headers != rhs.headers {return false}
     if lhs.constantKeys != rhs.constantKeys {return false}
+    if lhs.method != rhs.method {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
