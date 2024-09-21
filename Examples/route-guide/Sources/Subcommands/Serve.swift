@@ -16,11 +16,10 @@
 
 import ArgumentParser
 import Foundation
-import GRPCHTTP2Transport
+import GRPCNIOTransportHTTP2
 import GRPCProtobuf
 import Synchronization
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct Serve: AsyncParsableCommand {
   static let configuration = CommandConfiguration(abstract: "Starts a route-guide server.")
 
@@ -52,7 +51,6 @@ struct Serve: AsyncParsableCommand {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct RouteGuideService {
   /// Known features.
   private let features: [Routeguide_Feature]
@@ -100,7 +98,6 @@ struct RouteGuideService {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   func getFeature(
     request: ServerRequest.Single<Routeguide_Point>,
@@ -131,7 +128,7 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
     context: ServerContext
   ) async throws -> ServerResponse.Stream<Routeguide_Feature> {
     return ServerResponse.Stream { writer in
-      let featuresWithinBounds = self.features.filter { feature in 
+      let featuresWithinBounds = self.features.filter { feature in
         !feature.name.isEmpty && feature.isContained(by: request.message)
       }
 
@@ -223,8 +220,8 @@ private func greatCircleDistance(
   let phi1 = radians(degreesInE7: point1.latitude)
   let lambda2 = radians(degreesInE7: point2.longitude)
   let phi2 = radians(degreesInE7: point2.latitude)
-  
-  // Δλ = λ2 - λ1 
+
+  // Δλ = λ2 - λ1
   let deltaLambda = lambda2 - lambda1
   // Δφ = φ2 - φ1
   let deltaPhi = phi2 - phi1

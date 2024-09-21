@@ -20,12 +20,33 @@ here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 root="$here/../.."
 protoc=$(which protoc)
 
-# Build the protoc plugins.
-swift build -c release --product protoc-gen-swift
+# Checkout and build the plugins.
+build_dir=$(mktemp -d)
+git clone https://github.com/grpc/grpc-swift-protobuf --depth 1 "$build_dir"
+swift build --package-path "$build_dir" --product protoc-gen-swift
+swift build --package-path "$build_dir" --product protoc-gen-grpc-swift
 
 # Grab the plugin paths.
-bin_path=$(swift build -c release --show-bin-path)
+bin_path=$(swift build --package-path "$build_dir" --show-bin-path)
 protoc_gen_swift="$bin_path/protoc-gen-swift"
+protoc_gen_grpc_swift="$bin_path/protoc-gen-grpc-swift"
+
+# Generates gRPC by invoking protoc with the gRPC Swift plugin.
+# Parameters:
+# - $1: .proto file
+# - $2: proto path
+# - $3: output path
+# - $4 onwards: options to forward to the plugin
+function generate_grpc {
+  local proto=$1
+  local args=("--plugin=$protoc_gen_grpc_swift" "--proto_path=${2}" "--grpc-swift_out=${3}")
+
+  for option in "${@:4}"; do
+    args+=("--grpc-swift_opt=$option")
+  done
+
+  invoke_protoc "${args[@]}" "$proto"
+}
 
 # Generates messages by invoking protoc with the Swift plugin.
 # Parameters:
@@ -51,9 +72,35 @@ function invoke_protoc {
   "$protoc" "$@"
 }
 
-#------------------------------------------------------------------------------
+#- EXAMPLES -------------------------------------------------------------------
 
-function generate_rpc_code_for_tests {
+function generate_echo_example {
+  local proto="$here/examples/echo/echo.proto"
+  local output="$root/Examples/echo/Sources/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+}
+
+function generate_helloworld_example {
+  local proto="$here/upstream/grpc/examples/helloworld.proto"
+  local output="$root/Examples/hello-world/Sources/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+}
+
+function generate_routeguide_example {
+  local proto="$here/examples/route_guide/route_guide.proto"
+  local output="$root/Examples/route-guide/Sources/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+}
+
+#- TESTS ----------------------------------------------------------------------
+
+function generate_service_config_for_tests {
   local protos=(
     "$here/upstream/grpc/service_config/service_config.proto"
     "$here/upstream/grpc/lookup/v1/rls.proto"
@@ -69,5 +116,10 @@ function generate_rpc_code_for_tests {
 
 #------------------------------------------------------------------------------
 
+# Generate examples
+generate_echo_example
+generate_helloworld_example
+generate_routeguide_example
+
 # Tests
-generate_rpc_code_for_tests
+generate_service_config_for_tests

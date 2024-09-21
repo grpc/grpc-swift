@@ -16,13 +16,11 @@
 
 import ArgumentParser
 import GRPCCore
-import GRPCHTTP2Core
-import GRPCHTTP2TransportNIOPosix
+import GRPCNIOTransportHTTP2
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct Update: AsyncParsableCommand {
+struct Collect: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
-    abstract: "Makes a bidirectional server streaming RPC to the echo server."
+    abstract: "Makes a client streaming RPC to the echo server."
   )
 
   @OptionGroup
@@ -44,16 +42,13 @@ struct Update: AsyncParsableCommand {
       let echo = Echo_EchoClient(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
-        try await echo.update { writer in
+        let message = try await echo.collect { writer in
           for part in self.arguments.message.split(separator: " ") {
-            print("update → \(part)")
+            print("collect → \(part)")
             try await writer.write(.with { $0.text = String(part) })
           }
-        } onResponse: { response in
-          for try await message in response.messages {
-            print("update ← \(message.text)")
-          }
         }
+        print("collect ← \(message.text)")
       }
 
       client.beginGracefulShutdown()

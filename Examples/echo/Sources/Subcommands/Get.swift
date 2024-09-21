@@ -16,14 +16,10 @@
 
 import ArgumentParser
 import GRPCCore
-import GRPCHTTP2Core
-import GRPCHTTP2TransportNIOPosix
+import GRPCNIOTransportHTTP2
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct Collect: AsyncParsableCommand {
-  static let configuration = CommandConfiguration(
-    abstract: "Makes a client streaming RPC to the echo server."
-  )
+struct Get: AsyncParsableCommand {
+  static let configuration = CommandConfiguration(abstract: "Makes a unary RPC to the echo server.")
 
   @OptionGroup
   var arguments: ClientArguments
@@ -44,13 +40,10 @@ struct Collect: AsyncParsableCommand {
       let echo = Echo_EchoClient(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
-        let message = try await echo.collect { writer in
-          for part in self.arguments.message.split(separator: " ") {
-            print("collect → \(part)")
-            try await writer.write(.with { $0.text = String(part) })
-          }
-        }
-        print("collect ← \(message.text)")
+        let message = Echo_EchoRequest.with { $0.text = self.arguments.message }
+        print("get → \(message.text)")
+        let response = try await echo.get(message)
+        print("get ← \(response.text)")
       }
 
       client.beginGracefulShutdown()

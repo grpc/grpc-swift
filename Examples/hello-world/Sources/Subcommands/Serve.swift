@@ -15,10 +15,9 @@
  */
 
 import ArgumentParser
-import GRPCHTTP2Transport
+import GRPCNIOTransportHTTP2
 import GRPCProtobuf
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct Serve: AsyncParsableCommand {
   static let configuration = CommandConfiguration(abstract: "Starts a greeter server.")
 
@@ -43,7 +42,6 @@ struct Serve: AsyncParsableCommand {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct Greeter: Helloworld_GreeterServiceProtocol {
   func sayHello(
     request: ServerRequest.Single<Helloworld_HelloRequest>,

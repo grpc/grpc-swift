@@ -15,9 +15,8 @@
  */
 
 import ArgumentParser
-import GRPCHTTP2Transport
+import GRPCNIOTransportHTTP2
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ListFeatures: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     abstract: "List all features within a bounding rectangle."

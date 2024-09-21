@@ -16,10 +16,8 @@
 
 import ArgumentParser
 import GRPCCore
-import GRPCHTTP2Core
-import GRPCHTTP2TransportNIOPosix
+import GRPCNIOTransportHTTP2
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct Expand: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     abstract: "Makes a server streaming RPC to the echo server."

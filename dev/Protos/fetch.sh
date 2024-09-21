@@ -18,6 +18,7 @@ set -eu
 
 here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 upstream="$here/upstream"
+root="$here/../.."
 
 # Create a temporary directory for the repo checkouts.
 checkouts="$(mktemp -d)"
@@ -33,11 +34,12 @@ rm -rf "$upstream"
 # rather than source repository name.
 mkdir -p "$upstream/google"
 mkdir -p "$upstream/grpc/core"
+mkdir -p "$upstream/grpc/examples"
 
 # Copy over the grpc-proto protos.
 cp -rp "$checkouts/grpc-proto/grpc/service_config" "$upstream/grpc/service_config"
 cp -rp "$checkouts/grpc-proto/grpc/lookup" "$upstream/grpc/lookup"
-cp -rp "$checkouts/grpc-proto/grpc/examples" "$upstream/grpc/examples"
+cp "$checkouts/grpc-proto/grpc/examples/helloworld.proto" "$upstream/grpc/examples/helloworld.proto"
 
 # Copy over the googleapis protos.
 mkdir -p "$upstream/google/rpc"

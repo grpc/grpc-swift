@@ -15,19 +15,18 @@
  */
 
 import ArgumentParser
-import GRPCHTTP2Transport
+import GRPCNIOTransportHTTP2
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct RouteChat: AsyncParsableCommand {
+struct RecordRoute: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
-    abstract: """
-      Visits a few points and records a note at each, and prints all notes previously recorded at \
-      each point.
-      """
+    abstract: "Records a route by visiting N randomly selected points and prints a summary of it."
   )
 
   @Option(help: "The server's listening port")
   var port: Int = 31415
+
+  @Option(help: "The number of places to visit.")
+  var points: Int = 10
 
   func run() async throws {
     let transport = try HTTP2ClientTransport.Posix(
@@ -43,30 +42,30 @@ struct RouteChat: AsyncParsableCommand {
 
       let routeGuide = Routeguide_RouteGuideClient(wrapping: client)
 
-      try await routeGuide.routeChat { writer in
-        let notes: [(String, (Int32, Int32))] = [
-          ("First message", (0, 0)),
-          ("Second message", (0, 1)),
-          ("Third message", (1, 0)),
-          ("Fourth message", (0, 0)),
-          ("Fifth message", (1, 0)),
-        ]
-
-        for (message, (lat, lon)) in notes {
-          let note = Routeguide_RouteNote.with {
-            $0.message = message
-            $0.location.latitude = lat
-            $0.location.longitude = lon
-          }
-          print("Sending note: '\(message) at (\(lat), \(lon))'")
-          try await writer.write(note)
-        }
-      } onResponse: { response in
-        for try await note in response.messages {
-          let (lat, lon) = (note.location.latitude, note.location.longitude)
-          print("Received note: '\(note.message) at (\(lat), \(lon))'")
-        }
+      // Get all features.
+      let rectangle = Routeguide_Rectangle.with {
+        $0.lo.latitude = 400_000_000
+        $0.hi.latitude = 420_000_000
+        $0.lo.longitude = -750_000_000
+        $0.hi.longitude = -730_000_000
       }
+      let features = try await routeGuide.listFeatures(rectangle) { response in
+        try await response.messages.reduce(into: []) { $0.append($1) }
+      }
+
+      // Pick 'N' locations to visit.
+      let placesToVisit = features.shuffled().map { $0.location }.prefix(self.points)
+
+      // Record a route.
+      let summary = try await routeGuide.recordRoute { writer in
+        try await writer.write(contentsOf: placesToVisit)
+      }
+
+      let text = """
+        Visited \(summary.pointCount) points and \(summary.featureCount) features covering \
+        a distance \(summary.distance) metres.
+        """
+      print(text)
 
       client.beginGracefulShutdown()
     }

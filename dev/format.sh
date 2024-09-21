@@ -60,7 +60,7 @@ if "$lint"; then
     --parallel --recursive --strict \
     "${repo}/Sources" \
     "${repo}/Tests" \
-    "${repo}/Plugins" \
+    "${repo}/Examples" \
     "${repo}/IntegrationTests/Benchmarks/Benchmarks/GRPCSwiftBenchmark" \
     && SWIFT_FORMAT_RC=$? || SWIFT_FORMAT_RC=$?
 
@@ -80,6 +80,7 @@ elif "$format"; then
     --parallel --recursive --in-place \
     "${repo}/Sources" \
     "${repo}/Tests" \
+    "${repo}/Examples" \
     "${repo}/IntegrationTests/Benchmarks/Benchmarks/GRPCSwiftBenchmark" \
     && SWIFT_FORMAT_RC=$? || SWIFT_FORMAT_RC=$?
 

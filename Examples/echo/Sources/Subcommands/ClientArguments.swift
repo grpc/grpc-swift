@@ -15,13 +15,21 @@
  */
 
 import ArgumentParser
+import GRPCNIOTransportHTTP2
 
-@main
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct HelloWorld: AsyncParsableCommand {
-  static let configuration = CommandConfiguration(
-    commandName: "hello-world",
-    abstract: "A multi-tool to run a greeter server and execute RPCs against it.",
-    subcommands: [Serve.self, Greet.self]
-  )
+struct ClientArguments: ParsableArguments {
+  @Option(help: "The server's listening port")
+  var port: Int = 1234
+
+  @Option(help: "The number of times to repeat the call")
+  var repetitions: Int = 1
+
+  @Option(help: "Message to send to the server")
+  var message: String
+}
+
+extension ClientArguments {
+  var target: any ResolvableTarget {
+    return .ipv4(host: "127.0.0.1", port: self.port)
+  }
 }
