@@ -67,6 +67,7 @@ jobs:
       timeout-minutes: 20
   examples:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - image: swiftlang/swift:nightly-jammy
