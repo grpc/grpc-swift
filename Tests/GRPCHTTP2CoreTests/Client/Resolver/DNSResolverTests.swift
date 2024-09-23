@@ -15,17 +15,19 @@
  */
 
 import GRPCHTTP2Core
-import XCTest
+import Testing
 
-class SimpleAsyncDNSResolverTests: XCTestCase {
-  func testResolve() async throws {
+@Suite("DNSResolver")
+struct DNSResolverTests {
+  @Test("Resolve hostname")
+  func resolve() async throws {
     let expectedResult: [SocketAddress] = [
       .ipv6(host: "::1", port: 80),
       .ipv4(host: "127.0.0.1", port: 80),
     ]
 
-    let result = try await SimpleAsyncDNSResolver.resolve(host: "localhost", port: 80)
+    let result = try await DNSResolver.resolve(host: "localhost", port: 80)
 
-    XCTAssertEqual(result, expectedResult)
+    #expect(result == expectedResult)
   }
 }
