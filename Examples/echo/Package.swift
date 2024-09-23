@@ -19,7 +19,7 @@ import PackageDescription
 
 let package = Package(
   name: "echo",
-  platforms: [.macOS(.v15)],
+  platforms: [.macOS("15.0")],
   dependencies: [
     .package(url: "https://github.com/grpc/grpc-swift-protobuf", branch: "main"),
     .package(url: "https://github.com/grpc/grpc-swift-nio-transport", branch: "main"),
