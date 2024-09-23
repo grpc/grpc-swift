@@ -20,24 +20,30 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input: Sendable, Output: Sendable>: Sendable {
-    let fn: @Sendable (ServerRequest.Stream<Input>) async throws -> ServerResponse.Stream<Output>
+    let fn:
+      @Sendable (
+        _ request: ServerRequest.Stream<Input>,
+        _ context: ServerContext
+      ) async throws -> ServerResponse.Stream<Output>
 
     init(
       _ fn: @escaping @Sendable (
-        ServerRequest.Stream<Input>
+        ServerRequest.Stream<Input>,
+        ServerContext
       ) async throws -> ServerResponse.Stream<Output>
     ) {
       self.fn = fn
     }
 
     func handle(
-      _ request: ServerRequest.Stream<Input>
+      _ request: ServerRequest.Stream<Input>,
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output> {
-      try await self.fn(request)
+      try await self.fn(request, context)
     }
 
     static func throwing(_ error: any Error) -> Self {
-      return Self { _ in throw error }
+      return Self { _, _ in throw error }
     }
   }
 
@@ -51,7 +57,8 @@ struct ServerRPCExecutorTestHarness {
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: @escaping @Sendable (
-      ServerRequest.Stream<Input>
+      ServerRequest.Stream<Input>,
+      ServerContext
     ) async throws -> ServerResponse.Stream<Output>,
     producer: @escaping @Sendable (
       RPCWriter<RPCRequestPart>.Closable
@@ -93,7 +100,12 @@ struct ServerRPCExecutorTestHarness {
       }
 
       group.addTask {
-        let context = ServerContext(descriptor: MethodDescriptor(service: "foo", method: "bar"))
+        let (streamState, _) = ServerStreamState.makeState()
+        let context = ServerContext(
+          descriptor: MethodDescriptor(service: "foo", method: "bar"),
+          streamState: streamState
+        )
+
         await ServerRPCExecutor.execute(
           context: context,
           stream: RPCStream(
@@ -105,7 +117,7 @@ struct ServerRPCExecutorTestHarness {
           serializer: serializer,
           interceptors: self.interceptors,
           handler: { stream, context in
-            try await handler.handle(stream)
+            try await handler.handle(stream, context)
           }
         )
       }
@@ -136,7 +148,7 @@ struct ServerRPCExecutorTestHarness {
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRPCExecutorTestHarness.ServerHandler where Input == Output {
   static var echo: Self {
-    return Self { request in
+    return Self { request, _ in
       return ServerResponse.Stream(metadata: request.metadata) { writer in
         try await writer.write(contentsOf: request.messages)
         return [:]

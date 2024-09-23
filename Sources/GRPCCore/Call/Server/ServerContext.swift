@@ -15,12 +15,17 @@
  */
 
 /// Additional information about an RPC handled by a server.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct ServerContext: Sendable {
   /// A description of the method being called.
   public var descriptor: MethodDescriptor
 
+  /// The state of the server stream.
+  public var streamState: ServerStreamState
+
   /// Create a new server context.
-  public init(descriptor: MethodDescriptor) {
+  public init(descriptor: MethodDescriptor, streamState: ServerStreamState) {
     self.descriptor = descriptor
+    self.streamState = streamState
   }
 }

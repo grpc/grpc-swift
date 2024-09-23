@@ -15,6 +15,7 @@
  */
 
 public import GRPCCore
+private import Synchronization
 
 /// An in-process implementation of a ``ServerTransport``.
 ///
@@ -27,16 +28,47 @@ public import GRPCCore
 ///
 /// - SeeAlso: ``ClientTransport``
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-public struct InProcessServerTransport: ServerTransport, Sendable {
+public final class InProcessServerTransport: ServerTransport, Sendable {
   public typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
   public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
 
   private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
   private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
+  private let streamCounter: Atomic<Int>
+  private let state: Mutex<State>
+
+  private struct State: Sendable {
+    private var streamStateContinuations: [Int: ServerStreamState.Events.Continuation]
+    private var isShuttingDown: Bool
+
+    init() {
+      self.streamStateContinuations = [:]
+      self.isShuttingDown = false
+    }
+
+    mutating func beginGracefulShutdown() -> [ServerStreamState.Events.Continuation] {
+      self.isShuttingDown = true
+      return Array(self.streamStateContinuations.values)
+    }
+
+    mutating func registerContinuation(
+      _ continuation: ServerStreamState.Events.Continuation,
+      id: Int
+    ) -> Bool {
+      self.streamStateContinuations[id] = continuation
+      return self.isShuttingDown
+    }
+
+    mutating func deregisterContinuation(id: Int) -> ServerStreamState.Events.Continuation? {
+      return self.streamStateContinuations.removeValue(forKey: id)
+    }
+  }
 
   /// Creates a new instance of ``InProcessServerTransport``.
   public init() {
     (self.newStreams, self.newStreamsContinuation) = AsyncStream.makeStream()
+    self.streamCounter = Atomic(0)
+    self.state = Mutex(State())
   }
 
   /// Publish a new ``RPCStream``, which will be returned by the transport's ``events``
@@ -64,7 +96,21 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
     await withDiscardingTaskGroup { group in
       for await stream in self.newStreams {
         group.addTask {
-          let context = ServerContext(descriptor: stream.descriptor)
+          let (streamState, continuation) = ServerStreamState.makeState()
+          let (id, isShuttingDown) = self.registerStreamStateContinuation(continuation)
+
+          // This can happen if the stream was accepted but not dequeued
+          // before 'beginGracefulShutdown' was called. Let the RPC run.
+          if isShuttingDown {
+            continuation.yield(.rpcCancelled)
+          }
+
+          defer {
+            let continuation = self.deregisterStreamStateContinuation(id)
+            continuation?.finish()
+          }
+
+          let context = ServerContext(descriptor: stream.descriptor, streamState: streamState)
           await streamHandler(stream, context)
         }
       }
@@ -76,5 +122,28 @@ public struct InProcessServerTransport: ServerTransport, Sendable {
   /// - SeeAlso: ``ServerTransport``
   public func beginGracefulShutdown() {
     self.newStreamsContinuation.finish()
+    let continuations = self.state.withLock { $0.beginGracefulShutdown() }
+    for continuation in continuations {
+      continuation.yield(.rpcCancelled)
+    }
+  }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension InProcessServerTransport {
+  private func registerStreamStateContinuation(
+    _ continuation: ServerStreamState.Events.Continuation
+  ) -> (Int, isShuttingDown: Bool) {
+    let (id, _) = self.streamCounter.add(1, ordering: .relaxed)
+    let isShuttingDown = self.state.withLock {
+      $0.registerContinuation(continuation, id: id)
+    }
+    return (id, isShuttingDown)
+  }
+
+  private func deregisterStreamStateContinuation(
+    _ id: Int
+  ) -> ServerStreamState.Events.Continuation? {
+    self.state.withLock { $0.deregisterContinuation(id: id) }
   }
 }

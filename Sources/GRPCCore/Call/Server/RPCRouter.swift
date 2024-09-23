@@ -155,7 +155,7 @@ extension RPCRouter {
     context: ServerContext,
     interceptors: [any ServerInterceptor]
   ) async {
-    if let handler = self.handlers[stream.descriptor] {
+    if let handler = self.handlers[context.descriptor] {
       await handler.handle(stream: stream, context: context, interceptors: interceptors)
     } else {
       // If this throws then the stream must be closed which we can't do anything about, so ignore

@@ -284,6 +284,65 @@ final class InProcessClientTransportTests: XCTestCase {
     }
   }
 
+  func testRPCIsCancelledIsPropagated() async throws {
+    let inProcess = InProcessTransport.makePair()
+    let shouldBeginShutdown = AsyncStream.makeStream(of: Void.self)
+
+    var router = RPCRouter()
+    router.registerHandler(
+      forMethod: MethodDescriptor(service: "foo", method: "bar"),
+      deserializer: PassthroughDeserializer(),
+      serializer: PassthroughSerializer()
+    ) { stream, context in
+      shouldBeginShutdown.continuation.finish()
+
+      for await event in context.streamState.events {
+        switch event {
+        case .rpcCancelled:
+          return ServerResponse.Stream(error: RPCError(code: .cancelled, message: ""))
+        default:
+          continue
+        }
+      }
+      return ServerResponse.Stream(error: RPCError(code: .failedPrecondition, message: ""))
+    }
+
+    let server = GRPCServer(transport: inProcess.server, router: router)
+    let client = GRPCClient(transport: inProcess.client)
+
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try await server.serve()
+      }
+
+      group.addTask {
+        for await _ in shouldBeginShutdown.stream {}
+        server.beginGracefulShutdown()
+      }
+
+      group.addTask {
+        try await client.run()
+      }
+
+      try await client.unary(
+        request: ClientRequest.Single(message: [UInt8]()),
+        descriptor: MethodDescriptor(service: "foo", method: "bar"),
+        serializer: PassthroughSerializer(),
+        deserializer: PassthroughDeserializer(),
+        options: .defaults
+      ) { response in
+        switch response.accepted {
+        case .success:
+          XCTFail("Expected error")
+        case .failure(let error):
+          XCTAssertEqual(error.code, .cancelled)
+        }
+      }
+
+      client.beginGracefulShutdown()
+    }
+  }
+
   func makeClient(
     server: InProcessServerTransport = InProcessServerTransport()
   ) -> InProcessClientTransport {
@@ -308,5 +367,17 @@ final class InProcessClientTransportTests: XCTestCase {
       server: server,
       serviceConfig: serviceConfig
     )
+  }
+}
+
+struct PassthroughSerializer: MessageSerializer {
+  func serialize(_ message: [UInt8]) throws -> [UInt8] {
+    return message
+  }
+}
+
+struct PassthroughDeserializer: MessageDeserializer {
+  func deserialize(_ messageBytes: [UInt8]) throws -> [UInt8] {
+    return messageBytes
   }
 }
