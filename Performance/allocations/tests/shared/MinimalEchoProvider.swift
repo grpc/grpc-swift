@@ -1,1 +1,0 @@
-../../../../Sources/GRPCPerformanceTests/Benchmarks/MinimalEchoProvider.swift

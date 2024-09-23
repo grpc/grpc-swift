@@ -23,7 +23,7 @@
 ///
 /// Interceptors are registered with a client and apply to all RPCs. If you need to modify the
 /// behavior of an interceptor on a per-RPC basis then you can use the
-/// ``ClientInterceptorContext/descriptor`` to determine which RPC is being called and
+/// ``ClientContext/descriptor`` to determine which RPC is being called and
 /// conditionalise behavior accordingly.
 ///
 /// - TODO: Update example and documentation to show how to register an interceptor.
@@ -41,10 +41,10 @@
 ///
 ///   func intercept<Input: Sendable, Output: Sendable>(
 ///     request: ClientRequest.Stream<Input>,
-///     context: ClientInterceptorContext,
+///     context: ClientContext,
 ///     next: @Sendable (
 ///       _ request: ClientRequest.Stream<Input>,
-///       _ context: ClientInterceptorContext
+///       _ context: ClientContext
 ///     ) async throws -> ClientResponse.Stream<Output>
 ///   ) async throws -> ClientResponse.Stream<Output> {
 ///     // Fetch the metadata value and attach it.
@@ -66,10 +66,10 @@
 /// struct LoggingClientInterceptor: ClientInterceptor {
 ///   func intercept<Input: Sendable, Output: Sendable>(
 ///     request: ClientRequest.Stream<Input>,
-///     context: ClientInterceptorContext,
+///     context: ClientContext,
 ///     next: @Sendable (
 ///       _ request: ClientRequest.Stream<Input>,
-///       _ context: ClientInterceptorContext
+///       _ context: ClientContext
 ///     ) async throws -> ClientResponse.Stream<Output>
 ///   ) async throws -> ClientResponse.Stream<Output> {
 ///     print("Invoking method '\(context.descriptor)'")
@@ -101,21 +101,10 @@ public protocol ClientInterceptor: Sendable {
   /// - Returns: A response object.
   func intercept<Input: Sendable, Output: Sendable>(
     request: ClientRequest.Stream<Input>,
-    context: ClientInterceptorContext,
+    context: ClientContext,
     next: (
       _ request: ClientRequest.Stream<Input>,
-      _ context: ClientInterceptorContext
+      _ context: ClientContext
     ) async throws -> ClientResponse.Stream<Output>
   ) async throws -> ClientResponse.Stream<Output>
-}
-
-/// A context passed to client interceptors containing additional information about the RPC.
-public struct ClientInterceptorContext: Sendable {
-  /// A description of the method being called.
-  public var descriptor: MethodDescriptor
-
-  /// Create a new client interceptor context.
-  public init(descriptor: MethodDescriptor) {
-    self.descriptor = descriptor
-  }
 }

@@ -72,5 +72,5 @@ public protocol ClientTransport: Sendable {
   ///
   /// - Parameter descriptor: The method to lookup configuration for.
   /// - Returns: Configuration for the method, if it exists.
-  func configuration(forMethod descriptor: MethodDescriptor) -> MethodConfig?
+  func config(forMethod descriptor: MethodDescriptor) -> MethodConfig?
 }

@@ -26,7 +26,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
     self.code = code
   }
 
-  let retryThrottle: RetryThrottle? = RetryThrottle(maximumTokens: 10, tokenRatio: 0.1)
+  let retryThrottle: RetryThrottle? = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
 
   func connect() async throws {
     // no-op
@@ -36,7 +36,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
     // no-op
   }
 
-  func configuration(
+  func config(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfig? {
     return nil
@@ -53,7 +53,12 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
-  func listen(_ streamHandler: (RPCStream<Inbound, Outbound>) async -> Void) async throws {
+  func listen(
+    streamHandler: (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void
+  ) async throws {
     throw RPCError(
       code: .unavailable,
       message: "The '\(type(of: self))' transport is never available."
@@ -74,7 +79,10 @@ struct ThrowOnSignalServerTransport: ServerTransport {
   }
 
   func listen(
-    _ streamHandler: (GRPCCore.RPCStream<Inbound, Outbound>) async -> Void
+    streamHandler: (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void
   ) async throws {
     for await _ in self.signal {}
 

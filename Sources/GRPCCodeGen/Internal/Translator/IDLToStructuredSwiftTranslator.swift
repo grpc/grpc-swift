@@ -20,20 +20,52 @@
 struct IDLToStructuredSwiftTranslator: Translator {
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    accessLevel: SourceGenerator.Configuration.AccessLevel,
+    accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool,
     client: Bool,
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     try self.validateInput(codeGenerationRequest)
+
+    var codeBlocks = [CodeBlock]()
+
     let typealiasTranslator = TypealiasTranslator(
       client: client,
       server: server,
       accessLevel: accessLevel
     )
+    codeBlocks.append(contentsOf: try typealiasTranslator.translate(from: codeGenerationRequest))
 
-    let topComment = Comment.preFormatted(codeGenerationRequest.leadingTrivia)
+    if server {
+      let serverCodeTranslator = ServerCodeTranslator(accessLevel: accessLevel)
+      codeBlocks.append(contentsOf: try serverCodeTranslator.translate(from: codeGenerationRequest))
+    }
 
+    if client {
+      let clientCodeTranslator = ClientCodeTranslator(accessLevel: accessLevel)
+      codeBlocks.append(contentsOf: try clientCodeTranslator.translate(from: codeGenerationRequest))
+    }
+
+    let fileDescription = FileDescription(
+      topComment: .preFormatted(codeGenerationRequest.leadingTrivia),
+      imports: try self.makeImports(
+        dependencies: codeGenerationRequest.dependencies,
+        accessLevel: accessLevel,
+        accessLevelOnImports: accessLevelOnImports
+      ),
+      codeBlocks: codeBlocks
+    )
+
+    let fileName = String(codeGenerationRequest.fileName.split(separator: ".")[0])
+    let file = NamedFileDescription(name: fileName, contents: fileDescription)
+    return StructuredSwiftRepresentation(file: file)
+  }
+
+  private func makeImports(
+    dependencies: [CodeGenerationRequest.Dependency],
+    accessLevel: SourceGenerator.Config.AccessLevel,
+    accessLevelOnImports: Bool
+  ) throws -> [ImportDescription] {
     var imports: [ImportDescription] = []
     imports.append(
       ImportDescription(
@@ -42,7 +74,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
       )
     )
 
-    for dependency in codeGenerationRequest.dependencies {
+    for dependency in dependencies {
       let importDescription = try self.translateImport(
         dependency: dependency,
         accessLevelOnImports: accessLevelOnImports
@@ -50,38 +82,12 @@ struct IDLToStructuredSwiftTranslator: Translator {
       imports.append(importDescription)
     }
 
-    var codeBlocks = [CodeBlock]()
-    codeBlocks.append(
-      contentsOf: try typealiasTranslator.translate(from: codeGenerationRequest)
-    )
-
-    if server {
-      let serverCodeTranslator = ServerCodeTranslator(accessLevel: accessLevel)
-      codeBlocks.append(
-        contentsOf: try serverCodeTranslator.translate(from: codeGenerationRequest)
-      )
-    }
-
-    if client {
-      let clientCodeTranslator = ClientCodeTranslator(accessLevel: accessLevel)
-      codeBlocks.append(
-        contentsOf: try clientCodeTranslator.translate(from: codeGenerationRequest)
-      )
-    }
-
-    let fileDescription = FileDescription(
-      topComment: topComment,
-      imports: imports,
-      codeBlocks: codeBlocks
-    )
-    let fileName = String(codeGenerationRequest.fileName.split(separator: ".")[0])
-    let file = NamedFileDescription(name: fileName, contents: fileDescription)
-    return StructuredSwiftRepresentation(file: file)
+    return imports
   }
 }
 
 extension AccessModifier {
-  fileprivate init(_ accessLevel: SourceGenerator.Configuration.AccessLevel) {
+  fileprivate init(_ accessLevel: SourceGenerator.Config.AccessLevel) {
     switch accessLevel.level {
     case .internal: self = .internal
     case .package: self = .package

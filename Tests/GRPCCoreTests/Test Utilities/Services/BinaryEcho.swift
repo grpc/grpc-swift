@@ -61,7 +61,7 @@ struct BinaryEcho: RegistrableRPCService {
       forMethod: Methods.get,
       deserializer: deserializer,
       serializer: serializer
-    ) { streamRequest in
+    ) { streamRequest, context in
       let singleRequest = try await ServerRequest.Single(stream: streamRequest)
       let singleResponse = try await self.get(singleRequest)
       return ServerResponse.Stream(single: singleResponse)
@@ -71,7 +71,7 @@ struct BinaryEcho: RegistrableRPCService {
       forMethod: Methods.collect,
       deserializer: deserializer,
       serializer: serializer
-    ) { streamRequest in
+    ) { streamRequest, context in
       let singleResponse = try await self.collect(streamRequest)
       return ServerResponse.Stream(single: singleResponse)
     }
@@ -80,7 +80,7 @@ struct BinaryEcho: RegistrableRPCService {
       forMethod: Methods.expand,
       deserializer: deserializer,
       serializer: serializer
-    ) { streamRequest in
+    ) { streamRequest, context in
       let singleRequest = try await ServerRequest.Single(stream: streamRequest)
       let streamResponse = try await self.expand(singleRequest)
       return streamResponse
@@ -90,7 +90,7 @@ struct BinaryEcho: RegistrableRPCService {
       forMethod: Methods.update,
       deserializer: deserializer,
       serializer: serializer
-    ) { streamRequest in
+    ) { streamRequest, context in
       let streamResponse = try await self.update(streamRequest)
       return streamResponse
     }

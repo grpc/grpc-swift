@@ -359,7 +359,7 @@ public final class GRPCClient: Sendable {
     handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try self.state.withLock { try $0.checkExecutable() }
-    let methodConfig = self.transport.configuration(forMethod: descriptor)
+    let methodConfig = self.transport.config(forMethod: descriptor)
     var options = options
     options.formUnion(with: methodConfig)
 

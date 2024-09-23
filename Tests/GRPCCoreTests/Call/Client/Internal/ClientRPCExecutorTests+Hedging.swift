@@ -90,7 +90,7 @@ extension ClientRPCExecutorTests {
         try await $0.write([2])
       },
       options: .hedge(
-        maximumAttempts: 5,
+        maxAttempts: 5,
         delay: .milliseconds(10),
         nonFatalCodes: [.unavailable]
       )
@@ -134,7 +134,7 @@ extension ClientRPCExecutorTests {
         try await $0.write([2])
       },
       options: .hedge(
-        maximumAttempts: 5,
+        maxAttempts: 5,
         delay: .seconds(60),  // High delay, server pushback will override this.
         nonFatalCodes: [.unavailable]
       )
@@ -189,13 +189,13 @@ extension ClientRPCExecutorTests {
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension CallOptions {
   fileprivate static func hedge(
-    maximumAttempts: Int = 5,
+    maxAttempts: Int = 5,
     delay: Duration = .milliseconds(25),
     nonFatalCodes: Set<Status.Code>,
     timeout: Duration? = nil
   ) -> Self {
     let policy = HedgingPolicy(
-      maximumAttempts: maximumAttempts,
+      maxAttempts: maxAttempts,
       hedgingDelay: delay,
       nonFatalStatusCodes: nonFatalCodes
     )

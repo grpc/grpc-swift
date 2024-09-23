@@ -115,7 +115,7 @@ extension ClientRPCExecutor.RetryExecutor {
       let delaySequence = RetryDelaySequence(policy: self.policy)
       var delayIterator = delaySequence.makeIterator()
 
-      for attempt in 1 ... self.policy.maximumAttempts {
+      for attempt in 1 ... self.policy.maxAttempts {
         do {
           let attemptResult = try await self.transport.withStream(
             descriptor: method,
@@ -253,7 +253,7 @@ extension ClientRPCExecutor.RetryExecutor {
           switch error.metadata.retryPushback {
           case .retryAfter(let delay):
             // Pushback: only retry if our config permits it.
-            shouldRetry = (attempt < self.policy.maximumAttempts) && !throttled
+            shouldRetry = (attempt < self.policy.maxAttempts) && !throttled
             retryDelayOverride = delay
           case .stopRetrying:
             // Server told us to stop trying.
@@ -261,7 +261,7 @@ extension ClientRPCExecutor.RetryExecutor {
             retryDelayOverride = nil
           case .none:
             // No pushback: only retry if our config permits it.
-            shouldRetry = (attempt < self.policy.maximumAttempts) && !throttled
+            shouldRetry = (attempt < self.policy.maxAttempts) && !throttled
             retryDelayOverride = nil
             break
           }

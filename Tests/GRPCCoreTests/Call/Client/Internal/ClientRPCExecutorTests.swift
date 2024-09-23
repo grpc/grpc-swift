@@ -231,16 +231,16 @@ final class ClientRPCExecutorTests: XCTestCase {
     var policies: [RPCExecutionPolicy?] = [nil]
 
     let retryPolicy = RetryPolicy(
-      maximumAttempts: 5,
+      maxAttempts: 5,
       initialBackoff: .seconds(1),
-      maximumBackoff: .seconds(1),
+      maxBackoff: .seconds(1),
       backoffMultiplier: 1.6,
       retryableStatusCodes: [.unavailable]
     )
     policies.append(.retry(retryPolicy))
 
     let hedgingPolicy = HedgingPolicy(
-      maximumAttempts: 5,
+      maxAttempts: 5,
       hedgingDelay: .seconds(1),
       nonFatalStatusCodes: [.unavailable]
     )

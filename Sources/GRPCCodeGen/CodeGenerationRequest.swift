@@ -87,7 +87,7 @@ public struct CodeGenerationRequest {
     public var item: Item?
 
     /// The access level to be included in imports of this dependency.
-    public var accessLevel: SourceGenerator.Configuration.AccessLevel
+    public var accessLevel: SourceGenerator.Config.AccessLevel
 
     /// The name of the imported module or of the module an item is imported from.
     public var module: String
@@ -106,7 +106,7 @@ public struct CodeGenerationRequest {
       module: String,
       spi: String? = nil,
       preconcurrency: PreconcurrencyRequirement = .notRequired,
-      accessLevel: SourceGenerator.Configuration.AccessLevel
+      accessLevel: SourceGenerator.Config.AccessLevel
     ) {
       self.item = item
       self.module = module

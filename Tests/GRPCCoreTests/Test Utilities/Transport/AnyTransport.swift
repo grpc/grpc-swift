@@ -49,7 +49,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     }
 
     self._configuration = { descriptor in
-      transport.configuration(forMethod: descriptor)
+      transport.config(forMethod: descriptor)
     }
   }
 
@@ -74,7 +74,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     return result as! T
   }
 
-  func configuration(
+  func config(
     forMethod descriptor: MethodDescriptor
   ) -> MethodConfig? {
     self._configuration(descriptor)
@@ -88,17 +88,23 @@ struct AnyServerTransport: ServerTransport, Sendable {
 
   private let _listen:
     @Sendable (
-      @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+      @escaping @Sendable (
+        _ stream: RPCStream<Inbound, Outbound>,
+        _ context: ServerContext
+      ) async -> Void
     ) async throws -> Void
   private let _stopListening: @Sendable () -> Void
 
   init<Transport: ServerTransport>(wrapping transport: Transport) {
-    self._listen = { streamHandler in try await transport.listen(streamHandler) }
+    self._listen = { streamHandler in try await transport.listen(streamHandler: streamHandler) }
     self._stopListening = { transport.beginGracefulShutdown() }
   }
 
   func listen(
-    _ streamHandler: @escaping @Sendable (RPCStream<Inbound, Outbound>) async -> Void
+    streamHandler: @escaping @Sendable (
+      _ stream: RPCStream<Inbound, Outbound>,
+      _ context: ServerContext
+    ) async -> Void
   ) async throws {
     try await self._listen(streamHandler)
   }

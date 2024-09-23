@@ -58,9 +58,9 @@
 /// }
 ///```
 struct ServerCodeTranslator: SpecializedTranslator {
-  var accessLevel: SourceGenerator.Configuration.AccessLevel
+  var accessLevel: SourceGenerator.Config.AccessLevel
 
-  init(accessLevel: SourceGenerator.Configuration.AccessLevel) {
+  init(accessLevel: SourceGenerator.Config.AccessLevel) {
     self.accessLevel = accessLevel
   }
 
@@ -150,7 +150,8 @@ extension ServerCodeTranslator {
             wrapper: .member(["GRPCCore", "ServerRequest", "Stream"]),
             wrapped: .member(method.inputType)
           )
-        )
+        ),
+        .init(label: "context", type: .member(["GRPCCore", "ServerContext"])),
       ],
       keywords: [.async, .throws],
       returnType: .identifierType(
@@ -229,30 +230,27 @@ extension ServerCodeTranslator {
   ) -> [FunctionArgumentDescription] {
     var arguments = [FunctionArgumentDescription]()
     arguments.append(
-      .init(
+      FunctionArgumentDescription(
         label: "forMethod",
-        expression: .identifierPattern(
-          self.methodDescriptorPath(for: method, service: service)
-        )
+        expression: .identifierPattern(self.methodDescriptorPath(for: method, service: service))
       )
     )
 
     arguments.append(
-      .init(
+      FunctionArgumentDescription(
         label: "deserializer",
         expression: .identifierPattern(codeGenerationRequest.lookupDeserializer(method.inputType))
       )
     )
 
     arguments.append(
-      .init(
+      FunctionArgumentDescription(
         label: "serializer",
-        expression:
-          .identifierPattern(codeGenerationRequest.lookupSerializer(method.outputType))
+        expression: .identifierPattern(codeGenerationRequest.lookupSerializer(method.outputType))
       )
     )
 
-    let getFunctionCall = Expression.functionCall(
+    let rpcFunctionCall = Expression.functionCall(
       calledExpression: .memberAccess(
         MemberAccessDescription(
           left: .identifierPattern("self"),
@@ -260,20 +258,24 @@ extension ServerCodeTranslator {
         )
       ),
       arguments: [
-        FunctionArgumentDescription(label: "request", expression: .identifierPattern("request"))
+        FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
+        FunctionArgumentDescription(label: "context", expression: .identifierPattern("context")),
       ]
     )
 
     let handlerClosureBody = Expression.unaryKeyword(
       kind: .try,
-      expression: .unaryKeyword(kind: .await, expression: getFunctionCall)
+      expression: .unaryKeyword(kind: .await, expression: rpcFunctionCall)
     )
 
     arguments.append(
-      .init(
+      FunctionArgumentDescription(
         label: "handler",
         expression: .closureInvocation(
-          .init(argumentNames: ["request"], body: [.expression(handlerClosureBody)])
+          ClosureInvocationDescription(
+            argumentNames: ["request", "context"],
+            body: [.expression(handlerClosureBody)]
+          )
         )
       )
     )
@@ -325,7 +327,8 @@ extension ServerCodeTranslator {
               wrapper: .member(["GRPCCore", "ServerRequest", inputStreaming]),
               wrapped: .member(method.inputType)
             )
-        )
+        ),
+        .init(label: "context", type: .member(["GRPCCore", "ServerContext"])),
       ],
       keywords: [.async, .throws],
       returnType: .identifierType(
@@ -409,7 +412,10 @@ extension ServerCodeTranslator {
           right: method.name.generatedLowerCase
         )
       ),
-      arguments: [FunctionArgumentDescription(label: "request", expression: serverRequest)]
+      arguments: [
+        FunctionArgumentDescription(label: "request", expression: serverRequest),
+        FunctionArgumentDescription(label: "context", expression: .identifier(.pattern("context"))),
+      ]
     )
 
     let responseValue = Expression.unaryKeyword(

@@ -33,21 +33,11 @@ It also uses derivations of SwiftNIO's lock 'NIOLock.swift' and locked value box
 
 This product uses derivations of SwiftNIOHTTP2's implementation of case
 insensitive comparison of strings, found in 'HPACKHeader.swift'.
-    
+
     * LICENSE (Apache License 2.0):
       * https://github.com/apple/swift-nio-http2/blob/main/LICENSE.txt
     * HOMEPAGE:
       * https://github.com/apple/swift-nio-http2
-
----
-
-This product contains a derivation of the backpressure aware async stream from
-the Swift project.
-
-  * LICENSE (Apache License 2.0):
-    * https://github.com/apple/swift/blob/main/LICENSE.txt
-  * HOMEPAGE:
-    * https://github.com/apple/swift
 
 ---
 
@@ -57,15 +47,3 @@ This product uses derivations of swift-extras/swift-extras-base64 'Base64.swift'
     * https://github.com/swift-extras/swift-extras-base64/blob/main/LICENSE
   * HOMEPAGE:
     * https://github.com/swift-extras/swift-extras-base64
-
----
-
-This product uses derivations of apple/swift-openapi-generator 'StructuredSwiftRepresentation.swift',
-'TypeName.swift', 'TypeUsage.swift', 'Builtins.swift', 'RendererProtocol.swift', 'TextBasedProtocol',
-'Test_TextBasedRenderer', and 'SnippetBasedReferenceTests.swift'.
-    
-    * LICENSE (Apache License 2.0):
-      * https://github.com/apple/swift-openapi-generator/blob/main/LICENSE.txt
-    * HOMEPAGE:
-      * https://github.com/apple/swift-openapi-generator
-

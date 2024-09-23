@@ -20,6 +20,7 @@ struct ServerRPCExecutor {
   /// Executes an RPC using the provided handler.
   ///
   /// - Parameters:
+  ///   - context: The context for the RPC.
   ///   - stream: The accepted stream to execute the RPC on.
   ///   - deserializer: A deserializer for messages received from the client.
   ///   - serializer: A serializer for messages to send to the client.
@@ -27,6 +28,7 @@ struct ServerRPCExecutor {
   ///   - handler: A handler which turns the request into a response.
   @inlinable
   static func execute<Input, Output>(
+    context: ServerContext,
     stream: RPCStream<
       RPCAsyncSequence<RPCRequestPart, any Error>,
       RPCWriter<RPCResponsePart>.Closable
@@ -35,7 +37,8 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @Sendable @escaping (
-      _ request: ServerRequest.Stream<Input>
+      _ request: ServerRequest.Stream<Input>,
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async {
     // Wait for the first request part from the transport.
@@ -44,7 +47,7 @@ struct ServerRPCExecutor {
     switch firstPart {
     case .process(let metadata, let inbound):
       await Self._execute(
-        method: stream.descriptor,
+        context: context,
         metadata: metadata,
         inbound: inbound,
         outbound: stream.outbound,
@@ -64,7 +67,7 @@ struct ServerRPCExecutor {
 
   @inlinable
   static func _execute<Input, Output>(
-    method: MethodDescriptor,
+    context: ServerContext,
     metadata: Metadata,
     inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
     outbound: RPCWriter<RPCResponsePart>.Closable,
@@ -72,13 +75,14 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
-      _ request: ServerRequest.Stream<Input>
+      _ request: ServerRequest.Stream<Input>,
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async {
     if let timeout = metadata.timeout {
       await Self._processRPCWithTimeout(
         timeout: timeout,
-        method: method,
+        context: context,
         metadata: metadata,
         inbound: inbound,
         outbound: outbound,
@@ -89,7 +93,7 @@ struct ServerRPCExecutor {
       )
     } else {
       await Self._processRPC(
-        method: method,
+        context: context,
         metadata: metadata,
         inbound: inbound,
         outbound: outbound,
@@ -104,7 +108,7 @@ struct ServerRPCExecutor {
   @inlinable
   static func _processRPCWithTimeout<Input, Output>(
     timeout: Duration,
-    method: MethodDescriptor,
+    context: ServerContext,
     metadata: Metadata,
     inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
     outbound: RPCWriter<RPCResponsePart>.Closable,
@@ -112,7 +116,8 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
-      ServerRequest.Stream<Input>
+      _ request: ServerRequest.Stream<Input>,
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async {
     await withTaskGroup(of: ServerExecutorTask.self) { group in
@@ -125,7 +130,7 @@ struct ServerRPCExecutor {
 
       group.addTask {
         await Self._processRPC(
-          method: method,
+          context: context,
           metadata: metadata,
           inbound: inbound,
           outbound: outbound,
@@ -157,7 +162,7 @@ struct ServerRPCExecutor {
 
   @inlinable
   static func _processRPC<Input, Output>(
-    method: MethodDescriptor,
+    context: ServerContext,
     metadata: Metadata,
     inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
     outbound: RPCWriter<RPCResponsePart>.Closable,
@@ -165,7 +170,8 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
-      ServerRequest.Stream<Input>
+      _ request: ServerRequest.Stream<Input>,
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async {
     let messages = UncheckedAsyncIteratorSequence(inbound.wrappedValue).map { part in
@@ -190,10 +196,10 @@ struct ServerRPCExecutor {
           metadata: metadata,
           messages: RPCAsyncSequence(wrapping: messages)
         ),
-        context: ServerInterceptorContext(descriptor: method),
+        context: context,
         interceptors: interceptors
-      ) { request, _ in
-        try await handler(request)
+      ) { request, context in
+        try await handler(request, context)
       }
     }.castError(to: RPCError.self) { error in
       RPCError(code: .unknown, message: "Service method threw an unknown error.", cause: error)
@@ -295,11 +301,11 @@ extension ServerRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(
     request: ServerRequest.Stream<Input>,
-    context: ServerInterceptorContext,
+    context: ServerContext,
     interceptors: [any ServerInterceptor],
     finally: @escaping @Sendable (
       _ request: ServerRequest.Stream<Input>,
-      _ context: ServerInterceptorContext
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async throws -> ServerResponse.Stream<Output> {
     return try await self._intercept(
@@ -313,11 +319,11 @@ extension ServerRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(
     request: ServerRequest.Stream<Input>,
-    context: ServerInterceptorContext,
+    context: ServerContext,
     iterator: Array<any ServerInterceptor>.Iterator,
     finally: @escaping @Sendable (
       _ request: ServerRequest.Stream<Input>,
-      _ context: ServerInterceptorContext
+      _ context: ServerContext
     ) async throws -> ServerResponse.Stream<Output>
   ) async throws -> ServerResponse.Stream<Output> {
     var iterator = iterator
