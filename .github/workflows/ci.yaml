@@ -65,3 +65,18 @@ jobs:
       working-directory: "./IntegrationTests/Benchmarks"
       run: swift package benchmark baseline check --no-progress --check-absolute-path Thresholds/${{ matrix.swift-version }}/
       timeout-minutes: 20
+  examples:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: swiftlang/swift:nightly-jammy
+          - image: swift:6.0-jammy
+    name: Build examples using ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build examples
+      run: ./dev/build-examples.sh

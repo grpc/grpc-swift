@@ -106,7 +106,7 @@ check_copyright_headers() {
     ! -name '*.pb.swift' \
     ! -name '*.grpc.swift' \
     ! -path './Sources/GRPCCore/Documentation.docc/*' \
-    ! -path './.build/*')
+    ! -path '.*/.build/*')
 }
 
 errors=0

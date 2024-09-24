@@ -21,12 +21,19 @@ error() { printf -- "** ERROR: %s\n" "$*" >&2; }
 fatal() { error "$@"; exit 1; }
 
 here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+examples="$here/../Examples"
 
-# Re-generate everything.
-log "Regenerating protos..."
-"$here"/protos/generate.sh
+for dir in "$examples"/*/ ; do
+  if [[ -f "$dir/Package.swift" ]]; then
+    example=$(basename "$dir")
+    log "Building '$example' example"
 
-# Check for changes.
-GIT_PAGER='' git diff --exit-code '*.swift'
-
-log "Generated code is up-to-date"
+    if ! build_output=$(swift build --package-path "$dir" 2>&1); then
+      # Only print the build output on failure.
+      echo "$build_output"
+      fatal "Build failed for '$example'"
+    else
+      log "Build succeeded for '$example'"
+    fi
+  fi
+done
