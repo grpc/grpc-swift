@@ -291,7 +291,10 @@ extension InProcessTransport {
           }
 
         case .closed:
-          let error = RPCError(code: .failedPrecondition, message: "The client transport is closed.")
+          let error = RPCError(
+            code: .failedPrecondition,
+            message: "The client transport is closed."
+          )
           return .failure(error)
         }
       }
