@@ -121,7 +121,7 @@ extension ClientCodeTranslator {
     let clientProtocol = Declaration.protocol(
       ProtocolDescription(
         accessModifier: self.accessModifier,
-        name: "\(service.namespacedGeneratedName)ClientProtocol",
+        name: "\(service.namespacedGeneratedName)_ClientProtocol",
         conformances: ["Sendable"],
         members: methods
       )
@@ -592,7 +592,7 @@ extension ClientCodeTranslator {
       .struct(
         StructDescription(
           accessModifier: self.accessModifier,
-          name: "\(service.namespacedGeneratedName)Client",
+          name: "\(service.namespacedGeneratedName)_Client",
           conformances: ["\(service.namespacedGeneratedName).ClientProtocol"],
           members: [clientProperty, initializer] + methods
         )
