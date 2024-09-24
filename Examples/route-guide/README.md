@@ -5,7 +5,7 @@ client.
 
 ## Overview
 
-A "rouge-guide" command line tool that uses generated stubs for an 'Route Guide'
+A "route-guide" command line tool that uses generated stubs for a 'Route Guide'
 service allows you to start a server and to make requests against it for
 each of the four RPC types.
 
