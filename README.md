@@ -8,7 +8,7 @@ about gRPC on the [gRPC project's website][grpcio].
 >
 > v1.x is still supported and maintained on the `release/1.x` branch.
 
-- 📚 **Documentation** is available on the [Swift Package Index][spi-grpc-swift]
+- 📚 **Documentation** and **tutorials** are available on the [Swift Package Index][spi-grpc-swift]
 - 💻 **Examples** are available in the [Examples](Examples) directory
 - 🚀 **Contributions** are welcome, please see [CONTRIBUTING.md](CONTRIBUTING.md)
 - 🪪 **License** is Apache 2.0, repeated in [LICENSE](License)

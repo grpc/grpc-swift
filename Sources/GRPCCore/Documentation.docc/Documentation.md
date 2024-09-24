@@ -13,12 +13,14 @@ gRPC Swift is distributed across multiple Swift packages. These are:
   - GitHub repository: [`grpc/grpc-swift`](https://github.com/grpc/grpc-swift)
   - Documentation: hosted on the [Swift Package
     Index](https://swiftpackageindex.com/grpc/grpc-swift/documentation)
-- `grpc-swift-nio-transport` contains high-performance HTTP/2 transports built on top of SwiftNIO.
+- `grpc-swift-nio-transport` contains high-performance HTTP/2 transports built on top
+    of [SwiftNIO](https://github.com/apple/swift-nio).
   - GitHub repository: [`grpc/grpc-swift-nio-transport`](https://github.com/grpc/grpc-swift-nio-transport)
   - Documentation: hosted on the [Swift Package
     Index](https://swiftpackageindex.com/grpc/grpc-swift-nio-transport/documentation)
-- `grpc-swift-protobuf` contains runtime serialization components to interoperate with SwiftProtobuf
-  as well as a plugin for the Protocol Buffers compiler, `protoc`.
+- `grpc-swift-protobuf` contains runtime serialization components to interoperate with
+    [SwiftProtobuf](https://github.com/apple/swift-protobuf) as well as a plugin for the Protocol
+    Buffers compiler, `protoc`.
   - GitHub repository: [`grpc/grpc-swift-protobuf`](https://github.com/grpc/grpc-swift-protobuf)
   - Documentation: hosted on the [Swift Package
     Index](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation)
