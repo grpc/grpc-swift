@@ -7,7 +7,7 @@ A gRPC library for Swift written natively in Swift.
 
 ## Package structure
 
-gRPC Swift is distributed across multiple Swift packages these are:
+gRPC Swift is distributed across multiple Swift packages. These are:
 
 - `grpc-swift` (this package) containing core gRPC abstractions and an in-process transport.
   - GitHub repository: [`grpc/grpc-swift`](https://github.com/grpc/grpc-swift)
