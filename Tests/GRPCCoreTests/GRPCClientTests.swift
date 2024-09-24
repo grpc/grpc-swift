@@ -25,7 +25,7 @@ final class GRPCClientTests: XCTestCase {
     interceptors: [any ClientInterceptor] = [],
     _ body: (GRPCClient, GRPCServer) async throws -> Void
   ) async throws {
-    let inProcess = InProcessTransport.makePair()
+    let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client, interceptors: interceptors)
     let server = GRPCServer(transport: inProcess.server, services: services)
 
@@ -329,7 +329,7 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testCancelRunningClient() async throws {
-    let inProcess = InProcessTransport.makePair()
+    let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -377,8 +377,8 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testRunStoppedClient() async throws {
-    let (_, clientTransport) = InProcessTransport.makePair()
-    let client = GRPCClient(transport: clientTransport)
+    let inProcess = InProcessTransport()
+    let client = GRPCClient(transport: inProcess.client)
     // Run the client.
     let task = Task { try await client.run() }
     task.cancel()
@@ -393,8 +393,8 @@ final class GRPCClientTests: XCTestCase {
   }
 
   func testRunAlreadyRunningClient() async throws {
-    let (_, clientTransport) = InProcessTransport.makePair()
-    let client = GRPCClient(transport: clientTransport)
+    let inProcess = InProcessTransport()
+    let client = GRPCClient(transport: inProcess.client)
     // Run the client.
     let task = Task { try await client.run() }
     // Make sure the client is run for the first time here.

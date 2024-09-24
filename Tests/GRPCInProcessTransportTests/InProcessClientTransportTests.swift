@@ -149,7 +149,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenStreamSuccessfullyAndThenClose() async throws {
-    let server = InProcessServerTransport()
+    let server = InProcessTransport.Server()
     let client = makeClient(server: server)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -208,8 +208,8 @@ final class InProcessClientTransportTests: XCTestCase {
       ]
     )
 
-    var client = InProcessClientTransport(
-      server: InProcessServerTransport(),
+    var client = InProcessTransport.Client(
+      server: InProcessTransport.Server(),
       serviceConfig: serviceConfig
     )
 
@@ -232,8 +232,8 @@ final class InProcessClientTransportTests: XCTestCase {
       executionPolicy: .retry(retryPolicy)
     )
     serviceConfig.methodConfig.append(overrideConfiguration)
-    client = InProcessClientTransport(
-      server: InProcessServerTransport(),
+    client = InProcessTransport.Client(
+      server: InProcessTransport.Server(),
       serviceConfig: serviceConfig
     )
 
@@ -249,7 +249,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenMultipleStreamsThenClose() async throws {
-    let server = InProcessServerTransport()
+    let server = InProcessTransport.Server()
     let client = makeClient(server: server)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -285,8 +285,8 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func makeClient(
-    server: InProcessServerTransport = InProcessServerTransport()
-  ) -> InProcessClientTransport {
+    server: InProcessTransport.Server = InProcessTransport.Server()
+  ) -> InProcessTransport.Client {
     let defaultPolicy = RetryPolicy(
       maxAttempts: 10,
       initialBackoff: .seconds(1),
@@ -304,7 +304,7 @@ final class InProcessClientTransportTests: XCTestCase {
       ]
     )
 
-    return InProcessClientTransport(
+    return InProcessTransport.Client(
       server: server,
       serviceConfig: serviceConfig
     )

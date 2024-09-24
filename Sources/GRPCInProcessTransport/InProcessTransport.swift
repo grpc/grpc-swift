@@ -16,24 +16,16 @@
 
 public import GRPCCore
 
-public enum InProcessTransport {
-  /// Returns a pair containing an ``InProcessServerTransport`` and an ``InProcessClientTransport``.
-  ///
-  /// This function is purely for convenience and does no more than constructing a server transport
-  /// and a client using that server transport.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+public struct InProcessTransport: Sendable {
+  public let server = Self.Server()
+  public let client: Self.Client
+
+  /// Initializes a new ``InProcessTransport`` pairing a ``ServerTransport`` and a ``ClientTransport``.
   ///
   /// - Parameters:
   ///   - serviceConfig: Configuration describing how methods should be executed.
-  /// - Returns: A tuple containing the connected server and client in-process transports.
-  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-  public static func makePair(
-    serviceConfig: ServiceConfig = ServiceConfig()
-  ) -> (server: InProcessServerTransport, client: InProcessClientTransport) {
-    let server = InProcessServerTransport()
-    let client = InProcessClientTransport(
-      server: server,
-      serviceConfig: serviceConfig
-    )
-    return (server, client)
+  public init(serviceConfig: ServiceConfig = ServiceConfig()) {
+    self.client = Self.Client(server: self.server, serviceConfig: serviceConfig)
   }
 }

@@ -35,7 +35,7 @@ private import Synchronization
 ///
 /// ```swift
 /// // Create and an in-process transport.
-/// let inProcessTransport = InProcessServerTransport()
+/// let inProcessTransport = InProcessTransport.Server()
 ///
 /// // Create the 'Greeter' and 'Echo' services.
 /// let greeter = GreeterService()
