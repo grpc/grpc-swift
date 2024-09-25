@@ -65,6 +65,7 @@ let targets: [Target] = [
     name: "GRPCCoreTests",
     dependencies: [
       .target(name: "GRPCCore"),
+      .target(name: "GRPCInProcessTransport"),
       .product(name: "SwiftProtobuf", package: "swift-protobuf")
     ],
     resources: [
