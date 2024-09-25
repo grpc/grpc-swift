@@ -18,14 +18,15 @@ public import GRPCCore
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct InProcessTransport: Sendable {
-  public let server = Self.Server()
+  public let server: Self.Server
   public let client: Self.Client
 
-  /// Initializes a new ``InProcessTransport`` pairing a ``ServerTransport`` and a ``ClientTransport``.
+  /// Initializes a new ``InProcessTransport`` pairing a ``Client`` and a ``Server``.
   ///
   /// - Parameters:
   ///   - serviceConfig: Configuration describing how methods should be executed.
   public init(serviceConfig: ServiceConfig = ServiceConfig()) {
+    self.server = Self.Server()
     self.client = Self.Client(server: self.server, serviceConfig: serviceConfig)
   }
 }

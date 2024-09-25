@@ -65,11 +65,10 @@ private import Synchronization
 /// )
 ///
 /// // Finally create a transport and instantiate the client, adding an interceptor.
-/// let inProcessServerTransport = InProcessTransport.Server()
-/// let inProcessClientTransport = InProcessTransport.Client(serverTransport: inProcessServerTransport)
+/// let inProcessTransport = InProcessTransport()
 ///
 /// let client = GRPCClient(
-///   transport: inProcessClientTransport,
+///   transport: inProcessTransport.client,
 ///   interceptors: [StatsRecordingClientInterceptor()],
 ///   configuration: configuration
 /// )
