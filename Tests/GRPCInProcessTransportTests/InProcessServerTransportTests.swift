@@ -22,7 +22,7 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
-    let transport = InProcessServerTransport()
+    let transport = InProcessTransport.Server()
 
     let outbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
     let stream = RPCStream<
@@ -54,7 +54,7 @@ final class InProcessServerTransportTests: XCTestCase {
   }
 
   func testStopListening() async throws {
-    let transport = InProcessServerTransport()
+    let transport = InProcessTransport.Server()
 
     let firstStreamOutbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
     let firstStream = RPCStream<
