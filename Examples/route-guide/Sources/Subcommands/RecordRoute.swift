@@ -40,7 +40,7 @@ struct RecordRoute: AsyncParsableCommand {
         try await client.run()
       }
 
-      let routeGuide = Routeguide_RouteGuideClient(wrapping: client)
+      let routeGuide = Routeguide_RouteGuide_Client(wrapping: client)
 
       // Get all features.
       let rectangle = Routeguide_Rectangle.with {

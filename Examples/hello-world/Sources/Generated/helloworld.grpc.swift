@@ -40,13 +40,13 @@ internal enum Helloworld_Greeter {
         ]
     }
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias StreamingServiceProtocol = Helloworld_GreeterStreamingServiceProtocol
+    internal typealias StreamingServiceProtocol = Helloworld_Greeter_StreamingServiceProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ServiceProtocol = Helloworld_GreeterServiceProtocol
+    internal typealias ServiceProtocol = Helloworld_Greeter_ServiceProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ClientProtocol = Helloworld_GreeterClientProtocol
+    internal typealias ClientProtocol = Helloworld_Greeter_ClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias Client = Helloworld_GreeterClient
+    internal typealias Client = Helloworld_Greeter_Client
 }
 
 extension GRPCCore.ServiceDescriptor {
@@ -58,7 +58,7 @@ extension GRPCCore.ServiceDescriptor {
 
 /// The greeting service definition.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Helloworld_GreeterStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+internal protocol Helloworld_Greeter_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Sends a greeting
     func sayHello(
         request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
@@ -87,7 +87,7 @@ extension Helloworld_Greeter.StreamingServiceProtocol {
 
 /// The greeting service definition.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Helloworld_GreeterServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
+internal protocol Helloworld_Greeter_ServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
     /// Sends a greeting
     func sayHello(
         request: GRPCCore.ServerRequest.Single<Helloworld_HelloRequest>,
@@ -95,7 +95,7 @@ internal protocol Helloworld_GreeterServiceProtocol: Helloworld_Greeter.Streamin
     ) async throws -> GRPCCore.ServerResponse.Single<Helloworld_HelloReply>
 }
 
-/// Partial conformance to `Helloworld_GreeterStreamingServiceProtocol`.
+/// Partial conformance to `Helloworld_Greeter_StreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Helloworld_Greeter.ServiceProtocol {
     internal func sayHello(
@@ -112,7 +112,7 @@ extension Helloworld_Greeter.ServiceProtocol {
 
 /// The greeting service definition.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Helloworld_GreeterClientProtocol: Sendable {
+internal protocol Helloworld_Greeter_ClientProtocol: Sendable {
     /// Sends a greeting
     func sayHello<R>(
         request: GRPCCore.ClientRequest.Single<Helloworld_HelloRequest>,
@@ -167,7 +167,7 @@ extension Helloworld_Greeter.ClientProtocol {
 
 /// The greeting service definition.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal struct Helloworld_GreeterClient: Helloworld_Greeter.ClientProtocol {
+internal struct Helloworld_Greeter_Client: Helloworld_Greeter.ClientProtocol {
     private let client: GRPCCore.GRPCClient
     
     internal init(wrapping client: GRPCCore.GRPCClient) {

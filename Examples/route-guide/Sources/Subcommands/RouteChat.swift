@@ -40,7 +40,7 @@ struct RouteChat: AsyncParsableCommand {
         try await client.run()
       }
 
-      let routeGuide = Routeguide_RouteGuideClient(wrapping: client)
+      let routeGuide = Routeguide_RouteGuide_Client(wrapping: client)
 
       try await routeGuide.routeChat { writer in
         let notes: [(String, (Int32, Int32))] = [
