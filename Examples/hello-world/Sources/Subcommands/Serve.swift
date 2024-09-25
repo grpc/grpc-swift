@@ -42,7 +42,7 @@ struct Serve: AsyncParsableCommand {
   }
 }
 
-struct Greeter: Helloworld_GreeterServiceProtocol {
+struct Greeter: Helloworld_Greeter_ServiceProtocol {
   func sayHello(
     request: ServerRequest.Single<Helloworld_HelloRequest>,
     context: ServerContext
