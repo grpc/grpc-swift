@@ -35,7 +35,7 @@ private import Synchronization
 ///
 /// ```swift
 /// // Create and an in-process transport.
-/// let inProcessTransport = InProcessServerTransport()
+/// let inProcessTransport = InProcessTransport()
 ///
 /// // Create the 'Greeter' and 'Echo' services.
 /// let greeter = GreeterService()
@@ -46,7 +46,7 @@ private import Synchronization
 ///
 /// // Finally create the server.
 /// let server = GRPCServer(
-///   transport: inProcessTransport,
+///   transport: inProcessTransport.server,
 ///   services: [greeter, echo],
 ///   interceptors: [statsRecorder]
 /// )

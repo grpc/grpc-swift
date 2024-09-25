@@ -43,7 +43,7 @@ struct Serve: AsyncParsableCommand {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-struct EchoService: Echo_EchoServiceProtocol {
+struct EchoService: Echo_Echo_ServiceProtocol {
   func get(
     request: ServerRequest.Single<Echo_EchoRequest>,
     context: ServerContext

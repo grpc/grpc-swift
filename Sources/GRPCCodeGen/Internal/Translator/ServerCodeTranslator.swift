@@ -481,8 +481,8 @@ extension ServerCodeTranslator {
     streaming: Bool
   ) -> String {
     if streaming {
-      return "\(service.namespacedGeneratedName)StreamingServiceProtocol"
+      return "\(service.namespacedGeneratedName)_StreamingServiceProtocol"
     }
-    return "\(service.namespacedGeneratedName)ServiceProtocol"
+    return "\(service.namespacedGeneratedName)_ServiceProtocol"
   }
 }

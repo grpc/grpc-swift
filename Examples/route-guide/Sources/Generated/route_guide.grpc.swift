@@ -67,13 +67,13 @@ internal enum Routeguide_RouteGuide {
         ]
     }
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias StreamingServiceProtocol = Routeguide_RouteGuideStreamingServiceProtocol
+    internal typealias StreamingServiceProtocol = Routeguide_RouteGuide_StreamingServiceProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ServiceProtocol = Routeguide_RouteGuideServiceProtocol
+    internal typealias ServiceProtocol = Routeguide_RouteGuide_ServiceProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ClientProtocol = Routeguide_RouteGuideClientProtocol
+    internal typealias ClientProtocol = Routeguide_RouteGuide_ClientProtocol
     @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias Client = Routeguide_RouteGuideClient
+    internal typealias Client = Routeguide_RouteGuide_Client
 }
 
 extension GRPCCore.ServiceDescriptor {
@@ -85,7 +85,7 @@ extension GRPCCore.ServiceDescriptor {
 
 /// Interface exported by the server.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Routeguide_RouteGuideStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+internal protocol Routeguide_RouteGuide_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// A simple RPC.
     ///
     /// Obtains the feature at a given position.
@@ -181,7 +181,7 @@ extension Routeguide_RouteGuide.StreamingServiceProtocol {
 
 /// Interface exported by the server.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Routeguide_RouteGuideServiceProtocol: Routeguide_RouteGuide.StreamingServiceProtocol {
+internal protocol Routeguide_RouteGuide_ServiceProtocol: Routeguide_RouteGuide.StreamingServiceProtocol {
     /// A simple RPC.
     ///
     /// Obtains the feature at a given position.
@@ -223,7 +223,7 @@ internal protocol Routeguide_RouteGuideServiceProtocol: Routeguide_RouteGuide.St
     ) async throws -> GRPCCore.ServerResponse.Stream<Routeguide_RouteNote>
 }
 
-/// Partial conformance to `Routeguide_RouteGuideStreamingServiceProtocol`.
+/// Partial conformance to `Routeguide_RouteGuide_StreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Routeguide_RouteGuide.ServiceProtocol {
     internal func getFeature(
@@ -262,7 +262,7 @@ extension Routeguide_RouteGuide.ServiceProtocol {
 
 /// Interface exported by the server.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Routeguide_RouteGuideClientProtocol: Sendable {
+internal protocol Routeguide_RouteGuide_ClientProtocol: Sendable {
     /// A simple RPC.
     ///
     /// Obtains the feature at a given position.
@@ -476,7 +476,7 @@ extension Routeguide_RouteGuide.ClientProtocol {
 
 /// Interface exported by the server.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal struct Routeguide_RouteGuideClient: Routeguide_RouteGuide.ClientProtocol {
+internal struct Routeguide_RouteGuide_Client: Routeguide_RouteGuide.ClientProtocol {
     private let client: GRPCCore.GRPCClient
     
     internal init(wrapping client: GRPCCore.GRPCClient) {

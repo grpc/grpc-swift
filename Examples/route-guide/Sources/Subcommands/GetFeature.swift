@@ -47,7 +47,7 @@ struct GetFeature: AsyncParsableCommand {
         try await client.run()
       }
 
-      let routeGuide = Routeguide_RouteGuideClient(wrapping: client)
+      let routeGuide = Routeguide_RouteGuide_Client(wrapping: client)
 
       let point = Routeguide_Point.with {
         $0.latitude = self.latitude

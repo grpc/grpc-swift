@@ -61,7 +61,7 @@ struct ListFeatures: AsyncParsableCommand {
         try await client.run()
       }
 
-      let routeGuide = Routeguide_RouteGuideClient(wrapping: client)
+      let routeGuide = Routeguide_RouteGuide_Client(wrapping: client)
       let boundingRectangle = Routeguide_Rectangle.with {
         $0.lo.latitude = self.minLatitude
         $0.hi.latitude = self.maxLatitude

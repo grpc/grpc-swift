@@ -256,12 +256,12 @@ extension TypealiasTranslator {
     let streamingServiceProtocolTypealias = Declaration.typealias(
       accessModifier: self.accessModifier,
       name: "StreamingServiceProtocol",
-      existingType: .member("\(service.namespacedGeneratedName)StreamingServiceProtocol")
+      existingType: .member("\(service.namespacedGeneratedName)_StreamingServiceProtocol")
     )
     let serviceProtocolTypealias = Declaration.typealias(
       accessModifier: self.accessModifier,
       name: "ServiceProtocol",
-      existingType: .member("\(service.namespacedGeneratedName)ServiceProtocol")
+      existingType: .member("\(service.namespacedGeneratedName)_ServiceProtocol")
     )
 
     return [
@@ -284,7 +284,7 @@ extension TypealiasTranslator {
       .typealias(
         accessModifier: self.accessModifier,
         name: "ClientProtocol",
-        existingType: .member("\(service.namespacedGeneratedName)ClientProtocol")
+        existingType: .member("\(service.namespacedGeneratedName)_ClientProtocol")
       )
     )
   }
@@ -297,7 +297,7 @@ extension TypealiasTranslator {
       .typealias(
         accessModifier: self.accessModifier,
         name: "Client",
-        existingType: .member("\(service.namespacedGeneratedName)Client")
+        existingType: .member("\(service.namespacedGeneratedName)_Client")
       )
     )
   }

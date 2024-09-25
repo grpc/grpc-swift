@@ -23,9 +23,9 @@ final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
     interceptors: [any ServerInterceptor] = [],
-    _ body: (InProcessClientTransport, GRPCServer) async throws -> Void
+    _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
   ) async throws {
-    let inProcess = InProcessTransport.makePair()
+    let inProcess = InProcessTransport()
     let server = GRPCServer(
       transport: inProcess.server,
       services: services,
@@ -317,7 +317,7 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testCancelRunningServer() async throws {
-    let inProcess = InProcessTransport.makePair()
+    let inProcess = InProcessTransport()
     let task = Task {
       let server = GRPCServer(transport: inProcess.server, services: [BinaryEcho()])
       try await server.serve()
@@ -338,7 +338,7 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testTestRunStoppedServer() async throws {
-    let server = GRPCServer(transport: InProcessServerTransport(), services: [])
+    let server = GRPCServer(transport: InProcessTransport.Server(), services: [])
     // Run the server.
     let task = Task { try await server.serve() }
     task.cancel()
