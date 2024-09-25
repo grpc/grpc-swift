@@ -62,13 +62,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               ]
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = NamespaceA_ServiceAClient
+          public typealias Client = NamespaceA_ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
@@ -106,13 +106,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = NamespaceA_ServiceAClient
+          public typealias Client = NamespaceA_ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
@@ -150,9 +150,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
@@ -190,9 +190,9 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = NamespaceA_ServiceAClient
+          public typealias Client = NamespaceA_ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
@@ -280,13 +280,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               ]
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = ServiceAStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = ServiceAServiceProtocol
+          public typealias ServiceProtocol = ServiceA_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = ServiceAClientProtocol
+          public typealias ClientProtocol = ServiceA_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = ServiceAClient
+          public typealias Client = ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let ServiceA = Self(
@@ -359,13 +359,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               ]
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = NamespaceA_ServiceAClient
+          public typealias Client = NamespaceA_ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_ServiceA = Self(
@@ -403,13 +403,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               package static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          package typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          package typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias ClientProtocol = NamespaceA_ServiceAClientProtocol
+          package typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias Client = NamespaceA_ServiceAClient
+          package typealias Client = NamespaceA_ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
           package static let namespaceA_ServiceA = Self(
@@ -459,13 +459,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_AserviceStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_Aservice_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_AserviceServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_Aservice_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = NamespaceA_AserviceClientProtocol
+          public typealias ClientProtocol = NamespaceA_Aservice_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = NamespaceA_AserviceClient
+          public typealias Client = NamespaceA_Aservice_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_AService = Self(
@@ -479,13 +479,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_BserviceStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_Bservice_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_BserviceServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_Bservice_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = NamespaceA_BserviceClientProtocol
+          public typealias ClientProtocol = NamespaceA_Bservice_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = NamespaceA_BserviceClient
+          public typealias Client = NamespaceA_Bservice_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let namespaceA_BService = Self(
@@ -527,13 +527,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               package static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias StreamingServiceProtocol = AServiceStreamingServiceProtocol
+          package typealias StreamingServiceProtocol = AService_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias ServiceProtocol = AServiceServiceProtocol
+          package typealias ServiceProtocol = AService_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias ClientProtocol = AServiceClientProtocol
+          package typealias ClientProtocol = AService_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias Client = AServiceClient
+          package typealias Client = AService_Client
       }
       extension GRPCCore.ServiceDescriptor {
           package static let AService = Self(
@@ -547,13 +547,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               package static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias StreamingServiceProtocol = BServiceStreamingServiceProtocol
+          package typealias StreamingServiceProtocol = BService_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias ServiceProtocol = BServiceServiceProtocol
+          package typealias ServiceProtocol = BService_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias ClientProtocol = BServiceClientProtocol
+          package typealias ClientProtocol = BService_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          package typealias Client = BServiceClient
+          package typealias Client = BService_Client
       }
       extension GRPCCore.ServiceDescriptor {
           package static let BService = Self(
@@ -603,13 +603,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               internal static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias StreamingServiceProtocol = Anamespace_AServiceStreamingServiceProtocol
+          internal typealias StreamingServiceProtocol = Anamespace_AService_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias ServiceProtocol = Anamespace_AServiceServiceProtocol
+          internal typealias ServiceProtocol = Anamespace_AService_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias ClientProtocol = Anamespace_AServiceClientProtocol
+          internal typealias ClientProtocol = Anamespace_AService_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias Client = Anamespace_AServiceClient
+          internal typealias Client = Anamespace_AService_Client
       }
       extension GRPCCore.ServiceDescriptor {
           internal static let anamespace_AService = Self(
@@ -623,13 +623,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               internal static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias StreamingServiceProtocol = Bnamespace_BServiceStreamingServiceProtocol
+          internal typealias StreamingServiceProtocol = Bnamespace_BService_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias ServiceProtocol = Bnamespace_BServiceServiceProtocol
+          internal typealias ServiceProtocol = Bnamespace_BService_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias ClientProtocol = Bnamespace_BServiceClientProtocol
+          internal typealias ClientProtocol = Bnamespace_BService_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          internal typealias Client = Bnamespace_BServiceClient
+          internal typealias Client = Bnamespace_BService_Client
       }
       extension GRPCCore.ServiceDescriptor {
           internal static let bnamespace_BService = Self(
@@ -673,13 +673,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = Anamespace_AServiceStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = Anamespace_AService_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = Anamespace_AServiceServiceProtocol
+          public typealias ServiceProtocol = Anamespace_AService_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = Anamespace_AServiceClientProtocol
+          public typealias ClientProtocol = Anamespace_AService_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = Anamespace_AServiceClient
+          public typealias Client = Anamespace_AService_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let anamespace_AService = Self(
@@ -693,13 +693,13 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = BServiceStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = BService_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = BServiceServiceProtocol
+          public typealias ServiceProtocol = BService_ServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ClientProtocol = BServiceClientProtocol
+          public typealias ClientProtocol = BService_ClientProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias Client = BServiceClient
+          public typealias Client = BService_Client
       }
       extension GRPCCore.ServiceDescriptor {
           public static let BService = Self(

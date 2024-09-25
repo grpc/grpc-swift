@@ -222,9 +222,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceAStreamingServiceProtocol
+          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
           @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-          public typealias ServiceProtocol = NamespaceA_ServiceAServiceProtocol
+          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
       }
 
       extension GRPCCore.ServiceDescriptor {
@@ -236,7 +236,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       /// Documentation for AService
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-      public protocol NamespaceA_ServiceAStreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+      public protocol NamespaceA_ServiceA_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
 
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
@@ -247,9 +247,9 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       /// Documentation for AService
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-      public protocol NamespaceA_ServiceAServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
+      public protocol NamespaceA_ServiceA_ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
 
-      /// Partial conformance to `NamespaceA_ServiceAStreamingServiceProtocol`.
+      /// Partial conformance to `NamespaceA_ServiceA_StreamingServiceProtocol`.
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ServiceProtocol {
       }
