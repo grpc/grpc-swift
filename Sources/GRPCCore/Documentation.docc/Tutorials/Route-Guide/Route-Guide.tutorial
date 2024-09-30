@@ -65,7 +65,7 @@
 
       @Step {
         We need to add a dependency on the gRPC Swift and Swift Protobuf packages. As gRPC Swift v2
-        hasn't yet been released the dependency must be on the `main` branch.
+        hasn't yet been released the dependencies must use the `-alpha` tags.
 
         Note that we also add `.macOS(.v15)` to platforms, this is the earliest macOS version supported by
         gRPC Swift v2.
@@ -77,12 +77,9 @@
         Next we can add a target. In this tutorial we'll create a single executable target which
         can act as both a client and a server.
 
-        We require two gRPC dependencies: `_GRPCHTTP2Transport"` provides an implementation of an HTTP/2
-        client and server, while `_GRPCProtobuf` provides the necessary components to serialize
+        We require two gRPC dependencies: `GRPCNIOTransportHTTP2"` provides an implementation of an HTTP/2
+        client and server, while `GRPCProtobuf` provides the necessary components to serialize
         and deserialize `SwiftProtobuf` messages.
-
-        > Because gRPC Swift v2 hasn't been released yet the product names are prefixed
-        > with an `"_"`; this indicates that they aren't yet considered as stable public API.
 
         @Code(name: "Package.swift", file: "route-guide-sec01-step08-description.swift")
       }
@@ -320,7 +317,7 @@
     @Steps {
       @Step {
         First we need to download a database of known features for the service. Copy
-        `route_guide_db.json` from the [gRPC Swift repository](https://github.com/grpc/grpc-swift/tree/main/Examples/v2/route-guide)
+        `route_guide_db.json` from the [gRPC Swift repository](https://github.com/grpc/grpc-swift/tree/main/Examples/route-guide)
         and place it in the `Sources` directory.
       }
 
@@ -331,7 +328,7 @@
       }
 
       @Step {
-        Now add a `resouces` argument to copy the `route_guide_db.json` database.
+        Now add a `resources` argument to copy the `route_guide_db.json` database.
 
         @Code(name: "Package.swift", file: "route-guide-sec05-step01-package.swift")
       }
@@ -379,7 +376,7 @@
         The server is instantiated with a transport which provides the communication with a remote
         peer.
 
-        We'll use an HTTP/2 transport provided by the `GRPCHTTP2Transport` module which is
+        We'll use an HTTP/2 transport provided by the `GRPCNIOTransportHTTP2` module which is
         implemented on top of SwiftNIO's Posix sockets abstraction. The server is configured to
         bind to "127.0.0.1:31415" and use the default configuration. The `.plaintext` transport
         security means that the connections won't use TLS and will be unencrypted.

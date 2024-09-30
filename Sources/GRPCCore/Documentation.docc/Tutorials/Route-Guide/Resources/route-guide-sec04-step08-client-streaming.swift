@@ -19,7 +19,8 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func getFeature(
-    request: ServerRequest.Single<Routeguide_Point>
+    request: ServerRequest.Single<Routeguide_Point>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Routeguide_Feature> {
     let feature = self.findFeature(
       latitude: request.message.latitude,
@@ -42,7 +43,8 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func listFeatures(
-    request: ServerRequest.Single<Routeguide_Rectangle>
+    request: ServerRequest.Single<Routeguide_Rectangle>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Routeguide_Feature> {
     return ServerResponse.Stream { writer in
       for feature in self.features {
@@ -56,7 +58,8 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func recordRoute(
-    request: ServerRequest.Stream<Routeguide_Point>
+    request: ServerRequest.Stream<Routeguide_Point>,
+    context: ServerContext
   ) async throws -> ServerResponse.Single<Routeguide_RouteSummary> {
     let startTime = ContinuousClock.now
     var pointsVisited = 0
@@ -90,7 +93,8 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func routeChat(
-    request: ServerRequest.Stream<Routeguide_RouteNote>
+    request: ServerRequest.Stream<Routeguide_RouteNote>,
+    context: ServerContext
   ) async throws -> ServerResponse.Stream<Routeguide_RouteNote> {
   }
 }

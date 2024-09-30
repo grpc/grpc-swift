@@ -1,30 +1,47 @@
 # gRPC Swift
 
-This repository contains a gRPC code generator and runtime libraries for Swift.
-You can read more about gRPC on the [gRPC project's website][grpcio].
+This repository contains a gRPC implementation for Swift. You can read more
+about gRPC on the [gRPC project's website][grpcio].
 
-## Versions
+> gRPC Swift v2.x is under active development on the `main` branch and takes
+> full advantage of Swift's native concurrency features.
+>
+> v1.x is still supported and maintained on the `release/1.x` branch.
 
-gRPC Swift is currently undergoing active development to take full advantage of
-Swift's native concurrency features. The culmination of this work will be a new
-major version, v2.x. Pre-release versions will be available in the near future.
+- 📚 **Documentation** and **tutorials** are available on the [Swift Package Index][spi-grpc-swift]
+- 💻 **Examples** are available in the [Examples](Examples) directory
+- 🚀 **Contributions** are welcome, please see [CONTRIBUTING.md](CONTRIBUTING.md)
+- 🪪 **License** is Apache 2.0, repeated in [LICENSE](License)
+- 🔒 **Security** issues should be reported via the process in [SECURITY.md](SECURITY.md)
 
-In the meantime, v1.x is available and still supported. You can read more about
-it on the [Swift Package Index][spi-grpc-swift-main].
+## Quick Start
 
-## Security
+The following snippet contains a Swift Package manifest to use gRPC Swift v2.x with
+the SwiftNIO based transport and SwiftProtobuf serialization:
 
-Please see [SECURITY.md](SECURITY.md).
+```swift
+// swift-tools-version: 6.0
+import PackageDescription
 
-## License
-
-gRPC Swift is released under the same license as [gRPC][gh-grpc], repeated in
-[LICENSE](LICENSE).
-
-## Contributing
-
-Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
+let package = Package(
+    name: "foo-package",
+    platforms: [.macOS("15.0")],
+    dependencies: [
+        .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0-alpha.1"),
+        .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", from: "1.0.0-alpha.1"),
+    ],
+    targets: [
+        .executableTarget(
+            name: "bar-target",
+            dependencies: [
+                .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
+                .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
+            ]
+        )
+    ]
+)
+```
 
 [gh-grpc]: https://github.com/grpc/grpc
 [grpcio]: https://grpc.io
-[spi-grpc-swift-main]: https://swiftpackageindex.com/grpc/grpc-swift/main/documentation/grpccore
+[spi-grpc-swift]: https://swiftpackageindex.com/grpc/grpc-swift/documentation
