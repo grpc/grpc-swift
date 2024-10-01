@@ -44,7 +44,7 @@ extension ClientRPCExecutorTests {
       consumeInboundStream: true
     )
     try await harness.bidirectional(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([0])
         try await $0.write([1])
         try await $0.write([2])
@@ -70,7 +70,7 @@ extension ClientRPCExecutorTests {
   func testRetriesRespectRetryableCodes() async throws {
     let harness = self.makeHarnessForRetries(rejectUntilAttempt: 3, withCode: .unavailable)
     try await harness.bidirectional(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([0, 1, 2])
       },
       options: .retry(codes: [.aborted])
@@ -91,7 +91,7 @@ extension ClientRPCExecutorTests {
   func testRetriesRespectRetryLimit() async throws {
     let harness = self.makeHarnessForRetries(rejectUntilAttempt: 5, withCode: .unavailable)
     try await harness.bidirectional(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([0, 1, 2])
       },
       options: .retry(maximumAttempts: 2, codes: [.unavailable])
@@ -118,7 +118,7 @@ extension ClientRPCExecutorTests {
     )
 
     try await harness.bidirectional(
-      request: ClientRequest.Stream {
+      request: StreamingClientRequest {
         for _ in 0 ..< 1000 {
           try await $0.write([])
         }
@@ -148,7 +148,7 @@ extension ClientRPCExecutorTests {
 
     await XCTAssertThrowsErrorAsync {
       try await harness.bidirectional(
-        request: ClientRequest.Stream {
+        request: StreamingClientRequest {
           try await $0.write([0])
           try await $0.write([1])
           try await $0.write([2])
@@ -169,7 +169,7 @@ extension ClientRPCExecutorTests {
 
     await XCTAssertThrowsErrorAsync {
       try await harness.bidirectional(
-        request: ClientRequest.Stream {
+        request: StreamingClientRequest {
           try await $0.write([0])
           try await $0.write([1])
           try await $0.write([2])
@@ -193,7 +193,7 @@ extension ClientRPCExecutorTests {
 
     await XCTAssertThrowsErrorAsync {
       try await harness.bidirectional(
-        request: ClientRequest.Stream {
+        request: StreamingClientRequest {
           try await $0.write([0])
           try await $0.write([1])
           try await $0.write([2])
@@ -233,7 +233,7 @@ extension ClientRPCExecutorTests {
 
     let start = ContinuousClock.now
     try await harness.bidirectional(
-      request: ClientRequest.Stream {
+      request: StreamingClientRequest {
         try await $0.write([0])
       },
       options: .retry(retryPolicy)
@@ -269,7 +269,7 @@ extension ClientRPCExecutorTests {
       )
 
       try await harness.bidirectional(
-        request: ClientRequest.Stream {
+        request: StreamingClientRequest {
           try await $0.write([0])
         },
         options: .retry(retryPolicy)

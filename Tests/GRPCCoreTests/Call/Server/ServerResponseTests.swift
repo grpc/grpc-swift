@@ -19,7 +19,7 @@ import XCTest
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ServerResponseTests: XCTestCase {
   func testSingleConvenienceInit() {
-    var response = ServerResponse.Single(
+    var response = ServerResponse(
       message: "message",
       metadata: ["metadata": "initial"],
       trailingMetadata: ["metadata": "trailing"]
@@ -35,7 +35,7 @@ final class ServerResponseTests: XCTestCase {
     }
 
     let error = RPCError(code: .aborted, message: "Aborted")
-    response = ServerResponse.Single(of: String.self, error: error)
+    response = ServerResponse(of: String.self, error: error)
     switch response.accepted {
     case .success:
       XCTFail("Unexpected success")
@@ -45,7 +45,7 @@ final class ServerResponseTests: XCTestCase {
   }
 
   func testStreamConvenienceInit() async throws {
-    var response = ServerResponse.Stream(of: String.self, metadata: ["metadata": "initial"]) { _ in
+    var response = StreamingServerResponse(of: String.self, metadata: ["metadata": "initial"]) { _ in
       // Empty body.
       return ["metadata": "trailing"]
     }
@@ -60,7 +60,7 @@ final class ServerResponseTests: XCTestCase {
     }
 
     let error = RPCError(code: .aborted, message: "Aborted")
-    response = ServerResponse.Stream(of: String.self, error: error)
+    response = StreamingServerResponse(of: String.self, error: error)
     switch response.accepted {
     case .success:
       XCTFail("Unexpected success")
@@ -70,13 +70,13 @@ final class ServerResponseTests: XCTestCase {
   }
 
   func testSingleToStreamConversionForSuccessfulResponse() async throws {
-    let single = ServerResponse.Single(
+    let single = ServerResponse(
       message: "foo",
       metadata: ["metadata": "initial"],
       trailingMetadata: ["metadata": "trailing"]
     )
 
-    let stream = ServerResponse.Stream(single: single)
+    let stream = StreamingServerResponse(single: single)
     let (messages, continuation) = AsyncStream.makeStream(of: String.self)
     let trailingMetadata: Metadata
 
@@ -96,8 +96,8 @@ final class ServerResponseTests: XCTestCase {
 
   func testSingleToStreamConversionForFailedResponse() async throws {
     let error = RPCError(code: .aborted, message: "aborted")
-    let single = ServerResponse.Single(of: String.self, error: error)
-    let stream = ServerResponse.Stream(single: single)
+    let single = ServerResponse(of: String.self, error: error)
+    let stream = StreamingServerResponse(single: single)
 
     XCTAssertThrowsRPCError(try stream.accepted.get()) {
       XCTAssertEqual($0, error)

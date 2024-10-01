@@ -19,22 +19,22 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct BinaryEcho: RegistrableRPCService {
   func get(
-    _ request: ServerRequest.Single<[UInt8]>
-  ) async throws -> ServerResponse.Single<[UInt8]> {
-    ServerResponse.Single(message: request.message, metadata: request.metadata)
+    _ request: ServerRequest<[UInt8]>
+  ) async throws -> ServerResponse<[UInt8]> {
+    ServerResponse(message: request.message, metadata: request.metadata)
   }
 
   func collect(
-    _ request: ServerRequest.Stream<[UInt8]>
-  ) async throws -> ServerResponse.Single<[UInt8]> {
+    _ request: StreamingServerRequest<[UInt8]>
+  ) async throws -> ServerResponse<[UInt8]> {
     let collected = try await request.messages.reduce(into: []) { $0.append(contentsOf: $1) }
-    return ServerResponse.Single(message: collected, metadata: request.metadata)
+    return ServerResponse(message: collected, metadata: request.metadata)
   }
 
   func expand(
-    _ request: ServerRequest.Single<[UInt8]>
-  ) async throws -> ServerResponse.Stream<[UInt8]> {
-    return ServerResponse.Stream(metadata: request.metadata) {
+    _ request: ServerRequest<[UInt8]>
+  ) async throws -> StreamingServerResponse<[UInt8]> {
+    return StreamingServerResponse(metadata: request.metadata) {
       for byte in request.message {
         try await $0.write([byte])
       }
@@ -43,9 +43,9 @@ struct BinaryEcho: RegistrableRPCService {
   }
 
   func update(
-    _ request: ServerRequest.Stream<[UInt8]>
-  ) async throws -> ServerResponse.Stream<[UInt8]> {
-    return ServerResponse.Stream(metadata: request.metadata) {
+    _ request: StreamingServerRequest<[UInt8]>
+  ) async throws -> StreamingServerResponse<[UInt8]> {
+    return StreamingServerResponse(metadata: request.metadata) {
       for try await message in request.messages {
         try await $0.write(message)
       }
@@ -62,9 +62,9 @@ struct BinaryEcho: RegistrableRPCService {
       deserializer: deserializer,
       serializer: serializer
     ) { streamRequest, context in
-      let singleRequest = try await ServerRequest.Single(stream: streamRequest)
+      let singleRequest = try await ServerRequest(stream: streamRequest)
       let singleResponse = try await self.get(singleRequest)
-      return ServerResponse.Stream(single: singleResponse)
+      return StreamingServerResponse(single: singleResponse)
     }
 
     router.registerHandler(
@@ -73,7 +73,7 @@ struct BinaryEcho: RegistrableRPCService {
       serializer: serializer
     ) { streamRequest, context in
       let singleResponse = try await self.collect(streamRequest)
-      return ServerResponse.Stream(single: singleResponse)
+      return StreamingServerResponse(single: singleResponse)
     }
 
     router.registerHandler(
@@ -81,7 +81,7 @@ struct BinaryEcho: RegistrableRPCService {
       deserializer: deserializer,
       serializer: serializer
     ) { streamRequest, context in
-      let singleRequest = try await ServerRequest.Single(stream: streamRequest)
+      let singleRequest = try await ServerRequest(stream: streamRequest)
       let streamResponse = try await self.expand(singleRequest)
       return streamResponse
     }

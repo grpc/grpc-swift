@@ -25,8 +25,8 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
 ///   func baz(
-///     request: GRPCCore.ServerRequest.Stream<Foo_Bar_Input>
-///   ) async throws -> GRPCCore.ServerResponse.Stream<Foo_Bar_Output>
+///     request: GRPCCore.StreamingServerRequest<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.StreamingServerResponse<Foo_Bar_Output>
 /// }
 /// // Conformance to `GRPCCore.RegistrableRPCService`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -43,17 +43,17 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarServiceProtocol: Foo_Bar.StreamingServiceProtocol {
 ///   func baz(
-///     request: GRPCCore.ServerRequest.Single<Foo_Bar_Input>
-///   ) async throws -> GRPCCore.ServerResponse.Single<Foo_Bar_Output>
+///     request: GRPCCore.ServerRequest<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.ServerResponse<Foo_Bar_Output>
 /// }
 /// // Partial conformance to `Foo_BarStreamingServiceProtocol`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension Foo_Bar.ServiceProtocol {
 ///   public func baz(
-///     request: GRPCCore.ServerRequest.Stream<Foo_Bar_Input>
-///   ) async throws -> GRPCCore.ServerResponse.Stream<Foo_Bar_Output> {
-///     let response = try await self.baz(request: GRPCCore.ServerRequest.Single(stream: request))
-///     return GRPCCore.ServerResponse.Stream(single: response)
+///     request: GRPCCore.StreamingServerRequest<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.StreamingServerResponse<Foo_Bar_Output> {
+///     let response = try await self.baz(request: GRPCCore.ServerRequest(stream: request))
+///     return GRPCCore.StreamingServerResponse(single: response)
 ///   }
 /// }
 ///```

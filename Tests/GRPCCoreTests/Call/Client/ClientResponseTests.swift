@@ -21,7 +21,7 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class ClientResponseTests: XCTestCase {
   func testAcceptedSingleResponseConvenienceMethods() {
-    let response = ClientResponse.Single(
+    let response = ClientResponse(
       message: "message",
       metadata: ["foo": "bar"],
       trailingMetadata: ["bar": "baz"]
@@ -34,7 +34,7 @@ final class ClientResponseTests: XCTestCase {
 
   func testRejectedSingleResponseConvenienceMethods() {
     let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
-    let response = ClientResponse.Single(of: String.self, error: error)
+    let response = ClientResponse(of: String.self, error: error)
 
     XCTAssertEqual(response.metadata, [:])
     XCTAssertThrowsRPCError(try response.message) {
@@ -45,7 +45,7 @@ final class ClientResponseTests: XCTestCase {
 
   func testAcceptedButFailedSingleResponseConvenienceMethods() {
     let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
-    let response = ClientResponse.Single(of: String.self, metadata: ["foo": "bar"], error: error)
+    let response = ClientResponse(of: String.self, metadata: ["foo": "bar"], error: error)
 
     XCTAssertEqual(response.metadata, ["foo": "bar"])
     XCTAssertThrowsRPCError(try response.message) {
@@ -55,7 +55,7 @@ final class ClientResponseTests: XCTestCase {
   }
 
   func testAcceptedStreamResponseConvenienceMethods() async throws {
-    let response = ClientResponse.Stream(
+    let response = StreamingClientResponse(
       of: String.self,
       metadata: ["foo": "bar"],
       bodyParts: RPCAsyncSequence(
@@ -76,7 +76,7 @@ final class ClientResponseTests: XCTestCase {
 
   func testRejectedStreamResponseConvenienceMethods() async throws {
     let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
-    let response = ClientResponse.Stream(of: String.self, error: error)
+    let response = StreamingClientResponse(of: String.self, error: error)
 
     XCTAssertEqual(response.metadata, [:])
     await XCTAssertThrowsRPCErrorAsync {
@@ -87,13 +87,13 @@ final class ClientResponseTests: XCTestCase {
   }
 
   func testStreamToSingleConversionForValidStream() async throws {
-    let stream = ClientResponse.Stream(
+    let stream = StreamingClientResponse(
       of: String.self,
       metadata: ["foo": "bar"],
       bodyParts: .elements(.message("foo"), .trailingMetadata(["bar": "baz"]))
     )
 
-    let single = await ClientResponse.Single(stream: stream)
+    let single = await ClientResponse(stream: stream)
     XCTAssertEqual(single.metadata, ["foo": "bar"])
     XCTAssertEqual(try single.message, "foo")
     XCTAssertEqual(single.trailingMetadata, ["bar": "baz"])
@@ -101,9 +101,9 @@ final class ClientResponseTests: XCTestCase {
 
   func testStreamToSingleConversionForFailedStream() async throws {
     let error = RPCError(code: .aborted, message: "aborted", metadata: ["bar": "baz"])
-    let stream = ClientResponse.Stream(of: String.self, error: error)
+    let stream = StreamingClientResponse(of: String.self, error: error)
 
-    let single = await ClientResponse.Single(stream: stream)
+    let single = await ClientResponse(stream: stream)
     XCTAssertEqual(single.metadata, [:])
     XCTAssertThrowsRPCError(try single.message) {
       XCTAssertEqual($0, error)
@@ -112,19 +112,19 @@ final class ClientResponseTests: XCTestCase {
   }
 
   func testStreamToSingleConversionForInvalidSingleStream() async throws {
-    let bodies: [[ClientResponse.Stream<String>.Contents.BodyPart]] = [
+    let bodies: [[StreamingClientResponse<String>.Contents.BodyPart]] = [
       [.message("1"), .message("2")],  // Too many messages.
       [.trailingMetadata([:])],  // Too few messages
     ]
 
     for body in bodies {
-      let stream = ClientResponse.Stream(
+      let stream = StreamingClientResponse(
         of: String.self,
         metadata: ["foo": "bar"],
         bodyParts: .elements(body)
       )
 
-      let single = await ClientResponse.Single(stream: stream)
+      let single = await ClientResponse(stream: stream)
       XCTAssertEqual(single.metadata, [:])
       XCTAssertThrowsRPCError(try single.message) { error in
         XCTAssertEqual(error.code, .unimplemented)
@@ -134,20 +134,20 @@ final class ClientResponseTests: XCTestCase {
   }
 
   func testStreamToSingleConversionForInvalidStream() async throws {
-    let bodies: [[ClientResponse.Stream<String>.Contents.BodyPart]] = [
+    let bodies: [[StreamingClientResponse<String>.Contents.BodyPart]] = [
       [],  // Empty stream
       [.trailingMetadata([:]), .trailingMetadata([:])],  // Multiple metadatas
       [.trailingMetadata([:]), .message("")],  // Metadata then message
     ]
 
     for body in bodies {
-      let stream = ClientResponse.Stream(
+      let stream = StreamingClientResponse(
         of: String.self,
         metadata: ["foo": "bar"],
         bodyParts: .elements(body)
       )
 
-      let single = await ClientResponse.Single(stream: stream)
+      let single = await ClientResponse(stream: stream)
       XCTAssertEqual(single.metadata, [:])
       XCTAssertThrowsRPCError(try single.message) { error in
         XCTAssertEqual(error.code, .internalError)
@@ -158,26 +158,26 @@ final class ClientResponseTests: XCTestCase {
 
   func testStreamToSingleConversionForStreamThrowingRPCError() async throws {
     let error = RPCError(code: .dataLoss, message: "oops")
-    let stream = ClientResponse.Stream(
+    let stream = StreamingClientResponse(
       of: String.self,
       metadata: [:],
       bodyParts: .throwing(error)
     )
 
-    let single = await ClientResponse.Single(stream: stream)
+    let single = await ClientResponse(stream: stream)
     XCTAssertThrowsRPCError(try single.message) {
       XCTAssertEqual($0, error)
     }
   }
 
   func testStreamToSingleConversionForStreamThrowingUnknownError() async throws {
-    let stream = ClientResponse.Stream(
+    let stream = StreamingClientResponse(
       of: String.self,
       metadata: [:],
       bodyParts: .throwing(CancellationError())
     )
 
-    let single = await ClientResponse.Single(stream: stream)
+    let single = await ClientResponse(stream: stream)
     XCTAssertThrowsRPCError(try single.message) { error in
       XCTAssertEqual(error.code, .unknown)
     }

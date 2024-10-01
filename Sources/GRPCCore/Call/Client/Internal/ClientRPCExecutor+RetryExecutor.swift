@@ -64,10 +64,10 @@ extension ClientRPCExecutor {
 extension ClientRPCExecutor.RetryExecutor {
   @inlinable
   func execute<R: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async throws -> R {
     // There's quite a lot going on here...
     //
@@ -201,13 +201,13 @@ extension ClientRPCExecutor.RetryExecutor {
     retryStream: BroadcastAsyncSequence<Input>,
     method: MethodDescriptor,
     attempt: Int,
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async -> _RetryExecutorTask<R> {
     return await withTaskGroup(
       of: Void.self,
       returning: _RetryExecutorTask<R>.self
     ) { group in
-      let request = ClientRequest.Stream(metadata: metadata) {
+      let request = StreamingClientRequest(metadata: metadata) {
         try await $0.write(contentsOf: retryStream)
       }
 

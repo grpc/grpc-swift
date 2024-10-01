@@ -67,41 +67,41 @@ struct ClientRPCExecutorTestHarness {
   }
 
   func unary(
-    request: ClientRequest.Single<[UInt8]>,
+    request: ClientRequest<[UInt8]>,
     options: CallOptions = .defaults,
-    handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
+    handler: @escaping @Sendable (ClientResponse<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(request: ClientRequest.Stream(single: request), options: options) {
+    try await self.bidirectional(request: StreamingClientRequest(single: request), options: options) {
       response in
-      try await handler(ClientResponse.Single(stream: response))
+      try await handler(ClientResponse(stream: response))
     }
   }
 
   func clientStreaming(
-    request: ClientRequest.Stream<[UInt8]>,
+    request: StreamingClientRequest<[UInt8]>,
     options: CallOptions = .defaults,
-    handler: @escaping @Sendable (ClientResponse.Single<[UInt8]>) async throws -> Void
+    handler: @escaping @Sendable (ClientResponse<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.bidirectional(request: request, options: options) { response in
-      try await handler(ClientResponse.Single(stream: response))
+      try await handler(ClientResponse(stream: response))
     }
   }
 
   func serverStreaming(
-    request: ClientRequest.Single<[UInt8]>,
+    request: ClientRequest<[UInt8]>,
     options: CallOptions = .defaults,
-    handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
+    handler: @escaping @Sendable (StreamingClientResponse<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(request: ClientRequest.Stream(single: request), options: options) {
+    try await self.bidirectional(request: StreamingClientRequest(single: request), options: options) {
       response in
       try await handler(response)
     }
   }
 
   func bidirectional(
-    request: ClientRequest.Stream<[UInt8]>,
+    request: StreamingClientRequest<[UInt8]>,
     options: CallOptions = .defaults,
-    handler: @escaping @Sendable (ClientResponse.Stream<[UInt8]>) async throws -> Void
+    handler: @escaping @Sendable (StreamingClientResponse<[UInt8]>) async throws -> Void
   ) async throws {
     try await self.execute(
       request: request,
@@ -113,11 +113,11 @@ struct ClientRPCExecutorTestHarness {
   }
 
   private func execute<Input, Output>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     options: CallOptions,
-    handler: @escaping @Sendable (ClientResponse.Stream<Output>) async throws -> Void
+    handler: @escaping @Sendable (StreamingClientResponse<Output>) async throws -> Void
   ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {

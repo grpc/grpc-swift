@@ -33,14 +33,14 @@ enum ClientRPCExecutor {
   /// - Returns: The result returns from the `handler`.
   @inlinable
   static func execute<Input: Sendable, Output: Sendable, Result: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     transport: some ClientTransport,
     interceptors: [any ClientInterceptor],
-    handler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> Result
+    handler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> Result
   ) async throws -> Result {
     let deadline = options.timeout.map { ContinuousClock.now + $0 }
 
@@ -116,14 +116,14 @@ extension ClientRPCExecutor {
   @inlinable  // would be private
   static func _execute<Input: Sendable, Output: Sendable>(
     in group: inout TaskGroup<Void>,
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     interceptors: [any ClientInterceptor],
     stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
-  ) async -> ClientResponse.Stream<Output> {
+  ) async -> StreamingClientResponse<Output> {
     let context = ClientContext(descriptor: method)
 
     if interceptors.isEmpty {
@@ -159,15 +159,15 @@ extension ClientRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(
     in group: inout TaskGroup<Void>,
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     context: ClientContext,
     iterator: Array<any ClientInterceptor>.Iterator,
     finally: (
       _ group: inout TaskGroup<Void>,
-      _ request: ClientRequest.Stream<Input>,
+      _ request: StreamingClientRequest<Input>,
       _ context: ClientContext
-    ) async -> ClientResponse.Stream<Output>
-  ) async -> ClientResponse.Stream<Output> {
+    ) async -> StreamingClientResponse<Output>
+  ) async -> StreamingClientResponse<Output> {
     var iterator = iterator
 
     switch iterator.next() {
@@ -184,10 +184,10 @@ extension ClientRPCExecutor {
           )
         }
       } catch let error as RPCError {
-        return ClientResponse.Stream(error: error)
+        return StreamingClientResponse(error: error)
       } catch let other {
         let error = RPCError(code: .unknown, message: "", cause: other)
-        return ClientResponse.Stream(error: error)
+        return StreamingClientResponse(error: error)
       }
 
     case .none:
