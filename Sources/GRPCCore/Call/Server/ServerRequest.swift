@@ -14,72 +14,65 @@
  * limitations under the License.
  */
 
-/// A namespace for request message types used by servers.
-public enum ServerRequest {}
+/// A request received at the server containing a single message.
+public struct ServerRequest<Message: Sendable>: Sendable {
+  /// Metadata received from the client at the start of the RPC.
+  ///
+  /// The metadata contains gRPC and transport specific entries in addition to user-specified
+  /// metadata.
+  public var metadata: Metadata
 
-extension ServerRequest {
-  /// A request received at the server containing a single message.
-  public struct Single<Message: Sendable>: Sendable {
-    /// Metadata received from the client at the start of the RPC.
-    ///
-    /// The metadata contains gRPC and transport specific entries in addition to user-specified
-    /// metadata.
-    public var metadata: Metadata
+  /// The message received from the client.
+  public var message: Message
 
-    /// The message received from the client.
-    public var message: Message
-
-    /// Create a new single server request.
-    ///
-    /// - Parameters:
-    ///   - metadata: Metadata received from the client.
-    ///   - message: The message received from the client.
-    public init(metadata: Metadata, message: Message) {
-      self.metadata = metadata
-      self.message = message
-    }
+  /// Create a new single server request.
+  ///
+  /// - Parameters:
+  ///   - metadata: Metadata received from the client.
+  ///   - message: The message received from the client.
+  public init(metadata: Metadata, message: Message) {
+    self.metadata = metadata
+    self.message = message
   }
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ServerRequest {
-  /// A request received at the server containing a stream of messages.
-  public struct Stream<Message: Sendable>: Sendable {
-    /// Metadata received from the client at the start of the RPC.
-    ///
-    /// The metadata contains gRPC and transport specific entries in addition to user-specified
-    /// metadata.
-    public var metadata: Metadata
+/// A request received at the server containing a stream of messages.
+public struct StreamingServerRequest<Message: Sendable>: Sendable {
+  /// Metadata received from the client at the start of the RPC.
+  ///
+  /// The metadata contains gRPC and transport specific entries in addition to user-specified
+  /// metadata.
+  public var metadata: Metadata
 
-    /// A sequence of messages received from the client.
-    ///
-    /// The sequence may be iterated at most once.
-    public var messages: RPCAsyncSequence<Message, any Error>
+  /// A sequence of messages received from the client.
+  ///
+  /// The sequence may be iterated at most once.
+  public var messages: RPCAsyncSequence<Message, any Error>
 
-    /// Create a new streaming request.
-    ///
-    /// - Parameters:
-    ///   - metadata: Metadata received from the client.
-    ///   - messages: A sequence of messages received from the client.
-    public init(metadata: Metadata, messages: RPCAsyncSequence<Message, any Error>) {
-      self.metadata = metadata
-      self.messages = messages
-    }
+  /// Create a new streaming request.
+  ///
+  /// - Parameters:
+  ///   - metadata: Metadata received from the client.
+  ///   - messages: A sequence of messages received from the client.
+  public init(metadata: Metadata, messages: RPCAsyncSequence<Message, any Error>) {
+    self.metadata = metadata
+    self.messages = messages
   }
 }
 
 // MARK: - Conversion
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ServerRequest.Stream {
-  public init(single request: ServerRequest.Single<Message>) {
+extension StreamingServerRequest {
+  public init(single request: ServerRequest<Message>) {
     self.init(metadata: request.metadata, messages: .one(request.message))
   }
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ServerRequest.Single {
-  public init(stream request: ServerRequest.Stream<Message>) async throws {
+extension ServerRequest {
+  public init(stream request: StreamingServerRequest<Message>) async throws {
     var iterator = request.messages.makeAsyncIterator()
 
     guard let message = try await iterator.next() else {
@@ -90,6 +83,6 @@ extension ServerRequest.Single {
       throw RPCError(code: .internalError, message: "Too many messages.")
     }
 
-    self = ServerRequest.Single(metadata: request.metadata, message: message)
+    self = ServerRequest(metadata: request.metadata, message: message)
   }
 }

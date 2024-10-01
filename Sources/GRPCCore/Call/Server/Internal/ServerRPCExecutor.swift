@@ -37,9 +37,9 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @Sendable @escaping (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
+    ) async throws -> StreamingServerResponse<Output>
   ) async {
     // Wait for the first request part from the transport.
     let firstPart = await Self._waitForFirstRequestPart(inbound: stream.inbound)
@@ -75,9 +75,9 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
+    ) async throws -> StreamingServerResponse<Output>
   ) async {
     if let timeout = metadata.timeout {
       await Self._processRPCWithTimeout(
@@ -116,9 +116,9 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
+    ) async throws -> StreamingServerResponse<Output>
   ) async {
     await withTaskGroup(of: ServerExecutorTask.self) { group in
       group.addTask {
@@ -170,9 +170,9 @@ struct ServerRPCExecutor {
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
+    ) async throws -> StreamingServerResponse<Output>
   ) async {
     let messages = UncheckedAsyncIteratorSequence(inbound.wrappedValue).map { part in
       switch part {
@@ -192,7 +192,7 @@ struct ServerRPCExecutor {
     let response = await Result {
       // Run the request through the interceptors, finally passing it to the handler.
       return try await Self._intercept(
-        request: ServerRequest.Stream(
+        request: StreamingServerRequest(
           metadata: metadata,
           messages: RPCAsyncSequence(wrapping: messages)
         ),
@@ -300,14 +300,14 @@ struct ServerRPCExecutor {
 extension ServerRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(
-    request: ServerRequest.Stream<Input>,
+    request: StreamingServerRequest<Input>,
     context: ServerContext,
     interceptors: [any ServerInterceptor],
     finally: @escaping @Sendable (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
-  ) async throws -> ServerResponse.Stream<Output> {
+    ) async throws -> StreamingServerResponse<Output>
+  ) async throws -> StreamingServerResponse<Output> {
     return try await self._intercept(
       request: request,
       context: context,
@@ -318,14 +318,14 @@ extension ServerRPCExecutor {
 
   @inlinable
   static func _intercept<Input, Output>(
-    request: ServerRequest.Stream<Input>,
+    request: StreamingServerRequest<Input>,
     context: ServerContext,
     iterator: Array<any ServerInterceptor>.Iterator,
     finally: @escaping @Sendable (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
-  ) async throws -> ServerResponse.Stream<Output> {
+    ) async throws -> StreamingServerResponse<Output>
+  ) async throws -> StreamingServerResponse<Output> {
     var iterator = iterator
 
     switch iterator.next() {
@@ -336,10 +336,10 @@ extension ServerRPCExecutor {
           try await self._intercept(request: $0, context: $1, iterator: iter, finally: finally)
         }
       } catch let error as RPCError {
-        return ServerResponse.Stream(error: error)
+        return StreamingServerResponse(error: error)
       } catch let other {
         let error = RPCError(code: .unknown, message: "", cause: other)
-        return ServerResponse.Stream(error: error)
+        return StreamingServerResponse(error: error)
       }
 
     case .none:

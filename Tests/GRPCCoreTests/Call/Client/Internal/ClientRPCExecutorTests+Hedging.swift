@@ -24,7 +24,7 @@ extension ClientRPCExecutorTests {
     )
 
     try await harness.bidirectional(
-      request: ClientRequest.Stream {
+      request: StreamingClientRequest {
         try await $0.write([0])
         try await $0.write([1])
         try await $0.write([2])
@@ -48,7 +48,7 @@ extension ClientRPCExecutorTests {
     )
 
     try await harness.bidirectional(
-      request: ClientRequest.Stream {
+      request: StreamingClientRequest {
         try await $0.write([0])
         try await $0.write([1])
         try await $0.write([2])
@@ -84,7 +84,7 @@ extension ClientRPCExecutorTests {
 
     let start = ContinuousClock.now
     try await harness.bidirectional(
-      request: ClientRequest.Stream {
+      request: StreamingClientRequest {
         try await $0.write([0])
         try await $0.write([1])
         try await $0.write([2])
@@ -128,7 +128,7 @@ extension ClientRPCExecutorTests {
 
     let start = ContinuousClock.now
     try await harness.bidirectional(
-      request: ClientRequest.Stream {
+      request: StreamingClientRequest {
         try await $0.write([0])
         try await $0.write([1])
         try await $0.write([2])
@@ -169,7 +169,7 @@ extension ClientRPCExecutorTests {
       )
 
       try await harness.bidirectional(
-        request: ClientRequest.Stream {
+        request: StreamingClientRequest {
           try await $0.write([0])
         },
         options: .hedge(delay: .seconds(60), nonFatalCodes: [.unavailable])

@@ -15,11 +15,11 @@
  */
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ClientResponse.Single {
+extension ClientResponse {
   /// Converts a streaming response into a single response.
   ///
   /// - Parameter response: The streaming response to convert.
-  init(stream response: ClientResponse.Stream<Message>) async {
+  init(stream response: StreamingClientResponse<Message>) async {
     switch response.accepted {
     case .success(let contents):
       do {
@@ -83,7 +83,7 @@ extension ClientResponse.Single {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ClientResponse.Stream {
+extension StreamingClientResponse {
   /// Creates a streaming response from the given status and metadata.
   ///
   /// If the ``Status`` has code ``Status/Code-swift.struct/ok`` then an accepted stream is created
@@ -104,7 +104,7 @@ extension ClientResponse.Stream {
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-extension ClientResponse.Stream {
+extension StreamingClientResponse {
   /// Returns a new response which maps the messages of this response.
   ///
   /// - Parameter transform: The function to transform each message with.
@@ -112,10 +112,10 @@ extension ClientResponse.Stream {
   @inlinable
   func map<Mapped>(
     _ transform: @escaping @Sendable (Message) throws -> Mapped
-  ) -> ClientResponse.Stream<Mapped> {
+  ) -> StreamingClientResponse<Mapped> {
     switch self.accepted {
     case .success(let contents):
-      return ClientResponse.Stream(
+      return StreamingClientResponse<Mapped>(
         metadata: self.metadata,
         bodyParts: RPCAsyncSequence(
           wrapping: contents.bodyParts.map {
@@ -130,7 +130,7 @@ extension ClientResponse.Stream {
       )
 
     case .failure(let error):
-      return ClientResponse.Stream(accepted: .failure(error))
+      return StreamingClientResponse<Mapped>(accepted: .failure(error))
     }
   }
 }

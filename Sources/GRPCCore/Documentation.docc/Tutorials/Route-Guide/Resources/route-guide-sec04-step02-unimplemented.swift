@@ -2,26 +2,26 @@ import GRPCCore
 
 struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   func getFeature(
-    request: ServerRequest.Single<Routeguide_Point>,
+    request: ServerRequest<Routeguide_Point>,
     context: ServerContext
-  ) async throws -> ServerResponse.Single<Routeguide_Feature> {
+  ) async throws -> ServerResponse<Routeguide_Feature> {
   }
 
   func listFeatures(
-    request: ServerRequest.Single<Routeguide_Rectangle>,
+    request: ServerRequest<Routeguide_Rectangle>,
     context: ServerContext
-  ) async throws -> ServerResponse.Stream<Routeguide_Feature> {
+  ) async throws -> StreamingServerResponse<Routeguide_Feature> {
   }
 
   func recordRoute(
-    request: ServerRequest.Stream<Routeguide_Point>,
+    request: StreamingServerRequest<Routeguide_Point>,
     context: ServerContext
-  ) async throws -> ServerResponse.Single<Routeguide_RouteSummary> {
+  ) async throws -> ServerResponse<Routeguide_RouteSummary> {
   }
 
   func routeChat(
-    request: ServerRequest.Stream<Routeguide_RouteNote>,
+    request: StreamingServerRequest<Routeguide_RouteNote>,
     context: ServerContext
-  ) async throws -> ServerResponse.Stream<Routeguide_RouteNote> {
+  ) async throws -> StreamingServerResponse<Routeguide_RouteNote> {
   }
 }

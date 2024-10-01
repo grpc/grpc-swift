@@ -23,7 +23,7 @@ final class ClientRPCExecutorTests: XCTestCase {
   func testUnaryEcho() async throws {
     let tester = ClientRPCExecutorTestHarness(server: .echo)
     try await tester.unary(
-      request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+      request: ClientRequest(message: [1, 2, 3], metadata: ["foo": "bar"])
     ) { response in
       XCTAssertEqual(response.metadata, ["foo": "bar"])
       XCTAssertEqual(try response.message, [1, 2, 3])
@@ -36,7 +36,7 @@ final class ClientRPCExecutorTests: XCTestCase {
   func testClientStreamingEcho() async throws {
     let tester = ClientRPCExecutorTestHarness(server: .echo)
     try await tester.clientStreaming(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([1, 2, 3])
       }
     ) { response in
@@ -51,7 +51,7 @@ final class ClientRPCExecutorTests: XCTestCase {
   func testServerStreamingEcho() async throws {
     let tester = ClientRPCExecutorTestHarness(server: .echo)
     try await tester.serverStreaming(
-      request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+      request: ClientRequest(message: [1, 2, 3], metadata: ["foo": "bar"])
     ) { response in
       XCTAssertEqual(response.metadata, ["foo": "bar"])
       let messages = try await response.messages.collect()
@@ -65,7 +65,7 @@ final class ClientRPCExecutorTests: XCTestCase {
   func testBidirectionalStreamingEcho() async throws {
     let tester = ClientRPCExecutorTestHarness(server: .echo)
     try await tester.bidirectional(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([1, 2, 3])
       }
     ) { response in
@@ -82,7 +82,7 @@ final class ClientRPCExecutorTests: XCTestCase {
     let error = RPCError(code: .unauthenticated, message: "", metadata: ["metadata": "error"])
     let tester = ClientRPCExecutorTestHarness(server: .reject(withError: error))
     try await tester.unary(
-      request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+      request: ClientRequest(message: [1, 2, 3], metadata: ["foo": "bar"])
     ) { response in
       XCTAssertThrowsRPCError(try response.message) {
         XCTAssertEqual($0, error)
@@ -97,7 +97,7 @@ final class ClientRPCExecutorTests: XCTestCase {
     let error = RPCError(code: .unauthenticated, message: "", metadata: ["metadata": "error"])
     let tester = ClientRPCExecutorTestHarness(server: .reject(withError: error))
     try await tester.clientStreaming(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([1, 2, 3])
       }
     ) { response in
@@ -114,7 +114,7 @@ final class ClientRPCExecutorTests: XCTestCase {
     let error = RPCError(code: .unauthenticated, message: "", metadata: ["metadata": "error"])
     let tester = ClientRPCExecutorTestHarness(server: .reject(withError: error))
     try await tester.serverStreaming(
-      request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+      request: ClientRequest(message: [1, 2, 3], metadata: ["foo": "bar"])
     ) { response in
       await XCTAssertThrowsRPCErrorAsync {
         try await response.messages.collect()
@@ -131,7 +131,7 @@ final class ClientRPCExecutorTests: XCTestCase {
     let error = RPCError(code: .unauthenticated, message: "", metadata: ["metadata": "error"])
     let tester = ClientRPCExecutorTestHarness(server: .reject(withError: error))
     try await tester.bidirectional(
-      request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+      request: StreamingClientRequest(metadata: ["foo": "bar"]) {
         try await $0.write([1, 2, 3])
       }
     ) { response in
@@ -154,7 +154,7 @@ final class ClientRPCExecutorTests: XCTestCase {
 
     await XCTAssertThrowsRPCErrorAsync {
       try await tester.unary(
-        request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+        request: ClientRequest(message: [1, 2, 3], metadata: ["foo": "bar"])
       ) { _ in }
     } errorHandler: { error in
       XCTAssertEqual(error.code, .aborted)
@@ -173,7 +173,7 @@ final class ClientRPCExecutorTests: XCTestCase {
 
     await XCTAssertThrowsRPCErrorAsync {
       try await tester.clientStreaming(
-        request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+        request: StreamingClientRequest(metadata: ["foo": "bar"]) {
           try await $0.write([1, 2, 3])
         }
       ) { _ in }
@@ -194,7 +194,7 @@ final class ClientRPCExecutorTests: XCTestCase {
 
     await XCTAssertThrowsRPCErrorAsync {
       try await tester.serverStreaming(
-        request: ClientRequest.Single(message: [1, 2, 3], metadata: ["foo": "bar"])
+        request: ClientRequest(message: [1, 2, 3], metadata: ["foo": "bar"])
       ) { _ in }
     } errorHandler: {
       XCTAssertEqual($0.code, .aborted)
@@ -213,7 +213,7 @@ final class ClientRPCExecutorTests: XCTestCase {
 
     await XCTAssertThrowsRPCErrorAsync {
       try await tester.bidirectional(
-        request: ClientRequest.Stream(metadata: ["foo": "bar"]) {
+        request: StreamingClientRequest(metadata: ["foo": "bar"]) {
           try await $0.write([1, 2, 3])
         }
       ) { _ in }
@@ -254,7 +254,7 @@ final class ClientRPCExecutorTests: XCTestCase {
 
       let tester = ClientRPCExecutorTestHarness(transport: .inProcess, server: .echo)
       try await tester.unary(
-        request: ClientRequest.Single(message: []),
+        request: ClientRequest(message: []),
         options: options
       ) { response in
         let timeoutMetadata = Array(response.metadata[stringValues: "grpc-timeout"])

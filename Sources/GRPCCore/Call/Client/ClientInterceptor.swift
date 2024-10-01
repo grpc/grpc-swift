@@ -40,13 +40,13 @@
 ///   let fetchMetadata: @Sendable () async -> String
 ///
 ///   func intercept<Input: Sendable, Output: Sendable>(
-///     request: ClientRequest.Stream<Input>,
+///     request: StreamingClientRequest<Input>,
 ///     context: ClientContext,
 ///     next: @Sendable (
-///       _ request: ClientRequest.Stream<Input>,
+///       _ request: StreamingClientRequest<Input>,
 ///       _ context: ClientContext
-///     ) async throws -> ClientResponse.Stream<Output>
-///   ) async throws -> ClientResponse.Stream<Output> {
+///     ) async throws -> StreamingClientResponse<Output>
+///   ) async throws -> StreamingClientResponse<Output> {
 ///     // Fetch the metadata value and attach it.
 ///     let value = await self.fetchMetadata()
 ///     var request = request
@@ -65,13 +65,13 @@
 /// ```swift
 /// struct LoggingClientInterceptor: ClientInterceptor {
 ///   func intercept<Input: Sendable, Output: Sendable>(
-///     request: ClientRequest.Stream<Input>,
+///     request: StreamingClientRequest<Input>,
 ///     context: ClientContext,
 ///     next: @Sendable (
-///       _ request: ClientRequest.Stream<Input>,
+///       _ request: StreamingClientRequest<Input>,
 ///       _ context: ClientContext
-///     ) async throws -> ClientResponse.Stream<Output>
-///   ) async throws -> ClientResponse.Stream<Output> {
+///     ) async throws -> StreamingClientResponse<Output>
+///   ) async throws -> StreamingClientResponse<Output> {
 ///     print("Invoking method '\(context.descriptor)'")
 ///     let response = try await next(request, context)
 ///
@@ -100,11 +100,11 @@ public protocol ClientInterceptor: Sendable {
   ///       interceptor in the chain.
   /// - Returns: A response object.
   func intercept<Input: Sendable, Output: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     context: ClientContext,
     next: (
-      _ request: ClientRequest.Stream<Input>,
+      _ request: StreamingClientRequest<Input>,
       _ context: ClientContext
-    ) async throws -> ClientResponse.Stream<Output>
-  ) async throws -> ClientResponse.Stream<Output>
+    ) async throws -> StreamingClientResponse<Output>
+  ) async throws -> StreamingClientResponse<Output>
 }

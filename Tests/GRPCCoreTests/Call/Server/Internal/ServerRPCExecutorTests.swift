@@ -87,7 +87,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     ) { request in
       let messages = try await request.messages.collect()
       XCTAssertEqual(messages, ["hello"])
-      return ServerResponse.Stream(metadata: request.metadata) { writer in
+      return StreamingServerResponse(metadata: request.metadata) { writer in
         try await writer.write("hello")
         return [:]
       }
@@ -116,7 +116,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     ) { request in
       let messages = try await request.messages.collect()
       XCTAssertEqual(messages, ["hello", "world"])
-      return ServerResponse.Stream(metadata: request.metadata) { writer in
+      return StreamingServerResponse(metadata: request.metadata) { writer in
         try await writer.write("hello")
         try await writer.write("world")
         return [:]
@@ -146,7 +146,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
     ) { request in
-      return ServerResponse.Stream(metadata: request.metadata) { _ in
+      return StreamingServerResponse(metadata: request.metadata) { _ in
         return ["bar": "baz"]
       }
     } producer: { inbound in
@@ -244,7 +244,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       }
 
       XCTFail("Server handler should've been cancelled by timeout.")
-      return ServerResponse.Stream(error: RPCError(code: .failedPrecondition, message: ""))
+      return StreamingServerResponse(error: RPCError(code: .failedPrecondition, message: ""))
     } producer: { inbound in
       try await inbound.write(.metadata(["grpc-timeout": "1000n"]))
       await inbound.finish()
@@ -271,7 +271,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       serializer: IdentitySerializer()
     ) { request in
       XCTFail("Unexpected request")
-      return ServerResponse.Stream(
+      return StreamingServerResponse(
         of: [UInt8].self,
         error: RPCError(code: .failedPrecondition, message: "")
       )
