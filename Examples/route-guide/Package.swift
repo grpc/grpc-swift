@@ -21,8 +21,8 @@ let package = Package(
   name: "route-guide",
   platforms: [.macOS("15.0")],
   dependencies: [
-    .package(url: "https://github.com/grpc/grpc-swift-protobuf", branch: "main"),
-    .package(url: "https://github.com/grpc/grpc-swift-nio-transport", branch: "main"),
+    .package(url: "https://github.com/grpc/grpc-swift-protobuf", exact: "1.0.0-alpha.1"),
+    .package(url: "https://github.com/grpc/grpc-swift-nio-transport", exact: "1.0.0-alpha.1"),
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
   ],
   targets: [
