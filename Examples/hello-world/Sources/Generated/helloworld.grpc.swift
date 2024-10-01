@@ -61,9 +61,9 @@ extension GRPCCore.ServiceDescriptor {
 internal protocol Helloworld_Greeter_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Sends a greeting
     func sayHello(
-        request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
+        request: GRPCCore.StreamingServerRequest<Helloworld_HelloRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply>
+    ) async throws -> GRPCCore.StreamingServerResponse<Helloworld_HelloReply>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -90,23 +90,23 @@ extension Helloworld_Greeter.StreamingServiceProtocol {
 internal protocol Helloworld_Greeter_ServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
     /// Sends a greeting
     func sayHello(
-        request: GRPCCore.ServerRequest.Single<Helloworld_HelloRequest>,
+        request: GRPCCore.ServerRequest<Helloworld_HelloRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Single<Helloworld_HelloReply>
+    ) async throws -> GRPCCore.ServerResponse<Helloworld_HelloReply>
 }
 
 /// Partial conformance to `Helloworld_Greeter_StreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Helloworld_Greeter.ServiceProtocol {
     internal func sayHello(
-        request: GRPCCore.ServerRequest.Stream<Helloworld_HelloRequest>,
+        request: GRPCCore.StreamingServerRequest<Helloworld_HelloRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Helloworld_HelloReply> {
+    ) async throws -> GRPCCore.StreamingServerResponse<Helloworld_HelloReply> {
         let response = try await self.sayHello(
-            request: GRPCCore.ServerRequest.Single(stream: request),
+            request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
-        return GRPCCore.ServerResponse.Stream(single: response)
+        return GRPCCore.StreamingServerResponse(single: response)
     }
 }
 
@@ -115,20 +115,20 @@ extension Helloworld_Greeter.ServiceProtocol {
 internal protocol Helloworld_Greeter_ClientProtocol: Sendable {
     /// Sends a greeting
     func sayHello<R>(
-        request: GRPCCore.ClientRequest.Single<Helloworld_HelloRequest>,
+        request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
         serializer: some GRPCCore.MessageSerializer<Helloworld_HelloRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Helloworld_HelloReply>,
         options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Helloworld_HelloReply>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> R
     ) async throws -> R where R: Sendable
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Helloworld_Greeter.ClientProtocol {
     internal func sayHello<R>(
-        request: GRPCCore.ClientRequest.Single<Helloworld_HelloRequest>,
+        request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Helloworld_HelloReply>) async throws -> R = {
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -149,11 +149,11 @@ extension Helloworld_Greeter.ClientProtocol {
         _ message: Helloworld_HelloRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Helloworld_HelloReply>) async throws -> Result = {
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> Result = {
             try $0.message
         }
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest.Single<Helloworld_HelloRequest>(
+        let request = GRPCCore.ClientRequest<Helloworld_HelloRequest>(
             message: message,
             metadata: metadata
         )
@@ -176,11 +176,11 @@ internal struct Helloworld_Greeter_Client: Helloworld_Greeter.ClientProtocol {
     
     /// Sends a greeting
     internal func sayHello<R>(
-        request: GRPCCore.ClientRequest.Single<Helloworld_HelloRequest>,
+        request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
         serializer: some GRPCCore.MessageSerializer<Helloworld_HelloRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Helloworld_HelloReply>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Helloworld_HelloReply>) async throws -> R = {
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {

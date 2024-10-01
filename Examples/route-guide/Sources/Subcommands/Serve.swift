@@ -100,16 +100,16 @@ struct RouteGuideService {
 
 extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   func getFeature(
-    request: ServerRequest.Single<Routeguide_Point>,
+    request: ServerRequest<Routeguide_Point>,
     context: ServerContext
-  ) async throws -> ServerResponse.Single<Routeguide_Feature> {
+  ) async throws -> ServerResponse<Routeguide_Feature> {
     let feature = self.findFeature(
       latitude: request.message.latitude,
       longitude: request.message.longitude
     )
 
     if let feature {
-      return ServerResponse.Single(message: feature)
+      return ServerResponse(message: feature)
     } else {
       // No feature: return a feature with an empty name.
       let unknownFeature = Routeguide_Feature.with {
@@ -119,15 +119,15 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
           $0.longitude = request.message.longitude
         }
       }
-      return ServerResponse.Single(message: unknownFeature)
+      return ServerResponse(message: unknownFeature)
     }
   }
 
   func listFeatures(
-    request: ServerRequest.Single<Routeguide_Rectangle>,
+    request: ServerRequest<Routeguide_Rectangle>,
     context: ServerContext
-  ) async throws -> ServerResponse.Stream<Routeguide_Feature> {
-    return ServerResponse.Stream { writer in
+  ) async throws -> StreamingServerResponse<Routeguide_Feature> {
+    return StreamingServerResponse { writer in
       let featuresWithinBounds = self.features.filter { feature in
         !feature.name.isEmpty && feature.isContained(by: request.message)
       }
@@ -138,9 +138,9 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func recordRoute(
-    request: ServerRequest.Stream<Routeguide_Point>,
+    request: StreamingServerRequest<Routeguide_Point>,
     context: ServerContext
-  ) async throws -> ServerResponse.Single<Routeguide_RouteSummary> {
+  ) async throws -> ServerResponse<Routeguide_RouteSummary> {
     let startTime = ContinuousClock.now
     var pointsVisited = 0
     var featuresVisited = 0
@@ -169,14 +169,14 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
       $0.distance = Int32(distanceTravelled)
     }
 
-    return ServerResponse.Single(message: summary)
+    return ServerResponse(message: summary)
   }
 
   func routeChat(
-    request: ServerRequest.Stream<Routeguide_RouteNote>,
+    request: StreamingServerRequest<Routeguide_RouteNote>,
     context: ServerContext
-  ) async throws -> ServerResponse.Stream<Routeguide_RouteNote> {
-    return ServerResponse.Stream { writer in
+  ) async throws -> StreamingServerResponse<Routeguide_RouteNote> {
+    return StreamingServerResponse { writer in
       for try await note in request.messages {
         let notes = self.receivedNotes.recordNote(note)
         try await writer.write(contentsOf: notes)
