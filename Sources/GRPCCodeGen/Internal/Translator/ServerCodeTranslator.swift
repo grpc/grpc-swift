@@ -147,7 +147,7 @@ extension ServerCodeTranslator {
         .init(
           label: "request",
           type: .generic(
-            wrapper: .member(["GRPCCore", "ServerRequest", "Stream"]),
+            wrapper: .member(["GRPCCore", "StreamingServerRequest"]),
             wrapped: .member(method.inputType)
           )
         ),
@@ -156,7 +156,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["GRPCCore", "ServerResponse", "Stream"]),
+          wrapper: .member(["GRPCCore", "StreamingServerResponse"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -313,8 +313,8 @@ extension ServerCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor,
     accessModifier: AccessModifier? = nil
   ) -> Declaration {
-    let inputStreaming = method.isInputStreaming ? "Stream" : "Single"
-    let outputStreaming = method.isOutputStreaming ? "Stream" : "Single"
+    let inputStreaming = method.isInputStreaming ? "Streaming" : ""
+    let outputStreaming = method.isOutputStreaming ? "Streaming" : ""
 
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
@@ -324,7 +324,7 @@ extension ServerCodeTranslator {
           label: "request",
           type:
             .generic(
-              wrapper: .member(["GRPCCore", "ServerRequest", inputStreaming]),
+              wrapper: .member(["GRPCCore", "\(inputStreaming)ServerRequest"]),
               wrapped: .member(method.inputType)
             )
         ),
@@ -333,7 +333,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["GRPCCore", "ServerResponse", outputStreaming]),
+          wrapper: .member(["GRPCCore", "\(outputStreaming)ServerResponse"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -391,12 +391,7 @@ extension ServerCodeTranslator {
     if !method.isInputStreaming {
       // Transform the streaming request into a unary request.
       serverRequest = Expression.functionCall(
-        calledExpression: .memberAccess(
-          MemberAccessDescription(
-            left: .identifierPattern("GRPCCore.ServerRequest"),
-            right: "Single"
-          )
-        ),
+        calledExpression: .identifierType(.member(["GRPCCore", "ServerRequest"])),
         arguments: [
           FunctionArgumentDescription(label: "stream", expression: .identifierPattern("request"))
         ]
@@ -433,12 +428,7 @@ extension ServerCodeTranslator {
     // Transforming the unary response into a streaming one.
     if !method.isOutputStreaming {
       returnValue = .functionCall(
-        calledExpression: .memberAccess(
-          MemberAccessDescription(
-            left: .identifierType(.member(["GRPCCore", "ServerResponse"])),
-            right: "Stream"
-          )
-        ),
+        calledExpression: .identifier(.type(.member(["GRPCCore", "StreamingServerResponse"]))),
         arguments: [
           (FunctionArgumentDescription(label: "single", expression: .identifierPattern("response")))
         ]
