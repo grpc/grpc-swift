@@ -87,27 +87,27 @@ extension GRPCCore.ServiceDescriptor {
 internal protocol Echo_Echo_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
     /// Immediately returns an echo of a request.
     func get(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
     
     /// Splits a request into words and returns each word in a stream of messages.
     func expand(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
     
     /// Collects a stream of messages and returns them concatenated when the caller closes.
     func collect(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
     
     /// Streams back messages as they are received in an input stream.
     func update(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
 }
 
 /// Conformance to `GRPCCore.RegistrableRPCService`.
@@ -166,63 +166,63 @@ extension Echo_Echo.StreamingServiceProtocol {
 internal protocol Echo_Echo_ServiceProtocol: Echo_Echo.StreamingServiceProtocol {
     /// Immediately returns an echo of a request.
     func get(
-        request: GRPCCore.ServerRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Single<Echo_EchoResponse>
+    ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse>
     
     /// Splits a request into words and returns each word in a stream of messages.
     func expand(
-        request: GRPCCore.ServerRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
     
     /// Collects a stream of messages and returns them concatenated when the caller closes.
     func collect(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Single<Echo_EchoResponse>
+    ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse>
     
     /// Streams back messages as they are received in an input stream.
     func update(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse>
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
 }
 
 /// Partial conformance to `Echo_Echo_StreamingServiceProtocol`.
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Echo_Echo.ServiceProtocol {
     internal func get(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse> {
         let response = try await self.get(
-            request: GRPCCore.ServerRequest.Single(stream: request),
+            request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
-        return GRPCCore.ServerResponse.Stream(single: response)
+        return GRPCCore.StreamingServerResponse(single: response)
     }
     
     internal func expand(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse> {
         let response = try await self.expand(
-            request: GRPCCore.ServerRequest.Single(stream: request),
+            request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
         return response
     }
     
     internal func collect(
-        request: GRPCCore.ServerRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse.Stream<Echo_EchoResponse> {
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse> {
         let response = try await self.collect(
             request: request,
             context: context
         )
-        return GRPCCore.ServerResponse.Stream(single: response)
+        return GRPCCore.StreamingServerResponse(single: response)
     }
 }
 
@@ -230,47 +230,47 @@ extension Echo_Echo.ServiceProtocol {
 internal protocol Echo_Echo_ClientProtocol: Sendable {
     /// Immediately returns an echo of a request.
     func get<R>(
-        request: GRPCCore.ClientRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable
     
     /// Splits a request into words and returns each word in a stream of messages.
     func expand<R>(
-        request: GRPCCore.ClientRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable
     
     /// Collects a stream of messages and returns them concatenated when the caller closes.
     func collect<R>(
-        request: GRPCCore.ClientRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable
     
     /// Streams back messages as they are received in an input stream.
     func update<R>(
-        request: GRPCCore.ClientRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable
 }
 
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension Echo_Echo.ClientProtocol {
     internal func get<R>(
-        request: GRPCCore.ClientRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -284,9 +284,9 @@ extension Echo_Echo.ClientProtocol {
     }
     
     internal func expand<R>(
-        request: GRPCCore.ClientRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.expand(
             request: request,
@@ -298,9 +298,9 @@ extension Echo_Echo.ClientProtocol {
     }
     
     internal func collect<R>(
-        request: GRPCCore.ClientRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -314,9 +314,9 @@ extension Echo_Echo.ClientProtocol {
     }
     
     internal func update<R>(
-        request: GRPCCore.ClientRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.update(
             request: request,
@@ -335,11 +335,11 @@ extension Echo_Echo.ClientProtocol {
         _ message: Echo_EchoRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> Result = {
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = {
             try $0.message
         }
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest.Single<Echo_EchoRequest>(
+        let request = GRPCCore.ClientRequest<Echo_EchoRequest>(
             message: message,
             metadata: metadata
         )
@@ -355,9 +355,9 @@ extension Echo_Echo.ClientProtocol {
         _ message: Echo_EchoRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> Result
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest.Single<Echo_EchoRequest>(
+        let request = GRPCCore.ClientRequest<Echo_EchoRequest>(
             message: message,
             metadata: metadata
         )
@@ -373,11 +373,11 @@ extension Echo_Echo.ClientProtocol {
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
         requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> Result = {
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = {
             try $0.message
         }
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest.Stream<Echo_EchoRequest>(
+        let request = GRPCCore.StreamingClientRequest<Echo_EchoRequest>(
             metadata: metadata,
             producer: requestProducer
         )
@@ -393,9 +393,9 @@ extension Echo_Echo.ClientProtocol {
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
         requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> Result
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest.Stream<Echo_EchoRequest>(
+        let request = GRPCCore.StreamingClientRequest<Echo_EchoRequest>(
             metadata: metadata,
             producer: requestProducer
         )
@@ -417,11 +417,11 @@ internal struct Echo_Echo_Client: Echo_Echo.ClientProtocol {
     
     /// Immediately returns an echo of a request.
     internal func get<R>(
-        request: GRPCCore.ClientRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -437,11 +437,11 @@ internal struct Echo_Echo_Client: Echo_Echo.ClientProtocol {
     
     /// Splits a request into words and returns each word in a stream of messages.
     internal func expand<R>(
-        request: GRPCCore.ClientRequest.Single<Echo_EchoRequest>,
+        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.serverStreaming(
             request: request,
@@ -455,11 +455,11 @@ internal struct Echo_Echo_Client: Echo_Echo.ClientProtocol {
     
     /// Collects a stream of messages and returns them concatenated when the caller closes.
     internal func collect<R>(
-        request: GRPCCore.ClientRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Echo_EchoResponse>) async throws -> R = {
+        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
             try $0.message
         }
     ) async throws -> R where R: Sendable {
@@ -475,11 +475,11 @@ internal struct Echo_Echo_Client: Echo_Echo.ClientProtocol {
     
     /// Streams back messages as they are received in an input stream.
     internal func update<R>(
-        request: GRPCCore.ClientRequest.Stream<Echo_EchoRequest>,
+        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
         deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse.Stream<Echo_EchoResponse>) async throws -> R
+        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
     ) async throws -> R where R: Sendable {
         try await self.client.bidirectionalStreaming(
             request: request,
