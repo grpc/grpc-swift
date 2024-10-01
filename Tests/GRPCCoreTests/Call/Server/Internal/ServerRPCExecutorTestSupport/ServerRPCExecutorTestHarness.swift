@@ -20,19 +20,20 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input: Sendable, Output: Sendable>: Sendable {
-    let fn: @Sendable (ServerRequest.Stream<Input>) async throws -> ServerResponse.Stream<Output>
+    let fn:
+      @Sendable (StreamingServerRequest<Input>) async throws -> StreamingServerResponse<Output>
 
     init(
       _ fn: @escaping @Sendable (
-        ServerRequest.Stream<Input>
-      ) async throws -> ServerResponse.Stream<Output>
+        StreamingServerRequest<Input>
+      ) async throws -> StreamingServerResponse<Output>
     ) {
       self.fn = fn
     }
 
     func handle(
-      _ request: ServerRequest.Stream<Input>
-    ) async throws -> ServerResponse.Stream<Output> {
+      _ request: StreamingServerRequest<Input>
+    ) async throws -> StreamingServerResponse<Output> {
       try await self.fn(request)
     }
 
@@ -51,8 +52,8 @@ struct ServerRPCExecutorTestHarness {
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: @escaping @Sendable (
-      ServerRequest.Stream<Input>
-    ) async throws -> ServerResponse.Stream<Output>,
+      StreamingServerRequest<Input>
+    ) async throws -> StreamingServerResponse<Output>,
     producer: @escaping @Sendable (
       RPCWriter<RPCRequestPart>.Closable
     ) async throws -> Void,
@@ -137,7 +138,7 @@ struct ServerRPCExecutorTestHarness {
 extension ServerRPCExecutorTestHarness.ServerHandler where Input == Output {
   static var echo: Self {
     return Self { request in
-      return ServerResponse.Stream(metadata: request.metadata) { writer in
+      return StreamingServerResponse(metadata: request.metadata) { writer in
         try await writer.write(contentsOf: request.messages)
         return [:]
       }

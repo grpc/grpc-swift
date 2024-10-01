@@ -89,7 +89,7 @@ private import Synchronization
 ///
 ///   // Execute a request against the "echo.Echo" service.
 ///   try await client.unary(
-///     request: ClientRequest.Single<[UInt8]>(message: [72, 101, 108, 108, 111, 33]),
+///     request: ClientRequest<[UInt8]>(message: [72, 101, 108, 108, 111, 33]),
 ///     descriptor: MethodDescriptor(service: "echo.Echo", method: "Get"),
 ///     serializer: IdentitySerializer(),
 ///     deserializer: IdentityDeserializer(),
@@ -256,21 +256,21 @@ public final class GRPCClient: Sendable {
   ///
   /// - Returns: The return value from the `handler`.
   public func unary<Request, Response, ReturnValue: Sendable>(
-    request: ClientRequest.Single<Request>,
+    request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
+    handler: @Sendable @escaping (ClientResponse<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
-      request: ClientRequest.Stream(single: request),
+      request: StreamingClientRequest(single: request),
       descriptor: descriptor,
       serializer: serializer,
       deserializer: deserializer,
       options: options
     ) { stream in
-      let singleResponse = await ClientResponse.Single(stream: stream)
+      let singleResponse = await ClientResponse(stream: stream)
       return try await handler(singleResponse)
     }
   }
@@ -287,12 +287,12 @@ public final class GRPCClient: Sendable {
   ///
   /// - Returns: The return value from the `handler`.
   public func clientStreaming<Request, Response, ReturnValue: Sendable>(
-    request: ClientRequest.Stream<Request>,
+    request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse.Single<Response>) async throws -> ReturnValue
+    handler: @Sendable @escaping (ClientResponse<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: request,
@@ -301,7 +301,7 @@ public final class GRPCClient: Sendable {
       deserializer: deserializer,
       options: options
     ) { stream in
-      let singleResponse = await ClientResponse.Single(stream: stream)
+      let singleResponse = await ClientResponse(stream: stream)
       return try await handler(singleResponse)
     }
   }
@@ -318,15 +318,15 @@ public final class GRPCClient: Sendable {
   ///
   /// - Returns: The return value from the `handler`.
   public func serverStreaming<Request, Response, ReturnValue: Sendable>(
-    request: ClientRequest.Single<Request>,
+    request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
+    handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
-      request: ClientRequest.Stream(single: request),
+      request: StreamingClientRequest(single: request),
       descriptor: descriptor,
       serializer: serializer,
       deserializer: deserializer,
@@ -350,12 +350,12 @@ public final class GRPCClient: Sendable {
   ///
   /// - Returns: The return value from the `handler`.
   public func bidirectionalStreaming<Request, Response, ReturnValue: Sendable>(
-    request: ClientRequest.Stream<Request>,
+    request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse.Stream<Response>) async throws -> ReturnValue
+    handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try self.state.withLock { try $0.checkExecutable() }
     let methodConfig = self.transport.config(forMethod: descriptor)

@@ -242,14 +242,14 @@
       @Step {
         `GetFeature` is a unary RPC which takes a single point as input and returns a single
         feature back to the client. Its generated method, `getFeature`, has one parameter:
-        `ServerRequest.Single<Routeguide_Point>` describing the request. To return our response to
+        `ServerRequest<Routeguide_Point>` describing the request. To return our response to
         the client and complete the call we must first lookup a feature at the given point.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step04-unary.swift")
       }
 
       @Step {
-        Then create and return an appropriate `ServerResponse.Single<Routeguide_Feature>` to the
+        Then create and return an appropriate `ServerResponse<Routeguide_Feature>` to the
         client.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step05-unary.swift")
@@ -257,11 +257,11 @@
 
       @Step {
         Next, let's look at one of our streaming RPCs. Like the unary RPC, this method gets a
-        request object, `ServerRequest.Single<Routeguide_Rectangle>`, which has a message describing
+        request object, `ServerRequest<Routeguide_Rectangle>`, which has a message describing
         the area in which the client wants to list features. As this is a server-side streaming RPC
         we can send back multiple `Routeguide_Feature` messages to our client.
 
-        To implement the method we must return a `ServerResponse.Stream` which is initialized with
+        To implement the method we must return a `StreamingServerResponse` which is initialized with
         a closure to produce messages. The closure is passed a writer allowing you to write back
         messages. We can write back a message for each feature we find in the rectangle.
 
@@ -280,8 +280,8 @@
         method `RecordRoute`, where we get a stream of `Routeguide_Point`s from the client and
         return a single `Routeguide_RouteSummary` with information about their trip.
 
-        As you can see our method gets a `ServerRequest.Stream<Routeguide_Point>` parameter and
-        returns a `ServerResponse.Single<Routeguide_RouteSummary>`. In the method we iterate over
+        As you can see our method gets a `StreamingServerRequest<Routeguide_Point>` parameter and
+        returns a `ServerResponse<Routeguide_RouteSummary>`. In the method we iterate over
         the asynchronous stream of points sent by the client. For each point we check if there's
         a feature at that point and calculate the distance between that and the last point we saw.
         After the *client* has finished sending points we populate a `Routeguide_RouteSummary` which
@@ -300,7 +300,7 @@
       }
 
       @Step {
-        To implement the RPC we return a `ServerResponse.Stream<Routeguide_RouteNote>`. Like in the
+        To implement the RPC we return a `StreamingServerResponse<Routeguide_RouteNote>`. Like in the
         server-side streaming RPC it's initialized with a closure for writing back messages. In
         the body of the closure we iterate the request messages and for each one call our helper
         class to record the note and get all other notes recorded in the same location. We then

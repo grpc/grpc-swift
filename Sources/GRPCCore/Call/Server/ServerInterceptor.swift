@@ -37,13 +37,13 @@
 ///   let isAuthorized: @Sendable (String, MethodDescriptor) async throws -> Void
 ///
 ///   func intercept<Input: Sendable, Output: Sendable>(
-///     request: ServerRequest.Stream<Input>,
+///     request: StreamingServerRequest<Input>,
 ///     context: ServerInterceptorContext,
 ///     next: @Sendable (
-///       _ request: ServerRequest.Stream<Input>,
+///       _ request: StreamingServerRequest<Input>,
 ///       _ context: ServerInterceptorContext
-///     ) async throws -> ServerResponse.Stream<Output>
-///   ) async throws -> ServerResponse.Stream<Output> {
+///     ) async throws -> StreamingServerResponse<Output>
+///   ) async throws -> StreamingServerResponse<Output> {
 ///     // Extract the auth token.
 ///     guard let token = request.metadata["authorization"] else {
 ///       throw RPCError(code: .unauthenticated, message: "Not authenticated")
@@ -71,11 +71,11 @@ public protocol ServerInterceptor: Sendable {
   ///       interceptor in the chain.
   /// - Returns: A response object.
   func intercept<Input: Sendable, Output: Sendable>(
-    request: ServerRequest.Stream<Input>,
+    request: StreamingServerRequest<Input>,
     context: ServerContext,
     next: @Sendable (
-      _ request: ServerRequest.Stream<Input>,
+      _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
-    ) async throws -> ServerResponse.Stream<Output>
-  ) async throws -> ServerResponse.Stream<Output>
+    ) async throws -> StreamingServerResponse<Output>
+  ) async throws -> StreamingServerResponse<Output>
 }

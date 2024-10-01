@@ -25,8 +25,8 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarStreamingServiceProtocol: GRPCCore.RegistrableRPCService {
 ///   func baz(
-///     request: GRPCCore.ServerRequest.Stream<Foo_Bar_Input>
-///   ) async throws -> GRPCCore.ServerResponse.Stream<Foo_Bar_Output>
+///     request: GRPCCore.StreamingServerRequest<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.StreamingServerResponse<Foo_Bar_Output>
 /// }
 /// // Conformance to `GRPCCore.RegistrableRPCService`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
@@ -43,17 +43,17 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarServiceProtocol: Foo_Bar.StreamingServiceProtocol {
 ///   func baz(
-///     request: GRPCCore.ServerRequest.Single<Foo_Bar_Input>
-///   ) async throws -> GRPCCore.ServerResponse.Single<Foo_Bar_Output>
+///     request: GRPCCore.ServerRequest<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.ServerResponse<Foo_Bar_Output>
 /// }
 /// // Partial conformance to `Foo_BarStreamingServiceProtocol`.
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension Foo_Bar.ServiceProtocol {
 ///   public func baz(
-///     request: GRPCCore.ServerRequest.Stream<Foo_Bar_Input>
-///   ) async throws -> GRPCCore.ServerResponse.Stream<Foo_Bar_Output> {
-///     let response = try await self.baz(request: GRPCCore.ServerRequest.Single(stream: request))
-///     return GRPCCore.ServerResponse.Stream(single: response)
+///     request: GRPCCore.StreamingServerRequest<Foo_Bar_Input>
+///   ) async throws -> GRPCCore.StreamingServerResponse<Foo_Bar_Output> {
+///     let response = try await self.baz(request: GRPCCore.ServerRequest(stream: request))
+///     return GRPCCore.StreamingServerResponse(single: response)
 ///   }
 /// }
 ///```
@@ -147,7 +147,7 @@ extension ServerCodeTranslator {
         .init(
           label: "request",
           type: .generic(
-            wrapper: .member(["GRPCCore", "ServerRequest", "Stream"]),
+            wrapper: .member(["GRPCCore", "StreamingServerRequest"]),
             wrapped: .member(method.inputType)
           )
         ),
@@ -156,7 +156,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["GRPCCore", "ServerResponse", "Stream"]),
+          wrapper: .member(["GRPCCore", "StreamingServerResponse"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -313,8 +313,8 @@ extension ServerCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor,
     accessModifier: AccessModifier? = nil
   ) -> Declaration {
-    let inputStreaming = method.isInputStreaming ? "Stream" : "Single"
-    let outputStreaming = method.isOutputStreaming ? "Stream" : "Single"
+    let inputStreaming = method.isInputStreaming ? "Streaming" : ""
+    let outputStreaming = method.isOutputStreaming ? "Streaming" : ""
 
     let functionSignature = FunctionSignatureDescription(
       accessModifier: accessModifier,
@@ -324,7 +324,7 @@ extension ServerCodeTranslator {
           label: "request",
           type:
             .generic(
-              wrapper: .member(["GRPCCore", "ServerRequest", inputStreaming]),
+              wrapper: .member(["GRPCCore", "\(inputStreaming)ServerRequest"]),
               wrapped: .member(method.inputType)
             )
         ),
@@ -333,7 +333,7 @@ extension ServerCodeTranslator {
       keywords: [.async, .throws],
       returnType: .identifierType(
         .generic(
-          wrapper: .member(["GRPCCore", "ServerResponse", outputStreaming]),
+          wrapper: .member(["GRPCCore", "\(outputStreaming)ServerResponse"]),
           wrapped: .member(method.outputType)
         )
       )
@@ -391,12 +391,7 @@ extension ServerCodeTranslator {
     if !method.isInputStreaming {
       // Transform the streaming request into a unary request.
       serverRequest = Expression.functionCall(
-        calledExpression: .memberAccess(
-          MemberAccessDescription(
-            left: .identifierPattern("GRPCCore.ServerRequest"),
-            right: "Single"
-          )
-        ),
+        calledExpression: .identifierType(.member(["GRPCCore", "ServerRequest"])),
         arguments: [
           FunctionArgumentDescription(label: "stream", expression: .identifierPattern("request"))
         ]
@@ -433,12 +428,7 @@ extension ServerCodeTranslator {
     // Transforming the unary response into a streaming one.
     if !method.isOutputStreaming {
       returnValue = .functionCall(
-        calledExpression: .memberAccess(
-          MemberAccessDescription(
-            left: .identifierType(.member(["GRPCCore", "ServerResponse"])),
-            right: "Stream"
-          )
-        ),
+        calledExpression: .identifier(.type(.member(["GRPCCore", "StreamingServerResponse"]))),
         arguments: [
           (FunctionArgumentDescription(label: "single", expression: .identifierPattern("response")))
         ]

@@ -50,17 +50,17 @@ struct RejectAllClientInterceptor: ClientInterceptor {
   }
 
   func intercept<Input: Sendable, Output: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     context: ClientContext,
     next: (
-      ClientRequest.Stream<Input>,
+      StreamingClientRequest<Input>,
       ClientContext
-    ) async throws -> ClientResponse.Stream<Output>
-  ) async throws -> ClientResponse.Stream<Output> {
+    ) async throws -> StreamingClientResponse<Output>
+  ) async throws -> StreamingClientResponse<Output> {
     if self.throw {
       throw self.error
     } else {
-      return ClientResponse.Stream(error: self.error)
+      return StreamingClientResponse(error: self.error)
     }
   }
 }
@@ -75,13 +75,13 @@ struct RequestCountingClientInterceptor: ClientInterceptor {
   }
 
   func intercept<Input: Sendable, Output: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     context: ClientContext,
     next: (
-      ClientRequest.Stream<Input>,
+      StreamingClientRequest<Input>,
       ClientContext
-    ) async throws -> ClientResponse.Stream<Output>
-  ) async throws -> ClientResponse.Stream<Output> {
+    ) async throws -> StreamingClientResponse<Output>
+  ) async throws -> StreamingClientResponse<Output> {
     self.counter.increment()
     return try await next(request, context)
   }

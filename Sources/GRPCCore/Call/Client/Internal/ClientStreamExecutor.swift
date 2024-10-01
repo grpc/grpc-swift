@@ -31,13 +31,13 @@ internal enum ClientStreamExecutor {
   @inlinable
   static func execute<Input: Sendable, Output: Sendable>(
     in group: inout TaskGroup<Void>,
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     context: ClientContext,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
-  ) async -> ClientResponse.Stream<Output> {
+  ) async -> StreamingClientResponse<Output> {
     // Let the server know this is a retry.
     var metadata = request.metadata
     if attempt > 1 {
@@ -63,7 +63,7 @@ internal enum ClientStreamExecutor {
       )
 
       // Expected happy case: the server is processing the request.
-      return ClientResponse.Stream(
+      return StreamingClientResponse(
         metadata: metadata,
         bodyParts: RPCAsyncSequence(wrapping: bodyParts)
       )
@@ -75,18 +75,18 @@ internal enum ClientStreamExecutor {
       }
 
       // Expected unhappy (but okay) case; the server rejected the request.
-      return ClientResponse.Stream(status: status, metadata: metadata)
+      return StreamingClientResponse(status: status, metadata: metadata)
 
     case .failed(let error):
       // Very unhappy case: the server did something unexpected.
-      return ClientResponse.Stream(error: error)
+      return StreamingClientResponse(error: error)
     }
   }
 
   @inlinable  // would be private
   static func _processRequest<Outbound>(
     on stream: some ClosableRPCWriterProtocol<RPCRequestPart>,
-    request: ClientRequest.Stream<Outbound>,
+    request: StreamingClientRequest<Outbound>,
     serializer: some MessageSerializer<Outbound>
   ) async {
     let result = await Result {
@@ -194,7 +194,7 @@ internal enum ClientStreamExecutor {
     @usableFromInline
     struct AsyncIterator: AsyncIteratorProtocol {
       @usableFromInline
-      typealias Element = ClientResponse.Stream<Message>.Contents.BodyPart
+      typealias Element = StreamingClientResponse<Message>.Contents.BodyPart
 
       @usableFromInline
       var base: Base.AsyncIterator
@@ -210,7 +210,7 @@ internal enum ClientStreamExecutor {
       @inlinable
       mutating func next(
         isolation actor: isolated (any Actor)?
-      ) async throws(any Error) -> ClientResponse.Stream<Message>.Contents.BodyPart? {
+      ) async throws(any Error) -> StreamingClientResponse<Message>.Contents.BodyPart? {
         guard let part = try await self.base.next(isolation: `actor`) else { return nil }
 
         switch part {
@@ -238,7 +238,7 @@ internal enum ClientStreamExecutor {
       }
 
       @inlinable
-      mutating func next() async throws -> ClientResponse.Stream<Message>.Contents.BodyPart? {
+      mutating func next() async throws -> StreamingClientResponse<Message>.Contents.BodyPart? {
         try await self.next(isolation: nil)
       }
     }

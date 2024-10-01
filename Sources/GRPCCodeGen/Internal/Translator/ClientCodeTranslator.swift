@@ -25,19 +25,19 @@
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// public protocol Foo_BarClientProtocol: Sendable {
 ///   func baz<R>(
-///     request: GRPCCore.ClientRequest.Single<Foo_Bar_Input>,
+///     request: GRPCCore.ClientRequest<Foo_Bar_Input>,
 ///     serializer: some GRPCCore.MessageSerializer<Foo_Bar_Input>,
 ///     deserializer: some GRPCCore.MessageDeserializer<Foo_Bar_Output>,
 ///     options: GRPCCore.CallOptions = .defaults,
-///     _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Foo_Bar_Output>) async throws -> R
+///     _ body: @Sendable @escaping (GRPCCore.ClientResponse<Foo_Bar_Output>) async throws -> R
 ///   ) async throws -> R where R: Sendable
 /// }
 /// @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 /// extension Foo_Bar.ClientProtocol {
 ///   public func baz<R>(
-///     request: GRPCCore.ClientRequest.Single<Foo_Bar_Input>,
+///     request: GRPCCore.ClientRequest<Foo_Bar_Input>,
 ///     options: GRPCCore.CallOptions = .defaults,
-///     _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Foo_Bar_Output>) async throws -> R = {
+///     _ body: @Sendable @escaping (GRPCCore.ClientResponse<Foo_Bar_Output>) async throws -> R = {
 ///       try $0.message
 ///     }
 ///   ) async throws -> R where R: Sendable {
@@ -56,11 +56,11 @@
 ///     self.client = client
 ///   }
 ///   public func methodA<R>(
-///     request: GRPCCore.ClientRequest.Stream<Foo_Bar_Input>,
+///     request: GRPCCore.StreamingClientRequest<Foo_Bar_Input>,
 ///     serializer: some GRPCCore.MessageSerializer<Foo_Bar_Input>,
 ///     deserializer: some GRPCCore.MessageDeserializer<Foo_Bar_Output>,
 ///     options: GRPCCore.CallOptions = .defaults,
-///     _ body: @Sendable @escaping (GRPCCore.ClientResponse.Single<Foo_Bar_Output>) async throws -> R = {
+///     _ body: @Sendable @escaping (GRPCCore.ClientResponse<Foo_Bar_Output>) async throws -> R = {
 ///       try $0.message
 ///     }
 ///   ) async throws -> R where R: Sendable {
@@ -263,13 +263,13 @@ extension ClientCodeTranslator {
 
     // All methods have a response handler.
     var responseHandler = ParameterDescription(label: "onResponse", name: "handleResponse")
-    let responseKind = method.isOutputStreaming ? "Stream" : "Single"
+    let responseKind = method.isOutputStreaming ? "Streaming" : ""
     responseHandler.type = .closure(
       ClosureSignatureDescription(
         parameters: [
           ParameterDescription(
             type: .generic(
-              wrapper: .member(["GRPCCore", "ClientResponse", responseKind]),
+              wrapper: .member(["GRPCCore", "\(responseKind)ClientResponse"]),
               wrapped: .member(method.outputType)
             )
           )
@@ -299,21 +299,21 @@ extension ClientCodeTranslator {
   ) -> [CodeBlock] {
     // Produces the following:
     //
-    // let request = GRPCCore.ClientRequest.Single<Input>(message: message, metadata: metadata)
+    // let request = GRPCCore.ClientRequest<Input>(message: message, metadata: metadata)
     // return try await method(request: request, options: options, responseHandler: responseHandler)
     //
     // or:
     //
-    // let request = GRPCCore.ClientRequest.Stream<Input>(metadata: metadata, producer: writer)
+    // let request = GRPCCore.StreamingClientRequest<Input>(metadata: metadata, producer: writer)
     // return try await method(request: request, options: options, responseHandler: responseHandler)
 
     // First, make the init for the ClientRequest
-    let requestType = method.isInputStreaming ? "Stream" : "Single"
+    let requestType = method.isInputStreaming ? "Streaming" : ""
     var requestInit = FunctionCallDescription(
       calledExpression: .identifier(
         .type(
           .generic(
-            wrapper: .member(["GRPCCore", "ClientRequest", requestType]),
+            wrapper: .member(["GRPCCore", "\(requestType)ClientRequest"]),
             wrapped: .member(method.inputType)
           )
         )
@@ -490,9 +490,10 @@ extension ClientCodeTranslator {
     for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
     in service: CodeGenerationRequest.ServiceDescriptor
   ) -> ParameterDescription {
-    let requestType = method.isInputStreaming ? "Stream" : "Single"
+    let requestType = method.isInputStreaming ? "Streaming" : ""
     let clientRequestType = ExistingTypeDescription.member([
-      "GRPCCore", "ClientRequest", requestType,
+      "GRPCCore",
+      "\(requestType)ClientRequest",
     ])
     return ParameterDescription(
       label: "request",
@@ -538,9 +539,9 @@ extension ClientCodeTranslator {
     in service: CodeGenerationRequest.ServiceDescriptor,
     includeDefaultResponseHandler: Bool
   ) -> ParameterDescription {
-    let clientStreaming = method.isOutputStreaming ? "Stream" : "Single"
+    let clientStreaming = method.isOutputStreaming ? "Streaming" : ""
     let closureParameterType = ExistingTypeDescription.generic(
-      wrapper: .member(["GRPCCore", "ClientResponse", clientStreaming]),
+      wrapper: .member(["GRPCCore", "\(clientStreaming)ClientResponse"]),
       wrapped: .member(method.outputType)
     )
 

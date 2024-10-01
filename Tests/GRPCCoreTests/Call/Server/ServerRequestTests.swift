@@ -19,8 +19,8 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 final class ServerRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
-    let single = ServerRequest.Single(metadata: ["bar": "baz"], message: "foo")
-    let stream = ServerRequest.Stream(single: single)
+    let single = ServerRequest(metadata: ["bar": "baz"], message: "foo")
+    let stream = StreamingServerRequest(single: single)
 
     XCTAssertEqual(stream.metadata, ["bar": "baz"])
     let collected = try await stream.messages.collect()

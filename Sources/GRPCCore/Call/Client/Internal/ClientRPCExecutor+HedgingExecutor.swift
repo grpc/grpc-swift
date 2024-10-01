@@ -66,10 +66,10 @@ extension ClientRPCExecutor {
 extension ClientRPCExecutor.HedgingExecutor {
   @inlinable
   func execute<R: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async throws -> R {
     // The high level approach is to have two levels of task group. In the outer level tasks are
     // run to:
@@ -102,7 +102,7 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
 
       group.addTask {
-        let replayableRequest = ClientRequest.Stream(metadata: request.metadata) { writer in
+        let replayableRequest = StreamingClientRequest(metadata: request.metadata) { writer in
           try await writer.write(contentsOf: broadcast.stream)
         }
 
@@ -148,10 +148,10 @@ extension ClientRPCExecutor.HedgingExecutor {
 
   @inlinable
   func executeAttempt<R: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async -> Result<R, any Error> {
     await withTaskGroup(
       of: _HedgingAttemptTaskResult<R, Output>.self,
@@ -201,7 +201,7 @@ extension ClientRPCExecutor.HedgingExecutor {
       }
 
       // Stop the most recent unusable response in case no response succeeds.
-      var unusableResponse: ClientResponse.Stream<Output>?
+      var unusableResponse: StreamingClientResponse<Output>?
 
       while let next = await group.next() {
         switch next {
@@ -312,13 +312,13 @@ extension ClientRPCExecutor.HedgingExecutor {
 
   @inlinable
   func _startAttempt<R: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
     attempt: Int,
     state: SharedState,
     picker: (stream: BroadcastAsyncSequence<Int>, continuation: BroadcastAsyncSequence<Int>.Source),
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async -> _HedgingAttemptTaskResult<R, Output>.AttemptResult {
     do {
       return try await self.transport.withStream(
@@ -562,7 +562,7 @@ enum _HedgingAttemptTaskResult<R: Sendable, Output: Sendable>: Sendable {
 
   @usableFromInline
   enum AttemptResult: Sendable {
-    case unusableResponse(ClientResponse.Stream<Output>, Metadata.RetryPushback?)
+    case unusableResponse(StreamingClientResponse<Output>, Metadata.RetryPushback?)
     case usableResponse(Result<R, any Error>)
     case noStreamAvailable(any Error)
   }

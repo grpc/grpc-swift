@@ -58,10 +58,10 @@ extension ClientRPCExecutor {
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
   func execute<R: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async throws -> R {
     let result: Result<R, any Error>
 
@@ -94,10 +94,10 @@ extension ClientRPCExecutor.OneShotExecutor {
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
   func _execute<R: Sendable>(
-    request: ClientRequest.Stream<Input>,
+    request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
     options: CallOptions,
-    responseHandler: @Sendable @escaping (ClientResponse.Stream<Output>) async throws -> R
+    responseHandler: @Sendable @escaping (StreamingClientResponse<Output>) async throws -> R
   ) async -> Result<R, any Error> {
     return await withTaskGroup(of: Void.self, returning: Result<R, any Error>.self) { group in
       do {
