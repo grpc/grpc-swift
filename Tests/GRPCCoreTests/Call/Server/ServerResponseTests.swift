@@ -45,7 +45,10 @@ final class ServerResponseTests: XCTestCase {
   }
 
   func testStreamConvenienceInit() async throws {
-    var response = StreamingServerResponse(of: String.self, metadata: ["metadata": "initial"]) { _ in
+    var response = StreamingServerResponse(
+      of: String.self,
+      metadata: ["metadata": "initial"]
+    ) { _ in
       // Empty body.
       return ["metadata": "trailing"]
     }

@@ -71,8 +71,10 @@ struct ClientRPCExecutorTestHarness {
     options: CallOptions = .defaults,
     handler: @escaping @Sendable (ClientResponse<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(request: StreamingClientRequest(single: request), options: options) {
-      response in
+    try await self.bidirectional(
+      request: StreamingClientRequest(single: request),
+      options: options
+    ) { response in
       try await handler(ClientResponse(stream: response))
     }
   }
@@ -92,8 +94,10 @@ struct ClientRPCExecutorTestHarness {
     options: CallOptions = .defaults,
     handler: @escaping @Sendable (StreamingClientResponse<[UInt8]>) async throws -> Void
   ) async throws {
-    try await self.bidirectional(request: StreamingClientRequest(single: request), options: options) {
-      response in
+    try await self.bidirectional(
+      request: StreamingClientRequest(single: request),
+      options: options
+    ) { response in
       try await handler(response)
     }
   }

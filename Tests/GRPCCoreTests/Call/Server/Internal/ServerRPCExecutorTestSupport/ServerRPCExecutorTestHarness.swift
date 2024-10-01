@@ -20,7 +20,8 @@ import XCTest
 @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input: Sendable, Output: Sendable>: Sendable {
-    let fn: @Sendable (StreamingServerRequest<Input>) async throws -> StreamingServerResponse<Output>
+    let fn:
+      @Sendable (StreamingServerRequest<Input>) async throws -> StreamingServerResponse<Output>
 
     init(
       _ fn: @escaping @Sendable (

@@ -493,7 +493,7 @@ extension ClientCodeTranslator {
     let requestType = method.isInputStreaming ? "Streaming" : ""
     let clientRequestType = ExistingTypeDescription.member([
       "GRPCCore",
-      "\(requestType)ClientRequest"
+      "\(requestType)ClientRequest",
     ])
     return ParameterDescription(
       label: "request",
