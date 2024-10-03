@@ -62,7 +62,7 @@ at any given time, that detail isn't surfaced at this level of abstraction.
 While the server is responsible for handling streams, the ``ClientTransport`` is
 responsible for creating them. Client transports will typically maintain a
 number of connections which may change over a period of time. Maintaining these
-connection and other background work is done in the ``ClientTransport/connect()``
+connections and other background work is done in the ``ClientTransport/connect()``
 method. Cancelling the task running this method will result in the transport
 abruptly closing. The transport can be shutdown gracefully by calling
 ``ClientTransport/beginGracefulShutdown()``.
@@ -70,7 +70,7 @@ abruptly closing. The transport can be shutdown gracefully by calling
 Streams are created using ``ClientTransport/withStream(descriptor:options:_:)``
 and the lifetime of the stream is limited to the closure. The handler passed to
 the method will be provided by a gRPC client and will ultimately include the
-callers code to send request messages and process response messages. Cancelling
+caller's code to send request messages and process response messages. Cancelling
 the task abruptly closes the stream, although the transport should ensure that
 doing this doesn't leave the other side waiting indefinitely.
 
@@ -85,8 +85,8 @@ the ``ClientTransport/retryThrottle`` and
 ### Streams
 
 Both client and server transport protocols use ``RPCStream`` to represent
-streams of information. Each RPC can be thought of has having two logical
-streams, a request stream where information flows from client to server,
+streams of information. Each RPC can be thought of as having two logical
+streams: a request stream where information flows from client to server,
 and a response stream where information flows from server to client.
 Each ``RPCStream`` has inbound and outbound types corresponding to one end of
 each stream.
