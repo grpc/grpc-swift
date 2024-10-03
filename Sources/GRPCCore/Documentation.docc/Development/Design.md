@@ -75,7 +75,8 @@ the task abruptly closes the stream, although the transport should ensure that
 doing this doesn't leave the other side waiting indefinitely.
 
 gRPC has mechanisms to deliver method-specific configuration at the transport
-layer which can also change dynamically (see "gRFC A2: ServiceConfig in DNS".)
+layer which can also change dynamically (see [gRFC A2: ServiceConfig in
+DNS](https://github.com/grpc/proposal/blob/master/A2-service-configs-in-dns.md).)
 This configuration is used to determine how clients should interact with servers
 and how methods should be executed, such as the conditions under which they
 may be retried. Some of this is exposed via the ``ClientTransport`` as
@@ -185,7 +186,7 @@ a ``GRPCServer/serve()`` method which runs the underlying transport and is the
 task from which all accepted streams are run under. Much like the client, you
 can initiate graceful shutdown by calling ``GRPCServer/beginGracefulShutdown()``
 which will stop new RPCs from being handled but will let existing RPCs run to
-completion.
+completion. Cancelling the task will close the server more abruptly.
 
 ## Stub
 
