@@ -15,7 +15,6 @@
  */
 @testable import GRPCCore
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct ThrowOnStreamCreationTransport: ClientTransport {
   typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
@@ -51,7 +50,6 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnRunServerTransport: ServerTransport {
   func listen(
     streamHandler: (
@@ -70,7 +68,6 @@ struct ThrowOnRunServerTransport: ServerTransport {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   let signal: AsyncStream<Void>
 

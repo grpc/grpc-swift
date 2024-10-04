@@ -25,7 +25,6 @@ func XCTAssertDescription(
   XCTAssertEqual(String(describing: subject), expected, file: file, line: line)
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertThrowsErrorAsync<T>(
   _ expression: () async throws -> T,
   errorHandler: (any Error) -> Void
@@ -51,7 +50,6 @@ func XCTAssertThrowsError<T, E: Error>(
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertThrowsErrorAsync<T, E: Error>(
   ofType: E.Type = E.self,
   _ expression: () async throws -> T,
@@ -80,7 +78,6 @@ func XCTAssertThrowsRPCError<T>(
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertThrowsRPCErrorAsync<T>(
   _ expression: () async throws -> T,
   errorHandler: (RPCError) -> Void
@@ -95,7 +92,6 @@ func XCTAssertThrowsRPCErrorAsync<T>(
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 func XCTAssertRejected<T>(
   _ response: StreamingClientResponse<T>,
   errorHandler: (RPCError) -> Void
@@ -132,7 +128,6 @@ func XCTAssertMetadata(
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertMetadata(
   _ part: RPCRequestPart?,
   metadataHandler: (Metadata) async throws -> Void = { _ in }
@@ -157,7 +152,6 @@ func XCTAssertMessage(
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func XCTAssertMessage(
   _ part: RPCRequestPart?,
   messageHandler: ([UInt8]) async throws -> Void = { _ in }

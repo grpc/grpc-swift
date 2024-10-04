@@ -221,9 +221,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
           public enum Method {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
-          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
-          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
       }
 
@@ -235,22 +233,17 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       }
 
       /// Documentation for AService
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
 
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
-          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
 
       /// Documentation for AService
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
 
       /// Partial conformance to `NamespaceA_ServiceA_StreamingServiceProtocol`.
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ServiceProtocol {
       }
       """

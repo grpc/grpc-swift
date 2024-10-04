@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 struct ServerRPCExecutor {
   /// Executes an RPC using the provided handler.
@@ -296,7 +295,6 @@ struct ServerRPCExecutor {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(

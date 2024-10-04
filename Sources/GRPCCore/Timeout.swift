@@ -22,7 +22,6 @@ internal import Dispatch
 /// one of ``Timeout/Unit`` (hours, minutes, seconds, milliseconds, microseconds or nanoseconds).
 ///
 /// Timeouts must be positive and at most 8-digits long.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 struct Timeout: CustomStringConvertible, Hashable, Sendable {
   /// Possible units for a ``Timeout``.
@@ -182,7 +181,6 @@ extension Int64 {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Duration {
   /// Construct a `Duration` given a number of minutes represented as an `Int64`.
   ///

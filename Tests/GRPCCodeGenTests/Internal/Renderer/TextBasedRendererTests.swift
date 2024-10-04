@@ -734,7 +734,6 @@ final class Test_TextBasedRenderer: XCTestCase {
       ]),
       renderedBy: { $0.renderAvailability(_:) },
       rendersAs: #"""
-        @available(macOS 12.0, iOS 13.1.2, watchOS 8.1.2, tvOS 15.0.2, *)
         """#
     )
   }

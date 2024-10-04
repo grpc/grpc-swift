@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 struct MapRPCWriter<
   Value: Sendable,
@@ -47,7 +46,6 @@ struct MapRPCWriter<
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCWriter {
   @inlinable
   static func map<Mapped>(

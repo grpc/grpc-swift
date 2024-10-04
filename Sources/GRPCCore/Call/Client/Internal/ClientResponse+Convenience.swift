@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientResponse {
   /// Converts a streaming response into a single response.
   ///
@@ -82,7 +81,6 @@ extension ClientResponse {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension StreamingClientResponse {
   /// Creates a streaming response from the given status and metadata.
   ///
@@ -103,7 +101,6 @@ extension StreamingClientResponse {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension StreamingClientResponse {
   /// Returns a new response which maps the messages of this response.
   ///

@@ -17,7 +17,6 @@
 public import GRPCCore
 private import Synchronization
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension InProcessTransport {
   /// An in-process implementation of a ``ClientTransport``.
   ///
@@ -36,7 +35,6 @@ extension InProcessTransport {
   /// block until ``connect()`` is called or the task is cancelled.
   ///
   /// - SeeAlso: ``ClientTransport``
-  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   public final class Client: ClientTransport {
     private enum State: Sendable {
       struct UnconnectedState {

@@ -18,7 +18,6 @@ import XCTest
 
 @testable import GRPCCore
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class ResultCatchingTests: XCTestCase {
   func testResultCatching() async {
     let result = await Result {
