@@ -16,7 +16,6 @@
 
 public import Synchronization  // would be internal but for usableFromInline
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor {
   @usableFromInline
   struct HedgingExecutor<
@@ -62,7 +61,6 @@ extension ClientRPCExecutor {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor.HedgingExecutor {
   @inlinable
   func execute<R: Sendable>(
@@ -545,7 +543,6 @@ extension ClientRPCExecutor.HedgingExecutor {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 enum _HedgingTaskResult<R: Sendable>: Sendable {
   case rpcHandled(Result<R, any Error>)
@@ -553,7 +550,6 @@ enum _HedgingTaskResult<R: Sendable>: Sendable {
   case timedOut(Result<Void, any Error>)
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 enum _HedgingAttemptTaskResult<R: Sendable, Output: Sendable>: Sendable {
   case attemptPicked(Bool)

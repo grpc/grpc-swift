@@ -36,7 +36,6 @@ public struct ServerRequest<Message: Sendable>: Sendable {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 /// A request received at the server containing a stream of messages.
 public struct StreamingServerRequest<Message: Sendable>: Sendable {
   /// Metadata received from the client at the start of the RPC.
@@ -63,14 +62,12 @@ public struct StreamingServerRequest<Message: Sendable>: Sendable {
 
 // MARK: - Conversion
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension StreamingServerRequest {
   public init(single request: ServerRequest<Message>) {
     self.init(metadata: request.metadata, messages: .one(request.message))
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ServerRequest {
   public init(stream request: StreamingServerRequest<Message>) async throws {
     var iterator = request.messages.makeAsyncIterator()

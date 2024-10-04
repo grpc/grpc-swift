@@ -15,7 +15,6 @@
  */
 @testable import GRPCCore
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct AnyClientTransport: ClientTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
   typealias Outbound = RPCWriter<RPCRequestPart>.Closable
@@ -81,7 +80,6 @@ struct AnyClientTransport: ClientTransport, Sendable {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct AnyServerTransport: ServerTransport, Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable

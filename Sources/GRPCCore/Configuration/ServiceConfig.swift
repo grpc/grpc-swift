@@ -17,7 +17,6 @@
 /// Service configuration values.
 ///
 /// See also: https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct ServiceConfig: Hashable, Sendable {
   /// Per-method configuration.
   public var methodConfig: [MethodConfig]
@@ -63,7 +62,6 @@ public struct ServiceConfig: Hashable, Sendable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case methodConfig
@@ -100,7 +98,6 @@ extension ServiceConfig: Codable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig {
   /// Configuration used by clients for load-balancing.
   public struct LoadBalancingConfig: Hashable, Sendable {
@@ -166,7 +163,6 @@ extension ServiceConfig {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig.LoadBalancingConfig {
   /// Configuration for the pick-first load balancing policy.
   public struct PickFirst: Hashable, Sendable, Codable {
@@ -194,7 +190,6 @@ extension ServiceConfig.LoadBalancingConfig {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig.LoadBalancingConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case roundRobin = "round_robin"
@@ -225,7 +220,6 @@ extension ServiceConfig.LoadBalancingConfig: Codable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension ServiceConfig {
   public struct RetryThrottling: Hashable, Sendable, Codable {
     /// The initial, and maximum number of tokens.

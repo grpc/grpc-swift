@@ -21,7 +21,6 @@
 ///
 /// You can create the default set of options, which defers all possible
 /// configuration to the transport, by using ``CallOptions/defaults``.
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct CallOptions: Sendable {
   /// The default timeout for the RPC.
   ///
@@ -108,7 +107,6 @@ public struct CallOptions: Sendable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension CallOptions {
   /// Default call options.
   ///
@@ -125,7 +123,6 @@ extension CallOptions {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension CallOptions {
   package mutating func formUnion(with methodConfig: MethodConfig?) {
     guard let methodConfig = methodConfig else { return }

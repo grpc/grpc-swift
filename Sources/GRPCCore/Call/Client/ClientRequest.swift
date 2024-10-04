@@ -61,7 +61,6 @@ public struct ClientRequest<Message: Sendable>: Sendable {
 ///
 /// See ``ClientRequest`` for single-message requests and ``StreamingServerRequest`` for the
 /// servers representation of a streaming-message request.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct StreamingClientRequest<Message: Sendable>: Sendable {
   /// Caller-specified metadata sent to the server at the start of the RPC.
   ///

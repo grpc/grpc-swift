@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 struct MessageToRPCResponsePartWriter<
   Serializer: MessageSerializer
@@ -48,7 +47,6 @@ struct MessageToRPCResponsePartWriter<
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCWriter {
   @inlinable
   static func serializingToRPCResponsePart(

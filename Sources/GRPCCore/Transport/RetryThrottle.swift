@@ -30,7 +30,6 @@ private import Synchronization
 /// the server.
 ///
 /// See also [gRFC A6: client retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public final class RetryThrottle: Sendable {
   // Note: only three figures after the decimal point from the original token ratio are used so
   //   all computation is done a scaled number of tokens (tokens * 1000). This allows us to do all

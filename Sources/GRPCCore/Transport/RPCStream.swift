@@ -15,7 +15,6 @@
  */
 
 /// A bidirectional communication channel between a client and server for a given method.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct RPCStream<
   Inbound: AsyncSequence & Sendable,
   Outbound: ClosableRPCWriterProtocol & Sendable

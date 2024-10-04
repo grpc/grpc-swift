@@ -16,7 +16,6 @@
 
 import GRPCCore
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientInterceptor where Self == RejectAllClientInterceptor {
   static func rejectAll(with error: RPCError) -> Self {
     return RejectAllClientInterceptor(error: error, throw: false)
@@ -28,7 +27,6 @@ extension ClientInterceptor where Self == RejectAllClientInterceptor {
 
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientInterceptor where Self == RequestCountingClientInterceptor {
   static func requestCounter(_ counter: AtomicCounter) -> Self {
     return RequestCountingClientInterceptor(counter: counter)
@@ -36,7 +34,6 @@ extension ClientInterceptor where Self == RequestCountingClientInterceptor {
 }
 
 /// Rejects all RPCs with the provided error.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct RejectAllClientInterceptor: ClientInterceptor {
   /// The error to reject all RPCs with.
   let error: RPCError
@@ -65,7 +62,6 @@ struct RejectAllClientInterceptor: ClientInterceptor {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 struct RequestCountingClientInterceptor: ClientInterceptor {
   /// The number of requests made.
   let counter: AtomicCounter

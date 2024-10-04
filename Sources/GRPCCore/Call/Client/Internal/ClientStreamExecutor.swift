@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @usableFromInline
 internal enum ClientStreamExecutor {
   /// Execute a request on the stream executor.
@@ -165,7 +164,6 @@ internal enum ClientStreamExecutor {
   }
 
   @usableFromInline
-  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   struct RawBodyPartToMessageSequence<
     Base: AsyncSequence<RPCResponsePart, Failure>,
     Message: Sendable,

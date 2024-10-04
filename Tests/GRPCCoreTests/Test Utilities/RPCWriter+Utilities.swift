@@ -16,7 +16,6 @@
 import GRPCCore
 import XCTest
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension RPCWriter {
   /// Returns a writer which calls `XCTFail(_:)` on every write.
   static func failTestOnWrite(elementType: Element.Type = Element.self) -> Self {
@@ -29,7 +28,6 @@ extension RPCWriter {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 private struct FailOnWrite<Element: Sendable>: RPCWriterProtocol {
   func write(_ element: Element) async throws {
     XCTFail("Unexpected write")
@@ -40,7 +38,6 @@ private struct FailOnWrite<Element: Sendable>: RPCWriterProtocol {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 private struct AsyncStreamGatheringWriter<Element: Sendable>: RPCWriterProtocol {
   let continuation: AsyncStream<Element>.Continuation
 

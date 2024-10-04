@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension TaskGroup {
   /// Adds a child task to the group which is individually cancellable.
   ///
@@ -65,7 +64,6 @@ extension TaskGroup {
 }
 
 @usableFromInline
-@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 struct CancellableTaskHandle: Sendable {
   @usableFromInline
   private(set) var continuation: AsyncStream<Void>.Continuation

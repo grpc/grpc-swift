@@ -16,7 +16,6 @@
 
 public import GRPCCore
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension InProcessTransport {
   /// An in-process implementation of a ``ServerTransport``.
   ///
@@ -28,7 +27,6 @@ extension InProcessTransport {
   /// To stop listening to new requests, call ``beginGracefulShutdown()``.
   ///
   /// - SeeAlso: ``ClientTransport``
-  @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
   public struct Server: ServerTransport, Sendable {
     public typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
     public typealias Outbound = RPCWriter<RPCResponsePart>.Closable

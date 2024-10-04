@@ -19,7 +19,6 @@ public import Darwin  // should be @usableFromInline
 public import Glibc  // should be @usableFromInline
 #endif
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 @usableFromInline
 struct RetryDelaySequence: Sequence {
   @usableFromInline

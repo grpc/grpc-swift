@@ -19,7 +19,6 @@
 // 'RPCWriterProtocol'. (Adding a constrained conformance to 'RPCWriterProtocol' on
 // 'AsyncThrowingStream.Continuation' isn't possible because 'Sendable' is a marker protocol.)
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 package struct GRPCAsyncThrowingStream<Element: Sendable>: AsyncSequence, Sendable {
   package typealias Element = Element
   package typealias Failure = any Error
@@ -78,7 +77,6 @@ package struct GRPCAsyncThrowingStream<Element: Sendable>: AsyncSequence, Sendab
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCAsyncThrowingStream.Continuation: RPCWriterProtocol {
   package func write(_ element: Element) async throws {
     self.yield(element)
@@ -91,7 +89,6 @@ extension GRPCAsyncThrowingStream.Continuation: RPCWriterProtocol {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension GRPCAsyncThrowingStream.Continuation: ClosableRPCWriterProtocol {
   package func finish() async {
     self.finish(throwing: nil)

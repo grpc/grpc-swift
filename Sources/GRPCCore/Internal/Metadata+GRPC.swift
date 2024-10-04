@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Metadata {
   @inlinable
   var previousRPCAttempts: Int? {
@@ -77,7 +76,6 @@ extension Metadata {
 }
 
 extension Metadata {
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   @usableFromInline
   enum RetryPushback: Hashable, Sendable {
     case retryAfter(Duration)

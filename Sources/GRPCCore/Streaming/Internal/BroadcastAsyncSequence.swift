@@ -30,7 +30,6 @@ public import DequeModule  // should be @usableFromInline
 ///
 /// The expectation is that the number of subscribers will be low; for retries there will be at most
 /// one subscriber at a time, for hedging there may be at most five subscribers at a time.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 struct BroadcastAsyncSequence<Element: Sendable>: Sendable, AsyncSequence {
   @usableFromInline
@@ -85,7 +84,6 @@ struct BroadcastAsyncSequence<Element: Sendable>: Sendable, AsyncSequence {
 
 // MARK: - AsyncIterator
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension BroadcastAsyncSequence {
   @usableFromInline
   struct AsyncIterator: AsyncIteratorProtocol {
@@ -112,7 +110,6 @@ extension BroadcastAsyncSequence {
 
 // MARK: - Continuation
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension BroadcastAsyncSequence {
   @usableFromInline
   struct Source: Sendable {
@@ -156,7 +153,6 @@ enum BroadcastAsyncSequenceError: Error {
 
 // MARK: - Storage
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   @usableFromInline
@@ -331,7 +327,6 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
 
 // MARK: - State machine
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 @usableFromInline
 struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
@@ -1369,7 +1364,6 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension _BroadcastSequenceStateMachine {
   /// A collection of elements tagged with an identifier.
   ///
@@ -1524,7 +1518,6 @@ extension _BroadcastSequenceStateMachine {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension _BroadcastSequenceStateMachine {
   /// A collection of subscriptions.
   @usableFromInline
@@ -1788,7 +1781,6 @@ extension _BroadcastSequenceStateMachine {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension _BroadcastSequenceStateMachine {
   // TODO: tiny array
   @usableFromInline

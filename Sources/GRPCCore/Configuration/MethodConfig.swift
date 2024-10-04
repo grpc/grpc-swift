@@ -17,7 +17,6 @@
 /// Configuration values for executing an RPC.
 ///
 /// See also: https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct MethodConfig: Hashable, Sendable {
   public struct Name: Sendable, Hashable {
     /// The name of the service, including the namespace.
@@ -144,7 +143,6 @@ public struct MethodConfig: Hashable, Sendable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct RPCExecutionPolicy: Hashable, Sendable {
   @usableFromInline
   enum Wrapped: Hashable, Sendable {
@@ -214,7 +212,6 @@ public struct RPCExecutionPolicy: Hashable, Sendable {
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct RetryPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -332,7 +329,6 @@ public struct RetryPolicy: Hashable, Sendable {
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public struct HedgingPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -397,7 +393,6 @@ private func validateMaxAttempts(_ value: Int) throws -> Int {
   return min(value, 5)
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension Duration {
   fileprivate init(googleProtobufDuration duration: String) throws {
     guard duration.utf8.last == UInt8(ascii: "s"),
@@ -413,7 +408,6 @@ extension Duration {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension MethodConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case name
@@ -472,7 +466,6 @@ extension MethodConfig: Codable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension MethodConfig.Name: Codable {
   private enum CodingKeys: String, CodingKey {
     case service
@@ -498,7 +491,6 @@ extension MethodConfig.Name: Codable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension RetryPolicy: Codable {
   private enum CodingKeys: String, CodingKey {
     case maxAttempts
@@ -546,7 +538,6 @@ extension RetryPolicy: Codable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension HedgingPolicy: Codable {
   private enum CodingKeys: String, CodingKey {
     case maxAttempts
@@ -578,7 +569,6 @@ extension HedgingPolicy: Codable {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 struct GoogleProtobufDuration: Codable {
   var duration: Duration
 
