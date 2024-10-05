@@ -21,7 +21,7 @@
 /// See ``StreamingClientRequest`` for streaming requests and ``ServerRequest`` for the
 /// servers representation of a single-message request.
 ///
-/// ## Creating ``Single`` requests
+/// ## Creating requests
 ///
 /// ```swift
 /// let request = ClientRequest<String>(message: "Hello, gRPC!")

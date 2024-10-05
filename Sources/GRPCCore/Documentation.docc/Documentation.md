@@ -55,4 +55,5 @@ as tutorials.
 
 Resources for developers working on gRPC Swift:
 
+- <doc:Design>
 - <doc:Benchmarks>
