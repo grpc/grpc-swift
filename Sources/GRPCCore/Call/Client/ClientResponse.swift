@@ -198,7 +198,6 @@ public struct ClientResponse<Message: Sendable>: Sendable {
 ///   print("RPC failed with code '\(error.code)'")
 /// }
 /// ```
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public struct StreamingClientResponse<Message: Sendable>: Sendable {
   public struct Contents: Sendable {
     /// Metadata received from the server at the beginning of the response.
@@ -325,7 +324,6 @@ extension ClientResponse {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension StreamingClientResponse {
   /// Creates a new accepted response.
   ///

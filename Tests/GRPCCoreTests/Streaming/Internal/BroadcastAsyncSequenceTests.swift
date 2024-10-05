@@ -18,7 +18,6 @@ import XCTest
 
 @testable import GRPCCore
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 final class BroadcastAsyncSequenceTests: XCTestCase {
   func testSingleSubscriberToEmptyStream() async throws {
     let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)

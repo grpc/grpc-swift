@@ -15,7 +15,6 @@
  */
 
 /// A protocol server transport implementations must conform to.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 public protocol ServerTransport: Sendable {
   typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
   typealias Outbound = RPCWriter<RPCResponsePart>.Closable

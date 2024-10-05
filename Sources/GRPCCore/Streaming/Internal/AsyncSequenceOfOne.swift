@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension RPCAsyncSequence {
   /// Returns an ``RPCAsyncSequence`` containing just the given element.
   @inlinable
@@ -33,7 +32,6 @@ extension RPCAsyncSequence {
 
 /// An `AsyncSequence` of a single value.
 @usableFromInline
-@available(macOS 10.15, iOS 13.0, tvOS 13, watchOS 6, *)
 struct AsyncSequenceOfOne<Element: Sendable, Failure: Error>: AsyncSequence, Sendable {
   @usableFromInline
   let result: Result<Element, Failure>

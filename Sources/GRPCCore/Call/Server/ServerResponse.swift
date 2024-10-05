@@ -168,7 +168,6 @@ public struct ServerResponse<Message: Sendable>: Sendable {
 ///   return ["goodbye": "trailing metadata"]
 /// }
 /// ```
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public struct StreamingServerResponse<Message: Sendable>: Sendable {
   /// The contents of a response to a request which has been accepted for processing.
   public struct Contents: Sendable {
@@ -279,7 +278,6 @@ extension ServerResponse {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension StreamingServerResponse {
   /// Creates a new accepted response.
   ///
@@ -318,7 +316,6 @@ extension StreamingServerResponse {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension StreamingServerResponse {
   public init(single response: ServerResponse<Message>) {
     switch response.accepted {

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension BroadcastAsyncSequence.Source: ClosableRPCWriterProtocol {
   @inlinable
   func write(contentsOf elements: some Sequence<Element>) async throws {

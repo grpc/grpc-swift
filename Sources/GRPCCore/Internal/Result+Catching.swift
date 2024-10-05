@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Result where Failure == any Error {
   /// Like `Result(catching:)`, but `async`.
   ///

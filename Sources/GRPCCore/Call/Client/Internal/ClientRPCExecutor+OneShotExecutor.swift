@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor {
   /// An executor for requests which doesn't apply retries or hedging. The request has just one
   /// attempt at execution.
@@ -54,7 +53,6 @@ extension ClientRPCExecutor {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
   func execute<R: Sendable>(
@@ -90,7 +88,6 @@ extension ClientRPCExecutor.OneShotExecutor {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
   func _execute<R: Sendable>(
@@ -129,7 +126,6 @@ extension ClientRPCExecutor.OneShotExecutor {
   }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 @inlinable
 func withDeadline<Result: Sendable>(
   _ deadline: ContinuousClock.Instant,

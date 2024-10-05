@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension AsyncSequence {
   func collect() async throws -> [Element] {
     return try await self.reduce(into: []) { $0.append($1) }

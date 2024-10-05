@@ -16,7 +16,6 @@
 import GRPCCore
 import XCTest
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
 extension ClientRPCExecutorTests {
   func testHedgingWhenAllAttemptsResultInNonFatalCodes() async throws {
     let harness = ClientRPCExecutorTestHarness(
@@ -186,7 +185,6 @@ extension ClientRPCExecutorTests {
   }
 }
 
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 extension CallOptions {
   fileprivate static func hedge(
     maxAttempts: Int = 5,
