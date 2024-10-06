@@ -14,11 +14,113 @@
  * limitations under the License.
  */
 import GRPCCore
-import XCTest
+import Testing
 
-final class RPCErrorTests: XCTestCase {
-  private static let statusCodeRawValue: [(RPCError.Code, Int)] = [
-    (.cancelled, 1),
+@Suite("RPCError Tests")
+struct RPCErrorTests {
+  @Test("Custom String Convertible")
+  func testCustomStringConvertible() {
+    #expect(String(describing: RPCError(code: .dataLoss, message: "")) == #"dataLoss: """#)
+    #expect(String(describing: RPCError(code: .unknown, message: "message")) == #"unknown: "message""#)
+    #expect(String(describing: RPCError(code: .aborted, message: "message")) == #"aborted: "message""#)
+
+    struct TestError: Error {}
+    #expect(
+      String(describing: RPCError(code: .aborted, message: "message", cause: TestError()))
+      ==
+      #"aborted: "message" (cause: "TestError()")"#
+    )
+  }
+
+  @Test("Error from Status")
+  func testErrorFromStatus() throws {
+    var status = Status(code: .ok, message: "")
+    // ok isn't an error
+    #expect(RPCError(status: status) == nil)
+
+    status.code = .invalidArgument
+    var error = RPCError(status: status)
+    try #require(error != nil)
+    #expect(error!.code == .invalidArgument)
+    #expect(error!.message == "")
+    #expect(error!.metadata == [:])
+
+    status.code = .cancelled
+    status.message = "an error message"
+    error = RPCError(status: status)
+    try #require(error != nil)
+    #expect(error!.code == .cancelled)
+    #expect(error!.message == "an error message")
+    #expect(error!.metadata == [:])
+  }
+
+  @Test(
+    "Error Code from Status Code",
+    arguments: [
+      (Status.Code.ok, nil),
+      (Status.Code.cancelled, RPCError.Code.cancelled),
+      (Status.Code.unknown, RPCError.Code.unknown),
+      (Status.Code.invalidArgument, RPCError.Code.invalidArgument),
+      (Status.Code.deadlineExceeded, RPCError.Code.deadlineExceeded),
+      (Status.Code.notFound, RPCError.Code.notFound),
+      (Status.Code.alreadyExists, RPCError.Code.alreadyExists),
+      (Status.Code.permissionDenied, RPCError.Code.permissionDenied),
+      (Status.Code.resourceExhausted, RPCError.Code.resourceExhausted),
+      (Status.Code.failedPrecondition, RPCError.Code.failedPrecondition),
+      (Status.Code.aborted, RPCError.Code.aborted),
+      (Status.Code.outOfRange, RPCError.Code.outOfRange),
+      (Status.Code.unimplemented, RPCError.Code.unimplemented),
+      (Status.Code.internalError, RPCError.Code.internalError),
+      (Status.Code.unavailable, RPCError.Code.unavailable),
+      (Status.Code.dataLoss, RPCError.Code.dataLoss),
+      (Status.Code.unauthenticated, RPCError.Code.unauthenticated)
+    ]
+  )
+  func testErrorCodeFromStatusCode(statusCode: Status.Code, rpcErrorCode: RPCError.Code?) throws {
+    #expect(RPCError.Code(statusCode) == rpcErrorCode)
+  }
+
+  @Test("Equatable Conformance")
+  func testEquatableConformance() {
+    #expect(
+      RPCError(code: .cancelled, message: "")
+      ==
+      RPCError(code: .cancelled, message: "")
+    )
+
+    #expect(
+      RPCError(code: .cancelled, message: "message")
+      ==
+      RPCError(code: .cancelled, message: "message")
+    )
+
+    #expect(
+      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
+      ==
+      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
+    )
+
+    #expect(
+      RPCError(code: .cancelled, message: "")
+      !=
+      RPCError(code: .cancelled, message: "message")
+    )
+
+    #expect(
+      RPCError(code: .cancelled, message: "message")
+      !=
+      RPCError(code: .unknown, message: "message")
+    )
+
+    #expect(
+      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
+      !=
+      RPCError(code: .cancelled, message: "message", metadata: ["foo": "baz"])
+    )
+  }
+
+  @Test("Status Code Raw Values", arguments: [
+    (RPCError.Code.cancelled, 1),
     (.unknown, 2),
     (.invalidArgument, 3),
     (.deadlineExceeded, 4),
@@ -34,94 +136,22 @@ final class RPCErrorTests: XCTestCase {
     (.unavailable, 14),
     (.dataLoss, 15),
     (.unauthenticated, 16),
-  ]
-
-  func testCustomStringConvertible() {
-    XCTAssertDescription(RPCError(code: .dataLoss, message: ""), #"dataLoss: """#)
-    XCTAssertDescription(RPCError(code: .unknown, message: "message"), #"unknown: "message""#)
-    XCTAssertDescription(RPCError(code: .aborted, message: "message"), #"aborted: "message""#)
-
-    struct TestError: Error {}
-    XCTAssertDescription(
-      RPCError(code: .aborted, message: "message", cause: TestError()),
-      #"aborted: "message" (cause: "TestError()")"#
-    )
+  ])
+  func testStatusCodeRawValues(statusCode: RPCError.Code, rawValue: Int) {
+    #expect(statusCode.rawValue == rawValue, "\(statusCode) had unexpected raw value")
   }
 
-  func testErrorFromStatus() throws {
-    var status = Status(code: .ok, message: "")
-    // ok isn't an error
-    XCTAssertNil(RPCError(status: status))
+  @Test("Flatten causes with same status code")
+  func testFlattenCausesWithSameStatusCode() {
+    let error1 = RPCError(code: .unknown, message: "Error 1.")
+    let error2 = RPCError(code: .unknown, message: "Error 2.", cause: error1)
+    let error3 = RPCError(code: .dataLoss, message: "Error 3.", cause: error2)
+    let error4 = RPCError(code: .aborted, message: "Error 4.", cause: error3)
+    let error5 = RPCError(code: .aborted, message: "Error 5.", cause: error4, flatteningCauses: true)
 
-    status.code = .invalidArgument
-    var error = try XCTUnwrap(RPCError(status: status))
-    XCTAssertEqual(error.code, .invalidArgument)
-    XCTAssertEqual(error.message, "")
-    XCTAssertEqual(error.metadata, [:])
-
-    status.code = .cancelled
-    status.message = "an error message"
-    error = try XCTUnwrap(RPCError(status: status))
-    XCTAssertEqual(error.code, .cancelled)
-    XCTAssertEqual(error.message, "an error message")
-    XCTAssertEqual(error.metadata, [:])
-  }
-
-  func testErrorCodeFromStatusCode() throws {
-    XCTAssertNil(RPCError.Code(Status.Code.ok))
-    XCTAssertEqual(RPCError.Code(Status.Code.cancelled), .cancelled)
-    XCTAssertEqual(RPCError.Code(Status.Code.unknown), .unknown)
-    XCTAssertEqual(RPCError.Code(Status.Code.invalidArgument), .invalidArgument)
-    XCTAssertEqual(RPCError.Code(Status.Code.deadlineExceeded), .deadlineExceeded)
-    XCTAssertEqual(RPCError.Code(Status.Code.notFound), .notFound)
-    XCTAssertEqual(RPCError.Code(Status.Code.alreadyExists), .alreadyExists)
-    XCTAssertEqual(RPCError.Code(Status.Code.permissionDenied), .permissionDenied)
-    XCTAssertEqual(RPCError.Code(Status.Code.resourceExhausted), .resourceExhausted)
-    XCTAssertEqual(RPCError.Code(Status.Code.failedPrecondition), .failedPrecondition)
-    XCTAssertEqual(RPCError.Code(Status.Code.aborted), .aborted)
-    XCTAssertEqual(RPCError.Code(Status.Code.outOfRange), .outOfRange)
-    XCTAssertEqual(RPCError.Code(Status.Code.unimplemented), .unimplemented)
-    XCTAssertEqual(RPCError.Code(Status.Code.internalError), .internalError)
-    XCTAssertEqual(RPCError.Code(Status.Code.unavailable), .unavailable)
-    XCTAssertEqual(RPCError.Code(Status.Code.dataLoss), .dataLoss)
-    XCTAssertEqual(RPCError.Code(Status.Code.unauthenticated), .unauthenticated)
-  }
-
-  func testEquatableConformance() {
-    XCTAssertEqual(
-      RPCError(code: .cancelled, message: ""),
-      RPCError(code: .cancelled, message: "")
-    )
-
-    XCTAssertEqual(
-      RPCError(code: .cancelled, message: "message"),
-      RPCError(code: .cancelled, message: "message")
-    )
-
-    XCTAssertEqual(
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"]),
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
-    )
-
-    XCTAssertNotEqual(
-      RPCError(code: .cancelled, message: ""),
-      RPCError(code: .cancelled, message: "message")
-    )
-
-    XCTAssertNotEqual(
-      RPCError(code: .cancelled, message: "message"),
-      RPCError(code: .unknown, message: "message")
-    )
-
-    XCTAssertNotEqual(
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"]),
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "baz"])
-    )
-  }
-
-  func testStatusCodeRawValues() {
-    for (code, expected) in Self.statusCodeRawValue {
-      XCTAssertEqual(code.rawValue, expected, "\(code) had unexpected raw value")
-    }
+    let unknownMerged = RPCError(code: .unknown, message: "Error 2. Error 1.")
+    let dataLossMerged = RPCError(code: .dataLoss, message: "Error 3.", cause: unknownMerged)
+    let abortedMerged = RPCError(code: .aborted, message: "Error 5. Error 4.", cause: dataLossMerged)
+    #expect(error5 == abortedMerged)
   }
 }

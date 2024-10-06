@@ -42,11 +42,46 @@ public struct RPCError: Sendable, Hashable, Error {
   ///   - message: A message providing additional context about the code.
   ///   - metadata: Any metadata to attach to the error.
   ///   - cause: An underlying error which led to this error being thrown.
-  public init(code: Code, message: String, metadata: Metadata = [:], cause: (any Error)? = nil) {
-    self.code = code
-    self.message = message
-    self.metadata = metadata
-    self.cause = cause
+  ///   - flatteningCauses: Whether to flatten the `causes` as long as they're ``RPCError``s
+  ///   sharing the same ``Code-swift.struct``.
+  public init(
+    code: Code,
+    message: String,
+    metadata: Metadata = [:],
+    cause: (any Error)? = nil,
+    flatteningCauses: Bool = false
+  ) {
+    if flatteningCauses {
+      var finalMessage = message
+      var finalMetadata = metadata
+      var nextCause = cause
+      while let nextRPCErrorCause = nextCause as? RPCError {
+        if code == nextRPCErrorCause.code {
+          finalMessage = finalMessage + " \(nextRPCErrorCause.message)"
+          finalMetadata.merge(nextRPCErrorCause.metadata)
+          nextCause = nextRPCErrorCause.cause
+        } else {
+          nextCause = RPCError(
+            code: nextRPCErrorCause.code,
+            message: nextRPCErrorCause.message,
+            metadata: nextRPCErrorCause.metadata,
+            cause: nextRPCErrorCause.cause,
+            flatteningCauses: true
+          )
+          break
+        }
+      }
+
+      self.code = code
+      self.message = finalMessage
+      self.metadata = finalMetadata
+      self.cause = nextCause
+    } else {
+      self.code = code
+      self.message = message
+      self.metadata = metadata
+      self.cause = cause
+    }
   }
 
   /// Create a new RPC error from the provided ``Status``.
