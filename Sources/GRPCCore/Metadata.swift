@@ -170,6 +170,15 @@ public struct Metadata: Sendable, Hashable {
   internal mutating func addValue(_ value: Value, forKey key: String) {
     self.elements.append(.init(key: key, value: value))
   }
+  
+  /// Merge another instance of `Metadata` into this one.
+  ///
+  /// - Parameter other: the `Metadata` which key-value pairs should be merged into this one.
+  public mutating func merge(_ other: Metadata) {
+    for (key, value) in other {
+      self.addValue(value, forKey: key)
+    }
+  }
 
   /// Removes all values associated with the given key.
   ///
