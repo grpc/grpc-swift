@@ -35,47 +35,56 @@ public struct RPCError: Sendable, Hashable, Error {
   /// The original error which led to this error being thrown.
   public var cause: (any Error)?
 
-  /// Create a new RPC error.
+  /// Create a new RPC error. If the given `cause` is also an ``RPCError`` sharing the same `code`,
+  /// then they will be flattened into a single error, by merging the messages and metadata.
   ///
   /// - Parameters:
   ///   - code: The status code.
   ///   - message: A message providing additional context about the code.
   ///   - metadata: Any metadata to attach to the error.
   ///   - cause: An underlying error which led to this error being thrown.
-  ///   - flatteningCauses: Whether to flatten the `causes` as long as they're ``RPCError``s
-  ///   sharing the same ``Code-swift.struct``.
   public init(
     code: Code,
     message: String,
     metadata: Metadata = [:],
-    cause: (any Error)? = nil,
-    flatteningCauses: Bool = false
+    cause: (any Error)? = nil
   ) {
-    if flatteningCauses {
-      var finalMessage = message
-      var finalMetadata = metadata
-      var nextCause = cause
-      while let nextRPCErrorCause = nextCause as? RPCError {
-        if code == nextRPCErrorCause.code {
-          finalMessage = finalMessage + " \(nextRPCErrorCause.message)"
-          finalMetadata.add(contentsOf: nextRPCErrorCause.metadata)
-          nextCause = nextRPCErrorCause.cause
-        } else {
-          nextCause = RPCError(
-            code: nextRPCErrorCause.code,
-            message: nextRPCErrorCause.message,
-            metadata: nextRPCErrorCause.metadata,
-            cause: nextRPCErrorCause.cause,
-            flatteningCauses: true
-          )
-          break
-        }
-      }
-
+    if let rpcErrorCause = cause as? RPCError, rpcErrorCause.code == code {
       self.code = code
-      self.message = finalMessage
-      self.metadata = finalMetadata
-      self.cause = nextCause
+      self.message = message + " \(rpcErrorCause.message)"
+      var mergedMetadata = metadata
+      mergedMetadata.add(contentsOf: rpcErrorCause.metadata)
+      self.metadata = mergedMetadata
+      self.cause = rpcErrorCause.cause
+    } else {
+      self.code = code
+      self.message = message
+      self.metadata = metadata
+      self.cause = cause
+    }
+  }
+
+  /// Create a new RPC error. If the given `cause` shares the same `code`, then it will be flattened
+  /// into a single error, by merging the messages and metadata.
+  ///
+  /// - Parameters:
+  ///   - code: The status code.
+  ///   - message: A message providing additional context about the code.
+  ///   - metadata: Any metadata to attach to the error.
+  ///   - cause: An underlying ``RPCError`` which led to this error being thrown.
+  public init(
+    code: Code,
+    message: String,
+    metadata: Metadata = [:],
+    cause: RPCError
+  ) {
+    if cause.code == code {
+      self.code = code
+      self.message = message + " \(cause.message)"
+      var mergedMetadata = metadata
+      mergedMetadata.add(contentsOf: cause.metadata)
+      self.metadata = mergedMetadata
+      self.cause = cause.cause
     } else {
       self.code = code
       self.message = message
