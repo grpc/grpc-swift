@@ -319,7 +319,7 @@ struct PathLike: CustomStringConvertible {
     #if compiler(<6.0)
     return String(describing: self.value)
     #elseif canImport(Darwin)
-    return self.value.path()
+    return self.value.path(percentEncoded: false)
     #else
     return self.value.path
     #endif
