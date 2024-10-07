@@ -170,7 +170,7 @@ public struct Metadata: Sendable, Hashable {
   internal mutating func addValue(_ value: Value, forKey key: String) {
     self.elements.append(.init(key: key, value: value))
   }
-  
+
   /// Add the contents of a `Sequence` of key-value pairs to this `Metadata` instance.
   ///
   /// - Parameter other: the `Sequence` whose key-value pairs should be added into this `Metadata` instance.

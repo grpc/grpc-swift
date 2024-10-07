@@ -270,14 +270,16 @@ struct MetadataTests {
       self.otherMetadata.addString("value1-2", forKey: "key1")
       self.metadata.add(contentsOf: self.otherMetadata)
 
-      #expect(self.metadata == [
-        "key1": "value1-1",
-        "key2": "value2",
-        "key3": "value3",
-        "key4": "value4",
-        "key5": "value5",
-        "key1": "value1-2",
-      ])
+      #expect(
+        self.metadata == [
+          "key1": "value1-1",
+          "key2": "value2",
+          "key3": "value3",
+          "key4": "value4",
+          "key5": "value5",
+          "key1": "value1-2",
+        ]
+      )
     }
 
     @Test("Where key is already present with same value")
@@ -285,27 +287,31 @@ struct MetadataTests {
       self.otherMetadata.addString("value1-1", forKey: "key1")
       self.metadata.add(contentsOf: self.otherMetadata)
 
-      #expect(self.metadata == [
-        "key1": "value1-1",
-        "key2": "value2",
-        "key3": "value3",
-        "key4": "value4",
-        "key5": "value5",
-        "key1": "value1-1",
-      ])
+      #expect(
+        self.metadata == [
+          "key1": "value1-1",
+          "key2": "value2",
+          "key3": "value3",
+          "key4": "value4",
+          "key5": "value5",
+          "key1": "value1-1",
+        ]
+      )
     }
 
     @Test("Where key is not already present")
     mutating func mergeWhereKeyIsNotAlreadyPresent() async throws {
       self.metadata.add(contentsOf: self.otherMetadata)
 
-      #expect(self.metadata == [
-        "key1": "value1-1",
-        "key2": "value2",
-        "key3": "value3",
-        "key4": "value4",
-        "key5": "value5"
-      ])
+      #expect(
+        self.metadata == [
+          "key1": "value1-1",
+          "key2": "value2",
+          "key3": "value3",
+          "key4": "value4",
+          "key5": "value5",
+        ]
+      )
     }
   }
 }
