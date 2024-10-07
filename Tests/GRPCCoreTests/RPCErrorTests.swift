@@ -21,14 +21,17 @@ struct RPCErrorTests {
   @Test("Custom String Convertible")
   func testCustomStringConvertible() {
     #expect(String(describing: RPCError(code: .dataLoss, message: "")) == #"dataLoss: """#)
-    #expect(String(describing: RPCError(code: .unknown, message: "message")) == #"unknown: "message""#)
-    #expect(String(describing: RPCError(code: .aborted, message: "message")) == #"aborted: "message""#)
+    #expect(
+      String(describing: RPCError(code: .unknown, message: "message")) == #"unknown: "message""#
+    )
+    #expect(
+      String(describing: RPCError(code: .aborted, message: "message")) == #"aborted: "message""#
+    )
 
     struct TestError: Error {}
     #expect(
       String(describing: RPCError(code: .aborted, message: "message", cause: TestError()))
-      ==
-      #"aborted: "message" (cause: "TestError()")"#
+        == #"aborted: "message" (cause: "TestError()")"#
     )
   }
 
@@ -71,7 +74,7 @@ struct RPCErrorTests {
       (Status.Code.internalError, RPCError.Code.internalError),
       (Status.Code.unavailable, RPCError.Code.unavailable),
       (Status.Code.dataLoss, RPCError.Code.dataLoss),
-      (Status.Code.unauthenticated, RPCError.Code.unauthenticated)
+      (Status.Code.unauthenticated, RPCError.Code.unauthenticated),
     ]
   )
   func testErrorCodeFromStatusCode(statusCode: Status.Code, rpcErrorCode: RPCError.Code?) throws {
@@ -82,59 +85,56 @@ struct RPCErrorTests {
   func testEquatableConformance() {
     #expect(
       RPCError(code: .cancelled, message: "")
-      ==
-      RPCError(code: .cancelled, message: "")
+        == RPCError(code: .cancelled, message: "")
     )
 
     #expect(
       RPCError(code: .cancelled, message: "message")
-      ==
-      RPCError(code: .cancelled, message: "message")
+        == RPCError(code: .cancelled, message: "message")
     )
 
     #expect(
       RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
-      ==
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
+        == RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
     )
 
     #expect(
       RPCError(code: .cancelled, message: "")
-      !=
-      RPCError(code: .cancelled, message: "message")
+        != RPCError(code: .cancelled, message: "message")
     )
 
     #expect(
       RPCError(code: .cancelled, message: "message")
-      !=
-      RPCError(code: .unknown, message: "message")
+        != RPCError(code: .unknown, message: "message")
     )
 
     #expect(
       RPCError(code: .cancelled, message: "message", metadata: ["foo": "bar"])
-      !=
-      RPCError(code: .cancelled, message: "message", metadata: ["foo": "baz"])
+        != RPCError(code: .cancelled, message: "message", metadata: ["foo": "baz"])
     )
   }
 
-  @Test("Status Code Raw Values", arguments: [
-    (RPCError.Code.cancelled, 1),
-    (.unknown, 2),
-    (.invalidArgument, 3),
-    (.deadlineExceeded, 4),
-    (.notFound, 5),
-    (.alreadyExists, 6),
-    (.permissionDenied, 7),
-    (.resourceExhausted, 8),
-    (.failedPrecondition, 9),
-    (.aborted, 10),
-    (.outOfRange, 11),
-    (.unimplemented, 12),
-    (.internalError, 13),
-    (.unavailable, 14),
-    (.dataLoss, 15),
-    (.unauthenticated, 16),
-  ])
+  @Test(
+    "Status Code Raw Values",
+    arguments: [
+      (RPCError.Code.cancelled, 1),
+      (.unknown, 2),
+      (.invalidArgument, 3),
+      (.deadlineExceeded, 4),
+      (.notFound, 5),
+      (.alreadyExists, 6),
+      (.permissionDenied, 7),
+      (.resourceExhausted, 8),
+      (.failedPrecondition, 9),
+      (.aborted, 10),
+      (.outOfRange, 11),
+      (.unimplemented, 12),
+      (.internalError, 13),
+      (.unavailable, 14),
+      (.dataLoss, 15),
+      (.unauthenticated, 16),
+    ]
+  )
   func testStatusCodeRawValues(statusCode: RPCError.Code, rawValue: Int) {
     #expect(statusCode.rawValue == rawValue, "\(statusCode) had unexpected raw value")
   }
@@ -145,11 +145,20 @@ struct RPCErrorTests {
     let error2 = RPCError(code: .unknown, message: "Error 2.", cause: error1)
     let error3 = RPCError(code: .dataLoss, message: "Error 3.", cause: error2)
     let error4 = RPCError(code: .aborted, message: "Error 4.", cause: error3)
-    let error5 = RPCError(code: .aborted, message: "Error 5.", cause: error4, flatteningCauses: true)
+    let error5 = RPCError(
+      code: .aborted,
+      message: "Error 5.",
+      cause: error4,
+      flatteningCauses: true
+    )
 
     let unknownMerged = RPCError(code: .unknown, message: "Error 2. Error 1.")
     let dataLossMerged = RPCError(code: .dataLoss, message: "Error 3.", cause: unknownMerged)
-    let abortedMerged = RPCError(code: .aborted, message: "Error 5. Error 4.", cause: dataLossMerged)
+    let abortedMerged = RPCError(
+      code: .aborted,
+      message: "Error 5. Error 4.",
+      cause: dataLossMerged
+    )
     #expect(error5 == abortedMerged)
   }
 }
