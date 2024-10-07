@@ -268,7 +268,7 @@ struct MetadataTests {
     @Test("Where key is already present with a different value")
     mutating func mergeWhereKeyIsAlreadyPresentWithDifferentValue() async throws {
       self.otherMetadata.addString("value1-2", forKey: "key1")
-      self.metadata.merge(self.otherMetadata)
+      self.metadata.add(contentsOf: self.otherMetadata)
 
       #expect(self.metadata == [
         "key1": "value1-1",
@@ -283,7 +283,7 @@ struct MetadataTests {
     @Test("Where key is already present with same value")
     mutating func mergeWhereKeyIsAlreadyPresentWithSameValue() async throws {
       self.otherMetadata.addString("value1-1", forKey: "key1")
-      self.metadata.merge(self.otherMetadata)
+      self.metadata.add(contentsOf: self.otherMetadata)
 
       #expect(self.metadata == [
         "key1": "value1-1",
@@ -297,7 +297,7 @@ struct MetadataTests {
 
     @Test("Where key is not already present")
     mutating func mergeWhereKeyIsNotAlreadyPresent() async throws {
-      self.metadata.merge(self.otherMetadata)
+      self.metadata.add(contentsOf: self.otherMetadata)
 
       #expect(self.metadata == [
         "key1": "value1-1",

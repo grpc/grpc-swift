@@ -171,13 +171,11 @@ public struct Metadata: Sendable, Hashable {
     self.elements.append(.init(key: key, value: value))
   }
   
-  /// Merge another instance of `Metadata` into this one.
+  /// Add the contents of a `Sequence` of key-value pairs to this `Metadata` instance.
   ///
-  /// - Parameter other: the `Metadata` which key-value pairs should be merged into this one.
-  public mutating func merge(_ other: Metadata) {
-    for (key, value) in other {
-      self.addValue(value, forKey: key)
-    }
+  /// - Parameter other: the `Sequence` whose key-value pairs should be added into this `Metadata` instance.
+  public mutating func add(contentsOf other: some Sequence<Element>) {
+    self.elements.append(contentsOf: other.map(KeyValuePair.init))
   }
 
   /// Removes all values associated with the given key.
