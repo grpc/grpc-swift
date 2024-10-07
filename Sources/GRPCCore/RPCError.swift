@@ -58,7 +58,7 @@ public struct RPCError: Sendable, Hashable, Error {
       while let nextRPCErrorCause = nextCause as? RPCError {
         if code == nextRPCErrorCause.code {
           finalMessage = finalMessage + " \(nextRPCErrorCause.message)"
-          finalMetadata.merge(nextRPCErrorCause.metadata)
+          finalMetadata.add(contentsOf: nextRPCErrorCause.metadata)
           nextCause = nextRPCErrorCause.cause
         } else {
           nextCause = RPCError(

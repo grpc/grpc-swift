@@ -39,19 +39,17 @@ struct RPCErrorTests {
     #expect(RPCError(status: status) == nil)
 
     status.code = .invalidArgument
-    var error = RPCError(status: status)
-    try #require(error != nil)
-    #expect(error!.code == .invalidArgument)
-    #expect(error!.message == "")
-    #expect(error!.metadata == [:])
+    var error = try #require(RPCError(status: status))
+    #expect(error.code == .invalidArgument)
+    #expect(error.message == "")
+    #expect(error.metadata == [:])
 
     status.code = .cancelled
     status.message = "an error message"
-    error = RPCError(status: status)
-    try #require(error != nil)
-    #expect(error!.code == .cancelled)
-    #expect(error!.message == "an error message")
-    #expect(error!.metadata == [:])
+    error = try #require(RPCError(status: status))
+    #expect(error.code == .cancelled)
+    #expect(error.message == "an error message")
+    #expect(error.metadata == [:])
   }
 
   @Test(
