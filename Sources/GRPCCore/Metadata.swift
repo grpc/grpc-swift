@@ -178,6 +178,13 @@ public struct Metadata: Sendable, Hashable {
     self.elements.append(contentsOf: other.map(KeyValuePair.init))
   }
 
+  /// Add the contents of another `Metadata` to this instance.
+  ///
+  /// - Parameter other: the `Metadata` whose key-value pairs should be added into this one.
+  public mutating func add(contentsOf other: Metadata) {
+    self.elements.append(contentsOf: other.elements)
+  }
+
   /// Removes all values associated with the given key.
   ///
   /// - Parameter key: The key for which all values should be removed.
