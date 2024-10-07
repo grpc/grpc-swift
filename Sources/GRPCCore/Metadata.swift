@@ -171,6 +171,20 @@ public struct Metadata: Sendable, Hashable {
     self.elements.append(.init(key: key, value: value))
   }
 
+  /// Add the contents of a `Sequence` of key-value pairs to this `Metadata` instance.
+  ///
+  /// - Parameter other: the `Sequence` whose key-value pairs should be added into this `Metadata` instance.
+  public mutating func add(contentsOf other: some Sequence<Element>) {
+    self.elements.append(contentsOf: other.map(KeyValuePair.init))
+  }
+
+  /// Add the contents of another `Metadata` to this instance.
+  ///
+  /// - Parameter other: the `Metadata` whose key-value pairs should be added into this one.
+  public mutating func add(contentsOf other: Metadata) {
+    self.elements.append(contentsOf: other.elements)
+  }
+
   /// Removes all values associated with the given key.
   ///
   /// - Parameter key: The key for which all values should be removed.
