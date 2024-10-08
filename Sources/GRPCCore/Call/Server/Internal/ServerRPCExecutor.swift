@@ -119,43 +119,29 @@ struct ServerRPCExecutor {
       _ context: ServerContext
     ) async throws -> StreamingServerResponse<Output>
   ) async {
-    await withTaskGroup(of: ServerExecutorTask.self) { group in
+    await withTaskGroup(of: Void.self) { group in
       group.addTask {
-        let result = await Result {
+        do {
           try await Task.sleep(for: timeout, clock: .continuous)
-        }
-        return .timedOut(result)
-      }
-
-      group.addTask {
-        await Self._processRPC(
-          context: context,
-          metadata: metadata,
-          inbound: inbound,
-          outbound: outbound,
-          deserializer: deserializer,
-          serializer: serializer,
-          interceptors: interceptors,
-          handler: handler
-        )
-        return .executed
-      }
-
-      while let next = await group.next() {
-        switch next {
-        case .timedOut(.success):
-          // Timeout expired; cancel the work.
-          group.cancelAll()
-
-        case .timedOut(.failure):
-          // Timeout failed (because it was cancelled). Wait for more tasks to finish.
-          ()
-
-        case .executed:
-          // The work finished. Cancel any remaining tasks.
-          group.cancelAll()
+          context.cancellation.cancel()
+        } catch {
+          ()  // Only cancel the RPC if the timeout completes.
         }
       }
+
+      await Self._processRPC(
+        context: context,
+        metadata: metadata,
+        inbound: inbound,
+        outbound: outbound,
+        deserializer: deserializer,
+        serializer: serializer,
+        interceptors: interceptors,
+        handler: handler
+      )
+
+      // Cancel the timeout
+      group.cancelAll()
     }
   }
 

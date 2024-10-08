@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-extension Result where Failure == any Error {
+extension Result {
   /// Like `Result(catching:)`, but `async`.
   ///
   /// - Parameter body: An `async` closure to catch the result of.
   @inlinable
-  init(catching body: () async throws -> Success) async {
+  init(catching body: () async throws(Failure) -> Success) async {
     do {
       self = .success(try await body())
     } catch {

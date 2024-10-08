@@ -20,24 +20,29 @@ import XCTest
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input: Sendable, Output: Sendable>: Sendable {
     let fn:
-      @Sendable (StreamingServerRequest<Input>) async throws -> StreamingServerResponse<Output>
+      @Sendable (
+        _ request: StreamingServerRequest<Input>,
+        _ context: ServerContext
+      ) async throws -> StreamingServerResponse<Output>
 
     init(
       _ fn: @escaping @Sendable (
-        StreamingServerRequest<Input>
+        _ request: StreamingServerRequest<Input>,
+        _ context: ServerContext
       ) async throws -> StreamingServerResponse<Output>
     ) {
       self.fn = fn
     }
 
     func handle(
-      _ request: StreamingServerRequest<Input>
+      _ request: StreamingServerRequest<Input>,
+      _ context: ServerContext
     ) async throws -> StreamingServerResponse<Output> {
-      try await self.fn(request)
+      try await self.fn(request, context)
     }
 
     static func throwing(_ error: any Error) -> Self {
-      return Self { _ in throw error }
+      return Self { _, _ in throw error }
     }
   }
 
@@ -51,7 +56,8 @@ struct ServerRPCExecutorTestHarness {
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: @escaping @Sendable (
-      StreamingServerRequest<Input>
+      StreamingServerRequest<Input>,
+      ServerContext
     ) async throws -> StreamingServerResponse<Output>,
     producer: @escaping @Sendable (
       RPCWriter<RPCRequestPart>.Closable
@@ -93,21 +99,27 @@ struct ServerRPCExecutorTestHarness {
       }
 
       group.addTask {
-        let context = ServerContext(descriptor: MethodDescriptor(service: "foo", method: "bar"))
-        await ServerRPCExecutor.execute(
-          context: context,
-          stream: RPCStream(
-            descriptor: context.descriptor,
-            inbound: RPCAsyncSequence(wrapping: input.stream),
-            outbound: RPCWriter.Closable(wrapping: output.continuation)
-          ),
-          deserializer: deserializer,
-          serializer: serializer,
-          interceptors: self.interceptors,
-          handler: { stream, context in
-            try await handler.handle(stream)
-          }
-        )
+        await withServerContextRPCCancellationHandle { cancellation in
+          let context = ServerContext(
+            descriptor: MethodDescriptor(service: "foo", method: "bar"),
+            cancellation: cancellation
+          )
+
+          await ServerRPCExecutor.execute(
+            context: context,
+            stream: RPCStream(
+              descriptor: context.descriptor,
+              inbound: RPCAsyncSequence(wrapping: input.stream),
+              outbound: RPCWriter.Closable(wrapping: output.continuation)
+            ),
+            deserializer: deserializer,
+            serializer: serializer,
+            interceptors: self.interceptors,
+            handler: { stream, context in
+              try await handler.handle(stream, context)
+            }
+          )
+        }
       }
 
       try await group.waitForAll()
@@ -135,7 +147,7 @@ struct ServerRPCExecutorTestHarness {
 
 extension ServerRPCExecutorTestHarness.ServerHandler where Input == Output {
   static var echo: Self {
-    return Self { request in
+    return Self { request, context in
       return StreamingServerResponse(metadata: request.metadata) { writer in
         try await writer.write(contentsOf: request.messages)
         return [:]
