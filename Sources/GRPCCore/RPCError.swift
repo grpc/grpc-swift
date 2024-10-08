@@ -49,13 +49,13 @@ public struct RPCError: Sendable, Hashable, Error {
     metadata: Metadata = [:],
     cause: (any Error)? = nil
   ) {
-    if let rpcErrorCause = cause as? RPCError, rpcErrorCause.code == code {
-      self.code = code
-      self.message = message + " \(rpcErrorCause.message)"
-      var mergedMetadata = metadata
-      mergedMetadata.add(contentsOf: rpcErrorCause.metadata)
-      self.metadata = mergedMetadata
-      self.cause = rpcErrorCause.cause
+    if let rpcErrorCause = cause as? RPCError {
+      self = .init(
+        code: code,
+        message: message,
+        metadata: metadata,
+        cause: rpcErrorCause
+      )
     } else {
       self.code = code
       self.message = message
