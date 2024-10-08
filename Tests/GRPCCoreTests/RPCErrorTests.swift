@@ -148,8 +148,7 @@ struct RPCErrorTests {
     let error5 = RPCError(
       code: .aborted,
       message: "Error 5.",
-      cause: error4,
-      flatteningCauses: true
+      cause: error4
     )
 
     let unknownMerged = RPCError(code: .unknown, message: "Error 2. Error 1.")
@@ -160,5 +159,34 @@ struct RPCErrorTests {
       cause: dataLossMerged
     )
     #expect(error5 == abortedMerged)
+  }
+
+  @Test("Causes of errors with different status codes aren't flattened")
+  func testDifferentStatusCodeAreNotFlattened() throws {
+    let error1 = RPCError(code: .unknown, message: "Error 1.")
+    let error2 = RPCError(code: .dataLoss, message: "Error 2.", cause: error1)
+    let error3 = RPCError(code: .alreadyExists, message: "Error 3.", cause: error2)
+    let error4 = RPCError(code: .aborted, message: "Error 4.", cause: error3)
+    let error5 = RPCError(
+      code: .deadlineExceeded,
+      message: "Error 5.",
+      cause: error4
+    )
+
+    #expect(error5.code == .deadlineExceeded)
+    #expect(error5.message == "Error 5.")
+    let wrappedError4 = try #require(error5.cause as? RPCError)
+    #expect(wrappedError4.code == .aborted)
+    #expect(wrappedError4.message == "Error 4.")
+    let wrappedError3 = try #require(wrappedError4.cause as? RPCError)
+    #expect(wrappedError3.code == .alreadyExists)
+    #expect(wrappedError3.message == "Error 3.")
+    let wrappedError2 = try #require(wrappedError3.cause as? RPCError)
+    #expect(wrappedError2.code == .dataLoss)
+    #expect(wrappedError2.message == "Error 2.")
+    let wrappedError1 = try #require(wrappedError2.cause as? RPCError)
+    #expect(wrappedError1.code == .unknown)
+    #expect(wrappedError1.message == "Error 1.")
+    #expect(wrappedError1.cause == nil)
   }
 }
