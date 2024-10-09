@@ -93,8 +93,10 @@ public func withRPCCancellationHandler<Result, Failure: Error>(
 /// Provides scoped access to a server RPC cancellation handle.
 ///
 /// The cancellation handle should be passed to a ``ServerContext`` and last
-/// the duration of the RPC. This function is intended for use when implementing
-/// a ``ServerTransport``.
+/// the duration of the RPC.
+///
+/// - Important: This function is intended for use when implementing
+///   a ``ServerTransport``.
 ///
 /// If you want to be notified about RPCs being cancelled
 /// use ``withRPCCancellationHandler(operation:onCancelRPC:)``.
