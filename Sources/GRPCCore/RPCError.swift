@@ -35,18 +35,62 @@ public struct RPCError: Sendable, Hashable, Error {
   /// The original error which led to this error being thrown.
   public var cause: (any Error)?
 
-  /// Create a new RPC error.
+  /// Create a new RPC error. If the given `cause` is also an ``RPCError`` sharing the same `code`,
+  /// then they will be flattened into a single error, by merging the messages and metadata.
   ///
   /// - Parameters:
   ///   - code: The status code.
   ///   - message: A message providing additional context about the code.
   ///   - metadata: Any metadata to attach to the error.
   ///   - cause: An underlying error which led to this error being thrown.
-  public init(code: Code, message: String, metadata: Metadata = [:], cause: (any Error)? = nil) {
-    self.code = code
-    self.message = message
-    self.metadata = metadata
-    self.cause = cause
+  public init(
+    code: Code,
+    message: String,
+    metadata: Metadata = [:],
+    cause: (any Error)? = nil
+  ) {
+    if let rpcErrorCause = cause as? RPCError {
+      self = .init(
+        code: code,
+        message: message,
+        metadata: metadata,
+        cause: rpcErrorCause
+      )
+    } else {
+      self.code = code
+      self.message = message
+      self.metadata = metadata
+      self.cause = cause
+    }
+  }
+
+  /// Create a new RPC error. If the given `cause` shares the same `code`, then it will be flattened
+  /// into a single error, by merging the messages and metadata.
+  ///
+  /// - Parameters:
+  ///   - code: The status code.
+  ///   - message: A message providing additional context about the code.
+  ///   - metadata: Any metadata to attach to the error.
+  ///   - cause: An underlying ``RPCError`` which led to this error being thrown.
+  public init(
+    code: Code,
+    message: String,
+    metadata: Metadata = [:],
+    cause: RPCError
+  ) {
+    if cause.code == code {
+      self.code = code
+      self.message = message + " \(cause.message)"
+      var mergedMetadata = metadata
+      mergedMetadata.add(contentsOf: cause.metadata)
+      self.metadata = mergedMetadata
+      self.cause = cause.cause
+    } else {
+      self.code = code
+      self.message = message
+      self.metadata = metadata
+      self.cause = cause
+    }
   }
 
   /// Create a new RPC error from the provided ``Status``.
