@@ -83,7 +83,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     try await harness.execute(
       deserializer: JSONDeserializer<String>(),
       serializer: JSONSerializer<String>()
-    ) { request in
+    ) { request, _ in
       let messages = try await request.messages.collect()
       XCTAssertEqual(messages, ["hello"])
       return StreamingServerResponse(metadata: request.metadata) { writer in
@@ -112,7 +112,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     try await harness.execute(
       deserializer: JSONDeserializer<String>(),
       serializer: JSONSerializer<String>()
-    ) { request in
+    ) { request, _ in
       let messages = try await request.messages.collect()
       XCTAssertEqual(messages, ["hello", "world"])
       return StreamingServerResponse(metadata: request.metadata) { writer in
@@ -144,7 +144,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     try await harness.execute(
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
-    ) { request in
+    ) { request, _ in
       return StreamingServerResponse(metadata: request.metadata) { _ in
         return ["bar": "baz"]
       }
@@ -235,15 +235,9 @@ final class ServerRPCExecutorTests: XCTestCase {
     try await harness.execute(
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
-    ) { request in
-      do {
-        try await Task.sleep(until: .now.advanced(by: .seconds(180)), clock: .continuous)
-      } catch is CancellationError {
-        throw RPCError(code: .cancelled, message: "Sleep was cancelled")
-      }
-
-      XCTFail("Server handler should've been cancelled by timeout.")
-      return StreamingServerResponse(error: RPCError(code: .failedPrecondition, message: ""))
+    ) { request, context in
+      try await context.cancellation.cancelled
+      throw RPCError(code: .cancelled, message: "Cancelled from server handler")
     } producer: { inbound in
       try await inbound.write(.metadata(["grpc-timeout": "1000n"]))
       await inbound.finish()
@@ -251,7 +245,7 @@ final class ServerRPCExecutorTests: XCTestCase {
       let part = try await outbound.collect().first
       XCTAssertStatus(part) { status, _ in
         XCTAssertEqual(status.code, .cancelled)
-        XCTAssertEqual(status.message, "Sleep was cancelled")
+        XCTAssertEqual(status.message, "Cancelled from server handler")
       }
     }
   }
@@ -268,7 +262,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     try await harness.execute(
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
-    ) { request in
+    ) { request, _ in
       XCTFail("Unexpected request")
       return StreamingServerResponse(
         of: [UInt8].self,

@@ -19,8 +19,17 @@ public struct ServerContext: Sendable {
   /// A description of the method being called.
   public var descriptor: MethodDescriptor
 
+  /// A handle for checking the cancellation status of an RPC.
+  public var cancellation: RPCCancellationHandle
+
   /// Create a new server context.
-  public init(descriptor: MethodDescriptor) {
+  ///
+  /// - Parameters:
+  ///   - descriptor: A description of the method being called.
+  ///   - cancellation: A cancellation handle. You can create a cancellation handle
+  ///     using ``withServerContextRPCCancellationHandle(_:)``.
+  public init(descriptor: MethodDescriptor, cancellation: RPCCancellationHandle) {
     self.descriptor = descriptor
+    self.cancellation = cancellation
   }
 }
