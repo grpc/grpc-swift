@@ -69,7 +69,7 @@ if "$lint"; then
 
     To fix, run the following command:
 
-    % $THIS_SCRIPT -f
+    % $here/format.sh -f
     "
     exit "${SWIFT_FORMAT_RC}"
   fi
