@@ -36,18 +36,18 @@ extension InProcessTransport {
     private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
 
     private struct State: Sendable {
-      private var id: UInt64
+      private var _nextID: UInt64
       private var handles: [UInt64: ServerContext.RPCCancellationHandle]
       private var isShutdown: Bool
 
       private mutating func nextID() -> UInt64 {
-        let id = self.id
-        self.id &+= 1
+        let id = self._nextID
+        self._nextID &+= 1
         return id
       }
 
       init() {
-        self.id = 0
+        self._nextID = 0
         self.handles = [:]
         self.isShutdown = false
       }
