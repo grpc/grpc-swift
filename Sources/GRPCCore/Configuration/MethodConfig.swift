@@ -393,21 +393,6 @@ private func validateMaxAttempts(_ value: Int) throws -> Int {
   return min(value, 5)
 }
 
-extension Duration {
-  fileprivate init(googleProtobufDuration duration: String) throws {
-    guard duration.utf8.last == UInt8(ascii: "s"),
-      let fractionalSeconds = Double(duration.dropLast())
-    else {
-      throw RuntimeError(code: .invalidArgument, message: "Invalid google.protobuf.duration")
-    }
-
-    let seconds = fractionalSeconds.rounded(.down)
-    let attoseconds = (fractionalSeconds - seconds) / 1e18
-
-    self.init(secondsComponent: Int64(seconds), attosecondsComponent: Int64(attoseconds))
-  }
-}
-
 extension MethodConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case name
@@ -506,12 +491,12 @@ extension RetryPolicy: Codable {
     let maxAttempts = try container.decode(Int.self, forKey: .maxAttempts)
     self.maxAttempts = try validateMaxAttempts(maxAttempts)
 
-    let initialBackoff = try container.decode(String.self, forKey: .initialBackoff)
-    self.initialBackoff = try Duration(googleProtobufDuration: initialBackoff)
+    let initialBackoff = try container.decode(GoogleProtobufDuration.self, forKey: .initialBackoff)
+    self.initialBackoff = initialBackoff.duration
     try Self.validateInitialBackoff(self.initialBackoff)
 
-    let maxBackoff = try container.decode(String.self, forKey: .maxBackoff)
-    self.maxBackoff = try Duration(googleProtobufDuration: maxBackoff)
+    let maxBackoff = try container.decode(GoogleProtobufDuration.self, forKey: .maxBackoff)
+    self.maxBackoff = maxBackoff.duration
     try Self.validateMaxBackoff(self.maxBackoff)
 
     self.backoffMultiplier = try container.decode(Double.self, forKey: .backoffMultiplier)
@@ -551,8 +536,8 @@ extension HedgingPolicy: Codable {
     let maxAttempts = try container.decode(Int.self, forKey: .maxAttempts)
     self.maxAttempts = try validateMaxAttempts(maxAttempts)
 
-    let delay = try container.decode(String.self, forKey: .hedgingDelay)
-    self.hedgingDelay = try Duration(googleProtobufDuration: delay)
+    let delay = try container.decode(GoogleProtobufDuration.self, forKey: .hedgingDelay)
+    self.hedgingDelay = delay.duration
 
     let statusCodes = try container.decode([GoogleRPCCode].self, forKey: .nonFatalStatusCodes)
     self.nonFatalStatusCodes = Set(statusCodes.map { $0.code })

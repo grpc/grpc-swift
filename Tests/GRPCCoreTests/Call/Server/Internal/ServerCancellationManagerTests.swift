@@ -65,7 +65,6 @@ struct ServerCancellationManagerTests {
   @Test("Remove cancellation handler")
   func removeCancellationHandler() async throws {
     let manager = ServerCancellationManager()
-    let signal = AsyncStream.makeStream(of: Void.self)
 
     let id = manager.addRPCCancelledHandler {
       Issue.record("Unexpected cancellation")

@@ -186,6 +186,7 @@ struct MethodConfigCodingTests {
         ("1s", .seconds(1)),
         ("1.000000s", .seconds(1)),
         ("0s", .zero),
+        ("0.1s", .milliseconds(100)),
         ("100.123s", .milliseconds(100_123)),
       ] as [(String, Duration)]
     )
