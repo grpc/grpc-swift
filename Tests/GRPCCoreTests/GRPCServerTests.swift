@@ -473,7 +473,7 @@ struct ServerTests {
     let allMethodsCounter = AtomicCounter()
 
     try await self.withInProcessClientConnectedToServer(
-      services: [BinaryEcho(), HelloWorld()],
+      services: [BinaryEcho()],
       interceptors: [
         .methodSpecific(
           interceptor: .requestCounter(onlyBinaryEchoGetCounter),
