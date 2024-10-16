@@ -21,10 +21,11 @@
 /// received from the transport. They are typically used for cross-cutting concerns like injecting
 /// metadata, validating messages, logging additional data, and tracing.
 ///
-/// Interceptors are registered with a client and apply to all RPCs. If you need to modify the
-/// behavior of an interceptor on a per-RPC basis then you can use the
-/// ``ClientContext/descriptor`` to determine which RPC is being called and
-/// conditionalise behavior accordingly.
+/// Interceptors are registered with the server via ``ClientInterceptorPipelineOperation``s.
+/// You may register them for all services registered with a server, for RPCs directed to specific services, or
+/// for RPCs directed to specific methods. If you need to modify the behavior of an interceptor on a
+/// per-RPC basis in more detail, then you can use the ``ClientContext/descriptor`` to determine
+/// which RPC is being called and conditionalise behavior accordingly.
 ///
 /// - TODO: Update example and documentation to show how to register an interceptor.
 ///

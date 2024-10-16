@@ -112,13 +112,18 @@ public final class GRPCClient: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
   private let transport: any ClientTransport
 
-  /// A collection of interceptors providing cross-cutting functionality to each accepted RPC.
+  private let interceptorPipeline: [ClientInterceptorPipelineOperation]
+
+  /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
+  ///
+  /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
+  /// This caching is done to avoid having to compute the applicable interceptors for each request made.
   ///
   /// The order in which interceptors are added reflects the order in which they are called. The
   /// first interceptor added will be the first interceptor to intercept each request. The last
   /// interceptor added will be the final interceptor to intercept each request before calling
   /// the appropriate handler.
-  private let interceptors: [any ClientInterceptor]
+  private let interceptorsPerMethod: Mutex<[MethodDescriptor: [any ClientInterceptor]]>
 
   /// The current state of the client.
   private let state: Mutex<State>
@@ -191,17 +196,37 @@ public final class GRPCClient: Sendable {
   ///
   /// - Parameters:
   ///   - transport: The transport used to establish a communication channel with a server.
-  ///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
+  ///   - interceptors: A collection of ``ClientInterceptor``s providing cross-cutting functionality to each
   ///       accepted RPC. The order in which interceptors are added reflects the order in which they
   ///       are called. The first interceptor added will be the first interceptor to intercept each
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
-  public init(
+  convenience public init(
     transport: some ClientTransport,
     interceptors: [any ClientInterceptor] = []
   ) {
+    self.init(
+      transport: transport,
+      interceptorPipeline: interceptors.map { .apply($0, to: .all) }
+    )
+  }
+
+  /// Creates a new client with the given transport, interceptors and configuration.
+  ///
+  /// - Parameters:
+  ///   - transport: The transport used to establish a communication channel with a server.
+  ///   - interceptorPipeline: A collection of ``ClientInterceptorPipelineOperation`` providing cross-cutting
+  ///       functionality to each accepted RPC. Only applicable interceptors from the pipeline will be applied to each RPC.
+  ///       The order in which interceptors are added reflects the order in which they are called.
+  ///       The first interceptor added will be the first interceptor to intercept each request.
+  ///       The last interceptor added will be the final interceptor to intercept each request before calling the appropriate handler.
+  public init(
+    transport: some ClientTransport,
+    interceptorPipeline: [ClientInterceptorPipelineOperation]
+  ) {
     self.transport = transport
-    self.interceptors = interceptors
+    self.interceptorPipeline = interceptorPipeline
+    self.interceptorsPerMethod = Mutex([:])
     self.state = Mutex(.notStarted)
   }
 
@@ -361,6 +386,18 @@ public final class GRPCClient: Sendable {
     var options = options
     options.formUnion(with: methodConfig)
 
+    let applicableInterceptors = self.interceptorsPerMethod.withLock {
+      if let interceptors = $0[descriptor] {
+        return interceptors
+      } else {
+        let interceptors = self.interceptorPipeline
+          .filter { $0.applies(to: descriptor) }
+          .map { $0.interceptor }
+        $0[descriptor] = interceptors
+        return interceptors
+      }
+    }
+
     return try await ClientRPCExecutor.execute(
       request: request,
       method: descriptor,
@@ -368,7 +405,7 @@ public final class GRPCClient: Sendable {
       serializer: serializer,
       deserializer: deserializer,
       transport: self.transport,
-      interceptors: self.interceptors,
+      interceptors: applicableInterceptors,
       handler: handler
     )
   }
