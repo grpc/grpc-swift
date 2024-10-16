@@ -46,9 +46,9 @@ struct ServerRPCExecutorTestHarness {
     }
   }
 
-  let interceptors: [any ServerInterceptor]
+  let interceptors: [ServerInterceptorTarget]
 
-  init(interceptors: [any ServerInterceptor] = []) {
+  init(interceptors: [ServerInterceptorTarget] = []) {
     self.interceptors = interceptors
   }
 
