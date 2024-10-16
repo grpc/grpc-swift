@@ -48,7 +48,7 @@ private import Synchronization
 /// let server = GRPCServer(
 ///   transport: inProcessTransport.server,
 ///   services: [greeter, echo],
-///   interceptors: [statsRecorder]
+///   interceptors: [.allServices(interceptor: statsRecorder)]
 /// )
 /// ```
 ///
@@ -78,13 +78,12 @@ public final class GRPCServer: Sendable {
   /// The services registered which the server is serving.
   private let router: RPCRouter
 
-  /// A collection of ``ServerInterceptor`` implementations which are applied to all accepted
-  /// RPCs.
+  /// A collection of ``ServerInterceptorTarget``s which may be applied to all accepted RPCs.
   ///
   /// RPCs are intercepted in the order that interceptors are added. That is, a request received
   /// from the client will first be intercepted by the first added interceptor followed by the
   /// second, and so on.
-  private let interceptors: [any ServerInterceptor]
+  private let interceptors: [ServerInterceptorTarget]
 
   /// The state of the server.
   private let state: Mutex<State>
@@ -152,7 +151,7 @@ public final class GRPCServer: Sendable {
   public convenience init(
     transport: any ServerTransport,
     services: [any RegistrableRPCService],
-    interceptors: [any ServerInterceptor] = []
+    interceptors: [ServerInterceptorTarget] = []
   ) {
     var router = RPCRouter()
     for service in services {
@@ -175,7 +174,7 @@ public final class GRPCServer: Sendable {
   public init(
     transport: any ServerTransport,
     router: RPCRouter,
-    interceptors: [any ServerInterceptor] = []
+    interceptors: [ServerInterceptorTarget] = []
   ) {
     self.state = Mutex(.notStarted)
     self.transport = transport

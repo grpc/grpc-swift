@@ -43,7 +43,7 @@ public struct RPCRouter: Sendable {
           RPCWriter<RPCResponsePart>.Closable
         >,
         _ context: ServerContext,
-        _ interceptors: [any ServerInterceptor]
+        _ interceptors: [ServerInterceptorTarget]
       ) async -> Void
 
     @inlinable
@@ -75,7 +75,7 @@ public struct RPCRouter: Sendable {
         RPCWriter<RPCResponsePart>.Closable
       >,
       context: ServerContext,
-      interceptors: [any ServerInterceptor]
+      interceptors: [ServerInterceptorTarget]
     ) async {
       await self._fn(stream, context, interceptors)
     }
@@ -151,7 +151,7 @@ extension RPCRouter {
       RPCWriter<RPCResponsePart>.Closable
     >,
     context: ServerContext,
-    interceptors: [any ServerInterceptor]
+    interceptors: [ServerInterceptorTarget]
   ) async {
     if let handler = self.handlers[stream.descriptor] {
       await handler.handle(stream: stream, context: context, interceptors: interceptors)
