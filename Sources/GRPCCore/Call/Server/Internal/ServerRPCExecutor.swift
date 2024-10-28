@@ -34,7 +34,7 @@ struct ServerRPCExecutor {
     >,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
-    interceptors: [ServerInterceptorTarget],
+    interceptors: [any ServerInterceptor],
     handler: @Sendable @escaping (
       _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
@@ -72,7 +72,7 @@ struct ServerRPCExecutor {
     outbound: RPCWriter<RPCResponsePart>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
-    interceptors: [ServerInterceptorTarget],
+    interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
       _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
@@ -113,7 +113,7 @@ struct ServerRPCExecutor {
     outbound: RPCWriter<RPCResponsePart>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
-    interceptors: [ServerInterceptorTarget],
+    interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
       _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
@@ -153,7 +153,7 @@ struct ServerRPCExecutor {
     outbound: RPCWriter<RPCResponsePart>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
-    interceptors: [ServerInterceptorTarget],
+    interceptors: [any ServerInterceptor],
     handler: @escaping @Sendable (
       _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
@@ -286,7 +286,7 @@ extension ServerRPCExecutor {
   static func _intercept<Input, Output>(
     request: StreamingServerRequest<Input>,
     context: ServerContext,
-    interceptors: [ServerInterceptorTarget],
+    interceptors: [any ServerInterceptor],
     finally: @escaping @Sendable (
       _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
@@ -304,7 +304,7 @@ extension ServerRPCExecutor {
   static func _intercept<Input, Output>(
     request: StreamingServerRequest<Input>,
     context: ServerContext,
-    iterator: Array<ServerInterceptorTarget>.Iterator,
+    iterator: Array<any ServerInterceptor>.Iterator,
     finally: @escaping @Sendable (
       _ request: StreamingServerRequest<Input>,
       _ context: ServerContext
@@ -313,29 +313,20 @@ extension ServerRPCExecutor {
     var iterator = iterator
 
     switch iterator.next() {
-    case .some(let interceptorTarget):
-      if interceptorTarget.applies(to: context.descriptor) {
-        let iter = iterator
-        do {
-          return try await interceptorTarget.interceptor.intercept(
-            request: request,
-            context: context
-          ) {
-            try await self._intercept(request: $0, context: $1, iterator: iter, finally: finally)
-          }
-        } catch let error as RPCError {
-          return StreamingServerResponse(error: error)
-        } catch let other {
-          let error = RPCError(code: .unknown, message: "", cause: other)
-          return StreamingServerResponse(error: error)
-        }
-      } else {
-        return try await self._intercept(
+    case .some(let interceptor):
+      let iter = iterator
+      do {
+        return try await interceptor.intercept(
           request: request,
-          context: context,
-          iterator: iterator,
-          finally: finally
-        )
+          context: context
+        ) {
+          try await self._intercept(request: $0, context: $1, iterator: iter, finally: finally)
+        }
+      } catch let error as RPCError {
+        return StreamingServerResponse(error: error)
+      } catch let other {
+        let error = RPCError(code: .unknown, message: "", cause: other)
+        return StreamingServerResponse(error: error)
       }
 
     case .none:

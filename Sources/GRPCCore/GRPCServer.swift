@@ -173,7 +173,7 @@ public final class GRPCServer: Sendable {
   public convenience init(
     transport: any ServerTransport,
     services: [any RegistrableRPCService],
-    interceptors: [ServerInterceptorTarget] = []
+    interceptors: [ServerInterceptorTarget]
   ) {
     var router = RPCRouter()
     for service in services {
@@ -218,7 +218,7 @@ public final class GRPCServer: Sendable {
   public init(
     transport: any ServerTransport,
     router: RPCRouter,
-    interceptors: [ServerInterceptorTarget] = []
+    interceptors: [ServerInterceptorTarget]
   ) {
     self.state = Mutex(.notStarted)
     self.transport = transport
@@ -249,7 +249,13 @@ public final class GRPCServer: Sendable {
 
     do {
       try await transport.listen { stream, context in
-        await self.router.handle(stream: stream, context: context, interceptors: self.interceptors)
+        await self.router.handle(
+          stream: stream,
+          context: context,
+          interceptors: self.interceptors
+            .filter { $0.applies(to: context.descriptor) }
+            .map { $0.interceptor }
+        )
       }
     } catch {
       throw RuntimeError(

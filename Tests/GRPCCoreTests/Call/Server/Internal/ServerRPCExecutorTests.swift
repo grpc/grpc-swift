@@ -259,7 +259,7 @@ final class ServerRPCExecutorTests: XCTestCase {
 
     // The interceptor skips the handler altogether.
     let harness = ServerRPCExecutorTestHarness(interceptors: [
-      .allServices(interceptor: .rejectAll(with: error))
+      .rejectAll(with: error)
     ])
     try await harness.execute(
       deserializer: IdentityDeserializer(),
@@ -290,8 +290,8 @@ final class ServerRPCExecutorTests: XCTestCase {
     // The interceptor skips the handler altogether.
     let harness = ServerRPCExecutorTestHarness(
       interceptors: [
-        .allServices(interceptor: .requestCounter(counter1)),
-        .allServices(interceptor: .requestCounter(counter2)),
+        .requestCounter(counter1),
+        .requestCounter(counter2),
       ]
     )
 
@@ -314,9 +314,9 @@ final class ServerRPCExecutorTests: XCTestCase {
     // The interceptor skips the handler altogether.
     let harness = ServerRPCExecutorTestHarness(
       interceptors: [
-        .allServices(interceptor: .requestCounter(counter1)),
-        .allServices(interceptor: .rejectAll(with: RPCError(code: .unavailable, message: ""))),
-        .allServices(interceptor: .requestCounter(counter2)),
+        .requestCounter(counter1),
+        .rejectAll(with: RPCError(code: .unavailable, message: "")),
+        .requestCounter(counter2),
       ]
     )
 
@@ -336,7 +336,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testThrowingInterceptor() async throws {
     let harness = ServerRPCExecutorTestHarness(
       interceptors: [
-        .allServices(interceptor: .throwError(RPCError(code: .unavailable, message: "Unavailable")))
+        .throwError(RPCError(code: .unavailable, message: "Unavailable"))
       ]
     )
 
