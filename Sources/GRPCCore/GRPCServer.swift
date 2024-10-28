@@ -151,6 +151,28 @@ public final class GRPCServer: Sendable {
   public convenience init(
     transport: any ServerTransport,
     services: [any RegistrableRPCService],
+    interceptors: [any ServerInterceptor] = []
+  ) {
+    self.init(
+      transport: transport,
+      services: services,
+      interceptors: interceptors.map { .allServices(interceptor: $0) }
+    )
+  }
+
+  /// Creates a new server with no resources.
+  ///
+  /// - Parameters:
+  ///   - transport: The transport the server should listen on.
+  ///   - services: Services offered by the server.
+  ///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
+  ///       accepted RPC. The order in which interceptors are added reflects the order in which they
+  ///       are called. The first interceptor added will be the first interceptor to intercept each
+  ///       request. The last interceptor added will be the final interceptor to intercept each
+  ///       request before calling the appropriate handler.
+  public convenience init(
+    transport: any ServerTransport,
+    services: [any RegistrableRPCService],
     interceptors: [ServerInterceptorTarget] = []
   ) {
     var router = RPCRouter()
@@ -159,6 +181,28 @@ public final class GRPCServer: Sendable {
     }
 
     self.init(transport: transport, router: router, interceptors: interceptors)
+  }
+
+  /// Creates a new server with no resources.
+  ///
+  /// - Parameters:
+  ///   - transport: The transport the server should listen on.
+  ///   - router: A ``RPCRouter`` used by the server to route accepted streams to method handlers.
+  ///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
+  ///       accepted RPC. The order in which interceptors are added reflects the order in which they
+  ///       are called. The first interceptor added will be the first interceptor to intercept each
+  ///       request. The last interceptor added will be the final interceptor to intercept each
+  ///       request before calling the appropriate handler.
+  public convenience init(
+    transport: any ServerTransport,
+    router: RPCRouter,
+    interceptors: [any ServerInterceptor] = []
+  ) {
+    self.init(
+      transport: transport,
+      router: router,
+      interceptors: interceptors.map { .allServices(interceptor: $0)}
+    )
   }
 
   /// Creates a new server with no resources.
