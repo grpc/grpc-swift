@@ -78,13 +78,6 @@ public final class GRPCServer: Sendable {
   /// The services registered which the server is serving.
   private let router: RPCRouter
 
-  /// A collection of ``ServerInterceptorOperation``s which may be applied to all accepted RPCs.
-  ///
-  /// RPCs are intercepted in the order that interceptors are added. That is, a request received
-  /// from the client will first be intercepted by the first added interceptor followed by the
-  /// second, and so on.
-  private let interceptors: [ServerInterceptorOperation]
-
   /// The state of the server.
   private let state: Mutex<State>
 
@@ -224,10 +217,12 @@ public final class GRPCServer: Sendable {
     router: RPCRouter,
     interceptorPipeline: [ServerInterceptorOperation]
   ) {
+    var router = router
+    router.registerInterceptors(pipeline: interceptorPipeline)
+
     self.state = Mutex(.notStarted)
     self.transport = transport
     self.router = router
-    self.interceptors = interceptorPipeline
   }
 
   /// Starts the server and runs until the registered transport has closed.
@@ -255,10 +250,7 @@ public final class GRPCServer: Sendable {
       try await transport.listen { stream, context in
         await self.router.handle(
           stream: stream,
-          context: context,
-          interceptors: self.interceptors
-            .filter { $0.applies(to: context.descriptor) }
-            .map { $0.interceptor }
+          context: context
         )
       }
     } catch {

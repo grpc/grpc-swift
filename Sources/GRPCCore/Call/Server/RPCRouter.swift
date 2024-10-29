@@ -82,7 +82,7 @@ public struct RPCRouter: Sendable {
   }
 
   @usableFromInline
-  private(set) var handlers: [MethodDescriptor: RPCHandler]
+  private(set) var handlers: [MethodDescriptor: (handler: RPCHandler, interceptors: [any ServerInterceptor])]
 
   /// Creates a new router with no methods registered.
   public init() {
@@ -126,12 +126,25 @@ public struct RPCRouter: Sendable {
       _ context: ServerContext
     ) async throws -> StreamingServerResponse<Output>
   ) {
-    self.handlers[descriptor] = RPCHandler(
+    let handler = RPCHandler(
       method: descriptor,
       deserializer: deserializer,
       serializer: serializer,
       handler: handler
     )
+    self.handlers[descriptor] = (handler, [])
+  }
+
+  @inlinable
+  public mutating func registerInterceptors(
+    pipeline: [ServerInterceptorOperation]
+  ) {
+    for descriptor in self.handlers.keys {
+      let applicableOperations = pipeline.filter { $0.applies(to: descriptor) }
+      if !applicableOperations.isEmpty {
+        self.handlers[descriptor]?.interceptors = applicableOperations.map { $0.interceptor }
+      }
+    }
   }
 
   /// Removes any handler registered for the specified method.
@@ -150,10 +163,9 @@ extension RPCRouter {
       RPCAsyncSequence<RPCRequestPart, any Error>,
       RPCWriter<RPCResponsePart>.Closable
     >,
-    context: ServerContext,
-    interceptors: [any ServerInterceptor]
+    context: ServerContext
   ) async {
-    if let handler = self.handlers[stream.descriptor] {
+    if let (handler, interceptors) = self.handlers[stream.descriptor] {
       await handler.handle(stream: stream, context: context, interceptors: interceptors)
     } else {
       // If this throws then the stream must be closed which we can't do anything about, so ignore
