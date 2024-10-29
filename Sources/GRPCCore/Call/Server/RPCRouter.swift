@@ -82,7 +82,8 @@ public struct RPCRouter: Sendable {
   }
 
   @usableFromInline
-  private(set) var handlers: [MethodDescriptor: (handler: RPCHandler, interceptors: [any ServerInterceptor])]
+  private(set) var handlers:
+    [MethodDescriptor: (handler: RPCHandler, interceptors: [any ServerInterceptor])]
 
   /// Creates a new router with no methods registered.
   public init() {
