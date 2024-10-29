@@ -78,12 +78,12 @@ public final class GRPCServer: Sendable {
   /// The services registered which the server is serving.
   private let router: RPCRouter
 
-  /// A collection of ``ServerInterceptorTarget``s which may be applied to all accepted RPCs.
+  /// A collection of ``ServerInterceptorOperation``s which may be applied to all accepted RPCs.
   ///
   /// RPCs are intercepted in the order that interceptors are added. That is, a request received
   /// from the client will first be intercepted by the first added interceptor followed by the
   /// second, and so on.
-  private let interceptors: [ServerInterceptorTarget]
+  private let interceptors: [ServerInterceptorOperation]
 
   /// The state of the server.
   private let state: Mutex<State>
@@ -156,7 +156,7 @@ public final class GRPCServer: Sendable {
     self.init(
       transport: transport,
       services: services,
-      interceptors: interceptors.map { .allServices(interceptor: $0) }
+      interceptorPipeline: interceptors.map { .applyToAllServices($0) }
     )
   }
 
@@ -165,7 +165,7 @@ public final class GRPCServer: Sendable {
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
   ///   - services: Services offered by the server.
-  ///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
+  ///   - interceptorPipeline: A collection of interceptors providing cross-cutting functionality to each
   ///       accepted RPC. The order in which interceptors are added reflects the order in which they
   ///       are called. The first interceptor added will be the first interceptor to intercept each
   ///       request. The last interceptor added will be the final interceptor to intercept each
@@ -173,14 +173,18 @@ public final class GRPCServer: Sendable {
   public convenience init(
     transport: any ServerTransport,
     services: [any RegistrableRPCService],
-    interceptors: [ServerInterceptorTarget]
+    interceptorPipeline: [ServerInterceptorOperation]
   ) {
     var router = RPCRouter()
     for service in services {
       service.registerMethods(with: &router)
     }
 
-    self.init(transport: transport, router: router, interceptors: interceptors)
+    self.init(
+      transport: transport,
+      router: router,
+      interceptorPipeline: interceptorPipeline
+    )
   }
 
   /// Creates a new server with no resources.
@@ -201,7 +205,7 @@ public final class GRPCServer: Sendable {
     self.init(
       transport: transport,
       router: router,
-      interceptors: interceptors.map { .allServices(interceptor: $0)}
+      interceptorPipeline: interceptors.map { .applyToAllServices($0) }
     )
   }
 
@@ -218,12 +222,12 @@ public final class GRPCServer: Sendable {
   public init(
     transport: any ServerTransport,
     router: RPCRouter,
-    interceptors: [ServerInterceptorTarget]
+    interceptorPipeline: [ServerInterceptorOperation]
   ) {
     self.state = Mutex(.notStarted)
     self.transport = transport
     self.router = router
-    self.interceptors = interceptors
+    self.interceptors = interceptorPipeline
   }
 
   /// Starts the server and runs until the registered transport has closed.

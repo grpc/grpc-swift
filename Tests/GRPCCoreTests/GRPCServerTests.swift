@@ -22,14 +22,14 @@ import XCTest
 final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
-    interceptors: [ServerInterceptorTarget] = [],
+    interceptorPipeline: [ServerInterceptorOperation] = [],
     _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     let server = GRPCServer(
       transport: inProcess.server,
       services: services,
-      interceptors: interceptors
+      interceptorPipeline: interceptorPipeline
     )
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -220,10 +220,10 @@ final class GRPCServerTests: XCTestCase {
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
-      interceptors: [
-        .allServices(interceptor: .requestCounter(counter1)),
-        .allServices(interceptor: .rejectAll(with: RPCError(code: .unavailable, message: ""))),
-        .allServices(interceptor: .requestCounter(counter2)),
+      interceptorPipeline: [
+        .applyToAllServices(.requestCounter(counter1)),
+        .applyToAllServices(.rejectAll(with: RPCError(code: .unavailable, message: ""))),
+        .applyToAllServices(.requestCounter(counter2)),
       ]
     ) { client, _ in
       try await client.withStream(
@@ -249,7 +249,7 @@ final class GRPCServerTests: XCTestCase {
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
-      interceptors: [.allServices(interceptor: .requestCounter(counter))]
+      interceptorPipeline: [.applyToAllServices(.requestCounter(counter))]
     ) { client, _ in
       try await client.withStream(
         descriptor: MethodDescriptor(service: "not", method: "implemented"),
@@ -387,19 +387,19 @@ struct ServerTests {
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho(), HelloWorld()],
-      interceptors: [
-        .serviceSpecific(
-          interceptor: .requestCounter(onlyBinaryEchoCounter),
-          services: [BinaryEcho.serviceName]
+      interceptorPipeline: [
+        .apply(
+          .requestCounter(onlyBinaryEchoCounter),
+          onlyToServices: [BinaryEcho.serviceName]
         ),
-        .allServices(interceptor: .requestCounter(allServicesCounter)),
-        .serviceSpecific(
-          interceptor: .requestCounter(onlyHelloWorldCounter),
-          services: [HelloWorld.serviceName]
+        .applyToAllServices(.requestCounter(allServicesCounter)),
+        .apply(
+          .requestCounter(onlyHelloWorldCounter),
+          onlyToServices: [HelloWorld.serviceName]
         ),
-        .serviceSpecific(
-          interceptor: .requestCounter(bothServicesCounter),
-          services: [BinaryEcho.serviceName, HelloWorld.serviceName]
+        .apply(
+          .requestCounter(bothServicesCounter),
+          onlyToServices: [BinaryEcho.serviceName, HelloWorld.serviceName]
         ),
       ]
     ) { client, _ in
@@ -474,19 +474,19 @@ struct ServerTests {
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
-      interceptors: [
-        .methodSpecific(
-          interceptor: .requestCounter(onlyBinaryEchoGetCounter),
-          methods: [BinaryEcho.Methods.get]
+      interceptorPipeline: [
+        .apply(
+          .requestCounter(onlyBinaryEchoGetCounter),
+          onlyToMethods: [BinaryEcho.Methods.get]
         ),
-        .allServices(interceptor: .requestCounter(allMethodsCounter)),
-        .methodSpecific(
-          interceptor: .requestCounter(onlyBinaryEchoCollectCounter),
-          methods: [BinaryEcho.Methods.collect]
+        .applyToAllServices(.requestCounter(allMethodsCounter)),
+        .apply(
+          .requestCounter(onlyBinaryEchoCollectCounter),
+          onlyToMethods: [BinaryEcho.Methods.collect]
         ),
-        .methodSpecific(
-          interceptor: .requestCounter(bothBinaryEchoMethodsCounter),
-          methods: [BinaryEcho.Methods.get, BinaryEcho.Methods.collect]
+        .apply(
+          .requestCounter(bothBinaryEchoMethodsCounter),
+          onlyToMethods: [BinaryEcho.Methods.get, BinaryEcho.Methods.collect]
         ),
       ]
     ) { client, _ in
@@ -554,14 +554,14 @@ struct ServerTests {
 
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
-    interceptors: [ServerInterceptorTarget] = [],
+    interceptorPipeline: [ServerInterceptorOperation] = [],
     _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     let server = GRPCServer(
       transport: inProcess.server,
       services: services,
-      interceptors: interceptors
+      interceptorPipeline: interceptorPipeline
     )
 
     try await withThrowingTaskGroup(of: Void.self) { group in

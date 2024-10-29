@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/// A `ServerInterceptorTarget` describes to which RPCs a server interceptor should be applied.
+/// A `ServerInterceptorOperation` describes to which RPCs a server interceptor should be applied.
 ///
 /// You can configure a server interceptor to be applied to:
 /// - all RPCs and services;
@@ -22,31 +22,31 @@
 /// - requests directed only to specific methods (of a specific service).
 ///
 /// - SeeAlso: ``ServerInterceptor`` for more information on server interceptors, and
-///  ``ClientInterceptorTarget`` for the client-side version of this type.
-public struct ServerInterceptorTarget: Sendable {
+///  ``ClientInterceptorOperation`` for the client-side version of this type.
+public struct ServerInterceptorOperation: Sendable {
   internal enum Wrapped: Sendable {
     case allServices(interceptor: any ServerInterceptor)
     case serviceSpecific(interceptor: any ServerInterceptor, services: [String])
     case methodSpecific(interceptor: any ServerInterceptor, methods: [MethodDescriptor])
   }
 
-  /// A target specifying an interceptor that applies to all RPCs across all services registered with this server.
+  /// An operation specifying an interceptor that applies to all RPCs across all services will be registered with this server.
   /// - Parameter interceptor: The interceptor to register with the server.
-  /// - Returns: A ``ServerInterceptorTarget``.
-  public static func allServices(
-    interceptor: any ServerInterceptor
+  /// - Returns: A ``ServerInterceptorOperation``.
+  public static func applyToAllServices(
+    _ interceptor: any ServerInterceptor
   ) -> Self {
     Self(wrapped: .allServices(interceptor: interceptor))
   }
 
-  /// A target specifying an interceptor that applies to RPCs directed only to the specified services.
+  /// An operation specifying an interceptor that will be applied only to RPCs directed to the specified services.
   /// - Parameters:
   ///   - interceptor: The interceptor to register with the server.
   ///   - services: The list of service names for which this interceptor should intercept RPCs.
-  /// - Returns: A ``ServerInterceptorTarget``.
-  public static func serviceSpecific(
-    interceptor: any ServerInterceptor,
-    services: [String]
+  /// - Returns: A ``ServerInterceptorOperation``.
+  public static func apply(
+    _ interceptor: any ServerInterceptor,
+    onlyToServices services: [String]
   ) -> Self {
     Self(
       wrapped: .serviceSpecific(
@@ -56,14 +56,14 @@ public struct ServerInterceptorTarget: Sendable {
     )
   }
 
-  /// A target specifying an interceptor that applies to RPCs directed only to the specified service methods.
+  /// An operation specifying an interceptor that will be applied only to RPCs directed to the specified service methods.
   /// - Parameters:
   ///   - interceptor: The interceptor to register with the server.
   ///   - services: The list of method descriptors for which this interceptor should intercept RPCs.
-  /// - Returns: A ``ServerInterceptorTarget``.
-  public static func methodSpecific(
-    interceptor: any ServerInterceptor,
-    methods: [MethodDescriptor]
+  /// - Returns: A ``ServerInterceptorOperation``.
+  public static func apply(
+    _ interceptor: any ServerInterceptor,
+    onlyToMethods methods: [MethodDescriptor]
   ) -> Self {
     Self(
       wrapped: .methodSpecific(
@@ -79,7 +79,7 @@ public struct ServerInterceptorTarget: Sendable {
     self.wrapped = wrapped
   }
 
-  /// Get the ``ServerInterceptor`` associated with this ``ServerInterceptorTarget``.
+  /// Get the ``ServerInterceptor`` associated with this ``ServerInterceptorOperation``.
   public var interceptor: any ServerInterceptor {
     switch self.wrapped {
     case .allServices(let interceptor):
@@ -91,7 +91,7 @@ public struct ServerInterceptorTarget: Sendable {
     }
   }
 
-  /// Returns whether this ``ServerInterceptorTarget`` applies to the given `descriptor`.
+  /// Returns whether this ``ServerInterceptorOperation`` applies to the given `descriptor`.
   /// - Parameter descriptor: A ``MethodDescriptor`` for which to test whether this interceptor applies.
   /// - Returns: `true` if this interceptor applies to the given `descriptor`, or `false` otherwise.
   public func applies(to descriptor: MethodDescriptor) -> Bool {
