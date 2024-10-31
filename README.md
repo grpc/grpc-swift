@@ -13,6 +13,11 @@ about gRPC on the [gRPC project's website][grpcio].
 - 🚀 **Contributions** are welcome, please see [CONTRIBUTING.md](CONTRIBUTING.md)
 - 🪪 **License** is Apache 2.0, repeated in [LICENSE](License)
 - 🔒 **Security** issues should be reported via the process in [SECURITY.md](SECURITY.md)
+- 🔀 **Related Repositories**:
+  - [`grpc-swift-nio-transport`][grpc-swift-nio-transport] contains high-performance HTTP/2 client and server transport implementations for gRPC Swift built on top of SwiftNIO.
+  - [`grpc-swift-protobuf`][grpc-swift-protobuf] contains integrations with SwiftProtobuf for gRPC Swift.
+  - [`grpc-swift-extras`][grpc-swift-extras] contains optional extras for gRPC Swift.
+ 
 
 ## Quick Start
 
@@ -45,3 +50,6 @@ let package = Package(
 [gh-grpc]: https://github.com/grpc/grpc
 [grpcio]: https://grpc.io
 [spi-grpc-swift]: https://swiftpackageindex.com/grpc/grpc-swift/documentation
+[grpc-swift-nio-transport]: https://github.com/grpc/grpc-swift-nio-transport
+[grpc-swift-protobuf]: https://github.com/grpc/grpc-swift-protobuf
+[grpc-swift-extras]: https://github.com/grpc/grpc-swift-extras 
