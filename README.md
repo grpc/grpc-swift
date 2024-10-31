@@ -14,9 +14,9 @@ about gRPC on the [gRPC project's website][grpcio].
 - 🪪 **License** is Apache 2.0, repeated in [LICENSE](License)
 - 🔒 **Security** issues should be reported via the process in [SECURITY.md](SECURITY.md)
 - 🔀 **Related Repositories**:
- - [`grpc-swift-nio-transport`][grpc-swift-nio-transport] contains high-performance HTTP/2 client and server transport implementations for gRPC Swift built on top of SwiftNIO.
- - [`grpc-swift-protobuf`][grpc-swift-protobuf] contains integrations with SwiftProtobuf for gRPC Swift.
- - [`grpc-swift-extras`][grpc-swift-extras] contains optional extras for gRPC Swift.
+  - [`grpc-swift-nio-transport`][grpc-swift-nio-transport] contains high-performance HTTP/2 client and server transport implementations for gRPC Swift built on top of SwiftNIO.
+  - [`grpc-swift-protobuf`][grpc-swift-protobuf] contains integrations with SwiftProtobuf for gRPC Swift.
+  - [`grpc-swift-extras`][grpc-swift-extras] contains optional extras for gRPC Swift.
  
 
 ## Quick Start
