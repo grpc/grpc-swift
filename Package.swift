@@ -70,7 +70,8 @@ let targets: [Target] = [
     ],
     resources: [
       .copy("Configuration/Inputs")
-    ]
+    ],
+    swiftSettings: defaultSwiftSettings
   ),
 
   // In-process client and server transport implementations
@@ -85,7 +86,8 @@ let targets: [Target] = [
     name: "GRPCInProcessTransportTests",
     dependencies: [
       .target(name: "GRPCInProcessTransport")
-    ]
+    ],
+    swiftSettings: defaultSwiftSettings
   ),
 
   // Code generator library for protoc-gen-grpc-swift
@@ -99,7 +101,8 @@ let targets: [Target] = [
     name: "GRPCCodeGenTests",
     dependencies: [
       .target(name: "GRPCCodeGen")
-    ]
+    ],
+    swiftSettings: defaultSwiftSettings
   )
 ]
 
