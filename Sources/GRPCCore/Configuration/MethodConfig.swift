@@ -16,7 +16,7 @@
 
 /// Configuration values for executing an RPC.
 ///
-/// See also: https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
+/// See also: https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto
 public struct MethodConfig: Hashable, Sendable {
   public struct Name: Sendable, Hashable {
     /// The name of the service, including the namespace.
@@ -211,7 +211,7 @@ public struct RPCExecutionPolicy: Hashable, Sendable {
 /// and `min(initialBackoff * backoffMultiplier^(n-1), maxBackoff)`.
 ///
 /// For more information see [gRFC A6 Client
-/// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+/// Retries](https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A6-client-retries.md).
 public struct RetryPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -328,7 +328,7 @@ public struct RetryPolicy: Hashable, Sendable {
 /// by ``hedgingDelay``.
 ///
 /// For more information see [gRFC A6 Client
-/// Retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+/// Retries](https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A6-client-retries.md).
 public struct HedgingPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///

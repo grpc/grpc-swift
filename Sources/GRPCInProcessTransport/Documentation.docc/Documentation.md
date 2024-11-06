@@ -13,5 +13,5 @@ use cases.
 ### Transports
 
 - ``InProcessTransport``
-- ``InProcessClientTransport``
-- ``InProcessServerTransport``
+- ``InProcessTransport/Client``
+- ``InProcessTransport/Server``

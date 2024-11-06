@@ -18,16 +18,16 @@ public import GRPCCore
 private import Synchronization
 
 extension InProcessTransport {
-  /// An in-process implementation of a ``ServerTransport``.
+  /// An in-process implementation of a `ServerTransport`.
   ///
   /// This is useful when you're interested in testing your application without any actual networking layers
   /// involved, as the client and server will communicate directly with each other via in-process streams.
   ///
   /// To use this server, you call ``listen(streamHandler:)`` and iterate over the returned `AsyncSequence` to get all
-  /// RPC requests made from clients (as ``RPCStream``s).
+  /// RPC requests made from clients (as `RPCStream`s).
   /// To stop listening to new requests, call ``beginGracefulShutdown()``.
   ///
-  /// - SeeAlso: ``ClientTransport``
+  /// - SeeAlso: `ClientTransport`
   public final class Server: ServerTransport, Sendable {
     public typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
     public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
@@ -123,9 +123,9 @@ extension InProcessTransport {
       }
     }
 
-    /// Stop listening to any new ``RPCStream`` publications.
+    /// Stop listening to any new `RPCStream` publications.
     ///
-    /// - SeeAlso: ``ServerTransport``
+    /// - SeeAlso: `ServerTransport`
     public func beginGracefulShutdown() {
       self.newStreamsContinuation.finish()
       for handle in self.handles.withLock({ $0.beginShutdown() }) {
