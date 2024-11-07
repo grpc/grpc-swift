@@ -1,7 +1,0 @@
-{
-  "maxAttempts": 1,
-  "initialBackoff": "1s",
-  "maxBackoff": "3s",
-  "backoffMultiplier": 1.6,
-  "retryableStatusCodes": ["ABORTED", "UNAVAILABLE"]
-}

@@ -18,11 +18,6 @@ import Foundation
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
-#if compiler(>=6.0)
-import GRPCCodeGen
-import GRPCProtobufCodeGen
-#endif
-
 @main
 final class GenerateGRPC: CodeGenerator {
   var version: String? {
@@ -66,15 +61,7 @@ final class GenerateGRPC: CodeGenerator {
       }
 
       if options.generateClient || options.generateServer || options.generateTestClient {
-        #if compiler(>=6.0)
-        if options.v2 {
-          try self.generateV2Stubs(descriptor, options: options, outputs: outputs)
-        } else {
-          try self.generateV1Stubs(descriptor, options: options, outputs: outputs)
-        }
-        #else
         try self.generateV1Stubs(descriptor, options: options, outputs: outputs)
-        #endif
       }
     }
   }
@@ -111,29 +98,6 @@ final class GenerateGRPC: CodeGenerator {
     let fileGenerator = Generator(descriptor, options: options)
     try outputs.add(fileName: fileName, contents: fileGenerator.code)
   }
-
-  #if compiler(>=6.0)
-  private func generateV2Stubs(
-    _ descriptor: FileDescriptor,
-    options: GeneratorOptions,
-    outputs: any GeneratorOutputs
-  ) throws {
-    let fileName = self.uniqueOutputFileName(
-      fileDescriptor: descriptor,
-      fileNamingOption: options.fileNaming
-    )
-
-    let config = SourceGenerator.Config(options: options)
-    let fileGenerator = ProtobufCodeGenerator(configuration: config)
-    let contents = try fileGenerator.generateCode(
-      from: descriptor,
-      protoFileModuleMappings: options.protoToModuleMappings,
-      extraModuleImports: options.extraModuleImports
-    )
-
-    try outputs.add(fileName: fileName, contents: contents)
-  }
-  #endif
 }
 
 extension GenerateGRPC {
@@ -210,26 +174,3 @@ private func splitPath(pathname: String) -> (dir: String, base: String, suffix: 
   }
   return (dir: dir, base: base, suffix: suffix)
 }
-
-#if compiler(>=6.0)
-extension SourceGenerator.Config {
-  init(options: GeneratorOptions) {
-    let accessLevel: SourceGenerator.Config.AccessLevel
-    switch options.visibility {
-    case .internal:
-      accessLevel = .internal
-    case .package:
-      accessLevel = .package
-    case .public:
-      accessLevel = .public
-    }
-
-    self.init(
-      accessLevel: accessLevel,
-      accessLevelOnImports: options.useAccessLevelOnImports,
-      client: options.generateClient,
-      server: options.generateServer
-    )
-  }
-}
-#endif

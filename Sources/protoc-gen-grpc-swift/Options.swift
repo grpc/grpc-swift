@@ -23,6 +23,8 @@ enum GenerationError: Error {
   case invalidParameterValue(name: String, value: String)
   /// Raised to wrap another error but provide a context message.
   case wrappedError(message: String, error: Error)
+  /// v2 isn't supported.
+  case unsupportedV2
 
   var localizedDescription: String {
     switch self {
@@ -32,6 +34,9 @@ enum GenerationError: Error {
       return "Unknown value for generation parameter '\(name)': '\(value)'"
     case let .wrappedError(message, error):
       return "\(message): \(error.localizedDescription)"
+    case .unsupportedV2:
+      return
+        "v2 isn't supported by this version of protoc-gen-grpc-swift, see https://github.com/grpc/grpc-swift-protobuf"
     }
   }
 }
@@ -171,9 +176,13 @@ struct GeneratorOptions {
       #if compiler(>=6.0)
       case "_V2":
         if let value = Bool(pair.value) {
-          self.v2 = value
+          if value {
+            throw GenerationError.unsupportedV2
+          } else {
+            // _V2 is false, ignore it.
+          }
         } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+          throw GenerationError.unsupportedV2
         }
       #endif
 

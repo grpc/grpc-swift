@@ -124,16 +124,12 @@ jobs:
         include:
           - image: swiftlang/swift:nightly-jammy
             swift-tools-version: '6.0'
-            supports-v2: true
           - image: swift:6.0-jammy
             swift-tools-version: '6.0'
-            supports-v2: true
           - image: swift:5.10.1-noble
             swift-tools-version: '5.10'
-            supports-v2: false
           - image: swift:5.9-jammy
             swift-tools-version: '5.9'
-            supports-v2: false
     name: Integration Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
@@ -144,9 +140,6 @@ jobs:
       run: apt update && apt install -y protobuf-compiler
     - name: SwiftPM plugin test (v1)
       run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }} "v1"
-    - name: SwiftPM plugin test (v2)
-      if: ${{ matrix.supports-v2 }}
-      run: ./scripts/run-plugin-tests.sh ${{ matrix.swift-tools-version }} "v2"
     - name: Build without NIOSSL
       run: swift build
       env:

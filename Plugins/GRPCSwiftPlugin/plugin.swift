@@ -261,11 +261,7 @@ extension GRPCSwiftPlugin: BuildToolPlugin {
       throw PluginError.invalidTarget("\(type(of: target))")
     }
 
-    #if compiler(<6.0)
     let workDirectory = PathLike(context.pluginWorkDirectory)
-    #else
-    let workDirectory = PathLike(context.pluginWorkDirectoryURL)
-    #endif
 
     return try self.createBuildCommands(
       pluginWorkDirectory: workDirectory,
@@ -279,11 +275,7 @@ extension GRPCSwiftPlugin: BuildToolPlugin {
 // methods, properties, and conformances have been deprecated but the type hasn't.) This type wraps
 // either depending on the compiler version.
 struct PathLike: CustomStringConvertible {
-  #if compiler(<6.0)
   typealias Value = Path
-  #else
-  typealias Value = URL
-  #endif
 
   private(set) var value: Value
 
@@ -292,64 +284,34 @@ struct PathLike: CustomStringConvertible {
   }
 
   init(_ path: String) {
-    #if compiler(<6.0)
     self.value = Path(path)
-    #else
-    self.value = URL(fileURLWithPath: path)
-    #endif
   }
 
   init(_ element: FileList.Element) {
-    #if compiler(<6.0)
     self.value = element.path
-    #else
-    self.value = element.url
-    #endif
   }
 
   init(_ element: PluginContext.Tool) {
-    #if compiler(<6.0)
     self.value = element.path
-    #else
-    self.value = element.url
-    #endif
   }
 
   var description: String {
-    #if compiler(<6.0)
     return String(describing: self.value)
-    #elseif canImport(Darwin)
-    return self.value.path(percentEncoded: false)
-    #else
-    return self.value.path
-    #endif
   }
 
   var lastComponent: String {
-    #if compiler(<6.0)
     return self.value.lastComponent
-    #else
-    return self.value.lastPathComponent
-    #endif
   }
 
   func removingLastComponent() -> Self {
     var copy = self
-    #if compiler(<6.0)
     copy.value = self.value.removingLastComponent()
-    #else
-    copy.value = self.value.deletingLastPathComponent()
-    #endif
     return copy
   }
 
   func appending(_ path: String) -> Self {
     var copy = self
-    #if compiler(<6.0)
     copy.value = self.value.appending(path)
-    #else
-    copy.value = self.value.appendingPathComponent(path)
-    #endif
     return copy
   }
 }
@@ -374,11 +336,7 @@ extension Command {
 
 extension URL {
   init(_ pathLike: PathLike) {
-    #if compiler(<6.0)
     self = URL(fileURLWithPath: "\(pathLike.value)")
-    #else
-    self = pathLike.value
-    #endif
   }
 }
 
@@ -390,11 +348,7 @@ extension GRPCSwiftPlugin: XcodeBuildToolPlugin {
     context: XcodePluginContext,
     target: XcodeTarget
   ) throws -> [Command] {
-    #if compiler(<6.0)
     let workDirectory = PathLike(context.pluginWorkDirectory)
-    #else
-    let workDirectory = PathLike(context.pluginWorkDirectoryURL)
-    #endif
 
     return try self.createBuildCommands(
       pluginWorkDirectory: workDirectory,

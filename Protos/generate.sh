@@ -80,14 +80,6 @@ function generate_echo_v1_example {
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Public" "TestClient=true"
 }
 
-function generate_echo_v2_example {
-  local proto="$here/examples/echo/echo.proto"
-  local output="$root/Examples/v2/echo/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
-}
-
 function generate_routeguide_v1_example {
   local proto="$here/examples/route_guide/route_guide.proto"
   local output="$root/Examples/v1/RouteGuide/Model"
@@ -96,28 +88,12 @@ function generate_routeguide_v1_example {
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
 }
 
-function generate_routeguide_v2_example {
-  local proto="$here/examples/route_guide/route_guide.proto"
-  local output="$root/Examples/v2/route-guide/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
-}
-
 function generate_helloworld_v1_example {
   local proto="$here/upstream/grpc/examples/helloworld.proto"
   local output="$root/Examples/v1/HelloWorld/Model"
 
   generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Public"
-}
-
-function generate_helloworld_v2_example {
-  local proto="$here/upstream/grpc/examples/helloworld.proto"
-  local output="$root/Examples/v2/hello-world/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "_V2=true"
 }
 
 function generate_reflection_service {
@@ -196,83 +172,12 @@ function generate_reflection_data_example {
   done
 }
 
-function generate_rpc_code_for_tests {
-  local protos=(
-    "$here/upstream/grpc/service_config/service_config.proto"
-    "$here/upstream/grpc/lookup/v1/rls.proto"
-    "$here/upstream/grpc/lookup/v1/rls_config.proto"
-    "$here/upstream/google/rpc/code.proto"
-  )
-  local output="$root/Tests/GRPCCoreTests/Configuration/Generated"
-
-  for proto in "${protos[@]}"; do
-    generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=DropPath"
-  done
-}
-
-function generate_http2_transport_tests_service {
-  local proto="$here/tests/control/control.proto"
-  local output="$root/Tests/GRPCHTTP2TransportTests/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal" "Client=true" "Server=true" "_V2=true"
-}
-
-function generate_service_messages_interop_tests {
-  local protos=(
-    "$here/tests/interoperability/src/proto/grpc/testing/empty_service.proto"
-    "$here/tests/interoperability/src/proto/grpc/testing/empty.proto"
-    "$here/tests/interoperability/src/proto/grpc/testing/messages.proto"
-    "$here/tests/interoperability/src/proto/grpc/testing/test.proto"
-  )
-  local output="$root/Sources/InteroperabilityTests/Generated"
-
-  for proto in "${protos[@]}"; do
-    generate_message "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "FileNaming=DropPath" "UseAccessLevelOnImports=true"
-    generate_grpc "$proto" "$here/tests/interoperability" "$output" "Visibility=Public" "Server=true" "_V2=true" "FileNaming=DropPath" "UseAccessLevelOnImports=true"
-  done
-}
-
-function generate_worker_service {
-  local protos=(
-    "$here/upstream/grpc/testing/payloads.proto"
-    "$here/upstream/grpc/testing/control.proto"
-    "$here/upstream/grpc/testing/messages.proto"
-    "$here/upstream/grpc/testing/stats.proto"
-    "$here/upstream/grpc/testing/benchmark_service.proto"
-    "$here/upstream/grpc/testing/worker_service.proto"
-  )
-  local output="$root/Sources/performance-worker/Generated"
-
-  generate_message "$here/upstream/grpc/core/stats.proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
-
-  for proto in "${protos[@]}"; do
-    generate_message "$proto" "$here/upstream" "$output" "Visibility=Internal" "FileNaming=PathToUnderscores"
-    if [ "$proto" == "$here/upstream/grpc/testing/worker_service.proto" ]; then
-      generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "Client=false" "_V2=true" "FileNaming=PathToUnderscores"
-    else
-      generate_grpc "$proto" "$here/upstream" "$output" "Visibility=Internal" "_V2=true" "FileNaming=PathToUnderscores"
-    fi
-  done
-}
-
-function generate_health_service {
-  local proto="$here/upstream/grpc/health/v1/health.proto"
-  local output="$root/Sources/Services/Health/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "UseAccessLevelOnImports=true"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Package" "Client=true" "Server=true" "_V2=true" "UseAccessLevelOnImports=true"
-}
-
 #------------------------------------------------------------------------------
 
 # Examples
 generate_echo_v1_example
-generate_echo_v2_example
 generate_routeguide_v1_example
-generate_routeguide_v2_example
 generate_helloworld_v1_example
-generate_helloworld_v2_example
 generate_reflection_data_example
 
 # Reflection service and tests
@@ -280,16 +185,5 @@ generate_reflection_service
 generate_reflection_client_for_tests
 generate_echo_reflection_data_for_tests
 
-# Interoperability tests
-generate_service_messages_interop_tests
-
 # Misc. tests
 generate_normalization_for_tests
-generate_rpc_code_for_tests
-generate_http2_transport_tests_service
-
-# Performance worker service
-generate_worker_service
-
-# Health
-generate_health_service
