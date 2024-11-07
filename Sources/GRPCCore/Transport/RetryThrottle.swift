@@ -29,7 +29,7 @@ private import Synchronization
 /// ``HedgingPolicy/nonFatalStatusCodes``) or when the client receives a pushback response from
 /// the server.
 ///
-/// See also [gRFC A6: client retries](https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+/// See also [gRFC A6: client retries](https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A6-client-retries.md).
 public final class RetryThrottle: Sendable {
   // Note: only three figures after the decimal point from the original token ratio are used so
   //   all computation is done a scaled number of tokens (tokens * 1000). This allows us to do all

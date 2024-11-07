@@ -15,7 +15,7 @@
  */
 // This base64 implementation is heavily inspired by:
 
-// https://github.com/lemire/fastbase64/blob/master/src/chromiumbase64.c
+// https://github.com/lemire/fastbase64/blob/a2e0967dfcb8f0129ea45b9b24cc410e4cac117f/src/chromiumbase64.c
 /*
  Copyright (c) 2015-2016, Wojciech Muła, Alfred Klomp,  Daniel Lemire
  (Unless otherwise stated in the source code)
@@ -45,7 +45,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// https://github.com/client9/stringencoders/blob/master/src/modp_b64.c
+// https://github.com/client9/stringencoders/blob/e1448a9415f4ebf6f559c86718193ba067cbb99d/src/modp_b64.c
 /*
  The MIT License (MIT)
 

@@ -1,0 +1,37 @@
+name: Soundness
+
+on:
+  workflow_call:
+
+jobs:
+  swift-license-check:
+    name: Swift license headers check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Mark the workspace as safe
+        run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
+      - name: Run license check
+        run: |
+          ./dev/license-check.sh
+
+  check-generated-code:
+    name: Check generated code
+    runs-on: ubuntu-latest
+    container:
+      image: swift:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Mark the workspace as safe
+        run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
+      - name: Install protoc
+        run: apt update && apt install -y protobuf-compiler
+      - name: Run soundness checks
+        run: |
+          ./dev/check-generated-code.sh

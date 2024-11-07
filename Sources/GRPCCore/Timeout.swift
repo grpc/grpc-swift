@@ -46,7 +46,7 @@ struct Timeout: CustomStringConvertible, Hashable, Sendable {
   }
 
   /// The wire encoding of this timeout as described in the gRPC protocol.
-  /// See "Timeout" in https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
+  /// See "Timeout" in https://github.com/grpc/grpc/blob/6c0578099835c854b0ff36a4b8db98ed49278ed5/doc/PROTOCOL-HTTP2.md#requests
   var wireEncoding: String {
     "\(amount)\(unit.rawValue)"
   }
