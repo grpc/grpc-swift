@@ -17,3 +17,7 @@ In order to protect both you and ourselves, you will need to sign the
 
 Please see the [main gRPC repository](https://github.com/grpc/grpc) for
 more information about gRPC.
+
+### Run CI checks locally
+
+You can run the GitHub Actions workflows locally using [act](https://github.com/nektos/act) or in some cases calling scripts directly. For detailed steps on how to do this please see [https://github.com/swiftlang/github-workflows?tab=readme-ov-file#running-workflows-locally](https://github.com/swiftlang/github-workflows?tab=readme-ov-file#running-workflows-locally).

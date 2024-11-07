@@ -111,7 +111,7 @@ extension Status {
   ///
   /// The outcome of every RPC is indicated by a status code.
   public struct Code: Hashable, CustomStringConvertible, Sendable {
-    // Source: https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
+    // Source: https://github.com/grpc/grpc/blob/6c0578099835c854b0ff36a4b8db98ed49278ed5/doc/statuscodes.md
     enum Wrapped: UInt8, Hashable, Sendable {
       case ok = 0
       case cancelled = 1

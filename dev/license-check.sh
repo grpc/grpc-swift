@@ -1,18 +1,17 @@
 #!/bin/bash
-
-# Copyright 2019, gRPC Authors All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+## Copyright 2019, gRPC Authors All rights reserved.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
 
 # This script checks the copyright headers in source *.swift source files and
 # exits if they do not match the expected header. The year, or year range in
@@ -37,10 +36,6 @@ read -r -d '' COPYRIGHT_HEADER_SWIFT << 'EOF'
  */
 EOF
 SWIFT_SHA=$(echo "$COPYRIGHT_HEADER_SWIFT" | shasum | awk '{print $1}')
-
-replace_years() {
-  sed -e 's/201[56789]-20[12][0-9]/YEARS/' -e 's/201[56789]/YEARS/'
-}
 
 # Checks the Copyright headers for *.swift files in this repository against the
 # expected headers.
@@ -74,12 +69,12 @@ check_copyright_headers() {
         drop_first=1
         expected_lines=15
         ;;
-      */Package@swift-*.swift)
+      */Package@swift-*.*.swift)
         expected_sha="$SWIFT_SHA"
         drop_first=1
         expected_lines=15
         ;;
-      */Package@swift-*.*.swift)
+      */Package@swift-*.swift)
         expected_sha="$SWIFT_SHA"
         drop_first=1
         expected_lines=15

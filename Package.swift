@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 import PackageDescription
 
 let products: [Product] = [
@@ -49,7 +48,7 @@ let dependencies: [Package.Dependency] = [
 let defaultSwiftSettings: [SwiftSetting] = [
   .swiftLanguageMode(.v6),
   .enableUpcomingFeature("ExistentialAny"),
-  .enableUpcomingFeature("InternalImportsByDefault")
+  .enableUpcomingFeature("InternalImportsByDefault"),
 ]
 
 let targets: [Target] = [
@@ -57,7 +56,7 @@ let targets: [Target] = [
   .target(
     name: "GRPCCore",
     dependencies: [
-      .product(name: "DequeModule", package: "swift-collections"),
+      .product(name: "DequeModule", package: "swift-collections")
     ],
     swiftSettings: defaultSwiftSettings
   ),
@@ -66,7 +65,7 @@ let targets: [Target] = [
     dependencies: [
       .target(name: "GRPCCore"),
       .target(name: "GRPCInProcessTransport"),
-      .product(name: "SwiftProtobuf", package: "swift-protobuf")
+      .product(name: "SwiftProtobuf", package: "swift-protobuf"),
     ],
     resources: [
       .copy("Configuration/Inputs")
@@ -91,8 +90,7 @@ let targets: [Target] = [
   // Code generator library for protoc-gen-grpc-swift
   .target(
     name: "GRPCCodeGen",
-    dependencies: [
-    ],
+    dependencies: [],
     swiftSettings: defaultSwiftSettings
   ),
   .testTarget(
@@ -100,7 +98,7 @@ let targets: [Target] = [
     dependencies: [
       .target(name: "GRPCCodeGen")
     ]
-  )
+  ),
 ]
 
 let package = Package(

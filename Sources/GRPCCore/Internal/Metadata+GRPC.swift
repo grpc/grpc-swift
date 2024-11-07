@@ -91,7 +91,7 @@ extension Metadata {
         self = .retryAfter(Duration(secondsComponent: seconds, attosecondsComponent: attoseconds))
       } else {
         // Negative or not parseable means stop trying.
-        // Source: https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+        // Source: https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A6-client-retries.md
         self = .stopRetrying
       }
     }

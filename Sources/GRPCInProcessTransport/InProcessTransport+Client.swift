@@ -18,13 +18,13 @@ public import GRPCCore
 private import Synchronization
 
 extension InProcessTransport {
-  /// An in-process implementation of a ``ClientTransport``.
+  /// An in-process implementation of a `ClientTransport`.
   ///
   /// This is useful when you're interested in testing your application without any actual networking layers
   /// involved, as the client and server will communicate directly with each other via in-process streams.
   ///
-  /// To use this client, you'll have to provide a ``ServerTransport`` upon creation, as well
-  /// as a ``ServiceConfig``.
+  /// To use this client, you'll have to provide a `ServerTransport` upon creation, as well
+  /// as a `ServiceConfig`.
   ///
   /// Once you have a client, you must keep a long-running task executing ``connect()``, which
   /// will return only once all streams have been finished and ``beginGracefulShutdown()`` has been called on this client; or
@@ -34,7 +34,7 @@ extension InProcessTransport {
   /// called before ``connect()`` is called, then any streams will remain pending and the call will
   /// block until ``connect()`` is called or the task is cancelled.
   ///
-  /// - SeeAlso: ``ClientTransport``
+  /// - SeeAlso: `ClientTransport`
   public final class Client: ClientTransport {
     private enum State: Sendable {
       struct UnconnectedState {
@@ -187,7 +187,7 @@ extension InProcessTransport {
     /// Signal to the transport that no new streams may be created.
     ///
     /// Existing streams may run to completion naturally but calling ``withStream(descriptor:options:_:)``
-    /// will result in an ``RPCError`` with code ``RPCError/Code/failedPrecondition`` being thrown.
+    /// will result in an `RPCError` with code `RPCError/Code/failedPrecondition` being thrown.
     ///
     /// If you want to forcefully cancel all active streams then cancel the task running ``connect()``.
     public func beginGracefulShutdown() {
@@ -215,7 +215,7 @@ extension InProcessTransport {
     ///
     /// - Important: The opened stream is closed after the closure is finished.
     ///
-    /// This transport implementation throws ``RPCError/Code/failedPrecondition`` if the transport
+    /// This transport implementation throws `RPCError/Code/failedPrecondition` if the transport
     /// is closing or has been closed.
     ///
     ///   This implementation will queue any streams (and thus block this call) if this function is called before

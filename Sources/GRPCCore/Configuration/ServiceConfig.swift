@@ -16,7 +16,7 @@
 
 /// Service configuration values.
 ///
-/// See also: https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
+/// See also: https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto
 public struct ServiceConfig: Hashable, Sendable {
   /// Per-method configuration.
   public var methodConfig: [MethodConfig]

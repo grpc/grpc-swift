@@ -76,7 +76,7 @@ doing this doesn't leave the other side waiting indefinitely.
 
 gRPC has mechanisms to deliver method-specific configuration at the transport
 layer which can also change dynamically (see [gRFC A2: ServiceConfig in
-DNS](https://github.com/grpc/proposal/blob/master/A2-service-configs-in-dns.md).)
+DNS](https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A2-service-configs-in-dns.md).)
 This configuration is used to determine how clients should interact with servers
 and how methods should be executed, such as the conditions under which they
 may be retried. Some of this is exposed via the ``ClientTransport`` as
