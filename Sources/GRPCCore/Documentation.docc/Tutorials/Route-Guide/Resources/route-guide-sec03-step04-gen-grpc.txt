@@ -1,5 +1,0 @@
-$ protoc --plugin=.build/debug/protoc-gen-grpc-swift \
-  -I Protos \
-  --grpc-swift_out=Sources/Generated \
-  --grpc-swift_opt=_V2=true \
-  Protos/route_guide.proto
