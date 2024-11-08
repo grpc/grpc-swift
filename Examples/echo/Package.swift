@@ -21,6 +21,7 @@ let package = Package(
   name: "echo",
   platforms: [.macOS("15.0")],
   dependencies: [
+    .package(url: "https://github.com/grpc/grpc-swift", exact: "2.0.0-alpha.1"),
     .package(url: "https://github.com/grpc/grpc-swift-protobuf", exact: "1.0.0-alpha.1"),
     .package(url: "https://github.com/grpc/grpc-swift-nio-transport", branch: "1.0.0-alpha.1"),
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
@@ -29,6 +30,7 @@ let package = Package(
     .executableTarget(
       name: "echo",
       dependencies: [
+        .product(name: "GRPCCore", package: "grpc-swift"),
         .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
         .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),

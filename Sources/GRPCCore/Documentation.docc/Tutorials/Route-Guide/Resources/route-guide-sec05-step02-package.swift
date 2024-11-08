@@ -13,6 +13,7 @@ let package = Package(
     .executableTarget(
       name: "RouteGuide",
       dependencies: [
+        .product(name: "GRPCCore", package: "grpc-swift"),
         .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
         .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),

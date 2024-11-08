@@ -17,7 +17,7 @@ about gRPC on the [gRPC project's website][grpcio].
   - [`grpc-swift-nio-transport`][grpc-swift-nio-transport] contains high-performance HTTP/2 client and server transport implementations for gRPC Swift built on top of SwiftNIO.
   - [`grpc-swift-protobuf`][grpc-swift-protobuf] contains integrations with SwiftProtobuf for gRPC Swift.
   - [`grpc-swift-extras`][grpc-swift-extras] contains optional extras for gRPC Swift.
- 
+
 
 ## Quick Start
 
@@ -32,6 +32,7 @@ let package = Package(
     name: "foo-package",
     platforms: [.macOS("15.0")],
     dependencies: [
+        .package(url: "https://github.com/grpc/grpc-swift.git", from: "2.0.0-alpha.1"),
         .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0-alpha.1"),
         .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", from: "1.0.0-alpha.1"),
     ],
@@ -39,6 +40,7 @@ let package = Package(
         .executableTarget(
             name: "bar-target",
             dependencies: [
+                .product(name: "GRPCCore", package: "grpc-swift"),
                 .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
                 .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
             ]
@@ -52,4 +54,4 @@ let package = Package(
 [spi-grpc-swift]: https://swiftpackageindex.com/grpc/grpc-swift/documentation
 [grpc-swift-nio-transport]: https://github.com/grpc/grpc-swift-nio-transport
 [grpc-swift-protobuf]: https://github.com/grpc/grpc-swift-protobuf
-[grpc-swift-extras]: https://github.com/grpc/grpc-swift-extras 
+[grpc-swift-extras]: https://github.com/grpc/grpc-swift-extras

@@ -1,3 +1,4 @@
+import GRPCCore
 import GRPCNIOTransportHTTP2
 
 extension RouteGuide {

@@ -77,8 +77,9 @@
         Next we can add a target. In this tutorial we'll create a single executable target which
         can act as both a client and a server.
 
-        We require two gRPC dependencies: `GRPCNIOTransportHTTP2"` provides an implementation of an HTTP/2
-        client and server, while `GRPCProtobuf` provides the necessary components to serialize
+        We require three gRPC dependencies: `GRPCCore` provides core abstractions and runtime
+        components, `GRPCNIOTransportHTTP2` provides an implementation of an HTTP/2
+        client and server, and `GRPCProtobuf` provides the necessary components to serialize
         and deserialize `SwiftProtobuf` messages.
 
         @Code(name: "Package.swift", file: "route-guide-sec01-step08-description.swift")
