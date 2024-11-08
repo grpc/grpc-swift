@@ -15,6 +15,7 @@
  */
 
 import ArgumentParser
+import GRPCCore
 import GRPCNIOTransportHTTP2
 import GRPCProtobuf
 

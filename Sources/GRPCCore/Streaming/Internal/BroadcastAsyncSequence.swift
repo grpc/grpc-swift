@@ -15,6 +15,7 @@
  */
 
 public import DequeModule  // should be @usableFromInline
+public import Synchronization  // should be @usableFromInline
 
 /// An `AsyncSequence` which can broadcast its values to multiple consumers concurrently.
 ///
@@ -156,15 +157,15 @@ enum BroadcastAsyncSequenceError: Error {
 @usableFromInline
 final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   @usableFromInline
-  let _state: LockedValueBox<_BroadcastSequenceStateMachine<Element>>
+  let _state: Mutex<_BroadcastSequenceStateMachine<Element>>
 
   @inlinable
   init(bufferSize: Int) {
-    self._state = LockedValueBox(_BroadcastSequenceStateMachine(bufferSize: bufferSize))
+    self._state = Mutex(_BroadcastSequenceStateMachine(bufferSize: bufferSize))
   }
 
   deinit {
-    let onDrop = self._state.withLockedValue { state in
+    let onDrop = self._state.withLock { state in
       state.dropResources()
     }
 
@@ -184,7 +185,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   /// - Parameter element: The element to write.
   @inlinable
   func yield(_ element: Element) async throws {
-    let onYield = self._state.withLockedValue { state in state.yield(element) }
+    let onYield = self._state.withLock { state in state.yield(element) }
 
     switch onYield {
     case .none:
@@ -196,7 +197,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
     case .suspend(let token):
       try await withTaskCancellationHandler {
         try await withCheckedThrowingContinuation { continuation in
-          let onProduceMore = self._state.withLockedValue { state in
+          let onProduceMore = self._state.withLock { state in
             state.waitToProduceMore(continuation: continuation, token: token)
           }
 
@@ -208,7 +209,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
           }
         }
       } onCancel: {
-        let onCancel = self._state.withLockedValue { state in
+        let onCancel = self._state.withLock { state in
           state.cancelProducer(withToken: token)
         }
 
@@ -230,7 +231,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   /// - Parameter result: Whether the stream is finishing cleanly or because of an error.
   @inlinable
   func finish(_ result: Result<Void, any Error>) {
-    let action = self._state.withLockedValue { state in state.finish(result: result) }
+    let action = self._state.withLock { state in state.finish(result: result) }
     switch action {
     case .none:
       ()
@@ -247,7 +248,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   /// - Returns: Returns a unique subscription ID.
   @inlinable
   func subscribe() -> _BroadcastSequenceStateMachine<Element>.Subscriptions.ID {
-    self._state.withLockedValue { $0.subscribe() }
+    self._state.withLock { $0.subscribe() }
   }
 
   /// Returns the next element for the given subscriber, if it is available.
@@ -259,35 +260,32 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
     forSubscriber id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
   ) async throws -> Element? {
     return try await withTaskCancellationHandler {
-      self._state.unsafe.lock()
-      let onNext = self._state.unsafe.withValueAssumingLockIsAcquired {
+      let onNext = self._state.withLock {
         $0.nextElement(forSubscriber: id)
       }
 
       switch onNext {
       case .return(let returnAndProduceMore):
-        self._state.unsafe.unlock()
         returnAndProduceMore.producers.resume()
         return try returnAndProduceMore.nextResult.get()
 
       case .suspend:
         return try await withCheckedThrowingContinuation { continuation in
-          let onSetContinuation = self._state.unsafe.withValueAssumingLockIsAcquired { state in
+          let onSetContinuation = self._state.withLock { state in
             state.setContinuation(continuation, forSubscription: id)
           }
 
-          self._state.unsafe.unlock()
-
           switch onSetContinuation {
-          case .resume(let continuation, let result):
+          case .resume(let continuation, let result, let producerContinuations):
             continuation.resume(with: result)
+            producerContinuations?.resume()
           case .none:
             ()
           }
         }
       }
     } onCancel: {
-      let onCancel = self._state.withLockedValue { state in
+      let onCancel = self._state.withLock { state in
         state.cancelSubscription(withID: id)
       }
 
@@ -304,7 +302,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   /// elements.
   @inlinable
   var isKnownSafeForNextSubscriber: Bool {
-    self._state.withLockedValue { state in
+    self._state.withLock { state in
       state.nextSubscriptionIsValid
     }
   }
@@ -312,7 +310,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   /// Invalidates all active subscriptions.
   @inlinable
   func invalidateAllSubscriptions() {
-    let action = self._state.withLockedValue { state in
+    let action = self._state.withLock { state in
       state.invalidateAllSubscriptions()
     }
 
@@ -467,10 +465,17 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
         _ continuation: ConsumerContinuation,
         forSubscription id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
       ) -> OnSetContinuation {
-        if self.subscriptions.setContinuation(continuation, forSubscriber: id) {
-          return .none
-        } else {
-          return .resume(continuation, .failure(CancellationError()))
+        // 'next(id)' must be checked first: an element might've been provided between the lock
+        // being dropped and a continuation being created and the lock being acquired again.
+        switch self.next(id) {
+        case .return(let resultAndProducers):
+          return .resume(continuation, resultAndProducers.nextResult, resultAndProducers.producers)
+        case .suspend:
+          if self.subscriptions.setContinuation(continuation, forSubscriber: id) {
+            return .none
+          } else {
+            return .resume(continuation, .failure(CancellationError()), nil)
+          }
         }
       }
 
@@ -697,10 +702,17 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
         _ continuation: ConsumerContinuation,
         forSubscription id: _BroadcastSequenceStateMachine<Element>.Subscriptions.ID
       ) -> OnSetContinuation {
-        if self.subscriptions.setContinuation(continuation, forSubscriber: id) {
-          return .none
-        } else {
-          return .resume(continuation, .failure(CancellationError()))
+        // 'next(id)' must be checked first: an element might've been provided between the lock
+        // being dropped and a continuation being created and the lock being acquired again.
+        switch self.next(id) {
+        case .return(let resultAndProducers):
+          return .resume(continuation, resultAndProducers.nextResult, resultAndProducers.producers)
+        case .suspend:
+          if self.subscriptions.setContinuation(continuation, forSubscriber: id) {
+            return .none
+          } else {
+            return .resume(continuation, .failure(CancellationError()), nil)
+          }
         }
       }
 
@@ -1149,7 +1161,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
   enum OnSetContinuation {
     case none
-    case resume(ConsumerContinuation, Result<Element?, any Error>)
+    case resume(ConsumerContinuation, Result<Element?, any Error>, ProducerContinuations?)
   }
 
   @inlinable
@@ -1175,7 +1187,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
       self._state = .streaming(state)
 
     case .finished(let state):
-      onSetContinuation = .resume(continuation, state.result.map { _ in nil })
+      onSetContinuation = .resume(continuation, state.result.map { _ in nil }, nil)
 
     case ._modifying:
       // All values must have been produced, nothing to wait for.
