@@ -221,9 +221,9 @@ final class GRPCServerTests: XCTestCase {
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
       interceptorPipeline: [
-        .applyToAllServices(.requestCounter(counter1)),
-        .applyToAllServices(.rejectAll(with: RPCError(code: .unavailable, message: ""))),
-        .applyToAllServices(.requestCounter(counter2)),
+        .apply(.requestCounter(counter1), to: .all),
+        .apply(.rejectAll(with: RPCError(code: .unavailable, message: "")), to: .all),
+        .apply(.requestCounter(counter2), to: .all),
       ]
     ) { client, _ in
       try await client.withStream(
@@ -249,7 +249,7 @@ final class GRPCServerTests: XCTestCase {
 
     try await self.withInProcessClientConnectedToServer(
       services: [BinaryEcho()],
-      interceptorPipeline: [.applyToAllServices(.requestCounter(counter))]
+      interceptorPipeline: [.apply(.requestCounter(counter), to: .all)]
     ) { client, _ in
       try await client.withStream(
         descriptor: MethodDescriptor(service: "not", method: "implemented"),
@@ -390,16 +390,16 @@ struct ServerTests {
       interceptorPipeline: [
         .apply(
           .requestCounter(onlyBinaryEchoCounter),
-          onlyToServices: [BinaryEcho.serviceName]
+          to: .services([BinaryEcho.serviceDescriptor])
         ),
-        .applyToAllServices(.requestCounter(allServicesCounter)),
+        .apply(.requestCounter(allServicesCounter), to: .all),
         .apply(
           .requestCounter(onlyHelloWorldCounter),
-          onlyToServices: [HelloWorld.serviceName]
+          to: .services([HelloWorld.serviceDescriptor])
         ),
         .apply(
           .requestCounter(bothServicesCounter),
-          onlyToServices: [BinaryEcho.serviceName, HelloWorld.serviceName]
+          to: .services([BinaryEcho.serviceDescriptor, HelloWorld.serviceDescriptor])
         ),
       ]
     ) { client, _ in
@@ -477,16 +477,16 @@ struct ServerTests {
       interceptorPipeline: [
         .apply(
           .requestCounter(onlyBinaryEchoGetCounter),
-          onlyToMethods: [BinaryEcho.Methods.get]
+          to: .methods([BinaryEcho.Methods.get])
         ),
-        .applyToAllServices(.requestCounter(allMethodsCounter)),
+        .apply(.requestCounter(allMethodsCounter), to: .all),
         .apply(
           .requestCounter(onlyBinaryEchoCollectCounter),
-          onlyToMethods: [BinaryEcho.Methods.collect]
+          to: .methods([BinaryEcho.Methods.collect])
         ),
         .apply(
           .requestCounter(bothBinaryEchoMethodsCounter),
-          onlyToMethods: [BinaryEcho.Methods.get, BinaryEcho.Methods.collect]
+          to: .methods([BinaryEcho.Methods.get, BinaryEcho.Methods.collect])
         ),
       ]
     ) { client, _ in

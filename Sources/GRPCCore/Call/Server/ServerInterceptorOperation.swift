@@ -15,93 +15,82 @@
  */
 
 /// A `ServerInterceptorOperation` describes to which RPCs a server interceptor should be applied.
-///
+///  
 /// You can configure a server interceptor to be applied to:
 /// - all RPCs and services;
 /// - requests directed only to specific services registered with your server; or
 /// - requests directed only to specific methods (of a specific service).
-///
+///  
 /// - SeeAlso: ``ServerInterceptor`` for more information on server interceptors, and
 ///  ``ClientInterceptorOperation`` for the client-side version of this type.
 public struct ServerInterceptorOperation: Sendable {
-  internal enum Wrapped: Sendable {
-    case allServices(interceptor: any ServerInterceptor)
-    case serviceSpecific(interceptor: any ServerInterceptor, services: [String])
-    case methodSpecific(interceptor: any ServerInterceptor, methods: [MethodDescriptor])
-  }
-
-  /// An operation specifying an interceptor that applies to all RPCs across all services will be registered with this server.
-  /// - Parameter interceptor: The interceptor to register with the server.
-  /// - Returns: A ``ServerInterceptorOperation``.
-  public static func applyToAllServices(
-    _ interceptor: any ServerInterceptor
-  ) -> Self {
-    Self(wrapped: .allServices(interceptor: interceptor))
-  }
-
-  /// An operation specifying an interceptor that will be applied only to RPCs directed to the specified services.
-  /// - Parameters:
-  ///   - interceptor: The interceptor to register with the server.
-  ///   - services: The list of service names for which this interceptor should intercept RPCs.
-  /// - Returns: A ``ServerInterceptorOperation``.
-  public static func apply(
-    _ interceptor: any ServerInterceptor,
-    onlyToServices services: [String]
-  ) -> Self {
-    Self(
-      wrapped: .serviceSpecific(
-        interceptor: interceptor,
-        services: services
-      )
-    )
-  }
-
-  /// An operation specifying an interceptor that will be applied only to RPCs directed to the specified service methods.
-  /// - Parameters:
-  ///   - interceptor: The interceptor to register with the server.
-  ///   - services: The list of method descriptors for which this interceptor should intercept RPCs.
-  /// - Returns: A ``ServerInterceptorOperation``.
-  public static func apply(
-    _ interceptor: any ServerInterceptor,
-    onlyToMethods methods: [MethodDescriptor]
-  ) -> Self {
-    Self(
-      wrapped: .methodSpecific(
-        interceptor: interceptor,
-        methods: methods
-      )
-    )
-  }
-
-  private let wrapped: Wrapped
-
-  private init(wrapped: Wrapped) {
-    self.wrapped = wrapped
-  }
-
-  /// Get the ``ServerInterceptor`` associated with this ``ServerInterceptorOperation``.
-  public var interceptor: any ServerInterceptor {
-    switch self.wrapped {
-    case .allServices(let interceptor):
-      return interceptor
-    case .serviceSpecific(let interceptor, _):
-      return interceptor
-    case .methodSpecific(let interceptor, _):
-      return interceptor
+  /// The subject of a ``ServerInterceptorOperation``.
+  /// The subject of an interceptor can either be all services and methods, only specific services, or only specific methods.
+  public struct Subject: Sendable {
+    internal enum Wrapped: Sendable {
+      case all
+      case services([ServiceDescriptor])
+      case methods([MethodDescriptor])
     }
+
+    private let wrapped: Wrapped
+
+    /// An operation subject specifying an interceptor that applies to all RPCs across all services will be registered with this server.
+    public static var all: Self { .init(wrapped: .all) }
+
+    /// An operation subject specifying an interceptor that will be applied only to RPCs directed to the specified services.
+    /// - Parameters:
+    ///   - services: The list of service names for which this interceptor should intercept RPCs.
+    /// - Returns: A ``ServerInterceptorOperation``.
+    public static func services(_ services: [ServiceDescriptor]) -> Self {
+      Self(wrapped: .services(services))
+    }
+
+    /// An operation subject specifying an interceptor that will be applied only to RPCs directed to the specified service methods.
+    /// - Parameters:
+    ///   - methods: The list of method descriptors for which this interceptor should intercept RPCs.
+    /// - Returns: A ``ServerInterceptorOperation``.
+    public static func methods(_ methods: [MethodDescriptor]) -> Self {
+      Self(wrapped: .methods(methods))
+    }
+
+    internal func applies(to descriptor: MethodDescriptor) -> Bool {
+      switch self.wrapped {
+      case .all:
+        return true
+
+      case .services(let services):
+        return services.map({ $0.fullyQualifiedService }).contains(descriptor.service)
+
+      case .methods(let methods):
+        return methods.contains(descriptor)
+      }
+    }
+  }
+
+  /// The interceptor specified for this operation.
+  public let interceptor: any ServerInterceptor
+
+  private let subject: Subject
+
+  private init(interceptor: any ServerInterceptor, appliesTo: Subject) {
+    self.interceptor = interceptor
+    self.subject = appliesTo
+  }
+
+  /// Create an operation, specifying which ``ServerInterceptor`` to apply and to which ``Subject``.
+  /// - Parameters:
+  ///   - interceptor: The ``ServerInterceptor`` to register with the server.
+  ///   - subject: The ``Subject`` to which the `interceptor` applies.
+  /// - Returns: A ``ServerInterceptorOperation``.
+  public static func apply(_ interceptor: any ServerInterceptor, to subject: Subject) -> Self {
+    Self(interceptor: interceptor, appliesTo: subject)
   }
 
   /// Returns whether this ``ServerInterceptorOperation`` applies to the given `descriptor`.
   /// - Parameter descriptor: A ``MethodDescriptor`` for which to test whether this interceptor applies.
   /// - Returns: `true` if this interceptor applies to the given `descriptor`, or `false` otherwise.
-  public func applies(to descriptor: MethodDescriptor) -> Bool {
-    switch self.wrapped {
-    case .allServices:
-      return true
-    case .serviceSpecific(_, let services):
-      return services.contains(descriptor.service)
-    case .methodSpecific(_, let methods):
-      return methods.contains(descriptor)
-    }
+  public func _applies(to descriptor: MethodDescriptor) -> Bool {
+    self.subject.applies(to: descriptor)
   }
 }

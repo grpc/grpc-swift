@@ -258,9 +258,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     )
 
     // The interceptor skips the handler altogether.
-    let harness = ServerRPCExecutorTestHarness(interceptors: [
-      .rejectAll(with: error)
-    ])
+    let harness = ServerRPCExecutorTestHarness(interceptors: [.rejectAll(with: error)])
     try await harness.execute(
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()

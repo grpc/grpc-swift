@@ -316,10 +316,7 @@ extension ServerRPCExecutor {
     case .some(let interceptor):
       let iter = iterator
       do {
-        return try await interceptor.intercept(
-          request: request,
-          context: context
-        ) {
+        return try await interceptor.intercept(request: request, context: context) {
           try await self._intercept(request: $0, context: $1, iterator: iter, finally: finally)
         }
       } catch let error as RPCError {

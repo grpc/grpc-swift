@@ -136,18 +136,6 @@ public struct RPCRouter: Sendable {
     self.handlers[descriptor] = (handler, [])
   }
 
-  @inlinable
-  public mutating func registerInterceptors(
-    pipeline: [ServerInterceptorOperation]
-  ) {
-    for descriptor in self.handlers.keys {
-      let applicableOperations = pipeline.filter { $0.applies(to: descriptor) }
-      if !applicableOperations.isEmpty {
-        self.handlers[descriptor]?.interceptors = applicableOperations.map { $0.interceptor }
-      }
-    }
-  }
-
   /// Removes any handler registered for the specified method.
   ///
   /// - Parameter descriptor: A descriptor of the method to remove a handler for.
@@ -155,6 +143,16 @@ public struct RPCRouter: Sendable {
   @discardableResult
   public mutating func removeHandler(forMethod descriptor: MethodDescriptor) -> Bool {
     return self.handlers.removeValue(forKey: descriptor) != nil
+  }
+
+  @inlinable
+  mutating func registerInterceptors(pipeline: [ServerInterceptorOperation]) {
+    for descriptor in self.handlers.keys {
+      let applicableOperations = pipeline.filter { $0._applies(to: descriptor) }
+      if !applicableOperations.isEmpty {
+        self.handlers[descriptor]?.interceptors = applicableOperations.map { $0.interceptor }
+      }
+    }
   }
 }
 

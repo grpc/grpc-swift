@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, gRPC Authors All rights reserved.
+ * Copyright 2024, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import GRPCCore
 
 struct HelloWorld: RegistrableRPCService {
-  static let serviceName = "helloworld.HelloWorld"
+  static let serviceDescriptor = ServiceDescriptor(package: "helloworld", service: "HelloWorld")
 
   func sayHello(
     _ request: ServerRequest<[UInt8]>
@@ -41,6 +41,9 @@ struct HelloWorld: RegistrableRPCService {
   }
 
   enum Methods {
-    static let sayHello = MethodDescriptor(service: HelloWorld.serviceName, method: "SayHello")
+    static let sayHello = MethodDescriptor(
+      service: HelloWorld.serviceDescriptor.fullyQualifiedService,
+      method: "SayHello"
+    )
   }
 }
