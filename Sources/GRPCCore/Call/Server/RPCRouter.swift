@@ -22,6 +22,8 @@
 /// the router has a handler for a method with ``hasHandler(forMethod:)`` or get a list of all
 /// methods with handlers registered by calling ``methods``. You can also remove the handler for a
 /// given method by calling ``removeHandler(forMethod:)``.
+/// You can also register any interceptors that you want applied to registered handlers via the
+/// ``registerInterceptors(pipeline:)`` method.
 ///
 /// In most cases you won't need to interact with the router directly. Instead you should register
 /// your services with ``GRPCServer/init(transport:services:interceptors:)`` which will in turn
@@ -145,10 +147,19 @@ public struct RPCRouter: Sendable {
     return self.handlers.removeValue(forKey: descriptor) != nil
   }
 
+  /// Registers applicable interceptors to all currently-registered handlers.
+  ///
+  /// - Important: Calling this method will apply the interceptors only to existing handlers. Any handlers registered via
+  ///  ``registerHandler(forMethod:deserializer:serializer:handler:)`` _after_ calling this method will not have
+  ///    any interceptors applied to them. If you want to make sure all registered methods have any applicable interceptors applied,
+  ///    only call this method _after_ you have registered all handlers.
+  /// - Parameter pipeline: The interceptor pipeline operations to register to all currently-registered handlers. The order of the
+  ///  interceptors matters.
+  /// - SeeAlso: ``ServerInterceptorPipelineOperation``.
   @inlinable
-  mutating func registerInterceptors(pipeline: [ServerInterceptorOperation]) {
+  public mutating func registerInterceptors(pipeline: [ServerInterceptorPipelineOperation]) {
     for descriptor in self.handlers.keys {
-      let applicableOperations = pipeline.filter { $0._applies(to: descriptor) }
+      let applicableOperations = pipeline.filter { $0.applies(to: descriptor) }
       if !applicableOperations.isEmpty {
         self.handlers[descriptor]?.interceptors = applicableOperations.map { $0.interceptor }
       }

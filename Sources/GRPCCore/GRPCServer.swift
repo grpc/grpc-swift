@@ -166,7 +166,7 @@ public final class GRPCServer: Sendable {
   public convenience init(
     transport: any ServerTransport,
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorOperation]
+    interceptorPipeline: [ServerInterceptorPipelineOperation]
   ) {
     var router = RPCRouter()
     for service in services {

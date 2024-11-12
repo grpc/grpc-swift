@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/// A `ServerInterceptorOperation` describes to which RPCs a server interceptor should be applied.
+/// A `ServerInterceptorPipelineOperation` describes to which RPCs a server interceptor should be applied.
 ///  
 /// You can configure a server interceptor to be applied to:
 /// - all RPCs and services;
@@ -22,15 +22,15 @@
 /// - requests directed only to specific methods (of a specific service).
 ///  
 /// - SeeAlso: ``ServerInterceptor`` for more information on server interceptors, and
-///  ``ClientInterceptorOperation`` for the client-side version of this type.
-public struct ServerInterceptorOperation: Sendable {
-  /// The subject of a ``ServerInterceptorOperation``.
+///  ``ClientInterceptorPipelineOperation`` for the client-side version of this type.
+public struct ServerInterceptorPipelineOperation: Sendable {
+  /// The subject of a ``ServerInterceptorPipelineOperation``.
   /// The subject of an interceptor can either be all services and methods, only specific services, or only specific methods.
   public struct Subject: Sendable {
     internal enum Wrapped: Sendable {
       case all
-      case services([ServiceDescriptor])
-      case methods([MethodDescriptor])
+      case services(Set<ServiceDescriptor>)
+      case methods(Set<MethodDescriptor>)
     }
 
     private let wrapped: Wrapped
@@ -41,19 +41,20 @@ public struct ServerInterceptorOperation: Sendable {
     /// An operation subject specifying an interceptor that will be applied only to RPCs directed to the specified services.
     /// - Parameters:
     ///   - services: The list of service names for which this interceptor should intercept RPCs.
-    /// - Returns: A ``ServerInterceptorOperation``.
-    public static func services(_ services: [ServiceDescriptor]) -> Self {
+    /// - Returns: A ``ServerInterceptorPipelineOperation``.
+    public static func services(_ services: Set<ServiceDescriptor>) -> Self {
       Self(wrapped: .services(services))
     }
 
     /// An operation subject specifying an interceptor that will be applied only to RPCs directed to the specified service methods.
     /// - Parameters:
     ///   - methods: The list of method descriptors for which this interceptor should intercept RPCs.
-    /// - Returns: A ``ServerInterceptorOperation``.
-    public static func methods(_ methods: [MethodDescriptor]) -> Self {
+    /// - Returns: A ``ServerInterceptorPipelineOperation``.
+    public static func methods(_ methods: Set<MethodDescriptor>) -> Self {
       Self(wrapped: .methods(methods))
     }
 
+    @usableFromInline
     internal func applies(to descriptor: MethodDescriptor) -> Bool {
       switch self.wrapped {
       case .all:
@@ -71,7 +72,8 @@ public struct ServerInterceptorOperation: Sendable {
   /// The interceptor specified for this operation.
   public let interceptor: any ServerInterceptor
 
-  private let subject: Subject
+  @usableFromInline
+  internal let subject: Subject
 
   private init(interceptor: any ServerInterceptor, appliesTo: Subject) {
     self.interceptor = interceptor
@@ -82,15 +84,16 @@ public struct ServerInterceptorOperation: Sendable {
   /// - Parameters:
   ///   - interceptor: The ``ServerInterceptor`` to register with the server.
   ///   - subject: The ``Subject`` to which the `interceptor` applies.
-  /// - Returns: A ``ServerInterceptorOperation``.
+  /// - Returns: A ``ServerInterceptorPipelineOperation``.
   public static func apply(_ interceptor: any ServerInterceptor, to subject: Subject) -> Self {
     Self(interceptor: interceptor, appliesTo: subject)
   }
 
-  /// Returns whether this ``ServerInterceptorOperation`` applies to the given `descriptor`.
+  /// Returns whether this ``ServerInterceptorPipelineOperation`` applies to the given `descriptor`.
   /// - Parameter descriptor: A ``MethodDescriptor`` for which to test whether this interceptor applies.
   /// - Returns: `true` if this interceptor applies to the given `descriptor`, or `false` otherwise.
-  public func _applies(to descriptor: MethodDescriptor) -> Bool {
+  @inlinable
+  internal func applies(to descriptor: MethodDescriptor) -> Bool {
     self.subject.applies(to: descriptor)
   }
 }
