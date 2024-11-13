@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 import GRPCCore
-import XCTest
 
 struct BinaryEcho: RegistrableRPCService {
+  static let serviceDescriptor = ServiceDescriptor(package: "echo", service: "Echo")
+
   func get(
     _ request: ServerRequest<[UInt8]>
   ) async throws -> ServerResponse<[UInt8]> {
@@ -96,9 +97,21 @@ struct BinaryEcho: RegistrableRPCService {
   }
 
   enum Methods {
-    static let get = MethodDescriptor(service: "echo.Echo", method: "Get")
-    static let collect = MethodDescriptor(service: "echo.Echo", method: "Collect")
-    static let expand = MethodDescriptor(service: "echo.Echo", method: "Expand")
-    static let update = MethodDescriptor(service: "echo.Echo", method: "Update")
+    static let get = MethodDescriptor(
+      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      method: "Get"
+    )
+    static let collect = MethodDescriptor(
+      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      method: "Collect"
+    )
+    static let expand = MethodDescriptor(
+      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      method: "Expand"
+    )
+    static let update = MethodDescriptor(
+      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      method: "Update"
+    )
   }
 }

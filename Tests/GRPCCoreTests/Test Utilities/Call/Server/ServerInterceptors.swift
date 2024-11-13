@@ -22,13 +22,13 @@ extension ServerInterceptor where Self == RejectAllServerInterceptor {
   }
 
   static func throwError(_ error: RPCError) -> Self {
-    return RejectAllServerInterceptor(error: error, throw: true)
+    RejectAllServerInterceptor(error: error, throw: true)
   }
 }
 
 extension ServerInterceptor where Self == RequestCountingServerInterceptor {
   static func requestCounter(_ counter: AtomicCounter) -> Self {
-    return RequestCountingServerInterceptor(counter: counter)
+    RequestCountingServerInterceptor(counter: counter)
   }
 }
 

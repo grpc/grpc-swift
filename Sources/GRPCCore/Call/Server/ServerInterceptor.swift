@@ -21,10 +21,11 @@
 /// been returned from a service. They are typically used for cross-cutting concerns like filtering
 /// requests, validating messages, logging additional data, and tracing.
 ///
-/// Interceptors are registered with the server apply to all RPCs. If you need to modify the
-/// behavior of an interceptor on a per-RPC basis then you can use the
-/// ``ServerContext/descriptor`` to determine which RPC is being called and
-/// conditionalise behavior accordingly.
+/// Interceptors can be registered with the server either directly or  via ``ServerInterceptorPipelineOperation``s.
+/// You may register them for all services registered with a server, for RPCs directed to specific services, or
+/// for RPCs directed to specific methods. If you need to modify the behavior of an interceptor on a
+/// per-RPC basis in more detail, then you can use the ``ServerContext/descriptor`` to determine
+/// which RPC is being called and conditionalise behavior accordingly.
 ///
 /// ## RPC filtering
 ///
@@ -33,19 +34,19 @@
 /// demonstrates this.
 ///
 /// ```swift
-/// struct AuthServerInterceptor: Sendable {
+/// struct AuthServerInterceptor: ServerInterceptor {
 ///   let isAuthorized: @Sendable (String, MethodDescriptor) async throws -> Void
 ///
 ///   func intercept<Input: Sendable, Output: Sendable>(
 ///     request: StreamingServerRequest<Input>,
-///     context: ServerInterceptorContext,
+///     context: ServerContext,
 ///     next: @Sendable (
 ///       _ request: StreamingServerRequest<Input>,
-///       _ context: ServerInterceptorContext
+///       _ context: ServerContext
 ///     ) async throws -> StreamingServerResponse<Output>
 ///   ) async throws -> StreamingServerResponse<Output> {
 ///     // Extract the auth token.
-///     guard let token = request.metadata["authorization"] else {
+///     guard let token = request.metadata[stringValues: "authorization"].first(where: { _ in true }) else {
 ///       throw RPCError(code: .unauthenticated, message: "Not authenticated")
 ///     }
 ///

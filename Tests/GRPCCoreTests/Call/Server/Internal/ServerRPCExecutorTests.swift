@@ -333,7 +333,9 @@ final class ServerRPCExecutorTests: XCTestCase {
 
   func testThrowingInterceptor() async throws {
     let harness = ServerRPCExecutorTestHarness(
-      interceptors: [.throwError(RPCError(code: .unavailable, message: "Unavailable"))]
+      interceptors: [
+        .throwError(RPCError(code: .unavailable, message: "Unavailable"))
+      ]
     )
 
     try await harness.execute(handler: .echo) { inbound in
