@@ -5,7 +5,9 @@ A gRPC library for Swift written natively in Swift.
 > 🚧 This module is part of gRPC Swift v2 which is under active development and in the pre-release
 > stage.
 
-## Package structure
+## Overview
+
+### Package structure
 
 gRPC Swift is distributed across multiple Swift packages. These are:
 
@@ -32,7 +34,7 @@ gRPC Swift is distributed across multiple Swift packages. These are:
 This package, and this module (``GRPCCore``) in particular, include higher level documentation such
 as tutorials.
 
-## Modules in this package
+### Modules in this package
 
 - ``GRPCCore`` (this module) contains core abstractions, currency types and runtime components
   for gRPC Swift.
