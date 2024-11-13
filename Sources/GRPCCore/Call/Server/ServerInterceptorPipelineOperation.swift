@@ -15,12 +15,12 @@
  */
 
 /// A `ServerInterceptorPipelineOperation` describes to which RPCs a server interceptor should be applied.
-///  
+///
 /// You can configure a server interceptor to be applied to:
 /// - all RPCs and services;
 /// - requests directed only to specific services registered with your server; or
 /// - requests directed only to specific methods (of a specific service).
-///  
+///
 /// - SeeAlso: ``ServerInterceptor`` for more information on server interceptors.
 public struct ServerInterceptorPipelineOperation: Sendable {
   /// The subject of a ``ServerInterceptorPipelineOperation``.
