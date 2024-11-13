@@ -14,7 +14,9 @@ mapping a call onto a stream and dealing with serialization. The highest level
 of abstraction is the _stub_ layer which provides client and server interfaces
 generated from an interface definition language (IDL).
 
-## Transport
+## Overview
+
+### Transport
 
 The transport layer provides a bidirectional communication channel with a remote
 peer which is typically long-lived.
@@ -42,7 +44,7 @@ The vast majority of users won't need to implement either of these protocols.
 However, many users will need to create instances of types conforming to these
 protocols to create a server or client, respectively.
 
-### Server transport
+#### Server transport
 
 The ``ServerTransport`` is responsible for the server half of a transport. It
 listens for new gRPC streams and then processes them. This is achieved via the
@@ -57,7 +59,7 @@ Note that the server transport doesn't include the idea of a "connection". While
 an HTTP/2 server transport will in all likelihood have multiple connections open
 at any given time, that detail isn't surfaced at this level of abstraction.
 
-### Client transport
+#### Client transport
 
 While the server is responsible for handling streams, the ``ClientTransport`` is
 responsible for creating them. Client transports will typically maintain a
@@ -83,7 +85,7 @@ may be retried. Some of this is exposed via the ``ClientTransport`` as
 the ``ClientTransport/retryThrottle`` and
 ``ClientTransport/config(forMethod:)``.
 
-### Streams
+#### Streams
 
 Both client and server transport protocols use ``RPCStream`` to represent
 streams of information. Each RPC can be thought of as having two logical
@@ -122,7 +124,7 @@ and indicates the final outcome of an RPC. It includes a ``Status/Code-swift.str
 and string describing the final outcome while the ``Metadata`` may contain additional
 information about the RPC.
 
-## Call
+### Call
 
 The "call" layer builds on top the transport layer to map higher level RPCs calls on
 to streams. It also implements transport-agnostic functionality, like serialization
@@ -139,7 +141,7 @@ provides support for [SwiftProtobuf](https://github.com/apple/swift-protobuf) by
 implementing serializers and a code generator for the Protocol Buffers
 compiler, `protoc`.
 
-### Interceptors
+#### Interceptors
 
 This layer also provides client and server interceptors allowing you to modify requests
 and responses between the caller and the network. These are implemented as
@@ -152,7 +154,7 @@ Naturally, the interceptors APIs are `async`.
 Interceptors are registered directly with the ``GRPCClient`` and ``GRPCServer`` and
 can either be applied to all RPCs or to specific services.
 
-### Client
+#### Client
 
 The call layer includes  a concrete ``GRPCClient`` which provides API to execute all
 four types of RPC against a ``ClientTransport``. These methods are:
@@ -178,7 +180,7 @@ which will stop new RPCs from starting (by failing them with
 Existing work can be stopped more abruptly by cancelling the task where
 ``GRPCClient/run()`` is executing.
 
-### Server
+#### Server
 
 ``GRPCServer`` is provided by the call layer to host services for a given
 transport. Beyond creating the server it has a very limited API surface: it has
@@ -188,7 +190,7 @@ can initiate graceful shutdown by calling ``GRPCServer/beginGracefulShutdown()``
 which will stop new RPCs from being handled but will let existing RPCs run to
 completion. Cancelling the task will close the server more abruptly.
 
-## Stub
+### Stub
 
 The stub layer is the layer which most users interact with. It provides service
 specific interfaces generated from an interface definition language (IDL) such
@@ -204,7 +206,7 @@ However, the stub layer is optional, users may choose to not use it and
 construct clients and services manually. A gRPC proxy, for example, would not
 use the stub layer.
 
-### Server stubs
+#### Server stubs
 
 Users implement services by conforming a type to a generated service `protocol`.
 Each service has three protocols generated for it:
@@ -308,7 +310,7 @@ refines the ``RegistrableRPCService`` protocol. This `protocol` has a single
 requirement for registering methods with an ``RPCRouter``. A default
 implementation of this method is also provided.
 
-### Client stubs
+#### Client stubs
 
 Generated client code is split into a `protocol` and a concrete `struct`
 implementing the `protocol`. An example of the client protocol is:
