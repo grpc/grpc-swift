@@ -30,7 +30,7 @@
 /// A description of an import declaration.
 ///
 /// For example: `import Foo`.
-struct ImportDescription: Equatable, Codable {
+struct ImportDescription: Equatable, Codable, Sendable {
   /// The access level of the imported module.
   ///
   /// For example, the `public` in `public import Foo`.
@@ -62,7 +62,7 @@ struct ImportDescription: Equatable, Codable {
   var item: Item? = nil
 
   /// Describes any requirement for the `@preconcurrency` attribute.
-  enum PreconcurrencyRequirement: Equatable, Codable {
+  enum PreconcurrencyRequirement: Equatable, Codable, Sendable {
     /// The attribute is always required.
     case always
     /// The attribute is not required.
@@ -72,7 +72,7 @@ struct ImportDescription: Equatable, Codable {
   }
 
   /// Represents an item imported from a module.
-  struct Item: Equatable, Codable {
+  struct Item: Equatable, Codable, Sendable {
     /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
     var kind: Kind
 
@@ -85,7 +85,7 @@ struct ImportDescription: Equatable, Codable {
     }
   }
 
-  enum Kind: String, Equatable, Codable {
+  enum Kind: String, Equatable, Codable, Sendable {
     case `typealias`
     case `struct`
     case `class`
@@ -120,7 +120,7 @@ internal enum AccessModifier: String, Sendable, Equatable, Codable {
 /// A description of a comment.
 ///
 /// For example `/// Hello`.
-enum Comment: Equatable, Codable {
+enum Comment: Equatable, Codable, Sendable {
 
   /// An inline comment.
   ///
@@ -150,7 +150,7 @@ enum Comment: Equatable, Codable {
 /// A description of a literal.
 ///
 /// For example `"hello"` or `42`.
-enum LiteralDescription: Equatable, Codable {
+enum LiteralDescription: Equatable, Codable, Sendable {
 
   /// A string literal.
   ///
@@ -189,7 +189,7 @@ enum LiteralDescription: Equatable, Codable {
 /// A description of an identifier, such as a variable name.
 ///
 /// For example, in `let foo = 42`, `foo` is an identifier.
-enum IdentifierDescription: Equatable, Codable {
+enum IdentifierDescription: Equatable, Codable, Sendable {
 
   /// A pattern identifier.
   ///
@@ -205,7 +205,7 @@ enum IdentifierDescription: Equatable, Codable {
 /// A description of a member access expression.
 ///
 /// For example `foo.bar`.
-struct MemberAccessDescription: Equatable, Codable {
+struct MemberAccessDescription: Equatable, Codable, Sendable {
 
   /// The expression of which a member `right` is accessed.
   ///
@@ -221,7 +221,7 @@ struct MemberAccessDescription: Equatable, Codable {
 /// A description of a function argument.
 ///
 /// For example in `foo(bar: 42)`, the function argument is `bar: 42`.
-struct FunctionArgumentDescription: Equatable, Codable {
+struct FunctionArgumentDescription: Equatable, Codable, Sendable {
 
   /// An optional label of the function argument.
   ///
@@ -237,7 +237,7 @@ struct FunctionArgumentDescription: Equatable, Codable {
 /// A description of a function call.
 ///
 /// For example `foo(bar: 42)`.
-struct FunctionCallDescription: Equatable, Codable {
+struct FunctionCallDescription: Equatable, Codable, Sendable {
 
   /// The expression that returns the function to be called.
   ///
@@ -284,7 +284,7 @@ struct FunctionCallDescription: Equatable, Codable {
 }
 
 /// A type of a variable binding: `let` or `var`.
-enum BindingKind: Equatable, Codable {
+enum BindingKind: Equatable, Codable, Sendable {
 
   /// A mutable variable.
   case `var`
@@ -296,7 +296,7 @@ enum BindingKind: Equatable, Codable {
 /// A description of a variable declaration.
 ///
 /// For example `let foo = 42`.
-struct VariableDescription: Equatable, Codable {
+struct VariableDescription: Equatable, Codable, Sendable {
 
   /// An access modifier.
   var accessModifier: AccessModifier?
@@ -346,7 +346,7 @@ struct VariableDescription: Equatable, Codable {
 }
 
 /// A requirement of a where clause.
-enum WhereClauseRequirement: Equatable, Codable {
+enum WhereClauseRequirement: Equatable, Codable, Sendable {
 
   /// A conformance requirement.
   ///
@@ -357,7 +357,7 @@ enum WhereClauseRequirement: Equatable, Codable {
 /// A description of a where clause.
 ///
 /// For example: `extension Array where Element: Foo {`.
-struct WhereClause: Equatable, Codable {
+struct WhereClause: Equatable, Codable, Sendable {
 
   /// One or more requirements to be added after the `where` keyword.
   var requirements: [WhereClauseRequirement]
@@ -366,7 +366,7 @@ struct WhereClause: Equatable, Codable {
 /// A description of an extension declaration.
 ///
 /// For example `extension Foo {`.
-struct ExtensionDescription: Equatable, Codable {
+struct ExtensionDescription: Equatable, Codable, Sendable {
 
   /// An access modifier.
   var accessModifier: AccessModifier? = nil
@@ -391,7 +391,7 @@ struct ExtensionDescription: Equatable, Codable {
 /// A description of a struct declaration.
 ///
 /// For example `struct Foo {`.
-struct StructDescription: Equatable, Codable {
+struct StructDescription: Equatable, Codable, Sendable {
 
   /// An access modifier.
   var accessModifier: AccessModifier? = nil
@@ -413,7 +413,7 @@ struct StructDescription: Equatable, Codable {
 /// A description of an enum declaration.
 ///
 /// For example `enum Bar {`.
-struct EnumDescription: Equatable, Codable {
+struct EnumDescription: Equatable, Codable, Sendable {
 
   /// A Boolean value that indicates whether the enum has a `@frozen`
   /// attribute.
@@ -441,7 +441,7 @@ struct EnumDescription: Equatable, Codable {
 }
 
 /// A description of a type reference.
-indirect enum ExistingTypeDescription: Equatable, Codable {
+indirect enum ExistingTypeDescription: Equatable, Codable, Sendable {
 
   /// A type with the `any` keyword in front of it.
   ///
@@ -488,7 +488,7 @@ indirect enum ExistingTypeDescription: Equatable, Codable {
 /// A description of a typealias declaration.
 ///
 /// For example `typealias Foo = Int`.
-struct TypealiasDescription: Equatable, Codable {
+struct TypealiasDescription: Equatable, Codable, Sendable {
 
   /// An access modifier.
   var accessModifier: AccessModifier?
@@ -507,7 +507,7 @@ struct TypealiasDescription: Equatable, Codable {
 /// A description of a protocol declaration.
 ///
 /// For example `protocol Foo {`.
-struct ProtocolDescription: Equatable, Codable {
+struct ProtocolDescription: Equatable, Codable, Sendable {
 
   /// An access modifier.
   var accessModifier: AccessModifier? = nil
@@ -531,7 +531,7 @@ struct ProtocolDescription: Equatable, Codable {
 ///
 /// For example, in `func foo(bar baz: String = "hi")`, the parameter
 /// description represents `bar baz: String = "hi"`
-struct ParameterDescription: Equatable, Codable {
+struct ParameterDescription: Equatable, Codable, Sendable {
 
   /// An external parameter label.
   ///
@@ -561,7 +561,7 @@ struct ParameterDescription: Equatable, Codable {
 }
 
 /// A function kind: `func` or `init`.
-enum FunctionKind: Equatable, Codable {
+enum FunctionKind: Equatable, Codable, Sendable {
 
   /// An initializer.
   ///
@@ -578,7 +578,7 @@ enum FunctionKind: Equatable, Codable {
 }
 
 /// A function keyword, such as `async` and `throws`.
-enum FunctionKeyword: Equatable, Codable {
+enum FunctionKeyword: Equatable, Codable, Sendable {
 
   /// An asynchronous function.
   case `async`
@@ -593,7 +593,7 @@ enum FunctionKeyword: Equatable, Codable {
 /// A description of a function signature.
 ///
 /// For example: `func foo(bar: String) async throws -> Int`.
-struct FunctionSignatureDescription: Equatable, Codable {
+struct FunctionSignatureDescription: Equatable, Codable, Sendable {
 
   /// An access modifier.
   var accessModifier: AccessModifier? = nil
@@ -620,7 +620,7 @@ struct FunctionSignatureDescription: Equatable, Codable {
 /// A description of a function definition.
 ///
 /// For example: `func foo() { }`.
-struct FunctionDescription: Equatable, Codable {
+struct FunctionDescription: Equatable, Codable, Sendable {
 
   /// The signature of the function.
   var signature: FunctionSignatureDescription
@@ -703,7 +703,7 @@ struct FunctionDescription: Equatable, Codable {
 /// A description of a closure signature.
 ///
 /// For example: `(String) async throws -> Int`.
-struct ClosureSignatureDescription: Equatable, Codable {
+struct ClosureSignatureDescription: Equatable, Codable, Sendable {
   /// The parameters of the function.
   var parameters: [ParameterDescription] = []
 
@@ -724,7 +724,7 @@ struct ClosureSignatureDescription: Equatable, Codable {
 ///
 /// For example, in `case foo(bar: String)`, the associated value
 /// represents `bar: String`.
-struct EnumCaseAssociatedValueDescription: Equatable, Codable {
+struct EnumCaseAssociatedValueDescription: Equatable, Codable, Sendable {
 
   /// A variable label.
   ///
@@ -740,7 +740,7 @@ struct EnumCaseAssociatedValueDescription: Equatable, Codable {
 /// An enum case kind.
 ///
 /// For example: `case foo` versus `case foo(String)`, and so on.
-enum EnumCaseKind: Equatable, Codable {
+enum EnumCaseKind: Equatable, Codable, Sendable {
 
   /// A case with only a name.
   ///
@@ -761,7 +761,7 @@ enum EnumCaseKind: Equatable, Codable {
 /// A description of an enum case.
 ///
 /// For example: `case foo(String)`.
-struct EnumCaseDescription: Equatable, Codable {
+struct EnumCaseDescription: Equatable, Codable, Sendable {
 
   /// The name of the enum case.
   ///
@@ -773,7 +773,7 @@ struct EnumCaseDescription: Equatable, Codable {
 }
 
 /// A declaration of a Swift entity.
-indirect enum Declaration: Equatable, Codable {
+indirect enum Declaration: Equatable, Codable, Sendable {
 
   /// A declaration that adds a comment on top of the provided declaration.
   case commentable(Comment?, Declaration)
@@ -812,7 +812,7 @@ indirect enum Declaration: Equatable, Codable {
 /// A description of a deprecation notice.
 ///
 /// For example: `@available(*, deprecated, message: "This is going away", renamed: "other(param:)")`
-struct DeprecationDescription: Equatable, Codable {
+struct DeprecationDescription: Equatable, Codable, Sendable {
 
   /// A message used by the deprecation attribute.
   var message: String?
@@ -824,7 +824,7 @@ struct DeprecationDescription: Equatable, Codable {
 /// A description of an availability guard.
 ///
 /// For example: `@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)`
-struct AvailabilityDescription: Equatable, Codable {
+struct AvailabilityDescription: Equatable, Codable, Sendable {
   /// The array of OSes and versions which are specified in the availability guard.
   var osVersions: [OSVersion]
   init(osVersions: [OSVersion]) {
@@ -832,7 +832,7 @@ struct AvailabilityDescription: Equatable, Codable {
   }
 
   /// An OS and its version.
-  struct OSVersion: Equatable, Codable {
+  struct OSVersion: Equatable, Codable, Sendable {
     var os: OS
     var version: String
     init(os: OS, version: String) {
@@ -843,7 +843,7 @@ struct AvailabilityDescription: Equatable, Codable {
 
   /// One of the possible OSes.
   // swift-format-ignore: DontRepeatTypeInStaticProperties
-  struct OS: Equatable, Codable {
+  struct OS: Equatable, Codable, Sendable {
     var name: String
 
     init(name: String) {
@@ -861,7 +861,7 @@ struct AvailabilityDescription: Equatable, Codable {
 /// A description of an assignment expression.
 ///
 /// For example: `foo = 42`.
-struct AssignmentDescription: Equatable, Codable {
+struct AssignmentDescription: Equatable, Codable, Sendable {
 
   /// The left-hand side expression, the variable to assign to.
   ///
@@ -875,7 +875,7 @@ struct AssignmentDescription: Equatable, Codable {
 }
 
 /// A switch case kind, either a `case` or a `default`.
-enum SwitchCaseKind: Equatable, Codable {
+enum SwitchCaseKind: Equatable, Codable, Sendable {
 
   /// A case.
   ///
@@ -894,7 +894,7 @@ enum SwitchCaseKind: Equatable, Codable {
 /// A description of a switch case definition.
 ///
 /// For example: `case foo: print("foo")`.
-struct SwitchCaseDescription: Equatable, Codable {
+struct SwitchCaseDescription: Equatable, Codable, Sendable {
 
   /// The kind of the switch case.
   var kind: SwitchCaseKind
@@ -909,7 +909,7 @@ struct SwitchCaseDescription: Equatable, Codable {
 /// A description of a switch statement expression.
 ///
 /// For example: `switch foo {`.
-struct SwitchDescription: Equatable, Codable {
+struct SwitchDescription: Equatable, Codable, Sendable {
 
   /// The expression evaluated by the switch statement.
   ///
@@ -924,7 +924,7 @@ struct SwitchDescription: Equatable, Codable {
 ///
 /// For example: in `if foo { bar }`, the condition pair represents
 /// `foo` + `bar`.
-struct IfBranch: Equatable, Codable {
+struct IfBranch: Equatable, Codable, Sendable {
 
   /// The expressions evaluated by the if statement and their corresponding
   /// body blocks. If more than one is provided, an `else if` branch is added.
@@ -941,7 +941,7 @@ struct IfBranch: Equatable, Codable {
 /// A description of an if[[/elseif]/else] statement expression.
 ///
 /// For example: `if foo { } else if bar { } else { }`.
-struct IfStatementDescription: Equatable, Codable {
+struct IfStatementDescription: Equatable, Codable, Sendable {
 
   /// The primary `if` branch.
   var ifBranch: IfBranch
@@ -958,7 +958,7 @@ struct IfStatementDescription: Equatable, Codable {
 /// A description of a do statement.
 ///
 /// For example: `do { try foo() } catch { return bar }`.
-struct DoStatementDescription: Equatable, Codable {
+struct DoStatementDescription: Equatable, Codable, Sendable {
 
   /// The code blocks in the `do` statement body.
   ///
@@ -978,7 +978,7 @@ struct DoStatementDescription: Equatable, Codable {
 /// A description of a value binding used in enums with associated values.
 ///
 /// For example: `let foo(bar)`.
-struct ValueBindingDescription: Equatable, Codable {
+struct ValueBindingDescription: Equatable, Codable, Sendable {
 
   /// The binding kind: `let` or `var`.
   var kind: BindingKind
@@ -990,7 +990,7 @@ struct ValueBindingDescription: Equatable, Codable {
 }
 
 /// A kind of a keyword.
-enum KeywordKind: Equatable, Codable {
+enum KeywordKind: Equatable, Codable, Sendable {
 
   /// The return keyword.
   case `return`
@@ -1009,7 +1009,7 @@ enum KeywordKind: Equatable, Codable {
 }
 
 /// A description of an expression that places a keyword before an expression.
-struct UnaryKeywordDescription: Equatable, Codable {
+struct UnaryKeywordDescription: Equatable, Codable, Sendable {
 
   /// The keyword to place before the expression.
   ///
@@ -1025,7 +1025,7 @@ struct UnaryKeywordDescription: Equatable, Codable {
 /// A description of a closure invocation.
 ///
 /// For example: `{ foo in return foo + "bar" }`.
-struct ClosureInvocationDescription: Equatable, Codable {
+struct ClosureInvocationDescription: Equatable, Codable, Sendable {
 
   /// The names of the arguments taken by the closure.
   ///
@@ -1043,7 +1043,7 @@ struct ClosureInvocationDescription: Equatable, Codable {
 /// A binary operator.
 ///
 /// For example: `+=` in `a += b`.
-enum BinaryOperator: String, Equatable, Codable {
+enum BinaryOperator: String, Equatable, Codable, Sendable {
 
   /// The += operator, adds and then assigns another value.
   case plusEquals = "+="
@@ -1061,7 +1061,7 @@ enum BinaryOperator: String, Equatable, Codable {
 /// A description of a binary operation expression.
 ///
 /// For example: `foo += 1`.
-struct BinaryOperationDescription: Equatable, Codable {
+struct BinaryOperationDescription: Equatable, Codable, Sendable {
 
   /// The left-hand side expression of the operation.
   ///
@@ -1083,7 +1083,7 @@ struct BinaryOperationDescription: Equatable, Codable {
 /// reference to a variable.
 ///
 /// For example, `&foo` passes a reference to the `foo` variable.
-struct InOutDescription: Equatable, Codable {
+struct InOutDescription: Equatable, Codable, Sendable {
 
   /// The referenced expression.
   ///
@@ -1094,7 +1094,7 @@ struct InOutDescription: Equatable, Codable {
 /// A description of an optional chaining expression.
 ///
 /// For example, in `foo?`, `referencedExpr` is `foo`.
-struct OptionalChainingDescription: Equatable, Codable {
+struct OptionalChainingDescription: Equatable, Codable, Sendable {
 
   /// The referenced expression.
   ///
@@ -1105,7 +1105,7 @@ struct OptionalChainingDescription: Equatable, Codable {
 /// A description of a tuple.
 ///
 /// For example: `(foo, bar)`.
-struct TupleDescription: Equatable, Codable {
+struct TupleDescription: Equatable, Codable, Sendable {
 
   /// The member expressions.
   ///
@@ -1114,7 +1114,7 @@ struct TupleDescription: Equatable, Codable {
 }
 
 /// A Swift expression.
-indirect enum Expression: Equatable, Codable {
+indirect enum Expression: Equatable, Codable, Sendable {
 
   /// A literal.
   ///
@@ -1191,7 +1191,7 @@ indirect enum Expression: Equatable, Codable {
 }
 
 /// A code block item, either a declaration or an expression.
-enum CodeBlockItem: Equatable, Codable {
+enum CodeBlockItem: Equatable, Codable, Sendable {
 
   /// A declaration, such as of a new type or function.
   case declaration(Declaration)
@@ -1201,7 +1201,7 @@ enum CodeBlockItem: Equatable, Codable {
 }
 
 /// A code block, with an optional comment.
-struct CodeBlock: Equatable, Codable {
+struct CodeBlock: Equatable, Codable, Sendable {
 
   /// The comment to prepend to the code block item.
   var comment: Comment?
@@ -1211,7 +1211,7 @@ struct CodeBlock: Equatable, Codable {
 }
 
 /// A description of a Swift file.
-struct FileDescription: Equatable, Codable {
+struct FileDescription: Equatable, Codable, Sendable {
 
   /// A comment placed at the top of the file.
   var topComment: Comment?
@@ -1225,7 +1225,7 @@ struct FileDescription: Equatable, Codable {
 }
 
 /// A description of a named Swift file.
-struct NamedFileDescription: Equatable, Codable {
+struct NamedFileDescription: Equatable, Codable, Sendable {
 
   /// A file name, including the file extension.
   ///
@@ -1237,7 +1237,7 @@ struct NamedFileDescription: Equatable, Codable {
 }
 
 /// A file with contents made up of structured Swift code.
-struct StructuredSwiftRepresentation: Equatable, Codable {
+struct StructuredSwiftRepresentation: Equatable, Codable, Sendable {
 
   /// The contents of the file.
   var file: NamedFileDescription
