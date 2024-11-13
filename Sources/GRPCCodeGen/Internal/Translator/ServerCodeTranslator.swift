@@ -107,7 +107,7 @@ struct ServerCodeTranslator: SpecializedTranslator {
 
 extension ServerCodeTranslator {
   private func makeStreamingProtocol(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     let methods = service.methods.compactMap {
       Declaration.commentable(
@@ -136,8 +136,8 @@ extension ServerCodeTranslator {
   }
 
   private func makeStreamingMethodSignature(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     accessModifier: AccessModifier? = nil
   ) -> FunctionSignatureDescription {
     return FunctionSignatureDescription(
@@ -164,7 +164,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeConformanceToRPCServiceExtension(
-    for service: CodeGenerationRequest.ServiceDescriptor,
+    for service: ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
@@ -179,7 +179,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeRegisterRPCsMethod(
-    for service: CodeGenerationRequest.ServiceDescriptor,
+    for service: ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let registerRPCsSignature = FunctionSignatureDescription(
@@ -202,7 +202,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeRegisterRPCsMethodBody(
-    for service: CodeGenerationRequest.ServiceDescriptor,
+    for service: ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> [CodeBlock] {
     let registerHandlerCalls = service.methods.compactMap {
@@ -224,8 +224,8 @@ extension ServerCodeTranslator {
   }
 
   private func makeArgumentsForRegisterHandler(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest
   ) -> [FunctionArgumentDescription] {
     var arguments = [FunctionArgumentDescription]()
@@ -284,7 +284,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeServiceProtocol(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     let methods = service.methods.compactMap {
       self.makeServiceProtocolMethod(for: $0, in: service)
@@ -309,8 +309,8 @@ extension ServerCodeTranslator {
   }
 
   private func makeServiceProtocolMethod(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     accessModifier: AccessModifier? = nil
   ) -> Declaration {
     let inputStreaming = method.isInputStreaming ? "Streaming" : ""
@@ -346,7 +346,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeExtensionServiceProtocol(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     let methods = service.methods.compactMap {
       self.makeServiceProtocolExtensionMethod(for: $0, in: service)
@@ -363,8 +363,8 @@ extension ServerCodeTranslator {
   }
 
   private func makeServiceProtocolExtensionMethod(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor
   ) -> Declaration? {
     // The method has the same definition in StreamingServiceProtocol and ServiceProtocol.
     if method.isInputStreaming && method.isOutputStreaming {
@@ -385,7 +385,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeResponse(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+    for method: MethodDescriptor
   ) -> Declaration {
     let serverRequest: Expression
     if !method.isInputStreaming {
@@ -422,7 +422,7 @@ extension ServerCodeTranslator {
   }
 
   private func makeReturnStatement(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+    for method: MethodDescriptor
   ) -> Expression {
     let returnValue: Expression
     // Transforming the unary response into a streaming one.
@@ -447,8 +447,8 @@ extension ServerCodeTranslator {
 
   /// Generates the fully qualified name of a method descriptor.
   private func methodDescriptorPath(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    service: CodeGenerationRequest.ServiceDescriptor
+    for method: MethodDescriptor,
+    service: ServiceDescriptor
   ) -> String {
     return
       "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
@@ -456,7 +456,7 @@ extension ServerCodeTranslator {
 
   /// Generates the fully qualified name of the type alias for a service protocol.
   internal func protocolNameTypealias(
-    service: CodeGenerationRequest.ServiceDescriptor,
+    service: ServiceDescriptor,
     streaming: Bool
   ) -> String {
     if streaming {
@@ -467,7 +467,7 @@ extension ServerCodeTranslator {
 
   /// Generates the name of a service protocol.
   internal func protocolName(
-    service: CodeGenerationRequest.ServiceDescriptor,
+    service: ServiceDescriptor,
     streaming: Bool
   ) -> String {
     if streaming {

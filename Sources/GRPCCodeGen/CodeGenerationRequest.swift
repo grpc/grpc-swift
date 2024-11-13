@@ -79,123 +79,68 @@ public struct CodeGenerationRequest {
     self.lookupSerializer = lookupSerializer
     self.lookupDeserializer = lookupDeserializer
   }
+}
 
-  /// Represents an import: a module or a specific item from a module.
-  public struct Dependency: Equatable {
-    /// If the dependency is an item, the property's value is the item representation.
-    /// If the dependency is a module, this property is nil.
-    public var item: Item?
+/// Represents an import: a module or a specific item from a module.
+public struct Dependency: Equatable {
+  /// If the dependency is an item, the property's value is the item representation.
+  /// If the dependency is a module, this property is nil.
+  public var item: Item?
 
-    /// The access level to be included in imports of this dependency.
-    public var accessLevel: SourceGenerator.Config.AccessLevel
+  /// The access level to be included in imports of this dependency.
+  public var accessLevel: SourceGenerator.Config.AccessLevel
 
-    /// The name of the imported module or of the module an item is imported from.
-    public var module: String
+  /// The name of the imported module or of the module an item is imported from.
+  public var module: String
 
-    /// The name of the private interface for an `@_spi` import.
-    ///
-    /// For example, if `spi` was "Secret" and the module name was "Foo" then the import
-    /// would be `@_spi(Secret) import Foo`.
-    public var spi: String?
+  /// The name of the private interface for an `@_spi` import.
+  ///
+  /// For example, if `spi` was "Secret" and the module name was "Foo" then the import
+  /// would be `@_spi(Secret) import Foo`.
+  public var spi: String?
 
-    /// Requirements for the `@preconcurrency` attribute.
-    public var preconcurrency: PreconcurrencyRequirement
+  /// Requirements for the `@preconcurrency` attribute.
+  public var preconcurrency: PreconcurrencyRequirement
 
-    public init(
-      item: Item? = nil,
-      module: String,
-      spi: String? = nil,
-      preconcurrency: PreconcurrencyRequirement = .notRequired,
-      accessLevel: SourceGenerator.Config.AccessLevel
-    ) {
-      self.item = item
-      self.module = module
-      self.spi = spi
-      self.preconcurrency = preconcurrency
-      self.accessLevel = accessLevel
+  public init(
+    item: Item? = nil,
+    module: String,
+    spi: String? = nil,
+    preconcurrency: PreconcurrencyRequirement = .notRequired,
+    accessLevel: SourceGenerator.Config.AccessLevel
+  ) {
+    self.item = item
+    self.module = module
+    self.spi = spi
+    self.preconcurrency = preconcurrency
+    self.accessLevel = accessLevel
+  }
+
+  /// Represents an item imported from a module.
+  public struct Item: Equatable {
+    /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
+    public var kind: Kind
+
+    /// The name of the imported item.
+    public var name: String
+
+    public init(kind: Kind, name: String) {
+      self.kind = kind
+      self.name = name
     }
 
-    /// Represents an item imported from a module.
-    public struct Item: Equatable {
-      /// The keyword that specifies the item's kind (e.g. `func`, `struct`).
-      public var kind: Kind
-
-      /// The name of the imported item.
-      public var name: String
-
-      public init(kind: Kind, name: String) {
-        self.kind = kind
-        self.name = name
-      }
-
-      /// Represents the imported item's kind.
-      public struct Kind: Equatable {
-        /// Describes the keyword associated with the imported item.
-        internal enum Value: String {
-          case `typealias`
-          case `struct`
-          case `class`
-          case `enum`
-          case `protocol`
-          case `let`
-          case `var`
-          case `func`
-        }
-
-        internal var value: Value
-
-        internal init(_ value: Value) {
-          self.value = value
-        }
-
-        /// The imported item is a typealias.
-        public static var `typealias`: Self {
-          Self(.`typealias`)
-        }
-
-        /// The imported item is a struct.
-        public static var `struct`: Self {
-          Self(.`struct`)
-        }
-
-        /// The imported item is a class.
-        public static var `class`: Self {
-          Self(.`class`)
-        }
-
-        /// The imported item is an enum.
-        public static var `enum`: Self {
-          Self(.`enum`)
-        }
-
-        /// The imported item is a protocol.
-        public static var `protocol`: Self {
-          Self(.`protocol`)
-        }
-
-        /// The imported item is a let.
-        public static var `let`: Self {
-          Self(.`let`)
-        }
-
-        /// The imported item is a var.
-        public static var `var`: Self {
-          Self(.`var`)
-        }
-
-        /// The imported item is a function.
-        public static var `func`: Self {
-          Self(.`func`)
-        }
-      }
-    }
-
-    /// Describes any requirement for the `@preconcurrency` attribute.
-    public struct PreconcurrencyRequirement: Equatable {
-      internal enum Value: Equatable {
-        case required
-        case notRequired
-        case requiredOnOS([String])
+    /// Represents the imported item's kind.
+    public struct Kind: Equatable {
+      /// Describes the keyword associated with the imported item.
+      internal enum Value: String {
+        case `typealias`
+        case `struct`
+        case `class`
+        case `enum`
+        case `protocol`
+        case `let`
+        case `var`
+        case `func`
       }
 
       internal var value: Value
@@ -204,130 +149,185 @@ public struct CodeGenerationRequest {
         self.value = value
       }
 
-      /// The attribute is always required.
-      public static var required: Self {
-        Self(.required)
+      /// The imported item is a typealias.
+      public static var `typealias`: Self {
+        Self(.`typealias`)
       }
 
-      /// The attribute is not required.
-      public static var notRequired: Self {
-        Self(.notRequired)
+      /// The imported item is a struct.
+      public static var `struct`: Self {
+        Self(.`struct`)
       }
 
-      /// The attribute is required only on the named operating systems.
-      public static func requiredOnOS(_ OSs: [String]) -> PreconcurrencyRequirement {
-        return Self(.requiredOnOS(OSs))
+      /// The imported item is a class.
+      public static var `class`: Self {
+        Self(.`class`)
       }
-    }
-  }
 
-  /// Represents a service described in an IDL file.
-  public struct ServiceDescriptor: Hashable {
-    /// Documentation from comments above the IDL service description.
-    /// It is already formatted, meaning it contains  "///" and new lines.
-    public var documentation: String
+      /// The imported item is an enum.
+      public static var `enum`: Self {
+        Self(.`enum`)
+      }
 
-    /// The service name in different formats.
-    ///
-    /// All properties of this object must be unique for each service from within a namespace.
-    public var name: Name
+      /// The imported item is a protocol.
+      public static var `protocol`: Self {
+        Self(.`protocol`)
+      }
 
-    /// The service namespace in different formats.
-    ///
-    /// All different services from within the same namespace must have
-    /// the same ``Name`` object as this property.
-    /// For `.proto` files the base name of this object is the package name.
-    public var namespace: Name
+      /// The imported item is a let.
+      public static var `let`: Self {
+        Self(.`let`)
+      }
 
-    /// A description of each method of a service.
-    ///
-    /// - SeeAlso: ``MethodDescriptor``.
-    public var methods: [MethodDescriptor]
+      /// The imported item is a var.
+      public static var `var`: Self {
+        Self(.`var`)
+      }
 
-    public init(
-      documentation: String,
-      name: Name,
-      namespace: Name,
-      methods: [MethodDescriptor]
-    ) {
-      self.documentation = documentation
-      self.name = name
-      self.namespace = namespace
-      self.methods = methods
-    }
-
-    /// Represents a method described in an IDL file.
-    public struct MethodDescriptor: Hashable {
-      /// Documentation from comments above the IDL method description.
-      /// It is already formatted, meaning it contains  "///" and new lines.
-      public var documentation: String
-
-      /// Method name in different formats.
-      ///
-      /// All properties of this object must be unique for each method
-      /// from within a service.
-      public var name: Name
-
-      /// Identifies if the method is input streaming.
-      public var isInputStreaming: Bool
-
-      /// Identifies if the method is output streaming.
-      public var isOutputStreaming: Bool
-
-      /// The generated input type for the described method.
-      public var inputType: String
-
-      /// The generated output type for the described method.
-      public var outputType: String
-
-      public init(
-        documentation: String,
-        name: Name,
-        isInputStreaming: Bool,
-        isOutputStreaming: Bool,
-        inputType: String,
-        outputType: String
-      ) {
-        self.documentation = documentation
-        self.name = name
-        self.isInputStreaming = isInputStreaming
-        self.isOutputStreaming = isOutputStreaming
-        self.inputType = inputType
-        self.outputType = outputType
+      /// The imported item is a function.
+      public static var `func`: Self {
+        Self(.`func`)
       }
     }
   }
 
-  /// Represents the name associated with a namespace, service or a method, in three different formats.
-  public struct Name: Hashable {
-    /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
-    /// the specific casing of the IDL.
-    ///
-    /// The base name is also used in the descriptors that identify a specific method or service :
-    /// `<service_namespace_baseName>.<service_baseName>.<method_baseName>`.
-    public var base: String
+  /// Describes any requirement for the `@preconcurrency` attribute.
+  public struct PreconcurrencyRequirement: Equatable {
+    internal enum Value: Equatable {
+      case required
+      case notRequired
+      case requiredOnOS([String])
+    }
 
-    /// The `generatedUpperCase` name is used in the generated code. It is expected
-    /// to be the UpperCamelCase version of the base name
-    ///
-    /// For example, if `base` is "fooBar", then `generatedUpperCase` is "FooBar".
-    public var generatedUpperCase: String
+    internal var value: Value
 
-    /// The `generatedLowerCase` name is used in the generated code. It is expected
-    /// to be the lowerCamelCase version of the base name
-    ///
-    /// For example, if `base` is "FooBar", then `generatedLowerCase` is "fooBar".
-    public var generatedLowerCase: String
+    internal init(_ value: Value) {
+      self.value = value
+    }
 
-    public init(base: String, generatedUpperCase: String, generatedLowerCase: String) {
-      self.base = base
-      self.generatedUpperCase = generatedUpperCase
-      self.generatedLowerCase = generatedLowerCase
+    /// The attribute is always required.
+    public static var required: Self {
+      Self(.required)
+    }
+
+    /// The attribute is not required.
+    public static var notRequired: Self {
+      Self(.notRequired)
+    }
+
+    /// The attribute is required only on the named operating systems.
+    public static func requiredOnOS(_ OSs: [String]) -> PreconcurrencyRequirement {
+      return Self(.requiredOnOS(OSs))
     }
   }
 }
 
-extension CodeGenerationRequest.Name {
+/// Represents a service described in an IDL file.
+public struct ServiceDescriptor: Hashable {
+  /// Documentation from comments above the IDL service description.
+  /// It is already formatted, meaning it contains  "///" and new lines.
+  public var documentation: String
+
+  /// The service name in different formats.
+  ///
+  /// All properties of this object must be unique for each service from within a namespace.
+  public var name: Name
+
+  /// The service namespace in different formats.
+  ///
+  /// All different services from within the same namespace must have
+  /// the same ``Name`` object as this property.
+  /// For `.proto` files the base name of this object is the package name.
+  public var namespace: Name
+
+  /// A description of each method of a service.
+  ///
+  /// - SeeAlso: ``MethodDescriptor``.
+  public var methods: [MethodDescriptor]
+
+  public init(
+    documentation: String,
+    name: Name,
+    namespace: Name,
+    methods: [MethodDescriptor]
+  ) {
+    self.documentation = documentation
+    self.name = name
+    self.namespace = namespace
+    self.methods = methods
+  }
+}
+
+/// Represents a method described in an IDL file.
+public struct MethodDescriptor: Hashable {
+  /// Documentation from comments above the IDL method description.
+  /// It is already formatted, meaning it contains  "///" and new lines.
+  public var documentation: String
+
+  /// Method name in different formats.
+  ///
+  /// All properties of this object must be unique for each method
+  /// from within a service.
+  public var name: Name
+
+  /// Identifies if the method is input streaming.
+  public var isInputStreaming: Bool
+
+  /// Identifies if the method is output streaming.
+  public var isOutputStreaming: Bool
+
+  /// The generated input type for the described method.
+  public var inputType: String
+
+  /// The generated output type for the described method.
+  public var outputType: String
+
+  public init(
+    documentation: String,
+    name: Name,
+    isInputStreaming: Bool,
+    isOutputStreaming: Bool,
+    inputType: String,
+    outputType: String
+  ) {
+    self.documentation = documentation
+    self.name = name
+    self.isInputStreaming = isInputStreaming
+    self.isOutputStreaming = isOutputStreaming
+    self.inputType = inputType
+    self.outputType = outputType
+  }
+}
+
+/// Represents the name associated with a namespace, service or a method, in three different formats.
+public struct Name: Hashable {
+  /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
+  /// the specific casing of the IDL.
+  ///
+  /// The base name is also used in the descriptors that identify a specific method or service :
+  /// `<service_namespace_baseName>.<service_baseName>.<method_baseName>`.
+  public var base: String
+
+  /// The `generatedUpperCase` name is used in the generated code. It is expected
+  /// to be the UpperCamelCase version of the base name
+  ///
+  /// For example, if `base` is "fooBar", then `generatedUpperCase` is "FooBar".
+  public var generatedUpperCase: String
+
+  /// The `generatedLowerCase` name is used in the generated code. It is expected
+  /// to be the lowerCamelCase version of the base name
+  ///
+  /// For example, if `base` is "FooBar", then `generatedLowerCase` is "fooBar".
+  public var generatedLowerCase: String
+
+  public init(base: String, generatedUpperCase: String, generatedLowerCase: String) {
+    self.base = base
+    self.generatedUpperCase = generatedUpperCase
+    self.generatedLowerCase = generatedLowerCase
+  }
+}
+
+extension Name {
   /// The base name replacing occurrences of "." with "_".
   ///
   /// For example, if `base` is "Foo.Bar", then `normalizedBase` is "Foo_Bar".
