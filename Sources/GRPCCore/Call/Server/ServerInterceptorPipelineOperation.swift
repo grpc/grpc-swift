@@ -21,8 +21,7 @@
 /// - requests directed only to specific services registered with your server; or
 /// - requests directed only to specific methods (of a specific service).
 ///  
-/// - SeeAlso: ``ServerInterceptor`` for more information on server interceptors, and
-///  ``ClientInterceptorPipelineOperation`` for the client-side version of this type.
+/// - SeeAlso: ``ServerInterceptor`` for more information on server interceptors.
 public struct ServerInterceptorPipelineOperation: Sendable {
   /// The subject of a ``ServerInterceptorPipelineOperation``.
   /// The subject of an interceptor can either be all services and methods, only specific services, or only specific methods.
