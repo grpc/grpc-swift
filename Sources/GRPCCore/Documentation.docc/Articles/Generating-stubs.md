@@ -2,7 +2,9 @@
 
 Learn how to generate stubs for gRPC Swift from a service defined using the Protocol Buffers IDL.
 
-## Using protoc
+## Overview
+
+### Using protoc
 
 If you've used Protocol Buffers before then generating gRPC Swift stubs should be simple. If you're
 unfamiliar with Protocol Buffers then you should get comfortable with the concepts before
@@ -45,7 +47,7 @@ protoc \
   --grpc-swift_out=.
 ```
 
-### Generator options
+#### Generator options
 
 | Name                      | Possible Values                            | Default    | Description                                              |
 |---------------------------|--------------------------------------------|------------|----------------------------------------------------------|
@@ -67,7 +69,7 @@ allows you to specify a mapping from `.proto` files to the Swift module they are
 allows the code generator to add appropriate imports to your generated stubs. This is described in
 more detail in the [SwiftProtobuf documentation](https://github.com/apple/swift-protobuf/blob/main/Documentation/PLUGIN.md).
 
-### Building the plugin
+#### Building the plugin
 
 > The version of `protoc-gen-grpc-swift` you use mustn't be newer than the version of
 > the `grpc-swift-protobuf` you're using.

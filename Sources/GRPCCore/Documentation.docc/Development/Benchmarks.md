@@ -1,5 +1,7 @@
 # Benchmarks
 
+This article discusses benchmarking in `grpc-swift`.
+
 ## Overview
 
 Benchmarks for this package are in a separate Swift Package in the `Performance/Benchmarks`
