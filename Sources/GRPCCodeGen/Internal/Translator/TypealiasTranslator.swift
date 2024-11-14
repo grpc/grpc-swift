@@ -108,7 +108,7 @@ struct TypealiasTranslator: SpecializedTranslator {
 
 extension TypealiasTranslator {
   private func makeServiceEnum(
-    from service: CodeGenerationRequest.ServiceDescriptor,
+    from service: ServiceDescriptor,
     named name: String
   ) throws -> Declaration {
     var serviceEnum = EnumDescription(
@@ -154,8 +154,8 @@ extension TypealiasTranslator {
   }
 
   private func makeMethodEnum(
-    from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    from method: MethodDescriptor,
+    in service: ServiceDescriptor
   ) -> Declaration {
     var methodEnum = EnumDescription(name: method.name.generatedUpperCase)
 
@@ -183,8 +183,8 @@ extension TypealiasTranslator {
   }
 
   private func makeMethodDescriptor(
-    from method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    from method: MethodDescriptor,
+    in service: ServiceDescriptor
   ) -> Declaration {
     let fullyQualifiedService = MemberAccessDescription(
       left: .memberAccess(
@@ -223,7 +223,7 @@ extension TypealiasTranslator {
   }
 
   private func makeMethodDescriptors(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     var methodDescriptors = [Expression]()
     let methodNames = service.methods.map { $0.name.generatedUpperCase }
@@ -251,7 +251,7 @@ extension TypealiasTranslator {
   }
 
   private func makeServiceProtocolsTypealiases(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> [Declaration] {
     let streamingServiceProtocolTypealias = Declaration.typealias(
       accessModifier: self.accessModifier,
@@ -277,7 +277,7 @@ extension TypealiasTranslator {
   }
 
   private func makeClientProtocolTypealias(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     return .guarded(
       self.availabilityGuard,
@@ -290,7 +290,7 @@ extension TypealiasTranslator {
   }
 
   private func makeClientStructTypealias(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     return .guarded(
       self.availabilityGuard,
@@ -302,7 +302,7 @@ extension TypealiasTranslator {
     )
   }
 
-  private func makeServiceIdentifier(_ service: CodeGenerationRequest.ServiceDescriptor) -> String {
+  private func makeServiceIdentifier(_ service: ServiceDescriptor) -> String {
     let prefix: String
 
     if service.namespace.normalizedBase.isEmpty {
@@ -315,7 +315,7 @@ extension TypealiasTranslator {
   }
 
   private func makeStaticServiceDescriptorProperty(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> VariableDescription {
     let serviceIdentifier = makeServiceIdentifier(service)
 
@@ -334,7 +334,7 @@ extension TypealiasTranslator {
   }
 
   private func makeServiceDescriptorExtension(
-    for service: CodeGenerationRequest.ServiceDescriptor
+    for service: ServiceDescriptor
   ) -> Declaration {
     let serviceIdentifier = makeServiceIdentifier(service)
 

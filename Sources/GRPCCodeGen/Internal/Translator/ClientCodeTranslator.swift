@@ -105,7 +105,7 @@ struct ClientCodeTranslator: SpecializedTranslator {
 
 extension ClientCodeTranslator {
   private func makeClientProtocol(
-    for service: CodeGenerationRequest.ServiceDescriptor,
+    for service: ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let methods = service.methods.map {
@@ -130,7 +130,7 @@ extension ClientCodeTranslator {
   }
 
   private func makeDefaultImplementation(
-    for service: CodeGenerationRequest.ServiceDescriptor,
+    for service: ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let methods = service.methods.map {
@@ -156,7 +156,7 @@ extension ClientCodeTranslator {
   }
 
   private func makeSugaredAPI(
-    forService service: CodeGenerationRequest.ServiceDescriptor,
+    forService service: ServiceDescriptor,
     request: CodeGenerationRequest
   ) -> Declaration {
     let sugaredAPIExtension = Declaration.extension(
@@ -175,7 +175,7 @@ extension ClientCodeTranslator {
   }
 
   private func makeSugaredMethodDeclaration(
-    method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
+    method: MethodDescriptor,
     accessModifier: AccessModifier?
   ) -> Declaration {
     let signature = FunctionSignatureDescription(
@@ -205,7 +205,7 @@ extension ClientCodeTranslator {
   }
 
   private func makeParametersForSugaredMethodDeclaration(
-    method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+    method: MethodDescriptor
   ) -> [ParameterDescription] {
     var parameters = [ParameterDescription]()
 
@@ -295,7 +295,7 @@ extension ClientCodeTranslator {
   }
 
   private func makeFunctionBodyForSugaredMethodDeclaration(
-    method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
+    method: MethodDescriptor
   ) -> [CodeBlock] {
     // Produces the following:
     //
@@ -375,8 +375,8 @@ extension ClientCodeTranslator {
   }
 
   private func makeClientProtocolMethod(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
     includeBody: Bool,
     accessModifier: AccessModifier? = nil,
@@ -421,8 +421,8 @@ extension ClientCodeTranslator {
   }
 
   private func makeClientProtocolMethodCall(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest
   ) -> [CodeBlock] {
     let functionCall = Expression.functionCall(
@@ -455,8 +455,8 @@ extension ClientCodeTranslator {
   }
 
   private func makeParameters(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest,
     includeSerializationParameters: Bool,
     includeDefaultCallOptions: Bool,
@@ -487,8 +487,8 @@ extension ClientCodeTranslator {
     return parameters
   }
   private func clientRequestParameter(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor
   ) -> ParameterDescription {
     let requestType = method.isInputStreaming ? "Streaming" : ""
     let clientRequestType = ExistingTypeDescription.member([
@@ -505,8 +505,8 @@ extension ClientCodeTranslator {
   }
 
   private func serializerParameter(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor
   ) -> ParameterDescription {
     return ParameterDescription(
       label: "serializer",
@@ -520,8 +520,8 @@ extension ClientCodeTranslator {
   }
 
   private func deserializerParameter(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor
   ) -> ParameterDescription {
     return ParameterDescription(
       label: "deserializer",
@@ -535,8 +535,8 @@ extension ClientCodeTranslator {
   }
 
   private func bodyParameter(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     includeDefaultResponseHandler: Bool
   ) -> ParameterDescription {
     let clientStreaming = method.isOutputStreaming ? "Streaming" : ""
@@ -571,7 +571,7 @@ extension ClientCodeTranslator {
   }
 
   private func makeClientStruct(
-    for service: CodeGenerationRequest.ServiceDescriptor,
+    for service: ServiceDescriptor,
     in codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let clientProperty = Declaration.variable(
@@ -637,8 +637,8 @@ extension ClientCodeTranslator {
   }
 
   private func makeClientMethod(
-    for method: CodeGenerationRequest.ServiceDescriptor.MethodDescriptor,
-    in service: CodeGenerationRequest.ServiceDescriptor,
+    for method: MethodDescriptor,
+    in service: ServiceDescriptor,
     from codeGenerationRequest: CodeGenerationRequest
   ) -> Declaration {
     let parameters = self.makeParameters(

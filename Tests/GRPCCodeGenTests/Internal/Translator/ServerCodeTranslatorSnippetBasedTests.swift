@@ -21,10 +21,6 @@ import XCTest
 @testable import GRPCCodeGen
 
 final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
-  typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
-  typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
-  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
-
   func testServerCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
       documentation: "/// Documentation for unaryMethod",
