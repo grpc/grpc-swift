@@ -16,16 +16,17 @@
 
 import GRPCCore
 import GRPCInProcessTransport
+import Testing
 import XCTest
 
 final class GRPCClientTests: XCTestCase {
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
-    interceptors: [any ClientInterceptor] = [],
+    interceptorPipeline: [ClientInterceptorPipelineOperation] = [],
     _ body: (GRPCClient, GRPCServer) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
-    let client = GRPCClient(transport: inProcess.client, interceptors: interceptors)
+    let client = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
     let server = GRPCServer(transport: inProcess.server, services: services)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -234,10 +235,10 @@ final class GRPCClientTests: XCTestCase {
 
     try await self.withInProcessConnectedClient(
       services: [BinaryEcho()],
-      interceptors: [
-        .requestCounter(counter1),
-        .rejectAll(with: RPCError(code: .unavailable, message: "")),
-        .requestCounter(counter2),
+      interceptorPipeline: [
+        .apply(.requestCounter(counter1), to: .all),
+        .apply(.rejectAll(with: RPCError(code: .unavailable, message: "")), to: .all),
+        .apply(.requestCounter(counter2), to: .all),
       ]
     ) { client, _ in
       try await client.unary(
@@ -407,5 +408,160 @@ final class GRPCClientTests: XCTestCase {
     }
 
     task.cancel()
+  }
+}
+
+@Suite("GRPC Client Tests")
+struct ClientTests {
+  @Test("Interceptors are applied only to specified services")
+  func testInterceptorsAreAppliedToSpecifiedServices() async throws {
+    let onlyBinaryEchoCounter = AtomicCounter()
+    let allServicesCounter = AtomicCounter()
+    let onlyHelloWorldCounter = AtomicCounter()
+    let bothServicesCounter = AtomicCounter()
+
+    try await self.withInProcessConnectedClient(
+      services: [BinaryEcho(), HelloWorld()],
+      interceptorPipeline: [
+        .apply(
+          .requestCounter(onlyBinaryEchoCounter),
+          to: .services([BinaryEcho.serviceDescriptor])
+        ),
+        .apply(.requestCounter(allServicesCounter), to: .all),
+        .apply(
+          .requestCounter(onlyHelloWorldCounter),
+          to: .services([HelloWorld.serviceDescriptor])
+        ),
+        .apply(
+          .requestCounter(bothServicesCounter),
+          to: .services([BinaryEcho.serviceDescriptor, HelloWorld.serviceDescriptor])
+        ),
+      ]
+    ) { client, _ in
+      // Make a request to the `BinaryEcho` service and assert that only
+      // the counters associated to interceptors that apply to it are incremented.
+      try await client.unary(
+        request: .init(message: Array("hello".utf8)),
+        descriptor: BinaryEcho.Methods.get,
+        serializer: IdentitySerializer(),
+        deserializer: IdentityDeserializer(),
+        options: .defaults
+      ) { response in
+        let message = try #require(try response.message)
+        #expect(message == Array("hello".utf8))
+      }
+
+      #expect(onlyBinaryEchoCounter.value == 1)
+      #expect(allServicesCounter.value == 1)
+      #expect(onlyHelloWorldCounter.value == 0)
+      #expect(bothServicesCounter.value == 1)
+
+      // Now, make a request to the `HelloWorld` service and assert that only
+      // the counters associated to interceptors that apply to it are incremented.
+      try await client.unary(
+        request: .init(message: Array("Swift".utf8)),
+        descriptor: HelloWorld.Methods.sayHello,
+        serializer: IdentitySerializer(),
+        deserializer: IdentityDeserializer(),
+        options: .defaults
+      ) { response in
+        let message = try #require(try response.message)
+        #expect(message == Array("Hello, Swift!".utf8))
+      }
+
+      #expect(onlyBinaryEchoCounter.value == 1)
+      #expect(allServicesCounter.value == 2)
+      #expect(onlyHelloWorldCounter.value == 1)
+      #expect(bothServicesCounter.value == 2)
+    }
+  }
+
+  @Test("Interceptors are applied only to specified methods")
+  func testInterceptorsAreAppliedToSpecifiedMethods() async throws {
+    let onlyBinaryEchoGetCounter = AtomicCounter()
+    let onlyBinaryEchoCollectCounter = AtomicCounter()
+    let bothBinaryEchoMethodsCounter = AtomicCounter()
+    let allMethodsCounter = AtomicCounter()
+
+    try await self.withInProcessConnectedClient(
+      services: [BinaryEcho()],
+      interceptorPipeline: [
+        .apply(
+          .requestCounter(onlyBinaryEchoGetCounter),
+          to: .methods([BinaryEcho.Methods.get])
+        ),
+        .apply(.requestCounter(allMethodsCounter), to: .all),
+        .apply(
+          .requestCounter(onlyBinaryEchoCollectCounter),
+          to: .methods([BinaryEcho.Methods.collect])
+        ),
+        .apply(
+          .requestCounter(bothBinaryEchoMethodsCounter),
+          to: .methods([BinaryEcho.Methods.get, BinaryEcho.Methods.collect])
+        ),
+      ]
+    ) { client, _ in
+      // Make a request to the `BinaryEcho/get` method and assert that only
+      // the counters associated to interceptors that apply to it are incremented.
+      try await client.unary(
+        request: .init(message: Array("hello".utf8)),
+        descriptor: BinaryEcho.Methods.get,
+        serializer: IdentitySerializer(),
+        deserializer: IdentityDeserializer(),
+        options: .defaults
+      ) { response in
+        let message = try #require(try response.message)
+        #expect(message == Array("hello".utf8))
+      }
+
+      #expect(onlyBinaryEchoGetCounter.value == 1)
+      #expect(allMethodsCounter.value == 1)
+      #expect(onlyBinaryEchoCollectCounter.value == 0)
+      #expect(bothBinaryEchoMethodsCounter.value == 1)
+
+      // Now, make a request to the `BinaryEcho/collect` method and assert that only
+      // the counters associated to interceptors that apply to it are incremented.
+      try await client.unary(
+        request: .init(message: Array("hello".utf8)),
+        descriptor: BinaryEcho.Methods.collect,
+        serializer: IdentitySerializer(),
+        deserializer: IdentityDeserializer(),
+        options: .defaults
+      ) { response in
+        let message = try #require(try response.message)
+        #expect(message == Array("hello".utf8))
+      }
+
+      #expect(onlyBinaryEchoGetCounter.value == 1)
+      #expect(allMethodsCounter.value == 2)
+      #expect(onlyBinaryEchoCollectCounter.value == 1)
+      #expect(bothBinaryEchoMethodsCounter.value == 2)
+    }
+  }
+
+  func withInProcessConnectedClient(
+    services: [any RegistrableRPCService],
+    interceptorPipeline: [ClientInterceptorPipelineOperation] = [],
+    _ body: (GRPCClient, GRPCServer) async throws -> Void
+  ) async throws {
+    let inProcess = InProcessTransport()
+    let client = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
+    let server = GRPCServer(transport: inProcess.server, services: services)
+
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      group.addTask {
+        try await server.serve()
+      }
+
+      group.addTask {
+        try await client.run()
+      }
+
+      // Make sure both server and client are running
+      try await Task.sleep(for: .milliseconds(100))
+      try await body(client, server)
+      client.beginGracefulShutdown()
+      server.beginGracefulShutdown()
+    }
   }
 }
