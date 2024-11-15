@@ -112,53 +112,27 @@ public final class GRPCClient: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
   private let transport: any ClientTransport
 
-  private let interceptorPipeline: [ClientInterceptorPipelineOperation]
-
   /// The current state of the client.
-  private let state: Mutex<State>
+  private let stateMachine: Mutex<StateMachine>
 
   /// The state of the client.
   private enum State: Sendable {
     
     /// The client hasn't been started yet. Can transition to `running` or `stopped`.
-    case notStarted(
-      /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
-      ///
-      /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
-      /// This caching is done to avoid having to compute the applicable interceptors for each request made.
-      ///
-      /// The order in which interceptors are added reflects the order in which they are called. The
-      /// first interceptor added will be the first interceptor to intercept each request. The last
-      /// interceptor added will be the final interceptor to intercept each request before calling
-      /// the appropriate handler.
-      interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
-    )
+    case notStarted
     /// The client is running and can send RPCs. Can transition to `stopping`.
-    case running(
-      /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
-      ///
-      /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
-      /// This caching is done to avoid having to compute the applicable interceptors for each request made.
-      ///
-      /// The order in which interceptors are added reflects the order in which they are called. The
-      /// first interceptor added will be the first interceptor to intercept each request. The last
-      /// interceptor added will be the final interceptor to intercept each request before calling
-      /// the appropriate handler.
-      interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
-    )
+    case running
     /// The client is stopping and no new RPCs will be sent. Existing RPCs may run to
     /// completion. May transition to `stopped`.
     case stopping
     /// The client has stopped, no RPCs are in flight and no more will be accepted. This state
     /// is terminal.
     case stopped
-    /// Temporary state to avoid CoWs.
-    case _modifying
 
     mutating func run() throws {
       switch self {
-      case .notStarted(let interceptorsPerMethod):
-        self = .running(interceptorsPerMethod: interceptorsPerMethod)
+      case .notStarted:
+        self = .running
 
       case .running:
         throw RuntimeError(
@@ -171,9 +145,6 @@ public final class GRPCClient: Sendable {
           code: .clientIsStopped,
           message: "The client has stopped and can only be started once."
         )
-
-      case ._modifying:
-        fatalError("Internal inconsistency")
       }
     }
 
@@ -191,8 +162,6 @@ public final class GRPCClient: Sendable {
         return true
       case .stopping, .stopped:
         return false
-      case ._modifying:
-        fatalError("Internal inconsistency")
       }
     }
 
@@ -207,9 +176,46 @@ public final class GRPCClient: Sendable {
           code: .clientIsStopped,
           message: "Client has been stopped. Can't make any more RPCs."
         )
-      case ._modifying:
-        fatalError("Internal inconsistency")
       }
+    }
+  }
+
+  private struct StateMachine {
+    var state: State
+
+    private let interceptorPipeline: [ClientInterceptorPipelineOperation]
+
+    /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
+    ///
+    /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
+    /// This caching is done to avoid having to compute the applicable interceptors for each request made.
+    ///
+    /// The order in which interceptors are added reflects the order in which they are called. The
+    /// first interceptor added will be the first interceptor to intercept each request. The last
+    /// interceptor added will be the final interceptor to intercept each request before calling
+    /// the appropriate handler.
+    var interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
+
+    init(interceptorPipeline: [ClientInterceptorPipelineOperation]) {
+      self.state = .notStarted
+      self.interceptorPipeline = interceptorPipeline
+      self.interceptorsPerMethod = [:]
+    }
+
+    mutating func checkExecutableAndGetApplicableInterceptors(
+      for method: MethodDescriptor
+    ) throws -> [any ClientInterceptor] {
+      try self.state.checkExecutable()
+
+      guard let applicableInterceptors = self.interceptorsPerMethod[method] else {
+        let applicableInterceptors = self.interceptorPipeline
+          .filter { $0.applies(to: method) }
+          .map { $0.interceptor }
+        self.interceptorsPerMethod[method] = applicableInterceptors
+        return applicableInterceptors
+      }
+
+      return applicableInterceptors
     }
   }
 
@@ -246,8 +252,7 @@ public final class GRPCClient: Sendable {
     interceptorPipeline: [ClientInterceptorPipelineOperation]
   ) {
     self.transport = transport
-    self.interceptorPipeline = interceptorPipeline
-    self.state = Mutex(.notStarted(interceptorsPerMethod: [:]))
+    self.stateMachine = Mutex(StateMachine(interceptorPipeline: interceptorPipeline))
   }
 
   /// Start the client.
@@ -258,11 +263,11 @@ public final class GRPCClient: Sendable {
   /// The client, and by extension this function, can only be run once. If the client is already
   /// running or has already been closed then a ``RuntimeError`` is thrown.
   public func run() async throws {
-    try self.state.withLock { try $0.run() }
+    try self.stateMachine.withLock { try $0.state.run() }
 
     // When this function exits the client must have stopped.
     defer {
-      self.state.withLock { $0.stopped() }
+      self.stateMachine.withLock { $0.state.stopped() }
     }
 
     do {
@@ -282,7 +287,7 @@ public final class GRPCClient: Sendable {
   /// in-flight RPCs to finish executing, but no new RPCs will be accepted. You can cancel the task
   /// executing ``run()`` if you want to abruptly stop in-flight RPCs.
   public func beginGracefulShutdown() {
-    let wasRunning = self.state.withLock { $0.beginGracefulShutdown() }
+    let wasRunning = self.stateMachine.withLock { $0.state.beginGracefulShutdown() }
     if wasRunning {
       self.transport.beginGracefulShutdown()
     }
@@ -401,46 +406,12 @@ public final class GRPCClient: Sendable {
     options: CallOptions,
     handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
   ) async throws -> ReturnValue {
-    try self.state.withLock { try $0.checkExecutable() }
+    let applicableInterceptors = try self.stateMachine.withLock {
+      try $0.checkExecutableAndGetApplicableInterceptors(for: descriptor)
+    }
     let methodConfig = self.transport.config(forMethod: descriptor)
     var options = options
     options.formUnion(with: methodConfig)
-
-    let applicableInterceptors = self.state.withLock {
-      switch $0 {
-      case .notStarted(var interceptorsPerMethod):
-        if let interceptors = interceptorsPerMethod[descriptor] {
-          return interceptors
-        } else {
-          $0 = ._modifying
-          let interceptors = self.interceptorPipeline
-            .filter { $0.applies(to: descriptor) }
-            .map { $0.interceptor }
-          interceptorsPerMethod[descriptor] = interceptors
-          $0 = .notStarted(interceptorsPerMethod: interceptorsPerMethod)
-          return interceptors
-        }
-
-      case .running(var interceptorsPerMethod):
-        if let interceptors = interceptorsPerMethod[descriptor] {
-          return interceptors
-        } else {
-          $0 = ._modifying
-          let interceptors = self.interceptorPipeline
-            .filter { $0.applies(to: descriptor) }
-            .map { $0.interceptor }
-          interceptorsPerMethod[descriptor] = interceptors
-          $0 = .running(interceptorsPerMethod: interceptorsPerMethod)
-          return interceptors
-        }
-
-      case .stopping, .stopped:
-        fatalError("The checkExecutable call should have failed.")
-
-      case ._modifying:
-        fatalError("Internal inconsistency")
-      }
-    }
 
     return try await ClientRPCExecutor.execute(
       request: request,
