@@ -117,7 +117,7 @@ public final class GRPCClient: Sendable {
 
   /// The state of the client.
   private enum State: Sendable {
-    
+
     /// The client hasn't been started yet. Can transition to `running` or `stopped`.
     case notStarted
     /// The client is running and can send RPCs. Can transition to `stopping`.

@@ -20,23 +20,26 @@ import Testing
 
 @Suite("ServerInterceptorPipelineOperation")
 struct ServerInterceptorPipelineOperationTests {
-  @Test("Applies to", arguments: [
-    (
-      .all,
-      [.fooBar, .fooBaz, .barFoo, .barBaz],
-      []
-    ),
-    (
-      .services([ServiceDescriptor(package: "pkg", service: "foo")]),
-      [.fooBar, .fooBaz],
-      [.barFoo, .barBaz]
-    ),
-    (
-      .methods([.barFoo]),
-      [.barFoo],
-      [.fooBar, .fooBaz, .barBaz]
-    )
-  ] as [(ServerInterceptorPipelineOperation.Subject, [MethodDescriptor], [MethodDescriptor])])
+  @Test(
+    "Applies to",
+    arguments: [
+      (
+        .all,
+        [.fooBar, .fooBaz, .barFoo, .barBaz],
+        []
+      ),
+      (
+        .services([ServiceDescriptor(package: "pkg", service: "foo")]),
+        [.fooBar, .fooBaz],
+        [.barFoo, .barBaz]
+      ),
+      (
+        .methods([.barFoo]),
+        [.barFoo],
+        [.fooBar, .fooBaz, .barBaz]
+      ),
+    ] as [(ServerInterceptorPipelineOperation.Subject, [MethodDescriptor], [MethodDescriptor])]
+  )
   func appliesTo(
     operationSubject: ServerInterceptorPipelineOperation.Subject,
     applicableMethods: [MethodDescriptor],
