@@ -114,37 +114,51 @@ public final class GRPCClient: Sendable {
 
   private let interceptorPipeline: [ClientInterceptorPipelineOperation]
 
-  /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
-  ///
-  /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
-  /// This caching is done to avoid having to compute the applicable interceptors for each request made.
-  ///
-  /// The order in which interceptors are added reflects the order in which they are called. The
-  /// first interceptor added will be the first interceptor to intercept each request. The last
-  /// interceptor added will be the final interceptor to intercept each request before calling
-  /// the appropriate handler.
-  private let interceptorsPerMethod: Mutex<[MethodDescriptor: [any ClientInterceptor]]>
-
   /// The current state of the client.
   private let state: Mutex<State>
 
   /// The state of the client.
   private enum State: Sendable {
+    
     /// The client hasn't been started yet. Can transition to `running` or `stopped`.
-    case notStarted
+    case notStarted(
+      /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
+      ///
+      /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
+      /// This caching is done to avoid having to compute the applicable interceptors for each request made.
+      ///
+      /// The order in which interceptors are added reflects the order in which they are called. The
+      /// first interceptor added will be the first interceptor to intercept each request. The last
+      /// interceptor added will be the final interceptor to intercept each request before calling
+      /// the appropriate handler.
+      interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
+    )
     /// The client is running and can send RPCs. Can transition to `stopping`.
-    case running
+    case running(
+      /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
+      ///
+      /// The list of interceptors for each method is computed from `interceptorsPipeline` when calling a method for the first time.
+      /// This caching is done to avoid having to compute the applicable interceptors for each request made.
+      ///
+      /// The order in which interceptors are added reflects the order in which they are called. The
+      /// first interceptor added will be the first interceptor to intercept each request. The last
+      /// interceptor added will be the final interceptor to intercept each request before calling
+      /// the appropriate handler.
+      interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
+    )
     /// The client is stopping and no new RPCs will be sent. Existing RPCs may run to
     /// completion. May transition to `stopped`.
     case stopping
     /// The client has stopped, no RPCs are in flight and no more will be accepted. This state
     /// is terminal.
     case stopped
+    /// Temporary state to avoid CoWs.
+    case _modifying
 
     mutating func run() throws {
       switch self {
-      case .notStarted:
-        self = .running
+      case .notStarted(let interceptorsPerMethod):
+        self = .running(interceptorsPerMethod: interceptorsPerMethod)
 
       case .running:
         throw RuntimeError(
@@ -157,6 +171,9 @@ public final class GRPCClient: Sendable {
           code: .clientIsStopped,
           message: "The client has stopped and can only be started once."
         )
+
+      case ._modifying:
+        fatalError("Internal inconsistency")
       }
     }
 
@@ -174,6 +191,8 @@ public final class GRPCClient: Sendable {
         return true
       case .stopping, .stopped:
         return false
+      case ._modifying:
+        fatalError("Internal inconsistency")
       }
     }
 
@@ -188,6 +207,8 @@ public final class GRPCClient: Sendable {
           code: .clientIsStopped,
           message: "Client has been stopped. Can't make any more RPCs."
         )
+      case ._modifying:
+        fatalError("Internal inconsistency")
       }
     }
   }
@@ -226,8 +247,7 @@ public final class GRPCClient: Sendable {
   ) {
     self.transport = transport
     self.interceptorPipeline = interceptorPipeline
-    self.interceptorsPerMethod = Mutex([:])
-    self.state = Mutex(.notStarted)
+    self.state = Mutex(.notStarted(interceptorsPerMethod: [:]))
   }
 
   /// Start the client.
@@ -386,15 +406,39 @@ public final class GRPCClient: Sendable {
     var options = options
     options.formUnion(with: methodConfig)
 
-    let applicableInterceptors = self.interceptorsPerMethod.withLock {
-      if let interceptors = $0[descriptor] {
-        return interceptors
-      } else {
-        let interceptors = self.interceptorPipeline
-          .filter { $0.applies(to: descriptor) }
-          .map { $0.interceptor }
-        $0[descriptor] = interceptors
-        return interceptors
+    let applicableInterceptors = self.state.withLock {
+      switch $0 {
+      case .notStarted(var interceptorsPerMethod):
+        if let interceptors = interceptorsPerMethod[descriptor] {
+          return interceptors
+        } else {
+          $0 = ._modifying
+          let interceptors = self.interceptorPipeline
+            .filter { $0.applies(to: descriptor) }
+            .map { $0.interceptor }
+          interceptorsPerMethod[descriptor] = interceptors
+          $0 = .notStarted(interceptorsPerMethod: interceptorsPerMethod)
+          return interceptors
+        }
+
+      case .running(var interceptorsPerMethod):
+        if let interceptors = interceptorsPerMethod[descriptor] {
+          return interceptors
+        } else {
+          $0 = ._modifying
+          let interceptors = self.interceptorPipeline
+            .filter { $0.applies(to: descriptor) }
+            .map { $0.interceptor }
+          interceptorsPerMethod[descriptor] = interceptors
+          $0 = .running(interceptorsPerMethod: interceptorsPerMethod)
+          return interceptors
+        }
+
+      case .stopping, .stopped:
+        fatalError("The checkExecutable call should have failed.")
+
+      case ._modifying:
+        fatalError("Internal inconsistency")
       }
     }
 
