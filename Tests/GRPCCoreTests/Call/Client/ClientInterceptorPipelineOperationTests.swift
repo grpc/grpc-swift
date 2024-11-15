@@ -20,47 +20,46 @@ import Testing
 
 @Suite("ClientInterceptorPipelineOperation")
 struct ClientInterceptorPipelineOperationTests {
-  @Suite("Applies to")
-  struct AppliesToTests {
-    @Test
-    func all() async throws {
-      let operation = ClientInterceptorPipelineOperation.apply(
-        .requestCounter(.init()),
-        to: .all
-      )
+  @Test("Applies to", arguments: [
+    (
+      .all,
+      [.fooBar, .fooBaz, .barFoo, .barBaz],
+      []
+    ),
+    (
+      .services([ServiceDescriptor(package: "pkg", service: "foo")]),
+      [.fooBar, .fooBaz],
+      [.barFoo, .barBaz]
+    ),
+    (
+      .methods([.barFoo]),
+      [.barFoo],
+      [.fooBar, .fooBaz, .barBaz]
+    )
+  ] as [(ClientInterceptorPipelineOperation.Subject, [MethodDescriptor], [MethodDescriptor])])
+  func appliesTo(
+    operationSubject: ClientInterceptorPipelineOperation.Subject,
+    applicableMethods: [MethodDescriptor],
+    notApplicableMethods: [MethodDescriptor]
+  ) {
+    let operation = ClientInterceptorPipelineOperation.apply(
+      .requestCounter(.init()),
+      to: operationSubject
+    )
 
-      #expect(operation.applies(to: MethodDescriptor(service: "foo", method: "bar")))
-      #expect(operation.applies(to: MethodDescriptor(service: "foo", method: "baz")))
-      #expect(operation.applies(to: MethodDescriptor(service: "bar", method: "foo")))
-      #expect(operation.applies(to: MethodDescriptor(service: "bar", method: "baz")))
+    for applicableMethod in applicableMethods {
+      #expect(operation.applies(to: applicableMethod))
     }
 
-    @Test
-    func serviceSpecific() async throws {
-      let operation = ClientInterceptorPipelineOperation.apply(
-        .requestCounter(.init()),
-        to: .services(Set([ServiceDescriptor(package: "pkg", service: "foo")]))
-      )
-
-      #expect(operation.applies(to: MethodDescriptor(service: "pkg.foo", method: "bar")))
-      #expect(operation.applies(to: MethodDescriptor(service: "pkg.foo", method: "baz")))
-
-      #expect(!operation.applies(to: MethodDescriptor(service: "pkg.bar", method: "foo")))
-      #expect(!operation.applies(to: MethodDescriptor(service: "pkg.bar", method: "baz")))
-    }
-
-    @Test
-    func methodSpecific() async throws {
-      let operation = ClientInterceptorPipelineOperation.apply(
-        .requestCounter(.init()),
-        to: .methods(Set([MethodDescriptor(service: "bar", method: "foo")]))
-      )
-
-      #expect(operation.applies(to: MethodDescriptor(service: "bar", method: "foo")))
-      
-      #expect(!operation.applies(to: MethodDescriptor(service: "foo", method: "bar")))
-      #expect(!operation.applies(to: MethodDescriptor(service: "foo", method: "baz")))
-      #expect(!operation.applies(to: MethodDescriptor(service: "bar", method: "baz")))
+    for notApplicableMethod in notApplicableMethods {
+      #expect(!operation.applies(to: notApplicableMethod))
     }
   }
+}
+
+extension MethodDescriptor {
+  fileprivate static let fooBar = Self(service: "pkg.foo", method: "bar")
+  fileprivate static let fooBaz = Self(service: "pkg.foo", method: "baz")
+  fileprivate static let barFoo = Self(service: "pkg.bar", method: "foo")
+  fileprivate static let barBaz = Self(service: "pkg.bar", method: "Baz")
 }
