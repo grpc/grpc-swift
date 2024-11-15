@@ -244,15 +244,25 @@ extension ServerResponse {
     self.accepted = .failure(error)
   }
 
-  /// Returns the metadata to be sent to the client at the start of the response.
-  ///
-  /// For rejected RPCs (in other words, where ``accepted`` is `failure`) the metadata is empty.
+  /// The metadata to be sent to the client at the start of the response.
   public var metadata: Metadata {
-    switch self.accepted {
-    case let .success(contents):
-      return contents.metadata
-    case .failure:
-      return [:]
+    get {
+      switch self.accepted {
+      case let .success(contents):
+        return contents.metadata
+      case .failure(let error):
+        return error.metadata
+      }
+    }
+    set {
+      switch self.accepted {
+      case var .success(contents):
+        contents.metadata = newValue
+        self.accepted = .success(contents)
+      case var .failure(error):
+        error.metadata = newValue
+        self.accepted = .failure(error)
+      }
     }
   }
 
@@ -303,15 +313,25 @@ extension StreamingServerResponse {
     self.accepted = .failure(error)
   }
 
-  /// Returns metadata received from the server at the start of the response.
-  ///
-  /// For rejected RPCs (in other words, where ``accepted`` is `failure`) the metadata is empty.
+  /// The metadata to be sent to the client at the start of the response.
   public var metadata: Metadata {
-    switch self.accepted {
-    case let .success(contents):
-      return contents.metadata
-    case .failure:
-      return [:]
+    get {
+      switch self.accepted {
+      case let .success(contents):
+        return contents.metadata
+      case .failure(let error):
+        return error.metadata
+      }
+    }
+    set {
+      switch self.accepted {
+      case var .success(contents):
+        contents.metadata = newValue
+        self.accepted = .success(contents)
+      case var .failure(error):
+        error.metadata = newValue
+        self.accepted = .failure(error)
+      }
     }
   }
 }
