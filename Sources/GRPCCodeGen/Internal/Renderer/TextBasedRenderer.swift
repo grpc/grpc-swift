@@ -70,6 +70,9 @@ final class StringCodeWriter {
     if nextWriteAppendsToLastLine && !lines.isEmpty {
       let existingLine = lines.removeLast()
       newLine = existingLine + line
+    } else if line.isEmpty {
+      // Skip indentation to avoid trailing whitespace on blank lines.
+      newLine = line
     } else {
       let indentation = Array(repeating: " ", count: self.indentation * level).joined()
       newLine = indentation + line

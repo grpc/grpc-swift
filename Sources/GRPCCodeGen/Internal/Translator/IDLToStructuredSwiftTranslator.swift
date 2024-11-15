@@ -62,7 +62,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
   }
 
   private func makeImports(
-    dependencies: [CodeGenerationRequest.Dependency],
+    dependencies: [Dependency],
     accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool
   ) throws -> [ImportDescription] {
@@ -98,7 +98,7 @@ extension AccessModifier {
 
 extension IDLToStructuredSwiftTranslator {
   private func translateImport(
-    dependency: CodeGenerationRequest.Dependency,
+    dependency: Dependency,
     accessLevelOnImports: Bool
   ) throws -> ImportDescription {
     var importDescription = ImportDescription(
@@ -146,7 +146,7 @@ extension IDLToStructuredSwiftTranslator {
 
   // Verify service enum names are unique.
   private func checkServiceEnumNamesAreUnique(
-    for servicesByGeneratedEnumName: [String: [CodeGenerationRequest.ServiceDescriptor]]
+    for servicesByGeneratedEnumName: [String: [ServiceDescriptor]]
   ) throws {
     for (generatedEnumName, services) in servicesByGeneratedEnumName {
       if services.count > 1 {
@@ -163,7 +163,7 @@ extension IDLToStructuredSwiftTranslator {
 
   // Verify method names are unique within a service.
   private func checkMethodNamesAreUnique(
-    in service: CodeGenerationRequest.ServiceDescriptor
+    in service: ServiceDescriptor
   ) throws {
     // Check that the method descriptors are unique, by checking that the base names
     // of the methods of a specific service are unique.
@@ -206,7 +206,7 @@ extension IDLToStructuredSwiftTranslator {
   }
 
   private func checkServiceDescriptorsAreUnique(
-    _ services: [CodeGenerationRequest.ServiceDescriptor]
+    _ services: [ServiceDescriptor]
   ) throws {
     var descriptors: Set<String> = []
     for service in services {
@@ -227,7 +227,7 @@ extension IDLToStructuredSwiftTranslator {
   }
 }
 
-extension CodeGenerationRequest.ServiceDescriptor {
+extension ServiceDescriptor {
   var namespacedGeneratedName: String {
     if self.namespace.generatedUpperCase.isEmpty {
       return self.name.generatedUpperCase

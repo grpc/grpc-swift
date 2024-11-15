@@ -72,8 +72,8 @@ internal func XCTAssertEqualWithDiff(
 }
 
 internal func makeCodeGenerationRequest(
-  services: [CodeGenerationRequest.ServiceDescriptor] = [],
-  dependencies: [CodeGenerationRequest.Dependency] = []
+  services: [ServiceDescriptor] = [],
+  dependencies: [Dependency] = []
 ) -> CodeGenerationRequest {
   return CodeGenerationRequest(
     fileName: "test.grpc",

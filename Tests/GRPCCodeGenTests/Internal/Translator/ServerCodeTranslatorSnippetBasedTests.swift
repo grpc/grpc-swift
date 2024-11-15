@@ -21,10 +21,6 @@ import XCTest
 @testable import GRPCCodeGen
 
 final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
-  typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
-  typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
-  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
-
   func testServerCodeTranslatorUnaryMethod() throws {
     let method = MethodDescriptor(
       documentation: "/// Documentation for unaryMethod",
@@ -408,7 +404,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
               context: GRPCCore.ServerContext
           ) async throws -> GRPCCore.StreamingServerResponse<NamespaceA_ServiceAResponse>
-          
+
           /// Documentation for outputStreamingMethod
           func outputStreaming(
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
@@ -452,7 +448,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
               context: GRPCCore.ServerContext
           ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>
-          
+
           /// Documentation for outputStreamingMethod
           func outputStreaming(
               request: GRPCCore.ServerRequest<NamespaceA_ServiceARequest>,
@@ -472,7 +468,7 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
               )
               return GRPCCore.StreamingServerResponse(single: response)
           }
-          
+
           internal func outputStreaming(
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
               context: GRPCCore.ServerContext

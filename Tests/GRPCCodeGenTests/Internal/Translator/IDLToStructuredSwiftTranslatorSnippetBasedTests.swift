@@ -21,64 +21,60 @@ import XCTest
 @testable import GRPCCodeGen
 
 final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
-  typealias MethodDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor.MethodDescriptor
-  typealias ServiceDescriptor = GRPCCodeGen.CodeGenerationRequest.ServiceDescriptor
-  typealias Name = GRPCCodeGen.CodeGenerationRequest.Name
-
   func testImports() throws {
-    var dependencies = [CodeGenerationRequest.Dependency]()
-    dependencies.append(CodeGenerationRequest.Dependency(module: "Foo", accessLevel: .public))
+    var dependencies = [Dependency]()
+    dependencies.append(Dependency(module: "Foo", accessLevel: .public))
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .typealias, name: "Bar"),
         module: "Foo",
         accessLevel: .internal
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .struct, name: "Baz"),
         module: "Foo",
         accessLevel: .package
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .class, name: "Bac"),
         module: "Foo",
         accessLevel: .package
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .enum, name: "Bap"),
         module: "Foo",
         accessLevel: .package
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .protocol, name: "Bat"),
         module: "Foo",
         accessLevel: .package
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .let, name: "Baq"),
         module: "Foo",
         accessLevel: .package
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .var, name: "Bag"),
         module: "Foo",
         accessLevel: .package
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .func, name: "Bak"),
         module: "Foo",
         accessLevel: .package
@@ -109,16 +105,16 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   }
 
   func testPreconcurrencyImports() throws {
-    var dependencies = [CodeGenerationRequest.Dependency]()
+    var dependencies = [Dependency]()
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         module: "Foo",
         preconcurrency: .required,
         accessLevel: .internal
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
         preconcurrency: .required,
@@ -126,7 +122,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       )
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         module: "Baz",
         preconcurrency: .requiredOnOS(["Deq", "Der"]),
         accessLevel: .internal
@@ -154,12 +150,12 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   }
 
   func testSPIImports() throws {
-    var dependencies = [CodeGenerationRequest.Dependency]()
+    var dependencies = [Dependency]()
     dependencies.append(
-      CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
+      Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
         spi: "Secret",
@@ -184,12 +180,12 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   }
 
   func testGeneration() throws {
-    var dependencies = [CodeGenerationRequest.Dependency]()
+    var dependencies = [Dependency]()
     dependencies.append(
-      CodeGenerationRequest.Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
+      Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
     )
     dependencies.append(
-      CodeGenerationRequest.Dependency(
+      Dependency(
         item: .init(kind: .enum, name: "Bar"),
         module: "Foo",
         spi: "Secret",
