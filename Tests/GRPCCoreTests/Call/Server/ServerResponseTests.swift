@@ -13,38 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@_spi(Testing) import GRPCCore
-import XCTest
 
-final class ServerResponseTests: XCTestCase {
-  func testSingleConvenienceInit() {
-    var response = ServerResponse(
+import GRPCCore
+import Testing
+
+@Suite("ServerResponse")
+struct ServerResponseTests {
+  @Test("ServerResponse(message:metadata:trailingMetadata:)")
+  func responseInitSuccess() throws {
+    let response = ServerResponse(
       message: "message",
       metadata: ["metadata": "initial"],
       trailingMetadata: ["metadata": "trailing"]
     )
 
-    switch response.accepted {
-    case .success(let contents):
-      XCTAssertEqual(contents.message, "message")
-      XCTAssertEqual(contents.metadata, ["metadata": "initial"])
-      XCTAssertEqual(contents.trailingMetadata, ["metadata": "trailing"])
-    case .failure:
-      XCTFail("Unexpected error")
-    }
+    let contents = try #require(try response.accepted.get())
+    #expect(contents.message == "message")
+    #expect(contents.metadata == ["metadata": "initial"])
+    #expect(contents.trailingMetadata == ["metadata": "trailing"])
+  }
 
+  @Test("ServerResponse(of:error:)")
+  func responseInitError() throws {
     let error = RPCError(code: .aborted, message: "Aborted")
-    response = ServerResponse(of: String.self, error: error)
+    let response = ServerResponse(of: String.self, error: error)
     switch response.accepted {
     case .success:
-      XCTFail("Unexpected success")
-    case .failure(let error):
-      XCTAssertEqual(error, error)
+      Issue.record("Expected error")
+    case .failure(let rpcError):
+      #expect(rpcError == error)
     }
   }
 
-  func testStreamConvenienceInit() async throws {
-    var response = StreamingServerResponse(
+  @Test("StreamingServerResponse(of:metadata:producer:)")
+  func streamingResponseInitSuccess() async throws {
+    let response = StreamingServerResponse(
       of: String.self,
       metadata: ["metadata": "initial"]
     ) { _ in
@@ -52,26 +55,26 @@ final class ServerResponseTests: XCTestCase {
       return ["metadata": "trailing"]
     }
 
-    switch response.accepted {
-    case .success(let contents):
-      XCTAssertEqual(contents.metadata, ["metadata": "initial"])
-      let trailingMetadata = try await contents.producer(.failTestOnWrite())
-      XCTAssertEqual(trailingMetadata, ["metadata": "trailing"])
-    case .failure:
-      XCTFail("Unexpected error")
-    }
+    let contents = try #require(try response.accepted.get())
+    #expect(contents.metadata == ["metadata": "initial"])
+    let trailingMetadata = try await contents.producer(.failTestOnWrite())
+    #expect(trailingMetadata == ["metadata": "trailing"])
+  }
 
+  @Test("StreamingServerResponse(of:error:)")
+  func streamingResponseInitError() async throws {
     let error = RPCError(code: .aborted, message: "Aborted")
-    response = StreamingServerResponse(of: String.self, error: error)
+    let response = StreamingServerResponse(of: String.self, error: error)
     switch response.accepted {
     case .success:
-      XCTFail("Unexpected success")
-    case .failure(let error):
-      XCTAssertEqual(error, error)
+      Issue.record("Expected error")
+    case .failure(let rpcError):
+      #expect(rpcError == error)
     }
   }
 
-  func testSingleToStreamConversionForSuccessfulResponse() async throws {
+  @Test("StreamingServerResponse(single:) (accepted)")
+  func singleToStreamConversionForSuccessfulResponse() async throws {
     let single = ServerResponse(
       message: "foo",
       metadata: ["metadata": "initial"],
@@ -90,19 +93,49 @@ final class ServerResponseTests: XCTestCase {
       throw error
     }
 
-    XCTAssertEqual(stream.metadata, ["metadata": "initial"])
+    #expect(stream.metadata == ["metadata": "initial"])
     let collected = try await messages.collect()
-    XCTAssertEqual(collected, ["foo"])
-    XCTAssertEqual(trailingMetadata, ["metadata": "trailing"])
+    #expect(collected == ["foo"])
+    #expect(trailingMetadata == ["metadata": "trailing"])
   }
 
-  func testSingleToStreamConversionForFailedResponse() async throws {
+  @Test("StreamingServerResponse(single:) (rejected)")
+  func singleToStreamConversionForFailedResponse() async throws {
     let error = RPCError(code: .aborted, message: "aborted")
     let single = ServerResponse(of: String.self, error: error)
     let stream = StreamingServerResponse(single: single)
 
-    XCTAssertThrowsRPCError(try stream.accepted.get()) {
-      XCTAssertEqual($0, error)
+    switch stream.accepted {
+    case .success:
+      Issue.record("Expected error")
+    case .failure(let rpcError):
+      #expect(rpcError == error)
     }
+  }
+
+  @Test("Mutate metadata on response", arguments: [true, false])
+  func mutateMetadataOnResponse(accepted: Bool) {
+    var response: ServerResponse<String>
+    if accepted {
+      response = ServerResponse(message: "")
+    } else {
+      response = ServerResponse(error: RPCError(code: .aborted, message: ""))
+    }
+
+    response.metadata.addString("value", forKey: "key")
+    #expect(response.metadata == ["key": "value"])
+  }
+
+  @Test("Mutate metadata on streaming response", arguments: [true, false])
+  func mutateMetadataOnStreamingResponse(accepted: Bool) {
+    var response: StreamingServerResponse<String>
+    if accepted {
+      response = StreamingServerResponse { _ in [:] }
+    } else {
+      response = StreamingServerResponse(error: RPCError(code: .aborted, message: ""))
+    }
+
+    response.metadata.addString("value", forKey: "key")
+    #expect(response.metadata == ["key": "value"])
   }
 }
