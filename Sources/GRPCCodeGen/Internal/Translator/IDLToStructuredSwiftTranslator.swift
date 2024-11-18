@@ -87,7 +87,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 }
 
 extension AccessModifier {
-  fileprivate init(_ accessLevel: SourceGenerator.Config.AccessLevel) {
+  init(_ accessLevel: SourceGenerator.Config.AccessLevel) {
     switch accessLevel.level {
     case .internal: self = .internal
     case .package: self = .package
