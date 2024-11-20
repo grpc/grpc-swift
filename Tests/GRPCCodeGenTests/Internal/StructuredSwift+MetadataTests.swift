@@ -42,13 +42,13 @@ extension StructuedSwiftTests {
     func staticMethodDescriptorProperty(access: AccessModifier) {
       let decl: VariableDescription = .methodDescriptor(
         accessModifier: access,
-        serviceNamespace: "FooService",
+        literalFullyQualifiedService: "foo.Foo",
         literalMethodName: "Bar"
       )
 
       let expected = """
         \(access) static let descriptor = GRPCCore.MethodDescriptor(
-          service: FooService.descriptor.fullyQualifiedService,
+          service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "foo.Foo"),
           method: "Bar"
         )
         """
@@ -56,16 +56,18 @@ extension StructuedSwiftTests {
     }
 
     @Test(
-      "static let descriptor = GRPCCore.ServiceDescriptor.<Name>",
+      "static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService:)",
       arguments: AccessModifier.allCases
     )
     func staticServiceDescriptorProperty(access: AccessModifier) {
       let decl: VariableDescription = .serviceDescriptor(
         accessModifier: access,
-        namespacedProperty: "foo"
+        literalFullyQualifiedService: "foo.Bar"
       )
 
-      let expected = "\(access) static let descriptor = GRPCCore.ServiceDescriptor.foo"
+      let expected = """
+        \(access) static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "foo.Bar")
+        """
       #expect(render(.variable(decl)) == expected)
     }
 
@@ -74,16 +76,12 @@ extension StructuedSwiftTests {
       let decl: ExtensionDescription = .serviceDescriptor(
         accessModifier: access,
         propertyName: "foo",
-        literalNamespace: "echo",
-        literalService: "EchoService"
+        literalFullyQualifiedService: "echo.EchoService"
       )
 
       let expected = """
         extension GRPCCore.ServiceDescriptor {
-          \(access) static let foo = Self(
-            package: "echo",
-            service: "EchoService"
-          )
+          \(access) static let foo = GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.EchoService")
         }
         """
       #expect(render(.extension(decl)) == expected)
@@ -115,7 +113,7 @@ extension StructuedSwiftTests {
         accessModifier: access,
         name: "Foo",
         literalMethod: "Foo",
-        serviceNamespace: "Bar_Baz",
+        literalFullyQualifiedService: "bar.Bar",
         inputType: "FooInput",
         outputType: "FooOutput"
       )
@@ -125,7 +123,7 @@ extension StructuedSwiftTests {
           \(access) typealias Input = FooInput
           \(access) typealias Output = FooOutput
           \(access) static let descriptor = GRPCCore.MethodDescriptor(
-            service: Bar_Baz.descriptor.fullyQualifiedService,
+            service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "bar.Bar"),
             method: "Foo"
           )
         }
@@ -137,7 +135,7 @@ extension StructuedSwiftTests {
     func methodsNamespaceEnum(access: AccessModifier) {
       let decl: EnumDescription = .methodsNamespace(
         accessModifier: access,
-        serviceNamespace: "Bar_Baz",
+        literalFullyQualifiedService: "bar.Bar",
         methods: [
           .init(
             documentation: "",
@@ -156,7 +154,7 @@ extension StructuedSwiftTests {
             \(access) typealias Input = FooInput
             \(access) typealias Output = FooOutput
             \(access) static let descriptor = GRPCCore.MethodDescriptor(
-              service: Bar_Baz.descriptor.fullyQualifiedService,
+              service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "bar.Bar"),
               method: "Foo"
             )
           }
@@ -172,7 +170,7 @@ extension StructuedSwiftTests {
     func methodsNamespaceEnumNoMethods(access: AccessModifier) {
       let decl: EnumDescription = .methodsNamespace(
         accessModifier: access,
-        serviceNamespace: "Bar_Baz",
+        literalFullyQualifiedService: "bar.Bar",
         methods: []
       )
 
@@ -189,9 +187,7 @@ extension StructuedSwiftTests {
       let decl: EnumDescription = .serviceNamespace(
         accessModifier: access,
         name: "Foo",
-        serviceDescriptorProperty: "foo",
-        client: false,
-        server: false,
+        literalFullyQualifiedService: "Foo",
         methods: [
           .init(
             documentation: "",
@@ -206,13 +202,13 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) enum Foo {
-          \(access) static let descriptor = GRPCCore.ServiceDescriptor.foo
+          \(access) static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "Foo")
           \(access) enum Method {
             \(access) enum Bar {
               \(access) typealias Input = BarInput
               \(access) typealias Output = BarOutput
               \(access) static let descriptor = GRPCCore.MethodDescriptor(
-                service: Foo.descriptor.fullyQualifiedService,
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "Foo"),
                 method: "Bar"
               )
             }
@@ -225,53 +221,23 @@ extension StructuedSwiftTests {
       #expect(render(.enum(decl)) == expected)
     }
 
-    @Test(
-      "enum <Service> { ... } (no methods)",
-      arguments: AccessModifier.allCases,
-      [(true, true), (false, false), (true, false), (false, true)]
-    )
-    func serviceNamespaceEnumNoMethods(access: AccessModifier, config: (client: Bool, server: Bool))
-    {
+    @Test("enum <Service> { ... } (no methods)", arguments: AccessModifier.allCases)
+    func serviceNamespaceEnumNoMethods(access: AccessModifier) {
       let decl: EnumDescription = .serviceNamespace(
         accessModifier: access,
         name: "Foo",
-        serviceDescriptorProperty: "foo",
-        client: config.client,
-        server: config.server,
+        literalFullyQualifiedService: "Foo",
         methods: []
       )
 
-      var expected = """
+      let expected = """
         \(access) enum Foo {
-          \(access) static let descriptor = GRPCCore.ServiceDescriptor.foo
+          \(access) static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "Foo")
           \(access) enum Method {
             \(access) static let descriptors: [GRPCCore.MethodDescriptor] = []
-          }\n
-        """
-
-      if config.server {
-        expected += """
-            \(access) typealias StreamingServiceProtocol = Foo_StreamingServiceProtocol
-            \(access) typealias ServiceProtocol = Foo_ServiceProtocol
-          """
-      }
-
-      if config.client {
-        if config.server {
-          expected += "\n"
+          }
         }
-
-        expected += """
-            \(access) typealias ClientProtocol = Foo_ClientProtocol
-            \(access) typealias Client = Foo_Client
-          """
-      }
-
-      if config.client || config.server {
-        expected += "\n}"
-      } else {
-        expected += "}"
-      }
+        """
 
       #expect(render(.enum(decl)) == expected)
     }

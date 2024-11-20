@@ -68,36 +68,41 @@ struct ServerCodeTranslator {
   ) -> [CodeBlock] {
     var blocks = [CodeBlock]()
 
-    let serviceProtocolName = self.protocolName(service: service, streaming: false)
-    let serviceTypealiasName = self.protocolName(
-      service: service,
-      streaming: false,
-      joinedUsing: "."
-    )
-    let streamingServiceProtocolName = self.protocolName(service: service, streaming: true)
-    let streamingServiceTypealiasName = self.protocolName(
-      service: service,
-      streaming: true,
-      joinedUsing: "."
-    )
+    let `extension` = ExtensionDescription(
+      onType: service.namespacedGeneratedName,
+      declarations: [
+        // protocol StreamingServiceProtocol { ... }
+        .commentable(
+          .preFormatted(service.documentation),
+          .protocol(
+            .streamingService(
+              accessLevel: accessModifier,
+              name: "StreamingServiceProtocol",
+              methods: service.methods
+            )
+          )
+        ),
 
-    // protocol <Service>_StreamingServiceProtocol { ... }
-    let streamingServiceProtocol: ProtocolDescription = .streamingService(
-      accessLevel: accessModifier,
-      name: streamingServiceProtocolName,
-      methods: service.methods
+        // protocol ServiceProtocol { ... }
+        .commentable(
+          .preFormatted(service.documentation),
+          .protocol(
+            .service(
+              accessLevel: accessModifier,
+              name: "ServiceProtocol",
+              streamingProtocol: "\(service.namespacedGeneratedName).StreamingServiceProtocol",
+              methods: service.methods
+            )
+          )
+        ),
+      ]
     )
-    blocks.append(
-      CodeBlock(
-        comment: .preFormatted(service.documentation),
-        item: .declaration(.protocol(streamingServiceProtocol))
-      )
-    )
+    blocks.append(.declaration(.extension(`extension`)))
 
-    // extension <Service>_StreamingServiceProtocol> { ... }
+    // extension <Service>.StreamingServiceProtocol> { ... }
     let registerExtension: ExtensionDescription = .registrableRPCServiceDefaultImplementation(
       accessLevel: accessModifier,
-      on: streamingServiceTypealiasName,
+      on: "\(service.namespacedGeneratedName).StreamingServiceProtocol",
       serviceNamespace: service.namespacedGeneratedName,
       methods: service.methods,
       serializer: serializer,
@@ -110,45 +115,15 @@ struct ServerCodeTranslator {
       )
     )
 
-    // protocol <Service>_ServiceProtocol { ... }
-    let serviceProtocol: ProtocolDescription = .service(
-      accessLevel: accessModifier,
-      name: serviceProtocolName,
-      streamingProtocol: streamingServiceTypealiasName,
-      methods: service.methods
-    )
-    blocks.append(
-      CodeBlock(
-        comment: .preFormatted(service.documentation),
-        item: .declaration(.protocol(serviceProtocol))
-      )
-    )
-
     // extension <Service>_ServiceProtocol { ... }
     let streamingServiceDefaultImplExtension: ExtensionDescription =
       .streamingServiceProtocolDefaultImplementation(
         accessModifier: accessModifier,
-        on: serviceTypealiasName,
+        on: "\(service.namespacedGeneratedName).ServiceProtocol",
         methods: service.methods
       )
-    blocks.append(
-      CodeBlock(
-        comment: .doc("Partial conformance to `\(streamingServiceProtocolName)`."),
-        item: .declaration(.extension(streamingServiceDefaultImplExtension))
-      )
-    )
+    blocks.append(.declaration(.extension(streamingServiceDefaultImplExtension)))
 
     return blocks
-  }
-
-  private func protocolName(
-    service: ServiceDescriptor,
-    streaming: Bool,
-    joinedUsing join: String = "_"
-  ) -> String {
-    if streaming {
-      return "\(service.namespacedGeneratedName)\(join)StreamingServiceProtocol"
-    }
-    return "\(service.namespacedGeneratedName)\(join)ServiceProtocol"
   }
 }

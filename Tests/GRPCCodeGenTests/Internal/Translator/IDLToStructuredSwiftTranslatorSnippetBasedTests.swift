@@ -215,35 +215,31 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       // MARK: - namespaceA.ServiceA
 
       public enum NamespaceA_ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
           public enum Method {
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
-          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
       }
 
       extension GRPCCore.ServiceDescriptor {
-          public static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
+          public static let namespaceA_ServiceA = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
       }
 
       // MARK: namespaceA.ServiceA (server)
 
-      /// Documentation for AService
-      public protocol NamespaceA_ServiceA_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+      extension NamespaceA_ServiceA {
+          /// Documentation for AService
+          public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
+
+          /// Documentation for AService
+          public protocol ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
+      }
 
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
 
-      /// Documentation for AService
-      public protocol NamespaceA_ServiceA_ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
-
-      /// Partial conformance to `NamespaceA_ServiceA_StreamingServiceProtocol`.
       extension NamespaceA_ServiceA.ServiceProtocol {
       }
       """

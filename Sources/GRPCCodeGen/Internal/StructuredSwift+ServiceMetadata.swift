@@ -43,12 +43,12 @@ extension TypealiasDescription {
 extension VariableDescription {
   /// ```
   /// static let descriptor = GRPCCore.MethodDescriptor(
-  ///   service: <serviceNamespace>.descriptor.fullyQualifiedService,
+  ///   service: GRPCCore.ServiceDescriptor(fullyQualifiedServiceName: "<literalFullyQualifiedService>"),
   ///   method: "<literalMethodName>"
   /// ```
   package static func methodDescriptor(
     accessModifier: AccessModifier? = nil,
-    serviceNamespace: String,
+    literalFullyQualifiedService: String,
     literalMethodName: String
   ) -> Self {
     return VariableDescription(
@@ -62,9 +62,11 @@ extension VariableDescription {
           arguments: [
             FunctionArgumentDescription(
               label: "service",
-              expression: .identifierType(
-                .member([serviceNamespace, "descriptor"])
-              ).dot("fullyQualifiedService")
+              expression: .functionCall(
+                .serviceDescriptor(
+                  literalFullyQualifiedService: literalFullyQualifiedService
+                )
+              )
             ),
             FunctionArgumentDescription(
               label: "method",
@@ -77,18 +79,34 @@ extension VariableDescription {
   }
 
   /// ```
-  /// static let descriptor = GRPCCore.ServiceDescriptor.<namespacedProperty>
+  /// static let descriptor = GRPCCore.ServiceDescriptor(package: "...", service: "...")
   /// ```
   package static func serviceDescriptor(
     accessModifier: AccessModifier? = nil,
-    namespacedProperty: String
+    literalFullyQualifiedService name: String
   ) -> Self {
     return VariableDescription(
       accessModifier: accessModifier,
       isStatic: true,
       kind: .let,
       left: .identifierPattern("descriptor"),
-      right: .identifier(.type(.serviceDescriptor)).dot(namespacedProperty)
+      right: .functionCall(.serviceDescriptor(literalFullyQualifiedService: name))
+    )
+  }
+}
+
+extension FunctionCallDescription {
+  package static func serviceDescriptor(
+    literalFullyQualifiedService: String
+  ) -> Self {
+    FunctionCallDescription(
+      calledExpression: .identifier(.type(.serviceDescriptor)),
+      arguments: [
+        FunctionArgumentDescription(
+          label: "fullyQualifiedService",
+          expression: .literal(literalFullyQualifiedService)
+        )
+      ]
     )
   }
 }
@@ -97,16 +115,14 @@ extension ExtensionDescription {
   /// ```
   /// extension GRPCCore.ServiceDescriptor {
   ///   static let <PropertyName> = Self(
-  ///     package: "<LiteralNamespaceName>",
-  ///     service: "<LiteralServiceName>"
+  ///     fullyQualifiedService: <LiteralFullyQualifiedService>
   ///   )
   /// }
   /// ```
   package static func serviceDescriptor(
     accessModifier: AccessModifier? = nil,
     propertyName: String,
-    literalNamespace: String,
-    literalService: String
+    literalFullyQualifiedService: String
   ) -> ExtensionDescription {
     return ExtensionDescription(
       onType: "GRPCCore.ServiceDescriptor",
@@ -117,17 +133,7 @@ extension ExtensionDescription {
           kind: .let,
           left: .identifier(.pattern(propertyName)),
           right: .functionCall(
-            calledExpression: .identifierType(.member("Self")),
-            arguments: [
-              FunctionArgumentDescription(
-                label: "package",
-                expression: .literal(literalNamespace)
-              ),
-              FunctionArgumentDescription(
-                label: "service",
-                expression: .literal(literalService)
-              ),
-            ]
+            .serviceDescriptor(literalFullyQualifiedService: literalFullyQualifiedService)
           )
         )
       ]
@@ -169,7 +175,7 @@ extension EnumDescription {
     accessModifier: AccessModifier? = nil,
     name: String,
     literalMethod: String,
-    serviceNamespace: String,
+    literalFullyQualifiedService: String,
     inputType: String,
     outputType: String
   ) -> Self {
@@ -182,7 +188,7 @@ extension EnumDescription {
         .variable(
           .methodDescriptor(
             accessModifier: accessModifier,
-            serviceNamespace: serviceNamespace,
+            literalFullyQualifiedService: literalFullyQualifiedService,
             literalMethodName: literalMethod
           )
         ),
@@ -209,7 +215,7 @@ extension EnumDescription {
   /// ```
   package static func methodsNamespace(
     accessModifier: AccessModifier? = nil,
-    serviceNamespace: String,
+    literalFullyQualifiedService: String,
     methods: [MethodDescriptor]
   ) -> EnumDescription {
     var description = EnumDescription(accessModifier: accessModifier, name: "Method")
@@ -221,7 +227,7 @@ extension EnumDescription {
           accessModifier: accessModifier,
           name: method.name.base,
           literalMethod: method.name.base,
-          serviceNamespace: serviceNamespace,
+          literalFullyQualifiedService: literalFullyQualifiedService,
           inputType: method.inputType,
           outputType: method.outputType
         )
@@ -245,56 +251,30 @@ extension EnumDescription {
   ///   enum Method {
   ///     ...
   ///   }
-  ///   @available(...)
-  ///   typealias StreamingServiceProtocol = ...
-  ///   @available(...)
-  ///   typealias ServiceProtocol = ...
-  ///   ...
   /// }
   /// ```
   package static func serviceNamespace(
     accessModifier: AccessModifier? = nil,
     name: String,
-    serviceDescriptorProperty: String,
-    client: Bool,
-    server: Bool,
+    literalFullyQualifiedService: String,
     methods: [MethodDescriptor]
   ) -> EnumDescription {
     var description = EnumDescription(accessModifier: accessModifier, name: name)
 
-    // static let descriptor = GRPCCore.ServiceDescriptor.<namespacedServicePropertyName>
+    // static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "...")
     let descriptor = VariableDescription.serviceDescriptor(
       accessModifier: accessModifier,
-      namespacedProperty: serviceDescriptorProperty
+      literalFullyQualifiedService: literalFullyQualifiedService
     )
     description.members.append(.variable(descriptor))
 
     // enum Method { ... }
     let methodsNamespace: EnumDescription = .methodsNamespace(
       accessModifier: accessModifier,
-      serviceNamespace: name,
+      literalFullyQualifiedService: literalFullyQualifiedService,
       methods: methods
     )
     description.members.append(.enum(methodsNamespace))
-
-    // Typealiases for the various protocols.
-    var typealiasNames: [String] = []
-    if server {
-      typealiasNames.append("StreamingServiceProtocol")
-      typealiasNames.append("ServiceProtocol")
-    }
-    if client {
-      typealiasNames.append("ClientProtocol")
-      typealiasNames.append("Client")
-    }
-    let typealiases: [Declaration] = typealiasNames.map { alias in
-      .typealias(
-        accessModifier: accessModifier,
-        name: alias,
-        existingType: .member(name + "_" + alias)
-      )
-    }
-    description.members.append(contentsOf: typealiases)
 
     return description
   }
@@ -312,18 +292,14 @@ extension [CodeBlock] {
   /// ```
   package static func serviceMetadata(
     accessModifier: AccessModifier? = nil,
-    service: ServiceDescriptor,
-    client: Bool,
-    server: Bool
+    service: ServiceDescriptor
   ) -> Self {
     var blocks: [CodeBlock] = []
 
     let serviceNamespace: EnumDescription = .serviceNamespace(
       accessModifier: accessModifier,
       name: service.namespacedGeneratedName,
-      serviceDescriptorProperty: service.namespacedServicePropertyName,
-      client: client,
-      server: server,
+      literalFullyQualifiedService: service.fullyQualifiedName,
       methods: service.methods
     )
     blocks.append(CodeBlock(item: .declaration(.enum(serviceNamespace))))
@@ -331,8 +307,7 @@ extension [CodeBlock] {
     let descriptorExtension: ExtensionDescription = .serviceDescriptor(
       accessModifier: accessModifier,
       propertyName: service.namespacedServicePropertyName,
-      literalNamespace: service.namespace.base,
-      literalService: service.name.base
+      literalFullyQualifiedService: service.fullyQualifiedName
     )
     blocks.append(CodeBlock(item: .declaration(.extension(descriptorExtension))))
 

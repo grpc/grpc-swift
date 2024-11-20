@@ -86,25 +86,41 @@ struct ClientCodeTranslator {
   ) -> [CodeBlock] {
     var blocks = [CodeBlock]()
 
-    let protocolName = "\(service.namespacedGeneratedName)_ClientProtocol"
-    let protocolTypealias = "\(service.namespacedGeneratedName).ClientProtocol"
-    let structName = "\(service.namespacedGeneratedName)_Client"
+    let `extension` = ExtensionDescription(
+      onType: service.namespacedGeneratedName,
+      declarations: [
+        // protocol ClientProtocol { ... }
+        .commentable(
+          .preFormatted(service.documentation),
+          .protocol(
+            .clientProtocol(
+              accessLevel: accessModifier,
+              name: "ClientProtocol",
+              methods: service.methods
+            )
+          )
+        ),
 
-    let clientProtocol: ProtocolDescription = .clientProtocol(
-      accessLevel: accessModifier,
-      name: protocolName,
-      methods: service.methods
+        // struct Client: ClientProtocol { ... }
+        .commentable(
+          .preFormatted(service.documentation),
+          .struct(
+            .client(
+              accessLevel: accessModifier,
+              name: "Client",
+              serviceEnum: service.namespacedGeneratedName,
+              clientProtocol: "ClientProtocol",
+              methods: service.methods
+            )
+          )
+        ),
+      ]
     )
-    blocks.append(
-      CodeBlock(
-        comment: .preFormatted(service.documentation),
-        item: .declaration(.protocol(clientProtocol))
-      )
-    )
+    blocks.append(.declaration(.extension(`extension`)))
 
     let extensionWithDefaults: ExtensionDescription = .clientMethodSignatureWithDefaults(
       accessLevel: accessModifier,
-      name: protocolTypealias,
+      name: "\(service.namespacedGeneratedName).ClientProtocol",
       methods: service.methods,
       serializer: serializer,
       deserializer: deserializer
@@ -115,25 +131,11 @@ struct ClientCodeTranslator {
 
     let extensionWithExplodedAPI: ExtensionDescription = .explodedClientMethods(
       accessLevel: accessModifier,
-      on: protocolTypealias,
+      on: "\(service.namespacedGeneratedName).ClientProtocol",
       methods: service.methods
     )
     blocks.append(
       CodeBlock(item: .declaration(.extension(extensionWithExplodedAPI)))
-    )
-
-    let clientStruct: StructDescription = .client(
-      accessLevel: accessModifier,
-      name: structName,
-      serviceEnum: service.namespacedGeneratedName,
-      clientProtocol: protocolTypealias,
-      methods: service.methods
-    )
-    blocks.append(
-      CodeBlock(
-        comment: .preFormatted(service.documentation),
-        item: .declaration(.struct(clientStruct))
-      )
     )
 
     return blocks

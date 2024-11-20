@@ -39,16 +39,47 @@ struct ClientCodeTranslatorSnippetBasedTests {
     )
 
     let expectedSwift = """
-      /// Documentation for ServiceA
-      public protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
-          /// Documentation for MethodA
-          func methodA<Result>(
-              request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
-              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: GRPCCore.CallOptions,
-              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
-          ) async throws -> Result where Result: Sendable
+      extension NamespaceA_ServiceA {
+          /// Documentation for ServiceA
+          public protocol ClientProtocol: Sendable {
+              /// Documentation for MethodA
+              func methodA<Result>(
+                  request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
+                  serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+                  deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+                  options: GRPCCore.CallOptions,
+                  onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+              ) async throws -> Result where Result: Sendable
+          }
+
+          /// Documentation for ServiceA
+          public struct Client: ClientProtocol {
+              private let client: GRPCCore.GRPCClient
+
+              public init(wrapping client: GRPCCore.GRPCClient) {
+                  self.client = client
+              }
+
+              /// Documentation for MethodA
+              public func methodA<Result>(
+                  request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
+                  serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
+                  deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
+                  options: GRPCCore.CallOptions = .defaults,
+                  onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                      try response.message
+                  }
+              ) async throws -> Result where Result: Sendable {
+                  try await self.client.unary(
+                      request: request,
+                      descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
+                      serializer: serializer,
+                      deserializer: deserializer,
+                      options: options,
+                      onResponse: handleResponse
+                  )
+              }
+          }
       }
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<Result>(
@@ -83,34 +114,6 @@ struct ClientCodeTranslatorSnippetBasedTests {
               )
               return try await self.methodA(
                   request: request,
-                  options: options,
-                  onResponse: handleResponse
-              )
-          }
-      }
-      /// Documentation for ServiceA
-      public struct NamespaceA_ServiceA_Client: NamespaceA_ServiceA.ClientProtocol {
-          private let client: GRPCCore.GRPCClient
-
-          public init(wrapping client: GRPCCore.GRPCClient) {
-              self.client = client
-          }
-
-          /// Documentation for MethodA
-          public func methodA<Result>(
-              request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
-              serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
-              deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
-              options: GRPCCore.CallOptions = .defaults,
-              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
-                  try response.message
-              }
-          ) async throws -> Result where Result: Sendable {
-              try await self.client.unary(
-                  request: request,
-                  descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
-                  serializer: serializer,
-                  deserializer: deserializer,
                   options: options,
                   onResponse: handleResponse
               )
