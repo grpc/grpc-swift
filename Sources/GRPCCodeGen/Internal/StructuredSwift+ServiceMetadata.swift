@@ -288,13 +288,10 @@ extension EnumDescription {
       typealiasNames.append("Client")
     }
     let typealiases: [Declaration] = typealiasNames.map { alias in
-      .guarded(
-        .grpc,
-        .typealias(
-          accessModifier: accessModifier,
-          name: alias,
-          existingType: .member(name + "_" + alias)
-        )
+      .typealias(
+        accessModifier: accessModifier,
+        name: alias,
+        existingType: .member(name + "_" + alias)
       )
     }
     description.members.append(contentsOf: typealiases)

@@ -62,22 +62,6 @@ struct ServerCodeTranslator {
 
   func translate(
     accessModifier: AccessModifier,
-    services: [ServiceDescriptor],
-    serializer: (String) -> String,
-    deserializer: (String) -> String
-  ) -> [CodeBlock] {
-    return services.flatMap { service in
-      self.translate(
-        accessModifier: accessModifier,
-        service: service,
-        serializer: serializer,
-        deserializer: deserializer
-      )
-    }
-  }
-
-  private func translate(
-    accessModifier: AccessModifier,
     service: ServiceDescriptor,
     serializer: (String) -> String,
     deserializer: (String) -> String
@@ -106,7 +90,7 @@ struct ServerCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .preFormatted(service.documentation),
-        item: .declaration(.guarded(.grpc, .protocol(streamingServiceProtocol)))
+        item: .declaration(.protocol(streamingServiceProtocol))
       )
     )
 
@@ -122,7 +106,7 @@ struct ServerCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .doc("Conformance to `GRPCCore.RegistrableRPCService`."),
-        item: .declaration(.guarded(.grpc, .extension(registerExtension)))
+        item: .declaration(.extension(registerExtension))
       )
     )
 
@@ -136,7 +120,7 @@ struct ServerCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .preFormatted(service.documentation),
-        item: .declaration(.guarded(.grpc, .protocol(serviceProtocol)))
+        item: .declaration(.protocol(serviceProtocol))
       )
     )
 
@@ -150,7 +134,7 @@ struct ServerCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .doc("Partial conformance to `\(streamingServiceProtocolName)`."),
-        item: .declaration(.guarded(.grpc, .extension(streamingServiceDefaultImplExtension)))
+        item: .declaration(.extension(streamingServiceDefaultImplExtension))
       )
     )
 
