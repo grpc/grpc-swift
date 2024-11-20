@@ -53,6 +53,10 @@ as tutorials.
 
 - <doc:Generating-stubs>
 
+### Project Information
+
+- <doc:Compatibility>
+
 ### Getting involved
 
 Resources for developers working on gRPC Swift:
