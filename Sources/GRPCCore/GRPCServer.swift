@@ -258,12 +258,14 @@ public func withGRPCServer<Result: Sendable>(
   transport: any ServerTransport,
   services: [any RegistrableRPCService],
   interceptors: [any ServerInterceptor] = [],
+  isolation: isolated (any Actor)? = #isolation,
   handleServer: (GRPCServer) async throws -> Result
 ) async throws -> Result {
   try await withGRPCServer(
     transport: transport,
     services: services,
     interceptorPipeline: interceptors.map { .apply($0, to: .all) },
+    isolation: isolation,
     handleServer: handleServer
   )
 }
@@ -285,6 +287,7 @@ public func withGRPCServer<Result: Sendable>(
   transport: any ServerTransport,
   services: [any RegistrableRPCService],
   interceptorPipeline: [ServerInterceptorPipelineOperation],
+  isolation: isolated (any Actor)? = #isolation,
   handleServer: (GRPCServer) async throws -> Result
 ) async throws -> Result {
   return try await withThrowingDiscardingTaskGroup { group in

@@ -386,11 +386,13 @@ public final class GRPCClient: Sendable {
 public func withGRPCClient<Result: Sendable>(
   transport: some ClientTransport,
   interceptors: [any ClientInterceptor] = [],
+  isolation: isolated (any Actor)? = #isolation,
   handleClient: (GRPCClient) async throws -> Result
 ) async throws -> Result {
   try await withGRPCClient(
     transport: transport,
     interceptorPipeline: interceptors.map { .apply($0, to: .all) },
+    isolation: isolation,
     handleClient: handleClient
   )
 }
@@ -410,6 +412,7 @@ public func withGRPCClient<Result: Sendable>(
 public func withGRPCClient<Result: Sendable>(
   transport: some ClientTransport,
   interceptorPipeline: [ClientInterceptorPipelineOperation],
+  isolation: isolated (any Actor)? = #isolation,
   handleClient: (GRPCClient) async throws -> Result
 ) async throws -> Result {
   try await withThrowingDiscardingTaskGroup { group in
