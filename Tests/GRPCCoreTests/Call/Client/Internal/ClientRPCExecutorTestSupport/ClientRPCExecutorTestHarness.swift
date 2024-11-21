@@ -136,7 +136,7 @@ struct ClientRPCExecutorTestHarness {
       // Execute the request.
       try await ClientRPCExecutor.execute(
         request: request,
-        method: MethodDescriptor(service: "foo", method: "bar"),
+        method: MethodDescriptor(fullyQualifiedService: "foo", method: "bar"),
         options: options,
         serializer: serializer,
         deserializer: deserializer,

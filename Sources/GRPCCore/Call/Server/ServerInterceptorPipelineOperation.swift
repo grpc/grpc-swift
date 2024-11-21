@@ -61,7 +61,7 @@ public struct ServerInterceptorPipelineOperation: Sendable {
         return true
 
       case .services(let services):
-        return services.map({ $0.fullyQualifiedService }).contains(descriptor.service)
+        return services.contains(descriptor.service)
 
       case .methods(let methods):
         return methods.contains(descriptor)

@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 import GRPCCore
-import XCTest
+import Testing
 
-final class MethodDescriptorTests: XCTestCase {
+@Suite
+struct MethodDescriptorTests {
+  @Test("Fully qualified name")
   func testFullyQualifiedName() {
-    let descriptor = MethodDescriptor(service: "foo.bar", method: "Baz")
-    XCTAssertEqual(descriptor.service, "foo.bar")
-    XCTAssertEqual(descriptor.method, "Baz")
-    XCTAssertEqual(descriptor.fullyQualifiedMethod, "foo.bar/Baz")
+    let descriptor = MethodDescriptor(fullyQualifiedService: "foo.bar", method: "Baz")
+    #expect(descriptor.service == ServiceDescriptor(fullyQualifiedService: "foo.bar"))
+    #expect(descriptor.method == "Baz")
+    #expect(descriptor.fullyQualifiedMethod == "foo.bar/Baz")
   }
 }
