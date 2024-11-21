@@ -63,3 +63,9 @@ public struct MethodDescriptor: Sendable, Hashable {
     self.init(fullyQualifiedService: service, method: method)
   }
 }
+
+extension MethodDescriptor: CustomStringConvertible {
+  public var description: String {
+    self.fullyQualifiedMethod
+  }
+}

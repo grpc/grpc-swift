@@ -35,4 +35,10 @@ struct ServiceDescriptorTests {
     #expect(descriptor.package == package)
     #expect(descriptor.service == service)
   }
+
+  @Test("CustomStringConvertible")
+  func description() {
+    let descriptor = ServiceDescriptor(fullyQualifiedService: "foo.Foo")
+    #expect(String(describing: descriptor) == "foo.Foo")
+  }
 }

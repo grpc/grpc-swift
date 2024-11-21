@@ -25,4 +25,14 @@ struct MethodDescriptorTests {
     #expect(descriptor.method == "Baz")
     #expect(descriptor.fullyQualifiedMethod == "foo.bar/Baz")
   }
+
+  @Test("CustomStringConvertible")
+  func description() {
+    let descriptor = MethodDescriptor(
+      service: ServiceDescriptor(fullyQualifiedService: "foo.Foo"),
+      method: "Bar"
+    )
+
+    #expect(String(describing: descriptor) == "foo.Foo/Bar")
+  }
 }

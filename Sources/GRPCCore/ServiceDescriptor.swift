@@ -59,3 +59,9 @@ public struct ServiceDescriptor: Sendable, Hashable {
     }
   }
 }
+
+extension ServiceDescriptor: CustomStringConvertible {
+  public var description: String {
+    self.fullyQualifiedService
+  }
+}
