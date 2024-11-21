@@ -81,25 +81,22 @@ struct TypealiasTranslator: SpecializedTranslator {
 
   func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
     var codeBlocks = [CodeBlock]()
-    let services = codeGenerationRequest.services
-    let servicesByEnumName = Dictionary(
-      grouping: services,
-      by: { $0.namespacedGeneratedName }
-    )
 
-    // Sorting the keys of the dictionary is necessary so that the generated enums are deterministically ordered.
-    for (generatedEnumName, services) in servicesByEnumName.sorted(by: { $0.key < $1.key }) {
-      for service in services {
-        codeBlocks.append(
-          CodeBlock(
-            item: .declaration(try self.makeServiceEnum(from: service, named: generatedEnumName))
+    for service in codeGenerationRequest.services {
+      codeBlocks.append(
+        CodeBlock(
+          item: .declaration(
+            try self.makeServiceEnum(
+              from: service,
+              named: service.namespacedGeneratedName
+            )
           )
         )
+      )
 
-        codeBlocks.append(
-          CodeBlock(item: .declaration(self.makeServiceDescriptorExtension(for: service)))
-        )
-      }
+      codeBlocks.append(
+        CodeBlock(item: .declaration(self.makeServiceDescriptorExtension(for: service)))
+      )
     }
 
     return codeBlocks
