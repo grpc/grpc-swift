@@ -36,8 +36,20 @@ fileprivate actor TestActor {
     let inProcess = InProcessTransport()
 
     try await withGRPCServer(transport: inProcess.server, services: []) { server in
-      try await withGRPCClient(transport: inProcess.client) { client in
-        self.hasRun = true
+      do {
+        try await withGRPCClient(transport: inProcess.client) { client in
+          self.hasRun = true
+        }
+      } catch {
+        // Starting the client can race with the closure returning which begins graceful shutdown.
+        // If that happens the client run method will throw an error as the client is being run
+        // when it's already been shutdown. That's okay and expected so rather than slowing down
+        // the closure tolerate that specific error.
+        if let error = error as? RuntimeError {
+          #expect(error.code == .clientIsStopped)
+        } else {
+          Issue.record(error)
+        }
       }
     }
   }
