@@ -29,20 +29,17 @@ final class GRPCClientTests: XCTestCase {
     let client = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
     let server = GRPCServer(transport: inProcess.server, services: services)
 
-    try await withThrowingTaskGroup(of: Void.self) { group in
-      group.addTask {
-        try await server.serve()
+    try await withGRPCServer(
+      transport: inProcess.server,
+      services: services
+    ) { server in
+      try await withGRPCClient(
+        transport: inProcess.client,
+        interceptorPipeline: interceptorPipeline
+      ) { client in
+        try await Task.sleep(for: .milliseconds(100))
+        try await body(client, server)
       }
-
-      group.addTask {
-        try await client.run()
-      }
-
-      // Make sure both server and client are running
-      try await Task.sleep(for: .milliseconds(100))
-      try await body(client, server)
-      client.beginGracefulShutdown()
-      server.beginGracefulShutdown()
     }
   }
 

@@ -29,13 +29,13 @@ private import Synchronization
 /// include request filtering, authentication, and logging. Once requests have been intercepted
 /// they are passed to a handler which in turn returns a response to send back to the client.
 ///
-/// ## Creating and configuring a server
+/// ## Configuring and starting a server
 ///
-/// The following example demonstrates how to create and configure a server.
+/// The following example demonstrates how to create and run a server.
 ///
 /// ```swift
-/// // Create and an in-process transport.
-/// let inProcessTransport = InProcessTransport()
+/// // Create an transport
+/// let transport: any ServerTransport = ...
 ///
 /// // Create the 'Greeter' and 'Echo' services.
 /// let greeter = GreeterService()
@@ -44,19 +44,24 @@ private import Synchronization
 /// // Create an interceptor.
 /// let statsRecorder = StatsRecordingServerInterceptors()
 ///
-/// // Finally create the server.
-/// let server = GRPCServer(
-///   transport: inProcessTransport.server,
+/// // Run the server.
+/// try await withGRPCServer(
+///   transport: transport,
 ///   services: [greeter, echo],
 ///   interceptors: [statsRecorder]
-/// )
+/// ) { server in
+///   // ...
+///   // The server begins shutting down when this closure returns
+///   // ...
+/// }
 /// ```
 ///
-/// ## Starting and stopping the server
+/// ## Creating a client manually
 ///
-/// Once you have configured the server call ``serve()`` to start it. Calling ``serve()`` starts the server's
-/// transport too. A ``RuntimeError`` is thrown if the transport can't be started or encounters some other
-/// runtime error.
+/// If the `with`-style methods for creating a server isn't suitable for your application then you
+/// can create and run it manually. This requires you to call the ``serve()`` method in a task
+/// which instructs the server to start its transport and listen for new RPCs. A ``RuntimeError`` is
+/// thrown if the transport can't be started or encounters some other runtime error.
 ///
 /// ```swift
 /// // Start running the server.
@@ -233,5 +238,75 @@ public final class GRPCServer: Sendable {
     if wasRunning {
       self.transport.beginGracefulShutdown()
     }
+  }
+}
+
+/// Creates and runs a gRPC server.
+///
+/// - Parameters:
+///   - transport: The transport the server should listen on.
+///   - services: Services offered by the server.
+///   - interceptors: A collection of interceptors providing cross-cutting functionality to each
+///       accepted RPC. The order in which interceptors are added reflects the order in which they
+///       are called. The first interceptor added will be the first interceptor to intercept each
+///       request. The last interceptor added will be the final interceptor to intercept each
+///       request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
+///   - handleServer: A closure which is called with the server. When the closure returns, the
+///       server is shutdown gracefully.
+/// - Returns: The result of the `handleServer` closure.
+public func withGRPCServer<Result: Sendable>(
+  transport: any ServerTransport,
+  services: [any RegistrableRPCService],
+  interceptors: [any ServerInterceptor] = [],
+  isolation: isolated (any Actor)? = #isolation,
+  handleServer: (GRPCServer) async throws -> Result
+) async throws -> Result {
+  try await withGRPCServer(
+    transport: transport,
+    services: services,
+    interceptorPipeline: interceptors.map { .apply($0, to: .all) },
+    isolation: isolation,
+    handleServer: handleServer
+  )
+}
+
+/// Creates and runs a gRPC server.
+///
+/// - Parameters:
+///   - transport: The transport the server should listen on.
+///   - services: Services offered by the server.
+///   - interceptorPipeline: A collection of interceptors providing cross-cutting functionality to each
+///       accepted RPC. The order in which interceptors are added reflects the order in which they
+///       are called. The first interceptor added will be the first interceptor to intercept each
+///       request. The last interceptor added will be the final interceptor to intercept each
+///       request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
+///   - handleServer: A closure which is called with the server. When the closure returns, the
+///       server is shutdown gracefully.
+/// - Returns: The result of the `handleServer` closure.
+public func withGRPCServer<Result: Sendable>(
+  transport: any ServerTransport,
+  services: [any RegistrableRPCService],
+  interceptorPipeline: [ServerInterceptorPipelineOperation],
+  isolation: isolated (any Actor)? = #isolation,
+  handleServer: (GRPCServer) async throws -> Result
+) async throws -> Result {
+  return try await withThrowingDiscardingTaskGroup { group in
+    let server = GRPCServer(
+      transport: transport,
+      services: services,
+      interceptorPipeline: interceptorPipeline
+    )
+
+    group.addTask {
+      try await server.serve()
+    }
+
+    let result = try await handleServer(server)
+    server.beginGracefulShutdown()
+    return result
   }
 }
