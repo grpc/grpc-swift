@@ -30,8 +30,8 @@ private import Synchronization
 ///
 /// ## Creating a client
 ///
-/// You can create and run a client using ``withGRPCClient(transport:interceptors:handleClient:)``
-/// or ``withGRPCClient(transport:interceptorPipeline:handleClient:)`` which create, configure and
+/// You can create and run a client using ``withGRPCClient(transport:interceptors:isolation:handleClient:)``
+/// or ``withGRPCClient(transport:interceptorPipeline:isolation:handleClient:)`` which create, configure and
 /// run the client providing scoped access to it via the `handleClient` closure. The client will
 /// begin gracefully shutting down when the closure returns.
 ///
@@ -381,6 +381,8 @@ public final class GRPCClient: Sendable {
 ///       are called. The first interceptor added will be the first interceptor to intercept each
 ///       request. The last interceptor added will be the final interceptor to intercept each
 ///       request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
 public func withGRPCClient<Result: Sendable>(
@@ -406,6 +408,8 @@ public func withGRPCClient<Result: Sendable>(
 ///       The order in which interceptors are added reflects the order in which they are called.
 ///       The first interceptor added will be the first interceptor to intercept each request.
 ///       The last interceptor added will be the final interceptor to intercept each request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
 /// - Returns: The result of the `handleClient` closure.

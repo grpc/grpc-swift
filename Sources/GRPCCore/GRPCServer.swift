@@ -251,6 +251,8 @@ public final class GRPCServer: Sendable {
 ///       are called. The first interceptor added will be the first interceptor to intercept each
 ///       request. The last interceptor added will be the final interceptor to intercept each
 ///       request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
 ///   - handleServer: A closure which is called with the server. When the closure returns, the
 ///       server is shutdown gracefully.
 /// - Returns: The result of the `handleServer` closure.
@@ -280,6 +282,8 @@ public func withGRPCServer<Result: Sendable>(
 ///       are called. The first interceptor added will be the first interceptor to intercept each
 ///       request. The last interceptor added will be the final interceptor to intercept each
 ///       request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
 ///   - handleServer: A closure which is called with the server. When the closure returns, the
 ///       server is shutdown gracefully.
 /// - Returns: The result of the `handleServer` closure.
