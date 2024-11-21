@@ -26,24 +26,20 @@ final class GRPCServerTests: XCTestCase {
     _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
-    let server = GRPCServer(
+
+    try await withGRPCServer(
       transport: inProcess.server,
       services: services,
       interceptorPipeline: interceptorPipeline
-    )
+    ) { server in
+      try await withThrowingTaskGroup(of: Void.self) { group in
+        group.addTask {
+          try await inProcess.client.connect()
+        }
 
-    try await withThrowingTaskGroup(of: Void.self) { group in
-      group.addTask {
-        try await server.serve()
+        try await body(inProcess.client, server)
+        inProcess.client.beginGracefulShutdown()
       }
-
-      group.addTask {
-        try await inProcess.client.connect()
-      }
-
-      try await body(inProcess.client, server)
-      inProcess.client.beginGracefulShutdown()
-      server.beginGracefulShutdown()
     }
   }
 

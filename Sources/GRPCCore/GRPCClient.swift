@@ -28,79 +28,25 @@ private import Synchronization
 ///
 /// However, in most cases you should prefer wrapping the ``GRPCClient`` with a generated stub.
 ///
-/// You can set ``ServiceConfig``s on this client to override whatever configurations have been
-/// set on the given transport. You can also use ``ClientInterceptor``s to implement cross-cutting
-/// logic which apply to all RPCs. Example uses of interceptors include authentication and logging.
+/// ## Creating a client
 ///
-/// ## Creating and configuring a client
-///
-/// The following example demonstrates how to create and configure a client.
-///
-/// ```swift
-/// // Create a configuration object for the client and override the timeout for the 'Get' method on
-/// // the 'echo.Echo' service. This configuration takes precedence over any set by the transport.
-/// var configuration = GRPCClient.Configuration()
-/// configuration.service.override = ServiceConfig(
-///   methodConfig: [
-///     MethodConfig(
-///       names: [
-///         MethodConfig.Name(service: "echo.Echo", method: "Get")
-///       ],
-///       timeout: .seconds(5)
-///     )
-///   ]
-/// )
-///
-/// // Configure a fallback timeout for all RPCs (indicated by an empty service and method name) if
-/// // no configuration is provided in the overrides or by the transport.
-/// configuration.service.defaults = ServiceConfig(
-///   methodConfig: [
-///     MethodConfig(
-///       names: [
-///         MethodConfig.Name(service: "", method: "")
-///       ],
-///       timeout: .seconds(10)
-///     )
-///   ]
-/// )
-///
-/// // Finally create a transport and instantiate the client, adding an interceptor.
-/// let inProcessTransport = InProcessTransport()
-///
-/// let client = GRPCClient(
-///   transport: inProcessTransport.client,
-///   interceptors: [StatsRecordingClientInterceptor()],
-///   configuration: configuration
-/// )
-/// ```
-///
-/// ## Starting and stopping the client
-///
-/// Once you have configured the client, call ``run()`` to start it. Calling ``run()`` instructs the
-/// transport to start connecting to the server.
+/// You can create and run a client using ``withGRPCClient(transport:interceptors:isolation:handleClient:)``
+/// or ``withGRPCClient(transport:interceptorPipeline:isolation:handleClient:)`` which create, configure and
+/// run the client providing scoped access to it via the `handleClient` closure. The client will
+/// begin gracefully shutting down when the closure returns.
 ///
 /// ```swift
-/// // Start running the client. 'run()' must be running while RPCs are execute so it's executed in
-/// // a task group.
-/// try await withThrowingTaskGroup(of: Void.self) { group in
-///   group.addTask {
-///     try await client.run()
-///   }
-///
-///   // Execute a request against the "echo.Echo" service.
-///   try await client.unary(
-///     request: ClientRequest<[UInt8]>(message: [72, 101, 108, 108, 111, 33]),
-///     descriptor: MethodDescriptor(service: "echo.Echo", method: "Get"),
-///     serializer: IdentitySerializer(),
-///     deserializer: IdentityDeserializer(),
-///   ) { response in
-///     print(response.message)
-///   }
-///
-///   // The RPC has completed, close the client.
-///   client.beginGracefulShutdown()
+/// let transport: any ClientTransport = ...
+/// try await withGRPCClient(transport: transport) { client in
+///   // ...
 /// }
 /// ```
+///
+/// ## Creating a client manually
+///
+/// If the `with`-style methods for creating clients isn't suitable for your application then you
+/// can create and run a client manually. This requires you to call the ``run()`` method in a task
+/// which instructs the client to start connecting to the server.
 ///
 /// The ``run()`` method won't return until the client has finished handling all requests. You can
 /// signal to the client that it should stop creating new request streams by calling ``beginGracefulShutdown()``.
@@ -423,5 +369,64 @@ public final class GRPCClient: Sendable {
       interceptors: applicableInterceptors,
       handler: handler
     )
+  }
+}
+
+/// Creates and runs a new client with the given transport and interceptors.
+///
+/// - Parameters:
+///   - transport: The transport used to establish a communication channel with a server.
+///   - interceptors: A collection of ``ClientInterceptor``s providing cross-cutting functionality to each
+///       accepted RPC. The order in which interceptors are added reflects the order in which they
+///       are called. The first interceptor added will be the first interceptor to intercept each
+///       request. The last interceptor added will be the final interceptor to intercept each
+///       request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
+///   - handleClient: A closure which is called with the client. When the closure returns, the
+///       client is shutdown gracefully.
+public func withGRPCClient<Result: Sendable>(
+  transport: some ClientTransport,
+  interceptors: [any ClientInterceptor] = [],
+  isolation: isolated (any Actor)? = #isolation,
+  handleClient: (GRPCClient) async throws -> Result
+) async throws -> Result {
+  try await withGRPCClient(
+    transport: transport,
+    interceptorPipeline: interceptors.map { .apply($0, to: .all) },
+    isolation: isolation,
+    handleClient: handleClient
+  )
+}
+
+/// Creates and runs a new client with the given transport and interceptors.
+///
+/// - Parameters:
+///   - transport: The transport used to establish a communication channel with a server.
+///   - interceptorPipeline: A collection of ``ClientInterceptorPipelineOperation`` providing cross-cutting
+///       functionality to each accepted RPC. Only applicable interceptors from the pipeline will be applied to each RPC.
+///       The order in which interceptors are added reflects the order in which they are called.
+///       The first interceptor added will be the first interceptor to intercept each request.
+///       The last interceptor added will be the final interceptor to intercept each request before calling the appropriate handler.
+///   - isolation: A reference to the actor to which the enclosing code is isolated, or nil if the
+///       code is nonisolated.
+///   - handleClient: A closure which is called with the client. When the closure returns, the
+///       client is shutdown gracefully.
+/// - Returns: The result of the `handleClient` closure.
+public func withGRPCClient<Result: Sendable>(
+  transport: some ClientTransport,
+  interceptorPipeline: [ClientInterceptorPipelineOperation],
+  isolation: isolated (any Actor)? = #isolation,
+  handleClient: (GRPCClient) async throws -> Result
+) async throws -> Result {
+  try await withThrowingDiscardingTaskGroup { group in
+    let client = GRPCClient(transport: transport, interceptorPipeline: interceptorPipeline)
+    group.addTask {
+      try await client.run()
+    }
+
+    let result = try await handleClient(client)
+    client.beginGracefulShutdown()
+    return result
   }
 }
