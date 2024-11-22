@@ -61,8 +61,8 @@ struct ServerInterceptorPipelineOperationTests {
 }
 
 extension MethodDescriptor {
-  fileprivate static let fooBar = Self(service: "pkg.foo", method: "bar")
-  fileprivate static let fooBaz = Self(service: "pkg.foo", method: "baz")
-  fileprivate static let barFoo = Self(service: "pkg.bar", method: "foo")
-  fileprivate static let barBaz = Self(service: "pkg.bar", method: "Baz")
+  fileprivate static let fooBar = Self(fullyQualifiedService: "pkg.foo", method: "bar")
+  fileprivate static let fooBaz = Self(fullyQualifiedService: "pkg.foo", method: "baz")
+  fileprivate static let barFoo = Self(fullyQualifiedService: "pkg.bar", method: "foo")
+  fileprivate static let barBaz = Self(fullyQualifiedService: "pkg.bar", method: "Baz")
 }

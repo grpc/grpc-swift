@@ -98,19 +98,19 @@ struct BinaryEcho: RegistrableRPCService {
 
   enum Methods {
     static let get = MethodDescriptor(
-      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      fullyQualifiedService: BinaryEcho.serviceDescriptor.fullyQualifiedService,
       method: "Get"
     )
     static let collect = MethodDescriptor(
-      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      fullyQualifiedService: BinaryEcho.serviceDescriptor.fullyQualifiedService,
       method: "Collect"
     )
     static let expand = MethodDescriptor(
-      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      fullyQualifiedService: BinaryEcho.serviceDescriptor.fullyQualifiedService,
       method: "Expand"
     )
     static let update = MethodDescriptor(
-      service: BinaryEcho.serviceDescriptor.fullyQualifiedService,
+      fullyQualifiedService: BinaryEcho.serviceDescriptor.fullyQualifiedService,
       method: "Update"
     )
   }

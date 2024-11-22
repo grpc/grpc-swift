@@ -16,11 +16,8 @@
 
 /// A description of a method on a service.
 public struct MethodDescriptor: Sendable, Hashable {
-  /// The name of the service, including the package name.
-  ///
-  /// For example, the name of the "Greeter" service in "helloworld" package
-  /// is "helloworld.Greeter".
-  public var service: String
+  /// A description of the service, including its package name.
+  public var service: ServiceDescriptor
 
   /// The name of the method in the service, excluding the service name.
   public var method: String
@@ -39,8 +36,36 @@ public struct MethodDescriptor: Sendable, Hashable {
   ///   - service: The name of the service, including the package name. For example,
   ///       "helloworld.Greeter".
   ///   - method: The name of the method. For example, "SayHello".
-  public init(service: String, method: String) {
+  public init(service: ServiceDescriptor, method: String) {
     self.service = service
     self.method = method
+  }
+
+  /// Creates a new method descriptor.
+  ///
+  /// - Parameters:
+  ///   - fullyQualifiedService: The fully qualified name of the service, including the package
+  ///       name. For example, "helloworld.Greeter".
+  ///   - method: The name of the method. For example, "SayHello".
+  public init(fullyQualifiedService: String, method: String) {
+    self.service = ServiceDescriptor(fullyQualifiedService: fullyQualifiedService)
+    self.method = method
+  }
+
+  @available(*, deprecated, renamed: "init(fullyQualifiedService:method:)")
+  /// Creates a new method descriptor.
+  ///
+  /// - Parameters:
+  ///   - service: The fully qualified name of the service, including the package
+  ///       name. For example, "helloworld.Greeter".
+  ///   - method: The name of the method. For example, "SayHello".
+  public init(service: String, method: String) {
+    self.init(fullyQualifiedService: service, method: method)
+  }
+}
+
+extension MethodDescriptor: CustomStringConvertible {
+  public var description: String {
+    self.fullyQualifiedMethod
   }
 }

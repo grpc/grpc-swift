@@ -164,7 +164,7 @@ final class GRPCServerTests: XCTestCase {
   func testUnimplementedMethod() async throws {
     try await self.withInProcessClientConnectedToServer(services: [BinaryEcho()]) { client, _ in
       try await client.withStream(
-        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))
@@ -248,7 +248,7 @@ final class GRPCServerTests: XCTestCase {
       interceptorPipeline: [.apply(.requestCounter(counter), to: .all)]
     ) { client, _ in
       try await client.withStream(
-        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         options: .defaults
       ) { stream in
         try await stream.outbound.write(.metadata([:]))

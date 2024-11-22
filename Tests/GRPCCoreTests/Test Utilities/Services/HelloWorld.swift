@@ -42,7 +42,7 @@ struct HelloWorld: RegistrableRPCService {
 
   enum Methods {
     static let sayHello = MethodDescriptor(
-      service: HelloWorld.serviceDescriptor.fullyQualifiedService,
+      fullyQualifiedService: HelloWorld.serviceDescriptor.fullyQualifiedService,
       method: "SayHello"
     )
   }
