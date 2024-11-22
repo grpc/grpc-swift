@@ -356,5 +356,99 @@ extension StructuedSwiftTests {
 
       #expect(render(.extension(decl)) == expected)
     }
+
+    @Test(
+      "func <Method>(request:response:context:) (simple)",
+      arguments: AccessModifier.allCases,
+      RPCKind.allCases
+    )
+    func simpleServerMethod(access: AccessModifier, kind: RPCKind) {
+      let decl: FunctionSignatureDescription = .simpleServerMethod(
+        accessLevel: access,
+        name: "foo",
+        input: "FooInput",
+        output: "FooOutput",
+        streamingInput: kind.streamsInput,
+        streamingOutput: kind.streamsOutput
+      )
+
+      let expected: String
+      switch kind {
+      case .unary:
+        expected = """
+          \(access) func foo(
+            request: FooInput,
+            context: GRPCCore.ServerContext
+          ) async throws -> FooOutput
+          """
+
+      case .clientStreaming:
+        expected = """
+          \(access) func foo(
+            request: GRPCCore.RPCAsyncSequence<FooInput, any Swift.Error>,
+            context: GRPCCore.ServerContext
+          ) async throws -> FooOutput
+          """
+
+      case .serverStreaming:
+        expected = """
+          \(access) func foo(
+            request: FooInput,
+            response: GRPCCore.RPCWriter<FooOutput>,
+            context: GRPCCore.ServerContext
+          ) async throws
+          """
+
+      case .bidirectionalStreaming:
+        expected = """
+          \(access) func foo(
+            request: GRPCCore.RPCAsyncSequence<FooInput, any Swift.Error>,
+            response: GRPCCore.RPCWriter<FooOutput>,
+            context: GRPCCore.ServerContext
+          ) async throws
+          """
+      }
+
+      #expect(render(.function(signature: decl)) == expected)
+    }
+
+    @Test("protocol SimpleServiceProtocol { ... }", arguments: AccessModifier.allCases)
+    func simpleServiceProtocol(access: AccessModifier) {
+      let decl: ProtocolDescription = .simpleServiceProtocol(
+        accessModifier: access,
+        name: "SimpleServiceProtocol",
+        serviceProtocol: "ServiceProtocol",
+        methods: [
+          .init(
+            documentation: "",
+            name: .init(base: "Foo", generatedUpperCase: "Foo", generatedLowerCase: "foo"),
+            isInputStreaming: false,
+            isOutputStreaming: false,
+            inputType: "Input",
+            outputType: "Output"
+          )
+        ]
+      )
+
+      let expected = """
+        \(access) protocol SimpleServiceProtocol: ServiceProtocol {
+          /// Handle the "Foo" method.
+          ///
+          /// - Parameters:
+          ///   - request: A `Input` message.
+          ///   - context: Context providing information about the RPC.
+          /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+          ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+          ///     to an internal error.
+          /// - Returns: A `Output` to respond with.
+          func foo(
+            request: Input,
+            context: GRPCCore.ServerContext
+          ) async throws -> Output
+        }
+        """
+
+      #expect(render(.protocol(decl)) == expected)
+    }
   }
 }

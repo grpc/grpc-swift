@@ -56,7 +56,7 @@ package enum Docs {
       """
 
     let body = docs.split(separator: "\n").map { line in
-      "/// > " + line.dropFirst(4)
+      "/// > " + line.dropFirst(4).trimmingCharacters(in: .whitespaces)
     }.joined(separator: "\n")
 
     return header + "\n" + body

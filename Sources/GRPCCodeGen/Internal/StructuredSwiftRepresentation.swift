@@ -453,10 +453,10 @@ indirect enum ExistingTypeDescription: Equatable, Codable, Sendable {
   /// For example, `Foo?`.
   case optional(ExistingTypeDescription)
 
-  /// A wrapper type generic over a wrapped type.
+  /// A wrapper type generic over a list of wrapped types.
   ///
   /// For example, `Wrapper<Wrapped>`.
-  case generic(wrapper: ExistingTypeDescription, wrapped: ExistingTypeDescription)
+  case generic(wrapper: ExistingTypeDescription, wrapped: [ExistingTypeDescription])
 
   /// A type reference represented by the components.
   ///
@@ -483,6 +483,16 @@ indirect enum ExistingTypeDescription: Equatable, Codable, Sendable {
   ///
   /// For example: `(String) async throws -> Int`.
   case closure(ClosureSignatureDescription)
+
+  /// A wrapper type generic over a list of wrapped types.
+  ///
+  /// For example, `Wrapper<Wrapped>`.
+  static func generic(
+    wrapper: ExistingTypeDescription,
+    wrapped: ExistingTypeDescription...
+  ) -> Self {
+    return .generic(wrapper: wrapper, wrapped: Array(wrapped))
+  }
 }
 
 /// A description of a typealias declaration.
