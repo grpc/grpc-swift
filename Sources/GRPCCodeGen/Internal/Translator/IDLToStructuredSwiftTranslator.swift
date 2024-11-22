@@ -26,24 +26,36 @@ struct IDLToStructuredSwiftTranslator: Translator {
     server: Bool
   ) throws -> StructuredSwiftRepresentation {
     try self.validateInput(codeGenerationRequest)
+    let accessModifier = AccessModifier(accessLevel)
 
-    var codeBlocks = [CodeBlock]()
-
-    let typealiasTranslator = TypealiasTranslator(
+    let metadataTranslator = MetadataTranslator()
+    var codeBlocks = metadataTranslator.translate(
+      accessModifier: accessModifier,
+      services: codeGenerationRequest.services,
       client: client,
-      server: server,
-      accessLevel: accessLevel
+      server: server
     )
-    codeBlocks.append(contentsOf: try typealiasTranslator.translate(from: codeGenerationRequest))
 
     if server {
-      let serverCodeTranslator = ServerCodeTranslator(accessLevel: accessLevel)
-      codeBlocks.append(contentsOf: try serverCodeTranslator.translate(from: codeGenerationRequest))
+      let translator = ServerCodeTranslator()
+      let blocks = translator.translate(
+        accessModifier: accessModifier,
+        services: codeGenerationRequest.services,
+        serializer: codeGenerationRequest.lookupSerializer,
+        deserializer: codeGenerationRequest.lookupDeserializer
+      )
+      codeBlocks.append(contentsOf: blocks)
     }
 
     if client {
-      let clientCodeTranslator = ClientCodeTranslator(accessLevel: accessLevel)
-      codeBlocks.append(contentsOf: try clientCodeTranslator.translate(from: codeGenerationRequest))
+      let translator = ClientCodeTranslator()
+      let blocks = translator.translate(
+        accessModifier: accessModifier,
+        services: codeGenerationRequest.services,
+        serializer: codeGenerationRequest.lookupSerializer,
+        deserializer: codeGenerationRequest.lookupDeserializer
+      )
+      codeBlocks.append(contentsOf: blocks)
     }
 
     let fileDescription = FileDescription(

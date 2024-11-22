@@ -348,14 +348,19 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
 
 extension TypealiasTranslatorSnippetBasedTests {
   private func assertTypealiasTranslation(
-    codeGenerationRequest: CodeGenerationRequest,
+    codeGenerationRequest request: CodeGenerationRequest,
     expectedSwift: String,
     client: Bool,
     server: Bool,
     accessLevel: SourceGenerator.Config.AccessLevel
   ) throws {
-    let translator = TypealiasTranslator(client: client, server: server, accessLevel: accessLevel)
-    let codeBlocks = try translator.translate(from: codeGenerationRequest)
+    let translator = MetadataTranslator()
+    let codeBlocks = translator.translate(
+      accessModifier: AccessModifier(accessLevel),
+      services: request.services,
+      client: client,
+      server: server
+    )
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
     let contents = renderer.renderedContents()

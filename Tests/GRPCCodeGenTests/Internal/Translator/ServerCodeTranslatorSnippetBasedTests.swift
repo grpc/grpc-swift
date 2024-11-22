@@ -634,12 +634,17 @@ final class ServerCodeTranslatorSnippetBasedTests: XCTestCase {
   }
 
   private func assertServerCodeTranslation(
-    codeGenerationRequest: CodeGenerationRequest,
+    codeGenerationRequest request: CodeGenerationRequest,
     expectedSwift: String,
     accessLevel: SourceGenerator.Config.AccessLevel
   ) throws {
-    let translator = ServerCodeTranslator(accessLevel: accessLevel)
-    let codeBlocks = try translator.translate(from: codeGenerationRequest)
+    let translator = ServerCodeTranslator()
+    let codeBlocks = translator.translate(
+      accessModifier: AccessModifier(accessLevel),
+      services: request.services,
+      serializer: request.lookupSerializer,
+      deserializer: request.lookupDeserializer
+    )
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
     let contents = renderer.renderedContents()

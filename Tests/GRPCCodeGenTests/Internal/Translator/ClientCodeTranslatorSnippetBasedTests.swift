@@ -42,29 +42,29 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
-          func methodA<R>(
+          func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.methodA(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
       }
@@ -75,8 +75,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ message: NamespaceA_ServiceARequest,
               metadata: GRPCCore.Metadata = [:],
               options: GRPCCore.CallOptions = .defaults,
-              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
           ) async throws -> Result where Result: Sendable {
               let request = GRPCCore.ClientRequest<NamespaceA_ServiceARequest>(
@@ -86,7 +86,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               return try await self.methodA(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
       }
@@ -100,22 +100,22 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
 
           /// Documentation for MethodA
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.client.unary(
                   request: request,
                   descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
       }
@@ -149,29 +149,29 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
-          func methodA<R>(
+          func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.methodA(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
       }
@@ -181,19 +181,19 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           public func methodA<Result>(
               metadata: GRPCCore.Metadata = [:],
               options: GRPCCore.CallOptions = .defaults,
-              requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
-              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = {
-                  try $0.message
+              requestProducer producer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
           ) async throws -> Result where Result: Sendable {
               let request = GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>(
                   metadata: metadata,
-                  producer: requestProducer
+                  producer: producer
               )
               return try await self.methodA(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
       }
@@ -207,22 +207,22 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
 
           /// Documentation for MethodA
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.client.clientStreaming(
                   request: request,
                   descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
       }
@@ -256,27 +256,27 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
-          func methodA<R>(
+          func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable {
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
               try await self.methodA(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
       }
@@ -296,7 +296,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               return try await self.methodA(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
       }
@@ -310,20 +310,20 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
 
           /// Documentation for MethodA
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable {
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
               try await self.client.serverStreaming(
                   request: request,
                   descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
       }
@@ -357,27 +357,27 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
-          func methodA<R>(
+          func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable {
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
               try await self.methodA(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
       }
@@ -387,17 +387,17 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           public func methodA<Result>(
               metadata: GRPCCore.Metadata = [:],
               options: GRPCCore.CallOptions = .defaults,
-              requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
+              requestProducer producer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
               onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
           ) async throws -> Result where Result: Sendable {
               let request = GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>(
                   metadata: metadata,
-                  producer: requestProducer
+                  producer: producer
               )
               return try await self.methodA(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
       }
@@ -411,20 +411,20 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
 
           /// Documentation for MethodA
-          public func methodA<R>(
+          public func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable {
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
               try await self.client.bidirectionalStreaming(
                   request: request,
                   descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
       }
@@ -466,52 +466,52 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       package protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
-          func methodA<R>(
+          func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
 
           /// Documentation for MethodB
-          func methodB<R>(
+          func methodB<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
-          package func methodA<R>(
+          package func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.methodA(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
 
-          package func methodB<R>(
+          package func methodB<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable {
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
               try await self.methodB(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<NamespaceA_ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
       }
@@ -521,19 +521,19 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           package func methodA<Result>(
               metadata: GRPCCore.Metadata = [:],
               options: GRPCCore.CallOptions = .defaults,
-              requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
-              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = {
-                  try $0.message
+              requestProducer producer: @Sendable @escaping (GRPCCore.RPCWriter<NamespaceA_ServiceARequest>) async throws -> Void,
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
           ) async throws -> Result where Result: Sendable {
               let request = GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>(
                   metadata: metadata,
-                  producer: requestProducer
+                  producer: producer
               )
               return try await self.methodA(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
 
@@ -551,7 +551,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               return try await self.methodB(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
       }
@@ -565,40 +565,40 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
 
           /// Documentation for MethodA
-          package func methodA<R>(
+          package func methodA<Result>(
               request: GRPCCore.StreamingClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.client.clientStreaming(
                   request: request,
                   descriptor: NamespaceA_ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
 
           /// Documentation for MethodB
-          package func methodB<R>(
+          package func methodB<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<NamespaceA_ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable {
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable {
               try await self.client.serverStreaming(
                   request: request,
                   descriptor: NamespaceA_ServiceA.Method.MethodB.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
       }
@@ -632,29 +632,29 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       internal protocol ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
-          func methodA<R>(
+          func methodA<Result>(
               request: GRPCCore.ClientRequest<ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<ServiceAResponse>,
               options: GRPCCore.CallOptions,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> R
-          ) async throws -> R where R: Sendable
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> Result
+          ) async throws -> Result where Result: Sendable
       }
       @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension ServiceA.ClientProtocol {
-          internal func methodA<R>(
+          internal func methodA<Result>(
               request: GRPCCore.ClientRequest<ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.methodA(
                   request: request,
                   serializer: GRPCProtobuf.ProtobufSerializer<ServiceARequest>(),
                   deserializer: GRPCProtobuf.ProtobufDeserializer<ServiceAResponse>(),
                   options: options,
-                  body
+                  onResponse: handleResponse
               )
           }
       }
@@ -665,8 +665,8 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               _ message: ServiceARequest,
               metadata: GRPCCore.Metadata = [:],
               options: GRPCCore.CallOptions = .defaults,
-              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> Result = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
           ) async throws -> Result where Result: Sendable {
               let request = GRPCCore.ClientRequest<ServiceARequest>(
@@ -676,7 +676,7 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
               return try await self.methodA(
                   request: request,
                   options: options,
-                  handleResponse
+                  onResponse: handleResponse
               )
           }
       }
@@ -690,22 +690,22 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
           }
 
           /// Documentation for MethodA
-          internal func methodA<R>(
+          internal func methodA<Result>(
               request: GRPCCore.ClientRequest<ServiceARequest>,
               serializer: some GRPCCore.MessageSerializer<ServiceARequest>,
               deserializer: some GRPCCore.MessageDeserializer<ServiceAResponse>,
               options: GRPCCore.CallOptions = .defaults,
-              _ body: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> R = {
-                  try $0.message
+              onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<ServiceAResponse>) async throws -> Result = { response in
+                  try response.message
               }
-          ) async throws -> R where R: Sendable {
+          ) async throws -> Result where Result: Sendable {
               try await self.client.unary(
                   request: request,
                   descriptor: ServiceA.Method.MethodA.descriptor,
                   serializer: serializer,
                   deserializer: deserializer,
                   options: options,
-                  handler: body
+                  onResponse: handleResponse
               )
           }
       }
@@ -791,14 +791,19 @@ final class ClientCodeTranslatorSnippetBasedTests: XCTestCase {
   }
 
   private func assertClientCodeTranslation(
-    codeGenerationRequest: CodeGenerationRequest,
+    codeGenerationRequest request: CodeGenerationRequest,
     expectedSwift: String,
     accessLevel: SourceGenerator.Config.AccessLevel,
     file: StaticString = #filePath,
     line: UInt = #line
   ) throws {
-    let translator = ClientCodeTranslator(accessLevel: accessLevel)
-    let codeBlocks = try translator.translate(from: codeGenerationRequest)
+    let translator = ClientCodeTranslator()
+    let codeBlocks = translator.translate(
+      accessModifier: AccessModifier(accessLevel),
+      services: request.services,
+      serializer: request.lookupSerializer,
+      deserializer: request.lookupDeserializer
+    )
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
     let contents = renderer.renderedContents()
