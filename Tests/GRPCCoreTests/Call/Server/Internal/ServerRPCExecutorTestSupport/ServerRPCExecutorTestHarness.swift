@@ -101,7 +101,7 @@ struct ServerRPCExecutorTestHarness {
       group.addTask {
         await withServerContextRPCCancellationHandle { cancellation in
           let context = ServerContext(
-            descriptor: MethodDescriptor(service: "foo", method: "bar"),
+            descriptor: MethodDescriptor(fullyQualifiedService: "foo", method: "bar"),
             cancellation: cancellation
           )
 

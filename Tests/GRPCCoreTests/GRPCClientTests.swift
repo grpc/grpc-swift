@@ -26,8 +26,8 @@ final class GRPCClientTests: XCTestCase {
     _ body: (GRPCClient, GRPCServer) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
-    let client = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
-    let server = GRPCServer(transport: inProcess.server, services: services)
+    _ = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
+    _ = GRPCServer(transport: inProcess.server, services: services)
 
     try await withGRPCServer(
       transport: inProcess.server,
@@ -137,7 +137,7 @@ final class GRPCClientTests: XCTestCase {
     try await self.withInProcessConnectedClient(services: [BinaryEcho()]) { client, _ in
       try await client.unary(
         request: .init(message: [3, 1, 4, 1, 5]),
-        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         serializer: IdentitySerializer(),
         deserializer: IdentityDeserializer(),
         options: .defaults
@@ -157,7 +157,7 @@ final class GRPCClientTests: XCTestCase {
             try await writer.write([byte])
           }
         }),
-        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         serializer: IdentitySerializer(),
         deserializer: IdentityDeserializer(),
         options: .defaults
@@ -173,7 +173,7 @@ final class GRPCClientTests: XCTestCase {
     try await self.withInProcessConnectedClient(services: [BinaryEcho()]) { client, _ in
       try await client.serverStreaming(
         request: .init(message: [3, 1, 4, 1, 5]),
-        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         serializer: IdentitySerializer(),
         deserializer: IdentityDeserializer(),
         options: .defaults
@@ -193,7 +193,7 @@ final class GRPCClientTests: XCTestCase {
             try await writer.write([byte])
           }
         }),
-        descriptor: MethodDescriptor(service: "not", method: "implemented"),
+        descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         serializer: IdentitySerializer(),
         deserializer: IdentityDeserializer(),
         options: .defaults

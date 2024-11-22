@@ -26,7 +26,7 @@ final class MethodConfigsTests: XCTestCase {
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigs()
     configurations.setDefaultConfig(defaultConfiguration)
-    let descriptor = MethodDescriptor(service: "test", method: "first")
+    let descriptor = MethodDescriptor(fullyQualifiedService: "test", method: "first")
     let retryPolicy = RetryPolicy(
       maxAttempts: 10,
       initialBackoff: .seconds(1),
@@ -49,7 +49,7 @@ final class MethodConfigsTests: XCTestCase {
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigs()
     configurations.setDefaultConfig(defaultConfiguration)
-    let firstDescriptor = MethodDescriptor(service: "test", method: "")
+    let firstDescriptor = MethodDescriptor(fullyQualifiedService: "test", method: "")
     let retryPolicy = RetryPolicy(
       maxAttempts: 10,
       initialBackoff: .seconds(1),
@@ -60,7 +60,7 @@ final class MethodConfigsTests: XCTestCase {
     let overrideConfiguration = MethodConfig(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
 
-    let secondDescriptor = MethodDescriptor(service: "test", method: "second")
+    let secondDescriptor = MethodDescriptor(fullyQualifiedService: "test", method: "second")
     XCTAssertEqual(configurations[secondDescriptor], overrideConfiguration)
   }
 
@@ -73,7 +73,7 @@ final class MethodConfigsTests: XCTestCase {
     let defaultConfiguration = MethodConfig(names: [], executionPolicy: .hedge(policy))
     var configurations = MethodConfigs()
     configurations.setDefaultConfig(defaultConfiguration)
-    let firstDescriptor = MethodDescriptor(service: "test1", method: "first")
+    let firstDescriptor = MethodDescriptor(fullyQualifiedService: "test1", method: "first")
     let retryPolicy = RetryPolicy(
       maxAttempts: 10,
       initialBackoff: .seconds(1),
@@ -84,7 +84,7 @@ final class MethodConfigsTests: XCTestCase {
     let overrideConfiguration = MethodConfig(names: [], executionPolicy: .retry(retryPolicy))
     configurations[firstDescriptor] = overrideConfiguration
 
-    let secondDescriptor = MethodDescriptor(service: "test2", method: "second")
+    let secondDescriptor = MethodDescriptor(fullyQualifiedService: "test2", method: "second")
     XCTAssertEqual(configurations[secondDescriptor], defaultConfiguration)
   }
 }

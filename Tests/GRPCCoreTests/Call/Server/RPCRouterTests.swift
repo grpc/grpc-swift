@@ -22,13 +22,17 @@ final class RPCRouterTests: XCTestCase {
     var router = RPCRouter()
     XCTAssertEqual(router.count, 0)
     XCTAssertEqual(router.methods, [])
-    XCTAssertFalse(router.hasHandler(forMethod: MethodDescriptor(service: "foo", method: "bar")))
-    XCTAssertFalse(router.removeHandler(forMethod: MethodDescriptor(service: "foo", method: "bar")))
+    XCTAssertFalse(
+      router.hasHandler(forMethod: MethodDescriptor(fullyQualifiedService: "foo", method: "bar"))
+    )
+    XCTAssertFalse(
+      router.removeHandler(forMethod: MethodDescriptor(fullyQualifiedService: "foo", method: "bar"))
+    )
   }
 
   func testRegisterMethod() async throws {
     var router = RPCRouter()
-    let method = MethodDescriptor(service: "foo", method: "bar")
+    let method = MethodDescriptor(fullyQualifiedService: "foo", method: "bar")
     router.registerHandler(
       forMethod: method,
       deserializer: IdentityDeserializer(),
@@ -44,7 +48,7 @@ final class RPCRouterTests: XCTestCase {
 
   func testRemoveMethod() async throws {
     var router = RPCRouter()
-    let method = MethodDescriptor(service: "foo", method: "bar")
+    let method = MethodDescriptor(fullyQualifiedService: "foo", method: "bar")
     router.registerHandler(
       forMethod: method,
       deserializer: IdentityDeserializer(),

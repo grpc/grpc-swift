@@ -28,7 +28,7 @@ final class InProcessServerTransportTests: XCTestCase {
       RPCAsyncSequence<RPCRequestPart, any Error>,
       RPCWriter<RPCResponsePart>.Closable
     >(
-      descriptor: .init(service: "testService", method: "testMethod"),
+      descriptor: .testTest,
       inbound: RPCAsyncSequence<RPCRequestPart, any Error>(
         wrapping: AsyncThrowingStream {
           $0.yield(.message([42]))
@@ -59,7 +59,7 @@ final class InProcessServerTransportTests: XCTestCase {
     let firstStream = RPCStream<
       RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
     >(
-      descriptor: .init(service: "testService1", method: "testMethod1"),
+      descriptor: .testTest,
       inbound: RPCAsyncSequence(
         wrapping: AsyncThrowingStream {
           $0.yield(.message([42]))
@@ -83,7 +83,7 @@ final class InProcessServerTransportTests: XCTestCase {
       let secondStream = RPCStream<
         RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
       >(
-        descriptor: .init(service: "testService1", method: "testMethod1"),
+        descriptor: .testTest,
         inbound: RPCAsyncSequence(
           wrapping: AsyncThrowingStream {
             $0.yield(.message([42]))

@@ -109,7 +109,10 @@ private struct TestService: RegistrableRPCService {
 }
 
 extension MethodDescriptor {
-  fileprivate static let testCancellation = Self(service: "test", method: "cancellation")
+  fileprivate static let testCancellation = Self(
+    fullyQualifiedService: "test",
+    method: "cancellation"
+  )
 }
 
 private struct UTF8Serializer: MessageSerializer {

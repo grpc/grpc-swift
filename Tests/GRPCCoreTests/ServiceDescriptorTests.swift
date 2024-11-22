@@ -14,13 +14,31 @@
  * limitations under the License.
  */
 import GRPCCore
-import XCTest
+import Testing
 
-final class ServiceDescriptorTests: XCTestCase {
-  func testFullyQualifiedName() {
-    let descriptor = ServiceDescriptor(package: "foo.bar", service: "Baz")
-    XCTAssertEqual(descriptor.package, "foo.bar")
-    XCTAssertEqual(descriptor.service, "Baz")
-    XCTAssertEqual(descriptor.fullyQualifiedService, "foo.bar.Baz")
+@Suite
+struct ServiceDescriptorTests {
+  @Test(
+    "Decompose fully qualified service name",
+    arguments: [
+      ("foo.bar.baz", "foo.bar", "baz"),
+      ("foo.bar", "foo", "bar"),
+      ("foo", "", "foo"),
+      ("..", ".", ""),
+      (".", "", ""),
+      ("", "", ""),
+    ]
+  )
+  func packageAndService(fullyQualified: String, package: String, service: String) {
+    let descriptor = ServiceDescriptor(fullyQualifiedService: fullyQualified)
+    #expect(descriptor.fullyQualifiedService == fullyQualified)
+    #expect(descriptor.package == package)
+    #expect(descriptor.service == service)
+  }
+
+  @Test("CustomStringConvertible")
+  func description() {
+    let descriptor = ServiceDescriptor(fullyQualifiedService: "foo.Foo")
+    #expect(String(describing: descriptor) == "foo.Foo")
   }
 }
