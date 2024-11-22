@@ -127,13 +127,16 @@ extension ExtensionDescription {
     return ExtensionDescription(
       onType: "GRPCCore.ServiceDescriptor",
       declarations: [
-        .variable(
-          accessModifier: accessModifier,
-          isStatic: true,
-          kind: .let,
-          left: .identifier(.pattern(propertyName)),
-          right: .functionCall(
-            .serviceDescriptor(literalFullyQualifiedService: literalFullyQualifiedService)
+        .commentable(
+          .doc("Service descriptor for the \"\(literalFullyQualifiedService)\" service."),
+          .variable(
+            accessModifier: accessModifier,
+            isStatic: true,
+            kind: .let,
+            left: .identifier(.pattern(propertyName)),
+            right: .functionCall(
+              .serviceDescriptor(literalFullyQualifiedService: literalFullyQualifiedService)
+            )
           )
         )
       ]
@@ -183,13 +186,22 @@ extension EnumDescription {
       accessModifier: accessModifier,
       name: name,
       members: [
-        .typealias(.methodInput(accessModifier: accessModifier, name: inputType)),
-        .typealias(.methodOutput(accessModifier: accessModifier, name: outputType)),
-        .variable(
-          .methodDescriptor(
-            accessModifier: accessModifier,
-            literalFullyQualifiedService: literalFullyQualifiedService,
-            literalMethodName: literalMethod
+        .commentable(
+          .doc("Request type for \"\(literalMethod)\"."),
+          .typealias(.methodInput(accessModifier: accessModifier, name: inputType))
+        ),
+        .commentable(
+          .doc("Response type for \"\(literalMethod)\"."),
+          .typealias(.methodOutput(accessModifier: accessModifier, name: outputType))
+        ),
+        .commentable(
+          .doc("Descriptor for \"\(literalMethod)\"."),
+          .variable(
+            .methodDescriptor(
+              accessModifier: accessModifier,
+              literalFullyQualifiedService: literalFullyQualifiedService,
+              literalMethodName: literalMethod
+            )
           )
         ),
       ]
@@ -222,14 +234,17 @@ extension EnumDescription {
 
     // Add a namespace for each method.
     let methodNamespaces: [Declaration] = methods.map { method in
-      return .enum(
-        .methodNamespace(
-          accessModifier: accessModifier,
-          name: method.name.base,
-          literalMethod: method.name.base,
-          literalFullyQualifiedService: literalFullyQualifiedService,
-          inputType: method.inputType,
-          outputType: method.outputType
+      return .commentable(
+        .doc("Namespace for \"\(method.name.base)\" metadata."),
+        .enum(
+          .methodNamespace(
+            accessModifier: accessModifier,
+            name: method.name.base,
+            literalMethod: method.name.base,
+            literalFullyQualifiedService: literalFullyQualifiedService,
+            inputType: method.inputType,
+            outputType: method.outputType
+          )
         )
       )
     }
@@ -240,7 +255,12 @@ extension EnumDescription {
       accessModifier: accessModifier,
       methodNamespaceNames: methods.map { $0.name.base }
     )
-    description.members.append(.variable(methodDescriptorsArray))
+    description.members.append(
+      .commentable(
+        .doc("Descriptors for all methods in the \"\(literalFullyQualifiedService)\" service."),
+        .variable(methodDescriptorsArray)
+      )
+    )
 
     return description
   }
@@ -266,7 +286,12 @@ extension EnumDescription {
       accessModifier: accessModifier,
       literalFullyQualifiedService: literalFullyQualifiedService
     )
-    description.members.append(.variable(descriptor))
+    description.members.append(
+      .commentable(
+        .doc("Service descriptor for the \"\(literalFullyQualifiedService)\" service."),
+        .variable(descriptor)
+      )
+    )
 
     // enum Method { ... }
     let methodsNamespace: EnumDescription = .methodsNamespace(
@@ -274,7 +299,12 @@ extension EnumDescription {
       literalFullyQualifiedService: literalFullyQualifiedService,
       methods: methods
     )
-    description.members.append(.enum(methodsNamespace))
+    description.members.append(
+      .commentable(
+        .doc("Namespace for method metadata."),
+        .enum(methodsNamespace)
+      )
+    )
 
     return description
   }
@@ -302,7 +332,14 @@ extension [CodeBlock] {
       literalFullyQualifiedService: service.fullyQualifiedName,
       methods: service.methods
     )
-    blocks.append(CodeBlock(item: .declaration(.enum(serviceNamespace))))
+    blocks.append(
+      CodeBlock(
+        comment: .doc(
+          "Namespace containing generated types for the \"\(service.fullyQualifiedName)\" service."
+        ),
+        item: .declaration(.enum(serviceNamespace))
+      )
+    )
 
     let descriptorExtension: ExtensionDescription = .serviceDescriptor(
       accessModifier: accessModifier,

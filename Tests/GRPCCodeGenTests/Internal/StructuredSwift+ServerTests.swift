@@ -91,7 +91,19 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) protocol FooService: GRPCCore.RegistrableRPCService {
-          /// Some docs
+          /// Handle the "Foo" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Some docs
+          ///
+          /// - Parameters:
+          ///   - request: A streaming request of `FooInput` messages.
+          ///   - context: Context providing information about the RPC.
+          /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+          ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+          ///     to an internal error.
+          /// - Returns: A streaming response of `FooOutput` messages.
           func foo(
             request: GRPCCore.StreamingServerRequest<FooInput>,
             context: GRPCCore.ServerContext
@@ -122,7 +134,19 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) protocol FooService: FooService_StreamingServiceProtocol {
-          /// Some docs
+          /// Handle the "Foo" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Some docs
+          ///
+          /// - Parameters:
+          ///   - request: A request containing a single `FooInput` message.
+          ///   - context: Context providing information about the RPC.
+          /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+          ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+          ///     to an internal error.
+          /// - Returns: A response containing a single `FooOutput` message.
           func foo(
             request: GRPCCore.ServerRequest<FooInput>,
             context: GRPCCore.ServerContext

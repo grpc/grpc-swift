@@ -56,13 +56,31 @@ extension ProtocolDescription {
     name: String,
     methods: [MethodDescriptor]
   ) -> Self {
+    func docs(for method: MethodDescriptor) -> String {
+      let summary = """
+        /// Handle the "\(method.name.normalizedBase)" method.
+        """
+
+      let parameters = """
+        /// - Parameters:
+        ///   - request: A streaming request of `\(method.inputType)` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `\(method.outputType)` messages.
+        """
+
+      return Docs.interposeDocs(method.documentation, between: summary, and: parameters)
+    }
+
     return ProtocolDescription(
       accessModifier: accessLevel,
       name: name,
       conformances: ["GRPCCore.RegistrableRPCService"],
       members: methods.map { method in
         .commentable(
-          .preFormatted(method.documentation),
+          .preFormatted(docs(for: method)),
           .function(
             signature: .serverMethod(
               name: method.name.generatedLowerCase,
@@ -123,13 +141,45 @@ extension ProtocolDescription {
     streamingProtocol: String,
     methods: [MethodDescriptor]
   ) -> Self {
+    func docs(for method: MethodDescriptor) -> String {
+      let summary = """
+        /// Handle the "\(method.name.normalizedBase)" method.
+        """
+
+      let request: String
+      if method.isInputStreaming {
+        request = "A streaming request of `\(method.inputType)` messages."
+      } else {
+        request = "A request containing a single `\(method.inputType)` message."
+      }
+
+      let returns: String
+      if method.isOutputStreaming {
+        returns = "A streaming response of `\(method.outputType)` messages."
+      } else {
+        returns = "A response containing a single `\(method.outputType)` message."
+      }
+
+      let parameters = """
+        /// - Parameters:
+        ///   - request: \(request)
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: \(returns)
+        """
+
+      return Docs.interposeDocs(method.documentation, between: summary, and: parameters)
+    }
+
     return ProtocolDescription(
       accessModifier: accessLevel,
       name: name,
       conformances: [streamingProtocol],
       members: methods.map { method in
         .commentable(
-          .preFormatted(method.documentation),
+          .preFormatted(docs(for: method)),
           .function(
             signature: .serverMethod(
               name: method.name.generatedLowerCase,
