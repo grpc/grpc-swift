@@ -29,7 +29,7 @@ struct Serve: AsyncParsableCommand {
     let server = GRPCServer(
       transport: .http2NIOPosix(
         address: .ipv4(host: "127.0.0.1", port: self.port),
-        config: .defaults(transportSecurity: .plaintext)
+        transportSecurity: .plaintext
       ),
       services: [Greeter()]
     )
@@ -43,14 +43,14 @@ struct Serve: AsyncParsableCommand {
   }
 }
 
-struct Greeter: Helloworld_Greeter_ServiceProtocol {
+struct Greeter: Helloworld_Greeter.SimpleServiceProtocol {
   func sayHello(
-    request: ServerRequest<Helloworld_HelloRequest>,
+    request: Helloworld_HelloRequest,
     context: ServerContext
-  ) async throws -> ServerResponse<Helloworld_HelloReply> {
+  ) async throws -> Helloworld_HelloReply {
     var reply = Helloworld_HelloReply()
-    let recipient = request.message.name.isEmpty ? "stranger" : request.message.name
+    let recipient = request.name.isEmpty ? "stranger" : request.name
     reply.message = "Hello, \(recipient)"
-    return ServerResponse(message: reply)
+    return reply
   }
 }
