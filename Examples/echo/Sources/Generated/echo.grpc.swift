@@ -23,42 +23,65 @@
 
 import GRPCCore
 import GRPCProtobuf
+import SwiftProtobuf
 
+// MARK: - echo.Echo
+
+/// Namespace containing generated types for the "echo.Echo" service.
 internal enum Echo_Echo {
-    internal static let descriptor = GRPCCore.ServiceDescriptor.echo_Echo
+    /// Service descriptor for the "echo.Echo" service.
+    internal static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.Echo")
+    /// Namespace for method metadata.
     internal enum Method {
+        /// Namespace for "Get" metadata.
         internal enum Get {
+            /// Request type for "Get".
             internal typealias Input = Echo_EchoRequest
+            /// Response type for "Get".
             internal typealias Output = Echo_EchoResponse
+            /// Descriptor for "Get".
             internal static let descriptor = GRPCCore.MethodDescriptor(
-                service: Echo_Echo.descriptor.fullyQualifiedService,
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.Echo"),
                 method: "Get"
             )
         }
+        /// Namespace for "Expand" metadata.
         internal enum Expand {
+            /// Request type for "Expand".
             internal typealias Input = Echo_EchoRequest
+            /// Response type for "Expand".
             internal typealias Output = Echo_EchoResponse
+            /// Descriptor for "Expand".
             internal static let descriptor = GRPCCore.MethodDescriptor(
-                service: Echo_Echo.descriptor.fullyQualifiedService,
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.Echo"),
                 method: "Expand"
             )
         }
+        /// Namespace for "Collect" metadata.
         internal enum Collect {
+            /// Request type for "Collect".
             internal typealias Input = Echo_EchoRequest
+            /// Response type for "Collect".
             internal typealias Output = Echo_EchoResponse
+            /// Descriptor for "Collect".
             internal static let descriptor = GRPCCore.MethodDescriptor(
-                service: Echo_Echo.descriptor.fullyQualifiedService,
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.Echo"),
                 method: "Collect"
             )
         }
+        /// Namespace for "Update" metadata.
         internal enum Update {
+            /// Request type for "Update".
             internal typealias Input = Echo_EchoRequest
+            /// Response type for "Update".
             internal typealias Output = Echo_EchoResponse
+            /// Descriptor for "Update".
             internal static let descriptor = GRPCCore.MethodDescriptor(
-                service: Echo_Echo.descriptor.fullyQualifiedService,
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.Echo"),
                 method: "Update"
             )
         }
+        /// Descriptors for all methods in the "echo.Echo" service.
         internal static let descriptors: [GRPCCore.MethodDescriptor] = [
             Get.descriptor,
             Expand.descriptor,
@@ -66,54 +89,265 @@ internal enum Echo_Echo {
             Update.descriptor
         ]
     }
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias StreamingServiceProtocol = Echo_Echo_StreamingServiceProtocol
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ServiceProtocol = Echo_Echo_ServiceProtocol
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ClientProtocol = Echo_Echo_ClientProtocol
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias Client = Echo_Echo_Client
 }
 
 extension GRPCCore.ServiceDescriptor {
-    internal static let echo_Echo = Self(
-        package: "echo",
-        service: "Echo"
-    )
+    /// Service descriptor for the "echo.Echo" service.
+    internal static let echo_Echo = GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.Echo")
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Echo_Echo_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-    /// Immediately returns an echo of a request.
-    func get(
-        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
-    
-    /// Splits a request into words and returns each word in a stream of messages.
-    func expand(
-        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
-    
-    /// Collects a stream of messages and returns them concatenated when the caller closes.
-    func collect(
-        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
-    
-    /// Streams back messages as they are received in an input stream.
-    func update(
-        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+// MARK: echo.Echo (server)
+
+extension Echo_Echo {
+    /// Streaming variant of the service protocol for the "echo.Echo" service.
+    ///
+    /// This protocol is the lowest-level of the service protocols generated for this service
+    /// giving you the most flexibility over the implementation of your service. This comes at
+    /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+    /// terms of a request stream and response stream. Where only a single request or response
+    /// message is expected, you are responsible for enforcing this invariant is maintained.
+    ///
+    /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+    /// or ``SimpleServiceProtocol`` instead.
+    internal protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+        /// Handle the "Get" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Immediately returns an echo of a request.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Echo_EchoResponse` messages.
+        func get(
+            request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+
+        /// Handle the "Expand" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Splits a request into words and returns each word in a stream of messages.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Echo_EchoResponse` messages.
+        func expand(
+            request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+
+        /// Handle the "Collect" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Collects a stream of messages and returns them concatenated when the caller closes.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Echo_EchoResponse` messages.
+        func collect(
+            request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+
+        /// Handle the "Update" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams back messages as they are received in an input stream.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Echo_EchoResponse` messages.
+        func update(
+            request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+    }
+
+    /// Service protocol for the "echo.Echo" service.
+    ///
+    /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+    /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+    /// trailing response metadata. If you don't need these then consider using
+    /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+    /// use ``StreamingServiceProtocol``.
+    internal protocol ServiceProtocol: Echo_Echo.StreamingServiceProtocol {
+        /// Handle the "Get" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Immediately returns an echo of a request.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Echo_EchoRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Echo_EchoResponse` message.
+        func get(
+            request: GRPCCore.ServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse>
+
+        /// Handle the "Expand" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Splits a request into words and returns each word in a stream of messages.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Echo_EchoRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Echo_EchoResponse` messages.
+        func expand(
+            request: GRPCCore.ServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+
+        /// Handle the "Collect" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Collects a stream of messages and returns them concatenated when the caller closes.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Echo_EchoResponse` message.
+        func collect(
+            request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse>
+
+        /// Handle the "Update" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams back messages as they are received in an input stream.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Echo_EchoResponse` messages.
+        func update(
+            request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
+    }
+
+    /// Simple service protocol for the "echo.Echo" service.
+    ///
+    /// This is the highest level protocol for the service. The API is the easiest to use but
+    /// doesn't provide access to request or response metadata. If you need access to these
+    /// then use ``ServiceProtocol`` instead.
+    internal protocol SimpleServiceProtocol: Echo_Echo.ServiceProtocol {
+        /// Handle the "Get" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Immediately returns an echo of a request.
+        ///
+        /// - Parameters:
+        ///   - request: A `Echo_EchoRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Echo_EchoResponse` to respond with.
+        func get(
+            request: Echo_EchoRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Echo_EchoResponse
+
+        /// Handle the "Expand" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Splits a request into words and returns each word in a stream of messages.
+        ///
+        /// - Parameters:
+        ///   - request: A `Echo_EchoRequest` message.
+        ///   - response: A response stream of `Echo_EchoResponse` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func expand(
+            request: Echo_EchoRequest,
+            response: GRPCCore.RPCWriter<Echo_EchoResponse>,
+            context: GRPCCore.ServerContext
+        ) async throws
+
+        /// Handle the "Collect" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Collects a stream of messages and returns them concatenated when the caller closes.
+        ///
+        /// - Parameters:
+        ///   - request: A stream of `Echo_EchoRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Echo_EchoResponse` to respond with.
+        func collect(
+            request: GRPCCore.RPCAsyncSequence<Echo_EchoRequest, any Swift.Error>,
+            context: GRPCCore.ServerContext
+        ) async throws -> Echo_EchoResponse
+
+        /// Handle the "Update" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams back messages as they are received in an input stream.
+        ///
+        /// - Parameters:
+        ///   - request: A stream of `Echo_EchoRequest` messages.
+        ///   - response: A response stream of `Echo_EchoResponse` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func update(
+            request: GRPCCore.RPCAsyncSequence<Echo_EchoRequest, any Swift.Error>,
+            response: GRPCCore.RPCWriter<Echo_EchoResponse>,
+            context: GRPCCore.ServerContext
+        ) async throws
+    }
 }
 
-/// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// Default implementation of 'registerMethods(with:)'.
 extension Echo_Echo.StreamingServiceProtocol {
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Echo_Echo.Method.Get.descriptor,
@@ -162,35 +396,7 @@ extension Echo_Echo.StreamingServiceProtocol {
     }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Echo_Echo_ServiceProtocol: Echo_Echo.StreamingServiceProtocol {
-    /// Immediately returns an echo of a request.
-    func get(
-        request: GRPCCore.ServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse>
-    
-    /// Splits a request into words and returns each word in a stream of messages.
-    func expand(
-        request: GRPCCore.ServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
-    
-    /// Collects a stream of messages and returns them concatenated when the caller closes.
-    func collect(
-        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse>
-    
-    /// Streams back messages as they are received in an input stream.
-    func update(
-        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse>
-}
-
-/// Partial conformance to `Echo_Echo_StreamingServiceProtocol`.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// Default implementation of streaming methods from 'StreamingServiceProtocol'.
 extension Echo_Echo.ServiceProtocol {
     internal func get(
         request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
@@ -202,7 +408,7 @@ extension Echo_Echo.ServiceProtocol {
         )
         return GRPCCore.StreamingServerResponse(single: response)
     }
-    
+
     internal func expand(
         request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
@@ -213,7 +419,7 @@ extension Echo_Echo.ServiceProtocol {
         )
         return response
     }
-    
+
     internal func collect(
         request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
         context: GRPCCore.ServerContext
@@ -226,117 +432,457 @@ extension Echo_Echo.ServiceProtocol {
     }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Echo_Echo_ClientProtocol: Sendable {
-    /// Immediately returns an echo of a request.
-    func get<R>(
-        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable
-    
-    /// Splits a request into words and returns each word in a stream of messages.
-    func expand<R>(
-        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable
-    
-    /// Collects a stream of messages and returns them concatenated when the caller closes.
-    func collect<R>(
-        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable
-    
-    /// Streams back messages as they are received in an input stream.
-    func update<R>(
-        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable
+// Default implementation of methods from 'ServiceProtocol'.
+extension Echo_Echo.SimpleServiceProtocol {
+    internal func get(
+        request: GRPCCore.ServerRequest<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse> {
+        return GRPCCore.ServerResponse<Echo_EchoResponse>(
+            message: try await self.get(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    internal func expand(
+        request: GRPCCore.ServerRequest<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse> {
+        return GRPCCore.StreamingServerResponse<Echo_EchoResponse>(
+            metadata: [:],
+            producer: { writer in
+                try await self.expand(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    internal func collect(
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Echo_EchoResponse> {
+        return GRPCCore.ServerResponse<Echo_EchoResponse>(
+            message: try await self.collect(
+                request: request.messages,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    internal func update(
+        request: GRPCCore.StreamingServerRequest<Echo_EchoRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Echo_EchoResponse> {
+        return GRPCCore.StreamingServerResponse<Echo_EchoResponse>(
+            metadata: [:],
+            producer: { writer in
+                try await self.update(
+                    request: request.messages,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// MARK: echo.Echo (client)
+
+extension Echo_Echo {
+    /// Generated client protocol for the "echo.Echo" service.
+    ///
+    /// You don't need to implement this protocol directly, use the generated
+    /// implementation, ``Client``.
+    internal protocol ClientProtocol: Sendable {
+        /// Call the "Get" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Immediately returns an echo of a request.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Echo_EchoRequest` message.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func get<Result>(
+            request: GRPCCore.ClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Expand" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Splits a request into words and returns each word in a stream of messages.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Echo_EchoRequest` message.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func expand<Result>(
+            request: GRPCCore.ClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Collect" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Collects a stream of messages and returns them concatenated when the caller closes.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request producing `Echo_EchoRequest` messages.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func collect<Result>(
+            request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Update" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams back messages as they are received in an input stream.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request producing `Echo_EchoRequest` messages.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func update<Result>(
+            request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+    }
+
+    /// Generated client for the "echo.Echo" service.
+    ///
+    /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
+    /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+    /// means of communication with the remote peer.
+    internal struct Client: ClientProtocol {
+        private let client: GRPCCore.GRPCClient
+
+        /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+        ///
+        /// - Parameters:
+        ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
+        internal init(wrapping client: GRPCCore.GRPCClient) {
+            self.client = client
+        }
+
+        /// Call the "Get" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Immediately returns an echo of a request.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Echo_EchoRequest` message.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        internal func get<Result>(
+            request: GRPCCore.ClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Echo_Echo.Method.Get.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "Expand" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Splits a request into words and returns each word in a stream of messages.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Echo_EchoRequest` message.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        internal func expand<Result>(
+            request: GRPCCore.ClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Echo_Echo.Method.Expand.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "Collect" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Collects a stream of messages and returns them concatenated when the caller closes.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request producing `Echo_EchoRequest` messages.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        internal func collect<Result>(
+            request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.clientStreaming(
+                request: request,
+                descriptor: Echo_Echo.Method.Collect.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "Update" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams back messages as they are received in an input stream.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request producing `Echo_EchoRequest` messages.
+        ///   - serializer: A serializer for `Echo_EchoRequest` messages.
+        ///   - deserializer: A deserializer for `Echo_EchoResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        internal func update<Result>(
+            request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
+            serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.bidirectionalStreaming(
+                request: request,
+                descriptor: Echo_Echo.Method.Update.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+    }
+}
+
+// Helpers providing default arguments to 'ClientProtocol' methods.
 extension Echo_Echo.ClientProtocol {
-    internal func get<R>(
+    /// Call the "Get" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Immediately returns an echo of a request.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Echo_EchoRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    internal func get<Result>(
         request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
-            try $0.message
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = { response in
+            try response.message
         }
-    ) async throws -> R where R: Sendable {
+    ) async throws -> Result where Result: Sendable {
         try await self.get(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoResponse>(),
             options: options,
-            body
+            onResponse: handleResponse
         )
     }
-    
-    internal func expand<R>(
+
+    /// Call the "Expand" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Splits a request into words and returns each word in a stream of messages.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Echo_EchoRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    internal func expand<Result>(
         request: GRPCCore.ClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable {
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
         try await self.expand(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoResponse>(),
             options: options,
-            body
+            onResponse: handleResponse
         )
     }
-    
-    internal func collect<R>(
+
+    /// Call the "Collect" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Collects a stream of messages and returns them concatenated when the caller closes.
+    ///
+    /// - Parameters:
+    ///   - request: A streaming request producing `Echo_EchoRequest` messages.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    internal func collect<Result>(
         request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
-            try $0.message
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = { response in
+            try response.message
         }
-    ) async throws -> R where R: Sendable {
+    ) async throws -> Result where Result: Sendable {
         try await self.collect(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoResponse>(),
             options: options,
-            body
+            onResponse: handleResponse
         )
     }
-    
-    internal func update<R>(
+
+    /// Call the "Update" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams back messages as they are received in an input stream.
+    ///
+    /// - Parameters:
+    ///   - request: A streaming request producing `Echo_EchoRequest` messages.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    internal func update<Result>(
         request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable {
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
         try await self.update(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Echo_EchoRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoResponse>(),
             options: options,
-            body
+            onResponse: handleResponse
         )
     }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// Helpers providing sugared APIs for 'ClientProtocol' methods.
 extension Echo_Echo.ClientProtocol {
-    /// Immediately returns an echo of a request.
+    /// Call the "Get" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Immediately returns an echo of a request.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
     internal func get<Result>(
         _ message: Echo_EchoRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = {
-            try $0.message
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = { response in
+            try response.message
         }
     ) async throws -> Result where Result: Sendable {
         let request = GRPCCore.ClientRequest<Echo_EchoRequest>(
@@ -346,11 +892,24 @@ extension Echo_Echo.ClientProtocol {
         return try await self.get(
             request: request,
             options: options,
-            handleResponse
+            onResponse: handleResponse
         )
     }
-    
-    /// Splits a request into words and returns each word in a stream of messages.
+
+    /// Call the "Expand" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Splits a request into words and returns each word in a stream of messages.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
     internal func expand<Result>(
         _ message: Echo_EchoRequest,
         metadata: GRPCCore.Metadata = [:],
@@ -364,130 +923,73 @@ extension Echo_Echo.ClientProtocol {
         return try await self.expand(
             request: request,
             options: options,
-            handleResponse
+            onResponse: handleResponse
         )
     }
-    
-    /// Collects a stream of messages and returns them concatenated when the caller closes.
+
+    /// Call the "Collect" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Collects a stream of messages and returns them concatenated when the caller closes.
+    ///
+    /// - Parameters:
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - producer: A closure producing request messages to send to the server. The request
+    ///       stream is closed when the closure returns.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
     internal func collect<Result>(
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = {
-            try $0.message
+        requestProducer producer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> Result = { response in
+            try response.message
         }
     ) async throws -> Result where Result: Sendable {
         let request = GRPCCore.StreamingClientRequest<Echo_EchoRequest>(
             metadata: metadata,
-            producer: requestProducer
+            producer: producer
         )
         return try await self.collect(
             request: request,
             options: options,
-            handleResponse
+            onResponse: handleResponse
         )
     }
-    
-    /// Streams back messages as they are received in an input stream.
+
+    /// Call the "Update" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams back messages as they are received in an input stream.
+    ///
+    /// - Parameters:
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - producer: A closure producing request messages to send to the server. The request
+    ///       stream is closed when the closure returns.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
     internal func update<Result>(
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        requestProducer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
+        requestProducer producer: @Sendable @escaping (GRPCCore.RPCWriter<Echo_EchoRequest>) async throws -> Void,
         onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> Result
     ) async throws -> Result where Result: Sendable {
         let request = GRPCCore.StreamingClientRequest<Echo_EchoRequest>(
             metadata: metadata,
-            producer: requestProducer
+            producer: producer
         )
         return try await self.update(
             request: request,
             options: options,
-            handleResponse
-        )
-    }
-}
-
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal struct Echo_Echo_Client: Echo_Echo.ClientProtocol {
-    private let client: GRPCCore.GRPCClient
-    
-    internal init(wrapping client: GRPCCore.GRPCClient) {
-        self.client = client
-    }
-    
-    /// Immediately returns an echo of a request.
-    internal func get<R>(
-        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
-            try $0.message
-        }
-    ) async throws -> R where R: Sendable {
-        try await self.client.unary(
-            request: request,
-            descriptor: Echo_Echo.Method.Get.descriptor,
-            serializer: serializer,
-            deserializer: deserializer,
-            options: options,
-            handler: body
-        )
-    }
-    
-    /// Splits a request into words and returns each word in a stream of messages.
-    internal func expand<R>(
-        request: GRPCCore.ClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable {
-        try await self.client.serverStreaming(
-            request: request,
-            descriptor: Echo_Echo.Method.Expand.descriptor,
-            serializer: serializer,
-            deserializer: deserializer,
-            options: options,
-            handler: body
-        )
-    }
-    
-    /// Collects a stream of messages and returns them concatenated when the caller closes.
-    internal func collect<R>(
-        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Echo_EchoResponse>) async throws -> R = {
-            try $0.message
-        }
-    ) async throws -> R where R: Sendable {
-        try await self.client.clientStreaming(
-            request: request,
-            descriptor: Echo_Echo.Method.Collect.descriptor,
-            serializer: serializer,
-            deserializer: deserializer,
-            options: options,
-            handler: body
-        )
-    }
-    
-    /// Streams back messages as they are received in an input stream.
-    internal func update<R>(
-        request: GRPCCore.StreamingClientRequest<Echo_EchoRequest>,
-        serializer: some GRPCCore.MessageSerializer<Echo_EchoRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Echo_EchoResponse>,
-        options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.StreamingClientResponse<Echo_EchoResponse>) async throws -> R
-    ) async throws -> R where R: Sendable {
-        try await self.client.bidirectionalStreaming(
-            request: request,
-            descriptor: Echo_Echo.Method.Update.descriptor,
-            serializer: serializer,
-            deserializer: deserializer,
-            options: options,
-            handler: body
+            onResponse: handleResponse
         )
     }
 }

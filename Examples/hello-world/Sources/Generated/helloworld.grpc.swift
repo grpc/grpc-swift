@@ -23,53 +23,140 @@
 
 import GRPCCore
 import GRPCProtobuf
+import SwiftProtobuf
 
+// MARK: - helloworld.Greeter
+
+/// Namespace containing generated types for the "helloworld.Greeter" service.
 internal enum Helloworld_Greeter {
-    internal static let descriptor = GRPCCore.ServiceDescriptor.helloworld_Greeter
+    /// Service descriptor for the "helloworld.Greeter" service.
+    internal static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "helloworld.Greeter")
+    /// Namespace for method metadata.
     internal enum Method {
+        /// Namespace for "SayHello" metadata.
         internal enum SayHello {
+            /// Request type for "SayHello".
             internal typealias Input = Helloworld_HelloRequest
+            /// Response type for "SayHello".
             internal typealias Output = Helloworld_HelloReply
+            /// Descriptor for "SayHello".
             internal static let descriptor = GRPCCore.MethodDescriptor(
-                service: Helloworld_Greeter.descriptor.fullyQualifiedService,
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "helloworld.Greeter"),
                 method: "SayHello"
             )
         }
+        /// Descriptors for all methods in the "helloworld.Greeter" service.
         internal static let descriptors: [GRPCCore.MethodDescriptor] = [
             SayHello.descriptor
         ]
     }
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias StreamingServiceProtocol = Helloworld_Greeter_StreamingServiceProtocol
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ServiceProtocol = Helloworld_Greeter_ServiceProtocol
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias ClientProtocol = Helloworld_Greeter_ClientProtocol
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-    internal typealias Client = Helloworld_Greeter_Client
 }
 
 extension GRPCCore.ServiceDescriptor {
-    internal static let helloworld_Greeter = Self(
-        package: "helloworld",
-        service: "Greeter"
-    )
+    /// Service descriptor for the "helloworld.Greeter" service.
+    internal static let helloworld_Greeter = GRPCCore.ServiceDescriptor(fullyQualifiedService: "helloworld.Greeter")
 }
 
-/// The greeting service definition.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Helloworld_Greeter_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-    /// Sends a greeting
-    func sayHello(
-        request: GRPCCore.StreamingServerRequest<Helloworld_HelloRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Helloworld_HelloReply>
+// MARK: helloworld.Greeter (server)
+
+extension Helloworld_Greeter {
+    /// Streaming variant of the service protocol for the "helloworld.Greeter" service.
+    ///
+    /// This protocol is the lowest-level of the service protocols generated for this service
+    /// giving you the most flexibility over the implementation of your service. This comes at
+    /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+    /// terms of a request stream and response stream. Where only a single request or response
+    /// message is expected, you are responsible for enforcing this invariant is maintained.
+    ///
+    /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+    /// or ``SimpleServiceProtocol`` instead.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > The greeting service definition.
+    internal protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+        /// Handle the "SayHello" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sends a greeting
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Helloworld_HelloRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Helloworld_HelloReply` messages.
+        func sayHello(
+            request: GRPCCore.StreamingServerRequest<Helloworld_HelloRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Helloworld_HelloReply>
+    }
+
+    /// Service protocol for the "helloworld.Greeter" service.
+    ///
+    /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+    /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+    /// trailing response metadata. If you don't need these then consider using
+    /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+    /// use ``StreamingServiceProtocol``.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > The greeting service definition.
+    internal protocol ServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
+        /// Handle the "SayHello" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sends a greeting
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Helloworld_HelloRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Helloworld_HelloReply` message.
+        func sayHello(
+            request: GRPCCore.ServerRequest<Helloworld_HelloRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Helloworld_HelloReply>
+    }
+
+    /// Simple service protocol for the "helloworld.Greeter" service.
+    ///
+    /// This is the highest level protocol for the service. The API is the easiest to use but
+    /// doesn't provide access to request or response metadata. If you need access to these
+    /// then use ``ServiceProtocol`` instead.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > The greeting service definition.
+    internal protocol SimpleServiceProtocol: Helloworld_Greeter.ServiceProtocol {
+        /// Handle the "SayHello" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sends a greeting
+        ///
+        /// - Parameters:
+        ///   - request: A `Helloworld_HelloRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Helloworld_HelloReply` to respond with.
+        func sayHello(
+            request: Helloworld_HelloRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Helloworld_HelloReply
+    }
 }
 
-/// Conformance to `GRPCCore.RegistrableRPCService`.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// Default implementation of 'registerMethods(with:)'.
 extension Helloworld_Greeter.StreamingServiceProtocol {
-    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
     internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
         router.registerHandler(
             forMethod: Helloworld_Greeter.Method.SayHello.descriptor,
@@ -85,18 +172,7 @@ extension Helloworld_Greeter.StreamingServiceProtocol {
     }
 }
 
-/// The greeting service definition.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Helloworld_Greeter_ServiceProtocol: Helloworld_Greeter.StreamingServiceProtocol {
-    /// Sends a greeting
-    func sayHello(
-        request: GRPCCore.ServerRequest<Helloworld_HelloRequest>,
-        context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse<Helloworld_HelloReply>
-}
-
-/// Partial conformance to `Helloworld_Greeter_StreamingServiceProtocol`.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// Default implementation of streaming methods from 'StreamingServiceProtocol'.
 extension Helloworld_Greeter.ServiceProtocol {
     internal func sayHello(
         request: GRPCCore.StreamingServerRequest<Helloworld_HelloRequest>,
@@ -110,47 +186,168 @@ extension Helloworld_Greeter.ServiceProtocol {
     }
 }
 
-/// The greeting service definition.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal protocol Helloworld_Greeter_ClientProtocol: Sendable {
-    /// Sends a greeting
-    func sayHello<R>(
-        request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
-        serializer: some GRPCCore.MessageSerializer<Helloworld_HelloRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Helloworld_HelloReply>,
-        options: GRPCCore.CallOptions,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> R
-    ) async throws -> R where R: Sendable
+// Default implementation of methods from 'ServiceProtocol'.
+extension Helloworld_Greeter.SimpleServiceProtocol {
+    internal func sayHello(
+        request: GRPCCore.ServerRequest<Helloworld_HelloRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Helloworld_HelloReply> {
+        return GRPCCore.ServerResponse<Helloworld_HelloReply>(
+            message: try await self.sayHello(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// MARK: helloworld.Greeter (client)
+
+extension Helloworld_Greeter {
+    /// Generated client protocol for the "helloworld.Greeter" service.
+    ///
+    /// You don't need to implement this protocol directly, use the generated
+    /// implementation, ``Client``.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > The greeting service definition.
+    internal protocol ClientProtocol: Sendable {
+        /// Call the "SayHello" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sends a greeting
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Helloworld_HelloRequest` message.
+        ///   - serializer: A serializer for `Helloworld_HelloRequest` messages.
+        ///   - deserializer: A deserializer for `Helloworld_HelloReply` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func sayHello<Result>(
+            request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
+            serializer: some GRPCCore.MessageSerializer<Helloworld_HelloRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Helloworld_HelloReply>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+    }
+
+    /// Generated client for the "helloworld.Greeter" service.
+    ///
+    /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
+    /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+    /// means of communication with the remote peer.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > The greeting service definition.
+    internal struct Client: ClientProtocol {
+        private let client: GRPCCore.GRPCClient
+
+        /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+        ///
+        /// - Parameters:
+        ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
+        internal init(wrapping client: GRPCCore.GRPCClient) {
+            self.client = client
+        }
+
+        /// Call the "SayHello" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sends a greeting
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Helloworld_HelloRequest` message.
+        ///   - serializer: A serializer for `Helloworld_HelloRequest` messages.
+        ///   - deserializer: A deserializer for `Helloworld_HelloReply` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        internal func sayHello<Result>(
+            request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
+            serializer: some GRPCCore.MessageSerializer<Helloworld_HelloRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Helloworld_HelloReply>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Helloworld_Greeter.Method.SayHello.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+    }
+}
+
+// Helpers providing default arguments to 'ClientProtocol' methods.
 extension Helloworld_Greeter.ClientProtocol {
-    internal func sayHello<R>(
+    /// Call the "SayHello" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Sends a greeting
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Helloworld_HelloRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    internal func sayHello<Result>(
         request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> R = {
-            try $0.message
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> Result = { response in
+            try response.message
         }
-    ) async throws -> R where R: Sendable {
+    ) async throws -> Result where Result: Sendable {
         try await self.sayHello(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Helloworld_HelloRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Helloworld_HelloReply>(),
             options: options,
-            body
+            onResponse: handleResponse
         )
     }
 }
 
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+// Helpers providing sugared APIs for 'ClientProtocol' methods.
 extension Helloworld_Greeter.ClientProtocol {
-    /// Sends a greeting
+    /// Call the "SayHello" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Sends a greeting
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
     internal func sayHello<Result>(
         _ message: Helloworld_HelloRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> Result = {
-            try $0.message
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> Result = { response in
+            try response.message
         }
     ) async throws -> Result where Result: Sendable {
         let request = GRPCCore.ClientRequest<Helloworld_HelloRequest>(
@@ -160,37 +357,7 @@ extension Helloworld_Greeter.ClientProtocol {
         return try await self.sayHello(
             request: request,
             options: options,
-            handleResponse
-        )
-    }
-}
-
-/// The greeting service definition.
-@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-internal struct Helloworld_Greeter_Client: Helloworld_Greeter.ClientProtocol {
-    private let client: GRPCCore.GRPCClient
-    
-    internal init(wrapping client: GRPCCore.GRPCClient) {
-        self.client = client
-    }
-    
-    /// Sends a greeting
-    internal func sayHello<R>(
-        request: GRPCCore.ClientRequest<Helloworld_HelloRequest>,
-        serializer: some GRPCCore.MessageSerializer<Helloworld_HelloRequest>,
-        deserializer: some GRPCCore.MessageDeserializer<Helloworld_HelloReply>,
-        options: GRPCCore.CallOptions = .defaults,
-        _ body: @Sendable @escaping (GRPCCore.ClientResponse<Helloworld_HelloReply>) async throws -> R = {
-            try $0.message
-        }
-    ) async throws -> R where R: Sendable {
-        try await self.client.unary(
-            request: request,
-            descriptor: Helloworld_Greeter.Method.SayHello.descriptor,
-            serializer: serializer,
-            deserializer: deserializer,
-            options: options,
-            handler: body
+            onResponse: handleResponse
         )
     }
 }
