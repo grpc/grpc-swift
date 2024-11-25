@@ -65,7 +65,7 @@
 
       @Step {
         We need to add a dependency on the gRPC Swift and Swift Protobuf packages. As gRPC Swift v2
-        hasn't yet been released the dependencies must use the `-alpha` tags.
+        hasn't yet been released the dependencies must use the `-beta` tags.
 
         Note that we also add `.macOS(.v15)` to platforms, this is the earliest macOS version supported by
         gRPC Swift v2.
@@ -192,9 +192,6 @@
         Run `protoc` again to generate the service code. This will create
         `Sources/Generated/route_guide.grpc.swift`.
 
-        > `protoc-gen-grpc-swift` is currently shared with v1 so the `_V2=true` option is required.
-        > This will be removed when v2 is released.
-
         @Code(name: "Console", file: "route-guide-sec03-step04-gen-grpc.txt")
       }
     }
@@ -216,11 +213,11 @@
       @Step {
         Create a new empty file in `Sources` called  `RouteGuideService.swift`. To implement
         the service we need to conform a type to the generated service protocol. The name
-        of the protocol will be `<package>_<service>.ServiceProtocol` where `<package>` and
+        of the protocol will be `<package>_<service>.SimpleServiceProtocol` where `<package>` and
         `<service>` are both taken from the `.proto` file.
 
         Create a `struct` called `RouteGuideService` which conforms to
-        the `Routeguide_RouteGuide.ServiceProtocol`.
+        the `Routeguide_RouteGuide.SimpleServiceProtocol`.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step01-struct.swift")
       }
@@ -243,37 +240,28 @@
       @Step {
         `GetFeature` is a unary RPC which takes a single point as input and returns a single
         feature back to the client. Its generated method, `getFeature`, has one parameter:
-        `ServerRequest<Routeguide_Point>` describing the request. To return our response to
+        `Routeguide_Point`, the request message. To return our response to
         the client and complete the call we must first lookup a feature at the given point.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step04-unary.swift")
       }
 
       @Step {
-        Then create and return an appropriate `ServerResponse<Routeguide_Feature>` to the
-        client.
+        Then create and return an appropriate `Routeguide_Feature` to the client.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step05-unary.swift")
       }
 
       @Step {
         Next, let's look at one of our streaming RPCs. Like the unary RPC, this method gets a
-        request object, `ServerRequest<Routeguide_Rectangle>`, which has a message describing
-        the area in which the client wants to list features. As this is a server-side streaming RPC
-        we can send back multiple `Routeguide_Feature` messages to our client.
+        request message, `Routeguide_Rectangle`, describing the area in which the client wants to
+        list features. As this is a server-side streaming RPC we can send back
+        multiple `Routeguide_Feature` messages to our client.
 
-        To implement the method we must return a `StreamingServerResponse` which is initialized with
-        a closure to produce messages. The closure is passed a writer allowing you to write back
-        messages. We can write back a message for each feature we find in the rectangle.
+        To implement the method we must write messages back to the client using `response`,
+        an `RPCWriter` for `Routeguide_Feature` messages.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step06-server-streaming.swift")
-      }
-
-      @Step {
-        You can also send metadata to the client once the RPC has finished, in this case we don't
-        have any to send back so return the empty `Metadata` collection.
-
-        @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step07-server-streaming.swift")
       }
 
       @Step {
@@ -281,9 +269,9 @@
         method `RecordRoute`, where we get a stream of `Routeguide_Point`s from the client and
         return a single `Routeguide_RouteSummary` with information about their trip.
 
-        As you can see our method gets a `StreamingServerRequest<Routeguide_Point>` parameter and
-        returns a `ServerResponse<Routeguide_RouteSummary>`. In the method we iterate over
-        the asynchronous stream of points sent by the client. For each point we check if there's
+        As you can see our method gets a `RPCAsyncSequence<Routeguide_Point, any Error>` parameter
+        and returns a `Routeguide_RouteSummary`. In the method we iterate over the asynchronous
+        stream of points sent by the client. For each point we check if there's
         a feature at that point and calculate the distance between that and the last point we saw.
         After the *client* has finished sending points we populate a `Routeguide_RouteSummary` which
         we return in the response.
@@ -301,11 +289,9 @@
       }
 
       @Step {
-        To implement the RPC we return a `StreamingServerResponse<Routeguide_RouteNote>`. Like in the
-        server-side streaming RPC it's initialized with a closure for writing back messages. In
-        the body of the closure we iterate the request messages and for each one call our helper
-        class to record the note and get all other notes recorded in the same location. We then
-        write each of those notes back to the client.
+        To implement the RPC we iterate the request notes, call our helper class to record each
+        note and get all other notes recorded in the same location. We then write each of those
+        notes back to the client.
 
         @Code(name: "Sources/RouteGuideService.swift", file: "route-guide-sec04-step10-bidi-streaming.swift")
       }

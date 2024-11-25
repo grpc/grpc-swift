@@ -6,20 +6,20 @@ extension RouteGuide {
     let client = try GRPCClient(
       transport: .http2NIOPosix(
         target: .ipv4(host: "127.0.0.1", port: 31415),
-        config: .defaults(transportSecurity: .plaintext)
+        transportSecurity: .plaintext
       )
     )
 
     async let _ = client.run()
 
-    let routeGuide = Routeguide_RouteGuideClient(wrapping: client)
+    let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
     try await self.getFeature(using: routeGuide)
     try await self.listFeatures(using: routeGuide)
     try await self.recordRoute(using: routeGuide)
     try await self.routeChat(using: routeGuide)
   }
 
-  private func getFeature(using routeGuide: Routeguide_RouteGuideClient) async throws {
+  private func getFeature(using routeGuide: Routeguide_RouteGuide.Client) async throws {
     print("→ Calling 'GetFeature'")
 
     let point = Routeguide_Point.with {
@@ -31,7 +31,7 @@ extension RouteGuide {
     print("Got feature '\(feature.name)'")
   }
 
-  private func listFeatures(using routeGuide: Routeguide_RouteGuideClient) async throws {
+  private func listFeatures(using routeGuide: Routeguide_RouteGuide.Client) async throws {
     print("→ Calling 'ListFeatures'")
 
     let boundingRectangle = Routeguide_Rectangle.with {
@@ -54,7 +54,7 @@ extension RouteGuide {
     }
   }
 
-  private func recordRoute(using routeGuide: Routeguide_RouteGuideClient) async throws {
+  private func recordRoute(using routeGuide: Routeguide_RouteGuide.Client) async throws {
     print("→ Calling 'RecordRoute'")
 
     let features = try self.loadFeatures()
@@ -76,7 +76,7 @@ extension RouteGuide {
     )
   }
 
-  private func routeChat(using routeGuide: Routeguide_RouteGuideClient) async throws {
+  private func routeChat(using routeGuide: Routeguide_RouteGuide.Client) async throws {
     print("→ Calling 'RouteChat'")
 
     try await routeGuide.routeChat { writer in

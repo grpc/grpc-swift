@@ -1,6 +1,6 @@
 import GRPCCore
 
-struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
+struct RouteGuideService: Routeguide_RouteGuide.SimpleServiceProtocol {
   /// Known features.
   private let features: [Routeguide_Feature]
 
@@ -18,16 +18,16 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func getFeature(
-    request: ServerRequest<Routeguide_Point>,
+    request: Routeguide_Point,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_Feature> {
+  ) async throws -> Routeguide_Feature {
     let feature = self.findFeature(
       latitude: request.message.latitude,
       longitude: request.message.longitude
     )
 
     if let feature {
-      return ServerResponse(message: feature)
+      return feature
     } else {
       // No feature: return a feature with an empty name.
       let unknownFeature = Routeguide_Feature.with {
@@ -37,33 +37,33 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
           $0.longitude = request.message.longitude
         }
       }
-      return ServerResponse(message: unknownFeature)
+      return unknownFeature
     }
   }
 
   func listFeatures(
-    request: ServerRequest<Routeguide_Rectangle>,
+    request: Routeguide_Rectangle,
+    response: RPCWriter<Routeguide_Feature>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_Feature> {
-    return StreamingServerResponse { writer in
-      for feature in self.features {
-        if !feature.name.isEmpty, feature.isContained(by: request.message) {
-          try await writer.write(feature)
-        }
+  ) async throws {
+    for feature in self.features {
+      if !feature.name.isEmpty, feature.isContained(by: request) {
+        try await response.write(feature)
       }
     }
   }
 
   func recordRoute(
-    request: StreamingServerRequest<Routeguide_Point>,
+    request: RPCAsyncSequence<Routeguide_Point, any Error>,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_RouteSummary> {
+  ) async throws -> Routeguide_RouteSummary {
   }
 
   func routeChat(
-    request: StreamingServerRequest<Routeguide_RouteNote>,
+    request: RPCAsyncSequence<Routeguide_RouteNote, any Error>,
+    response: RPCWriter<Routeguide_RouteNote>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_RouteNote> {
+  ) async throws {
   }
 }
 
