@@ -40,7 +40,7 @@ struct Serve: AsyncParsableCommand {
     let features = try self.loadFeatures()
     let transport = HTTP2ServerTransport.Posix(
       address: .ipv4(host: "127.0.0.1", port: self.port),
-      config: .defaults(transportSecurity: .plaintext)
+      transportSecurity: .plaintext
     )
 
     let server = GRPCServer(transport: transport, services: [RouteGuideService(features: features)])
@@ -99,56 +99,54 @@ struct RouteGuideService {
   }
 }
 
-extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
+extension RouteGuideService: Routeguide_RouteGuide.SimpleServiceProtocol {
   func getFeature(
-    request: ServerRequest<Routeguide_Point>,
+    request: Routeguide_Point,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_Feature> {
+  ) async throws -> Routeguide_Feature {
     let feature = self.findFeature(
-      latitude: request.message.latitude,
-      longitude: request.message.longitude
+      latitude: request.latitude,
+      longitude: request.longitude
     )
 
     if let feature {
-      return ServerResponse(message: feature)
+      return feature
     } else {
       // No feature: return a feature with an empty name.
       let unknownFeature = Routeguide_Feature.with {
         $0.name = ""
         $0.location = .with {
-          $0.latitude = request.message.latitude
-          $0.longitude = request.message.longitude
+          $0.latitude = request.latitude
+          $0.longitude = request.longitude
         }
       }
-      return ServerResponse(message: unknownFeature)
+      return unknownFeature
     }
   }
 
   func listFeatures(
-    request: ServerRequest<Routeguide_Rectangle>,
+    request: Routeguide_Rectangle,
+    response: RPCWriter<Routeguide_Feature>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_Feature> {
-    return StreamingServerResponse { writer in
-      let featuresWithinBounds = self.features.filter { feature in
-        !feature.name.isEmpty && feature.isContained(by: request.message)
-      }
-
-      try await writer.write(contentsOf: featuresWithinBounds)
-      return [:]
+  ) async throws {
+    let featuresWithinBounds = self.features.filter { feature in
+      !feature.name.isEmpty && feature.isContained(by: request)
     }
+
+    try await response.write(contentsOf: featuresWithinBounds)
   }
 
   func recordRoute(
-    request: StreamingServerRequest<Routeguide_Point>,
+    request: RPCAsyncSequence<Routeguide_Point, any Error>,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_RouteSummary> {
+  ) async throws -> Routeguide_RouteSummary {
     let startTime = ContinuousClock.now
     var pointsVisited = 0
     var featuresVisited = 0
     var distanceTravelled = 0.0
     var previousPoint: Routeguide_Point? = nil
 
-    for try await point in request.messages {
+    for try await point in request {
       pointsVisited += 1
 
       if self.findFeature(latitude: point.latitude, longitude: point.longitude) != nil {
@@ -170,19 +168,17 @@ extension RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
       $0.distance = Int32(distanceTravelled)
     }
 
-    return ServerResponse(message: summary)
+    return summary
   }
 
   func routeChat(
-    request: StreamingServerRequest<Routeguide_RouteNote>,
+    request: RPCAsyncSequence<Routeguide_RouteNote, any Error>,
+    response: RPCWriter<Routeguide_RouteNote>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_RouteNote> {
-    return StreamingServerResponse { writer in
-      for try await note in request.messages {
-        let notes = self.receivedNotes.recordNote(note)
-        try await writer.write(contentsOf: notes)
-      }
-      return [:]
+  ) async throws {
+    for try await note in request {
+      let notes = self.receivedNotes.recordNote(note)
+      try await response.write(contentsOf: notes)
     }
   }
 }

@@ -32,7 +32,7 @@ struct RouteChat: AsyncParsableCommand {
   func run() async throws {
     let transport = try HTTP2ClientTransport.Posix(
       target: .ipv4(host: "127.0.0.1", port: self.port),
-      config: .defaults(transportSecurity: .plaintext)
+      transportSecurity: .plaintext
     )
     let client = GRPCClient(transport: transport)
 
@@ -41,7 +41,7 @@ struct RouteChat: AsyncParsableCommand {
         try await client.run()
       }
 
-      let routeGuide = Routeguide_RouteGuide_Client(wrapping: client)
+      let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
 
       try await routeGuide.routeChat { writer in
         let notes: [(String, (Int32, Int32))] = [

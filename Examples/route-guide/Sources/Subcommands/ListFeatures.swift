@@ -53,7 +53,7 @@ struct ListFeatures: AsyncParsableCommand {
   func run() async throws {
     let transport = try HTTP2ClientTransport.Posix(
       target: .ipv4(host: "127.0.0.1", port: self.port),
-      config: .defaults(transportSecurity: .plaintext)
+      transportSecurity: .plaintext
     )
     let client = GRPCClient(transport: transport)
 
@@ -62,7 +62,7 @@ struct ListFeatures: AsyncParsableCommand {
         try await client.run()
       }
 
-      let routeGuide = Routeguide_RouteGuide_Client(wrapping: client)
+      let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
       let boundingRectangle = Routeguide_Rectangle.with {
         $0.lo.latitude = self.minLatitude
         $0.hi.latitude = self.maxLatitude
