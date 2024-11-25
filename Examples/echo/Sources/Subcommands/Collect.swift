@@ -30,7 +30,7 @@ struct Collect: AsyncParsableCommand {
     let client = GRPCClient(
       transport: try .http2NIOPosix(
         target: self.arguments.target,
-        config: .defaults(transportSecurity: .plaintext)
+        transportSecurity: .plaintext
       )
     )
 
@@ -39,7 +39,7 @@ struct Collect: AsyncParsableCommand {
         try await client.run()
       }
 
-      let echo = Echo_Echo_Client(wrapping: client)
+      let echo = Echo_Echo.Client(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
         let message = try await echo.collect { writer in
