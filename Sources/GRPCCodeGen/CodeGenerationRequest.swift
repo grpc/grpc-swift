@@ -335,3 +335,17 @@ extension Name {
     return self.base.replacingOccurrences(of: ".", with: "_")
   }
 }
+
+extension ServiceDescriptor {
+  var namespacedServicePropertyName: String {
+    let prefix: String
+
+    if self.namespace.normalizedBase.isEmpty {
+      prefix = ""
+    } else {
+      prefix = self.namespace.normalizedBase + "_"
+    }
+
+    return prefix + self.name.normalizedBase
+  }
+}

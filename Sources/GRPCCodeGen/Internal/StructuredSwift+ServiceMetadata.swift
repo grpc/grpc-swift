@@ -302,3 +302,43 @@ extension EnumDescription {
     return description
   }
 }
+
+extension [CodeBlock] {
+  /// ```
+  /// enum <Service> {
+  ///   ...
+  /// }
+  ///
+  /// extension GRPCCore.ServiceDescriptor {
+  ///   ...
+  /// }
+  /// ```
+  package static func serviceMetadata(
+    accessModifier: AccessModifier? = nil,
+    service: ServiceDescriptor,
+    client: Bool,
+    server: Bool
+  ) -> Self {
+    var blocks: [CodeBlock] = []
+
+    let serviceNamespace: EnumDescription = .serviceNamespace(
+      accessModifier: accessModifier,
+      name: service.namespacedGeneratedName,
+      serviceDescriptorProperty: service.namespacedServicePropertyName,
+      client: client,
+      server: server,
+      methods: service.methods
+    )
+    blocks.append(CodeBlock(item: .declaration(.enum(serviceNamespace))))
+
+    let descriptorExtension: ExtensionDescription = .serviceDescriptor(
+      accessModifier: accessModifier,
+      propertyName: service.namespacedServicePropertyName,
+      literalNamespace: service.namespace.base,
+      literalService: service.name.base
+    )
+    blocks.append(CodeBlock(item: .declaration(.extension(descriptorExtension))))
+
+    return blocks
+  }
+}

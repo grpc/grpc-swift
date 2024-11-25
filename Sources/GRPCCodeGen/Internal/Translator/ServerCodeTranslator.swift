@@ -57,422 +57,114 @@
 ///   }
 /// }
 ///```
-struct ServerCodeTranslator: SpecializedTranslator {
-  var accessLevel: SourceGenerator.Config.AccessLevel
+struct ServerCodeTranslator {
+  init() {}
 
-  init(accessLevel: SourceGenerator.Config.AccessLevel) {
-    self.accessLevel = accessLevel
-  }
-
-  func translate(from codeGenerationRequest: CodeGenerationRequest) throws -> [CodeBlock] {
-    var codeBlocks = [CodeBlock]()
-    for service in codeGenerationRequest.services {
-      // Create the streaming protocol that declares the service methods as bidirectional streaming.
-      let streamingProtocol = CodeBlockItem.declaration(self.makeStreamingProtocol(for: service))
-      codeBlocks.append(CodeBlock(item: streamingProtocol))
-
-      // Create extension for implementing the 'registerRPCs' function which is a 'RegistrableRPCService' requirement.
-      let conformanceToRPCServiceExtension = CodeBlockItem.declaration(
-        self.makeConformanceToRPCServiceExtension(for: service, in: codeGenerationRequest)
-      )
-      codeBlocks.append(
-        CodeBlock(
-          comment: .doc("Conformance to `GRPCCore.RegistrableRPCService`."),
-          item: conformanceToRPCServiceExtension
-        )
-      )
-
-      // Create the service protocol that declares the service methods as they are described in the Source IDL (unary,
-      // client/server streaming or bidirectional streaming).
-      let serviceProtocol = CodeBlockItem.declaration(self.makeServiceProtocol(for: service))
-      codeBlocks.append(CodeBlock(item: serviceProtocol))
-
-      // Create extension for partial conformance to the streaming protocol.
-      let extensionServiceProtocol = CodeBlockItem.declaration(
-        self.makeExtensionServiceProtocol(for: service)
-      )
-      codeBlocks.append(
-        CodeBlock(
-          comment: .doc(
-            "Partial conformance to `\(self.protocolName(service: service, streaming: true))`."
-          ),
-          item: extensionServiceProtocol
-        )
-      )
-    }
-
-    return codeBlocks
-  }
-}
-
-extension ServerCodeTranslator {
-  private func makeStreamingProtocol(
-    for service: ServiceDescriptor
-  ) -> Declaration {
-    let methods = service.methods.compactMap {
-      Declaration.commentable(
-        .preFormatted($0.documentation),
-        .function(
-          FunctionDescription(
-            signature: self.makeStreamingMethodSignature(for: $0, in: service)
-          )
-        )
-      )
-    }
-
-    let streamingProtocol = Declaration.protocol(
-      .init(
-        accessModifier: self.accessModifier,
-        name: self.protocolName(service: service, streaming: true),
-        conformances: ["GRPCCore.RegistrableRPCService"],
-        members: methods
-      )
-    )
-
-    return .commentable(
-      .preFormatted(service.documentation),
-      .guarded(self.availabilityGuard, streamingProtocol)
-    )
-  }
-
-  private func makeStreamingMethodSignature(
-    for method: MethodDescriptor,
-    in service: ServiceDescriptor,
-    accessModifier: AccessModifier? = nil
-  ) -> FunctionSignatureDescription {
-    return FunctionSignatureDescription(
-      accessModifier: accessModifier,
-      kind: .function(name: method.name.generatedLowerCase),
-      parameters: [
-        .init(
-          label: "request",
-          type: .generic(
-            wrapper: .member(["GRPCCore", "StreamingServerRequest"]),
-            wrapped: .member(method.inputType)
-          )
-        ),
-        .init(label: "context", type: .member(["GRPCCore", "ServerContext"])),
-      ],
-      keywords: [.async, .throws],
-      returnType: .identifierType(
-        .generic(
-          wrapper: .member(["GRPCCore", "StreamingServerResponse"]),
-          wrapped: .member(method.outputType)
-        )
-      )
-    )
-  }
-
-  private func makeConformanceToRPCServiceExtension(
-    for service: ServiceDescriptor,
-    in codeGenerationRequest: CodeGenerationRequest
-  ) -> Declaration {
-    let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
-    let registerRPCMethod = self.makeRegisterRPCsMethod(for: service, in: codeGenerationRequest)
-    return .guarded(
-      self.availabilityGuard,
-      .extension(
-        onType: streamingProtocol,
-        declarations: [registerRPCMethod]
-      )
-    )
-  }
-
-  private func makeRegisterRPCsMethod(
-    for service: ServiceDescriptor,
-    in codeGenerationRequest: CodeGenerationRequest
-  ) -> Declaration {
-    let registerRPCsSignature = FunctionSignatureDescription(
-      accessModifier: self.accessModifier,
-      kind: .function(name: "registerMethods"),
-      parameters: [
-        .init(
-          label: "with",
-          name: "router",
-          type: .member(["GRPCCore", "RPCRouter"]),
-          `inout`: true
-        )
-      ]
-    )
-    let registerRPCsBody = self.makeRegisterRPCsMethodBody(for: service, in: codeGenerationRequest)
-    return .guarded(
-      self.availabilityGuard,
-      .function(signature: registerRPCsSignature, body: registerRPCsBody)
-    )
-  }
-
-  private func makeRegisterRPCsMethodBody(
-    for service: ServiceDescriptor,
-    in codeGenerationRequest: CodeGenerationRequest
+  func translate(
+    accessModifier: AccessModifier,
+    services: [ServiceDescriptor],
+    serializer: (String) -> String,
+    deserializer: (String) -> String
   ) -> [CodeBlock] {
-    let registerHandlerCalls = service.methods.compactMap {
-      CodeBlock.expression(
-        Expression.functionCall(
-          calledExpression: .memberAccess(
-            MemberAccessDescription(left: .identifierPattern("router"), right: "registerHandler")
-          ),
-          arguments: self.makeArgumentsForRegisterHandler(
-            for: $0,
-            in: service,
-            from: codeGenerationRequest
-          )
-        )
+    return services.flatMap { service in
+      self.translate(
+        accessModifier: accessModifier,
+        service: service,
+        serializer: serializer,
+        deserializer: deserializer
       )
     }
-
-    return registerHandlerCalls
   }
 
-  private func makeArgumentsForRegisterHandler(
-    for method: MethodDescriptor,
-    in service: ServiceDescriptor,
-    from codeGenerationRequest: CodeGenerationRequest
-  ) -> [FunctionArgumentDescription] {
-    var arguments = [FunctionArgumentDescription]()
-    arguments.append(
-      FunctionArgumentDescription(
-        label: "forMethod",
-        expression: .identifierPattern(self.methodDescriptorPath(for: method, service: service))
-      )
-    )
-
-    arguments.append(
-      FunctionArgumentDescription(
-        label: "deserializer",
-        expression: .identifierPattern(codeGenerationRequest.lookupDeserializer(method.inputType))
-      )
-    )
-
-    arguments.append(
-      FunctionArgumentDescription(
-        label: "serializer",
-        expression: .identifierPattern(codeGenerationRequest.lookupSerializer(method.outputType))
-      )
-    )
-
-    let rpcFunctionCall = Expression.functionCall(
-      calledExpression: .memberAccess(
-        MemberAccessDescription(
-          left: .identifierPattern("self"),
-          right: method.name.generatedLowerCase
-        )
-      ),
-      arguments: [
-        FunctionArgumentDescription(label: "request", expression: .identifierPattern("request")),
-        FunctionArgumentDescription(label: "context", expression: .identifierPattern("context")),
-      ]
-    )
-
-    let handlerClosureBody = Expression.unaryKeyword(
-      kind: .try,
-      expression: .unaryKeyword(kind: .await, expression: rpcFunctionCall)
-    )
-
-    arguments.append(
-      FunctionArgumentDescription(
-        label: "handler",
-        expression: .closureInvocation(
-          ClosureInvocationDescription(
-            argumentNames: ["request", "context"],
-            body: [.expression(handlerClosureBody)]
-          )
-        )
-      )
-    )
-
-    return arguments
-  }
-
-  private func makeServiceProtocol(
-    for service: ServiceDescriptor
-  ) -> Declaration {
-    let methods = service.methods.compactMap {
-      self.makeServiceProtocolMethod(for: $0, in: service)
-    }
-    let protocolName = self.protocolName(service: service, streaming: false)
-    let streamingProtocol = self.protocolNameTypealias(service: service, streaming: true)
-
-    return .commentable(
-      .preFormatted(service.documentation),
-      .guarded(
-        self.availabilityGuard,
-        .protocol(
-          ProtocolDescription(
-            accessModifier: self.accessModifier,
-            name: protocolName,
-            conformances: [streamingProtocol],
-            members: methods
-          )
-        )
-      )
-    )
-  }
-
-  private func makeServiceProtocolMethod(
-    for method: MethodDescriptor,
-    in service: ServiceDescriptor,
-    accessModifier: AccessModifier? = nil
-  ) -> Declaration {
-    let inputStreaming = method.isInputStreaming ? "Streaming" : ""
-    let outputStreaming = method.isOutputStreaming ? "Streaming" : ""
-
-    let functionSignature = FunctionSignatureDescription(
-      accessModifier: accessModifier,
-      kind: .function(name: method.name.generatedLowerCase),
-      parameters: [
-        .init(
-          label: "request",
-          type:
-            .generic(
-              wrapper: .member(["GRPCCore", "\(inputStreaming)ServerRequest"]),
-              wrapped: .member(method.inputType)
-            )
-        ),
-        .init(label: "context", type: .member(["GRPCCore", "ServerContext"])),
-      ],
-      keywords: [.async, .throws],
-      returnType: .identifierType(
-        .generic(
-          wrapper: .member(["GRPCCore", "\(outputStreaming)ServerResponse"]),
-          wrapped: .member(method.outputType)
-        )
-      )
-    )
-
-    return .commentable(
-      .preFormatted(method.documentation),
-      .function(FunctionDescription(signature: functionSignature))
-    )
-  }
-
-  private func makeExtensionServiceProtocol(
-    for service: ServiceDescriptor
-  ) -> Declaration {
-    let methods = service.methods.compactMap {
-      self.makeServiceProtocolExtensionMethod(for: $0, in: service)
-    }
-
-    let protocolName = self.protocolNameTypealias(service: service, streaming: false)
-    return .guarded(
-      self.availabilityGuard,
-      .extension(
-        onType: protocolName,
-        declarations: methods
-      )
-    )
-  }
-
-  private func makeServiceProtocolExtensionMethod(
-    for method: MethodDescriptor,
-    in service: ServiceDescriptor
-  ) -> Declaration? {
-    // The method has the same definition in StreamingServiceProtocol and ServiceProtocol.
-    if method.isInputStreaming && method.isOutputStreaming {
-      return nil
-    }
-
-    let response = CodeBlock(item: .declaration(self.makeResponse(for: method)))
-    let returnStatement = CodeBlock(item: .expression(self.makeReturnStatement(for: method)))
-
-    return .function(
-      signature: self.makeStreamingMethodSignature(
-        for: method,
-        in: service,
-        accessModifier: self.accessModifier
-      ),
-      body: [response, returnStatement]
-    )
-  }
-
-  private func makeResponse(
-    for method: MethodDescriptor
-  ) -> Declaration {
-    let serverRequest: Expression
-    if !method.isInputStreaming {
-      // Transform the streaming request into a unary request.
-      serverRequest = Expression.functionCall(
-        calledExpression: .identifierType(.member(["GRPCCore", "ServerRequest"])),
-        arguments: [
-          FunctionArgumentDescription(label: "stream", expression: .identifierPattern("request"))
-        ]
-      )
-    } else {
-      serverRequest = Expression.identifierPattern("request")
-    }
-    // Call to the corresponding ServiceProtocol method.
-    let serviceProtocolMethod = Expression.functionCall(
-      calledExpression: .memberAccess(
-        MemberAccessDescription(
-          left: .identifierPattern("self"),
-          right: method.name.generatedLowerCase
-        )
-      ),
-      arguments: [
-        FunctionArgumentDescription(label: "request", expression: serverRequest),
-        FunctionArgumentDescription(label: "context", expression: .identifier(.pattern("context"))),
-      ]
-    )
-
-    let responseValue = Expression.unaryKeyword(
-      kind: .try,
-      expression: .unaryKeyword(kind: .await, expression: serviceProtocolMethod)
-    )
-
-    return .variable(kind: .let, left: "response", right: responseValue)
-  }
-
-  private func makeReturnStatement(
-    for method: MethodDescriptor
-  ) -> Expression {
-    let returnValue: Expression
-    // Transforming the unary response into a streaming one.
-    if !method.isOutputStreaming {
-      returnValue = .functionCall(
-        calledExpression: .identifier(.type(.member(["GRPCCore", "StreamingServerResponse"]))),
-        arguments: [
-          (FunctionArgumentDescription(label: "single", expression: .identifierPattern("response")))
-        ]
-      )
-    } else {
-      returnValue = .identifierPattern("response")
-    }
-
-    return .unaryKeyword(kind: .return, expression: returnValue)
-  }
-
-  fileprivate enum InputOutputType {
-    case input
-    case output
-  }
-
-  /// Generates the fully qualified name of a method descriptor.
-  private func methodDescriptorPath(
-    for method: MethodDescriptor,
-    service: ServiceDescriptor
-  ) -> String {
-    return
-      "\(service.namespacedGeneratedName).Method.\(method.name.generatedUpperCase).descriptor"
-  }
-
-  /// Generates the fully qualified name of the type alias for a service protocol.
-  internal func protocolNameTypealias(
+  private func translate(
+    accessModifier: AccessModifier,
     service: ServiceDescriptor,
-    streaming: Bool
+    serializer: (String) -> String,
+    deserializer: (String) -> String
+  ) -> [CodeBlock] {
+    var blocks = [CodeBlock]()
+
+    let serviceProtocolName = self.protocolName(service: service, streaming: false)
+    let serviceTypealiasName = self.protocolName(
+      service: service,
+      streaming: false,
+      joinedUsing: "."
+    )
+    let streamingServiceProtocolName = self.protocolName(service: service, streaming: true)
+    let streamingServiceTypealiasName = self.protocolName(
+      service: service,
+      streaming: true,
+      joinedUsing: "."
+    )
+
+    // protocol <Service>_StreamingServiceProtocol { ... }
+    let streamingServiceProtocol: ProtocolDescription = .streamingService(
+      accessLevel: accessModifier,
+      name: streamingServiceProtocolName,
+      methods: service.methods
+    )
+    blocks.append(
+      CodeBlock(
+        comment: .preFormatted(service.documentation),
+        item: .declaration(.guarded(.grpc, .protocol(streamingServiceProtocol)))
+      )
+    )
+
+    // extension <Service>_StreamingServiceProtocol> { ... }
+    let registerExtension: ExtensionDescription = .registrableRPCServiceDefaultImplementation(
+      accessLevel: accessModifier,
+      on: streamingServiceTypealiasName,
+      serviceNamespace: service.namespacedGeneratedName,
+      methods: service.methods,
+      serializer: serializer,
+      deserializer: deserializer
+    )
+    blocks.append(
+      CodeBlock(
+        comment: .doc("Conformance to `GRPCCore.RegistrableRPCService`."),
+        item: .declaration(.guarded(.grpc, .extension(registerExtension)))
+      )
+    )
+
+    // protocol <Service>_ServiceProtocol { ... }
+    let serviceProtocol: ProtocolDescription = .service(
+      accessLevel: accessModifier,
+      name: serviceProtocolName,
+      streamingProtocol: streamingServiceTypealiasName,
+      methods: service.methods
+    )
+    blocks.append(
+      CodeBlock(
+        comment: .preFormatted(service.documentation),
+        item: .declaration(.guarded(.grpc, .protocol(serviceProtocol)))
+      )
+    )
+
+    // extension <Service>_ServiceProtocol { ... }
+    let streamingServiceDefaultImplExtension: ExtensionDescription =
+      .streamingServiceProtocolDefaultImplementation(
+        accessModifier: accessModifier,
+        on: serviceTypealiasName,
+        methods: service.methods
+      )
+    blocks.append(
+      CodeBlock(
+        comment: .doc("Partial conformance to `\(streamingServiceProtocolName)`."),
+        item: .declaration(.guarded(.grpc, .extension(streamingServiceDefaultImplExtension)))
+      )
+    )
+
+    return blocks
+  }
+
+  private func protocolName(
+    service: ServiceDescriptor,
+    streaming: Bool,
+    joinedUsing join: String = "_"
   ) -> String {
     if streaming {
-      return "\(service.namespacedGeneratedName).StreamingServiceProtocol"
+      return "\(service.namespacedGeneratedName)\(join)StreamingServiceProtocol"
     }
-    return "\(service.namespacedGeneratedName).ServiceProtocol"
-  }
-
-  /// Generates the name of a service protocol.
-  internal func protocolName(
-    service: ServiceDescriptor,
-    streaming: Bool
-  ) -> String {
-    if streaming {
-      return "\(service.namespacedGeneratedName)_StreamingServiceProtocol"
-    }
-    return "\(service.namespacedGeneratedName)_ServiceProtocol"
+    return "\(service.namespacedGeneratedName)\(join)ServiceProtocol"
   }
 }
