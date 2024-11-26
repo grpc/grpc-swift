@@ -21,18 +21,6 @@ import Testing
 extension StructuedSwiftTests {
   @Suite("Metadata")
   struct Metadata {
-    @Test("@available(...)")
-    func grpcAvailability() async throws {
-      let availability: AvailabilityDescription = .grpc
-      let structDecl = StructDescription(name: "Ignored")
-      let expected = """
-        @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
-        struct Ignored {}
-        """
-
-      #expect(render(.guarded(availability, .struct(structDecl))) == expected)
-    }
-
     @Test("typealias Input = <Name>", arguments: AccessModifier.allCases)
     func methodInputTypealias(access: AccessModifier) {
       let decl: TypealiasDescription = .methodInput(accessModifier: access, name: "Foo")
@@ -263,9 +251,7 @@ extension StructuedSwiftTests {
 
       if config.server {
         expected += """
-            @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
             \(access) typealias StreamingServiceProtocol = Foo_StreamingServiceProtocol
-            @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
             \(access) typealias ServiceProtocol = Foo_ServiceProtocol
           """
       }
@@ -276,9 +262,7 @@ extension StructuedSwiftTests {
         }
 
         expected += """
-            @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
             \(access) typealias ClientProtocol = Foo_ClientProtocol
-            @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
             \(access) typealias Client = Foo_Client
           """
       }

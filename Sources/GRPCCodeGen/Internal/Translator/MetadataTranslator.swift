@@ -19,22 +19,6 @@ struct MetadataTranslator {
 
   func translate(
     accessModifier: AccessModifier,
-    services: [ServiceDescriptor],
-    client: Bool,
-    server: Bool
-  ) -> [CodeBlock] {
-    return services.flatMap { service in
-      self.translate(
-        accessModifier: accessModifier,
-        service: service,
-        client: client,
-        server: server
-      )
-    }
-  }
-
-  private func translate(
-    accessModifier: AccessModifier,
     service: ServiceDescriptor,
     client: Bool,
     server: Bool

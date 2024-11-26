@@ -28,34 +28,50 @@ struct IDLToStructuredSwiftTranslator: Translator {
     try self.validateInput(codeGenerationRequest)
     let accessModifier = AccessModifier(accessLevel)
 
+    var codeBlocks: [CodeBlock] = []
     let metadataTranslator = MetadataTranslator()
-    var codeBlocks = metadataTranslator.translate(
-      accessModifier: accessModifier,
-      services: codeGenerationRequest.services,
-      client: client,
-      server: server
-    )
+    let serverTranslator = ServerCodeTranslator()
+    let clientTranslator = ClientCodeTranslator()
 
-    if server {
-      let translator = ServerCodeTranslator()
-      let blocks = translator.translate(
-        accessModifier: accessModifier,
-        services: codeGenerationRequest.services,
-        serializer: codeGenerationRequest.lookupSerializer,
-        deserializer: codeGenerationRequest.lookupDeserializer
+    for service in codeGenerationRequest.services {
+      codeBlocks.append(
+        CodeBlock(comment: .mark("\(service.fullyQualifiedName)", sectionBreak: true))
       )
-      codeBlocks.append(contentsOf: blocks)
-    }
 
-    if client {
-      let translator = ClientCodeTranslator()
-      let blocks = translator.translate(
+      let metadata = metadataTranslator.translate(
         accessModifier: accessModifier,
-        services: codeGenerationRequest.services,
-        serializer: codeGenerationRequest.lookupSerializer,
-        deserializer: codeGenerationRequest.lookupDeserializer
+        service: service,
+        client: client,
+        server: server
       )
-      codeBlocks.append(contentsOf: blocks)
+      codeBlocks.append(contentsOf: metadata)
+
+      if server {
+        codeBlocks.append(
+          CodeBlock(comment: .mark("\(service.fullyQualifiedName) (server)", sectionBreak: false))
+        )
+
+        let blocks = serverTranslator.translate(
+          accessModifier: accessModifier,
+          service: service,
+          serializer: codeGenerationRequest.lookupSerializer,
+          deserializer: codeGenerationRequest.lookupDeserializer
+        )
+        codeBlocks.append(contentsOf: blocks)
+      }
+
+      if client {
+        codeBlocks.append(
+          CodeBlock(comment: .mark("\(service.fullyQualifiedName) (client)", sectionBreak: false))
+        )
+        let blocks = clientTranslator.translate(
+          accessModifier: accessModifier,
+          service: service,
+          serializer: codeGenerationRequest.lookupSerializer,
+          deserializer: codeGenerationRequest.lookupDeserializer
+        )
+        codeBlocks.append(contentsOf: blocks)
+      }
     }
 
     let fileDescription = FileDescription(

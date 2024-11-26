@@ -1207,7 +1207,7 @@ struct CodeBlock: Equatable, Codable, Sendable {
   var comment: Comment?
 
   /// The code block item that appears below the comment.
-  var item: CodeBlockItem
+  var item: CodeBlockItem?
 }
 
 /// A description of a Swift file.

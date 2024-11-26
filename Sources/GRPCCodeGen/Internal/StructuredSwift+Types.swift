@@ -14,18 +14,6 @@
  * limitations under the License.
  */
 
-extension AvailabilityDescription {
-  package static let grpc = AvailabilityDescription(
-    osVersions: [
-      OSVersion(os: .macOS, version: "15.0"),
-      OSVersion(os: .iOS, version: "18.0"),
-      OSVersion(os: .watchOS, version: "11.0"),
-      OSVersion(os: .tvOS, version: "18.0"),
-      OSVersion(os: .visionOS, version: "2.0"),
-    ]
-  )
-}
-
 extension ExistingTypeDescription {
   fileprivate static func grpcCore(_ typeName: String) -> Self {
     return .member(["GRPCCore", typeName])

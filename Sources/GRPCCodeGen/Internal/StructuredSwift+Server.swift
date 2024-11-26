@@ -97,16 +97,13 @@ extension ExtensionDescription {
     return ExtensionDescription(
       onType: extensionName,
       declarations: [
-        .guarded(
-          .grpc,
-          .function(
-            .registerMethods(
-              accessLevel: accessLevel,
-              serviceNamespace: serviceNamespace,
-              methods: methods,
-              serializer: serializer,
-              deserializer: deserializer
-            )
+        .function(
+          .registerMethods(
+            accessLevel: accessLevel,
+            serviceNamespace: serviceNamespace,
+            methods: methods,
+            serializer: serializer,
+            deserializer: deserializer
           )
         )
       ]

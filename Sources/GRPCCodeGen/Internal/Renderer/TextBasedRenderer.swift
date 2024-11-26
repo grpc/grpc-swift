@@ -1134,8 +1134,9 @@ struct TextBasedRenderer: RendererProtocol {
   /// Renders the specified code block.
   func renderCodeBlock(_ description: CodeBlock) {
     if let comment = description.comment { renderComment(comment) }
-    let item = description.item
-    renderCodeBlockItem(item)
+    if let item = description.item {
+      renderCodeBlockItem(item)
+    }
   }
 
   /// Renders the specified code blocks.

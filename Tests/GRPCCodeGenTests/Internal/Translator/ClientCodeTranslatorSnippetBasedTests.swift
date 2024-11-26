@@ -40,7 +40,6 @@ struct ClientCodeTranslatorSnippetBasedTests {
 
     let expectedSwift = """
       /// Documentation for ServiceA
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ClientProtocol: Sendable {
           /// Documentation for MethodA
           func methodA<Result>(
@@ -51,7 +50,6 @@ struct ClientCodeTranslatorSnippetBasedTests {
               onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<NamespaceA_ServiceAResponse>) async throws -> Result
           ) async throws -> Result where Result: Sendable
       }
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           public func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
@@ -69,7 +67,6 @@ struct ClientCodeTranslatorSnippetBasedTests {
               )
           }
       }
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           /// Documentation for MethodA
           public func methodA<Result>(
@@ -92,7 +89,6 @@ struct ClientCodeTranslatorSnippetBasedTests {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public struct NamespaceA_ServiceA_Client: NamespaceA_ServiceA.ClientProtocol {
           private let client: GRPCCore.GRPCClient
 
@@ -131,7 +127,7 @@ struct ClientCodeTranslatorSnippetBasedTests {
     service: ServiceDescriptor
   ) -> String {
     let translator = ClientCodeTranslator()
-    let codeBlocks = translator.translate(accessModifier: accessLevel, services: [service]) {
+    let codeBlocks = translator.translate(accessModifier: accessLevel, service: service) {
       "GRPCProtobuf.ProtobufSerializer<\($0)>()"
     } deserializer: {
       "GRPCProtobuf.ProtobufDeserializer<\($0)>()"

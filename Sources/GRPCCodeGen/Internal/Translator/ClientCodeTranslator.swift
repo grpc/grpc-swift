@@ -80,22 +80,6 @@ struct ClientCodeTranslator {
 
   func translate(
     accessModifier: AccessModifier,
-    services: [ServiceDescriptor],
-    serializer: (String) -> String,
-    deserializer: (String) -> String
-  ) -> [CodeBlock] {
-    services.flatMap { service in
-      self.translate(
-        accessModifier: accessModifier,
-        service: service,
-        serializer: serializer,
-        deserializer: deserializer
-      )
-    }
-  }
-
-  private func translate(
-    accessModifier: AccessModifier,
     service: ServiceDescriptor,
     serializer: (String) -> String,
     deserializer: (String) -> String
@@ -114,7 +98,7 @@ struct ClientCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .preFormatted(service.documentation),
-        item: .declaration(.guarded(.grpc, .protocol(clientProtocol)))
+        item: .declaration(.protocol(clientProtocol))
       )
     )
 
@@ -126,7 +110,7 @@ struct ClientCodeTranslator {
       deserializer: deserializer
     )
     blocks.append(
-      CodeBlock(item: .declaration(.guarded(.grpc, .extension(extensionWithDefaults))))
+      CodeBlock(item: .declaration(.extension(extensionWithDefaults)))
     )
 
     let extensionWithExplodedAPI: ExtensionDescription = .explodedClientMethods(
@@ -135,7 +119,7 @@ struct ClientCodeTranslator {
       methods: service.methods
     )
     blocks.append(
-      CodeBlock(item: .declaration(.guarded(.grpc, .extension(extensionWithExplodedAPI))))
+      CodeBlock(item: .declaration(.extension(extensionWithExplodedAPI)))
     )
 
     let clientStruct: StructDescription = .client(
@@ -148,7 +132,7 @@ struct ClientCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .preFormatted(service.documentation),
-        item: .declaration(.guarded(.grpc, .struct(clientStruct)))
+        item: .declaration(.struct(clientStruct))
       )
     )
 

@@ -48,7 +48,6 @@ final class ServerCodeTranslatorSnippetBasedTests {
 
     let expectedSwift = """
       /// Documentation for ServiceA
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
           /// Documentation for unaryMethod
           func unary(
@@ -57,9 +56,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
           ) async throws -> GRPCCore.StreamingServerResponse<NamespaceA_ServiceAResponse>
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
-          @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
                   forMethod: NamespaceA_ServiceA.Method.Unary.descriptor,
@@ -75,7 +72,6 @@ final class ServerCodeTranslatorSnippetBasedTests {
           }
       }
       /// Documentation for ServiceA
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public protocol NamespaceA_ServiceA_ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {
           /// Documentation for unaryMethod
           func unary(
@@ -84,7 +80,6 @@ final class ServerCodeTranslatorSnippetBasedTests {
           ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>
       }
       /// Partial conformance to `NamespaceA_ServiceA_StreamingServiceProtocol`.
-      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ServiceProtocol {
           public func unary(
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
@@ -108,12 +103,11 @@ final class ServerCodeTranslatorSnippetBasedTests {
     service: ServiceDescriptor
   ) -> String {
     let translator = ServerCodeTranslator()
-    let codeBlocks = translator.translate(accessModifier: accessLevel, services: [service]) {
+    let codeBlocks = translator.translate(accessModifier: accessLevel, service: service) {
       "GRPCProtobuf.ProtobufSerializer<\($0)>()"
     } deserializer: {
       "GRPCProtobuf.ProtobufDeserializer<\($0)>()"
     }
-
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
     return renderer.renderedContents()
