@@ -47,13 +47,24 @@ final class ServerCodeTranslatorSnippetBasedTests {
     )
 
     let expectedSwift = """
-      /// Documentation for ServiceA
-      public protocol NamespaceA_ServiceA_StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-          /// Documentation for unaryMethod
-          func unary(
-              request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
-              context: GRPCCore.ServerContext
-          ) async throws -> GRPCCore.StreamingServerResponse<NamespaceA_ServiceAResponse>
+      extension NamespaceA_ServiceA {
+          /// Documentation for ServiceA
+          public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+              /// Documentation for unaryMethod
+              func unary(
+                  request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
+                  context: GRPCCore.ServerContext
+              ) async throws -> GRPCCore.StreamingServerResponse<NamespaceA_ServiceAResponse>
+          }
+
+          /// Documentation for ServiceA
+          public protocol ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {
+              /// Documentation for unaryMethod
+              func unary(
+                  request: GRPCCore.ServerRequest<NamespaceA_ServiceARequest>,
+                  context: GRPCCore.ServerContext
+              ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>
+          }
       }
       /// Conformance to `GRPCCore.RegistrableRPCService`.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
@@ -71,15 +82,6 @@ final class ServerCodeTranslatorSnippetBasedTests {
               )
           }
       }
-      /// Documentation for ServiceA
-      public protocol NamespaceA_ServiceA_ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {
-          /// Documentation for unaryMethod
-          func unary(
-              request: GRPCCore.ServerRequest<NamespaceA_ServiceARequest>,
-              context: GRPCCore.ServerContext
-          ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>
-      }
-      /// Partial conformance to `NamespaceA_ServiceA_StreamingServiceProtocol`.
       extension NamespaceA_ServiceA.ServiceProtocol {
           public func unary(
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,

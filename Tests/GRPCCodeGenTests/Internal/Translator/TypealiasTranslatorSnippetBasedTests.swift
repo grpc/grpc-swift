@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#if os(macOS) || os(Linux)  // swift-format doesn't like canImport(Foundation.Process)
-
-import XCTest
+import Testing
 
 @testable import GRPCCodeGen
 
-final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
+@Suite
+struct TypealiasTranslatorSnippetBasedTests {
+  @Test
   func testTypealiasTranslator() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
@@ -40,16 +40,16 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
       ),
       methods: [method]
     )
-    let expectedSwift =
-      """
+
+    let expectedSwift = """
       public enum NamespaceA_ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
+          public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
           public enum Method {
               public enum MethodA {
                   public typealias Input = NamespaceA_ServiceARequest
                   public typealias Output = NamespaceA_ServiceAResponse
                   public static let descriptor = GRPCCore.MethodDescriptor(
-                      service: NamespaceA_ServiceA.descriptor.fullyQualifiedService,
+                      service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA"),
                       method: "MethodA"
                   )
               }
@@ -57,297 +57,29 @@ final class TypealiasTranslatorSnippetBasedTests: XCTestCase {
                   MethodA.descriptor
               ]
           }
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
-          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
-          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
-          public typealias Client = NamespaceA_ServiceA_Client
       }
       extension GRPCCore.ServiceDescriptor {
-          public static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
+          public static let namespaceA_ServiceA = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
       }
       """
 
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: true,
-      server: true,
-      accessLevel: .public
-    )
-  }
-
-  func testTypealiasTranslatorNoMethodsServiceClientAndServer() throws {
-    let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
-      ),
-      methods: []
-    )
-    let expectedSwift =
-      """
-      public enum NamespaceA_ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
-          public enum Method {
-              public static let descriptors: [GRPCCore.MethodDescriptor] = []
-          }
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
-          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
-          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
-          public typealias Client = NamespaceA_ServiceA_Client
-      }
-      extension GRPCCore.ServiceDescriptor {
-          public static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
-      }
-      """
-
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: true,
-      server: true,
-      accessLevel: .public
-    )
-  }
-
-  func testTypealiasTranslatorServer() throws {
-    let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
-      ),
-      methods: []
-    )
-    let expectedSwift =
-      """
-      public enum NamespaceA_ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
-          public enum Method {
-              public static let descriptors: [GRPCCore.MethodDescriptor] = []
-          }
-          public typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
-          public typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
-      }
-      extension GRPCCore.ServiceDescriptor {
-          public static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
-      }
-      """
-
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: false,
-      server: true,
-      accessLevel: .public
-    )
-  }
-
-  func testTypealiasTranslatorClient() throws {
-    let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
-      ),
-      methods: []
-    )
-    let expectedSwift =
-      """
-      public enum NamespaceA_ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
-          public enum Method {
-              public static let descriptors: [GRPCCore.MethodDescriptor] = []
-          }
-          public typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
-          public typealias Client = NamespaceA_ServiceA_Client
-      }
-      extension GRPCCore.ServiceDescriptor {
-          public static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
-      }
-      """
-
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: true,
-      server: false,
-      accessLevel: .public
-    )
-  }
-
-  func testTypealiasTranslatorNoClientNoServer() throws {
-    let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
-      ),
-      methods: []
-    )
-    let expectedSwift =
-      """
-      public enum NamespaceA_ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
-          public enum Method {
-              public static let descriptors: [GRPCCore.MethodDescriptor] = []
-          }
-      }
-      extension GRPCCore.ServiceDescriptor {
-          public static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
-      }
-      """
-
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: false,
-      server: false,
-      accessLevel: .public
-    )
-  }
-
-  func testTypealiasTranslatorEmptyNamespace() throws {
-    let method = MethodDescriptor(
-      documentation: "Documentation for MethodA",
-      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
-      isInputStreaming: false,
-      isOutputStreaming: false,
-      inputType: "ServiceARequest",
-      outputType: "ServiceAResponse"
-    )
-    let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(base: "", generatedUpperCase: "", generatedLowerCase: ""),
-      methods: [method]
-    )
-    let expectedSwift =
-      """
-      public enum ServiceA {
-          public static let descriptor = GRPCCore.ServiceDescriptor.ServiceA
-          public enum Method {
-              public enum MethodA {
-                  public typealias Input = ServiceARequest
-                  public typealias Output = ServiceAResponse
-                  public static let descriptor = GRPCCore.MethodDescriptor(
-                      service: ServiceA.descriptor.fullyQualifiedService,
-                      method: "MethodA"
-                  )
-              }
-              public static let descriptors: [GRPCCore.MethodDescriptor] = [
-                  MethodA.descriptor
-              ]
-          }
-          public typealias StreamingServiceProtocol = ServiceA_StreamingServiceProtocol
-          public typealias ServiceProtocol = ServiceA_ServiceProtocol
-          public typealias ClientProtocol = ServiceA_ClientProtocol
-          public typealias Client = ServiceA_Client
-      }
-      extension GRPCCore.ServiceDescriptor {
-          public static let ServiceA = Self(
-              package: "",
-              service: "ServiceA"
-          )
-      }
-      """
-
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: true,
-      server: true,
-      accessLevel: .public
-    )
-  }
-
-  func testTypealiasTranslatorNoMethodsService() throws {
-    let service = ServiceDescriptor(
-      documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
-      ),
-      methods: []
-    )
-    let expectedSwift =
-      """
-      package enum NamespaceA_ServiceA {
-          package static let descriptor = GRPCCore.ServiceDescriptor.namespaceA_ServiceA
-          package enum Method {
-              package static let descriptors: [GRPCCore.MethodDescriptor] = []
-          }
-          package typealias StreamingServiceProtocol = NamespaceA_ServiceA_StreamingServiceProtocol
-          package typealias ServiceProtocol = NamespaceA_ServiceA_ServiceProtocol
-          package typealias ClientProtocol = NamespaceA_ServiceA_ClientProtocol
-          package typealias Client = NamespaceA_ServiceA_Client
-      }
-      extension GRPCCore.ServiceDescriptor {
-          package static let namespaceA_ServiceA = Self(
-              package: "namespaceA",
-              service: "ServiceA"
-          )
-      }
-      """
-
-    try self.assertTypealiasTranslation(
-      codeGenerationRequest: makeCodeGenerationRequest(services: [service]),
-      expectedSwift: expectedSwift,
-      client: true,
-      server: true,
-      accessLevel: .package
-    )
+    #expect(self.render(accessLevel: .public, service: service) == expectedSwift)
   }
 }
 
 extension TypealiasTranslatorSnippetBasedTests {
-  private func assertTypealiasTranslation(
-    codeGenerationRequest request: CodeGenerationRequest,
-    expectedSwift: String,
-    client: Bool,
-    server: Bool,
-    accessLevel: SourceGenerator.Config.AccessLevel
-  ) throws {
+  func render(
+    accessLevel: SourceGenerator.Config.AccessLevel,
+    service: ServiceDescriptor
+  ) -> String {
     let translator = MetadataTranslator()
-    let codeBlocks = request.services.flatMap { service in
-      translator.translate(
-        accessModifier: AccessModifier(accessLevel),
-        service: service,
-        client: client,
-        server: server
-      )
-    }
+    let codeBlocks = translator.translate(
+      accessModifier: AccessModifier(accessLevel),
+      service: service
+    )
+
     let renderer = TextBasedRenderer.default
     renderer.renderCodeBlocks(codeBlocks)
-    let contents = renderer.renderedContents()
-    try XCTAssertEqualWithDiff(contents, expectedSwift)
+    return renderer.renderedContents()
   }
 }
-
-#endif  // os(macOS) || os(Linux)

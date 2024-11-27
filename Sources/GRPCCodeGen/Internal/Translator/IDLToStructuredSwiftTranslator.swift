@@ -40,9 +40,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
 
       let metadata = metadataTranslator.translate(
         accessModifier: accessModifier,
-        service: service,
-        client: client,
-        server: server
+        service: service
       )
       codeBlocks.append(contentsOf: metadata)
 
