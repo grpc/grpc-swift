@@ -766,22 +766,22 @@ private func explodedDocs(for method: MethodDescriptor) -> String {
   if !method.isInputStreaming {
     parameters += "\n"
     parameters += """
-        ///   - message: request message to send.
-        """
+      ///   - message: request message to send.
+      """
   }
 
   parameters += "\n"
   parameters += """
-      ///   - metadata: Additional metadata to send, defaults to empty.
-      ///   - options: Options to apply to this RPC, defaults to `.defaults`.
-      """
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    """
 
   if method.isInputStreaming {
     parameters += "\n"
     parameters += """
-        ///   - producer: A closure producing request messages to send to the server. The request
-        ///       stream is closed when the closure returns.
-        """
+      ///   - producer: A closure producing request messages to send to the server. The request
+      ///       stream is closed when the closure returns.
+      """
   }
 
   parameters += "\n"
