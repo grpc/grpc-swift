@@ -114,7 +114,21 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) protocol Foo_ClientProtocol: Sendable {
-          /// Some docs
+          /// Call the "Bar" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Some docs
+          ///
+          /// - Parameters:
+          ///   - request: A request containing a single `BarInput` message.
+          ///   - serializer: A serializer for `BarInput` messages.
+          ///   - deserializer: A deserializer for `BarOutput` messages.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           func bar<Result>(
             request: GRPCCore.ClientRequest<BarInput>,
             serializer: some GRPCCore.MessageSerializer<BarInput>,
@@ -186,6 +200,15 @@ extension StructuedSwiftTests {
 
       let expected = """
         extension Foo_ClientProtocol {
+          /// Call the "Bar" method.
+          ///
+          /// - Parameters:
+          ///   - request: A request containing a single `BarInput` message.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           \(access) func bar<Result>(
             request: GRPCCore.ClientRequest<BarInput>,
             options: GRPCCore.CallOptions = .defaults,
@@ -330,7 +353,20 @@ extension StructuedSwiftTests {
 
       let expected = """
         extension Foo_ClientProtocol {
-          /// Some docs
+          /// Call the "Bar" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Some docs
+          ///
+          /// - Parameters:
+          ///   - message: request message to send.
+          ///   - metadata: Additional metadata to send, defaults to empty.
+          ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           \(access) func bar<Result>(
             _ message: Input,
             metadata: GRPCCore.Metadata = [:],
@@ -456,11 +492,29 @@ extension StructuedSwiftTests {
         \(access) struct FooClient: Foo_ClientProtocol {
           private let client: GRPCCore.GRPCClient
 
+          /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+          ///
+          /// - Parameters:
+          ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
           \(access) init(wrapping client: GRPCCore.GRPCClient) {
             self.client = client
           }
 
-          /// Unary docs
+          /// Call the "Unary" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Unary docs
+          ///
+          /// - Parameters:
+          ///   - request: A request containing a single `Input` message.
+          ///   - serializer: A serializer for `Input` messages.
+          ///   - deserializer: A deserializer for `Output` messages.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           \(access) func unary<Result>(
             request: GRPCCore.ClientRequest<Input>,
             serializer: some GRPCCore.MessageSerializer<Input>,
@@ -480,7 +534,21 @@ extension StructuedSwiftTests {
             )
           }
 
-          /// ClientStreaming docs
+          /// Call the "ClientStreaming" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > ClientStreaming docs
+          ///
+          /// - Parameters:
+          ///   - request: A streaming request producing `Input` messages.
+          ///   - serializer: A serializer for `Input` messages.
+          ///   - deserializer: A deserializer for `Output` messages.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           \(access) func clientStreaming<Result>(
             request: GRPCCore.StreamingClientRequest<Input>,
             serializer: some GRPCCore.MessageSerializer<Input>,
@@ -500,7 +568,21 @@ extension StructuedSwiftTests {
             )
           }
 
-          /// ServerStreaming docs
+          /// Call the "ServerStreaming" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > ServerStreaming docs
+          ///
+          /// - Parameters:
+          ///   - request: A request containing a single `Input` message.
+          ///   - serializer: A serializer for `Input` messages.
+          ///   - deserializer: A deserializer for `Output` messages.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           \(access) func serverStreaming<Result>(
             request: GRPCCore.ClientRequest<Input>,
             serializer: some GRPCCore.MessageSerializer<Input>,
@@ -518,7 +600,21 @@ extension StructuedSwiftTests {
             )
           }
 
-          /// BidiStreaming docs
+          /// Call the "BidiStreaming" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > BidiStreaming docs
+          ///
+          /// - Parameters:
+          ///   - request: A streaming request producing `Input` messages.
+          ///   - serializer: A serializer for `Input` messages.
+          ///   - deserializer: A deserializer for `Output` messages.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           \(access) func bidiStreaming<Result>(
             request: GRPCCore.StreamingClientRequest<Input>,
             serializer: some GRPCCore.MessageSerializer<Input>,

@@ -81,6 +81,7 @@ extension StructuedSwiftTests {
 
       let expected = """
         extension GRPCCore.ServiceDescriptor {
+          /// Service descriptor for the "echo.EchoService" service.
           \(access) static let foo = GRPCCore.ServiceDescriptor(fullyQualifiedService: "echo.EchoService")
         }
         """
@@ -120,8 +121,11 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) enum Foo {
+          /// Request type for "Foo".
           \(access) typealias Input = FooInput
+          /// Response type for "Foo".
           \(access) typealias Output = FooOutput
+          /// Descriptor for "Foo".
           \(access) static let descriptor = GRPCCore.MethodDescriptor(
             service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "bar.Bar"),
             method: "Foo"
@@ -150,14 +154,19 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) enum Method {
+          /// Namespace for "Foo" metadata.
           \(access) enum Foo {
+            /// Request type for "Foo".
             \(access) typealias Input = FooInput
+            /// Response type for "Foo".
             \(access) typealias Output = FooOutput
+            /// Descriptor for "Foo".
             \(access) static let descriptor = GRPCCore.MethodDescriptor(
               service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "bar.Bar"),
               method: "Foo"
             )
           }
+          /// Descriptors for all methods in the "bar.Bar" service.
           \(access) static let descriptors: [GRPCCore.MethodDescriptor] = [
             Foo.descriptor
           ]
@@ -176,6 +185,7 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) enum Method {
+          /// Descriptors for all methods in the "bar.Bar" service.
           \(access) static let descriptors: [GRPCCore.MethodDescriptor] = []
         }
         """
@@ -202,16 +212,23 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) enum Foo {
+          /// Service descriptor for the "Foo" service.
           \(access) static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "Foo")
+          /// Namespace for method metadata.
           \(access) enum Method {
+            /// Namespace for "Bar" metadata.
             \(access) enum Bar {
+              /// Request type for "Bar".
               \(access) typealias Input = BarInput
+              /// Response type for "Bar".
               \(access) typealias Output = BarOutput
+              /// Descriptor for "Bar".
               \(access) static let descriptor = GRPCCore.MethodDescriptor(
                 service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "Foo"),
                 method: "Bar"
               )
             }
+            /// Descriptors for all methods in the "Foo" service.
             \(access) static let descriptors: [GRPCCore.MethodDescriptor] = [
               Bar.descriptor
             ]
@@ -232,8 +249,11 @@ extension StructuedSwiftTests {
 
       let expected = """
         \(access) enum Foo {
+          /// Service descriptor for the "Foo" service.
           \(access) static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "Foo")
+          /// Namespace for method metadata.
           \(access) enum Method {
+            /// Descriptors for all methods in the "Foo" service.
             \(access) static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
         }

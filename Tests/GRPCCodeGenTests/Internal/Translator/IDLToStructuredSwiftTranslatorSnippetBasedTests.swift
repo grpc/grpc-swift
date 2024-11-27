@@ -214,32 +214,61 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       // MARK: - namespaceA.ServiceA
 
+      /// Namespace containing generated types for the "namespaceA.ServiceA" service.
       public enum NamespaceA_ServiceA {
+          /// Service descriptor for the "namespaceA.ServiceA" service.
           public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
+          /// Namespace for method metadata.
           public enum Method {
+              /// Descriptors for all methods in the "namespaceA.ServiceA" service.
               public static let descriptors: [GRPCCore.MethodDescriptor] = []
           }
       }
 
       extension GRPCCore.ServiceDescriptor {
+          /// Service descriptor for the "namespaceA.ServiceA" service.
           public static let namespaceA_ServiceA = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
       }
 
       // MARK: namespaceA.ServiceA (server)
 
       extension NamespaceA_ServiceA {
-          /// Documentation for AService
+          /// Streaming variant of the service protocol for the "namespaceA.ServiceA" service.
+          ///
+          /// This protocol is the lowest-level of the service protocols generated for this service
+          /// giving you the most flexibility over the implementation of your service. This comes at
+          /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+          /// terms of a request stream and response stream. Where only a single request or response
+          /// message is expected, you are responsible for enforcing this invariant is maintained.
+          ///
+          /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+          /// or ``SimpleServiceProtocol`` instead.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for AService
           public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {}
 
-          /// Documentation for AService
+          /// Service protocol for the "namespaceA.ServiceA" service.
+          ///
+          /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+          /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+          /// trailing response metadata. If you don't need these then consider using
+          /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+          /// use ``StreamingServiceProtocol``.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for AService
           public protocol ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
       }
 
-      /// Conformance to `GRPCCore.RegistrableRPCService`.
+      // Default implementation of 'registerMethods(with:)'.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
       }
 
+      // Default implementation of streaming methods from 'StreamingServiceProtocol'.
       extension NamespaceA_ServiceA.ServiceProtocol {
       }
       """

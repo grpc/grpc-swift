@@ -73,7 +73,12 @@ struct ServerCodeTranslator {
       declarations: [
         // protocol StreamingServiceProtocol { ... }
         .commentable(
-          .preFormatted(service.documentation),
+          .preFormatted(
+            Docs.suffix(
+              self.streamingServiceDocs(serviceName: service.fullyQualifiedName),
+              withDocs: service.documentation
+            )
+          ),
           .protocol(
             .streamingService(
               accessLevel: accessModifier,
@@ -85,7 +90,12 @@ struct ServerCodeTranslator {
 
         // protocol ServiceProtocol { ... }
         .commentable(
-          .preFormatted(service.documentation),
+          .preFormatted(
+            Docs.suffix(
+              self.serviceDocs(serviceName: service.fullyQualifiedName),
+              withDocs: service.documentation
+            )
+          ),
           .protocol(
             .service(
               accessLevel: accessModifier,
@@ -110,7 +120,7 @@ struct ServerCodeTranslator {
     )
     blocks.append(
       CodeBlock(
-        comment: .doc("Conformance to `GRPCCore.RegistrableRPCService`."),
+        comment: .inline("Default implementation of 'registerMethods(with:)'."),
         item: .declaration(.extension(registerExtension))
       )
     )
@@ -122,8 +132,42 @@ struct ServerCodeTranslator {
         on: "\(service.namespacedGeneratedName).ServiceProtocol",
         methods: service.methods
       )
-    blocks.append(.declaration(.extension(streamingServiceDefaultImplExtension)))
+    blocks.append(
+      CodeBlock(
+        comment: .inline(
+          "Default implementation of streaming methods from 'StreamingServiceProtocol'."
+        ),
+        item: .declaration(.extension(streamingServiceDefaultImplExtension))
+      )
+    )
 
     return blocks
+  }
+
+  private func streamingServiceDocs(serviceName: String) -> String {
+    return """
+      /// Streaming variant of the service protocol for the "\(serviceName)" service.
+      ///
+      /// This protocol is the lowest-level of the service protocols generated for this service
+      /// giving you the most flexibility over the implementation of your service. This comes at
+      /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+      /// terms of a request stream and response stream. Where only a single request or response
+      /// message is expected, you are responsible for enforcing this invariant is maintained.
+      ///
+      /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+      /// or ``SimpleServiceProtocol`` instead.
+      """
+  }
+
+  private func serviceDocs(serviceName: String) -> String {
+    return """
+      /// Service protocol for the "\(serviceName)" service.
+      ///
+      /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+      /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+      /// trailing response metadata. If you don't need these then consider using
+      /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+      /// use ``StreamingServiceProtocol``.
+      """
   }
 }

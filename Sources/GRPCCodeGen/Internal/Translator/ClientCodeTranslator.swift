@@ -91,7 +91,12 @@ struct ClientCodeTranslator {
       declarations: [
         // protocol ClientProtocol { ... }
         .commentable(
-          .preFormatted(service.documentation),
+          .preFormatted(
+            Docs.suffix(
+              self.clientProtocolDocs(serviceName: service.fullyQualifiedName),
+              withDocs: service.documentation
+            )
+          ),
           .protocol(
             .clientProtocol(
               accessLevel: accessModifier,
@@ -103,7 +108,12 @@ struct ClientCodeTranslator {
 
         // struct Client: ClientProtocol { ... }
         .commentable(
-          .preFormatted(service.documentation),
+          .preFormatted(
+            Docs.suffix(
+              self.clientDocs(serviceName: service.fullyQualifiedName),
+              withDocs: service.documentation
+            )
+          ),
           .struct(
             .client(
               accessLevel: accessModifier,
@@ -126,7 +136,10 @@ struct ClientCodeTranslator {
       deserializer: deserializer
     )
     blocks.append(
-      CodeBlock(item: .declaration(.extension(extensionWithDefaults)))
+      CodeBlock(
+        comment: .inline("Helpers providing default arguments to 'ClientProtocol' methods."),
+        item: .declaration(.extension(extensionWithDefaults))
+      )
     )
 
     let extensionWithExplodedAPI: ExtensionDescription = .explodedClientMethods(
@@ -135,9 +148,31 @@ struct ClientCodeTranslator {
       methods: service.methods
     )
     blocks.append(
-      CodeBlock(item: .declaration(.extension(extensionWithExplodedAPI)))
+      CodeBlock(
+        comment: .inline("Helpers providing sugared APIs for 'ClientProtocol' methods."),
+        item: .declaration(.extension(extensionWithExplodedAPI))
+      )
     )
 
     return blocks
+  }
+
+  private func clientProtocolDocs(serviceName: String) -> String {
+    return """
+      /// Generated client protocol for the "\(serviceName)" service.
+      ///
+      /// You don't need to implement this protocol directly, use the generated
+      /// implementation, ``Client``.
+      """
+  }
+
+  private func clientDocs(serviceName: String) -> String {
+    return """
+      /// Generated client for the "\(serviceName)" service.
+      ///
+      /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
+      /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+      /// means of communication with the remote peer.
+      """
   }
 }

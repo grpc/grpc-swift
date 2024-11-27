@@ -40,9 +40,30 @@ struct ClientCodeTranslatorSnippetBasedTests {
 
     let expectedSwift = """
       extension NamespaceA_ServiceA {
-          /// Documentation for ServiceA
+          /// Generated client protocol for the "namespaceA.ServiceA" service.
+          ///
+          /// You don't need to implement this protocol directly, use the generated
+          /// implementation, ``Client``.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for ServiceA
           public protocol ClientProtocol: Sendable {
-              /// Documentation for MethodA
+              /// Call the "MethodA" method.
+              ///
+              /// > Source IDL Documentation:
+              /// >
+              /// > Documentation for MethodA
+              ///
+              /// - Parameters:
+              ///   - request: A request containing a single `NamespaceA_ServiceARequest` message.
+              ///   - serializer: A serializer for `NamespaceA_ServiceARequest` messages.
+              ///   - deserializer: A deserializer for `NamespaceA_ServiceAResponse` messages.
+              ///   - options: Options to apply to this RPC.
+              ///   - handleResponse: A closure which handles the response, the result of which is
+              ///       returned to the caller. Returning from the closure will cancel the RPC if it
+              ///       hasn't already finished.
+              /// - Returns: The result of `handleResponse`.
               func methodA<Result>(
                   request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
                   serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
@@ -52,15 +73,41 @@ struct ClientCodeTranslatorSnippetBasedTests {
               ) async throws -> Result where Result: Sendable
           }
 
-          /// Documentation for ServiceA
+          /// Generated client for the "namespaceA.ServiceA" service.
+          ///
+          /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
+          /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+          /// means of communication with the remote peer.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for ServiceA
           public struct Client: ClientProtocol {
               private let client: GRPCCore.GRPCClient
 
+              /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+              ///
+              /// - Parameters:
+              ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
               public init(wrapping client: GRPCCore.GRPCClient) {
                   self.client = client
               }
 
-              /// Documentation for MethodA
+              /// Call the "MethodA" method.
+              ///
+              /// > Source IDL Documentation:
+              /// >
+              /// > Documentation for MethodA
+              ///
+              /// - Parameters:
+              ///   - request: A request containing a single `NamespaceA_ServiceARequest` message.
+              ///   - serializer: A serializer for `NamespaceA_ServiceARequest` messages.
+              ///   - deserializer: A deserializer for `NamespaceA_ServiceAResponse` messages.
+              ///   - options: Options to apply to this RPC.
+              ///   - handleResponse: A closure which handles the response, the result of which is
+              ///       returned to the caller. Returning from the closure will cancel the RPC if it
+              ///       hasn't already finished.
+              /// - Returns: The result of `handleResponse`.
               public func methodA<Result>(
                   request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
                   serializer: some GRPCCore.MessageSerializer<NamespaceA_ServiceARequest>,
@@ -81,7 +128,21 @@ struct ClientCodeTranslatorSnippetBasedTests {
               }
           }
       }
+      // Helpers providing default arguments to 'ClientProtocol' methods.
       extension NamespaceA_ServiceA.ClientProtocol {
+          /// Call the "MethodA" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for MethodA
+          ///
+          /// - Parameters:
+          ///   - request: A request containing a single `NamespaceA_ServiceARequest` message.
+          ///   - options: Options to apply to this RPC.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           public func methodA<Result>(
               request: GRPCCore.ClientRequest<NamespaceA_ServiceARequest>,
               options: GRPCCore.CallOptions = .defaults,
@@ -98,8 +159,22 @@ struct ClientCodeTranslatorSnippetBasedTests {
               )
           }
       }
+      // Helpers providing sugared APIs for 'ClientProtocol' methods.
       extension NamespaceA_ServiceA.ClientProtocol {
-          /// Documentation for MethodA
+          /// Call the "MethodA" method.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for MethodA
+          ///
+          /// - Parameters:
+          ///   - message: request message to send.
+          ///   - metadata: Additional metadata to send, defaults to empty.
+          ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+          ///   - handleResponse: A closure which handles the response, the result of which is
+          ///       returned to the caller. Returning from the closure will cancel the RPC if it
+          ///       hasn't already finished.
+          /// - Returns: The result of `handleResponse`.
           public func methodA<Result>(
               _ message: NamespaceA_ServiceARequest,
               metadata: GRPCCore.Metadata = [:],

@@ -210,7 +210,7 @@ extension ProtocolDescription {
       conformances: ["Sendable"],
       members: methods.map { method in
         .commentable(
-          .preFormatted(method.documentation),
+          .preFormatted(docs(for: method)),
           .function(
             signature: .clientMethod(
               name: method.name.generatedLowerCase,
@@ -251,16 +251,19 @@ extension ExtensionDescription {
     ExtensionDescription(
       onType: name,
       declarations: methods.map { method in
-        .function(
-          .clientMethodWithDefaults(
-            accessLevel: accessLevel,
-            name: method.name.generatedLowerCase,
-            input: method.inputType,
-            output: method.outputType,
-            streamingInput: method.isInputStreaming,
-            streamingOutput: method.isOutputStreaming,
-            serializer: .identifierPattern(serializer(method.inputType)),
-            deserializer: .identifierPattern(deserializer(method.outputType))
+        .commentable(
+          .preFormatted(docs(for: method, serializers: false)),
+          .function(
+            .clientMethodWithDefaults(
+              accessLevel: accessLevel,
+              name: method.name.generatedLowerCase,
+              input: method.inputType,
+              output: method.outputType,
+              streamingInput: method.isInputStreaming,
+              streamingOutput: method.isOutputStreaming,
+              serializer: .identifierPattern(serializer(method.inputType)),
+              deserializer: .identifierPattern(deserializer(method.outputType))
+            )
           )
         )
       }
@@ -495,11 +498,11 @@ extension ExtensionDescription {
     on extensionName: String,
     methods: [MethodDescriptor]
   ) -> ExtensionDescription {
-    ExtensionDescription(
+    return ExtensionDescription(
       onType: extensionName,
       declarations: methods.map { method in
         .commentable(
-          .preFormatted(method.documentation),
+          .preFormatted(explodedDocs(for: method)),
           .function(
             .clientMethodExploded(
               accessLevel: accessLevel,
@@ -665,26 +668,36 @@ extension StructDescription {
       conformances: [clientProtocol],
       members: [
         .variable(accessModifier: .private, kind: .let, left: "client", type: .grpcClient),
-        .function(
-          accessModifier: accessLevel,
-          kind: .initializer,
-          parameters: [
-            ParameterDescription(label: "wrapping", name: "client", type: .grpcClient)
-          ],
-          whereClause: nil,
-          body: [
-            .expression(
-              .assignment(
-                left: .identifierPattern("self").dot("client"),
-                right: .identifierPattern("client")
+        .commentable(
+          .preFormatted(
+            """
+            /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+            ///
+            /// - Parameters:
+            ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
+            """
+          ),
+          .function(
+            accessModifier: accessLevel,
+            kind: .initializer,
+            parameters: [
+              ParameterDescription(label: "wrapping", name: "client", type: .grpcClient)
+            ],
+            whereClause: nil,
+            body: [
+              .expression(
+                .assignment(
+                  left: .identifierPattern("self").dot("client"),
+                  right: .identifierPattern("client")
+                )
               )
-            )
-          ]
+            ]
+          )
         ),
       ]
         + methods.map { method in
           .commentable(
-            .preFormatted(method.documentation),
+            .preFormatted(docs(for: method)),
             .function(
               .clientMethod(
                 accessLevel: accessLevel,
@@ -701,4 +714,83 @@ extension StructDescription {
         }
     )
   }
+}
+
+private func docs(
+  for method: MethodDescriptor,
+  serializers includeSerializers: Bool = true
+) -> String {
+  let summary = "/// Call the \"\(method.name.base)\" method."
+
+  let request: String
+  if method.isInputStreaming {
+    request = "A streaming request producing `\(method.inputType)` messages."
+  } else {
+    request = "A request containing a single `\(method.inputType)` message."
+  }
+
+  let parameters = """
+    /// - Parameters:
+    ///   - request: \(request)
+    """
+
+  let serializers = """
+    ///   - serializer: A serializer for `\(method.inputType)` messages.
+    ///   - deserializer: A deserializer for `\(method.outputType)` messages.
+    """
+
+  let otherParameters = """
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    """
+
+  let allParameters: String
+  if includeSerializers {
+    allParameters = parameters + "\n" + serializers + "\n" + otherParameters
+  } else {
+    allParameters = parameters + "\n" + otherParameters
+  }
+
+  return Docs.interposeDocs(method.documentation, between: summary, and: allParameters)
+}
+
+private func explodedDocs(for method: MethodDescriptor) -> String {
+  let summary = "/// Call the \"\(method.name.base)\" method."
+  var parameters = """
+    /// - Parameters:
+    """
+
+  if !method.isInputStreaming {
+    parameters += "\n"
+    parameters += """
+      ///   - message: request message to send.
+      """
+  }
+
+  parameters += "\n"
+  parameters += """
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    """
+
+  if method.isInputStreaming {
+    parameters += "\n"
+    parameters += """
+      ///   - producer: A closure producing request messages to send to the server. The request
+      ///       stream is closed when the closure returns.
+      """
+  }
+
+  parameters += "\n"
+  parameters += """
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    """
+
+  return Docs.interposeDocs(method.documentation, between: summary, and: parameters)
 }

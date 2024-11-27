@@ -42,23 +42,32 @@ struct TypealiasTranslatorSnippetBasedTests {
     )
 
     let expectedSwift = """
+      /// Namespace containing generated types for the "namespaceA.ServiceA" service.
       public enum NamespaceA_ServiceA {
+          /// Service descriptor for the "namespaceA.ServiceA" service.
           public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
+          /// Namespace for method metadata.
           public enum Method {
+              /// Namespace for "MethodA" metadata.
               public enum MethodA {
+                  /// Request type for "MethodA".
                   public typealias Input = NamespaceA_ServiceARequest
+                  /// Response type for "MethodA".
                   public typealias Output = NamespaceA_ServiceAResponse
+                  /// Descriptor for "MethodA".
                   public static let descriptor = GRPCCore.MethodDescriptor(
                       service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA"),
                       method: "MethodA"
                   )
               }
+              /// Descriptors for all methods in the "namespaceA.ServiceA" service.
               public static let descriptors: [GRPCCore.MethodDescriptor] = [
                   MethodA.descriptor
               ]
           }
       }
       extension GRPCCore.ServiceDescriptor {
+          /// Service descriptor for the "namespaceA.ServiceA" service.
           public static let namespaceA_ServiceA = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
       }
       """

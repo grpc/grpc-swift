@@ -48,25 +48,72 @@ final class ServerCodeTranslatorSnippetBasedTests {
 
     let expectedSwift = """
       extension NamespaceA_ServiceA {
-          /// Documentation for ServiceA
+          /// Streaming variant of the service protocol for the "namespaceA.AlongNameForServiceA" service.
+          ///
+          /// This protocol is the lowest-level of the service protocols generated for this service
+          /// giving you the most flexibility over the implementation of your service. This comes at
+          /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+          /// terms of a request stream and response stream. Where only a single request or response
+          /// message is expected, you are responsible for enforcing this invariant is maintained.
+          ///
+          /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+          /// or ``SimpleServiceProtocol`` instead.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for ServiceA
           public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
-              /// Documentation for unaryMethod
+              /// Handle the "UnaryMethod" method.
+              ///
+              /// > Source IDL Documentation:
+              /// >
+              /// > Documentation for unaryMethod
+              ///
+              /// - Parameters:
+              ///   - request: A streaming request of `NamespaceA_ServiceARequest` messages.
+              ///   - context: Context providing information about the RPC.
+              /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+              ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+              ///     to an internal error.
+              /// - Returns: A streaming response of `NamespaceA_ServiceAResponse` messages.
               func unary(
                   request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
                   context: GRPCCore.ServerContext
               ) async throws -> GRPCCore.StreamingServerResponse<NamespaceA_ServiceAResponse>
           }
 
-          /// Documentation for ServiceA
+          /// Service protocol for the "namespaceA.AlongNameForServiceA" service.
+          ///
+          /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+          /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+          /// trailing response metadata. If you don't need these then consider using
+          /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+          /// use ``StreamingServiceProtocol``.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for ServiceA
           public protocol ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {
-              /// Documentation for unaryMethod
+              /// Handle the "UnaryMethod" method.
+              ///
+              /// > Source IDL Documentation:
+              /// >
+              /// > Documentation for unaryMethod
+              ///
+              /// - Parameters:
+              ///   - request: A request containing a single `NamespaceA_ServiceARequest` message.
+              ///   - context: Context providing information about the RPC.
+              /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+              ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+              ///     to an internal error.
+              /// - Returns: A response containing a single `NamespaceA_ServiceAResponse` message.
               func unary(
                   request: GRPCCore.ServerRequest<NamespaceA_ServiceARequest>,
                   context: GRPCCore.ServerContext
               ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>
           }
       }
-      /// Conformance to `GRPCCore.RegistrableRPCService`.
+      // Default implementation of 'registerMethods(with:)'.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
           public func registerMethods(with router: inout GRPCCore.RPCRouter) {
               router.registerHandler(
@@ -82,6 +129,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
               )
           }
       }
+      // Default implementation of streaming methods from 'StreamingServiceProtocol'.
       extension NamespaceA_ServiceA.ServiceProtocol {
           public func unary(
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
