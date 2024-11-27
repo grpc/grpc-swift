@@ -79,7 +79,7 @@ extension VariableDescription {
   }
 
   /// ```
-  /// static let descriptor = GRPCCore.ServiceDescriptor(package: "...", service: "...")
+  /// static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: <LiteralFullyQualifiedService>)
   /// ```
   package static func serviceDescriptor(
     accessModifier: AccessModifier? = nil,
