@@ -256,7 +256,9 @@ public final class GRPCClient: Sendable {
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: ClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: StreamingClientRequest(single: request),
@@ -266,7 +268,7 @@ public final class GRPCClient: Sendable {
       options: options
     ) { stream in
       let singleResponse = await ClientResponse(stream: stream)
-      return try await handler(singleResponse)
+      return try await handleResponse(singleResponse)
     }
   }
 
@@ -287,7 +289,9 @@ public final class GRPCClient: Sendable {
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: ClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: request,
@@ -297,7 +301,7 @@ public final class GRPCClient: Sendable {
       options: options
     ) { stream in
       let singleResponse = await ClientResponse(stream: stream)
-      return try await handler(singleResponse)
+      return try await handleResponse(singleResponse)
     }
   }
 
@@ -318,7 +322,9 @@ public final class GRPCClient: Sendable {
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: StreamingClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: StreamingClientRequest(single: request),
@@ -326,7 +332,7 @@ public final class GRPCClient: Sendable {
       serializer: serializer,
       deserializer: deserializer,
       options: options,
-      handler: handler
+      onResponse: handleResponse
     )
   }
 
@@ -350,7 +356,9 @@ public final class GRPCClient: Sendable {
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: StreamingClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     let applicableInterceptors = try self.stateMachine.withLock {
       try $0.checkExecutableAndGetApplicableInterceptors(for: descriptor)
@@ -367,7 +375,7 @@ public final class GRPCClient: Sendable {
       deserializer: deserializer,
       transport: self.transport,
       interceptors: applicableInterceptors,
-      handler: handler
+      handler: handleResponse
     )
   }
 }
