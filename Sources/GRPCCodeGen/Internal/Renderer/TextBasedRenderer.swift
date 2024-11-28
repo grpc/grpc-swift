@@ -613,7 +613,14 @@ struct TextBasedRenderer: RendererProtocol {
       writer.nextLineAppendsToLastLine()
       writer.writeLine("<")
       writer.nextLineAppendsToLastLine()
-      renderExistingTypeDescription(wrapped)
+      for (wrap, isLast) in wrapped.enumeratedWithLastMarker() {
+        renderExistingTypeDescription(wrap)
+        writer.nextLineAppendsToLastLine()
+        if !isLast {
+          writer.writeLine(", ")
+          writer.nextLineAppendsToLastLine()
+        }
+      }
       writer.nextLineAppendsToLastLine()
       writer.writeLine(">")
     case .optional(let existingTypeDescription):

@@ -473,3 +473,289 @@ extension ExtensionDescription {
     )
   }
 }
+
+extension FunctionSignatureDescription {
+  /// ```
+  /// func <Name>(
+  ///   request: <Input>,
+  ///   context: GRPCCore.ServerContext,
+  /// ) async throws -> <Output>
+  /// ```
+  ///
+  /// ```
+  /// func <Name>(
+  ///   request: GRPCCore.RPCAsyncSequence<Input, any Error>,
+  ///   response: GRPCCore.RPCAsyncWriter<Output>
+  ///   context: GRPCCore.ServerContext,
+  /// ) async throws
+  /// ```
+  static func simpleServerMethod(
+    accessLevel: AccessModifier? = nil,
+    name: String,
+    input: String,
+    output: String,
+    streamingInput: Bool,
+    streamingOutput: Bool
+  ) -> Self {
+    var parameters: [ParameterDescription] = [
+      ParameterDescription(
+        label: "request",
+        type: streamingInput ? .rpcAsyncSequence(forType: input) : .member(input)
+      )
+    ]
+
+    if streamingOutput {
+      parameters.append(ParameterDescription(label: "response", type: .rpcWriter(forType: output)))
+    }
+
+    parameters.append(ParameterDescription(label: "context", type: .serverContext))
+
+    return FunctionSignatureDescription(
+      accessModifier: accessLevel,
+      kind: .function(name: name),
+      parameters: parameters,
+      keywords: [.async, .throws],
+      returnType: streamingOutput ? nil : .identifier(.pattern(output))
+    )
+  }
+}
+
+extension ProtocolDescription {
+  /// ```
+  /// protocol SimpleServiceProtocol: <ServiceProtocol> {
+  ///   ...
+  /// }
+  /// ```
+  static func simpleServiceProtocol(
+    accessModifier: AccessModifier? = nil,
+    name: String,
+    serviceProtocol: String,
+    methods: [MethodDescriptor]
+  ) -> Self {
+    func docs(for method: MethodDescriptor) -> String {
+      let summary = """
+        /// Handle the "\(method.name.normalizedBase)" method.
+        """
+
+      let requestText =
+        method.isInputStreaming
+        ? "A stream of `\(method.inputType)` messages."
+        : "A `\(method.inputType)` message."
+
+      var parameters = """
+        /// - Parameters:
+        ///   - request: \(requestText)
+        """
+
+      if method.isOutputStreaming {
+        parameters += "\n"
+        parameters += """
+          ///   - response: A response stream of `\(method.outputType)` messages.
+          """
+      }
+
+      parameters += "\n"
+      parameters += """
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        """
+
+      if !method.isOutputStreaming {
+        parameters += "\n"
+        parameters += """
+          /// - Returns: A `\(method.outputType)` to respond with.
+          """
+      }
+
+      return Docs.interposeDocs(method.documentation, between: summary, and: parameters)
+    }
+
+    return ProtocolDescription(
+      accessModifier: accessModifier,
+      name: name,
+      conformances: [serviceProtocol],
+      members: methods.map { method in
+        .commentable(
+          .preFormatted(docs(for: method)),
+          .function(
+            signature: .simpleServerMethod(
+              name: method.name.generatedLowerCase,
+              input: method.inputType,
+              output: method.outputType,
+              streamingInput: method.isInputStreaming,
+              streamingOutput: method.isOutputStreaming
+            )
+          )
+        )
+      }
+    )
+  }
+}
+
+extension FunctionCallDescription {
+  /// ```
+  /// try await self.<Name>(
+  ///   request: request.message,
+  ///   response: writer,
+  ///   context: context
+  /// )
+  /// ```
+  static func serviceMethodCallingSimpleMethod(
+    name: String,
+    input: String,
+    output: String,
+    streamingInput: Bool,
+    streamingOutput: Bool
+  ) -> Self {
+    var arguments: [FunctionArgumentDescription] = [
+      FunctionArgumentDescription(
+        label: "request",
+        expression: .identifierPattern("request").dot(streamingInput ? "messages" : "message")
+      )
+    ]
+
+    if streamingOutput {
+      arguments.append(
+        FunctionArgumentDescription(
+          label: "response",
+          expression: .identifierPattern("writer")
+        )
+      )
+    }
+
+    arguments.append(
+      FunctionArgumentDescription(
+        label: "context",
+        expression: .identifierPattern("context")
+      )
+    )
+
+    return FunctionCallDescription(
+      calledExpression: .try(.await(.identifierPattern("self").dot(name))),
+      arguments: arguments
+    )
+  }
+}
+
+extension FunctionDescription {
+  /// ```
+  /// func <Name>(
+  ///   request: GRPCCore.ServerRequest<Input>,
+  ///   context: GRPCCore.ServerContext
+  /// ) async throws -> GRPCCore.ServerResponse<Output> {
+  ///   return GRPCCore.ServerResponse<Output>(
+  ///     message: try await self.<Name>(
+  ///       request: request.message,
+  ///       context: context
+  ///     )
+  ///     metadata: [:]
+  ///   )
+  /// }
+  /// ```
+  static func serviceProtocolDefaultImplementation(
+    accessModifier: AccessModifier? = nil,
+    name: String,
+    input: String,
+    output: String,
+    streamingInput: Bool,
+    streamingOutput: Bool
+  ) -> Self {
+    func makeUnaryOutputArguments() -> [FunctionArgumentDescription] {
+      return [
+        FunctionArgumentDescription(
+          label: "message",
+          expression: .functionCall(
+            .serviceMethodCallingSimpleMethod(
+              name: name,
+              input: input,
+              output: output,
+              streamingInput: streamingInput,
+              streamingOutput: streamingOutput
+            )
+          )
+        ),
+        FunctionArgumentDescription(label: "metadata", expression: .literal(.dictionary([]))),
+      ]
+    }
+
+    func makeStreamingOutputArguments() -> [FunctionArgumentDescription] {
+      return [
+        FunctionArgumentDescription(label: "metadata", expression: .literal(.dictionary([]))),
+        FunctionArgumentDescription(
+          label: "producer",
+          expression: .closureInvocation(
+            argumentNames: ["writer"],
+            body: [
+              .expression(
+                .functionCall(
+                  .serviceMethodCallingSimpleMethod(
+                    name: name,
+                    input: input,
+                    output: output,
+                    streamingInput: streamingInput,
+                    streamingOutput: streamingOutput
+                  )
+                )
+              ),
+              .expression(.return(.literal(.dictionary([])))),
+            ]
+          )
+        ),
+      ]
+    }
+
+    return FunctionDescription(
+      signature: .serverMethod(
+        accessLevel: accessModifier,
+        name: name,
+        input: input,
+        output: output,
+        streamingInput: streamingInput,
+        streamingOutput: streamingOutput
+      ),
+      body: [
+        .expression(
+          .functionCall(
+            calledExpression: .return(
+              .identifierType(
+                .serverResponse(forType: output, streaming: streamingOutput)
+              )
+            ),
+            arguments: streamingOutput ? makeStreamingOutputArguments() : makeUnaryOutputArguments()
+          )
+        )
+      ]
+    )
+  }
+}
+
+extension ExtensionDescription {
+  /// ```
+  /// extension ServiceProtocol {
+  ///   ...
+  /// }
+  /// ```
+  static func serviceProtocolDefaultImplementation(
+    accessModifier: AccessModifier? = nil,
+    on extensionName: String,
+    methods: [MethodDescriptor]
+  ) -> Self {
+    ExtensionDescription(
+      onType: extensionName,
+      declarations: methods.map { method in
+        .function(
+          .serviceProtocolDefaultImplementation(
+            accessModifier: accessModifier,
+            name: method.name.generatedLowerCase,
+            input: method.inputType,
+            output: method.outputType,
+            streamingInput: method.isInputStreaming,
+            streamingOutput: method.isOutputStreaming
+          )
+        )
+      }
+    )
+  }
+}

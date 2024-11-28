@@ -261,6 +261,17 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
           /// >
           /// > Documentation for AService
           public protocol ServiceProtocol: NamespaceA_ServiceA.StreamingServiceProtocol {}
+
+          /// Simple service protocol for the "namespaceA.ServiceA" service.
+          ///
+          /// This is the highest level protocol for the service. The API is the easiest to use but
+          /// doesn't provide access to request or response metadata. If you need access to these
+          /// then use ``ServiceProtocol`` instead.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for AService
+          public protocol SimpleServiceProtocol: NamespaceA_ServiceA.ServiceProtocol {}
       }
 
       // Default implementation of 'registerMethods(with:)'.
@@ -270,6 +281,10 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       // Default implementation of streaming methods from 'StreamingServiceProtocol'.
       extension NamespaceA_ServiceA.ServiceProtocol {
+      }
+
+      // Default implementation of methods from 'ServiceProtocol'.
+      extension NamespaceA_ServiceA.SimpleServiceProtocol {
       }
       """
     try self.assertIDLToStructuredSwiftTranslation(

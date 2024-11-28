@@ -112,6 +112,35 @@ final class ServerCodeTranslatorSnippetBasedTests {
                   context: GRPCCore.ServerContext
               ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>
           }
+
+          /// Simple service protocol for the "namespaceA.AlongNameForServiceA" service.
+          ///
+          /// This is the highest level protocol for the service. The API is the easiest to use but
+          /// doesn't provide access to request or response metadata. If you need access to these
+          /// then use ``ServiceProtocol`` instead.
+          ///
+          /// > Source IDL Documentation:
+          /// >
+          /// > Documentation for ServiceA
+          public protocol SimpleServiceProtocol: NamespaceA_ServiceA.ServiceProtocol {
+              /// Handle the "UnaryMethod" method.
+              ///
+              /// > Source IDL Documentation:
+              /// >
+              /// > Documentation for unaryMethod
+              ///
+              /// - Parameters:
+              ///   - request: A `NamespaceA_ServiceARequest` message.
+              ///   - context: Context providing information about the RPC.
+              /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+              ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+              ///     to an internal error.
+              /// - Returns: A `NamespaceA_ServiceAResponse` to respond with.
+              func unary(
+                  request: NamespaceA_ServiceARequest,
+                  context: GRPCCore.ServerContext
+              ) async throws -> NamespaceA_ServiceAResponse
+          }
       }
       // Default implementation of 'registerMethods(with:)'.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
@@ -140,6 +169,21 @@ final class ServerCodeTranslatorSnippetBasedTests {
                   context: context
               )
               return GRPCCore.StreamingServerResponse(single: response)
+          }
+      }
+      // Default implementation of methods from 'ServiceProtocol'.
+      extension NamespaceA_ServiceA.SimpleServiceProtocol {
+          public func unary(
+              request: GRPCCore.ServerRequest<NamespaceA_ServiceARequest>,
+              context: GRPCCore.ServerContext
+          ) async throws -> GRPCCore.ServerResponse<NamespaceA_ServiceAResponse> {
+              return GRPCCore.ServerResponse<NamespaceA_ServiceAResponse>(
+                  message: try await self.unary(
+                      request: request.message,
+                      context: context
+                  ),
+                  metadata: [:]
+              )
           }
       }
       """

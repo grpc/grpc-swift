@@ -70,6 +70,14 @@ extension ExistingTypeDescription {
     .generic(wrapper: .grpcCore("RPCWriter"), wrapped: .member(type))
   }
 
+  package static func rpcAsyncSequence(forType type: String) -> Self {
+    .generic(
+      wrapper: .grpcCore("RPCAsyncSequence"),
+      wrapped: .member(type),
+      .any(.member(["Swift", "Error"]))
+    )
+  }
+
   package static let callOptions: Self = .grpcCore("CallOptions")
   package static let metadata: Self = .grpcCore("Metadata")
   package static let grpcClient: Self = .grpcCore("GRPCClient")

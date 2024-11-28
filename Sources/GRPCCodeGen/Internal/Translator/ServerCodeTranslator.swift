@@ -105,6 +105,24 @@ struct ServerCodeTranslator {
             )
           )
         ),
+
+        // protocol SimpleServiceProtocol { ... }
+        .commentable(
+          .preFormatted(
+            Docs.suffix(
+              self.simpleServiceDocs(serviceName: service.fullyQualifiedName),
+              withDocs: service.documentation
+            )
+          ),
+          .protocol(
+            .simpleServiceProtocol(
+              accessModifier: accessModifier,
+              name: "SimpleServiceProtocol",
+              serviceProtocol: "\(service.namespacedGeneratedName).ServiceProtocol",
+              methods: service.methods
+            )
+          )
+        ),
       ]
     )
     blocks.append(.declaration(.extension(`extension`)))
@@ -141,6 +159,19 @@ struct ServerCodeTranslator {
       )
     )
 
+    // extension <Service>_SimpleServiceProtocol { ... }
+    let serviceDefaultImplExtension: ExtensionDescription = .serviceProtocolDefaultImplementation(
+      accessModifier: accessModifier,
+      on: "\(service.namespacedGeneratedName).SimpleServiceProtocol",
+      methods: service.methods
+    )
+    blocks.append(
+      CodeBlock(
+        comment: .inline("Default implementation of methods from 'ServiceProtocol'."),
+        item: .declaration(.extension(serviceDefaultImplExtension))
+      )
+    )
+
     return blocks
   }
 
@@ -168,6 +199,16 @@ struct ServerCodeTranslator {
       /// trailing response metadata. If you don't need these then consider using
       /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
       /// use ``StreamingServiceProtocol``.
+      """
+  }
+
+  private func simpleServiceDocs(serviceName: String) -> String {
+    return """
+      /// Simple service protocol for the "\(serviceName)" service.
+      ///
+      /// This is the highest level protocol for the service. The API is the easiest to use but
+      /// doesn't provide access to request or response metadata. If you need access to these
+      /// then use ``ServiceProtocol`` instead.
       """
   }
 }
