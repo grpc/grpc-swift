@@ -21,7 +21,7 @@ import XCTest
 
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
-    let transport = InProcessTransport.Server()
+    let transport = InProcessTransport.Server(peer: "in-process")
 
     let outbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
     let stream = RPCStream<
@@ -53,7 +53,7 @@ final class InProcessServerTransportTests: XCTestCase {
   }
 
   func testStopListening() async throws {
-    let transport = InProcessTransport.Server()
+    let transport = InProcessTransport.Server(peer: "in-process")
 
     let firstStreamOutbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
     let firstStream = RPCStream<

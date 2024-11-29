@@ -47,13 +47,13 @@ struct ClientRPCExecutorTestHarness {
 
     switch transport {
     case .inProcess:
-      let server = InProcessTransport.Server()
+      let server = InProcessTransport.Server(peer: "in-process")
       let client = server.spawnClientTransport()
       self.serverTransport = StreamCountingServerTransport(wrapping: server)
       self.clientTransport = StreamCountingClientTransport(wrapping: client)
 
     case .throwsOnStreamCreation(let code):
-      let server = InProcessTransport.Server()  // Will never be called.
+      let server = InProcessTransport.Server(peer: "in-process")  // Will never be called.
       let client = ThrowOnStreamCreationTransport(code: code)
       self.serverTransport = StreamCountingServerTransport(wrapping: server)
       self.clientTransport = StreamCountingClientTransport(wrapping: client)

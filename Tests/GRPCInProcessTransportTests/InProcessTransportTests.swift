@@ -64,6 +64,29 @@ struct InProcessTransportTests {
       client.beginGracefulShutdown()
     }
   }
+
+  @Test("Peer info")
+  func peerInfo() async throws {
+    try await self.withTestServerAndClient { server, client in
+      defer {
+        client.beginGracefulShutdown()
+        server.beginGracefulShutdown()
+      }
+
+      let peerInfo = try await client.unary(
+        request: ClientRequest(message: ()),
+        descriptor: .peerInfo,
+        serializer: VoidSerializer(),
+        deserializer: UTF8Deserializer(),
+        options: .defaults
+      ) {
+        try $0.message
+      }
+
+      let match = peerInfo.wholeMatch(of: /in-process:\d+/)
+      #expect(match != nil)
+    }
+  }
 }
 
 private struct TestService: RegistrableRPCService {
@@ -96,6 +119,13 @@ private struct TestService: RegistrableRPCService {
     }
   }
 
+  func peerInfo(
+    request: ServerRequest<Void>,
+    context: ServerContext
+  ) async throws -> ServerResponse<String> {
+    return ServerResponse(message: context.peer)
+  }
+
   func registerMethods(with router: inout RPCRouter) {
     router.registerHandler(
       forMethod: .testCancellation,
@@ -105,6 +135,19 @@ private struct TestService: RegistrableRPCService {
         try await self.cancellation(request: ServerRequest(stream: $0), context: $1)
       }
     )
+
+    router.registerHandler(
+      forMethod: .peerInfo,
+      deserializer: VoidDeserializer(),
+      serializer: UTF8Serializer(),
+      handler: {
+        let response = try await self.peerInfo(
+          request: ServerRequest<Void>(stream: $0),
+          context: $1
+        )
+        return StreamingServerResponse(single: response)
+      }
+    )
   }
 }
 
@@ -112,6 +155,11 @@ extension MethodDescriptor {
   fileprivate static let testCancellation = Self(
     fullyQualifiedService: "test",
     method: "cancellation"
+  )
+
+  fileprivate static let peerInfo = Self(
+    fullyQualifiedService: "test",
+    method: "peerInfo"
   )
 }
 
@@ -124,5 +172,16 @@ private struct UTF8Serializer: MessageSerializer {
 private struct UTF8Deserializer: MessageDeserializer {
   func deserialize(_ serializedMessageBytes: [UInt8]) throws -> String {
     String(decoding: serializedMessageBytes, as: UTF8.self)
+  }
+}
+
+private struct VoidSerializer: MessageSerializer {
+  func serialize(_ message: Void) throws -> [UInt8] {
+    []
+  }
+}
+
+private struct VoidDeserializer: MessageDeserializer {
+  func deserialize(_ serializedMessageBytes: [UInt8]) throws {
   }
 }

@@ -25,7 +25,8 @@ public struct InProcessTransport: Sendable {
   /// - Parameters:
   ///   - serviceConfig: Configuration describing how methods should be executed.
   public init(serviceConfig: ServiceConfig = ServiceConfig()) {
-    self.server = Self.Server()
+    let peer = "in-process:\(System.pid())"
+    self.server = Self.Server(peer: peer)
     self.client = Self.Client(server: self.server, serviceConfig: serviceConfig)
   }
 }

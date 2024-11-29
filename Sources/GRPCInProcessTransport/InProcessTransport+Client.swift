@@ -109,7 +109,7 @@ extension InProcessTransport {
     /// - Parameters:
     ///   - server: The in-process server transport to connect to.
     ///   - serviceConfig: Service configuration.
-    public init(
+    package init(
       server: InProcessTransport.Server,
       serviceConfig: ServiceConfig = ServiceConfig()
     ) {

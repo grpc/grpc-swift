@@ -34,6 +34,7 @@ extension InProcessTransport {
 
     private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
     private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
+    private let peer: String
 
     private struct State: Sendable {
       private var _nextID: UInt64
@@ -73,9 +74,10 @@ extension InProcessTransport {
     private let handles: Mutex<State>
 
     /// Creates a new instance of ``Server``.
-    public init() {
+    package init(peer: String) {
       (self.newStreams, self.newStreamsContinuation) = AsyncStream.makeStream()
       self.handles = Mutex(State())
+      self.peer = peer
     }
 
     /// Publish a new ``RPCStream``, which will be returned by the transport's ``events``
@@ -115,7 +117,11 @@ extension InProcessTransport {
                 handle.cancel()
               }
 
-              let context = ServerContext(descriptor: stream.descriptor, cancellation: handle)
+              let context = ServerContext(
+                descriptor: stream.descriptor,
+                peer: self.peer,
+                cancellation: handle
+              )
               await streamHandler(stream, context)
             }
           }
