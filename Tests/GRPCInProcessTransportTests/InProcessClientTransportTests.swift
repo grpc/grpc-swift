@@ -142,7 +142,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenStreamSuccessfullyAndThenClose() async throws {
-    let server = InProcessTransport.Server(peer: "in-process")
+    let server = InProcessTransport.Server(peer: "in-process:1234")
     let client = makeClient(server: server)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -199,7 +199,7 @@ final class InProcessClientTransportTests: XCTestCase {
     )
 
     var client = InProcessTransport.Client(
-      server: InProcessTransport.Server(peer: "in-process"),
+      server: InProcessTransport.Server(peer: "in-process:1234"),
       serviceConfig: serviceConfig
     )
 
@@ -223,7 +223,7 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     serviceConfig.methodConfig.append(overrideConfiguration)
     client = InProcessTransport.Client(
-      server: InProcessTransport.Server(peer: "in-process"),
+      server: InProcessTransport.Server(peer: "in-process:1234"),
       serviceConfig: serviceConfig
     )
 
@@ -239,7 +239,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func testOpenMultipleStreamsThenClose() async throws {
-    let server = InProcessTransport.Server(peer: "in-process")
+    let server = InProcessTransport.Server(peer: "in-process:1234")
     let client = makeClient(server: server)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -269,7 +269,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 
   func makeClient(
-    server: InProcessTransport.Server = InProcessTransport.Server(peer: "in-process")
+    server: InProcessTransport.Server = InProcessTransport.Server(peer: "in-process:1234")
   ) -> InProcessTransport.Client {
     let defaultPolicy = RetryPolicy(
       maxAttempts: 10,
