@@ -19,6 +19,19 @@ public struct ServerContext: Sendable {
   /// A description of the method being called.
   public var descriptor: MethodDescriptor
 
+  /// A description of the remote peer.
+  ///
+  /// The format of the description should follow the pattern "<transport>:<address>" where
+  /// "<transport>" indicates the underlying network transport (such as "ipv4", "unix", or
+  /// "in-process"). This is a guideline for how descriptions should be formatted; different
+  /// implementations may not follow this format so you shouldn't make assumptions based on it.
+  ///
+  /// Some examples include:
+  /// - "ipv4:127.0.0.1:31415",
+  /// - "ipv6:[::1]:443",
+  /// - "in-process:27182".
+  public var peer: String
+
   /// A handle for checking the cancellation status of an RPC.
   public var cancellation: RPCCancellationHandle
 
@@ -26,10 +39,16 @@ public struct ServerContext: Sendable {
   ///
   /// - Parameters:
   ///   - descriptor: A description of the method being called.
+  ///   - peer: A description of the remote peer.
   ///   - cancellation: A cancellation handle. You can create a cancellation handle
   ///     using ``withServerContextRPCCancellationHandle(_:)``.
-  public init(descriptor: MethodDescriptor, cancellation: RPCCancellationHandle) {
+  public init(
+    descriptor: MethodDescriptor,
+    peer: String,
+    cancellation: RPCCancellationHandle
+  ) {
     self.descriptor = descriptor
+    self.peer = peer
     self.cancellation = cancellation
   }
 }

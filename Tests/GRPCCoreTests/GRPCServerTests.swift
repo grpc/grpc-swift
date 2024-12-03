@@ -334,7 +334,10 @@ final class GRPCServerTests: XCTestCase {
   }
 
   func testTestRunStoppedServer() async throws {
-    let server = GRPCServer(transport: InProcessTransport.Server(), services: [])
+    let server = GRPCServer(
+      transport: InProcessTransport.Server(peer: "in-process:1234"),
+      services: []
+    )
     // Run the server.
     let task = Task { try await server.serve() }
     task.cancel()
