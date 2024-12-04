@@ -21,10 +21,10 @@ private import Synchronization
 /// A ``GRPCClient`` communicates to a server via a ``ClientTransport``.
 ///
 /// You can start RPCs to the server by calling the corresponding method:
-/// - ``unary(request:descriptor:serializer:deserializer:options:handler:)``
-/// - ``clientStreaming(request:descriptor:serializer:deserializer:options:handler:)``
-/// - ``serverStreaming(request:descriptor:serializer:deserializer:options:handler:)``
-/// - ``bidirectionalStreaming(request:descriptor:serializer:deserializer:options:handler:)``
+/// - ``unary(request:descriptor:serializer:deserializer:options:onResponse:)``
+/// - ``clientStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``
+/// - ``serverStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``
+/// - ``bidirectionalStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``
 ///
 /// However, in most cases you should prefer wrapping the ``GRPCClient`` with a generated stub.
 ///
@@ -247,9 +247,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A unary response handler.
+  ///   - onResponse: A unary response handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `onResponse`.
   public func unary<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
@@ -280,9 +280,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A unary response handler.
+  ///   - onResponse: A unary response handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `onResponse`.
   public func clientStreaming<Request, Response, ReturnValue: Sendable>(
     request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
@@ -313,9 +313,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A response stream handler.
+  ///   - onResponse: A response stream handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `onResponse`.
   public func serverStreaming<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
@@ -347,9 +347,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A response stream handler.
+  ///   - onResponse: A response stream handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `onResponse`.
   public func bidirectionalStreaming<Request, Response, ReturnValue: Sendable>(
     request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
