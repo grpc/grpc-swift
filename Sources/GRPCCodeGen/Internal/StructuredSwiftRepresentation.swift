@@ -791,9 +791,6 @@ indirect enum Declaration: Equatable, Codable, Sendable {
   /// A declaration that adds a comment on top of the provided declaration.
   case deprecated(DeprecationDescription, Declaration)
 
-  /// A declaration that adds an availability guard on top of the provided declaration.
-  case guarded(AvailabilityDescription, Declaration)
-
   /// A variable declaration.
   case variable(VariableDescription)
 
@@ -1870,7 +1867,6 @@ extension Declaration {
       switch self {
       case .commentable(_, let declaration): return declaration.accessModifier
       case .deprecated(_, let declaration): return declaration.accessModifier
-      case .guarded(_, let declaration): return declaration.accessModifier
       case .variable(let variableDescription): return variableDescription.accessModifier
       case .extension(let extensionDescription): return extensionDescription.accessModifier
       case .struct(let structDescription): return structDescription.accessModifier
@@ -1889,9 +1885,6 @@ extension Declaration {
       case .deprecated(let deprecationDescription, var declaration):
         declaration.accessModifier = newValue
         self = .deprecated(deprecationDescription, declaration)
-      case .guarded(let availability, var declaration):
-        declaration.accessModifier = newValue
-        self = .guarded(availability, declaration)
       case .variable(var variableDescription):
         variableDescription.accessModifier = newValue
         self = .variable(variableDescription)
