@@ -247,9 +247,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - onResponse: A unary response handler.
+  ///   - handleResponse: A unary response handler.
   ///
-  /// - Returns: The return value from the `onResponse`.
+  /// - Returns: The return value from the `handleResponse`.
   public func unary<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
@@ -280,9 +280,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - onResponse: A unary response handler.
+  ///   - handleResponse: A unary response handler.
   ///
-  /// - Returns: The return value from the `onResponse`.
+  /// - Returns: The return value from the `handleResponse`.
   public func clientStreaming<Request, Response, ReturnValue: Sendable>(
     request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
@@ -313,9 +313,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - onResponse: A response stream handler.
+  ///   - handleResponse: A response stream handler.
   ///
-  /// - Returns: The return value from the `onResponse`.
+  /// - Returns: The return value from the `handleResponse`.
   public func serverStreaming<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
@@ -347,9 +347,9 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - onResponse: A response stream handler.
+  ///   - handleResponse: A response stream handler.
   ///
-  /// - Returns: The return value from the `onResponse`.
+  /// - Returns: The return value from the `handleResponse`.
   public func bidirectionalStreaming<Request, Response, ReturnValue: Sendable>(
     request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
