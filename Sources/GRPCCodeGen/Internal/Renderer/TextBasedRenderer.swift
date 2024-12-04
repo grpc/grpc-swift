@@ -857,8 +857,6 @@ struct TextBasedRenderer: RendererProtocol {
       renderCommentableDeclaration(comment: comment, declaration: nestedDeclaration)
     case let .deprecated(deprecation, nestedDeclaration):
       renderDeprecatedDeclaration(deprecation: deprecation, declaration: nestedDeclaration)
-    case let .guarded(availability, nestedDeclaration):
-      renderGuardedDeclaration(availability: availability, declaration: nestedDeclaration)
     case .variable(let variableDescription): renderVariable(variableDescription)
     case .extension(let extensionDescription): renderExtension(extensionDescription)
     case .struct(let structDescription): renderStruct(structDescription)
