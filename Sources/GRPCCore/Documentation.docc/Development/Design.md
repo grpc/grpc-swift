@@ -159,10 +159,10 @@ can either be applied to all RPCs or to specific services.
 The call layer includes  a concrete ``GRPCClient`` which provides API to execute all
 four types of RPC against a ``ClientTransport``. These methods are:
 
-- ``GRPCClient/unary(request:descriptor:serializer:deserializer:options:handler:)``,
-- ``GRPCClient/clientStreaming(request:descriptor:serializer:deserializer:options:handler:)``,
-- ``GRPCClient/serverStreaming(request:descriptor:serializer:deserializer:options:handler:)``, and
-- ``GRPCClient/bidirectionalStreaming(request:descriptor:serializer:deserializer:options:handler:)``.
+- ``GRPCClient/unary(request:descriptor:serializer:deserializer:options:onResponse:)``,
+- ``GRPCClient/clientStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``,
+- ``GRPCClient/serverStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``, and
+- ``GRPCClient/bidirectionalStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``.
 
 As lower level methods they require you to pass in a serializer and
 deserializer, as well as the descriptor of the method being called. Each method

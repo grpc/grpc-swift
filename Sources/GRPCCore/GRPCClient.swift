@@ -21,10 +21,10 @@ private import Synchronization
 /// A ``GRPCClient`` communicates to a server via a ``ClientTransport``.
 ///
 /// You can start RPCs to the server by calling the corresponding method:
-/// - ``unary(request:descriptor:serializer:deserializer:options:handler:)``
-/// - ``clientStreaming(request:descriptor:serializer:deserializer:options:handler:)``
-/// - ``serverStreaming(request:descriptor:serializer:deserializer:options:handler:)``
-/// - ``bidirectionalStreaming(request:descriptor:serializer:deserializer:options:handler:)``
+/// - ``unary(request:descriptor:serializer:deserializer:options:onResponse:)``
+/// - ``clientStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``
+/// - ``serverStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``
+/// - ``bidirectionalStreaming(request:descriptor:serializer:deserializer:options:onResponse:)``
 ///
 /// However, in most cases you should prefer wrapping the ``GRPCClient`` with a generated stub.
 ///
@@ -247,16 +247,18 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A unary response handler.
+  ///   - handleResponse: A unary response handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `handleResponse`.
   public func unary<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: ClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: StreamingClientRequest(single: request),
@@ -266,7 +268,7 @@ public final class GRPCClient: Sendable {
       options: options
     ) { stream in
       let singleResponse = await ClientResponse(stream: stream)
-      return try await handler(singleResponse)
+      return try await handleResponse(singleResponse)
     }
   }
 
@@ -278,16 +280,18 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A unary response handler.
+  ///   - handleResponse: A unary response handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `handleResponse`.
   public func clientStreaming<Request, Response, ReturnValue: Sendable>(
     request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (ClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: ClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: request,
@@ -297,7 +301,7 @@ public final class GRPCClient: Sendable {
       options: options
     ) { stream in
       let singleResponse = await ClientResponse(stream: stream)
-      return try await handler(singleResponse)
+      return try await handleResponse(singleResponse)
     }
   }
 
@@ -309,16 +313,18 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A response stream handler.
+  ///   - handleResponse: A response stream handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `handleResponse`.
   public func serverStreaming<Request, Response, ReturnValue: Sendable>(
     request: ClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: StreamingClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     try await self.bidirectionalStreaming(
       request: StreamingClientRequest(single: request),
@@ -326,7 +332,7 @@ public final class GRPCClient: Sendable {
       serializer: serializer,
       deserializer: deserializer,
       options: options,
-      handler: handler
+      onResponse: handleResponse
     )
   }
 
@@ -341,16 +347,18 @@ public final class GRPCClient: Sendable {
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
   ///   - options: Call specific options.
-  ///   - handler: A response stream handler.
+  ///   - handleResponse: A response stream handler.
   ///
-  /// - Returns: The return value from the `handler`.
+  /// - Returns: The return value from the `handleResponse`.
   public func bidirectionalStreaming<Request, Response, ReturnValue: Sendable>(
     request: StreamingClientRequest<Request>,
     descriptor: MethodDescriptor,
     serializer: some MessageSerializer<Request>,
     deserializer: some MessageDeserializer<Response>,
     options: CallOptions,
-    handler: @Sendable @escaping (StreamingClientResponse<Response>) async throws -> ReturnValue
+    onResponse handleResponse: @Sendable @escaping (
+      _ response: StreamingClientResponse<Response>
+    ) async throws -> ReturnValue
   ) async throws -> ReturnValue {
     let applicableInterceptors = try self.stateMachine.withLock {
       try $0.checkExecutableAndGetApplicableInterceptors(for: descriptor)
@@ -367,7 +375,7 @@ public final class GRPCClient: Sendable {
       deserializer: deserializer,
       transport: self.transport,
       interceptors: applicableInterceptors,
-      handler: handler
+      handler: handleResponse
     )
   }
 }
