@@ -33,7 +33,7 @@ struct Greet: AsyncParsableCommand {
       let client = GRPCClient(
         transport: try .http2NIOPosix(
           target: .ipv4(host: "127.0.0.1", port: self.port),
-          config: .defaults(transportSecurity: .plaintext)
+          transportSecurity: .plaintext
         )
       )
 
@@ -45,7 +45,7 @@ struct Greet: AsyncParsableCommand {
         client.beginGracefulShutdown()
       }
 
-      let greeter = Helloworld_Greeter_Client(wrapping: client)
+      let greeter = Helloworld_Greeter.Client(wrapping: client)
       let reply = try await greeter.sayHello(.with { $0.name = self.name })
       print(reply.message)
     }

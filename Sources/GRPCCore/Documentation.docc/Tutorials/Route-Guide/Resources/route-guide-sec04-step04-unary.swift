@@ -1,6 +1,6 @@
 import GRPCCore
 
-struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
+struct RouteGuideService: Routeguide_RouteGuide.SimpleServiceProtocol {
   /// Known features.
   private let features: [Routeguide_Feature]
 
@@ -18,9 +18,9 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func getFeature(
-    request: ServerRequest<Routeguide_Point>,
+    request: Routeguide_Point,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_Feature> {
+  ) async throws -> Routeguide_Feature {
     let feature = self.findFeature(
       latitude: request.message.latitude,
       longitude: request.message.longitude
@@ -28,20 +28,22 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func listFeatures(
-    request: ServerRequest<Routeguide_Rectangle>,
+    request: Routeguide_Rectangle,
+    response: RPCWriter<Routeguide_Feature>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_Feature> {
+  ) async throws {
   }
 
   func recordRoute(
-    request: StreamingServerRequest<Routeguide_Point>,
+    request: RPCAsyncSequence<Routeguide_Point, any Error>,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_RouteSummary> {
+  ) async throws -> Routeguide_RouteSummary {
   }
 
   func routeChat(
-    request: StreamingServerRequest<Routeguide_RouteNote>,
+    request: RPCAsyncSequence<Routeguide_RouteNote, any Error>,
+    response: RPCWriter<Routeguide_RouteNote>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_RouteNote> {
+  ) async throws {
   }
 }

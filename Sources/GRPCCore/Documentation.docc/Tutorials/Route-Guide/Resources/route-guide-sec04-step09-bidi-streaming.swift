@@ -2,44 +2,14 @@ import Foundation
 import GRPCCore
 import Synchronization
 
-struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
+struct RouteGuideService: Routeguide_RouteGuide.SimpleServiceProtocol {
   /// Known features.
   private let features: [Routeguide_Feature]
-
-  /// Notes recorded by clients.
-  private let receivedNotes: Notes
-
-  /// A thread-safe store for notes sent by clients.
-  private final class Notes: Sendable {
-    private let notes: Mutex<[Routeguide_RouteNote]>
-
-    init() {
-      self.notes = Mutex([])
-    }
-
-    /// Records a note and returns all other notes recorded at the same location.
-    ///
-    /// - Parameter receivedNote: A note to record.
-    /// - Returns: Other notes recorded at the same location.
-    func recordNote(_ receivedNote: Routeguide_RouteNote) -> [Routeguide_RouteNote] {
-      return self.notes.withLock { notes in
-        var notesFromSameLocation: [Routeguide_RouteNote] = []
-        for note in notes {
-          if note.location == receivedNote.location {
-            notesFromSameLocation.append(note)
-          }
-        }
-        notes.append(receivedNote)
-        return notesFromSameLocation
-      }
-    }
-  }
 
   /// Creates a new route guide service.
   /// - Parameter features: Known features.
   init(features: [Routeguide_Feature]) {
     self.features = features
-    self.receivedNotes = Notes()
   }
 
   /// Returns the first feature found at the given location, if one exists.
@@ -50,16 +20,16 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
   }
 
   func getFeature(
-    request: ServerRequest<Routeguide_Point>,
+    request: Routeguide_Point,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_Feature> {
+  ) async throws -> Routeguide_Feature {
     let feature = self.findFeature(
       latitude: request.message.latitude,
       longitude: request.message.longitude
     )
 
     if let feature {
-      return ServerResponse(message: feature)
+      return feature
     } else {
       // No feature: return a feature with an empty name.
       let unknownFeature = Routeguide_Feature.with {
@@ -69,36 +39,33 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
           $0.longitude = request.message.longitude
         }
       }
-      return ServerResponse(message: unknownFeature)
+      return unknownFeature
     }
   }
 
   func listFeatures(
-    request: ServerRequest<Routeguide_Rectangle>,
+    request: Routeguide_Rectangle,
+    response: RPCWriter<Routeguide_Feature>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_Feature> {
-    return StreamingServerResponse { writer in
-      for feature in self.features {
-        if !feature.name.isEmpty, feature.isContained(by: request.message) {
-          try await writer.write(feature)
-        }
+  ) async throws {
+    for feature in self.features {
+      if !feature.name.isEmpty, feature.isContained(by: request) {
+        try await response.write(feature)
       }
-
-      return [:]
     }
   }
 
   func recordRoute(
-    request: StreamingServerRequest<Routeguide_Point>,
+    request: RPCAsyncSequence<Routeguide_Point, any Error>,
     context: ServerContext
-  ) async throws -> ServerResponse<Routeguide_RouteSummary> {
+  ) async throws -> Routeguide_RouteSummary {
     let startTime = ContinuousClock.now
     var pointsVisited = 0
     var featuresVisited = 0
     var distanceTravelled = 0.0
     var previousPoint: Routeguide_Point? = nil
 
-    for try await point in request.messages {
+    for try await point in request {
       pointsVisited += 1
 
       if self.findFeature(latitude: point.latitude, longitude: point.longitude) != nil {
@@ -120,13 +87,14 @@ struct RouteGuideService: Routeguide_RouteGuide.ServiceProtocol {
       $0.distance = Int32(distanceTravelled)
     }
 
-    return ServerResponse(message: summary)
+    return summary
   }
 
   func routeChat(
-    request: StreamingServerRequest<Routeguide_RouteNote>,
+    request: RPCAsyncSequence<Routeguide_RouteNote, any Error>,
+    response: RPCWriter<Routeguide_RouteNote>,
     context: ServerContext
-  ) async throws -> StreamingServerResponse<Routeguide_RouteNote> {
+  ) async throws {
   }
 }
 

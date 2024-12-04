@@ -8,7 +8,7 @@ extension RouteGuide {
     let server = GRPCServer(
       transport: .http2NIOPosix(
         address: .ipv4(host: "127.0.0.1", port: 31415),
-        config: .defaults(transportSecurity: .plaintext)
+        transportSecurity: .plaintext
       ),
       services: [routeGuide]
     )
