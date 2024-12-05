@@ -23,7 +23,6 @@
 
 import GRPCCore
 import GRPCProtobuf
-import SwiftProtobuf
 
 // MARK: - helloworld.Greeter
 
