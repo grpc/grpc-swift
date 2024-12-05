@@ -1,6 +1,6 @@
 # gRPC Swift
 
-A fake change to check CI
+Another fake change to check CI
 
 This repository contains a gRPC implementation for Swift. You can read more
 about gRPC on the [gRPC project's website][grpcio].
