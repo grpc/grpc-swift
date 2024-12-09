@@ -277,3 +277,60 @@ extension RPCError.Code {
   /// operation.
   public static let unauthenticated = Self(code: .unauthenticated)
 }
+
+/// A value that can be converted to an ``RPCError``.
+///
+/// You can conform types to this protocol to have more control over the status codes and
+/// error information provided to clients when a service throws an error.
+public protocol RPCErrorConvertible {
+  /// The error code to terminate the RPC with.
+  var rpcErrorCode: RPCError.Code { get }
+
+  /// A message providing additional context about the error.
+  var rpcErrorMessage: String { get }
+
+  /// Metadata associated with the error.
+  ///
+  /// Any metadata included in the error thrown from a service will be sent back to the client and
+  /// conversely any ``RPCError`` received by the client may include metadata sent by a service.
+  ///
+  /// Note that clients and servers may synthesise errors which may not include metadata.
+  var rpcErrorMetadata: Metadata { get }
+
+  /// The original error which led to this error being thrown.
+  var rpcErrorCause: (any Error)? { get }
+}
+
+extension RPCErrorConvertible {
+  /// Metadata associated with the error.
+  ///
+  /// Any metadata included in the error thrown from a service will be sent back to the client and
+  /// conversely any ``RPCError`` received by the client may include metadata sent by a service.
+  ///
+  /// Note that clients and servers may synthesise errors which may not include metadata.
+  public var rpcErrorMetadata: Metadata {
+    [:]
+  }
+
+  /// The original error which led to this error being thrown.
+  public var rpcErrorCause: (any Error)? {
+    nil
+  }
+}
+
+extension RPCErrorConvertible where Self: Error {
+  /// The original error which led to this error being thrown.
+  public var rpcErrorCause: (any Error)? {
+    self
+  }
+}
+
+extension RPCError {
+  /// Create a new error by converting the given value.
+  public init(_ convertible: some RPCErrorConvertible) {
+    self.code = convertible.rpcErrorCode
+    self.message = convertible.rpcErrorMessage
+    self.metadata = convertible.rpcErrorMetadata
+    self.cause = convertible.rpcErrorCause
+  }
+}
