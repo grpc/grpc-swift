@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import Foundation
+
 /// Describes the services, dependencies and trivia from an IDL file,
 /// and the IDL itself through its specific serializer and deserializer.
 public struct CodeGenerationRequest {
