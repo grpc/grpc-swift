@@ -16,6 +16,7 @@
 
 import Foundation
 import GRPCCore
+import SwiftProtobuf
 import XCTest
 
 final class ServiceConfigCodingTests: XCTestCase {
