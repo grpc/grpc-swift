@@ -346,4 +346,27 @@ final class ServerRPCExecutorTests: XCTestCase {
       XCTAssertEqual(parts, [.status(Status(code: .unavailable, message: "Unavailable"), [:])])
     }
   }
+
+  func testErrorConversion() async throws {
+    struct CustomError: RPCErrorConvertible, Error {
+      var rpcErrorCode: RPCError.Code { .alreadyExists }
+      var rpcErrorMessage: String { "foobar" }
+      var rpcErrorMetadata: Metadata { ["error": "yes"] }
+    }
+
+    let harness = ServerRPCExecutorTestHarness()
+    try await harness.execute(handler: .throwing(CustomError())) { inbound in
+      try await inbound.write(.metadata(["foo": "bar"]))
+      try await inbound.write(.message([0]))
+      await inbound.finish()
+    } consumer: { outbound in
+      let parts = try await outbound.collect()
+      XCTAssertEqual(
+        parts,
+        [
+          .status(Status(code: .alreadyExists, message: "foobar"), ["error": "yes"])
+        ]
+      )
+    }
+  }
 }

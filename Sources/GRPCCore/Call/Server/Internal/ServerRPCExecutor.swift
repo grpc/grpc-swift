@@ -188,7 +188,15 @@ struct ServerRPCExecutor {
         try await handler(request, context)
       }
     }.castError(to: RPCError.self) { error in
-      RPCError(code: .unknown, message: "Service method threw an unknown error.", cause: error)
+      if let convertible = error as? (any RPCErrorConvertible) {
+        return RPCError(convertible)
+      } else {
+        return RPCError(
+          code: .unknown,
+          message: "Service method threw an unknown error.",
+          cause: error
+        )
+      }
     }.flatMap { response in
       response.accepted
     }

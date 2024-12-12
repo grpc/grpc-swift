@@ -189,4 +189,49 @@ struct RPCErrorTests {
     #expect(wrappedError1.message == "Error 1.")
     #expect(wrappedError1.cause == nil)
   }
+
+  @Test("Convert type to RPCError")
+  func convertTypeUsingRPCErrorConvertible() {
+    struct Cause: Error {}
+    struct ConvertibleError: RPCErrorConvertible {
+      var rpcErrorCode: RPCError.Code { .unknown }
+      var rpcErrorMessage: String { "uhoh" }
+      var rpcErrorMetadata: Metadata { ["k": "v"] }
+      var rpcErrorCause: (any Error)? { Cause() }
+    }
+
+    let error = RPCError(ConvertibleError())
+    #expect(error.code == .unknown)
+    #expect(error.message == "uhoh")
+    #expect(error.metadata == ["k": "v"])
+    #expect(error.cause is Cause)
+  }
+
+  @Test("Convert type to RPCError with defaults")
+  func convertTypeUsingRPCErrorConvertibleDefaults() {
+    struct ConvertibleType: RPCErrorConvertible {
+      var rpcErrorCode: RPCError.Code { .unknown }
+      var rpcErrorMessage: String { "uhoh" }
+    }
+
+    let error = RPCError(ConvertibleType())
+    #expect(error.code == .unknown)
+    #expect(error.message == "uhoh")
+    #expect(error.metadata == [:])
+    #expect(error.cause == nil)
+  }
+
+  @Test("Convert error to RPCError with defaults")
+  func convertErrorUsingRPCErrorConvertibleDefaults() {
+    struct ConvertibleType: RPCErrorConvertible, Error {
+      var rpcErrorCode: RPCError.Code { .unknown }
+      var rpcErrorMessage: String { "uhoh" }
+    }
+
+    let error = RPCError(ConvertibleType())
+    #expect(error.code == .unknown)
+    #expect(error.message == "uhoh")
+    #expect(error.metadata == [:])
+    #expect(error.cause is ConvertibleType)
+  }
 }
