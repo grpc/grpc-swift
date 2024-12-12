@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import Foundation
+
 package enum Docs {
   package static func suffix(_ header: String, withDocs footer: String) -> String {
     if footer.isEmpty {
