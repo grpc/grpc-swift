@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import Foundation
-
 package enum Docs {
   package static func suffix(_ header: String, withDocs footer: String) -> String {
     if footer.isEmpty {
@@ -58,7 +56,9 @@ package enum Docs {
       """
 
     let body = docs.split(separator: "\n").map { line in
-      "/// > " + line.dropFirst(4).trimmingCharacters(in: .whitespaces)
+      var line = "/// > " + line.dropFirst(4)
+      line.trimPrefix(while: { $0.isWhitespace })
+      return String(line.drop(while: { $0.isWhitespace }))
     }.joined(separator: "\n")
 
     return header + "\n" + body

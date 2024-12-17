@@ -26,7 +26,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 //===----------------------------------------------------------------------===//
-import Foundation
 
 /// An object for building up a generated file line-by-line.
 ///
