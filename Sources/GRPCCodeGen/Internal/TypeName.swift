@@ -26,7 +26,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 //===----------------------------------------------------------------------===//
-import Foundation
 
 /// A fully-qualified type name that contains the components of the Swift
 /// type name.

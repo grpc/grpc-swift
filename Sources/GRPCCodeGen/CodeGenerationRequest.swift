@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import Foundation
-
 /// Describes the services, dependencies and trivia from an IDL file,
 /// and the IDL itself through its specific serializer and deserializer.
 public struct CodeGenerationRequest {
@@ -334,7 +332,7 @@ extension Name {
   ///
   /// For example, if `base` is "Foo.Bar", then `normalizedBase` is "Foo_Bar".
   public var normalizedBase: String {
-    return self.base.replacingOccurrences(of: ".", with: "_")
+    return self.base.replacing(".", with: "_")
   }
 }
 
