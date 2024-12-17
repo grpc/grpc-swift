@@ -27,7 +27,7 @@ You can find more information about the error codes in ``RPCError/Code`` and in
 the status codes guide on the
 [gRPC website](https://grpc.io/docs/guides/status-codes/).
 
-This mechanism is part of the gRPC protocol is supported by all client/server
+This mechanism is part of the gRPC protocol and is supported by all client/server
 gRPC libraries regardless of the data format (e.g. Protocol Buffers) being used
 for messages.
 
@@ -79,5 +79,5 @@ it may be synthesized locally.
 For clients using the rich error model, the ``RPCError`` can be caught and a
 detailed error can be extracted from it using `unpackGoogleRPCStatus()`.
 
-See [`error-details`](https://github.com/grpc/grpc-swift/tree/main/Examples) for
-an examples.
+See [`error-details`](https://github.com/grpc/grpc-swift/tree/main/Examples/error-details) for
+an example.
