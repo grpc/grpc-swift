@@ -97,6 +97,14 @@ function generate_routeguide_example {
   generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
 }
 
+function generate_error_details_example {
+  local proto="$here/upstream/grpc/examples/helloworld.proto"
+  local output="$root/Examples/error-details/Sources/Generated"
+
+  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
+}
+
 #- TESTS ----------------------------------------------------------------------
 
 function generate_service_config_for_tests {
@@ -119,6 +127,7 @@ function generate_service_config_for_tests {
 generate_echo_example
 generate_helloworld_example
 generate_routeguide_example
+generate_error_details_example
 
 # Tests
 generate_service_config_for_tests

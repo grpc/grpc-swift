@@ -52,6 +52,7 @@ as tutorials.
 ### Essentials
 
 - <doc:Generating-stubs>
+- <doc:Errors>
 
 ### Project Information
 
