@@ -40,3 +40,4 @@ LICENSE
 **/*.swift
 dev/protos/**/*.proto
 Examples/hello-world/Protos/HelloWorld.proto
+**/*.pb
