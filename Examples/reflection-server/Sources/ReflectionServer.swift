@@ -28,10 +28,7 @@ struct ReflectionServer: AsyncParsableCommand {
 
   func run() async throws {
     // Find descriptor sets ('*.pb') bundled with this example.
-    let urls = Bundle.module.urls(
-      forResourcesWithExtension: "pb",
-      subdirectory: "DescriptorSets"
-    )
+    let paths = Bundle.module.paths(forResourcesOfType: "pb", inDirectory: "DescriptorSets")
 
     // Start the server with the reflection service and the echo service.
     let server = GRPCServer(
@@ -40,7 +37,7 @@ struct ReflectionServer: AsyncParsableCommand {
         transportSecurity: .plaintext
       ),
       services: [
-        try ReflectionService(descriptorSetFileURLs: urls ?? []),
+        try ReflectionService(descriptorSetFilePaths: paths),
         EchoService(),
       ]
     )
