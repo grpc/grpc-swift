@@ -5,7 +5,7 @@ detail in the [gRPC documentation](https://github.com/grpc/grpc/blob/6fa8043bf9b
 
 ## Overview
 
-A "reflection-server" command line tool that uses the reflection service implementation
+A 'reflection-server' command line tool that uses the reflection service implementation
 from [grpc/grpc-swift-extras](https://github.com/grpc/grpc-swift-extras) and the
 Echo service (see the 'echo' example).
 
@@ -32,8 +32,8 @@ $ swift run reflection-server
 Reflection server listening on [ipv4]127.0.0.1:31415
 ```
 
-You can use `grpcurl` to query the reflection service. If you don't already have
-it installed follow the instructions in the `grpcurl` project's
+You can use 'grpcurl' to query the reflection service. If you don't already have
+it installed follow the instructions in the 'grpcurl' project's
 [README](https://github.com/fullstorydev/grpcurl).
 
 You can list all services with:
