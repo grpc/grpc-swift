@@ -61,8 +61,8 @@ public struct SourceGenerator: Sendable {
 
     /// The possible access levels for the generated code.
     public struct AccessLevel: Sendable, Hashable {
-      internal var level: Level
-      internal enum Level {
+      package var level: Level
+      package enum Level {
         case `internal`
         case `public`
         case `package`

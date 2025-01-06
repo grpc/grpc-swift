@@ -17,7 +17,9 @@
 /// Creates a representation for the server and client code, as well as for the enums containing useful type aliases and properties.
 /// The representation is generated based on the ``CodeGenerationRequest`` object and user specifications,
 /// using types from ``StructuredSwiftRepresentation``.
-struct IDLToStructuredSwiftTranslator: Translator {
+package struct IDLToStructuredSwiftTranslator: Translator {
+  package init() {}
+
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
     accessLevel: SourceGenerator.Config.AccessLevel,
@@ -97,7 +99,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
     return StructuredSwiftRepresentation(file: file)
   }
 
-  internal func makeImports(
+  package func makeImports(
     dependencies: [Dependency],
     accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool

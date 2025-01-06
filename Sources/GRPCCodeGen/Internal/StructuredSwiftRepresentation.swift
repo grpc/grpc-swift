@@ -30,7 +30,7 @@
 /// A description of an import declaration.
 ///
 /// For example: `import Foo`.
-struct ImportDescription: Equatable, Codable, Sendable {
+package struct ImportDescription: Equatable, Codable, Sendable {
   /// The access level of the imported module.
   ///
   /// For example, the `public` in `public import Foo`.
