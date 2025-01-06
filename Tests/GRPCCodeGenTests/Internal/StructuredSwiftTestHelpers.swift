@@ -19,8 +19,8 @@ import Testing
 @testable import GRPCCodeGen
 
 // Used as a namespace for organising other structured swift tests.
-@Suite("Structued Swift")
-struct StructuedSwiftTests {}
+@Suite("Structured Swift")
+struct StructuredSwiftTests {}
 
 func render(_ declaration: Declaration) -> String {
   let renderer = TextBasedRenderer(indentation: 2)
@@ -37,6 +37,12 @@ func render(_ expression: Expression) -> String {
 func render(_ blocks: [CodeBlock]) -> String {
   let renderer = TextBasedRenderer(indentation: 2)
   renderer.renderCodeBlocks(blocks)
+  return renderer.renderedContents()
+}
+
+func render(_ imports: [ImportDescription]) -> String {
+  let renderer = TextBasedRenderer(indentation: 2)
+  renderer.renderImports(imports)
   return renderer.renderedContents()
 }
 

@@ -17,7 +17,9 @@
 /// Creates a representation for the server and client code, as well as for the enums containing useful type aliases and properties.
 /// The representation is generated based on the ``CodeGenerationRequest`` object and user specifications,
 /// using types from ``StructuredSwiftRepresentation``.
-struct IDLToStructuredSwiftTranslator: Translator {
+package struct IDLToStructuredSwiftTranslator: Translator {
+  package init() {}
+
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
     accessLevel: SourceGenerator.Config.AccessLevel,
@@ -72,13 +74,23 @@ struct IDLToStructuredSwiftTranslator: Translator {
       }
     }
 
-    let fileDescription = FileDescription(
-      topComment: .preFormatted(codeGenerationRequest.leadingTrivia),
-      imports: try self.makeImports(
+    let imports: [ImportDescription]
+    if codeGenerationRequest.services.isEmpty {
+      imports = []
+      codeBlocks.append(
+        CodeBlock(comment: .inline("This file contained no services."))
+      )
+    } else {
+      imports = try self.makeImports(
         dependencies: codeGenerationRequest.dependencies,
         accessLevel: accessLevel,
         accessLevelOnImports: accessLevelOnImports
-      ),
+      )
+    }
+
+    let fileDescription = FileDescription(
+      topComment: .preFormatted(codeGenerationRequest.leadingTrivia),
+      imports: imports,
       codeBlocks: codeBlocks
     )
 
@@ -87,7 +99,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
     return StructuredSwiftRepresentation(file: file)
   }
 
-  private func makeImports(
+  package func makeImports(
     dependencies: [Dependency],
     accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool

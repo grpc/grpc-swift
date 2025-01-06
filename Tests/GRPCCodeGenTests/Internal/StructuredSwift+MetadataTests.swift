@@ -18,7 +18,7 @@ import Testing
 
 @testable import GRPCCodeGen
 
-extension StructuedSwiftTests {
+extension StructuredSwiftTests {
   @Suite("Metadata")
   struct Metadata {
     @Test("typealias Input = <Name>", arguments: AccessModifier.allCases)

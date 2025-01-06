@@ -18,7 +18,7 @@ import Testing
 
 @testable import GRPCCodeGen
 
-extension StructuedSwiftTests {
+extension StructuredSwiftTests {
   @Suite("Server")
   struct Server {
     @Test(
