@@ -97,7 +97,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
     return StructuredSwiftRepresentation(file: file)
   }
 
-  private func makeImports(
+  internal func makeImports(
     dependencies: [Dependency],
     accessLevel: SourceGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool
