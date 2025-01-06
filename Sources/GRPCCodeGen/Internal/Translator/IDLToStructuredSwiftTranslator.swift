@@ -73,7 +73,7 @@ struct IDLToStructuredSwiftTranslator: Translator {
     }
 
     let imports: [ImportDescription]
-    if codeBlocks.isEmpty {
+    if codeGenerationRequest.services.isEmpty {
       imports = []
       codeBlocks.append(
         CodeBlock(comment: .inline("This file contained no services."))
