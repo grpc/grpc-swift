@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import Testing
-
 import GRPCCodeGen
+import Testing
 
 extension StructuredSwiftTests {
   @Suite("Import")
