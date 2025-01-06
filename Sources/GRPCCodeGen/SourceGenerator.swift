@@ -87,20 +87,13 @@ public struct SourceGenerator: Sendable {
     let translator = IDLToStructuredSwiftTranslator()
     let textRenderer = TextBasedRenderer(indentation: self.config.indentation)
 
-    var structuredSwiftRepresentation = try translator.translate(
+    let structuredSwiftRepresentation = try translator.translate(
       codeGenerationRequest: request,
       accessLevel: self.config.accessLevel,
       accessLevelOnImports: self.config.accessLevelOnImports,
       client: self.config.client,
       server: self.config.server
     )
-
-    if structuredSwiftRepresentation.file.contents.codeBlocks.isEmpty {
-      structuredSwiftRepresentation.file.contents.imports = []
-      structuredSwiftRepresentation.file.contents.codeBlocks.append(
-        CodeBlock(comment: .inline("This file contained no services."))
-      )
-    }
 
     let sourceFile = try textRenderer.render(structured: structuredSwiftRepresentation)
 

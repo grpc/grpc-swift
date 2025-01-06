@@ -298,6 +298,25 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
   }
 
+  func testEmptyFileGeneration() throws {
+    let expectedSwift =
+      """
+      /// Some really exciting license header 2023.
+
+
+      // This file contained no services.
+      """
+    try self.assertIDLToStructuredSwiftTranslation(
+      codeGenerationRequest: makeCodeGenerationRequest(
+        services: [],
+        dependencies: []
+      ),
+      expectedSwift: expectedSwift,
+      accessLevel: .public,
+      server: true
+    )
+  }
+
   private func assertIDLToStructuredSwiftTranslation(
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,

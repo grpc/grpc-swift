@@ -72,13 +72,23 @@ struct IDLToStructuredSwiftTranslator: Translator {
       }
     }
 
-    let fileDescription = FileDescription(
-      topComment: .preFormatted(codeGenerationRequest.leadingTrivia),
-      imports: try self.makeImports(
+    let imports: [ImportDescription]
+    if codeBlocks.isEmpty {
+      imports = []
+      codeBlocks.append(
+        CodeBlock(comment: .inline("This file contained no services."))
+      )
+    } else {
+      imports = try self.makeImports(
         dependencies: codeGenerationRequest.dependencies,
         accessLevel: accessLevel,
         accessLevelOnImports: accessLevelOnImports
-      ),
+      )
+    }
+
+    let fileDescription = FileDescription(
+      topComment: .preFormatted(codeGenerationRequest.leadingTrivia),
+      imports: imports,
       codeBlocks: codeBlocks
     )
 
