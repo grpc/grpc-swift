@@ -115,9 +115,10 @@ extension StructuredSwiftTests {
     }
 
     @Test(
-      "preconcurrency import rendering"
+      "preconcurrency import rendering",
+      arguments: allAccessLevels
     )
-    func preconcurrencyImports() throws {
+    func preconcurrencyImports(accessLevel: SourceGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(
         Dependency(
@@ -144,7 +145,7 @@ extension StructuredSwiftTests {
 
       let expected =
         """
-        public import GRPCCore
+        \(accessLevel.level) import GRPCCore
         @preconcurrency internal import Foo
         @preconcurrency internal import enum Foo.Bar
         #if os(Deq) || os(Der)
@@ -156,7 +157,7 @@ extension StructuredSwiftTests {
 
       let imports = try StructuredSwiftTests.Import.translator.makeImports(
         dependencies: dependencies,
-        accessLevel: .public,
+        accessLevel: accessLevel,
         accessLevelOnImports: true
       )
 
@@ -164,9 +165,10 @@ extension StructuredSwiftTests {
     }
 
     @Test(
-      "SPI import rendering"
+      "SPI import rendering",
+      arguments: allAccessLevels
     )
-    func spiImports() throws {
+    func spiImports(accessLevel: SourceGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(
         Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)
@@ -182,14 +184,14 @@ extension StructuredSwiftTests {
 
       let expected =
         """
-        public import GRPCCore
+        \(accessLevel.level) import GRPCCore
         @_spi(Secret) internal import Foo
         @_spi(Secret) internal import enum Foo.Bar
         """
 
       let imports = try StructuredSwiftTests.Import.translator.makeImports(
         dependencies: dependencies,
-        accessLevel: .public,
+        accessLevel: accessLevel,
         accessLevelOnImports: true
       )
 
