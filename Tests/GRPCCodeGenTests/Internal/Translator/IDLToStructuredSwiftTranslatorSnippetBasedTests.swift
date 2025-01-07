@@ -145,7 +145,6 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       """
       /// Some really exciting license header 2023.
 
-
       // This file contained no services.
       """
     try self.assertIDLToStructuredSwiftTranslation(
