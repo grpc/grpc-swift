@@ -26,7 +26,7 @@ struct HelloWorld: RegistrableRPCService {
     return ServerResponse(message: Array("Hello, \(name)!".utf8), metadata: [])
   }
 
-  func registerMethods(with router: inout RPCRouter) {
+  func registerMethods<Transport: ServerTransport>(with router: inout RPCRouter<Transport>) {
     let serializer = IdentitySerializer()
     let deserializer = IdentityDeserializer()
 

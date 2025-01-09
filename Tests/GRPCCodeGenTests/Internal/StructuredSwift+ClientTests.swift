@@ -489,14 +489,14 @@ extension StructuredSwiftTests {
       )
 
       let expected = """
-        \(access) struct FooClient: Foo_ClientProtocol {
-          private let client: GRPCCore.GRPCClient
+        \(access) struct FooClient<Transport>: Foo_ClientProtocol where Transport: GRPCCore.ClientTransport {
+          private let client: GRPCCore.GRPCClient<Transport>
 
           /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
           ///
           /// - Parameters:
           ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
-          \(access) init(wrapping client: GRPCCore.GRPCClient) {
+          \(access) init(wrapping client: GRPCCore.GRPCClient<Transport>) {
             self.client = client
           }
 

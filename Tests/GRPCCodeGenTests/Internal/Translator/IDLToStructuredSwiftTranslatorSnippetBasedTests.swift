@@ -118,7 +118,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       // Default implementation of 'registerMethods(with:)'.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
-          public func registerMethods(with router: inout GRPCCore.RPCRouter) {}
+          public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {}
       }
 
       // Default implementation of streaming methods from 'StreamingServiceProtocol'.

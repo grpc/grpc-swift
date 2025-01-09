@@ -16,18 +16,19 @@
 
 @usableFromInline
 struct MessageToRPCResponsePartWriter<
-  Serializer: MessageSerializer
+  Serializer: MessageSerializer,
+  Bytes: GRPCContiguousBytes & Sendable
 >: RPCWriterProtocol where Serializer.Message: Sendable {
   @usableFromInline
   typealias Element = Serializer.Message
 
   @usableFromInline
-  let base: RPCWriter<RPCResponsePart>
+  let base: RPCWriter<RPCResponsePart<Bytes>>
   @usableFromInline
   let serializer: Serializer
 
   @inlinable
-  init(serializer: Serializer, base: some RPCWriterProtocol<RPCResponsePart>) {
+  init(serializer: Serializer, base: some RPCWriterProtocol<RPCResponsePart<Bytes>>) {
     self.serializer = serializer
     self.base = RPCWriter(wrapping: base)
   }
@@ -39,7 +40,7 @@ struct MessageToRPCResponsePartWriter<
 
   @inlinable
   func write(contentsOf elements: some Sequence<Serializer.Message>) async throws {
-    let requestParts = try elements.map { message -> RPCResponsePart in
+    let requestParts = try elements.map { message -> RPCResponsePart<Bytes> in
       .message(try self.serializer.serialize(message))
     }
 
@@ -49,8 +50,8 @@ struct MessageToRPCResponsePartWriter<
 
 extension RPCWriter {
   @inlinable
-  static func serializingToRPCResponsePart(
-    into writer: some RPCWriterProtocol<RPCResponsePart>,
+  static func serializingToRPCResponsePart<Bytes: GRPCContiguousBytes>(
+    into writer: some RPCWriterProtocol<RPCResponsePart<Bytes>>,
     with serializer: some MessageSerializer<Element>
   ) -> Self {
     return RPCWriter(wrapping: MessageToRPCResponsePartWriter(serializer: serializer, base: writer))

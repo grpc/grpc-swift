@@ -15,9 +15,12 @@
  */
 
 /// A protocol server transport implementations must conform to.
-public protocol ServerTransport: Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
-  typealias Outbound = RPCWriter<RPCResponsePart>.Closable
+public protocol ServerTransport<Bytes>: Sendable {
+  /// The bag-of-bytes type used by the transport.
+  associatedtype Bytes: GRPCContiguousBytes & Sendable
+
+  typealias Inbound = RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>
+  typealias Outbound = RPCWriter<RPCResponsePart<Bytes>>.Closable
 
   /// Starts the transport.
   ///

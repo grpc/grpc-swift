@@ -16,7 +16,8 @@
 
 @usableFromInline
 struct SerializingRPCWriter<
-  Base: RPCWriterProtocol<[UInt8]>,
+  Base: RPCWriterProtocol<Bytes>,
+  Bytes: GRPCContiguousBytes,
   Serializer: MessageSerializer
 >: RPCWriterProtocol where Serializer.Message: Sendable {
   @usableFromInline
@@ -41,7 +42,7 @@ struct SerializingRPCWriter<
   @inlinable
   func write(contentsOf elements: some Sequence<Serializer.Message>) async throws {
     let requestParts = try elements.map { message in
-      try self.serializer.serialize(message)
+      try self.serializer.serialize(message) as Bytes
     }
 
     try await self.base.write(contentsOf: requestParts)

@@ -23,7 +23,7 @@ final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
     interceptorPipeline: [ServerInterceptorPipelineOperation] = [],
-    _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
+    _ body: (InProcessTransport.Client, GRPCServer<InProcessTransport.Server>) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
 
@@ -360,7 +360,7 @@ final class GRPCServerTests: XCTestCase {
     }
   }
 
-  private func doEchoGet(using transport: some ClientTransport) async throws {
+  private func doEchoGet(using transport: some ClientTransport<[UInt8]>) async throws {
     try await transport.withStream(
       descriptor: BinaryEcho.Methods.get,
       options: .defaults
@@ -554,7 +554,7 @@ struct ServerTests {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
     interceptorPipeline: [ServerInterceptorPipelineOperation] = [],
-    _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
+    _ body: (InProcessTransport.Client, GRPCServer<InProcessTransport.Server>) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     let server = GRPCServer(
@@ -578,8 +578,8 @@ struct ServerTests {
     }
   }
 
-  func assertMetadata(
-    _ part: RPCResponsePart?,
+  func assertMetadata<Bytes: GRPCContiguousBytes>(
+    _ part: RPCResponsePart<Bytes>?,
     metadataHandler: (Metadata) -> Void = { _ in }
   ) {
     switch part {
@@ -590,9 +590,9 @@ struct ServerTests {
     }
   }
 
-  func assertMessage(
-    _ part: RPCResponsePart?,
-    messageHandler: ([UInt8]) -> Void = { _ in }
+  func assertMessage<Bytes: GRPCContiguousBytes>(
+    _ part: RPCResponsePart<Bytes>?,
+    messageHandler: (Bytes) -> Void = { _ in }
   ) {
     switch part {
     case .some(.message(let message)):
@@ -602,8 +602,8 @@ struct ServerTests {
     }
   }
 
-  func assertStatus(
-    _ part: RPCResponsePart?,
+  func assertStatus<Bytes: GRPCContiguousBytes>(
+    _ part: RPCResponsePart<Bytes>?,
     statusHandler: (Status, Metadata) -> Void = { _, _ in }
   ) {
     switch part {

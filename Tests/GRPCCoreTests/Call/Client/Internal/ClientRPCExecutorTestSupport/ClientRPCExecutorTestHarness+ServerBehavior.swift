@@ -23,16 +23,16 @@ extension ClientRPCExecutorTestHarness {
     private let handler:
       @Sendable (
         _ stream: RPCStream<
-          RPCAsyncSequence<RPCRequestPart, any Error>,
-          RPCWriter<RPCResponsePart>.Closable
+          RPCAsyncSequence<RPCRequestPart<[UInt8]>, any Error>,
+          RPCWriter<RPCResponsePart<[UInt8]>>.Closable
         >
       ) async throws -> Void
 
     init(
       _ handler: @escaping @Sendable (
         RPCStream<
-          RPCAsyncSequence<RPCRequestPart, any Error>,
-          RPCWriter<RPCResponsePart>.Closable
+          RPCAsyncSequence<RPCRequestPart<[UInt8]>, any Error>,
+          RPCWriter<RPCResponsePart<[UInt8]>>.Closable
         >
       ) async throws -> Void
     ) {
@@ -43,9 +43,9 @@ extension ClientRPCExecutorTestHarness {
       stream: RPCStream<Inbound, Outbound>
     ) async throws
     where
-      Inbound.Element == RPCRequestPart,
+      Inbound.Element == RPCRequestPart<[UInt8]>,
       Inbound.Failure == any Error,
-      Outbound.Element == RPCResponsePart
+      Outbound.Element == RPCResponsePart<[UInt8]>
     {
       let erased = RPCStream(
         descriptor: stream.descriptor,
@@ -61,7 +61,7 @@ extension ClientRPCExecutorTestHarness {
 extension ClientRPCExecutorTestHarness.ServerStreamHandler {
   static var echo: Self {
     return Self { stream in
-      let response = stream.inbound.map { part -> RPCResponsePart in
+      let response = stream.inbound.map { part -> RPCResponsePart<[UInt8]> in
         switch part {
         case .metadata(let metadata):
           return .metadata(metadata)

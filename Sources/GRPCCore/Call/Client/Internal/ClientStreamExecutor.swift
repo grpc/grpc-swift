@@ -28,14 +28,17 @@ internal enum ClientStreamExecutor {
   ///   - stream: The stream to excecute the RPC on.
   /// - Returns: A streamed response.
   @inlinable
-  static func execute<Input: Sendable, Output: Sendable>(
+  static func execute<Input: Sendable, Output: Sendable, Bytes: GRPCContiguousBytes>(
     in group: inout TaskGroup<Void>,
     request: StreamingClientRequest<Input>,
     context: ClientContext,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
-    stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
+    stream: RPCStream<
+      RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>,
+      RPCWriter<RPCRequestPart<Bytes>>.Closable
+    >
   ) async -> StreamingClientResponse<Output> {
     // Let the server know this is a retry.
     var metadata = request.metadata
@@ -83,8 +86,8 @@ internal enum ClientStreamExecutor {
   }
 
   @inlinable  // would be private
-  static func _processRequest<Outbound>(
-    on stream: some ClosableRPCWriterProtocol<RPCRequestPart>,
+  static func _processRequest<Outbound, Bytes: GRPCContiguousBytes>(
+    on stream: some ClosableRPCWriterProtocol<RPCRequestPart<Bytes>>,
     request: StreamingClientRequest<Outbound>,
     serializer: some MessageSerializer<Outbound>
   ) async {
@@ -104,16 +107,19 @@ internal enum ClientStreamExecutor {
   }
 
   @usableFromInline
-  enum OnFirstResponsePart: Sendable {
-    case metadata(Metadata, UnsafeTransfer<ClientTransport.Inbound.AsyncIterator>)
+  enum OnFirstResponsePart<Bytes: GRPCContiguousBytes>: Sendable {
+    case metadata(
+      Metadata,
+      UnsafeTransfer<RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>.AsyncIterator>
+    )
     case status(Status, Metadata)
     case failed(RPCError)
   }
 
   @inlinable  // would be private
-  static func _waitForFirstResponsePart(
-    on stream: ClientTransport.Inbound
-  ) async -> OnFirstResponsePart {
+  static func _waitForFirstResponsePart<Bytes: GRPCContiguousBytes>(
+    on stream: RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>
+  ) async -> OnFirstResponsePart<Bytes> {
     var iterator = stream.makeAsyncIterator()
     let result = await Result<OnFirstResponsePart, any Error> {
       switch try await iterator.next() {
@@ -165,7 +171,8 @@ internal enum ClientStreamExecutor {
 
   @usableFromInline
   struct RawBodyPartToMessageSequence<
-    Base: AsyncSequence<RPCResponsePart, Failure>,
+    Base: AsyncSequence<RPCResponsePart<Bytes>, Failure>,
+    Bytes: GRPCContiguousBytes,
     Message: Sendable,
     Deserializer: MessageDeserializer<Message>,
     Failure: Error

@@ -112,7 +112,7 @@ extension ClientRPCExecutor {
   ///       interceptors will be called in the order of the array.
   /// - Returns: The deserialized response.
   @inlinable  // would be private
-  static func _execute<Input: Sendable, Output: Sendable>(
+  static func _execute<Input: Sendable, Output: Sendable, Bytes: GRPCContiguousBytes>(
     in group: inout TaskGroup<Void>,
     request: StreamingClientRequest<Input>,
     method: MethodDescriptor,
@@ -120,7 +120,10 @@ extension ClientRPCExecutor {
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     interceptors: [any ClientInterceptor],
-    stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
+    stream: RPCStream<
+      RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>,
+      RPCWriter<RPCRequestPart<Bytes>>.Closable
+    >
   ) async -> StreamingClientResponse<Output> {
     let context = ClientContext(descriptor: method)
 

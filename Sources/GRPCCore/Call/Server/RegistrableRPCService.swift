@@ -26,5 +26,5 @@ public protocol RegistrableRPCService: Sendable {
   /// Registers methods to server with the provided ``RPCRouter``.
   ///
   /// - Parameter router: The router to register methods with.
-  func registerMethods(with router: inout RPCRouter)
+  func registerMethods<Transport: ServerTransport>(with router: inout RPCRouter<Transport>)
 }

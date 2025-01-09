@@ -52,7 +52,8 @@ struct ServerRPCExecutorTestHarness {
     self.interceptors = interceptors
   }
 
-  func execute<Input, Output>(
+  func execute<Input, Output, Bytes: GRPCContiguousBytes>(
+    bytes: Bytes.Type = Bytes.self,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: @escaping @Sendable (
@@ -60,10 +61,10 @@ struct ServerRPCExecutorTestHarness {
       ServerContext
     ) async throws -> StreamingServerResponse<Output>,
     producer: @escaping @Sendable (
-      RPCWriter<RPCRequestPart>.Closable
+      RPCWriter<RPCRequestPart<Bytes>>.Closable
     ) async throws -> Void,
     consumer: @escaping @Sendable (
-      RPCAsyncSequence<RPCResponsePart, any Error>
+      RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>
     ) async throws -> Void
   ) async throws {
     try await self.execute(
@@ -75,19 +76,19 @@ struct ServerRPCExecutorTestHarness {
     )
   }
 
-  func execute<Input, Output>(
+  func execute<Input, Output, Bytes: GRPCContiguousBytes>(
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     handler: ServerHandler<Input, Output>,
     producer: @escaping @Sendable (
-      RPCWriter<RPCRequestPart>.Closable
+      RPCWriter<RPCRequestPart<Bytes>>.Closable
     ) async throws -> Void,
     consumer: @escaping @Sendable (
-      RPCAsyncSequence<RPCResponsePart, any Error>
+      RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>
     ) async throws -> Void
   ) async throws {
-    let input = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart.self)
-    let output = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+    let input = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart<Bytes>.self)
+    let output = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart<Bytes>.self)
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
@@ -130,10 +131,10 @@ struct ServerRPCExecutorTestHarness {
   func execute(
     handler: ServerHandler<[UInt8], [UInt8]> = .echo,
     producer: @escaping @Sendable (
-      RPCWriter<RPCRequestPart>.Closable
+      RPCWriter<RPCRequestPart<[UInt8]>>.Closable
     ) async throws -> Void,
     consumer: @escaping @Sendable (
-      RPCAsyncSequence<RPCResponsePart, any Error>
+      RPCAsyncSequence<RPCResponsePart<[UInt8]>, any Error>
     ) async throws -> Void
   ) async throws {
     try await self.execute(
