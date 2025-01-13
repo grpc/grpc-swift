@@ -839,7 +839,7 @@ final class Test_TextBasedRenderer: XCTestCase {
     try _test(
       StructDescription(
         name: "Structy",
-        generics: [.member("T")],
+        generics: [.member("T")]
       ),
       renderedBy: { $0.renderStruct(_:) },
       rendersAs: #"""
