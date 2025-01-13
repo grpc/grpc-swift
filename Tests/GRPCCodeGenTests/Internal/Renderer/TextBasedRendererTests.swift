@@ -853,11 +853,12 @@ final class Test_TextBasedRenderer: XCTestCase {
         whereClause: WhereClause(
           requirements: [
             .conformance("T", "Foo"),
-            .conformance("T", "Sendable")
+            .conformance("T", "Sendable"),
           ]
         )
       ),
-      renderedBy: { $0.renderStruct(_:)
+      renderedBy: {
+        $0.renderStruct(_:)
       },
       rendersAs: #"""
         struct Structy<T> where T: Foo, T: Sendable {}
