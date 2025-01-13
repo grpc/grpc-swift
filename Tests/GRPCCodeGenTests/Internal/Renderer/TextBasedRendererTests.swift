@@ -850,11 +850,17 @@ final class Test_TextBasedRenderer: XCTestCase {
       StructDescription(
         name: "Structy",
         generics: [.member("T")],
-        whereClause: WhereClause(requirements: [.conformance("T", "Foo")])
+        whereClause: WhereClause(
+          requirements: [
+            .conformance("T", "Foo"),
+            .conformance("T", "Sendable")
+          ]
+        )
       ),
-      renderedBy: { $0.renderStruct(_:) },
+      renderedBy: { $0.renderStruct(_:)
+      },
       rendersAs: #"""
-        struct Structy<T> where T: Foo {}
+        struct Structy<T> where T: Foo, T: Sendable {}
         """#
     )
     try _test(
