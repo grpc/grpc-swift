@@ -45,10 +45,10 @@ private import Synchronization
 /// ## Creating a client manually
 ///
 /// If the `with`-style methods for creating clients isn't suitable for your application then you
-/// can create and run a client manually. This requires you to call the ``run()`` method in a task
+/// can create and run a client manually. This requires you to call the ``maintainConnections()`` method in a task
 /// which instructs the client to start connecting to the server.
 ///
-/// The ``run()`` method won't return until the client has finished handling all requests. You can
+/// The ``maintainConnections()`` method won't return until the client has finished handling all requests. You can
 /// signal to the client that it should stop creating new request streams by calling ``beginGracefulShutdown()``.
 /// This gives the client enough time to drain any requests already in flight. To stop the client
 /// more abruptly you can cancel the task running your client. If your application requires
@@ -114,7 +114,7 @@ public final class GRPCClient: Sendable {
     func checkExecutable() throws {
       switch self {
       case .notStarted, .running:
-        // Allow .notStarted as making a request can race with 'run()'. Transports should tolerate
+        // Allow .notStarted as making a request can race with 'maintainConnections()'. Transports should tolerate
         // queuing the request if not yet started.
         ()
       case .stopping, .stopped:
@@ -208,7 +208,7 @@ public final class GRPCClient: Sendable {
   ///
   /// The client, and by extension this function, can only be run once. If the client is already
   /// running or has already been closed then a ``RuntimeError`` is thrown.
-  public func run() async throws {
+  public func maintainConnections() async throws {
     try self.stateMachine.withLock { try $0.state.run() }
 
     // When this function exits the client must have stopped.
@@ -225,6 +225,11 @@ public final class GRPCClient: Sendable {
         cause: error
       )
     }
+  }
+
+  @available(*, deprecated, renamed: "maintainConnections", message: "It'll be removed before v2.")
+  public func run() async throws {
+    try await self.maintainConnections()
   }
 
   /// Close the client.
@@ -338,7 +343,7 @@ public final class GRPCClient: Sendable {
 
   /// Start a bidirectional streaming RPC.
   ///
-  /// - Note: ``run()`` must have been called and still executing, and ``beginGracefulShutdown()`` mustn't
+  /// - Note: ``maintainConnections()`` must have been called and still executing, and ``beginGracefulShutdown()`` mustn't
   /// have been called.
   ///
   /// - Parameters:
@@ -430,7 +435,7 @@ public func withGRPCClient<Result: Sendable>(
   try await withThrowingDiscardingTaskGroup { group in
     let client = GRPCClient(transport: transport, interceptorPipeline: interceptorPipeline)
     group.addTask {
-      try await client.run()
+      try await client.maintainConnections()
     }
 
     let result = try await handleClient(client)

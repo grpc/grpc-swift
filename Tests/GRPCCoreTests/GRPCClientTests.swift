@@ -336,7 +336,7 @@ final class GRPCClientTests: XCTestCase {
       }
 
       group.addTask {
-        try await client.run()
+        try await client.maintainConnections()
       }
 
       // Wait for client and server to be running.
@@ -377,13 +377,13 @@ final class GRPCClientTests: XCTestCase {
     let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client)
     // Run the client.
-    let task = Task { try await client.run() }
+    let task = Task { try await client.maintainConnections() }
     task.cancel()
     try await task.value
 
     // Client is stopped, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await client.run()
+      try await client.maintainConnections()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .clientIsStopped)
     }
@@ -393,13 +393,13 @@ final class GRPCClientTests: XCTestCase {
     let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client)
     // Run the client.
-    let task = Task { try await client.run() }
+    let task = Task { try await client.maintainConnections() }
     // Make sure the client is run for the first time here.
     try await Task.sleep(for: .milliseconds(10))
 
     // Client is already running, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await client.run()
+      try await client.maintainConnections()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .clientIsAlreadyRunning)
     }
@@ -551,7 +551,7 @@ struct ClientTests {
       }
 
       group.addTask {
-        try await client.run()
+        try await client.maintainConnections()
       }
 
       // Make sure both server and client are running

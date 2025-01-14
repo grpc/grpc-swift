@@ -35,7 +35,7 @@ struct InProcessTransportTests {
 
       let client = GRPCClient(transport: inProcess.client)
       group.addTask {
-        try await client.run()
+        try await client.maintainConnections()
       }
 
       try await execute(server, client)
@@ -60,7 +60,7 @@ struct InProcessTransportTests {
         #expect(messages == ["isCancelled=true"])
       }
 
-      // Finally, shutdown the client so its run() method returns.
+      // Finally, shutdown the client so its maintainConnections() method returns.
       client.beginGracefulShutdown()
     }
   }
