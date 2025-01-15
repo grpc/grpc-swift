@@ -47,7 +47,7 @@ public protocol ClientTransport: Sendable {
   /// running ``connect()``.
   func beginGracefulShutdown()
 
-  /// Opens a stream using the transport, and uses it as input into a user-provided closure.
+  /// Opens a stream using the transport, and uses it as input into a user-provided closure alongisde the given context.
   ///
   /// - Important: The opened stream is closed after the closure is finished.
   ///

@@ -34,7 +34,7 @@ extension InProcessTransport {
 
     private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
     private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation
-    private let peer: String
+    package let peer: String
 
     private struct State: Sendable {
       private var _nextID: UInt64

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, gRPC Authors All rights reserved.
+ * Copyright 2023-2025, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,9 +198,11 @@ final class InProcessClientTransportTests: XCTestCase {
       ]
     )
 
+    let peer = "in-process:1234"
     var client = InProcessTransport.Client(
-      server: InProcessTransport.Server(peer: "in-process:1234"),
-      serviceConfig: serviceConfig
+      server: InProcessTransport.Server(peer: peer),
+      serviceConfig: serviceConfig,
+      peer: peer
     )
 
     let firstDescriptor = MethodDescriptor(fullyQualifiedService: "test", method: "first")
@@ -223,8 +225,9 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     serviceConfig.methodConfig.append(overrideConfiguration)
     client = InProcessTransport.Client(
-      server: InProcessTransport.Server(peer: "in-process:1234"),
-      serviceConfig: serviceConfig
+      server: InProcessTransport.Server(peer: peer),
+      serviceConfig: serviceConfig,
+      peer: peer
     )
 
     let secondDescriptor = MethodDescriptor(fullyQualifiedService: "test", method: "second")
@@ -290,7 +293,8 @@ final class InProcessClientTransportTests: XCTestCase {
 
     return InProcessTransport.Client(
       server: server,
-      serviceConfig: serviceConfig
+      serviceConfig: serviceConfig,
+      peer: server.peer
     )
   }
 }
