@@ -225,12 +225,12 @@ extension InProcessTransport {
     /// - Parameters:
     ///   - descriptor: A description of the method to open a stream for.
     ///   - options: Options specific to the stream.
-    ///   - closure: A closure that takes the opened stream as parameter.
+    ///   - closure: A closure that takes the opened stream and the client context as its parameters.
     /// - Returns: Whatever value was returned from `closure`.
     public func withStream<T>(
       descriptor: MethodDescriptor,
       options: CallOptions,
-      _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+      _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
     ) async throws -> T {
       let request = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart.self)
       let response = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
@@ -297,11 +297,19 @@ extension InProcessTransport {
         }
       }
 
+      let clientContext = ClientContext(
+        descriptor: descriptor,
+        remotePeer: "<in-process>",
+        localPeer: "<in-process>",
+        serverHostname: "<in-process>",
+        networkTransportMethod: "in-process"
+      )
+
       switch acceptStream {
       case .success(let streamID):
         let streamHandlingResult: Result<T, any Error>
         do {
-          let result = try await closure(clientStream)
+          let result = try await closure(clientStream, clientContext)
           streamHandlingResult = .success(result)
         } catch {
           streamHandlingResult = .failure(error)
