@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/// A sink for values which are produced over time.
+/// A type into which values can be written indefinitely.
 public protocol RPCWriterProtocol<Element>: Sendable {
   /// The type of value written.
   associatedtype Element: Sendable
@@ -49,6 +49,7 @@ extension RPCWriterProtocol {
   }
 }
 
+/// A type into which values can be written until it is finished.
 public protocol ClosableRPCWriterProtocol<Element>: RPCWriterProtocol {
   /// Indicate to the writer that no more writes are to be accepted.
   ///
