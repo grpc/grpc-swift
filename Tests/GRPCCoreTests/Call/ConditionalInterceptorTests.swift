@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
+import GRPCCore
 import Testing
 
-@testable import GRPCCore
-
-@Suite("ClientInterceptorPipelineOperation")
-struct ClientInterceptorPipelineOperationTests {
+@Suite("ConditionalInterceptor")
+struct ConditionalInterceptorTests {
   @Test(
     "Applies to",
     arguments: [
@@ -38,24 +37,19 @@ struct ClientInterceptorPipelineOperationTests {
         [.barFoo],
         [.fooBar, .fooBaz, .barBaz]
       ),
-    ] as [(ClientInterceptorPipelineOperation.Subject, [MethodDescriptor], [MethodDescriptor])]
+    ] as [(ConditionalInterceptor<any Sendable>.Subject, [MethodDescriptor], [MethodDescriptor])]
   )
   func appliesTo(
-    operationSubject: ClientInterceptorPipelineOperation.Subject,
+    target: ConditionalInterceptor<any Sendable>.Subject,
     applicableMethods: [MethodDescriptor],
     notApplicableMethods: [MethodDescriptor]
   ) {
-    let operation = ClientInterceptorPipelineOperation.apply(
-      .requestCounter(.init()),
-      to: operationSubject
-    )
-
     for applicableMethod in applicableMethods {
-      #expect(operation.applies(to: applicableMethod))
+      #expect(target.applies(to: applicableMethod))
     }
 
     for notApplicableMethod in notApplicableMethods {
-      #expect(!operation.applies(to: notApplicableMethod))
+      #expect(!target.applies(to: notApplicableMethod))
     }
   }
 }

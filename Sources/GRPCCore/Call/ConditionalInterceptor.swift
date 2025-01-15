@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-/// A `ClientInterceptorPipelineOperation` describes to which RPCs a client interceptor should be applied.
+/// Describes the conditions under which an interceptor should be applied.
 ///
-/// You can configure a client interceptor to be applied to:
+/// You can configure interceptors to be applied to:
 /// - all RPCs and services;
 /// - requests directed only to specific services; or
 /// - requests directed only to specific methods (of a specific service).
 ///
-/// - SeeAlso: ``ClientInterceptor`` for more information on client interceptors, and
-///  ``ServerInterceptorPipelineOperation`` for the server-side version of this type.
-public struct ClientInterceptorPipelineOperation: Sendable {
-  /// The subject of a ``ClientInterceptorPipelineOperation``.
-  /// The subject of an interceptor can either be all services and methods, only specific services, or only specific methods.
+/// - SeeAlso: ``ClientInterceptor`` and ``ServerInterceptor`` for more information on client and
+///   server interceptors, respectively.
+public struct ConditionalInterceptor<Interceptor: Sendable>: Sendable {
   public struct Subject: Sendable {
     internal enum Wrapped: Sendable {
       case all
@@ -41,7 +39,6 @@ public struct ClientInterceptorPipelineOperation: Sendable {
     /// An operation subject specifying an interceptor that will be applied only to RPCs directed to the specified services.
     /// - Parameters:
     ///   - services: The list of service names for which this interceptor should intercept RPCs.
-    /// - Returns: A ``ClientInterceptorPipelineOperation``.
     public static func services(_ services: Set<ServiceDescriptor>) -> Self {
       Self(wrapped: .services(services))
     }
@@ -49,13 +46,12 @@ public struct ClientInterceptorPipelineOperation: Sendable {
     /// An operation subject specifying an interceptor that will be applied only to RPCs directed to the specified service methods.
     /// - Parameters:
     ///   - methods: The list of method descriptors for which this interceptor should intercept RPCs.
-    /// - Returns: A ``ClientInterceptorPipelineOperation``.
     public static func methods(_ methods: Set<MethodDescriptor>) -> Self {
       Self(wrapped: .methods(methods))
     }
 
     @usableFromInline
-    internal func applies(to descriptor: MethodDescriptor) -> Bool {
+    package func applies(to descriptor: MethodDescriptor) -> Bool {
       switch self.wrapped {
       case .all:
         return true
@@ -69,24 +65,15 @@ public struct ClientInterceptorPipelineOperation: Sendable {
     }
   }
 
-  /// The interceptor specified for this operation.
-  public let interceptor: any ClientInterceptor
+  /// The interceptor.
+  public let interceptor: Interceptor
 
   @usableFromInline
   internal let subject: Subject
 
-  private init(interceptor: any ClientInterceptor, appliesTo: Subject) {
+  fileprivate init(interceptor: Interceptor, subject: Subject) {
     self.interceptor = interceptor
-    self.subject = appliesTo
-  }
-
-  /// Create an operation, specifying which ``ClientInterceptor`` to apply and to which ``Subject``.
-  /// - Parameters:
-  ///   - interceptor: The ``ClientInterceptor`` to register with the client.
-  ///   - subject: The ``Subject`` to which the `interceptor` applies.
-  /// - Returns: A ``ClientInterceptorPipelineOperation``.
-  public static func apply(_ interceptor: any ClientInterceptor, to subject: Subject) -> Self {
-    Self(interceptor: interceptor, appliesTo: subject)
+    self.subject = subject
   }
 
   /// Returns whether this ``ClientInterceptorPipelineOperation`` applies to the given `descriptor`.
@@ -95,5 +82,31 @@ public struct ClientInterceptorPipelineOperation: Sendable {
   @inlinable
   internal func applies(to descriptor: MethodDescriptor) -> Bool {
     self.subject.applies(to: descriptor)
+  }
+}
+
+extension ConditionalInterceptor where Interceptor == any ClientInterceptor {
+  /// Create an operation, specifying which ``ClientInterceptor`` to apply and to which ``Subject``.
+  /// - Parameters:
+  ///   - interceptor: The ``ClientInterceptor`` to register with the client.
+  ///   - subject: The ``Subject`` to which the `interceptor` applies.
+  public static func apply(
+    _ interceptor: any ClientInterceptor,
+    to subject: Subject
+  ) -> Self {
+    Self(interceptor: interceptor, subject: subject)
+  }
+}
+
+extension ConditionalInterceptor where Interceptor == any ServerInterceptor {
+  /// Create an operation, specifying which ``ServerInterceptor`` to apply and to which ``Subject``.
+  /// - Parameters:
+  ///   - interceptor: The ``ServerInterceptor`` to register with the client.
+  ///   - target: The ``Subject`` to which the `interceptor` applies.
+  public static func apply(
+    _ interceptor: any ServerInterceptor,
+    to subject: Subject
+  ) -> Self {
+    Self(interceptor: interceptor, subject: subject)
   }
 }

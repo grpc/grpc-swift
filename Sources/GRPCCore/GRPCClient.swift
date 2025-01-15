@@ -129,7 +129,7 @@ public final class GRPCClient: Sendable {
   private struct StateMachine {
     var state: State
 
-    private let interceptorPipeline: [ClientInterceptorPipelineOperation]
+    private let interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]
 
     /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
     ///
@@ -142,7 +142,7 @@ public final class GRPCClient: Sendable {
     /// the appropriate handler.
     var interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
 
-    init(interceptorPipeline: [ClientInterceptorPipelineOperation]) {
+    init(interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]) {
       self.state = .notStarted
       self.interceptorPipeline = interceptorPipeline
       self.interceptorsPerMethod = [:]
@@ -195,7 +195,7 @@ public final class GRPCClient: Sendable {
   ///       The last interceptor added will be the final interceptor to intercept each request before calling the appropriate handler.
   public init(
     transport: some ClientTransport,
-    interceptorPipeline: [ClientInterceptorPipelineOperation]
+    interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]
   ) {
     self.transport = transport
     self.stateMachine = Mutex(StateMachine(interceptorPipeline: interceptorPipeline))
@@ -423,7 +423,7 @@ public func withGRPCClient<Result: Sendable>(
 /// - Returns: The result of the `handleClient` closure.
 public func withGRPCClient<Result: Sendable>(
   transport: some ClientTransport,
-  interceptorPipeline: [ClientInterceptorPipelineOperation],
+  interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>],
   isolation: isolated (any Actor)? = #isolation,
   handleClient: (GRPCClient) async throws -> Result
 ) async throws -> Result {

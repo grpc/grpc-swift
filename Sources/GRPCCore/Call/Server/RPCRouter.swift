@@ -157,7 +157,9 @@ public struct RPCRouter: Sendable {
   ///  interceptors matters.
   /// - SeeAlso: ``ServerInterceptorPipelineOperation``.
   @inlinable
-  public mutating func registerInterceptors(pipeline: [ServerInterceptorPipelineOperation]) {
+  public mutating func registerInterceptors(
+    pipeline: [ConditionalInterceptor<any ServerInterceptor>]
+  ) {
     for descriptor in self.handlers.keys {
       let applicableOperations = pipeline.filter { $0.applies(to: descriptor) }
       if !applicableOperations.isEmpty {
