@@ -103,19 +103,23 @@ extension InProcessTransport {
 
     private let methodConfig: MethodConfigs
     private let state: Mutex<State>
+    private let peer: String
 
     /// Creates a new in-process client transport.
     ///
     /// - Parameters:
     ///   - server: The in-process server transport to connect to.
     ///   - serviceConfig: Service configuration.
+    ///   - peer: The system's PID for the running client and server.
     package init(
       server: InProcessTransport.Server,
-      serviceConfig: ServiceConfig = ServiceConfig()
+      serviceConfig: ServiceConfig = ServiceConfig(),
+      peer: String
     ) {
       self.retryThrottle = serviceConfig.retryThrottling.map { RetryThrottle(policy: $0) }
       self.methodConfig = MethodConfigs(serviceConfig: serviceConfig)
       self.state = Mutex(.unconnected(.init(serverTransport: server)))
+      self.peer = peer
     }
 
     /// Establish and maintain a connection to the remote destination.
@@ -299,8 +303,8 @@ extension InProcessTransport {
 
       let clientContext = ClientContext(
         descriptor: descriptor,
-        remotePeer: "<in-process>",
-        localPeer: "<in-process>"
+        remotePeer: self.peer,
+        localPeer: self.peer
       )
 
       switch acceptStream {

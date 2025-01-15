@@ -74,6 +74,9 @@ extension InProcessTransport {
     private let handles: Mutex<State>
 
     /// Creates a new instance of ``Server``.
+    ///
+    /// - Parameters:
+    ///   - peer: The system's PID for the running client and server.
     package init(peer: String) {
       (self.newStreams, self.newStreamsContinuation) = AsyncStream.makeStream()
       self.handles = Mutex(State())
