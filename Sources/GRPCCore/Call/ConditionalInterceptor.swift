@@ -102,7 +102,7 @@ extension ConditionalInterceptor where Interceptor == any ServerInterceptor {
   /// Create an operation, specifying which ``ServerInterceptor`` to apply and to which ``Subject``.
   /// - Parameters:
   ///   - interceptor: The ``ServerInterceptor`` to register with the client.
-  ///   - target: The ``Subject`` to which the `interceptor` applies.
+  ///   - subject: The ``Subject`` to which the `interceptor` applies.
   public static func apply(
     _ interceptor: any ServerInterceptor,
     to subject: Subject

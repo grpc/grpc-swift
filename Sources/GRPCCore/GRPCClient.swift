@@ -188,7 +188,7 @@ public final class GRPCClient: Sendable {
   ///
   /// - Parameters:
   ///   - transport: The transport used to establish a communication channel with a server.
-  ///   - interceptorPipeline: A collection of ``ClientInterceptorPipelineOperation`` providing cross-cutting
+  ///   - interceptorPipeline: A collection of ``ConditionalInterceptor``s providing cross-cutting
   ///       functionality to each accepted RPC. Only applicable interceptors from the pipeline will be applied to each RPC.
   ///       The order in which interceptors are added reflects the order in which they are called.
   ///       The first interceptor added will be the first interceptor to intercept each request.
@@ -411,7 +411,7 @@ public func withGRPCClient<Result: Sendable>(
 ///
 /// - Parameters:
 ///   - transport: The transport used to establish a communication channel with a server.
-///   - interceptorPipeline: A collection of ``ClientInterceptorPipelineOperation`` providing cross-cutting
+///   - interceptorPipeline: A collection of ``ConditionalInterceptor``s providing cross-cutting
 ///       functionality to each accepted RPC. Only applicable interceptors from the pipeline will be applied to each RPC.
 ///       The order in which interceptors are added reflects the order in which they are called.
 ///       The first interceptor added will be the first interceptor to intercept each request.
