@@ -300,9 +300,7 @@ extension InProcessTransport {
       let clientContext = ClientContext(
         descriptor: descriptor,
         remotePeer: "<in-process>",
-        localPeer: "<in-process>",
-        serverHostname: "<in-process>",
-        networkTransportMethod: "in-process"
+        localPeer: "<in-process>"
       )
 
       switch acceptStream {

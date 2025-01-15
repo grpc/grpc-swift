@@ -32,9 +32,6 @@ public struct ClientContext: Sendable {
   /// - "in-process:27182".
   public var remotePeer: String
 
-  /// The hostname of the RPC server.
-  public var serverHostname: String
-
   /// A description of the local peer.
   ///
   /// The format of the description should follow the pattern "<transport>:<address>" where
@@ -48,21 +45,14 @@ public struct ClientContext: Sendable {
   /// - "in-process:27182".
   public var localPeer: String
 
-  /// The transport in use (e.g. "tcp", "udp").
-  public var networkTransportMethod: String
-
   /// Create a new client interceptor context.
   public init(
     descriptor: MethodDescriptor,
     remotePeer: String,
-    localPeer: String,
-    serverHostname: String,
-    networkTransportMethod: String
+    localPeer: String
   ) {
     self.descriptor = descriptor
     self.remotePeer = remotePeer
     self.localPeer = localPeer
-    self.serverHostname = serverHostname
-    self.networkTransportMethod = networkTransportMethod
   }
 }
