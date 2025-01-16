@@ -32,7 +32,8 @@ public struct ServerContext: Sendable {
   /// - "in-process:27182".
   @available(*, deprecated, renamed: "remotePeer")
   public var peer: String {
-    remotePeer
+    get { remotePeer }
+    set { remotePeer = newValue }
   }
 
   /// A description of the remote peer.
