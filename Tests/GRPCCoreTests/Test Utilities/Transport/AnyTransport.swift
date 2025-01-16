@@ -24,7 +24,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
     @Sendable (
       _ method: MethodDescriptor,
       _ options: CallOptions,
-      _ body: (RPCStream<Inbound, Outbound>) async throws -> (any Sendable)
+      _ body: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> (any Sendable)
     ) async throws -> Any
   private let _connect: @Sendable () async throws -> Void
   private let _close: @Sendable () -> Void
@@ -34,8 +34,8 @@ struct AnyClientTransport: ClientTransport, Sendable {
   where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
     self._retryThrottle = { transport.retryThrottle }
     self._withStream = { descriptor, options, closure in
-      try await transport.withStream(descriptor: descriptor, options: options) { stream in
-        try await closure(stream) as (any Sendable)
+      try await transport.withStream(descriptor: descriptor, options: options) { stream, context in
+        try await closure(stream, context) as (any Sendable)
       }
     }
 
@@ -67,7 +67,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
   func withStream<T>(
     descriptor: MethodDescriptor,
     options: CallOptions,
-    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
   ) async throws -> T {
     let result = try await self._withStream(descriptor, options, closure)
     return result as! T

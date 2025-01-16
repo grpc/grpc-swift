@@ -27,6 +27,6 @@ public struct InProcessTransport: Sendable {
   public init(serviceConfig: ServiceConfig = ServiceConfig()) {
     let peer = "in-process:\(System.pid())"
     self.server = Self.Server(peer: peer)
-    self.client = Self.Client(server: self.server, serviceConfig: serviceConfig)
+    self.client = Self.Client(server: self.server, serviceConfig: serviceConfig, peer: peer)
   }
 }

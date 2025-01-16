@@ -44,7 +44,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
   func withStream<T>(
     descriptor: MethodDescriptor,
     options: CallOptions,
-    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
   ) async throws -> T {
     throw RPCError(code: self.code, message: "")
   }
