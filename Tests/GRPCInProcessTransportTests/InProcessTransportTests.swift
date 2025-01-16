@@ -83,8 +83,9 @@ struct InProcessTransportTests {
         try $0.message
       }
 
-      let match = peerInfo.wholeMatch(of: /in-process:\d+/)
-      #expect(match != nil)
+      let maybeMatch = peerInfo.wholeMatch(of: /local: in-process:(\d+), remote: in-process:(\d+)/)
+      let match = try #require(maybeMatch)
+      #expect(match.1 == match.2)
     }
   }
 }
@@ -123,7 +124,8 @@ private struct TestService: RegistrableRPCService {
     request: ServerRequest<Void>,
     context: ServerContext
   ) async throws -> ServerResponse<String> {
-    return ServerResponse(message: context.remotePeer)
+    let peerInfo = "local: \(context.localPeer), remote: \(context.remotePeer)"
+    return ServerResponse(message: peerInfo)
   }
 
   func registerMethods(with router: inout RPCRouter) {
