@@ -50,7 +50,7 @@ public protocol ClientTransport<Bytes>: Sendable {
   /// running ``connect()``.
   func beginGracefulShutdown()
 
-  /// Opens a stream using the transport, and uses it as input into a user-provided closure.
+  /// Opens a stream using the transport, and uses it as input into a user-provided closure alongisde the given context.
   ///
   /// - Important: The opened stream is closed after the closure is finished.
   ///
@@ -62,12 +62,12 @@ public protocol ClientTransport<Bytes>: Sendable {
   /// - Parameters:
   ///   - descriptor: A description of the method to open a stream for.
   ///   - options: Options specific to the stream.
-  ///   - closure: A closure that takes the opened stream as parameter.
+  ///   - closure: A closure that takes the opened stream and the client context as its parameters.
   /// - Returns: Whatever value was returned from `closure`.
   func withStream<T: Sendable>(
     descriptor: MethodDescriptor,
     options: CallOptions,
-    _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (_ stream: RPCStream<Inbound, Outbound>, _ context: ClientContext) async throws -> T
   ) async throws -> T
 
   /// Returns the configuration for a given method.

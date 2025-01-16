@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, gRPC Authors All rights reserved.
+ * Copyright 2023-2025, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ final class InProcessClientTransportTests: XCTestCase {
 
     try await withThrowingTaskGroup(of: Void.self) { group in
       group.addTask {
-        try await client.withStream(descriptor: .testTest, options: .defaults) { _ in
+        try await client.withStream(descriptor: .testTest, options: .defaults) { _, _ in
           // Once the pending stream is opened, close the client to new connections,
           // so that, once this closure is executed and this stream is closed,
           // the client will return from `connect()`.
@@ -135,7 +135,7 @@ final class InProcessClientTransportTests: XCTestCase {
     client.beginGracefulShutdown()
 
     await XCTAssertThrowsErrorAsync(ofType: RPCError.self) {
-      try await client.withStream(descriptor: .testTest, options: .defaults) { _ in }
+      try await client.withStream(descriptor: .testTest, options: .defaults) { _, _ in }
     } errorHandler: { error in
       XCTAssertEqual(error.code, .failedPrecondition)
     }
@@ -151,7 +151,7 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        try await client.withStream(descriptor: .testTest, options: .defaults) { stream in
+        try await client.withStream(descriptor: .testTest, options: .defaults) { stream, _ in
           try await stream.outbound.write(.message([1]))
           await stream.outbound.finish()
           let receivedMessages = try await stream.inbound.reduce(into: []) { $0.append($1) }
@@ -198,9 +198,11 @@ final class InProcessClientTransportTests: XCTestCase {
       ]
     )
 
+    let peer = "in-process:1234"
     var client = InProcessTransport.Client(
-      server: InProcessTransport.Server(peer: "in-process:1234"),
-      serviceConfig: serviceConfig
+      server: InProcessTransport.Server(peer: peer),
+      serviceConfig: serviceConfig,
+      peer: peer
     )
 
     let firstDescriptor = MethodDescriptor(fullyQualifiedService: "test", method: "first")
@@ -223,8 +225,9 @@ final class InProcessClientTransportTests: XCTestCase {
     )
     serviceConfig.methodConfig.append(overrideConfiguration)
     client = InProcessTransport.Client(
-      server: InProcessTransport.Server(peer: "in-process:1234"),
-      serviceConfig: serviceConfig
+      server: InProcessTransport.Server(peer: peer),
+      serviceConfig: serviceConfig,
+      peer: peer
     )
 
     let secondDescriptor = MethodDescriptor(fullyQualifiedService: "test", method: "second")
@@ -248,13 +251,13 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        try await client.withStream(descriptor: .testTest, options: .defaults) { stream in
+        try await client.withStream(descriptor: .testTest, options: .defaults) { stream, _ in
           try await Task.sleep(for: .milliseconds(100))
         }
       }
 
       group.addTask {
-        try await client.withStream(descriptor: .testTest, options: .defaults) { stream in
+        try await client.withStream(descriptor: .testTest, options: .defaults) { stream, _ in
           try await Task.sleep(for: .milliseconds(100))
         }
       }
@@ -290,7 +293,8 @@ final class InProcessClientTransportTests: XCTestCase {
 
     return InProcessTransport.Client(
       server: server,
-      serviceConfig: serviceConfig
+      serviceConfig: serviceConfig,
+      peer: server.peer
     )
   }
 }

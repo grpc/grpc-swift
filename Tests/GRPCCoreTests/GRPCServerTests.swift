@@ -48,7 +48,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
         await stream.outbound.finish()
@@ -75,7 +75,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.collect,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3]))
         try await stream.outbound.write(.message([1]))
@@ -106,7 +106,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.expand,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
         await stream.outbound.finish()
@@ -135,7 +135,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.update,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         for byte in [3, 1, 4, 1, 5] as [UInt8] {
           try await stream.outbound.write(.message([byte]))
@@ -166,7 +166,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         await stream.outbound.finish()
 
@@ -187,7 +187,7 @@ final class GRPCServerTests: XCTestCase {
             try await client.withStream(
               descriptor: BinaryEcho.Methods.get,
               options: .defaults
-            ) { stream in
+            ) { stream, _ in
               try await stream.outbound.write(.metadata([:]))
               try await stream.outbound.write(.message([i]))
               await stream.outbound.finish()
@@ -225,7 +225,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         await stream.outbound.finish()
 
@@ -250,7 +250,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         await stream.outbound.finish()
 
@@ -277,7 +277,7 @@ final class GRPCServerTests: XCTestCase {
         try await client.withStream(
           descriptor: BinaryEcho.Methods.get,
           options: .defaults
-        ) { stream in
+        ) { stream, _ in
           XCTFail("Stream shouldn't be opened")
         }
       } errorHandler: { error in
@@ -291,7 +291,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.update,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         var iterator = stream.inbound.makeAsyncIterator()
         // Don't need to validate the response, just that the server is running.
@@ -364,7 +364,7 @@ final class GRPCServerTests: XCTestCase {
     try await transport.withStream(
       descriptor: BinaryEcho.Methods.get,
       options: .defaults
-    ) { stream in
+    ) { stream, _ in
       try await stream.outbound.write(.metadata([:]))
       try await stream.outbound.write(.message([0]))
       await stream.outbound.finish()
@@ -407,7 +407,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("hello".utf8)))
         await stream.outbound.finish()
@@ -437,7 +437,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: HelloWorld.Methods.sayHello,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("Swift".utf8)))
         await stream.outbound.finish()
@@ -494,7 +494,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("hello".utf8)))
         await stream.outbound.finish()
@@ -524,7 +524,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.collect,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("hello".utf8)))
         await stream.outbound.finish()

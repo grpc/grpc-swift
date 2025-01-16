@@ -118,7 +118,7 @@ extension ClientRPCExecutor.RetryExecutor {
           let attemptResult = try await self.transport.withStream(
             descriptor: method,
             options: options
-          ) { stream in
+          ) { stream, context in
             group.addTask {
               var metadata = request.metadata
               // Work out the timeout from the deadline.
@@ -127,6 +127,7 @@ extension ClientRPCExecutor.RetryExecutor {
               }
 
               return await self.executeAttempt(
+                context: context,
                 stream: stream,
                 metadata: metadata,
                 retryStream: retry.stream,
@@ -194,6 +195,7 @@ extension ClientRPCExecutor.RetryExecutor {
 
   @inlinable
   func executeAttempt<R: Sendable, Bytes: GRPCContiguousBytes>(
+    context: ClientContext,
     stream: RPCStream<
       RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>,
       RPCWriter<RPCRequestPart<Bytes>>.Closable
@@ -214,8 +216,8 @@ extension ClientRPCExecutor.RetryExecutor {
 
       let response = await ClientRPCExecutor._execute(
         in: &group,
+        context: context,
         request: request,
-        method: method,
         attempt: attempt,
         serializer: self.serializer,
         deserializer: self.deserializer,

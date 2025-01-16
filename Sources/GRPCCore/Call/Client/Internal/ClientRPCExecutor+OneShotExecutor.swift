@@ -98,11 +98,14 @@ extension ClientRPCExecutor.OneShotExecutor {
   ) async -> Result<R, any Error> {
     return await withTaskGroup(of: Void.self, returning: Result<R, any Error>.self) { group in
       do {
-        return try await self.transport.withStream(descriptor: method, options: options) { stream in
+        return try await self.transport.withStream(
+          descriptor: method,
+          options: options
+        ) { stream, context in
           let response = await ClientRPCExecutor._execute(
             in: &group,
+            context: context,
             request: request,
-            method: method,
             attempt: 1,
             serializer: self.serializer,
             deserializer: self.deserializer,
