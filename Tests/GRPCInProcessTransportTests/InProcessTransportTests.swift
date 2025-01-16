@@ -123,7 +123,7 @@ private struct TestService: RegistrableRPCService {
     request: ServerRequest<Void>,
     context: ServerContext
   ) async throws -> ServerResponse<String> {
-    return ServerResponse(message: context.peer)
+    return ServerResponse(message: context.remotePeer)
   }
 
   func registerMethods(with router: inout RPCRouter) {
