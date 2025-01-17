@@ -14,22 +14,32 @@
  * limitations under the License.
  */
 
-import Foundation
 import GRPCCore
 
-struct JSONSerializer<Message: Encodable>: MessageSerializer {
-  private let encoder = JSONEncoder()
+import struct Foundation.Data
+import class Foundation.JSONDecoder
+import class Foundation.JSONEncoder
 
-  func serialize(_ message: Message) throws -> [UInt8] {
-    let data = try self.encoder.encode(message)
-    return Array(data)
+struct JSONSerializer<Message: Codable>: MessageSerializer {
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: Message) throws -> Bytes {
+    do {
+      let jsonEncoder = JSONEncoder()
+      let data = try jsonEncoder.encode(message)
+      return Bytes(data)
+    } catch {
+      throw RPCError(code: .internalError, message: "Can't serialize message to JSON. \(error)")
+    }
   }
 }
 
-struct JSONDeserializer<Message: Decodable>: MessageDeserializer {
-  private let decoder = JSONDecoder()
-
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> Message {
-    try self.decoder.decode(Message.self, from: Data(serializedMessageBytes))
+struct JSONDeserializer<Message: Codable>: MessageDeserializer {
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> Message {
+    do {
+      let jsonDecoder = JSONDecoder()
+      let data = serializedMessageBytes.withUnsafeBytes { Data($0) }
+      return try jsonDecoder.decode(Message.self, from: data)
+    } catch {
+      throw RPCError(code: .internalError, message: "Can't deserialze message from JSON. \(error)")
+    }
   }
 }
