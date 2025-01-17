@@ -60,7 +60,7 @@ struct InProcessTransportTests {
         #expect(messages == ["isCancelled=true"])
       }
 
-      // Finally, shutdown the client so its maintainConnections() method returns.
+      // Finally, shutdown the client so its runConnections() method returns.
       client.beginGracefulShutdown()
     }
   }
