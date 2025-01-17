@@ -29,7 +29,7 @@ struct DetailedErrorExample {
     }
   }
 
-  static func doRPC(_ greeter: Helloworld_Greeter.Client) async throws {
+  static func doRPC(_ greeter: Helloworld_Greeter.Client<some ClientTransport>) async throws {
     do {
       let reply = try await greeter.sayHello(.with { $0.name = "(ignored)" })
       print("Unexpected reply: \(reply.message)")

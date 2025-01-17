@@ -30,17 +30,12 @@ struct RouteChat: AsyncParsableCommand {
   var port: Int = 31415
 
   func run() async throws {
-    let transport = try HTTP2ClientTransport.Posix(
-      target: .ipv4(host: "127.0.0.1", port: self.port),
-      transportSecurity: .plaintext
-    )
-    let client = GRPCClient(transport: transport)
-
-    try await withThrowingDiscardingTaskGroup { group in
-      group.addTask {
-        try await client.run()
-      }
-
+    try await withGRPCClient(
+      transport: .http2NIOPosix(
+        target: .ipv4(host: "127.0.0.1", port: self.port),
+        transportSecurity: .plaintext
+      )
+    ) { client in
       let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
 
       try await routeGuide.routeChat { writer in
@@ -67,8 +62,6 @@ struct RouteChat: AsyncParsableCommand {
           print("Received note: '\(note.message) at (\(lat), \(lon))'")
         }
       }
-
-      client.beginGracefulShutdown()
     }
   }
 }
