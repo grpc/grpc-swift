@@ -227,11 +227,6 @@ public final class GRPCClient<Transport: ClientTransport>: Sendable {
     }
   }
 
-  @available(*, deprecated, renamed: "runConnections", message: "It'll be removed before v2.")
-  public func run() async throws {
-    try await self.runConnections()
-  }
-
   /// Close the client.
   ///
   /// The transport will be closed: this means that it will be given enough time to wait for

@@ -51,17 +51,6 @@ public struct MethodDescriptor: Sendable, Hashable {
     self.service = ServiceDescriptor(fullyQualifiedService: fullyQualifiedService)
     self.method = method
   }
-
-  @available(*, deprecated, renamed: "init(fullyQualifiedService:method:)")
-  /// Creates a new method descriptor.
-  ///
-  /// - Parameters:
-  ///   - service: The fully qualified name of the service, including the package
-  ///       name. For example, "helloworld.Greeter".
-  ///   - method: The name of the method. For example, "SayHello".
-  public init(service: String, method: String) {
-    self.init(fullyQualifiedService: service, method: method)
-  }
 }
 
 extension MethodDescriptor: CustomStringConvertible {
