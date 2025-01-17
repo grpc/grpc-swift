@@ -35,7 +35,7 @@ struct InProcessTransportTests {
 
       let client = GRPCClient(transport: inProcess.client)
       group.addTask {
-        try await client.maintainConnections()
+        try await client.runConnections()
       }
 
       try await execute(server, client)
