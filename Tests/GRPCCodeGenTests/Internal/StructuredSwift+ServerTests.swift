@@ -220,7 +220,7 @@ extension StructuredSwiftTests {
       }
 
       let expected = """
-        \(access) func registerMethods(with router: inout GRPCCore.RPCRouter) {
+        \(access) func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
           router.registerHandler(
             forMethod: FooService.Method.Bar.descriptor,
             deserializer: Deserialize<BarInput>(),

@@ -36,6 +36,8 @@ extension InProcessTransport {
   ///
   /// - SeeAlso: `ClientTransport`
   public final class Client: ClientTransport {
+    public typealias Bytes = [UInt8]
+
     private enum State: Sendable {
       struct UnconnectedState {
         var serverTransport: InProcessTransport.Server
@@ -54,7 +56,8 @@ extension InProcessTransport {
           [Int: (
             RPCStream<Inbound, Outbound>,
             RPCStream<
-              RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
+              RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>,
+              RPCWriter<RPCResponsePart<Bytes>>.Closable
             >
           )]
         var signalEndContinuation: AsyncStream<Void>.Continuation
@@ -75,7 +78,8 @@ extension InProcessTransport {
           [Int: (
             RPCStream<Inbound, Outbound>,
             RPCStream<
-              RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
+              RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>,
+              RPCWriter<RPCResponsePart<Bytes>>.Closable
             >
           )]
         var signalEndContinuation: AsyncStream<Void>.Continuation?
@@ -95,9 +99,6 @@ extension InProcessTransport {
       case connected(ConnectedState)
       case closed(ClosedState)
     }
-
-    public typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
-    public typealias Outbound = RPCWriter<RPCRequestPart>.Closable
 
     public let retryThrottle: RetryThrottle?
 
@@ -236,8 +237,8 @@ extension InProcessTransport {
       options: CallOptions,
       _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
     ) async throws -> T {
-      let request = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart.self)
-      let response = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+      let request = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart<Bytes>.self)
+      let response = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart<Bytes>.self)
 
       let clientStream = RPCStream(
         descriptor: descriptor,

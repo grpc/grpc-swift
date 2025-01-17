@@ -311,14 +311,20 @@ extension FunctionDescription {
     return FunctionDescription(
       accessModifier: accessLevel,
       kind: .function(name: "registerMethods"),
+      generics: [.member("Transport")],
       parameters: [
         ParameterDescription(
           label: "with",
           name: "router",
-          type: .rpcRouter,
+          type: .rpcRouter(genericOver: "Transport"),
           `inout`: true
         )
       ],
+      whereClause: WhereClause(
+        requirements: [
+          .conformance("Transport", "GRPCCore.ServerTransport")
+        ]
+      ),
       body: methods.map { method in
         .functionCall(
           .registerWithRouter(

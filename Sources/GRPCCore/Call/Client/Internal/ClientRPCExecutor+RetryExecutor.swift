@@ -194,9 +194,12 @@ extension ClientRPCExecutor.RetryExecutor {
   }
 
   @inlinable
-  func executeAttempt<R: Sendable>(
+  func executeAttempt<R: Sendable, Bytes: GRPCContiguousBytes>(
     context: ClientContext,
-    stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>,
+    stream: RPCStream<
+      RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>,
+      RPCWriter<RPCRequestPart<Bytes>>.Closable
+    >,
     metadata: Metadata,
     retryStream: BroadcastAsyncSequence<Input>,
     method: MethodDescriptor,

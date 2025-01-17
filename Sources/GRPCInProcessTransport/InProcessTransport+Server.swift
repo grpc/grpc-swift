@@ -29,8 +29,10 @@ extension InProcessTransport {
   ///
   /// - SeeAlso: `ClientTransport`
   public final class Server: ServerTransport, Sendable {
-    public typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
-    public typealias Outbound = RPCWriter<RPCResponsePart>.Closable
+    public typealias Bytes = [UInt8]
+
+    public typealias Inbound = RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>
+    public typealias Outbound = RPCWriter<RPCResponsePart<Bytes>>.Closable
 
     private let newStreams: AsyncStream<RPCStream<Inbound, Outbound>>
     private let newStreamsContinuation: AsyncStream<RPCStream<Inbound, Outbound>>.Continuation

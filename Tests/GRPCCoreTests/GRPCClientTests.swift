@@ -23,7 +23,10 @@ final class GRPCClientTests: XCTestCase {
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
     interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>] = [],
-    _ body: (GRPCClient, GRPCServer) async throws -> Void
+    _ body: (
+      GRPCClient<InProcessTransport.Client>,
+      GRPCServer<InProcessTransport.Server>
+    ) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     _ = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
@@ -40,22 +43,6 @@ final class GRPCClientTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(100))
         try await body(client, server)
       }
-    }
-  }
-
-  struct IdentitySerializer: MessageSerializer {
-    typealias Message = [UInt8]
-
-    func serialize(_ message: [UInt8]) throws -> [UInt8] {
-      return message
-    }
-  }
-
-  struct IdentityDeserializer: MessageDeserializer {
-    typealias Message = [UInt8]
-
-    func deserialize(_ serializedMessageBytes: [UInt8]) throws -> [UInt8] {
-      return serializedMessageBytes
     }
   }
 
@@ -539,7 +526,10 @@ struct ClientTests {
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
     interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>] = [],
-    _ body: (GRPCClient, GRPCServer) async throws -> Void
+    _ body: (
+      GRPCClient<InProcessTransport.Client>,
+      GRPCServer<InProcessTransport.Server>
+    ) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)

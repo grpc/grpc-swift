@@ -16,8 +16,7 @@
 @testable import GRPCCore
 
 struct ThrowOnStreamCreationTransport: ClientTransport {
-  typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
-  typealias Outbound = RPCWriter<RPCRequestPart>.Closable
+  typealias Bytes = [UInt8]
 
   private let code: RPCError.Code
 
@@ -51,6 +50,8 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
 }
 
 struct ThrowOnRunServerTransport: ServerTransport {
+  typealias Bytes = [UInt8]
+
   func listen(
     streamHandler: (
       _ stream: RPCStream<Inbound, Outbound>,
@@ -69,6 +70,8 @@ struct ThrowOnRunServerTransport: ServerTransport {
 }
 
 struct ThrowOnSignalServerTransport: ServerTransport {
+  typealias Bytes = [UInt8]
+
   let signal: AsyncStream<Void>
 
   init(signal: AsyncStream<Void>) {

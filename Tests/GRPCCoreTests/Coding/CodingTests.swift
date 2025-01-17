@@ -35,7 +35,7 @@ final class CodingTests: XCTestCase {
     let serializer = JSONSerializer<Message>()
     let deserializer = JSONDeserializer<Message>()
 
-    let bytes = try serializer.serialize(message)
+    let bytes = try serializer.serialize(message) as [UInt8]
     let roundTrip = try deserializer.deserialize(bytes)
     XCTAssertEqual(roundTrip, message)
   }

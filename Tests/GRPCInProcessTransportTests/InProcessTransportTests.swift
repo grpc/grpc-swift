@@ -23,7 +23,10 @@ struct InProcessTransportTests {
   private static let cancellationModes = ["await-cancelled", "with-cancellation-handler"]
 
   private func withTestServerAndClient(
-    execute: (GRPCServer, GRPCClient) async throws -> Void
+    execute: (
+      GRPCServer<InProcessTransport.Server>,
+      GRPCClient<InProcessTransport.Client>
+    ) async throws -> Void
   ) async throws {
     try await withThrowingDiscardingTaskGroup { group in
       let inProcess = InProcessTransport()
@@ -126,7 +129,7 @@ private struct TestService: RegistrableRPCService {
     return ServerResponse(message: peerInfo)
   }
 
-  func registerMethods(with router: inout RPCRouter) {
+  func registerMethods<Transport: ServerTransport>(with router: inout RPCRouter<Transport>) {
     router.registerHandler(
       forMethod: .testCancellation,
       deserializer: UTF8Deserializer(),
@@ -169,38 +172,42 @@ private struct PeerInfo: Codable {
 }
 
 private struct PeerInfoSerializer: MessageSerializer {
-  func serialize(_ message: PeerInfo) throws -> [UInt8] {
-    Array("\(message.local) \(message.remote)".utf8)
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: PeerInfo) throws -> Bytes {
+    Bytes("\(message.local) \(message.remote)".utf8)
   }
 }
 
 private struct PeerInfoDeserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> PeerInfo {
-    let stringPeerInfo = String(decoding: serializedMessageBytes, as: UTF8.self)
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> PeerInfo {
+    let stringPeerInfo = serializedMessageBytes.withUnsafeBytes {
+      String(decoding: $0, as: UTF8.self)
+    }
     let peerInfoComponents = stringPeerInfo.split(separator: " ")
     return PeerInfo(local: String(peerInfoComponents[0]), remote: String(peerInfoComponents[1]))
   }
 }
 
 private struct UTF8Serializer: MessageSerializer {
-  func serialize(_ message: String) throws -> [UInt8] {
-    Array(message.utf8)
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: String) throws -> Bytes {
+    Bytes(message.utf8)
   }
 }
 
 private struct UTF8Deserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> String {
-    String(decoding: serializedMessageBytes, as: UTF8.self)
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> String {
+    serializedMessageBytes.withUnsafeBytes {
+      String(decoding: $0, as: UTF8.self)
+    }
   }
 }
 
 private struct VoidSerializer: MessageSerializer {
-  func serialize(_ message: Void) throws -> [UInt8] {
-    []
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: Void) throws -> Bytes {
+    Bytes(repeating: 0, count: 0)
   }
 }
 
 private struct VoidDeserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws {
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws {
   }
 }

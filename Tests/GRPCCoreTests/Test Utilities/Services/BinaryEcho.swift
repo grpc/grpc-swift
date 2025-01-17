@@ -53,7 +53,7 @@ struct BinaryEcho: RegistrableRPCService {
     }
   }
 
-  func registerMethods(with router: inout RPCRouter) {
+  func registerMethods<Transport: ServerTransport>(with router: inout RPCRouter<Transport>) {
     let serializer = IdentitySerializer()
     let deserializer = IdentityDeserializer()
 

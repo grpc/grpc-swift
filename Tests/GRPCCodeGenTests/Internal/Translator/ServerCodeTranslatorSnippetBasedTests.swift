@@ -144,7 +144,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
       }
       // Default implementation of 'registerMethods(with:)'.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
-          public func registerMethods(with router: inout GRPCCore.RPCRouter) {
+          public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
               router.registerHandler(
                   forMethod: NamespaceA_ServiceA.Method.Unary.descriptor,
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceARequest>(),

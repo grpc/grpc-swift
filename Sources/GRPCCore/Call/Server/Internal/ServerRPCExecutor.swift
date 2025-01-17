@@ -27,11 +27,11 @@ struct ServerRPCExecutor {
   ///       interceptors will be called in the order of the array.
   ///   - handler: A handler which turns the request into a response.
   @inlinable
-  static func execute<Input, Output>(
+  static func execute<Input, Output, Bytes: GRPCContiguousBytes>(
     context: ServerContext,
     stream: RPCStream<
-      RPCAsyncSequence<RPCRequestPart, any Error>,
-      RPCWriter<RPCResponsePart>.Closable
+      RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>,
+      RPCWriter<RPCResponsePart<Bytes>>.Closable
     >,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
@@ -66,11 +66,11 @@ struct ServerRPCExecutor {
   }
 
   @inlinable
-  static func _execute<Input, Output>(
+  static func _execute<Input, Output, Bytes: GRPCContiguousBytes>(
     context: ServerContext,
     metadata: Metadata,
-    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
-    outbound: RPCWriter<RPCResponsePart>.Closable,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>.AsyncIterator>,
+    outbound: RPCWriter<RPCResponsePart<Bytes>>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
@@ -106,12 +106,12 @@ struct ServerRPCExecutor {
   }
 
   @inlinable
-  static func _processRPCWithTimeout<Input, Output>(
+  static func _processRPCWithTimeout<Input, Output, Bytes: GRPCContiguousBytes>(
     timeout: Duration,
     context: ServerContext,
     metadata: Metadata,
-    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
-    outbound: RPCWriter<RPCResponsePart>.Closable,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>.AsyncIterator>,
+    outbound: RPCWriter<RPCResponsePart<Bytes>>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
@@ -147,11 +147,11 @@ struct ServerRPCExecutor {
   }
 
   @inlinable
-  static func _processRPC<Input, Output>(
+  static func _processRPC<Input, Output, Bytes: GRPCContiguousBytes>(
     context: ServerContext,
     metadata: Metadata,
-    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>,
-    outbound: RPCWriter<RPCResponsePart>.Closable,
+    inbound: UnsafeTransfer<RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>.AsyncIterator>,
+    outbound: RPCWriter<RPCResponsePart<Bytes>>.Closable,
     deserializer: some MessageDeserializer<Input>,
     serializer: some MessageSerializer<Output>,
     interceptors: [any ServerInterceptor],
@@ -235,12 +235,12 @@ struct ServerRPCExecutor {
   }
 
   @inlinable
-  static func _waitForFirstRequestPart(
-    inbound: RPCAsyncSequence<RPCRequestPart, any Error>
-  ) async -> OnFirstRequestPart {
+  static func _waitForFirstRequestPart<Bytes: GRPCContiguousBytes>(
+    inbound: RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>
+  ) async -> OnFirstRequestPart<Bytes> {
     var iterator = inbound.makeAsyncIterator()
     let part = await Result { try await iterator.next() }
-    let onFirstRequestPart: OnFirstRequestPart
+    let onFirstRequestPart: OnFirstRequestPart<Bytes>
 
     switch part {
     case .success(.metadata(let metadata)):
@@ -275,10 +275,10 @@ struct ServerRPCExecutor {
   }
 
   @usableFromInline
-  enum OnFirstRequestPart {
+  enum OnFirstRequestPart<Bytes: GRPCContiguousBytes> {
     case process(
       Metadata,
-      UnsafeTransfer<RPCAsyncSequence<RPCRequestPart, any Error>.AsyncIterator>
+      UnsafeTransfer<RPCAsyncSequence<RPCRequestPart<Bytes>, any Error>.AsyncIterator>
     )
     case reject(RPCError)
   }

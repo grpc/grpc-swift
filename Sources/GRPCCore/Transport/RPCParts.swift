@@ -15,7 +15,7 @@
  */
 
 /// Part of a request sent from a client to a server in a stream.
-public enum RPCRequestPart: Hashable, Sendable {
+public enum RPCRequestPart<Bytes: GRPCContiguousBytes> {
   /// Key-value pairs sent at the start of a request stream. Only one ``metadata(_:)`` value may
   /// be sent to the server.
   case metadata(Metadata)
@@ -23,11 +23,15 @@ public enum RPCRequestPart: Hashable, Sendable {
   /// The bytes of a serialized message to send to the server. A stream may have any number of
   /// messages sent on it. Restrictions for unary request or response streams are imposed at a
   /// higher level.
-  case message([UInt8])
+  case message(Bytes)
 }
 
+extension RPCRequestPart: Sendable where Bytes: Sendable {}
+extension RPCRequestPart: Hashable where Bytes: Hashable {}
+extension RPCRequestPart: Equatable where Bytes: Equatable {}
+
 /// Part of a response sent from a server to a client in a stream.
-public enum RPCResponsePart: Hashable, Sendable {
+public enum RPCResponsePart<Bytes: GRPCContiguousBytes> {
   /// Key-value pairs sent at the start of the response stream. At most one ``metadata(_:)`` value
   /// may be sent to the client. If the server sends ``metadata(_:)`` it must be the first part in
   /// the response stream.
@@ -36,10 +40,14 @@ public enum RPCResponsePart: Hashable, Sendable {
   /// The bytes of a serialized message to send to the client. A stream may have any number of
   /// messages sent on it. Restrictions for unary request or response streams are imposed at a
   /// higher level.
-  case message([UInt8])
+  case message(Bytes)
 
   /// A status and key-value pairs sent to the client at the end of the response stream. Every
   /// response stream must have exactly one ``status(_:_:)`` as the final part of the request
   /// stream.
   case status(Status, Metadata)
 }
+
+extension RPCResponsePart: Sendable where Bytes: Sendable {}
+extension RPCResponsePart: Hashable where Bytes: Hashable {}
+extension RPCResponsePart: Equatable where Bytes: Equatable {}

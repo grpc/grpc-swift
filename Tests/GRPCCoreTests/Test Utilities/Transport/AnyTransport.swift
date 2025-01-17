@@ -16,8 +16,7 @@
 @testable import GRPCCore
 
 struct AnyClientTransport: ClientTransport, Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
-  typealias Outbound = RPCWriter<RPCRequestPart>.Closable
+  typealias Bytes = [UInt8]
 
   private let _retryThrottle: @Sendable () -> RetryThrottle?
   private let _withStream:
@@ -30,8 +29,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
   private let _close: @Sendable () -> Void
   private let _configuration: @Sendable (MethodDescriptor) -> MethodConfig?
 
-  init<Transport: ClientTransport>(wrapping transport: Transport)
-  where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
+  init<Transport: ClientTransport>(wrapping transport: Transport) where Transport.Bytes == [UInt8] {
     self._retryThrottle = { transport.retryThrottle }
     self._withStream = { descriptor, options, closure in
       try await transport.withStream(descriptor: descriptor, options: options) { stream, context in
@@ -81,8 +79,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
 }
 
 struct AnyServerTransport: ServerTransport, Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
-  typealias Outbound = RPCWriter<RPCResponsePart>.Closable
+  typealias Bytes = [UInt8]
 
   private let _listen:
     @Sendable (
@@ -93,7 +90,7 @@ struct AnyServerTransport: ServerTransport, Sendable {
     ) async throws -> Void
   private let _stopListening: @Sendable () -> Void
 
-  init<Transport: ServerTransport>(wrapping transport: Transport) {
+  init<Transport: ServerTransport>(wrapping transport: Transport) where Transport.Bytes == [UInt8] {
     self._listen = { streamHandler in try await transport.listen(streamHandler: streamHandler) }
     self._stopListening = { transport.beginGracefulShutdown() }
   }

@@ -645,10 +645,10 @@ extension FunctionDescription {
 
 extension StructDescription {
   /// ```
-  /// struct <Name>: <ClientProtocol> {
-  ///   private let client: GRPCCore.GRPCClient
+  /// struct <Name><Transport>: <ClientProtocol> where Transport: GRPCCore.ClientTransport {
+  ///   private let client: GRPCCore.GRPCClient<Transport>
   ///
-  ///   init(wrapping client: GRPCCore.GRPCClient) {
+  ///   init(wrapping client: GRPCCore.GRPCClient<Transport>) {
   ///     self.client = client
   ///   }
   ///
@@ -665,9 +665,18 @@ extension StructDescription {
     StructDescription(
       accessModifier: accessLevel,
       name: name,
+      generics: [.member("Transport")],
       conformances: [clientProtocol],
+      whereClause: WhereClause(
+        requirements: [.conformance("Transport", "GRPCCore.ClientTransport")]
+      ),
       members: [
-        .variable(accessModifier: .private, kind: .let, left: "client", type: .grpcClient),
+        .variable(
+          accessModifier: .private,
+          kind: .let,
+          left: "client",
+          type: .grpcClient(genericOver: "Transport")
+        ),
         .commentable(
           .preFormatted(
             """
@@ -681,7 +690,13 @@ extension StructDescription {
             accessModifier: accessLevel,
             kind: .initializer,
             parameters: [
-              ParameterDescription(label: "wrapping", name: "client", type: .grpcClient)
+              ParameterDescription(
+                label: "wrapping",
+                name: "client",
+                type: .grpcClient(
+                  genericOver: "Transport"
+                )
+              )
             ],
             whereClause: nil,
             body: [

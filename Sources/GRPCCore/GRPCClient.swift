@@ -54,9 +54,9 @@ private import Synchronization
 /// more abruptly you can cancel the task running your client. If your application requires
 /// additional resources that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
-public final class GRPCClient: Sendable {
+public final class GRPCClient<Transport: ClientTransport>: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
-  private let transport: any ClientTransport
+  private let transport: Transport
 
   /// The current state of the client.
   private let stateMachine: Mutex<StateMachine>
@@ -175,7 +175,7 @@ public final class GRPCClient: Sendable {
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
   convenience public init(
-    transport: some ClientTransport,
+    transport: Transport,
     interceptors: [any ClientInterceptor] = []
   ) {
     self.init(
@@ -194,7 +194,7 @@ public final class GRPCClient: Sendable {
   ///       The first interceptor added will be the first interceptor to intercept each request.
   ///       The last interceptor added will be the final interceptor to intercept each request before calling the appropriate handler.
   public init(
-    transport: some ClientTransport,
+    transport: Transport,
     interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]
   ) {
     self.transport = transport
@@ -398,11 +398,11 @@ public final class GRPCClient: Sendable {
 ///       code is nonisolated.
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
-public func withGRPCClient<Result: Sendable>(
-  transport: some ClientTransport,
+public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
+  transport: Transport,
   interceptors: [any ClientInterceptor] = [],
   isolation: isolated (any Actor)? = #isolation,
-  handleClient: (GRPCClient) async throws -> Result
+  handleClient: (GRPCClient<Transport>) async throws -> Result
 ) async throws -> Result {
   try await withGRPCClient(
     transport: transport,
@@ -426,11 +426,11 @@ public func withGRPCClient<Result: Sendable>(
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
 /// - Returns: The result of the `handleClient` closure.
-public func withGRPCClient<Result: Sendable>(
-  transport: some ClientTransport,
+public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
+  transport: Transport,
   interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>],
   isolation: isolated (any Actor)? = #isolation,
-  handleClient: (GRPCClient) async throws -> Result
+  handleClient: (GRPCClient<Transport>) async throws -> Result
 ) async throws -> Result {
   try await withThrowingDiscardingTaskGroup { group in
     let client = GRPCClient(transport: transport, interceptorPipeline: interceptorPipeline)
