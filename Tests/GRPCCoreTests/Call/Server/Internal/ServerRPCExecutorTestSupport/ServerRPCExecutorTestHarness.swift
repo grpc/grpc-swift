@@ -102,7 +102,8 @@ struct ServerRPCExecutorTestHarness {
         await withServerContextRPCCancellationHandle { cancellation in
           let context = ServerContext(
             descriptor: MethodDescriptor(fullyQualifiedService: "foo", method: "bar"),
-            peer: "tests",
+            remotePeer: "remote",
+            localPeer: "local",
             cancellation: cancellation
           )
 
