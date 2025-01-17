@@ -322,7 +322,7 @@ extension ClientRPCExecutor.HedgingExecutor {
       return try await self.transport.withStream(
         descriptor: method,
         options: options
-      ) { stream -> _HedgingAttemptTaskResult<R, Output>.AttemptResult in
+      ) { stream, context -> _HedgingAttemptTaskResult<R, Output>.AttemptResult in
         return await withTaskGroup(of: _HedgingAttemptTaskResult<R, Output>.self) { group in
           group.addTask {
             do {
@@ -348,8 +348,8 @@ extension ClientRPCExecutor.HedgingExecutor {
 
               let response = await ClientRPCExecutor._execute(
                 in: &group,
+                context: context,
                 request: request,
-                method: method,
                 attempt: attempt,
                 serializer: self.serializer,
                 deserializer: self.deserializer,

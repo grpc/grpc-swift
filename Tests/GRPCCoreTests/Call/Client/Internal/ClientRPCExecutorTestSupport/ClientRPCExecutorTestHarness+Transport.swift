@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, gRPC Authors All rights reserved.
+ * Copyright 2023-2025, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,6 @@ extension InProcessTransport.Server {
   func spawnClientTransport(
     throttle: RetryThrottle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)
   ) -> InProcessTransport.Client {
-    return InProcessTransport.Client(server: self)
+    return InProcessTransport.Client(server: self, peer: self.peer)
   }
 }

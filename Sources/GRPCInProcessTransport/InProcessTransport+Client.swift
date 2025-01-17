@@ -103,19 +103,23 @@ extension InProcessTransport {
 
     private let methodConfig: MethodConfigs
     private let state: Mutex<State>
+    private let peer: String
 
     /// Creates a new in-process client transport.
     ///
     /// - Parameters:
     ///   - server: The in-process server transport to connect to.
     ///   - serviceConfig: Service configuration.
+    ///   - peer: The system's PID for the running client and server.
     package init(
       server: InProcessTransport.Server,
-      serviceConfig: ServiceConfig = ServiceConfig()
+      serviceConfig: ServiceConfig = ServiceConfig(),
+      peer: String
     ) {
       self.retryThrottle = serviceConfig.retryThrottling.map { RetryThrottle(policy: $0) }
       self.methodConfig = MethodConfigs(serviceConfig: serviceConfig)
       self.state = Mutex(.unconnected(.init(serverTransport: server)))
+      self.peer = peer
     }
 
     /// Establish and maintain a connection to the remote destination.
@@ -225,12 +229,12 @@ extension InProcessTransport {
     /// - Parameters:
     ///   - descriptor: A description of the method to open a stream for.
     ///   - options: Options specific to the stream.
-    ///   - closure: A closure that takes the opened stream as parameter.
+    ///   - closure: A closure that takes the opened stream and the client context as its parameters.
     /// - Returns: Whatever value was returned from `closure`.
     public func withStream<T>(
       descriptor: MethodDescriptor,
       options: CallOptions,
-      _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+      _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
     ) async throws -> T {
       let request = GRPCAsyncThrowingStream.makeStream(of: RPCRequestPart.self)
       let response = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
@@ -297,11 +301,17 @@ extension InProcessTransport {
         }
       }
 
+      let clientContext = ClientContext(
+        descriptor: descriptor,
+        remotePeer: self.peer,
+        localPeer: self.peer
+      )
+
       switch acceptStream {
       case .success(let streamID):
         let streamHandlingResult: Result<T, any Error>
         do {
-          let result = try await closure(clientStream)
+          let result = try await closure(clientStream, clientContext)
           streamHandlingResult = .success(result)
         } catch {
           streamHandlingResult = .failure(error)
