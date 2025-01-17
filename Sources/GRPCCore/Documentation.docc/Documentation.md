@@ -96,8 +96,7 @@ Resources for developers working on gRPC Swift:
 - ``ServerInterceptor``
 - ``ClientContext``
 - ``ServerContext``
-- ``ClientInterceptorPipelineOperation``
-- ``ServerInterceptorPipelineOperation``
+- ``ConditionalInterceptor``
 
 ### RPC descriptors
 
