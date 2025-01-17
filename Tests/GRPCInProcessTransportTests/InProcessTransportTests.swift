@@ -17,6 +17,9 @@
 import GRPCCore
 import GRPCInProcessTransport
 import Testing
+import struct Foundation.Data
+import class Foundation.JSONDecoder
+import class Foundation.JSONEncoder
 
 @Suite("InProcess transport")
 struct InProcessTransportTests {
@@ -172,14 +175,16 @@ private struct PeerInfo: Codable {
 }
 
 private struct PeerInfoSerializer: MessageSerializer {
-  func serialize(_ message: PeerInfo) throws -> [UInt8] {
-    Array("\(message.local) \(message.remote)".utf8)
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: PeerInfo) throws -> Bytes {
+    Bytes("\(message.local) \(message.remote)".utf8)
   }
 }
 
 private struct PeerInfoDeserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> PeerInfo {
-    let stringPeerInfo = String(decoding: serializedMessageBytes, as: UTF8.self)
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> PeerInfo {
+    let stringPeerInfo = serializedMessageBytes.withUnsafeBytes {
+      String(decoding: $0, as: UTF8.self)
+    }
     let peerInfoComponents = stringPeerInfo.split(separator: " ")
     return PeerInfo(local: String(peerInfoComponents[0]), remote: String(peerInfoComponents[1]))
   }
