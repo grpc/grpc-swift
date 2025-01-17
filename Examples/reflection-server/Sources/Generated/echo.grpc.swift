@@ -347,7 +347,7 @@ extension Echo_Echo {
 
 // Default implementation of 'registerMethods(with:)'.
 extension Echo_Echo.StreamingServiceProtocol {
-    internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
+    internal func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
         router.registerHandler(
             forMethod: Echo_Echo.Method.Get.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Echo_EchoRequest>(),
@@ -600,14 +600,14 @@ extension Echo_Echo {
     /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
     /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
     /// means of communication with the remote peer.
-    internal struct Client: ClientProtocol {
-        private let client: GRPCCore.GRPCClient
+    internal struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
+        private let client: GRPCCore.GRPCClient<Transport>
 
         /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
         ///
         /// - Parameters:
         ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
-        internal init(wrapping client: GRPCCore.GRPCClient) {
+        internal init(wrapping client: GRPCCore.GRPCClient<Transport>) {
             self.client = client
         }
 

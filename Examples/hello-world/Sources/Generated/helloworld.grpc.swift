@@ -156,7 +156,7 @@ extension Helloworld_Greeter {
 
 // Default implementation of 'registerMethods(with:)'.
 extension Helloworld_Greeter.StreamingServiceProtocol {
-    internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
+    internal func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
         router.registerHandler(
             forMethod: Helloworld_Greeter.Method.SayHello.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Helloworld_HelloRequest>(),
@@ -246,14 +246,14 @@ extension Helloworld_Greeter {
     /// > Source IDL Documentation:
     /// >
     /// > The greeting service definition.
-    internal struct Client: ClientProtocol {
-        private let client: GRPCCore.GRPCClient
+    internal struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
+        private let client: GRPCCore.GRPCClient<Transport>
 
         /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
         ///
         /// - Parameters:
         ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
-        internal init(wrapping client: GRPCCore.GRPCClient) {
+        internal init(wrapping client: GRPCCore.GRPCClient<Transport>) {
             self.client = client
         }
 
