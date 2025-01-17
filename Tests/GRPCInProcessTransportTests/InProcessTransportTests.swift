@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, gRPC Authors All rights reserved.
+ * Copyright 2024-2025, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,14 +77,13 @@ struct InProcessTransportTests {
         request: ClientRequest(message: ()),
         descriptor: .peerInfo,
         serializer: VoidSerializer(),
-        deserializer: UTF8Deserializer(),
+        deserializer: PeerInfoDeserializer(),
         options: .defaults
       ) {
         try $0.message
       }
 
-      let match = peerInfo.wholeMatch(of: /in-process:\d+/)
-      #expect(match != nil)
+      #expect(peerInfo.local == peerInfo.remote)
     }
   }
 }
@@ -122,8 +121,9 @@ private struct TestService: RegistrableRPCService {
   func peerInfo(
     request: ServerRequest<Void>,
     context: ServerContext
-  ) async throws -> ServerResponse<String> {
-    return ServerResponse(message: context.peer)
+  ) async throws -> ServerResponse<PeerInfo> {
+    let peerInfo = PeerInfo(local: context.localPeer, remote: context.remotePeer)
+    return ServerResponse(message: peerInfo)
   }
 
   func registerMethods(with router: inout RPCRouter) {
@@ -139,7 +139,7 @@ private struct TestService: RegistrableRPCService {
     router.registerHandler(
       forMethod: .peerInfo,
       deserializer: VoidDeserializer(),
-      serializer: UTF8Serializer(),
+      serializer: PeerInfoSerializer(),
       handler: {
         let response = try await self.peerInfo(
           request: ServerRequest<Void>(stream: $0),
@@ -161,6 +161,25 @@ extension MethodDescriptor {
     fullyQualifiedService: "test",
     method: "peerInfo"
   )
+}
+
+private struct PeerInfo: Codable {
+  var local: String
+  var remote: String
+}
+
+private struct PeerInfoSerializer: MessageSerializer {
+  func serialize(_ message: PeerInfo) throws -> [UInt8] {
+    Array("\(message.local) \(message.remote)".utf8)
+  }
+}
+
+private struct PeerInfoDeserializer: MessageDeserializer {
+  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> PeerInfo {
+    let stringPeerInfo = String(decoding: serializedMessageBytes, as: UTF8.self)
+    let peerInfoComponents = stringPeerInfo.split(separator: " ")
+    return PeerInfo(local: String(peerInfoComponents[0]), remote: String(peerInfoComponents[1]))
+  }
 }
 
 private struct UTF8Serializer: MessageSerializer {
