@@ -104,25 +104,25 @@ extension ClientRPCExecutor {
   ///
   /// - Parameters:
   ///   - request: The request to execute.
-  ///   - method: A description of the method to execute the request against.
+  ///   - context: The ``ClientContext`` related to this request.
   ///   - attempt: The attempt number of the request.
   ///   - serializer: A serializer to convert input messages to bytes.
   ///   - deserializer: A deserializer to convert bytes to output messages.
   ///   - interceptors: An array of interceptors which the request and response pass through. The
   ///       interceptors will be called in the order of the array.
+  ///   - stream: The stream to excecute the RPC on.
   /// - Returns: The deserialized response.
   @inlinable  // would be private
   static func _execute<Input: Sendable, Output: Sendable>(
     in group: inout TaskGroup<Void>,
+    context: ClientContext,
     request: StreamingClientRequest<Input>,
-    method: MethodDescriptor,
     attempt: Int,
     serializer: some MessageSerializer<Input>,
     deserializer: some MessageDeserializer<Output>,
     interceptors: [any ClientInterceptor],
     stream: RPCStream<ClientTransport.Inbound, ClientTransport.Outbound>
   ) async -> StreamingClientResponse<Output> {
-    let context = ClientContext(descriptor: method)
 
     if interceptors.isEmpty {
       return await ClientStreamExecutor.execute(

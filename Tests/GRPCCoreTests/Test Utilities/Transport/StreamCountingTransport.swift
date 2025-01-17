@@ -54,15 +54,15 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
   func withStream<T>(
     descriptor: MethodDescriptor,
     options: CallOptions,
-    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
   ) async throws -> T {
     do {
       return try await self.transport.withStream(
         descriptor: descriptor,
         options: options
-      ) { stream in
+      ) { stream, context in
         self._streamsOpened.increment()
-        return try await closure(stream)
+        return try await closure(stream, context)
       }
     } catch {
       self._streamFailures.increment()

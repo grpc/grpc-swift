@@ -45,6 +45,7 @@ extension VariableDescription {
   /// static let descriptor = GRPCCore.MethodDescriptor(
   ///   service: GRPCCore.ServiceDescriptor(fullyQualifiedServiceName: "<literalFullyQualifiedService>"),
   ///   method: "<literalMethodName>"
+  /// )
   /// ```
   package static func methodDescriptor(
     accessModifier: AccessModifier? = nil,
