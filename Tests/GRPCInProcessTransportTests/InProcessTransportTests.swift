@@ -80,7 +80,7 @@ struct InProcessTransportTests {
         request: ClientRequest(message: ()),
         descriptor: .peerInfo,
         serializer: VoidSerializer(),
-        deserializer: PeerInfoDeserializer(),
+        deserializer: JSONDeserializer<PeerInfo>(),
         options: .defaults
       ) {
         try $0.message
@@ -142,7 +142,7 @@ private struct TestService: RegistrableRPCService {
     router.registerHandler(
       forMethod: .peerInfo,
       deserializer: VoidDeserializer(),
-      serializer: PeerInfoSerializer(),
+      serializer: JSONSerializer<PeerInfo>(),
       handler: {
         let response = try await self.peerInfo(
           request: ServerRequest<Void>(stream: $0),
@@ -169,22 +169,6 @@ extension MethodDescriptor {
 private struct PeerInfo: Codable {
   var local: String
   var remote: String
-}
-
-private struct PeerInfoSerializer: MessageSerializer {
-  func serialize<Bytes: GRPCContiguousBytes>(_ message: PeerInfo) throws -> Bytes {
-    Bytes("\(message.local) \(message.remote)".utf8)
-  }
-}
-
-private struct PeerInfoDeserializer: MessageDeserializer {
-  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> PeerInfo {
-    let stringPeerInfo = serializedMessageBytes.withUnsafeBytes {
-      String(decoding: $0, as: UTF8.self)
-    }
-    let peerInfoComponents = stringPeerInfo.split(separator: " ")
-    return PeerInfo(local: String(peerInfoComponents[0]), remote: String(peerInfoComponents[1]))
-  }
 }
 
 private struct UTF8Serializer: MessageSerializer {
