@@ -173,12 +173,12 @@ concurrency.
 Most users won't use ``GRPCClient`` to execute RPCs directly, instead they will
 use the generated client stubs which wrap the ``GRPCClient``. Users are
 responsible for creating the client and running it (which starts and runs the
-underlying transport). This is done by calling ``GRPCClient/run()``. The client
+underlying transport). This is done by calling ``GRPCClient/runConnections()``. The client
 can be shutdown gracefully by calling ``GRPCClient/beginGracefulShutdown()``
 which will stop new RPCs from starting (by failing them with
 ``RPCError/Code-swift.struct/unavailable``) but allow existing ones to continue.
 Existing work can be stopped more abruptly by cancelling the task where
-``GRPCClient/run()`` is executing.
+``GRPCClient/runConnections()`` is executing.
 
 #### Server
 

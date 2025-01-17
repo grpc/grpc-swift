@@ -227,16 +227,11 @@ public final class GRPCClient<Transport: ClientTransport>: Sendable {
     }
   }
 
-  @available(*, deprecated, renamed: "runConnections", message: "It'll be removed before v2.")
-  public func run() async throws {
-    try await self.runConnections()
-  }
-
   /// Close the client.
   ///
   /// The transport will be closed: this means that it will be given enough time to wait for
   /// in-flight RPCs to finish executing, but no new RPCs will be accepted. You can cancel the task
-  /// executing ``run()`` if you want to abruptly stop in-flight RPCs.
+  /// executing ``runConnections()`` if you want to abruptly stop in-flight RPCs.
   public func beginGracefulShutdown() {
     let wasRunning = self.stateMachine.withLock { $0.state.beginGracefulShutdown() }
     if wasRunning {
