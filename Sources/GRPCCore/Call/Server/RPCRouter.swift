@@ -155,9 +155,10 @@ public struct RPCRouter<Transport: ServerTransport>: Sendable {
   ///    only call this method _after_ you have registered all handlers.
   /// - Parameter pipeline: The interceptor pipeline operations to register to all currently-registered handlers. The order of the
   ///  interceptors matters.
-  /// - SeeAlso: ``ServerInterceptorPipelineOperation``.
   @inlinable
-  public mutating func registerInterceptors(pipeline: [ServerInterceptorPipelineOperation]) {
+  public mutating func registerInterceptors(
+    pipeline: [ConditionalInterceptor<any ServerInterceptor>]
+  ) {
     for descriptor in self.handlers.keys {
       let applicableOperations = pipeline.filter { $0.applies(to: descriptor) }
       if !applicableOperations.isEmpty {

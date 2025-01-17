@@ -22,7 +22,7 @@ import XCTest
 final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorPipelineOperation] = [],
+    interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>] = [],
     _ body: (InProcessTransport.Client, GRPCServer<InProcessTransport.Server>) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
@@ -553,7 +553,7 @@ struct ServerTests {
 
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorPipelineOperation] = [],
+    interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>] = [],
     _ body: (InProcessTransport.Client, GRPCServer<InProcessTransport.Server>) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()

@@ -46,6 +46,11 @@ public struct ClientContext: Sendable {
   public var localPeer: String
 
   /// Create a new client interceptor context.
+  ///
+  /// - Parameters:
+  ///   - descriptor: A description of the method being called.
+  ///   - remotePeer: A description of the remote peer.
+  ///   - localPeer: A description of the local peer.
   public init(
     descriptor: MethodDescriptor,
     remotePeer: String,

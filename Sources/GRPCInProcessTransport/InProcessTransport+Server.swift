@@ -124,7 +124,8 @@ extension InProcessTransport {
 
               let context = ServerContext(
                 descriptor: stream.descriptor,
-                peer: self.peer,
+                remotePeer: self.peer,
+                localPeer: self.peer,
                 cancellation: handle
               )
               await streamHandler(stream, context)

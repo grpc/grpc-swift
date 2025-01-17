@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-/// A protocol server transport implementations must conform to.
+/// A type that provides a bidirectional communication channel with a client.
+///
+/// The server transport is responsible for handling connections created by a client and
+/// the multiplexing of those connections into streams corresponding to RPCs.
+///
+/// gRPC provides an in-process transport in the `GRPCInProcessTransport` module and HTTP/2
+/// transport built on top of SwiftNIO in the https://github.com/grpc/grpc-swift-nio-transport
+/// package.
 public protocol ServerTransport<Bytes>: Sendable {
   /// The bag-of-bytes type used by the transport.
   associatedtype Bytes: GRPCContiguousBytes & Sendable

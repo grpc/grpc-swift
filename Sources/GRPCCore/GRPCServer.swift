@@ -171,7 +171,7 @@ public final class GRPCServer<Transport: ServerTransport>: Sendable {
   public convenience init(
     transport: Transport,
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorPipelineOperation]
+    interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>]
   ) {
     var router = RPCRouter<Transport>()
     for service in services {
@@ -290,7 +290,7 @@ public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
 public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
   transport: Transport,
   services: [any RegistrableRPCService],
-  interceptorPipeline: [ServerInterceptorPipelineOperation],
+  interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>],
   isolation: isolated (any Actor)? = #isolation,
   handleServer: (GRPCServer<Transport>) async throws -> Result
 ) async throws -> Result {

@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+/// A type that provides a long-lived bidirectional communication channel to a server.
+///
+/// The client transport is responsible for providing streams to a backend on top of which an
+/// RPC can be executed. A typical transport implementation will establish and maintain connections
+/// to a server (or servers) and manage these over time, potentially closing idle connections and
+/// creating new ones on demand. As such transports can be expensive to create and as such are
+/// intended to be used as long-lived objects which exist for the lifetime of your application.
+///
+/// gRPC provides an in-process transport in the `GRPCInProcessTransport` module and HTTP/2
+/// transport built on top of SwiftNIO in the https://github.com/grpc/grpc-swift-nio-transport
+/// package.
 public protocol ClientTransport<Bytes>: Sendable {
   /// The bag-of-bytes type used by the transport.
   associatedtype Bytes: GRPCContiguousBytes & Sendable
