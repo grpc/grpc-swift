@@ -17,9 +17,6 @@
 import GRPCCore
 import GRPCInProcessTransport
 import Testing
-import struct Foundation.Data
-import class Foundation.JSONDecoder
-import class Foundation.JSONEncoder
 
 @Suite("InProcess transport")
 struct InProcessTransportTests {
