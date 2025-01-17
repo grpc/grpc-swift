@@ -29,22 +29,12 @@ struct Greet: AsyncParsableCommand {
   var name: String = ""
 
   func run() async throws {
-    try await withThrowingDiscardingTaskGroup { group in
-      let client = GRPCClient(
-        transport: try .http2NIOPosix(
-          target: .ipv4(host: "127.0.0.1", port: self.port),
-          transportSecurity: .plaintext
-        )
+    try await withGRPCClient(
+      transport: .http2NIOPosix(
+        target: .ipv4(host: "127.0.0.1", port: self.port),
+        transportSecurity: .plaintext
       )
-
-      group.addTask {
-        try await client.run()
-      }
-
-      defer {
-        client.beginGracefulShutdown()
-      }
-
+    ) { client in
       let greeter = Helloworld_Greeter.Client(wrapping: client)
       let reply = try await greeter.sayHello(.with { $0.name = self.name })
       print(reply.message)

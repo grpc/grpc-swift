@@ -407,7 +407,7 @@ extension Routeguide_RouteGuide {
 
 // Default implementation of 'registerMethods(with:)'.
 extension Routeguide_RouteGuide.StreamingServiceProtocol {
-    internal func registerMethods(with router: inout GRPCCore.RPCRouter) {
+    internal func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
         router.registerHandler(
             forMethod: Routeguide_RouteGuide.Method.GetFeature.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Routeguide_Point>(),
@@ -684,14 +684,14 @@ extension Routeguide_RouteGuide {
     /// > Source IDL Documentation:
     /// >
     /// > Interface exported by the server.
-    internal struct Client: ClientProtocol {
-        private let client: GRPCCore.GRPCClient
+    internal struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
+        private let client: GRPCCore.GRPCClient<Transport>
 
         /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
         ///
         /// - Parameters:
         ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
-        internal init(wrapping client: GRPCCore.GRPCClient) {
+        internal init(wrapping client: GRPCCore.GRPCClient<Transport>) {
             self.client = client
         }
 

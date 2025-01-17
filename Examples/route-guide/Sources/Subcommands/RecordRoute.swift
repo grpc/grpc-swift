@@ -30,17 +30,12 @@ struct RecordRoute: AsyncParsableCommand {
   var points: Int = 10
 
   func run() async throws {
-    let transport = try HTTP2ClientTransport.Posix(
-      target: .ipv4(host: "127.0.0.1", port: self.port),
-      transportSecurity: .plaintext
-    )
-    let client = GRPCClient(transport: transport)
-
-    try await withThrowingDiscardingTaskGroup { group in
-      group.addTask {
-        try await client.run()
-      }
-
+    try await withGRPCClient(
+      transport: .http2NIOPosix(
+        target: .ipv4(host: "127.0.0.1", port: self.port),
+        transportSecurity: .plaintext
+      )
+    ) { client in
       let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
 
       // Get all features.
@@ -67,8 +62,6 @@ struct RecordRoute: AsyncParsableCommand {
         a distance \(summary.distance) metres.
         """
       print(text)
-
-      client.beginGracefulShutdown()
     }
   }
 }
