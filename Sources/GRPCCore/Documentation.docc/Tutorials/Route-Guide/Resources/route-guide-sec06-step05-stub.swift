@@ -3,15 +3,13 @@ import GRPCNIOTransportHTTP2
 
 extension RouteGuide {
   func runClient() async throws {
-    let client = try GRPCClient(
+    try await withGRPCClient(
       transport: .http2NIOPosix(
         target: .ipv4(host: "127.0.0.1", port: 31415),
         transportSecurity: .plaintext
       )
-    )
-
-    async let _ = client.run()
-
-    let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
+    ) { client in
+      let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
+    }
   }
 }
