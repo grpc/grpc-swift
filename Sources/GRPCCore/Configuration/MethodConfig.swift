@@ -18,6 +18,7 @@
 ///
 /// See also: https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto
 public struct MethodConfig: Hashable, Sendable {
+  /// The name of a method to which the method config applies.
   public struct Name: Sendable, Hashable {
     /// The name of the service, including the namespace.
     ///
@@ -143,6 +144,7 @@ public struct MethodConfig: Hashable, Sendable {
   }
 }
 
+/// Whether an RPC should be retried or hedged.
 public struct RPCExecutionPolicy: Hashable, Sendable {
   @usableFromInline
   enum Wrapped: Hashable, Sendable {

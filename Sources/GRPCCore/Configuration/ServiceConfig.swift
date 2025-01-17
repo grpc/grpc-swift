@@ -16,7 +16,12 @@
 
 /// Service configuration values.
 ///
-/// See also: https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto
+/// A service config mostly contains parameters describing how clients connecting to a service
+/// should behave (for example, the load balancing policy to use).
+///
+/// The schema is described by [`grpc/service_config/service_config.proto`](https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto)
+/// in the `grpc/grpc-proto` GitHub repository although gRPC uses it in its JSON form rather than
+/// the Protobuf form.
 public struct ServiceConfig: Hashable, Sendable {
   /// Per-method configuration.
   public var methodConfig: [MethodConfig]
