@@ -24,7 +24,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
   func translate() {
     let method = MethodDescriptor(
       documentation: "/// Documentation for unaryMethod",
-      name: Name(base: "UnaryMethod", generatedUpperCase: "Unary", generatedLowerCase: "unary"),
+      name: MethodName(identifyingName: "UnaryMethod", typeName: "Unary", functionName: "unary"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -33,15 +33,10 @@ final class ServerCodeTranslatorSnippetBasedTests {
 
     let service = ServiceDescriptor(
       documentation: "/// Documentation for ServiceA",
-      name: Name(
-        base: "AlongNameForServiceA",
-        generatedUpperCase: "ServiceA",
-        generatedLowerCase: "serviceA"
-      ),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
+      name: ServiceName(
+        identifyingName: "namespaceA.AlongNameForServiceA",
+        typeName: "NamespaceA_ServiceA",
+        propertyName: "namespaceA_serviceA"
       ),
       methods: [method]
     )

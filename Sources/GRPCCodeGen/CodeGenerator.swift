@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-/// Creates a ``SourceFile`` containing the generated code for the RPCs represented in a ``CodeGenerationRequest`` object.
-public struct SourceGenerator: Sendable {
+@available(*, deprecated, renamed: "CodeGenerator")
+public typealias SourceGenerator = CodeGenerator
+
+/// Generates ``SourceFile`` objects containing generated code for the RPCs represented
+/// in a ``CodeGenerationRequest`` object.
+public struct CodeGenerator: Sendable {
   /// The options regarding the access level, indentation for the generated code
   /// and whether to generate server and client code.
   public var config: Config
@@ -79,8 +83,8 @@ public struct SourceGenerator: Sendable {
     }
   }
 
-  /// The function that transforms a ``CodeGenerationRequest`` object  into a ``SourceFile`` object containing
-  /// the generated code, in accordance to the configurations set by the user for the ``SourceGenerator``.
+  /// Transforms a ``CodeGenerationRequest`` object  into a ``SourceFile`` object containing
+  /// the generated code.
   public func generate(
     _ request: CodeGenerationRequest
   ) throws -> SourceFile {

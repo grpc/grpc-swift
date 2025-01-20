@@ -69,13 +69,13 @@ struct ServerCodeTranslator {
     var blocks = [CodeBlock]()
 
     let `extension` = ExtensionDescription(
-      onType: service.namespacedGeneratedName,
+      onType: service.name.typeName,
       declarations: [
         // protocol StreamingServiceProtocol { ... }
         .commentable(
           .preFormatted(
             Docs.suffix(
-              self.streamingServiceDocs(serviceName: service.fullyQualifiedName),
+              self.streamingServiceDocs(serviceName: service.name.identifyingName),
               withDocs: service.documentation
             )
           ),
@@ -92,7 +92,7 @@ struct ServerCodeTranslator {
         .commentable(
           .preFormatted(
             Docs.suffix(
-              self.serviceDocs(serviceName: service.fullyQualifiedName),
+              self.serviceDocs(serviceName: service.name.identifyingName),
               withDocs: service.documentation
             )
           ),
@@ -100,7 +100,7 @@ struct ServerCodeTranslator {
             .service(
               accessLevel: accessModifier,
               name: "ServiceProtocol",
-              streamingProtocol: "\(service.namespacedGeneratedName).StreamingServiceProtocol",
+              streamingProtocol: "\(service.name.typeName).StreamingServiceProtocol",
               methods: service.methods
             )
           )
@@ -110,7 +110,7 @@ struct ServerCodeTranslator {
         .commentable(
           .preFormatted(
             Docs.suffix(
-              self.simpleServiceDocs(serviceName: service.fullyQualifiedName),
+              self.simpleServiceDocs(serviceName: service.name.identifyingName),
               withDocs: service.documentation
             )
           ),
@@ -118,7 +118,7 @@ struct ServerCodeTranslator {
             .simpleServiceProtocol(
               accessModifier: accessModifier,
               name: "SimpleServiceProtocol",
-              serviceProtocol: "\(service.namespacedGeneratedName).ServiceProtocol",
+              serviceProtocol: "\(service.name.typeName).ServiceProtocol",
               methods: service.methods
             )
           )
@@ -130,8 +130,8 @@ struct ServerCodeTranslator {
     // extension <Service>.StreamingServiceProtocol> { ... }
     let registerExtension: ExtensionDescription = .registrableRPCServiceDefaultImplementation(
       accessLevel: accessModifier,
-      on: "\(service.namespacedGeneratedName).StreamingServiceProtocol",
-      serviceNamespace: service.namespacedGeneratedName,
+      on: "\(service.name.typeName).StreamingServiceProtocol",
+      serviceNamespace: service.name.typeName,
       methods: service.methods,
       serializer: serializer,
       deserializer: deserializer
@@ -147,7 +147,7 @@ struct ServerCodeTranslator {
     let streamingServiceDefaultImplExtension: ExtensionDescription =
       .streamingServiceProtocolDefaultImplementation(
         accessModifier: accessModifier,
-        on: "\(service.namespacedGeneratedName).ServiceProtocol",
+        on: "\(service.name.typeName).ServiceProtocol",
         methods: service.methods
       )
     blocks.append(
@@ -162,7 +162,7 @@ struct ServerCodeTranslator {
     // extension <Service>_SimpleServiceProtocol { ... }
     let serviceDefaultImplExtension: ExtensionDescription = .serviceProtocolDefaultImplementation(
       accessModifier: accessModifier,
-      on: "\(service.namespacedGeneratedName).SimpleServiceProtocol",
+      on: "\(service.name.typeName).SimpleServiceProtocol",
       methods: service.methods
     )
     blocks.append(

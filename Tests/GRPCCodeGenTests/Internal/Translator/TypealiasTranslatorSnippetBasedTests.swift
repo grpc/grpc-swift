@@ -24,7 +24,7 @@ struct TypealiasTranslatorSnippetBasedTests {
   func testTypealiasTranslator() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
-      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
+      name: MethodName(identifyingName: "MethodA", typeName: "MethodA", functionName: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -32,11 +32,10 @@ struct TypealiasTranslatorSnippetBasedTests {
     )
     let service = ServiceDescriptor(
       documentation: "Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: "serviceA"),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
+      name: ServiceName(
+        identifyingName: "namespaceA.ServiceA",
+        typeName: "NamespaceA_ServiceA",
+        propertyName: "namespaceA_ServiceA"
       ),
       methods: [method]
     )
@@ -78,7 +77,7 @@ struct TypealiasTranslatorSnippetBasedTests {
 
 extension TypealiasTranslatorSnippetBasedTests {
   func render(
-    accessLevel: SourceGenerator.Config.AccessLevel,
+    accessLevel: CodeGenerator.Config.AccessLevel,
     service: ServiceDescriptor
   ) -> String {
     let translator = MetadataTranslator()
