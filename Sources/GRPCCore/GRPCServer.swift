@@ -34,8 +34,8 @@ private import Synchronization
 /// The following example demonstrates how to create and run a server.
 ///
 /// ```swift
-/// // Create an transport
-/// let transport: any ServerTransport = ...
+/// // Create a transport
+/// let transport = SomeServerTransport()
 ///
 /// // Create the 'Greeter' and 'Echo' services.
 /// let greeter = GreeterService()
@@ -73,7 +73,8 @@ private import Synchronization
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
 /// you can cancel the task running your server. If your application requires additional resources
 /// that need their lifecycles managed you should consider using [Swift Service
-/// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
+/// Lifecycle](https://github.com/swift-server/swift-service-lifecycle) and the
+/// `GRPCServiceLifecycle` module provided by [gRPC Swift Extras](https://github.com/grpc/grpc-swift-extras).
 public final class GRPCServer<Transport: ServerTransport>: Sendable {
   typealias Stream = RPCStream<Transport.Inbound, Transport.Outbound>
 
@@ -136,7 +137,7 @@ public final class GRPCServer<Transport: ServerTransport>: Sendable {
     }
   }
 
-  /// Creates a new server with no resources.
+  /// Creates a new server.
   ///
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
@@ -158,7 +159,7 @@ public final class GRPCServer<Transport: ServerTransport>: Sendable {
     )
   }
 
-  /// Creates a new server with no resources.
+  /// Creates a new server.
   ///
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
@@ -182,7 +183,7 @@ public final class GRPCServer<Transport: ServerTransport>: Sendable {
     self.init(transport: transport, router: router)
   }
 
-  /// Creates a new server with no resources.
+  /// Creates a new server with a pre-configured router.
   ///
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
