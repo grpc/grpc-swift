@@ -33,7 +33,7 @@ jobs:
       name: "Examples"
       matrix_linux_5_9_enabled: false
       matrix_linux_5_10_enabled: false
-      matrix_linux_command: "./dev/build-examples.sh"
+      matrix_linux_command: "apt update && apt install -y protobuf-compiler && ./dev/build-examples.sh"
 
   benchmarks:
     name: Benchmarks
