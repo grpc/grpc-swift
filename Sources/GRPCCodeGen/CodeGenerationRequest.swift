@@ -298,20 +298,20 @@ extension ServiceDescriptor {
 
     let identifier = namespace.base.isEmpty ? name.base : namespace.base + "." + name.base
 
-    let upper =
+    let typeName =
       namespace.generatedUpperCase.isEmpty
       ? name.generatedUpperCase
       : namespace.generatedUpperCase + "_" + name.generatedUpperCase
 
-    let lower =
+    let propertyName =
       namespace.generatedLowerCase.isEmpty
       ? name.generatedUpperCase
       : namespace.generatedLowerCase + "_" + name.generatedUpperCase
 
     self.name = ServiceName(
       identifyingName: identifier,
-      typeName: upper,
-      propertyName: lower
+      typeName: typeName,
+      propertyName: propertyName
     )
   }
 }
