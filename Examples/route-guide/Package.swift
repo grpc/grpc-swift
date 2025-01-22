@@ -21,9 +21,9 @@ let package = Package(
   name: "route-guide",
   platforms: [.macOS("15.0")],
   dependencies: [
-    .package(url: "https://github.com/grpc/grpc-swift.git", exact: "2.0.0-beta.3"),
-    .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", exact: "1.0.0-beta.3"),
-    .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", exact: "1.0.0-beta.3"),
+    .package(url: "https://github.com/grpc/grpc-swift.git", branch: "main"),
+    .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", branch: "main"),
+    .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", branch: "main"),
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
   ],
   targets: [
@@ -37,6 +37,9 @@ let package = Package(
       ],
       resources: [
         .copy("route_guide_db.json")
+      ],
+      plugins: [
+        .plugin(name: "GRPCProtobufGenerator", package: "grpc-swift-protobuf")
       ]
     )
   ]

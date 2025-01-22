@@ -42,7 +42,7 @@ jobs:
           MATRIX_LINUX_5_9_ENABLED: false
           MATRIX_LINUX_5_10_ENABLED: false
           MATRIX_LINUX_COMMAND: "./dev/build-examples.sh"
-          MATRIX_LINUX_SETUP_COMMAND: ""
+          MATRIX_LINUX_SETUP_COMMAND: "apt update && apt install -y protobuf-compiler && ./dev/build-examples.sh"
 
   examples-matrix:
     name: Examples
