@@ -1,0 +1,11 @@
+{
+  "generate": {
+    "clients": true,
+    "servers": true,
+    "messages": true
+  },
+  "generatedSources": {
+    "accessLevel": "public",
+    "accessLevelOnImports": true
+  }
+}
