@@ -296,3 +296,32 @@ extension Status.Code {
   /// operation.
   public static let unauthenticated = Self(code: .unauthenticated)
 }
+
+extension Status {
+  /// Create a status from an HTTP status code for a response which didn't include a gRPC status.
+  ///
+  /// - Parameter httpStatusCode: The HTTP status code to map to a status.
+  public init(httpStatusCode: Int) {
+    // See the "http-grpc-status-mapping.md" doc in grpc/grpc GitHub repo.
+    switch httpStatusCode {
+    case 400:
+      self = Status(code: .internalError, message: "HTTP 400: Bad Request")
+    case 401:
+      self = Status(code: .unauthenticated, message: "HTTP 401: Unauthorized")
+    case 403:
+      self = Status(code: .permissionDenied, message: "HTTP 403: Forbidden")
+    case 404:
+      self = Status(code: .unimplemented, message: "HTTP 404: Not Found")
+    case 429:
+      self = Status(code: .unavailable, message: "HTTP 429: Too Many Requests")
+    case 502:
+      self = Status(code: .unavailable, message: "HTTP 502: Bad Gateway")
+    case 503:
+      self = Status(code: .unavailable, message: "HTTP 503: Service Unavailable")
+    case 504:
+      self = Status(code: .unavailable, message: "HTTP 504: Gateway Timeout")
+    default:
+      self = Status(code: .unknown, message: "HTTP \(httpStatusCode)")
+    }
+  }
+}
