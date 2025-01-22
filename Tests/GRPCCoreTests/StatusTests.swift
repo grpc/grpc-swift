@@ -69,4 +69,23 @@ struct StatusTests {
   func fitsInExistentialContainer() {
     #expect(MemoryLayout<Status>.size <= 24)
   }
+
+  @Test(
+    "From HTTP status code",
+    arguments: [
+      (400, Status(code: .internalError, message: "HTTP 400: Bad Request")),
+      (401, Status(code: .unauthenticated, message: "HTTP 401: Unauthorized")),
+      (403, Status(code: .permissionDenied, message: "HTTP 403: Forbidden")),
+      (404, Status(code: .unimplemented, message: "HTTP 404: Not Found")),
+      (429, Status(code: .unavailable, message: "HTTP 429: Too Many Requests")),
+      (502, Status(code: .unavailable, message: "HTTP 502: Bad Gateway")),
+      (503, Status(code: .unavailable, message: "HTTP 503: Service Unavailable")),
+      (504, Status(code: .unavailable, message: "HTTP 504: Gateway Timeout")),
+      (418, Status(code: .unknown, message: "HTTP 418")),
+    ]
+  )
+  func convertFromHTTPStatusCode(code: Int, expected: Status) {
+    let status = Status(httpStatusCode: code)
+    #expect(status == expected)
+  }
 }
