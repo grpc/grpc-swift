@@ -302,7 +302,7 @@ extension Status {
   ///
   /// - Parameter httpStatusCode: The HTTP status code to map to a status.
   public init(httpStatusCode: Int) {
-    // https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+    // See the "http-grpc-status-mapping.md" doc in grpc/grpc GitHub repo.
     switch httpStatusCode {
     case 400:
       self = Status(code: .internalError, message: "HTTP 400: Bad Request")
