@@ -22,7 +22,7 @@ extension StructuredSwiftTests {
   struct Import {
     static let translator = IDLToStructuredSwiftTranslator()
 
-    static let allAccessLevels: [SourceGenerator.Config.AccessLevel] = [
+    static let allAccessLevels: [CodeGenerator.Config.AccessLevel] = [
       .internal, .public, .package,
     ]
 
@@ -30,7 +30,7 @@ extension StructuredSwiftTests {
       "import rendering",
       arguments: allAccessLevels
     )
-    func imports(accessLevel: SourceGenerator.Config.AccessLevel) throws {
+    func imports(accessLevel: CodeGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(Dependency(module: "Foo", accessLevel: .public))
       dependencies.append(
@@ -117,7 +117,7 @@ extension StructuredSwiftTests {
       "preconcurrency import rendering",
       arguments: allAccessLevels
     )
-    func preconcurrencyImports(accessLevel: SourceGenerator.Config.AccessLevel) throws {
+    func preconcurrencyImports(accessLevel: CodeGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(
         Dependency(
@@ -167,7 +167,7 @@ extension StructuredSwiftTests {
       "SPI import rendering",
       arguments: allAccessLevels
     )
-    func spiImports(accessLevel: SourceGenerator.Config.AccessLevel) throws {
+    func spiImports(accessLevel: CodeGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(
         Dependency(module: "Foo", spi: "Secret", accessLevel: .internal)

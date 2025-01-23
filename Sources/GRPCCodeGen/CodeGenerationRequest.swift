@@ -44,11 +44,11 @@ public struct CodeGenerationRequest {
   ///
   /// For example, to serialize Protobuf messages you could specify a serializer as:
   /// ```swift
-  /// request.lookupSerializer = { messageType in
+  /// request.makeSerializerCodeSnippet = { messageType in
   ///   "ProtobufSerializer<\(messageType)>()"
   /// }
   /// ```
-  public var lookupSerializer: (_ messageType: String) -> String
+  public var makeSerializerCodeSnippet: (_ messageType: String) -> String
 
   /// Closure that receives a message type as a `String` and returns a code snippet to
   /// initialize a `MessageDeserializer` for that type as a `String`.
@@ -58,12 +58,48 @@ public struct CodeGenerationRequest {
   ///
   /// For example, to serialize Protobuf messages you could specify a serializer as:
   /// ```swift
-  /// request.lookupDeserializer = { messageType in
+  /// request.makeDeserializerCodeSnippet = { messageType in
   ///   "ProtobufDeserializer<\(messageType)>()"
   /// }
   /// ```
-  public var lookupDeserializer: (_ messageType: String) -> String
+  public var makeDeserializerCodeSnippet: (_ messageType: String) -> String
 
+  public init(
+    fileName: String,
+    leadingTrivia: String,
+    dependencies: [Dependency],
+    services: [ServiceDescriptor],
+    makeSerializerCodeSnippet: @escaping (_ messageType: String) -> String,
+    makeDeserializerCodeSnippet: @escaping (_ messageType: String) -> String
+  ) {
+    self.fileName = fileName
+    self.leadingTrivia = leadingTrivia
+    self.dependencies = dependencies
+    self.services = services
+    self.makeSerializerCodeSnippet = makeSerializerCodeSnippet
+    self.makeDeserializerCodeSnippet = makeDeserializerCodeSnippet
+  }
+}
+
+extension CodeGenerationRequest {
+  @available(*, deprecated, renamed: "makeSerializerSnippet")
+  public var lookupSerializer: (_ messageType: String) -> String {
+    get { self.makeSerializerCodeSnippet }
+    set { self.makeSerializerCodeSnippet = newValue }
+  }
+
+  @available(*, deprecated, renamed: "makeDeserializerSnippet")
+  public var lookupDeserializer: (_ messageType: String) -> String {
+    get { self.makeDeserializerCodeSnippet }
+    set { self.makeDeserializerCodeSnippet = newValue }
+  }
+
+  @available(
+    *,
+    deprecated,
+    renamed:
+      "init(fileName:leadingTrivia:dependencies:services:lookupSerializer:lookupDeserializer:)"
+  )
   public init(
     fileName: String,
     leadingTrivia: String,
@@ -72,12 +108,14 @@ public struct CodeGenerationRequest {
     lookupSerializer: @escaping (String) -> String,
     lookupDeserializer: @escaping (String) -> String
   ) {
-    self.fileName = fileName
-    self.leadingTrivia = leadingTrivia
-    self.dependencies = dependencies
-    self.services = services
-    self.lookupSerializer = lookupSerializer
-    self.lookupDeserializer = lookupDeserializer
+    self.init(
+      fileName: fileName,
+      leadingTrivia: leadingTrivia,
+      dependencies: dependencies,
+      services: services,
+      makeSerializerCodeSnippet: lookupSerializer,
+      makeDeserializerCodeSnippet: lookupDeserializer
+    )
   }
 }
 
@@ -88,7 +126,7 @@ public struct Dependency: Equatable {
   public var item: Item?
 
   /// The access level to be included in imports of this dependency.
-  public var accessLevel: SourceGenerator.Config.AccessLevel
+  public var accessLevel: CodeGenerator.Config.AccessLevel
 
   /// The name of the imported module or of the module an item is imported from.
   public var module: String
@@ -107,7 +145,7 @@ public struct Dependency: Equatable {
     module: String,
     spi: String? = nil,
     preconcurrency: PreconcurrencyRequirement = .notRequired,
-    accessLevel: SourceGenerator.Config.AccessLevel
+    accessLevel: CodeGenerator.Config.AccessLevel
   ) {
     self.item = item
     self.module = module
@@ -228,17 +266,8 @@ public struct ServiceDescriptor: Hashable {
   /// It is already formatted, meaning it contains  "///" and new lines.
   public var documentation: String
 
-  /// The service name in different formats.
-  ///
-  /// All properties of this object must be unique for each service from within a namespace.
-  public var name: Name
-
-  /// The service namespace in different formats.
-  ///
-  /// All different services from within the same namespace must have
-  /// the same ``Name`` object as this property.
-  /// For `.proto` files the base name of this object is the package name.
-  public var namespace: Name
+  /// The name of the service.
+  public var name: ServiceName
 
   /// A description of each method of a service.
   ///
@@ -247,14 +276,43 @@ public struct ServiceDescriptor: Hashable {
 
   public init(
     documentation: String,
+    name: ServiceName,
+    methods: [MethodDescriptor]
+  ) {
+    self.documentation = documentation
+    self.name = name
+    self.methods = methods
+  }
+}
+
+extension ServiceDescriptor {
+  @available(*, deprecated, renamed: "init(documentation:name:methods:)")
+  public init(
+    documentation: String,
     name: Name,
     namespace: Name,
     methods: [MethodDescriptor]
   ) {
     self.documentation = documentation
-    self.name = name
-    self.namespace = namespace
     self.methods = methods
+
+    let identifier = namespace.base.isEmpty ? name.base : namespace.base + "." + name.base
+
+    let typeName =
+      namespace.generatedUpperCase.isEmpty
+      ? name.generatedUpperCase
+      : namespace.generatedUpperCase + "_" + name.generatedUpperCase
+
+    let propertyName =
+      namespace.generatedLowerCase.isEmpty
+      ? name.generatedUpperCase
+      : namespace.generatedLowerCase + "_" + name.generatedUpperCase
+
+    self.name = ServiceName(
+      identifyingName: identifier,
+      typeName: typeName,
+      propertyName: propertyName
+    )
   }
 }
 
@@ -268,7 +326,7 @@ public struct MethodDescriptor: Hashable {
   ///
   /// All properties of this object must be unique for each method
   /// from within a service.
-  public var name: Name
+  public var name: MethodName
 
   /// Identifies if the method is input streaming.
   public var isInputStreaming: Bool
@@ -284,7 +342,7 @@ public struct MethodDescriptor: Hashable {
 
   public init(
     documentation: String,
-    name: Name,
+    name: MethodName,
     isInputStreaming: Bool,
     isOutputStreaming: Bool,
     inputType: String,
@@ -299,7 +357,94 @@ public struct MethodDescriptor: Hashable {
   }
 }
 
+extension MethodDescriptor {
+  @available(*, deprecated, message: "Use MethodName instead of Name")
+  public init(
+    documentation: String,
+    name: Name,
+    isInputStreaming: Bool,
+    isOutputStreaming: Bool,
+    inputType: String,
+    outputType: String
+  ) {
+    self.documentation = documentation
+    self.name = MethodName(
+      identifyingName: name.base,
+      typeName: name.generatedUpperCase,
+      functionName: name.generatedLowerCase
+    )
+    self.isInputStreaming = isInputStreaming
+    self.isOutputStreaming = isOutputStreaming
+    self.inputType = inputType
+    self.outputType = outputType
+  }
+}
+
+public struct ServiceName: Hashable {
+  /// The identifying name as used in the service/method descriptors including any namespace.
+  ///
+  /// This value is also used to identify the service to the remote peer, usually as part of the
+  /// ":path" pseudoheader if doing gRPC over HTTP/2.
+  ///
+  /// If the service is declared in package "foo.bar" and the service is called "Baz" then this
+  /// value should be "foo.bar.Baz".
+  public var identifyingName: String
+
+  /// The name as used on types including any namespace.
+  ///
+  /// This is used to generate a namespace for each service which contains a number of client and
+  /// server protocols and concrete types.
+  ///
+  /// If the service is declared in package "foo.bar" and the service is called "Baz" then this
+  /// value should be "Foo\_Bar\_Baz".
+  public var typeName: String
+
+  /// The name as used as a property.
+  ///
+  /// This is used to provide a convenience getter for a descriptor of the service.
+  ///
+  /// If the service is declared in package "foo.bar" and the service is called "Baz" then this
+  /// value should be "foo\_bar\_Baz".
+  public var propertyName: String
+
+  public init(identifyingName: String, typeName: String, propertyName: String) {
+    self.identifyingName = identifyingName
+    self.typeName = typeName
+    self.propertyName = propertyName
+  }
+}
+
+public struct MethodName: Hashable {
+  /// The identifying name as used in the service/method descriptors.
+  ///
+  /// This value is also used to identify the method to the remote peer, usually as part of the
+  /// ":path" pseudoheader if doing gRPC over HTTP/2.
+  ///
+  /// This value typically starts with an uppercase character, for example "Get".
+  public var identifyingName: String
+
+  /// The name as used on types including any namespace.
+  ///
+  /// This is used to generate a namespace for each method which contains information about
+  /// the method.
+  ///
+  /// This value typically starts with an uppercase character, for example "Get".
+  public var typeName: String
+
+  /// The name as used as a property.
+  ///
+  /// This value typically starts with an lowercase character, for example "get".
+  public var functionName: String
+
+  public init(identifyingName: String, typeName: String, functionName: String) {
+    self.identifyingName = identifyingName
+    self.typeName = typeName
+    self.functionName = functionName
+  }
+}
+
 /// Represents the name associated with a namespace, service or a method, in three different formats.
+@available(*, deprecated, message: "Use ServiceName/MethodName instead.")
 public struct Name: Hashable {
   /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
   /// the specific casing of the IDL.
@@ -327,25 +472,12 @@ public struct Name: Hashable {
   }
 }
 
+@available(*, deprecated, message: "Use ServiceName/MethodName instead.")
 extension Name {
   /// The base name replacing occurrences of "." with "_".
   ///
   /// For example, if `base` is "Foo.Bar", then `normalizedBase` is "Foo_Bar".
   public var normalizedBase: String {
     return self.base.replacing(".", with: "_")
-  }
-}
-
-extension ServiceDescriptor {
-  var namespacedServicePropertyName: String {
-    let prefix: String
-
-    if self.namespace.normalizedBase.isEmpty {
-      prefix = ""
-    } else {
-      prefix = self.namespace.normalizedBase + "_"
-    }
-
-    return prefix + self.name.normalizedBase
   }
 }

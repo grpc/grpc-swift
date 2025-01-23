@@ -213,7 +213,7 @@ extension ProtocolDescription {
           .preFormatted(docs(for: method)),
           .function(
             signature: .clientMethod(
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -256,7 +256,7 @@ extension ExtensionDescription {
           .function(
             .clientMethodWithDefaults(
               accessLevel: accessLevel,
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -506,7 +506,7 @@ extension ExtensionDescription {
           .function(
             .clientMethodExploded(
               accessLevel: accessLevel,
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -716,11 +716,11 @@ extension StructDescription {
             .function(
               .clientMethod(
                 accessLevel: accessLevel,
-                name: method.name.generatedLowerCase,
+                name: method.name.functionName,
                 input: method.inputType,
                 output: method.outputType,
                 serviceEnum: serviceEnum,
-                methodEnum: method.name.generatedUpperCase,
+                methodEnum: method.name.typeName,
                 streamingInput: method.isInputStreaming,
                 streamingOutput: method.isOutputStreaming
               )
@@ -735,7 +735,7 @@ private func docs(
   for method: MethodDescriptor,
   serializers includeSerializers: Bool = true
 ) -> String {
-  let summary = "/// Call the \"\(method.name.base)\" method."
+  let summary = "/// Call the \"\(method.name.identifyingName)\" method."
 
   let request: String
   if method.isInputStreaming {
@@ -773,7 +773,7 @@ private func docs(
 }
 
 private func explodedDocs(for method: MethodDescriptor) -> String {
-  let summary = "/// Call the \"\(method.name.base)\" method."
+  let summary = "/// Call the \"\(method.name.identifyingName)\" method."
   var parameters = """
     /// - Parameters:
     """

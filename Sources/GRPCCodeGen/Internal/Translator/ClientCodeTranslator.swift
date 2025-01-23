@@ -87,13 +87,13 @@ struct ClientCodeTranslator {
     var blocks = [CodeBlock]()
 
     let `extension` = ExtensionDescription(
-      onType: service.namespacedGeneratedName,
+      onType: service.name.typeName,
       declarations: [
         // protocol ClientProtocol { ... }
         .commentable(
           .preFormatted(
             Docs.suffix(
-              self.clientProtocolDocs(serviceName: service.fullyQualifiedName),
+              self.clientProtocolDocs(serviceName: service.name.identifyingName),
               withDocs: service.documentation
             )
           ),
@@ -110,7 +110,7 @@ struct ClientCodeTranslator {
         .commentable(
           .preFormatted(
             Docs.suffix(
-              self.clientDocs(serviceName: service.fullyQualifiedName),
+              self.clientDocs(serviceName: service.name.identifyingName),
               withDocs: service.documentation
             )
           ),
@@ -118,7 +118,7 @@ struct ClientCodeTranslator {
             .client(
               accessLevel: accessModifier,
               name: "Client",
-              serviceEnum: service.namespacedGeneratedName,
+              serviceEnum: service.name.typeName,
               clientProtocol: "ClientProtocol",
               methods: service.methods
             )
@@ -130,7 +130,7 @@ struct ClientCodeTranslator {
 
     let extensionWithDefaults: ExtensionDescription = .clientMethodSignatureWithDefaults(
       accessLevel: accessModifier,
-      name: "\(service.namespacedGeneratedName).ClientProtocol",
+      name: "\(service.name.typeName).ClientProtocol",
       methods: service.methods,
       serializer: serializer,
       deserializer: deserializer
@@ -144,7 +144,7 @@ struct ClientCodeTranslator {
 
     let extensionWithExplodedAPI: ExtensionDescription = .explodedClientMethods(
       accessLevel: accessModifier,
-      on: "\(service.namespacedGeneratedName).ClientProtocol",
+      on: "\(service.name.typeName).ClientProtocol",
       methods: service.methods
     )
     blocks.append(
