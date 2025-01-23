@@ -57,6 +57,7 @@ as tutorials.
 ### Project Information
 
 - <doc:Compatibility>
+- <doc:Public-API>
 
 ### Getting involved
 
