@@ -71,52 +71,6 @@ function invoke_protoc {
   "$protoc" "$@"
 }
 
-#- EXAMPLES -------------------------------------------------------------------
-
-function generate_echo_example {
-  local proto="$here/examples/echo/echo.proto"
-  local output="$root/Examples/echo/Sources/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-}
-
-function generate_helloworld_example {
-  local proto="$here/upstream/grpc/examples/helloworld.proto"
-  local output="$root/Examples/hello-world/Sources/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-}
-
-function generate_routeguide_example {
-  local proto="$here/examples/route_guide/route_guide.proto"
-  local output="$root/Examples/route-guide/Sources/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-}
-
-function generate_error_details_example {
-  local proto="$here/upstream/grpc/examples/helloworld.proto"
-  local output="$root/Examples/error-details/Sources/Generated"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-}
-
-function generate_reflection_server_example {
-  local proto="$here/examples/echo/echo.proto"
-  local output="$root/Examples/reflection-server/Sources/Generated"
-  local pb_output="$root/Examples/reflection-server/Sources/DescriptorSets/echo.pb"
-
-  generate_message "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  generate_grpc "$proto" "$(dirname "$proto")" "$output" "Visibility=Internal"
-  invoke_protoc --descriptor_set_out="$pb_output" "$proto" -I "$(dirname "$proto")" \
-    --include_source_info \
-    --include_imports
-}
-
 #- TESTS ----------------------------------------------------------------------
 
 function generate_service_config_for_tests {
@@ -134,13 +88,6 @@ function generate_service_config_for_tests {
 }
 
 #------------------------------------------------------------------------------
-
-# Generate examples
-generate_echo_example
-generate_helloworld_example
-generate_routeguide_example
-generate_error_details_example
-generate_reflection_server_example
 
 # Tests
 generate_service_config_for_tests
