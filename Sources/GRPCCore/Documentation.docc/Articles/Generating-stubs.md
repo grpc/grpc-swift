@@ -17,7 +17,7 @@ You may use the build plugin either from the command line or from Xcode.
 
 The build plugin (`GRPCProtobufGenerator`) is a great choice for convenient dynamic code generation, however it does come with some limitations.
 Because it generates the gRPC Swift stubs as part of the build it has the requirement that `protoc` must be available 
-at compile time. This requirements means it is not a good fit for library authors who do not have
+at compile time. This requirement means it is not a good fit for library authors who do not have
 direct control over this.
 
 The build plugin detects `.proto` files in the source tree and invokes `protoc` once for each file 
@@ -43,7 +43,7 @@ targets: [
    )
  ]
 ```
-Once this is done you need to ensure that that the `.proto` files to be used for generation 
+Once this is done you need to ensure that the `.proto` files to be used for generation 
 are included in the target's source directory and that you have defined at least one configuration file.
 
 ### Configuration
@@ -80,8 +80,8 @@ The options do not need to be specified and each have default values.
 | `generate.messages`                    | `true`, `false`                            | `true`       | Generate message stubs                              |
 | `generatedSource.accessLevelOnImports` | `true`, `false`                            | `false`      | Whether imports should have explicit access levels  |
 | `generatedSource.accessLevel`          | `"public"`, `"package"`, `"internal"`      | `"internal"` | Access level for generated stubs                    |
-| `protoc.executablePath`                | N/A                                        | null†        | Path to the `protoc` executable                     |
-| `protoc.importPaths`                   | N/A                                        | null‡        | Import paths passed to `protoc`                     |
+| `protoc.executablePath`                | N/A                                        | `null`†      | Path to the `protoc` executable                     |
+| `protoc.importPaths`                   | N/A                                        | `null`‡      | Import paths passed to `protoc`                     |
 
 † The Swift Package Manager build plugin infrastructure will attempt to discover the executable's location if you don't provide one.
 
