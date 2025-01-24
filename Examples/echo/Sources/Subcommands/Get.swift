@@ -25,18 +25,12 @@ struct Get: AsyncParsableCommand {
   var arguments: ClientArguments
 
   func run() async throws {
-    let client = GRPCClient(
-      transport: try .http2NIOPosix(
+    try await withGRPCClient(
+      transport: .http2NIOPosix(
         target: self.arguments.target,
         transportSecurity: .plaintext
       )
-    )
-
-    try await withThrowingDiscardingTaskGroup { group in
-      group.addTask {
-        try await client.run()
-      }
-
+    ) { client in
       let echo = Echo_Echo.Client(wrapping: client)
 
       for _ in 0 ..< self.arguments.repetitions {
@@ -45,8 +39,6 @@ struct Get: AsyncParsableCommand {
         let response = try await echo.get(message)
         print("get ← \(response.text)")
       }
-
-      client.beginGracefulShutdown()
     }
   }
 }

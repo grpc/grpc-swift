@@ -103,7 +103,7 @@ extension StructuredSwiftTests {
         methods: [
           .init(
             documentation: "/// Some docs",
-            name: .init(base: "Bar", generatedUpperCase: "Bar", generatedLowerCase: "bar"),
+            name: MethodName(identifyingName: "Bar", typeName: "Bar", functionName: "bar"),
             isInputStreaming: false,
             isOutputStreaming: false,
             inputType: "BarInput",
@@ -187,7 +187,7 @@ extension StructuredSwiftTests {
         methods: [
           MethodDescriptor(
             documentation: "",
-            name: .init(base: "Bar", generatedUpperCase: "Bar", generatedLowerCase: "bar"),
+            name: MethodName(identifyingName: "Bar", typeName: "Bar", functionName: "bar"),
             isInputStreaming: false,
             isOutputStreaming: false,
             inputType: "BarInput",
@@ -342,7 +342,7 @@ extension StructuredSwiftTests {
         methods: [
           .init(
             documentation: "/// Some docs",
-            name: .init(base: "Bar", generatedUpperCase: "Bar", generatedLowerCase: "bar"),
+            name: MethodName(identifyingName: "Bar", typeName: "Bar", functionName: "bar"),
             isInputStreaming: false,
             isOutputStreaming: true,
             inputType: "Input",
@@ -439,10 +439,10 @@ extension StructuredSwiftTests {
         methods: [
           .init(
             documentation: "/// Unary docs",
-            name: .init(
-              base: "Unary",
-              generatedUpperCase: "Unary",
-              generatedLowerCase: "unary"
+            name: MethodName(
+              identifyingName: "Unary",
+              typeName: "Unary",
+              functionName: "unary"
             ),
             isInputStreaming: false,
             isOutputStreaming: false,
@@ -451,11 +451,12 @@ extension StructuredSwiftTests {
           ),
           .init(
             documentation: "/// ClientStreaming docs",
-            name: .init(
-              base: "ClientStreaming",
-              generatedUpperCase: "ClientStreaming",
-              generatedLowerCase: "clientStreaming"
+            name: MethodName(
+              identifyingName: "ClientStreaming",
+              typeName: "ClientStreaming",
+              functionName: "clientStreaming"
             ),
+
             isInputStreaming: true,
             isOutputStreaming: false,
             inputType: "Input",
@@ -463,10 +464,10 @@ extension StructuredSwiftTests {
           ),
           .init(
             documentation: "/// ServerStreaming docs",
-            name: .init(
-              base: "ServerStreaming",
-              generatedUpperCase: "ServerStreaming",
-              generatedLowerCase: "serverStreaming"
+            name: MethodName(
+              identifyingName: "ServerStreaming",
+              typeName: "ServerStreaming",
+              functionName: "serverStreaming"
             ),
             isInputStreaming: false,
             isOutputStreaming: true,
@@ -475,10 +476,10 @@ extension StructuredSwiftTests {
           ),
           .init(
             documentation: "/// BidiStreaming docs",
-            name: .init(
-              base: "BidiStreaming",
-              generatedUpperCase: "BidiStreaming",
-              generatedLowerCase: "bidiStreaming"
+            name: MethodName(
+              identifyingName: "BidiStreaming",
+              typeName: "BidiStreaming",
+              functionName: "bidiStreaming"
             ),
             isInputStreaming: true,
             isOutputStreaming: true,
@@ -489,14 +490,14 @@ extension StructuredSwiftTests {
       )
 
       let expected = """
-        \(access) struct FooClient: Foo_ClientProtocol {
-          private let client: GRPCCore.GRPCClient
+        \(access) struct FooClient<Transport>: Foo_ClientProtocol where Transport: GRPCCore.ClientTransport {
+          private let client: GRPCCore.GRPCClient<Transport>
 
           /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
           ///
           /// - Parameters:
           ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
-          \(access) init(wrapping client: GRPCCore.GRPCClient) {
+          \(access) init(wrapping client: GRPCCore.GRPCClient<Transport>) {
             self.client = client
           }
 

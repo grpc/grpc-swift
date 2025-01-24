@@ -116,8 +116,8 @@ func XCTAssertRejected<T>(
   }
 }
 
-func XCTAssertMetadata(
-  _ part: RPCResponsePart?,
+func XCTAssertMetadata<Bytes: GRPCContiguousBytes>(
+  _ part: RPCResponsePart<Bytes>?,
   metadataHandler: (Metadata) -> Void = { _ in }
 ) {
   switch part {
@@ -128,8 +128,8 @@ func XCTAssertMetadata(
   }
 }
 
-func XCTAssertMetadata(
-  _ part: RPCRequestPart?,
+func XCTAssertMetadata<Bytes: GRPCContiguousBytes>(
+  _ part: RPCRequestPart<Bytes>?,
   metadataHandler: (Metadata) async throws -> Void = { _ in }
 ) async throws {
   switch part {
@@ -140,9 +140,9 @@ func XCTAssertMetadata(
   }
 }
 
-func XCTAssertMessage(
-  _ part: RPCResponsePart?,
-  messageHandler: ([UInt8]) -> Void = { _ in }
+func XCTAssertMessage<Bytes: GRPCContiguousBytes>(
+  _ part: RPCResponsePart<Bytes>?,
+  messageHandler: (Bytes) -> Void = { _ in }
 ) {
   switch part {
   case .some(.message(let message)):
@@ -152,9 +152,9 @@ func XCTAssertMessage(
   }
 }
 
-func XCTAssertMessage(
-  _ part: RPCRequestPart?,
-  messageHandler: ([UInt8]) async throws -> Void = { _ in }
+func XCTAssertMessage<Bytes: GRPCContiguousBytes>(
+  _ part: RPCRequestPart<Bytes>?,
+  messageHandler: (Bytes) async throws -> Void = { _ in }
 ) async throws {
   switch part {
   case .some(.message(let message)):
@@ -164,8 +164,8 @@ func XCTAssertMessage(
   }
 }
 
-func XCTAssertStatus(
-  _ part: RPCResponsePart?,
+func XCTAssertStatus<Bytes: GRPCContiguousBytes>(
+  _ part: RPCResponsePart<Bytes>?,
   statusHandler: (Status, Metadata) -> Void = { _, _ in }
 ) {
   switch part {

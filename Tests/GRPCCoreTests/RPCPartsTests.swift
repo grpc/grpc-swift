@@ -18,7 +18,7 @@ import XCTest
 
 final class RPCPartsTests: XCTestCase {
   func testPartsFitInExistentialContainer() {
-    XCTAssertLessThanOrEqual(MemoryLayout<RPCRequestPart>.size, 24)
-    XCTAssertLessThanOrEqual(MemoryLayout<RPCResponsePart>.size, 24)
+    XCTAssertLessThanOrEqual(MemoryLayout<RPCRequestPart<[UInt8]>>.size, 24)
+    XCTAssertLessThanOrEqual(MemoryLayout<RPCResponsePart<[UInt8]>>.size, 24)
   }
 }

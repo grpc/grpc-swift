@@ -22,8 +22,8 @@ import XCTest
 final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorPipelineOperation] = [],
-    _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
+    interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>] = [],
+    _ body: (InProcessTransport.Client, GRPCServer<InProcessTransport.Server>) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
 
@@ -48,7 +48,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
         await stream.outbound.finish()
@@ -75,7 +75,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.collect,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3]))
         try await stream.outbound.write(.message([1]))
@@ -106,7 +106,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.expand,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message([3, 1, 4, 1, 5]))
         await stream.outbound.finish()
@@ -135,7 +135,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.update,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         for byte in [3, 1, 4, 1, 5] as [UInt8] {
           try await stream.outbound.write(.message([byte]))
@@ -166,7 +166,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         await stream.outbound.finish()
 
@@ -187,7 +187,7 @@ final class GRPCServerTests: XCTestCase {
             try await client.withStream(
               descriptor: BinaryEcho.Methods.get,
               options: .defaults
-            ) { stream in
+            ) { stream, _ in
               try await stream.outbound.write(.metadata([:]))
               try await stream.outbound.write(.message([i]))
               await stream.outbound.finish()
@@ -225,7 +225,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         await stream.outbound.finish()
 
@@ -250,7 +250,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: MethodDescriptor(fullyQualifiedService: "not", method: "implemented"),
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         await stream.outbound.finish()
 
@@ -277,7 +277,7 @@ final class GRPCServerTests: XCTestCase {
         try await client.withStream(
           descriptor: BinaryEcho.Methods.get,
           options: .defaults
-        ) { stream in
+        ) { stream, _ in
           XCTFail("Stream shouldn't be opened")
         }
       } errorHandler: { error in
@@ -291,7 +291,7 @@ final class GRPCServerTests: XCTestCase {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.update,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         var iterator = stream.inbound.makeAsyncIterator()
         // Don't need to validate the response, just that the server is running.
@@ -360,11 +360,11 @@ final class GRPCServerTests: XCTestCase {
     }
   }
 
-  private func doEchoGet(using transport: some ClientTransport) async throws {
+  private func doEchoGet(using transport: some ClientTransport<[UInt8]>) async throws {
     try await transport.withStream(
       descriptor: BinaryEcho.Methods.get,
       options: .defaults
-    ) { stream in
+    ) { stream, _ in
       try await stream.outbound.write(.metadata([:]))
       try await stream.outbound.write(.message([0]))
       await stream.outbound.finish()
@@ -407,7 +407,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("hello".utf8)))
         await stream.outbound.finish()
@@ -437,7 +437,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: HelloWorld.Methods.sayHello,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("Swift".utf8)))
         await stream.outbound.finish()
@@ -494,7 +494,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.get,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("hello".utf8)))
         await stream.outbound.finish()
@@ -524,7 +524,7 @@ struct ServerTests {
       try await client.withStream(
         descriptor: BinaryEcho.Methods.collect,
         options: .defaults
-      ) { stream in
+      ) { stream, _ in
         try await stream.outbound.write(.metadata([:]))
         try await stream.outbound.write(.message(Array("hello".utf8)))
         await stream.outbound.finish()
@@ -553,8 +553,8 @@ struct ServerTests {
 
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorPipelineOperation] = [],
-    _ body: (InProcessTransport.Client, GRPCServer) async throws -> Void
+    interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>] = [],
+    _ body: (InProcessTransport.Client, GRPCServer<InProcessTransport.Server>) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     let server = GRPCServer(
@@ -578,8 +578,8 @@ struct ServerTests {
     }
   }
 
-  func assertMetadata(
-    _ part: RPCResponsePart?,
+  func assertMetadata<Bytes: GRPCContiguousBytes>(
+    _ part: RPCResponsePart<Bytes>?,
     metadataHandler: (Metadata) -> Void = { _ in }
   ) {
     switch part {
@@ -590,9 +590,9 @@ struct ServerTests {
     }
   }
 
-  func assertMessage(
-    _ part: RPCResponsePart?,
-    messageHandler: ([UInt8]) -> Void = { _ in }
+  func assertMessage<Bytes: GRPCContiguousBytes>(
+    _ part: RPCResponsePart<Bytes>?,
+    messageHandler: (Bytes) -> Void = { _ in }
   ) {
     switch part {
     case .some(.message(let message)):
@@ -602,8 +602,8 @@ struct ServerTests {
     }
   }
 
-  func assertStatus(
-    _ part: RPCResponsePart?,
+  func assertStatus<Bytes: GRPCContiguousBytes>(
+    _ part: RPCResponsePart<Bytes>?,
     statusHandler: (Status, Metadata) -> Void = { _, _ in }
   ) {
     switch part {

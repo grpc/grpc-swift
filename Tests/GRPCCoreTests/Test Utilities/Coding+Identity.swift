@@ -16,13 +16,15 @@
 import GRPCCore
 
 struct IdentitySerializer: MessageSerializer {
-  func serialize(_ message: [UInt8]) throws -> [UInt8] {
-    return message
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: [UInt8]) throws -> Bytes {
+    return Bytes(message)
   }
 }
 
 struct IdentityDeserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> [UInt8] {
-    return serializedMessageBytes
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> [UInt8] {
+    return serializedMessageBytes.withUnsafeBytes {
+      Array($0)
+    }
   }
 }

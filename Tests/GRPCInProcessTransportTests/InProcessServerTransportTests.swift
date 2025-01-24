@@ -23,10 +23,10 @@ final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessTransport.Server(peer: "in-process:1234")
 
-    let outbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+    let outbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart<[UInt8]>.self)
     let stream = RPCStream<
-      RPCAsyncSequence<RPCRequestPart, any Error>,
-      RPCWriter<RPCResponsePart>.Closable
+      RPCAsyncSequence<RPCRequestPart<[UInt8]>, any Error>,
+      RPCWriter<RPCResponsePart<[UInt8]>>.Closable
     >(
       descriptor: .testTest,
       inbound: RPCAsyncSequence<RPCRequestPart, any Error>(
@@ -55,9 +55,10 @@ final class InProcessServerTransportTests: XCTestCase {
   func testStopListening() async throws {
     let transport = InProcessTransport.Server(peer: "in-process:1234")
 
-    let firstStreamOutbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+    let firstStreamOutbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart<[UInt8]>.self)
     let firstStream = RPCStream<
-      RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
+      RPCAsyncSequence<RPCRequestPart<[UInt8]>, any Error>,
+      RPCWriter<RPCResponsePart<[UInt8]>>.Closable
     >(
       descriptor: .testTest,
       inbound: RPCAsyncSequence(
@@ -79,9 +80,12 @@ final class InProcessServerTransportTests: XCTestCase {
 
       transport.beginGracefulShutdown()
 
-      let secondStreamOutbound = GRPCAsyncThrowingStream.makeStream(of: RPCResponsePart.self)
+      let secondStreamOutbound = GRPCAsyncThrowingStream.makeStream(
+        of: RPCResponsePart<[UInt8]>.self
+      )
       let secondStream = RPCStream<
-        RPCAsyncSequence<RPCRequestPart, any Error>, RPCWriter<RPCResponsePart>.Closable
+        RPCAsyncSequence<RPCRequestPart<[UInt8]>, any Error>,
+        RPCWriter<RPCResponsePart<[UInt8]>>.Closable
       >(
         descriptor: .testTest,
         inbound: RPCAsyncSequence(

@@ -45,18 +45,18 @@ private import Synchronization
 /// ## Creating a client manually
 ///
 /// If the `with`-style methods for creating clients isn't suitable for your application then you
-/// can create and run a client manually. This requires you to call the ``run()`` method in a task
+/// can create and run a client manually. This requires you to call the ``runConnections()`` method in a task
 /// which instructs the client to start connecting to the server.
 ///
-/// The ``run()`` method won't return until the client has finished handling all requests. You can
+/// The ``runConnections()`` method won't return until the client has finished handling all requests. You can
 /// signal to the client that it should stop creating new request streams by calling ``beginGracefulShutdown()``.
 /// This gives the client enough time to drain any requests already in flight. To stop the client
 /// more abruptly you can cancel the task running your client. If your application requires
 /// additional resources that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
-public final class GRPCClient: Sendable {
+public final class GRPCClient<Transport: ClientTransport>: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
-  private let transport: any ClientTransport
+  private let transport: Transport
 
   /// The current state of the client.
   private let stateMachine: Mutex<StateMachine>
@@ -114,7 +114,7 @@ public final class GRPCClient: Sendable {
     func checkExecutable() throws {
       switch self {
       case .notStarted, .running:
-        // Allow .notStarted as making a request can race with 'run()'. Transports should tolerate
+        // Allow .notStarted as making a request can race with 'runConnections()'. Transports should tolerate
         // queuing the request if not yet started.
         ()
       case .stopping, .stopped:
@@ -129,7 +129,7 @@ public final class GRPCClient: Sendable {
   private struct StateMachine {
     var state: State
 
-    private let interceptorPipeline: [ClientInterceptorPipelineOperation]
+    private let interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]
 
     /// A collection of interceptors providing cross-cutting functionality to each accepted RPC, keyed by the method to which they apply.
     ///
@@ -142,7 +142,7 @@ public final class GRPCClient: Sendable {
     /// the appropriate handler.
     var interceptorsPerMethod: [MethodDescriptor: [any ClientInterceptor]]
 
-    init(interceptorPipeline: [ClientInterceptorPipelineOperation]) {
+    init(interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]) {
       self.state = .notStarted
       self.interceptorPipeline = interceptorPipeline
       self.interceptorsPerMethod = [:]
@@ -175,7 +175,7 @@ public final class GRPCClient: Sendable {
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
   convenience public init(
-    transport: some ClientTransport,
+    transport: Transport,
     interceptors: [any ClientInterceptor] = []
   ) {
     self.init(
@@ -188,14 +188,14 @@ public final class GRPCClient: Sendable {
   ///
   /// - Parameters:
   ///   - transport: The transport used to establish a communication channel with a server.
-  ///   - interceptorPipeline: A collection of ``ClientInterceptorPipelineOperation`` providing cross-cutting
+  ///   - interceptorPipeline: A collection of ``ConditionalInterceptor``s providing cross-cutting
   ///       functionality to each accepted RPC. Only applicable interceptors from the pipeline will be applied to each RPC.
   ///       The order in which interceptors are added reflects the order in which they are called.
   ///       The first interceptor added will be the first interceptor to intercept each request.
   ///       The last interceptor added will be the final interceptor to intercept each request before calling the appropriate handler.
   public init(
-    transport: some ClientTransport,
-    interceptorPipeline: [ClientInterceptorPipelineOperation]
+    transport: Transport,
+    interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>]
   ) {
     self.transport = transport
     self.stateMachine = Mutex(StateMachine(interceptorPipeline: interceptorPipeline))
@@ -208,7 +208,7 @@ public final class GRPCClient: Sendable {
   ///
   /// The client, and by extension this function, can only be run once. If the client is already
   /// running or has already been closed then a ``RuntimeError`` is thrown.
-  public func run() async throws {
+  public func runConnections() async throws {
     try self.stateMachine.withLock { try $0.state.run() }
 
     // When this function exits the client must have stopped.
@@ -231,7 +231,7 @@ public final class GRPCClient: Sendable {
   ///
   /// The transport will be closed: this means that it will be given enough time to wait for
   /// in-flight RPCs to finish executing, but no new RPCs will be accepted. You can cancel the task
-  /// executing ``run()`` if you want to abruptly stop in-flight RPCs.
+  /// executing ``runConnections()`` if you want to abruptly stop in-flight RPCs.
   public func beginGracefulShutdown() {
     let wasRunning = self.stateMachine.withLock { $0.state.beginGracefulShutdown() }
     if wasRunning {
@@ -338,7 +338,7 @@ public final class GRPCClient: Sendable {
 
   /// Start a bidirectional streaming RPC.
   ///
-  /// - Note: ``run()`` must have been called and still executing, and ``beginGracefulShutdown()`` mustn't
+  /// - Note: ``runConnections()`` must have been called and still executing, and ``beginGracefulShutdown()`` mustn't
   /// have been called.
   ///
   /// - Parameters:
@@ -393,11 +393,11 @@ public final class GRPCClient: Sendable {
 ///       code is nonisolated.
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
-public func withGRPCClient<Result: Sendable>(
-  transport: some ClientTransport,
+public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
+  transport: Transport,
   interceptors: [any ClientInterceptor] = [],
   isolation: isolated (any Actor)? = #isolation,
-  handleClient: (GRPCClient) async throws -> Result
+  handleClient: (GRPCClient<Transport>) async throws -> Result
 ) async throws -> Result {
   try await withGRPCClient(
     transport: transport,
@@ -411,7 +411,7 @@ public func withGRPCClient<Result: Sendable>(
 ///
 /// - Parameters:
 ///   - transport: The transport used to establish a communication channel with a server.
-///   - interceptorPipeline: A collection of ``ClientInterceptorPipelineOperation`` providing cross-cutting
+///   - interceptorPipeline: A collection of ``ConditionalInterceptor``s providing cross-cutting
 ///       functionality to each accepted RPC. Only applicable interceptors from the pipeline will be applied to each RPC.
 ///       The order in which interceptors are added reflects the order in which they are called.
 ///       The first interceptor added will be the first interceptor to intercept each request.
@@ -421,16 +421,16 @@ public func withGRPCClient<Result: Sendable>(
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
 /// - Returns: The result of the `handleClient` closure.
-public func withGRPCClient<Result: Sendable>(
-  transport: some ClientTransport,
-  interceptorPipeline: [ClientInterceptorPipelineOperation],
+public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
+  transport: Transport,
+  interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>],
   isolation: isolated (any Actor)? = #isolation,
-  handleClient: (GRPCClient) async throws -> Result
+  handleClient: (GRPCClient<Transport>) async throws -> Result
 ) async throws -> Result {
   try await withThrowingDiscardingTaskGroup { group in
     let client = GRPCClient(transport: transport, interceptorPipeline: interceptorPipeline)
     group.addTask {
-      try await client.run()
+      try await client.runConnections()
     }
 
     let result = try await handleClient(client)

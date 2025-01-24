@@ -22,7 +22,7 @@ package struct IDLToStructuredSwiftTranslator: Translator {
 
   func translate(
     codeGenerationRequest: CodeGenerationRequest,
-    accessLevel: SourceGenerator.Config.AccessLevel,
+    accessLevel: CodeGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool,
     client: Bool,
     server: Bool
@@ -37,7 +37,7 @@ package struct IDLToStructuredSwiftTranslator: Translator {
 
     for service in codeGenerationRequest.services {
       codeBlocks.append(
-        CodeBlock(comment: .mark("\(service.fullyQualifiedName)", sectionBreak: true))
+        CodeBlock(comment: .mark("\(service.name.identifyingName)", sectionBreak: true))
       )
 
       let metadata = metadataTranslator.translate(
@@ -48,35 +48,35 @@ package struct IDLToStructuredSwiftTranslator: Translator {
 
       if server {
         codeBlocks.append(
-          CodeBlock(comment: .mark("\(service.fullyQualifiedName) (server)", sectionBreak: false))
+          CodeBlock(comment: .mark("\(service.name.identifyingName) (server)", sectionBreak: false))
         )
 
         let blocks = serverTranslator.translate(
           accessModifier: accessModifier,
           service: service,
-          serializer: codeGenerationRequest.lookupSerializer,
-          deserializer: codeGenerationRequest.lookupDeserializer
+          serializer: codeGenerationRequest.makeSerializerCodeSnippet,
+          deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
         )
         codeBlocks.append(contentsOf: blocks)
       }
 
       if client {
         codeBlocks.append(
-          CodeBlock(comment: .mark("\(service.fullyQualifiedName) (client)", sectionBreak: false))
+          CodeBlock(comment: .mark("\(service.name.identifyingName) (client)", sectionBreak: false))
         )
         let blocks = clientTranslator.translate(
           accessModifier: accessModifier,
           service: service,
-          serializer: codeGenerationRequest.lookupSerializer,
-          deserializer: codeGenerationRequest.lookupDeserializer
+          serializer: codeGenerationRequest.makeSerializerCodeSnippet,
+          deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
         )
         codeBlocks.append(contentsOf: blocks)
       }
     }
 
-    let imports: [ImportDescription]
+    let imports: [ImportDescription]?
     if codeGenerationRequest.services.isEmpty {
-      imports = []
+      imports = nil
       codeBlocks.append(
         CodeBlock(comment: .inline("This file contained no services."))
       )
@@ -101,7 +101,7 @@ package struct IDLToStructuredSwiftTranslator: Translator {
 
   package func makeImports(
     dependencies: [Dependency],
-    accessLevel: SourceGenerator.Config.AccessLevel,
+    accessLevel: CodeGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool
   ) throws -> [ImportDescription] {
     var imports: [ImportDescription] = []
@@ -125,7 +125,7 @@ package struct IDLToStructuredSwiftTranslator: Translator {
 }
 
 extension AccessModifier {
-  init(_ accessLevel: SourceGenerator.Config.AccessLevel) {
+  init(_ accessLevel: CodeGenerator.Config.AccessLevel) {
     switch accessLevel.level {
     case .internal: self = .internal
     case .package: self = .package
@@ -173,7 +173,7 @@ extension IDLToStructuredSwiftTranslator {
 
     let servicesByGeneratedEnumName = Dictionary(
       grouping: codeGenerationRequest.services,
-      by: { $0.namespacedGeneratedName }
+      by: { $0.name.typeName }
     )
     try self.checkServiceEnumNamesAreUnique(for: servicesByGeneratedEnumName)
 
@@ -205,39 +205,39 @@ extension IDLToStructuredSwiftTranslator {
   ) throws {
     // Check that the method descriptors are unique, by checking that the base names
     // of the methods of a specific service are unique.
-    let baseNames = service.methods.map { $0.name.base }
+    let baseNames = service.methods.map { $0.name.identifyingName }
     if let duplicatedBase = baseNames.getFirstDuplicate() {
       throw CodeGenError(
         code: .nonUniqueMethodName,
         message: """
           Methods of a service must have unique base names. \
-          \(duplicatedBase) is used as a base name for multiple methods of the \(service.name.base) service.
+          \(duplicatedBase) is used as a base name for multiple methods of the \(service.name.identifyingName) service.
           """
       )
     }
 
     // Check that generated upper case names for methods are unique within a service, to ensure that
     // the enums containing type aliases for each method of a service.
-    let upperCaseNames = service.methods.map { $0.name.generatedUpperCase }
+    let upperCaseNames = service.methods.map { $0.name.typeName }
     if let duplicatedGeneratedUpperCase = upperCaseNames.getFirstDuplicate() {
       throw CodeGenError(
         code: .nonUniqueMethodName,
         message: """
           Methods of a service must have unique generated upper case names. \
-          \(duplicatedGeneratedUpperCase) is used as a generated upper case name for multiple methods of the \(service.name.base) service.
+          \(duplicatedGeneratedUpperCase) is used as a generated upper case name for multiple methods of the \(service.name.identifyingName) service.
           """
       )
     }
 
     // Check that generated lower case names for methods are unique within a service, to ensure that
     // the function declarations and definitions from the same protocols and extensions have unique names.
-    let lowerCaseNames = service.methods.map { $0.name.generatedLowerCase }
+    let lowerCaseNames = service.methods.map { $0.name.functionName }
     if let duplicatedLowerCase = lowerCaseNames.getFirstDuplicate() {
       throw CodeGenError(
         code: .nonUniqueMethodName,
         message: """
           Methods of a service must have unique lower case names. \
-          \(duplicatedLowerCase) is used as a signature name for multiple methods of the \(service.name.base) service.
+          \(duplicatedLowerCase) is used as a signature name for multiple methods of the \(service.name.identifyingName) service.
           """
       )
     }
@@ -248,9 +248,7 @@ extension IDLToStructuredSwiftTranslator {
   ) throws {
     var descriptors: Set<String> = []
     for service in services {
-      let name =
-        service.namespace.base.isEmpty
-        ? service.name.base : "\(service.namespace.base).\(service.name.base)"
+      let name = service.name.identifyingName
       let (inserted, _) = descriptors.insert(name)
       if !inserted {
         throw CodeGenError(
@@ -261,24 +259,6 @@ extension IDLToStructuredSwiftTranslator {
             """
         )
       }
-    }
-  }
-}
-
-extension ServiceDescriptor {
-  var namespacedGeneratedName: String {
-    if self.namespace.generatedUpperCase.isEmpty {
-      return self.name.generatedUpperCase
-    } else {
-      return "\(self.namespace.generatedUpperCase)_\(self.name.generatedUpperCase)"
-    }
-  }
-
-  var fullyQualifiedName: String {
-    if self.namespace.base.isEmpty {
-      return self.name.base
-    } else {
-      return "\(self.namespace.base).\(self.name.base)"
     }
   }
 }

@@ -740,8 +740,29 @@ struct TextBasedRenderer: RendererProtocol {
     }
     writer.writeLine("struct \(structDesc.name)")
     writer.nextLineAppendsToLastLine()
+    let generics = structDesc.generics
+    if !generics.isEmpty {
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine("<")
+      for (genericType, isLast) in generics.enumeratedWithLastMarker() {
+        writer.nextLineAppendsToLastLine()
+        renderExistingTypeDescription(genericType)
+        if !isLast {
+          writer.nextLineAppendsToLastLine()
+          writer.writeLine(", ")
+        }
+      }
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(">")
+      writer.nextLineAppendsToLastLine()
+    }
     if !structDesc.conformances.isEmpty {
       writer.writeLine(": \(structDesc.conformances.joined(separator: ", "))")
+      writer.nextLineAppendsToLastLine()
+    }
+    if let whereClause = structDesc.whereClause {
+      writer.nextLineAppendsToLastLine()
+      writer.writeLine(" " + renderedWhereClause(whereClause))
       writer.nextLineAppendsToLastLine()
     }
     writer.writeLine(" {")

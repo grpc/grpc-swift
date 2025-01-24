@@ -34,8 +34,8 @@ private import Synchronization
 /// The following example demonstrates how to create and run a server.
 ///
 /// ```swift
-/// // Create an transport
-/// let transport: any ServerTransport = ...
+/// // Create a transport
+/// let transport = SomeServerTransport()
 ///
 /// // Create the 'Greeter' and 'Echo' services.
 /// let greeter = GreeterService()
@@ -73,15 +73,16 @@ private import Synchronization
 /// This allows the server to drain existing requests gracefully. To stop the server more abruptly
 /// you can cancel the task running your server. If your application requires additional resources
 /// that need their lifecycles managed you should consider using [Swift Service
-/// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
-public final class GRPCServer: Sendable {
-  typealias Stream = RPCStream<ServerTransport.Inbound, ServerTransport.Outbound>
+/// Lifecycle](https://github.com/swift-server/swift-service-lifecycle) and the
+/// `GRPCServiceLifecycle` module provided by [gRPC Swift Extras](https://github.com/grpc/grpc-swift-extras).
+public final class GRPCServer<Transport: ServerTransport>: Sendable {
+  typealias Stream = RPCStream<Transport.Inbound, Transport.Outbound>
 
   /// The ``ServerTransport`` implementation that the server uses to listen for new requests.
-  public let transport: any ServerTransport
+  public let transport: Transport
 
   /// The services registered which the server is serving.
-  private let router: RPCRouter
+  private let router: RPCRouter<Transport>
 
   /// The state of the server.
   private let state: Mutex<State>
@@ -136,7 +137,7 @@ public final class GRPCServer: Sendable {
     }
   }
 
-  /// Creates a new server with no resources.
+  /// Creates a new server.
   ///
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
@@ -147,7 +148,7 @@ public final class GRPCServer: Sendable {
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
   public convenience init(
-    transport: any ServerTransport,
+    transport: Transport,
     services: [any RegistrableRPCService],
     interceptors: [any ServerInterceptor] = []
   ) {
@@ -158,7 +159,7 @@ public final class GRPCServer: Sendable {
     )
   }
 
-  /// Creates a new server with no resources.
+  /// Creates a new server.
   ///
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
@@ -169,11 +170,11 @@ public final class GRPCServer: Sendable {
   ///       request. The last interceptor added will be the final interceptor to intercept each
   ///       request before calling the appropriate handler.
   public convenience init(
-    transport: any ServerTransport,
+    transport: Transport,
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ServerInterceptorPipelineOperation]
+    interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>]
   ) {
-    var router = RPCRouter()
+    var router = RPCRouter<Transport>()
     for service in services {
       service.registerMethods(with: &router)
     }
@@ -182,12 +183,12 @@ public final class GRPCServer: Sendable {
     self.init(transport: transport, router: router)
   }
 
-  /// Creates a new server with no resources.
+  /// Creates a new server with a pre-configured router.
   ///
   /// - Parameters:
   ///   - transport: The transport the server should listen on.
   ///   - router: A ``RPCRouter`` used by the server to route accepted streams to method handlers.
-  public init(transport: any ServerTransport, router: RPCRouter) {
+  public init(transport: Transport, router: RPCRouter<Transport>) {
     self.state = Mutex(.notStarted)
     self.transport = transport
     self.router = router
@@ -256,12 +257,12 @@ public final class GRPCServer: Sendable {
 ///   - handleServer: A closure which is called with the server. When the closure returns, the
 ///       server is shutdown gracefully.
 /// - Returns: The result of the `handleServer` closure.
-public func withGRPCServer<Result: Sendable>(
-  transport: any ServerTransport,
+public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
+  transport: Transport,
   services: [any RegistrableRPCService],
   interceptors: [any ServerInterceptor] = [],
   isolation: isolated (any Actor)? = #isolation,
-  handleServer: (GRPCServer) async throws -> Result
+  handleServer: (GRPCServer<Transport>) async throws -> Result
 ) async throws -> Result {
   try await withGRPCServer(
     transport: transport,
@@ -287,12 +288,12 @@ public func withGRPCServer<Result: Sendable>(
 ///   - handleServer: A closure which is called with the server. When the closure returns, the
 ///       server is shutdown gracefully.
 /// - Returns: The result of the `handleServer` closure.
-public func withGRPCServer<Result: Sendable>(
-  transport: any ServerTransport,
+public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
+  transport: Transport,
   services: [any RegistrableRPCService],
-  interceptorPipeline: [ServerInterceptorPipelineOperation],
+  interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>],
   isolation: isolated (any Actor)? = #isolation,
-  handleServer: (GRPCServer) async throws -> Result
+  handleServer: (GRPCServer<Transport>) async throws -> Result
 ) async throws -> Result {
   return try await withThrowingDiscardingTaskGroup { group in
     let server = GRPCServer(

@@ -58,7 +58,7 @@ extension ProtocolDescription {
   ) -> Self {
     func docs(for method: MethodDescriptor) -> String {
       let summary = """
-        /// Handle the "\(method.name.normalizedBase)" method.
+        /// Handle the "\(method.name.identifyingName)" method.
         """
 
       let parameters = """
@@ -83,7 +83,7 @@ extension ProtocolDescription {
           .preFormatted(docs(for: method)),
           .function(
             signature: .serverMethod(
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: true,
@@ -143,7 +143,7 @@ extension ProtocolDescription {
   ) -> Self {
     func docs(for method: MethodDescriptor) -> String {
       let summary = """
-        /// Handle the "\(method.name.normalizedBase)" method.
+        /// Handle the "\(method.name.identifyingName)" method.
         """
 
       let request: String
@@ -182,7 +182,7 @@ extension ProtocolDescription {
           .preFormatted(docs(for: method)),
           .function(
             signature: .serverMethod(
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -311,20 +311,26 @@ extension FunctionDescription {
     return FunctionDescription(
       accessModifier: accessLevel,
       kind: .function(name: "registerMethods"),
+      generics: [.member("Transport")],
       parameters: [
         ParameterDescription(
           label: "with",
           name: "router",
-          type: .rpcRouter,
+          type: .rpcRouter(genericOver: "Transport"),
           `inout`: true
         )
       ],
+      whereClause: WhereClause(
+        requirements: [
+          .conformance("Transport", "GRPCCore.ServerTransport")
+        ]
+      ),
       body: methods.map { method in
         .functionCall(
           .registerWithRouter(
             serviceNamespace: serviceNamespace,
-            methodNamespace: method.name.generatedUpperCase,
-            methodName: method.name.generatedLowerCase,
+            methodNamespace: method.name.typeName,
+            methodName: method.name.functionName,
             inputDeserializer: deserializer(method.inputType),
             outputSerializer: serializer(method.outputType)
           )
@@ -462,7 +468,7 @@ extension ExtensionDescription {
         return .function(
           .serverStreamingMethodsCallingMethod(
             accessLevel: accessModifier,
-            name: method.name.generatedLowerCase,
+            name: method.name.functionName,
             input: method.inputType,
             output: method.outputType,
             streamingInput: method.isInputStreaming,
@@ -534,7 +540,7 @@ extension ProtocolDescription {
   ) -> Self {
     func docs(for method: MethodDescriptor) -> String {
       let summary = """
-        /// Handle the "\(method.name.normalizedBase)" method.
+        /// Handle the "\(method.name.identifyingName)" method.
         """
 
       let requestText =
@@ -581,7 +587,7 @@ extension ProtocolDescription {
           .preFormatted(docs(for: method)),
           .function(
             signature: .simpleServerMethod(
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -748,7 +754,7 @@ extension ExtensionDescription {
         .function(
           .serviceProtocolDefaultImplementation(
             accessModifier: accessModifier,
-            name: method.name.generatedLowerCase,
+            name: method.name.functionName,
             input: method.inputType,
             output: method.outputType,
             streamingInput: method.isInputStreaming,

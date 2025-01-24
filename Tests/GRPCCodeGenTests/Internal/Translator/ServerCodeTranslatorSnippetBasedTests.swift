@@ -24,7 +24,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
   func translate() {
     let method = MethodDescriptor(
       documentation: "/// Documentation for unaryMethod",
-      name: Name(base: "UnaryMethod", generatedUpperCase: "Unary", generatedLowerCase: "unary"),
+      name: MethodName(identifyingName: "UnaryMethod", typeName: "Unary", functionName: "unary"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -33,15 +33,10 @@ final class ServerCodeTranslatorSnippetBasedTests {
 
     let service = ServiceDescriptor(
       documentation: "/// Documentation for ServiceA",
-      name: Name(
-        base: "AlongNameForServiceA",
-        generatedUpperCase: "ServiceA",
-        generatedLowerCase: "serviceA"
-      ),
-      namespace: Name(
-        base: "namespaceA",
-        generatedUpperCase: "NamespaceA",
-        generatedLowerCase: "namespaceA"
+      name: ServiceName(
+        identifyingName: "namespaceA.AlongNameForServiceA",
+        typeName: "NamespaceA_ServiceA",
+        propertyName: "namespaceA_serviceA"
       ),
       methods: [method]
     )
@@ -144,7 +139,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
       }
       // Default implementation of 'registerMethods(with:)'.
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
-          public func registerMethods(with router: inout GRPCCore.RPCRouter) {
+          public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
               router.registerHandler(
                   forMethod: NamespaceA_ServiceA.Method.Unary.descriptor,
                   deserializer: GRPCProtobuf.ProtobufDeserializer<NamespaceA_ServiceARequest>(),

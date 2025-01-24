@@ -81,6 +81,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testEchoSingleJSONMessage() async throws {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(
+      bytes: [UInt8].self,
       deserializer: JSONDeserializer<String>(),
       serializer: JSONSerializer<String>()
     ) { request, _ in
@@ -110,6 +111,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testEchoMultipleJSONMessages() async throws {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(
+      bytes: [UInt8].self,
       deserializer: JSONDeserializer<String>(),
       serializer: JSONSerializer<String>()
     ) { request, _ in
@@ -142,6 +144,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testReturnTrailingMetadata() async throws {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(
+      bytes: [UInt8].self,
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
     ) { request, _ in
@@ -233,6 +236,7 @@ final class ServerRPCExecutorTests: XCTestCase {
   func testHandlerRespectsTimeout() async throws {
     let harness = ServerRPCExecutorTestHarness()
     try await harness.execute(
+      bytes: [UInt8].self,
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
     ) { request, context in
@@ -260,6 +264,7 @@ final class ServerRPCExecutorTests: XCTestCase {
     // The interceptor skips the handler altogether.
     let harness = ServerRPCExecutorTestHarness(interceptors: [.rejectAll(with: error)])
     try await harness.execute(
+      bytes: [UInt8].self,
       deserializer: IdentityDeserializer(),
       serializer: IdentitySerializer()
     ) { request, _ in

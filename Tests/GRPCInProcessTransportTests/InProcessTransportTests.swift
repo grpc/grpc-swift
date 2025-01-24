@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, gRPC Authors All rights reserved.
+ * Copyright 2024-2025, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,10 @@ struct InProcessTransportTests {
   private static let cancellationModes = ["await-cancelled", "with-cancellation-handler"]
 
   private func withTestServerAndClient(
-    execute: (GRPCServer, GRPCClient) async throws -> Void
+    execute: (
+      GRPCServer<InProcessTransport.Server>,
+      GRPCClient<InProcessTransport.Client>
+    ) async throws -> Void
   ) async throws {
     try await withThrowingDiscardingTaskGroup { group in
       let inProcess = InProcessTransport()
@@ -35,7 +38,7 @@ struct InProcessTransportTests {
 
       let client = GRPCClient(transport: inProcess.client)
       group.addTask {
-        try await client.run()
+        try await client.runConnections()
       }
 
       try await execute(server, client)
@@ -60,7 +63,7 @@ struct InProcessTransportTests {
         #expect(messages == ["isCancelled=true"])
       }
 
-      // Finally, shutdown the client so its run() method returns.
+      // Finally, shutdown the client so its runConnections() method returns.
       client.beginGracefulShutdown()
     }
   }
@@ -77,14 +80,13 @@ struct InProcessTransportTests {
         request: ClientRequest(message: ()),
         descriptor: .peerInfo,
         serializer: VoidSerializer(),
-        deserializer: UTF8Deserializer(),
+        deserializer: JSONDeserializer<PeerInfo>(),
         options: .defaults
       ) {
         try $0.message
       }
 
-      let match = peerInfo.wholeMatch(of: /in-process:\d+/)
-      #expect(match != nil)
+      #expect(peerInfo.local == peerInfo.remote)
     }
   }
 }
@@ -122,11 +124,12 @@ private struct TestService: RegistrableRPCService {
   func peerInfo(
     request: ServerRequest<Void>,
     context: ServerContext
-  ) async throws -> ServerResponse<String> {
-    return ServerResponse(message: context.peer)
+  ) async throws -> ServerResponse<PeerInfo> {
+    let peerInfo = PeerInfo(local: context.localPeer, remote: context.remotePeer)
+    return ServerResponse(message: peerInfo)
   }
 
-  func registerMethods(with router: inout RPCRouter) {
+  func registerMethods<Transport: ServerTransport>(with router: inout RPCRouter<Transport>) {
     router.registerHandler(
       forMethod: .testCancellation,
       deserializer: UTF8Deserializer(),
@@ -139,7 +142,7 @@ private struct TestService: RegistrableRPCService {
     router.registerHandler(
       forMethod: .peerInfo,
       deserializer: VoidDeserializer(),
-      serializer: UTF8Serializer(),
+      serializer: JSONSerializer<PeerInfo>(),
       handler: {
         let response = try await self.peerInfo(
           request: ServerRequest<Void>(stream: $0),
@@ -163,25 +166,32 @@ extension MethodDescriptor {
   )
 }
 
+private struct PeerInfo: Codable {
+  var local: String
+  var remote: String
+}
+
 private struct UTF8Serializer: MessageSerializer {
-  func serialize(_ message: String) throws -> [UInt8] {
-    Array(message.utf8)
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: String) throws -> Bytes {
+    Bytes(message.utf8)
   }
 }
 
 private struct UTF8Deserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> String {
-    String(decoding: serializedMessageBytes, as: UTF8.self)
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> String {
+    serializedMessageBytes.withUnsafeBytes {
+      String(decoding: $0, as: UTF8.self)
+    }
   }
 }
 
 private struct VoidSerializer: MessageSerializer {
-  func serialize(_ message: Void) throws -> [UInt8] {
-    []
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: Void) throws -> Bytes {
+    Bytes(repeating: 0, count: 0)
   }
 }
 
 private struct VoidDeserializer: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws {
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws {
   }
 }

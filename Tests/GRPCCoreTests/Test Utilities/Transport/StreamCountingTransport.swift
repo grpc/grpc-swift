@@ -17,8 +17,7 @@
 @testable import GRPCCore
 
 struct StreamCountingClientTransport: ClientTransport, Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
-  typealias Outbound = RPCWriter<RPCRequestPart>.Closable
+  typealias Bytes = [UInt8]
 
   private let transport: AnyClientTransport
   private let _streamsOpened: AtomicCounter
@@ -32,8 +31,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
     self._streamFailures.value
   }
 
-  init<Transport: ClientTransport>(wrapping transport: Transport)
-  where Transport.Inbound == Inbound, Transport.Outbound == Outbound {
+  init<Transport: ClientTransport>(wrapping transport: Transport) where Transport.Bytes == [UInt8] {
     self.transport = AnyClientTransport(wrapping: transport)
     self._streamsOpened = AtomicCounter()
     self._streamFailures = AtomicCounter()
@@ -54,15 +52,15 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
   func withStream<T>(
     descriptor: MethodDescriptor,
     options: CallOptions,
-    _ closure: (RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (RPCStream<Inbound, Outbound>, ClientContext) async throws -> T
   ) async throws -> T {
     do {
       return try await self.transport.withStream(
         descriptor: descriptor,
         options: options
-      ) { stream in
+      ) { stream, context in
         self._streamsOpened.increment()
-        return try await closure(stream)
+        return try await closure(stream, context)
       }
     } catch {
       self._streamFailures.increment()
@@ -78,8 +76,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
 }
 
 struct StreamCountingServerTransport: ServerTransport, Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCRequestPart, any Error>
-  typealias Outbound = RPCWriter<RPCResponsePart>.Closable
+  typealias Bytes = [UInt8]
 
   private let transport: AnyServerTransport
   private let _acceptedStreams: AtomicCounter
@@ -88,7 +85,7 @@ struct StreamCountingServerTransport: ServerTransport, Sendable {
     self._acceptedStreams.value
   }
 
-  init<Transport: ServerTransport>(wrapping transport: Transport) {
+  init<Transport: ServerTransport>(wrapping transport: Transport) where Transport.Bytes == [UInt8] {
     self.transport = AnyServerTransport(wrapping: transport)
     self._acceptedStreams = AtomicCounter()
   }

@@ -401,10 +401,16 @@ struct StructDescription: Equatable, Codable, Sendable {
   /// For example, in `struct Foo {`, `name` is `Foo`.
   var name: String
 
+  /// The generic types of the struct.
+  var generics: [ExistingTypeDescription] = []
+
   /// The type names that the struct conforms to.
   ///
   /// For example: `["Sendable", "Codable"]`.
   var conformances: [String] = []
+
+  /// A where clause constraining the struct declaration.
+  var whereClause: WhereClause? = nil
 
   /// The declarations that make up the main struct body.
   var members: [Declaration] = []

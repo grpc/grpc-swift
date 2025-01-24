@@ -22,8 +22,11 @@ import XCTest
 final class GRPCClientTests: XCTestCase {
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ClientInterceptorPipelineOperation] = [],
-    _ body: (GRPCClient, GRPCServer) async throws -> Void
+    interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>] = [],
+    _ body: (
+      GRPCClient<InProcessTransport.Client>,
+      GRPCServer<InProcessTransport.Server>
+    ) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     _ = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
@@ -40,22 +43,6 @@ final class GRPCClientTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(100))
         try await body(client, server)
       }
-    }
-  }
-
-  struct IdentitySerializer: MessageSerializer {
-    typealias Message = [UInt8]
-
-    func serialize(_ message: [UInt8]) throws -> [UInt8] {
-      return message
-    }
-  }
-
-  struct IdentityDeserializer: MessageDeserializer {
-    typealias Message = [UInt8]
-
-    func deserialize(_ serializedMessageBytes: [UInt8]) throws -> [UInt8] {
-      return serializedMessageBytes
     }
   }
 
@@ -336,7 +323,7 @@ final class GRPCClientTests: XCTestCase {
       }
 
       group.addTask {
-        try await client.run()
+        try await client.runConnections()
       }
 
       // Wait for client and server to be running.
@@ -377,13 +364,13 @@ final class GRPCClientTests: XCTestCase {
     let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client)
     // Run the client.
-    let task = Task { try await client.run() }
+    let task = Task { try await client.runConnections() }
     task.cancel()
     try await task.value
 
     // Client is stopped, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await client.run()
+      try await client.runConnections()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .clientIsStopped)
     }
@@ -393,13 +380,13 @@ final class GRPCClientTests: XCTestCase {
     let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client)
     // Run the client.
-    let task = Task { try await client.run() }
+    let task = Task { try await client.runConnections() }
     // Make sure the client is run for the first time here.
     try await Task.sleep(for: .milliseconds(10))
 
     // Client is already running, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
-      try await client.run()
+      try await client.runConnections()
     } errorHandler: { error in
       XCTAssertEqual(error.code, .clientIsAlreadyRunning)
     }
@@ -538,8 +525,11 @@ struct ClientTests {
 
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
-    interceptorPipeline: [ClientInterceptorPipelineOperation] = [],
-    _ body: (GRPCClient, GRPCServer) async throws -> Void
+    interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>] = [],
+    _ body: (
+      GRPCClient<InProcessTransport.Client>,
+      GRPCServer<InProcessTransport.Server>
+    ) async throws -> Void
   ) async throws {
     let inProcess = InProcessTransport()
     let client = GRPCClient(transport: inProcess.client, interceptorPipeline: interceptorPipeline)
@@ -551,7 +541,7 @@ struct ClientTests {
       }
 
       group.addTask {
-        try await client.run()
+        try await client.runConnections()
       }
 
       // Make sure both server and client are running

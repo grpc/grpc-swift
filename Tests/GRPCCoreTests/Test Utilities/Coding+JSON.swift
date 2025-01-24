@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import GRPCCore
 
 import struct Foundation.Data
@@ -20,10 +21,11 @@ import class Foundation.JSONDecoder
 import class Foundation.JSONEncoder
 
 struct JSONSerializer<Message: Codable>: MessageSerializer {
-  func serialize(_ message: Message) throws -> [UInt8] {
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: Message) throws -> Bytes {
     do {
       let jsonEncoder = JSONEncoder()
-      return try Array(jsonEncoder.encode(message))
+      let data = try jsonEncoder.encode(message)
+      return Bytes(data)
     } catch {
       throw RPCError(code: .internalError, message: "Can't serialize message to JSON. \(error)")
     }
@@ -31,10 +33,11 @@ struct JSONSerializer<Message: Codable>: MessageSerializer {
 }
 
 struct JSONDeserializer<Message: Codable>: MessageDeserializer {
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> Message {
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> Message {
     do {
       let jsonDecoder = JSONDecoder()
-      return try jsonDecoder.decode(Message.self, from: Data(serializedMessageBytes))
+      let data = serializedMessageBytes.withUnsafeBytes { Data($0) }
+      return try jsonDecoder.decode(Message.self, from: data)
     } catch {
       throw RPCError(code: .internalError, message: "Can't deserialze message from JSON. \(error)")
     }

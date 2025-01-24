@@ -820,10 +820,60 @@ final class Test_TextBasedRenderer: XCTestCase {
 
   func testStruct() throws {
     try _test(
-      .init(name: "Structy"),
+      StructDescription(name: "Structy"),
       renderedBy: { $0.renderStruct(_:) },
       rendersAs: #"""
         struct Structy {}
+        """#
+    )
+    try _test(
+      StructDescription(
+        name: "Structy",
+        conformances: ["Foo"]
+      ),
+      renderedBy: { $0.renderStruct(_:) },
+      rendersAs: #"""
+        struct Structy: Foo {}
+        """#
+    )
+    try _test(
+      StructDescription(
+        name: "Structy",
+        generics: [.member("T")]
+      ),
+      renderedBy: { $0.renderStruct(_:) },
+      rendersAs: #"""
+        struct Structy<T> {}
+        """#
+    )
+    try _test(
+      StructDescription(
+        name: "Structy",
+        generics: [.member("T")],
+        whereClause: WhereClause(
+          requirements: [
+            .conformance("T", "Foo"),
+            .conformance("T", "Sendable"),
+          ]
+        )
+      ),
+      renderedBy: {
+        $0.renderStruct(_:)
+      },
+      rendersAs: #"""
+        struct Structy<T> where T: Foo, T: Sendable {}
+        """#
+    )
+    try _test(
+      StructDescription(
+        name: "Structy",
+        generics: [.member("T")],
+        conformances: ["Hashable"],
+        whereClause: WhereClause(requirements: [.conformance("T", "Foo")])
+      ),
+      renderedBy: { $0.renderStruct(_:) },
+      rendersAs: #"""
+        struct Structy<T>: Hashable where T: Foo {}
         """#
     )
   }

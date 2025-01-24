@@ -19,7 +19,7 @@ import XCTest
 
 final class RPCRouterTests: XCTestCase {
   func testEmptyRouter() async throws {
-    var router = RPCRouter()
+    var router = RPCRouter<NoServerTransport>()
     XCTAssertEqual(router.count, 0)
     XCTAssertEqual(router.methods, [])
     XCTAssertFalse(
@@ -31,7 +31,7 @@ final class RPCRouterTests: XCTestCase {
   }
 
   func testRegisterMethod() async throws {
-    var router = RPCRouter()
+    var router = RPCRouter<NoServerTransport>()
     let method = MethodDescriptor(fullyQualifiedService: "foo", method: "bar")
     router.registerHandler(
       forMethod: method,
@@ -47,7 +47,7 @@ final class RPCRouterTests: XCTestCase {
   }
 
   func testRemoveMethod() async throws {
-    var router = RPCRouter()
+    var router = RPCRouter<NoServerTransport>()
     let method = MethodDescriptor(fullyQualifiedService: "foo", method: "bar")
     router.registerHandler(
       forMethod: method,
@@ -61,5 +61,20 @@ final class RPCRouterTests: XCTestCase {
     XCTAssertFalse(router.hasHandler(forMethod: method))
     XCTAssertEqual(router.count, 0)
     XCTAssertEqual(router.methods, [])
+  }
+}
+
+struct NoServerTransport: ServerTransport {
+  typealias Bytes = [UInt8]
+
+  func listen(
+    streamHandler: @escaping @Sendable (
+      GRPCCore.RPCStream<Inbound, Outbound>,
+      GRPCCore.ServerContext
+    ) async -> Void
+  ) async throws {
+  }
+
+  func beginGracefulShutdown() {
   }
 }

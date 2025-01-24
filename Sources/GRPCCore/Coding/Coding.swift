@@ -30,7 +30,7 @@ public protocol MessageSerializer<Message>: Sendable {
   ///
   /// - Parameter message: The message to serialize.
   /// - Returns: The serialized bytes of a message.
-  func serialize(_ message: Message) throws -> [UInt8]
+  func serialize<Bytes: GRPCContiguousBytes>(_ message: Message) throws -> Bytes
 }
 
 /// Deserializes a sequence of bytes into a message.
@@ -49,5 +49,5 @@ public protocol MessageDeserializer<Message>: Sendable {
   ///
   /// - Parameter serializedMessageBytes: The bytes to deserialize.
   /// - Returns: The deserialized message.
-  func deserialize(_ serializedMessageBytes: [UInt8]) throws -> Message
+  func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> Message
 }

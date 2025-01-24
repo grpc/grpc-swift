@@ -80,10 +80,10 @@ internal func makeCodeGenerationRequest(
     leadingTrivia: "/// Some really exciting license header 2023.\n",
     dependencies: dependencies,
     services: services,
-    lookupSerializer: {
+    makeSerializerCodeSnippet: {
       "GRPCProtobuf.ProtobufSerializer<\($0)>()"
     },
-    lookupDeserializer: {
+    makeDeserializerCodeSnippet: {
       "GRPCProtobuf.ProtobufDeserializer<\($0)>()"
     }
   )

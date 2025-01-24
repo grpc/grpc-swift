@@ -37,17 +37,12 @@ struct GetFeature: AsyncParsableCommand {
   var longitude: Int32 = -746_143_763
 
   func run() async throws {
-    let transport = try HTTP2ClientTransport.Posix(
-      target: .ipv4(host: "127.0.0.1", port: self.port),
-      transportSecurity: .plaintext
-    )
-    let client = GRPCClient(transport: transport)
-
-    try await withThrowingDiscardingTaskGroup { group in
-      group.addTask {
-        try await client.run()
-      }
-
+    try await withGRPCClient(
+      transport: .http2NIOPosix(
+        target: .ipv4(host: "127.0.0.1", port: self.port),
+        transportSecurity: .plaintext
+      )
+    ) { client in
       let routeGuide = Routeguide_RouteGuide.Client(wrapping: client)
 
       let point = Routeguide_Point.with {
@@ -62,8 +57,6 @@ struct GetFeature: AsyncParsableCommand {
       } else {
         print("Found '\(feature.name)' at (\(self.latitude), \(self.longitude))")
       }
-
-      client.beginGracefulShutdown()
     }
   }
 }

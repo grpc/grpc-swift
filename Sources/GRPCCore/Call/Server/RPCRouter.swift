@@ -34,15 +34,15 @@
 /// 1. Remove individual methods by calling ``removeHandler(forMethod:)``, or
 /// 2. Implement ``RegistrableRPCService/registerMethods(with:)`` to register only the methods you
 ///    want to be served.
-public struct RPCRouter: Sendable {
+public struct RPCRouter<Transport: ServerTransport>: Sendable {
   @usableFromInline
   struct RPCHandler: Sendable {
     @usableFromInline
     let _fn:
       @Sendable (
         _ stream: RPCStream<
-          RPCAsyncSequence<RPCRequestPart, any Error>,
-          RPCWriter<RPCResponsePart>.Closable
+          RPCAsyncSequence<RPCRequestPart<Transport.Bytes>, any Error>,
+          RPCWriter<RPCResponsePart<Transport.Bytes>>.Closable
         >,
         _ context: ServerContext,
         _ interceptors: [any ServerInterceptor]
@@ -73,8 +73,8 @@ public struct RPCRouter: Sendable {
     @inlinable
     func handle(
       stream: RPCStream<
-        RPCAsyncSequence<RPCRequestPart, any Error>,
-        RPCWriter<RPCResponsePart>.Closable
+        RPCAsyncSequence<RPCRequestPart<Transport.Bytes>, any Error>,
+        RPCWriter<RPCResponsePart<Transport.Bytes>>.Closable
       >,
       context: ServerContext,
       interceptors: [any ServerInterceptor]
@@ -155,9 +155,10 @@ public struct RPCRouter: Sendable {
   ///    only call this method _after_ you have registered all handlers.
   /// - Parameter pipeline: The interceptor pipeline operations to register to all currently-registered handlers. The order of the
   ///  interceptors matters.
-  /// - SeeAlso: ``ServerInterceptorPipelineOperation``.
   @inlinable
-  public mutating func registerInterceptors(pipeline: [ServerInterceptorPipelineOperation]) {
+  public mutating func registerInterceptors(
+    pipeline: [ConditionalInterceptor<any ServerInterceptor>]
+  ) {
     for descriptor in self.handlers.keys {
       let applicableOperations = pipeline.filter { $0.applies(to: descriptor) }
       if !applicableOperations.isEmpty {
@@ -170,8 +171,8 @@ public struct RPCRouter: Sendable {
 extension RPCRouter {
   internal func handle(
     stream: RPCStream<
-      RPCAsyncSequence<RPCRequestPart, any Error>,
-      RPCWriter<RPCResponsePart>.Closable
+      RPCAsyncSequence<RPCRequestPart<Transport.Bytes>, any Error>,
+      RPCWriter<RPCResponsePart<Transport.Bytes>>.Closable
     >,
     context: ServerContext
   ) async {

@@ -14,9 +14,23 @@
  * limitations under the License.
  */
 
-public protocol ClientTransport: Sendable {
-  typealias Inbound = RPCAsyncSequence<RPCResponsePart, any Error>
-  typealias Outbound = RPCWriter<RPCRequestPart>.Closable
+/// A type that provides a long-lived bidirectional communication channel to a server.
+///
+/// The client transport is responsible for providing streams to a backend on top of which an
+/// RPC can be executed. A typical transport implementation will establish and maintain connections
+/// to a server (or servers) and manage these over time, potentially closing idle connections and
+/// creating new ones on demand. As such transports can be expensive to create and as such are
+/// intended to be used as long-lived objects which exist for the lifetime of your application.
+///
+/// gRPC provides an in-process transport in the `GRPCInProcessTransport` module and HTTP/2
+/// transport built on top of SwiftNIO in the https://github.com/grpc/grpc-swift-nio-transport
+/// package.
+public protocol ClientTransport<Bytes>: Sendable {
+  /// The bag-of-bytes type used by the transport.
+  associatedtype Bytes: GRPCContiguousBytes & Sendable
+
+  typealias Inbound = RPCAsyncSequence<RPCResponsePart<Bytes>, any Error>
+  typealias Outbound = RPCWriter<RPCRequestPart<Bytes>>.Closable
 
   /// Returns a throttle which gRPC uses to determine whether retries can be executed.
   ///
@@ -47,7 +61,7 @@ public protocol ClientTransport: Sendable {
   /// running ``connect()``.
   func beginGracefulShutdown()
 
-  /// Opens a stream using the transport, and uses it as input into a user-provided closure.
+  /// Opens a stream using the transport, and uses it as input into a user-provided closure alongisde the given context.
   ///
   /// - Important: The opened stream is closed after the closure is finished.
   ///
@@ -59,12 +73,12 @@ public protocol ClientTransport: Sendable {
   /// - Parameters:
   ///   - descriptor: A description of the method to open a stream for.
   ///   - options: Options specific to the stream.
-  ///   - closure: A closure that takes the opened stream as parameter.
+  ///   - closure: A closure that takes the opened stream and the client context as its parameters.
   /// - Returns: Whatever value was returned from `closure`.
   func withStream<T: Sendable>(
     descriptor: MethodDescriptor,
     options: CallOptions,
-    _ closure: (_ stream: RPCStream<Inbound, Outbound>) async throws -> T
+    _ closure: (_ stream: RPCStream<Inbound, Outbound>, _ context: ClientContext) async throws -> T
   ) async throws -> T
 
   /// Returns the configuration for a given method.

@@ -213,7 +213,7 @@ extension ProtocolDescription {
           .preFormatted(docs(for: method)),
           .function(
             signature: .clientMethod(
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -256,7 +256,7 @@ extension ExtensionDescription {
           .function(
             .clientMethodWithDefaults(
               accessLevel: accessLevel,
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -506,7 +506,7 @@ extension ExtensionDescription {
           .function(
             .clientMethodExploded(
               accessLevel: accessLevel,
-              name: method.name.generatedLowerCase,
+              name: method.name.functionName,
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
@@ -645,10 +645,10 @@ extension FunctionDescription {
 
 extension StructDescription {
   /// ```
-  /// struct <Name>: <ClientProtocol> {
-  ///   private let client: GRPCCore.GRPCClient
+  /// struct <Name><Transport>: <ClientProtocol> where Transport: GRPCCore.ClientTransport {
+  ///   private let client: GRPCCore.GRPCClient<Transport>
   ///
-  ///   init(wrapping client: GRPCCore.GRPCClient) {
+  ///   init(wrapping client: GRPCCore.GRPCClient<Transport>) {
   ///     self.client = client
   ///   }
   ///
@@ -665,9 +665,18 @@ extension StructDescription {
     StructDescription(
       accessModifier: accessLevel,
       name: name,
+      generics: [.member("Transport")],
       conformances: [clientProtocol],
+      whereClause: WhereClause(
+        requirements: [.conformance("Transport", "GRPCCore.ClientTransport")]
+      ),
       members: [
-        .variable(accessModifier: .private, kind: .let, left: "client", type: .grpcClient),
+        .variable(
+          accessModifier: .private,
+          kind: .let,
+          left: "client",
+          type: .grpcClient(genericOver: "Transport")
+        ),
         .commentable(
           .preFormatted(
             """
@@ -681,7 +690,13 @@ extension StructDescription {
             accessModifier: accessLevel,
             kind: .initializer,
             parameters: [
-              ParameterDescription(label: "wrapping", name: "client", type: .grpcClient)
+              ParameterDescription(
+                label: "wrapping",
+                name: "client",
+                type: .grpcClient(
+                  genericOver: "Transport"
+                )
+              )
             ],
             whereClause: nil,
             body: [
@@ -701,11 +716,11 @@ extension StructDescription {
             .function(
               .clientMethod(
                 accessLevel: accessLevel,
-                name: method.name.generatedLowerCase,
+                name: method.name.functionName,
                 input: method.inputType,
                 output: method.outputType,
                 serviceEnum: serviceEnum,
-                methodEnum: method.name.generatedUpperCase,
+                methodEnum: method.name.typeName,
                 streamingInput: method.isInputStreaming,
                 streamingOutput: method.isOutputStreaming
               )
@@ -720,7 +735,7 @@ private func docs(
   for method: MethodDescriptor,
   serializers includeSerializers: Bool = true
 ) -> String {
-  let summary = "/// Call the \"\(method.name.base)\" method."
+  let summary = "/// Call the \"\(method.name.identifyingName)\" method."
 
   let request: String
   if method.isInputStreaming {
@@ -758,7 +773,7 @@ private func docs(
 }
 
 private func explodedDocs(for method: MethodDescriptor) -> String {
-  let summary = "/// Call the \"\(method.name.base)\" method."
+  let summary = "/// Call the \"\(method.name.identifyingName)\" method."
   var parameters = """
     /// - Parameters:
     """

@@ -1,6 +1,6 @@
 @Tutorial(time: 10) {
   @XcodeRequirement(
-    title: "Xcode 16 Beta 5+",
+    title: "Xcode 16",
     destination: "https://developer.apple.com/download/"
   )
 
@@ -18,7 +18,7 @@
     repository by running the following command in a terminal:
 
     ```console
-    git clone --branch 2.0.0-beta.2 https://github.com/grpc/grpc-swift
+    git clone --branch 2.0.0-beta.3 https://github.com/grpc/grpc-swift
     ```
 
     You then need to change directory to the `Examples/hello-world` directory of the cloned
@@ -28,17 +28,28 @@
   @Section(title: "Run a gRPC application") {
     Let's start by running the existing Greeter application.
 
+    As a prerequisite you must have the Protocol Buffers compiler (`protoc`) installed. You can
+    find the instructions for doing this in the [gRPC Swift Protobuf
+    documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc).
+    The remainder of this tutorial assumes you installed `protoc` and it's available in
+    your `$PATH`.
+
+    You may notice that the `swift` commands are all prefixed with `PROTOC_PATH=$(which protoc)`,
+    this is to let the build system know where `protoc` is located so that it can generate stubs
+    for you. You can read more about it in the  [gRPC Swift Protobuf
+    documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/generating-stubs).
+
     @Steps {
       @Step {
-        In a terminal run `swift run hello-world serve` to start the server. By default it'll start
-        listening on port 31415.
+        In a terminal run `PROTOC_PATH=$(which protoc) swift run hello-world serve` to start the
+        server. By default it'll start listening on port 31415.
 
         @Code(name: "Console.txt", file: "hello-world-sec02-step01.txt")
       }
 
       @Step {
-        In another terminal run `swift run hello-world greet` to create a client, connect
-        to the server you started and send it a request and print the response.
+        In another terminal run `PROTOC_PATH=$(which protoc) swift run hello-world greet` to create
+        a client, connect to the server you started and send it a request and print the response.
 
         @Code(name: "Console.txt", file: "hello-world-sec02-step02.txt")
       }
@@ -75,19 +86,19 @@
   }
 
   @Section(title: "Update and run the application") {
-    You need to regenerate the stubs as the service definition has changed. To do this run the
-    following command from the _root of the checked out repository_:
+    You need to regenerate the stubs as the service definition has changed. As you're using
+    the Swift Package Manager Build Plugin for gRPC Swift the gRPC code is automatically
+    generated if necessary when you build the example. You can learn more about generating stubs in
+    the <doc:Generating-stubs> article.
 
-    ```console
-    dev/protos/generate.sh
-    ```
-
-    To learn how to generate stubs check out the <doc:Generating-stubs> article.
-
-    Now that the stubs have been updated you need to implement and call the new method in the
-    human-written parts of your application.
 
     @Steps {
+      @Step {
+        Run `PROTOC_PATH=$(which protoc) swift build` to build the example. This will fail
+        because the service no longer implements all of the methods declared in the `.proto` file.
+        Let's fix that!
+      }
+
       @Step {
         Open `Serve.swift` in the `Subcommands` directory.
 
@@ -114,13 +125,14 @@
 
       @Step {
         Just like we did before, open a terminal and start the server by
-        running `swift run hello-world serve`
+        running `PROTOC_PATH=$(which protoc) swift run hello-world serve`
 
         @Code(name: "Console.txt", file: "hello-world-sec04-step05.txt")
       }
 
       @Step {
-        In a separate terminal run `swift run hello-world greet` to call the server.
+        In a separate terminal run `PROTOC_PATH=$(which protoc) swift run hello-world greet` to
+        call the server.
 
         @Code(name: "Console.txt", file: "hello-world-sec04-step06.txt")
       }

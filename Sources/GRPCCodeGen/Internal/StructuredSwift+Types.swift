@@ -54,7 +54,11 @@ extension ExistingTypeDescription {
   }
 
   package static let serverContext: Self = .grpcCore("ServerContext")
-  package static let rpcRouter: Self = .grpcCore("RPCRouter")
+
+  package static func rpcRouter(genericOver type: String) -> Self {
+    .generic(wrapper: .grpcCore("RPCRouter"), wrapped: .member(type))
+  }
+
   package static let serviceDescriptor: Self = .grpcCore("ServiceDescriptor")
   package static let methodDescriptor: Self = .grpcCore("MethodDescriptor")
 
@@ -80,5 +84,8 @@ extension ExistingTypeDescription {
 
   package static let callOptions: Self = .grpcCore("CallOptions")
   package static let metadata: Self = .grpcCore("Metadata")
-  package static let grpcClient: Self = .grpcCore("GRPCClient")
+
+  package static func grpcClient(genericOver transport: String) -> Self {
+    .generic(wrapper: .grpcCore("GRPCClient"), wrapped: [.member(transport)])
+  }
 }
