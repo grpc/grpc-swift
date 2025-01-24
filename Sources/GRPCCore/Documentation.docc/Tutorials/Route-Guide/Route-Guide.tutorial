@@ -21,10 +21,15 @@
     to depend on gRPC Swift.
 
     As a prerequisite you must have the Protocol Buffers compiler (`protoc`) installed. You can
-    find the instructions for doing this in the [gRPC Swift Protobuf 
+    find the instructions for doing this in the [gRPC Swift Protobuf
     documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc).
     The remainder of this tutorial assumes you installed `protoc` and it's available in
     your `$PATH`.
+
+    You may notices that the `swift` commands are all prefixed with `PROTOC_PATH=$(which protoc)`,
+    this is to let the build system know where `protoc` is located so that it can generate stubs
+    for you. You can read more about it in the  [gRPC Swift Protobuf
+    documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/generating-stubs).
 
     @Steps {
       @Step {
@@ -126,7 +131,7 @@
         called `route_guide.proto`. We'll use the "proto3" syntax and our service will be part of
         the "routeguide" package.
 
-        It's good practice to organise your `.proto` files according to the package they are
+        It's good practice to organize your `.proto` files according to the package they are
         declared in, that's why we created the `routeguide` directory to match the "routeguide"
         package name.
 
@@ -475,13 +480,13 @@
 
     @Steps {
       @Step {
-        In one terminal run `swift run RouteGuide --server` to start the server.
+        In one terminal run `PROTOC_PATH=$(which protoc) swift run RouteGuide --server` to start the server.
 
         @Code(name: "Console", file: "route-guide-sec07-step01-server.txt")
       }
 
       @Step {
-        In another terminal run `swift run RouteGuide` to run the client program.
+        In another terminal run `PROTOC_PATH=$(which protoc) swift run RouteGuide` to run the client program.
 
         @Code(name: "Console", file: "route-guide-sec07-step02-client.txt")
       }

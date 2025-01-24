@@ -29,10 +29,15 @@
     Let's start by running the existing Greeter application.
 
     As a prerequisite you must have the Protocol Buffers compiler (`protoc`) installed. You can
-    find the instructions for doing this in the [gRPC Swift Protobuf 
+    find the instructions for doing this in the [gRPC Swift Protobuf
     documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc).
     The remainder of this tutorial assumes you installed `protoc` and it's available in
     your `$PATH`.
+
+    You may notices that the `swift` commands are all prefixed with `PROTOC_PATH=$(which protoc)`,
+    this is to let the build system know where `protoc` is located so that it can generate stubs
+    for you. You can read more about it in the  [gRPC Swift Protobuf
+    documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/generating-stubs).
 
     @Steps {
       @Step {
