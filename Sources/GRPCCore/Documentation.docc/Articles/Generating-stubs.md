@@ -8,7 +8,7 @@ If you've used Protocol Buffers before then generating gRPC Swift stubs should b
 unfamiliar with Protocol Buffers then you should get comfortable with the concepts before
 continuing; the [Protocol Buffers website](https://protobuf.dev/) is a great place to start.
 
-You can use the protoc plugin from the command line directly, or you can make use of a 
+You can use the `protoc` plugin from the command line directly, or you can make use of a 
  [Swift Package Manager build plugin](https://github.com/swiftlang/swift-package-manager/blob/main/Documentation/Plugins.md) 
 convenience which adds the stub generation to the Swift build graph.
 You may use the build plugin either from the command line or from Xcode.
@@ -50,7 +50,7 @@ are included in the target's source directory and that you have defined at least
 
 You must provide a configuration file in the directory which encloses all `.proto` files (in the same directory or a parent). 
 Configuration files, written in JSON, tell the build plugin about the options used for `protoc` invocations. 
-You must name the file grpc-swift-proto-generator-config.json and structure it in the following format:
+You must name the file `grpc-swift-proto-generator-config.json` and structure it in the following format:
 ```json
 {
   "generate": {
