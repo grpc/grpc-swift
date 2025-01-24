@@ -19,6 +19,9 @@ let package = Package(
       ],
       resources: [
         .copy("route_guide_db.json")
+      ],
+      plugins: [
+        .plugin(name: "GRPCProtobufGenerator", package: "grpc-swift-protobuf")
       ]
     )
   ]
