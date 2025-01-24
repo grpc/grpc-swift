@@ -96,7 +96,7 @@ The options do not need to be specified and each have default values.
 
 ‡ If you don't provide any import paths then the path to the configuration file will be used on a per-source-file basis. 
 
-Many of these map to `protoc-gen-grpc-swift` and `protoc-gen-swift` options.
+Many of these options map to `protoc-gen-grpc-swift` and `protoc-gen-swift` options.
 
 If you require greater flexibility you may specify more than one configuration file.
 Configuration files apply to all `.proto` files equal to or below it in the file hierarchy. A configuration file
