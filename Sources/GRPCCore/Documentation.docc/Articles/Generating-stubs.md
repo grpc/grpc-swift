@@ -11,16 +11,96 @@ continuing; the [Protocol Buffers website](https://protobuf.dev/) is a great pla
 The [`grpc-swift-protobuf`](https://github.com/grpc/grpc-swift-protobuf) package provides
 `protoc-gen-grpc-swift`, a program which is a plugin for the Protocol Buffers compiler, `protoc`.
 
+You can use the protoc plugin from the command line directly, or you can make use of a 
+ [Swift Package Manager build plugin](https://github.com/swiftlang/swift-package-manager/blob/main/Documentation/Plugins.md) 
+convenience which adds the stub generation to the Swift build graph.
+You may use the build plugin either from the command line or from Xcode.
+
+
 > `protoc-gen-grpc-swift` only generates gRPC stubs, it doesn't generate messages. You must use
 > `protoc-gen-swift` to generate messages in addition to gRPC Stubs.
 
-The protoc plugin can be used from the command line directly, passed to `protoc`, or 
-you can make use of a convenience which adds the stub generation to the Swift build graph.
-The automatic gRPC Swift stub generation makes use of a [Swift Package Manager build plugin](
-https://github.com/swiftlang/swift-package-manager/blob/main/Documentation/Plugins.md) to use the 
-`.proto` files as inputs to the build graph, input them into `protoc` using `protoc-gen-grpc-swift` 
-and `protoc-gen-swift` as needed, and make the resulting gRPC Swift stubs available to code 
-against without committing them as source. The build plugin may be invoked either from the command line or from Xcode.
+
+
+## Using the build plugin
+
+The build plugin (`GRPCProtobufGenerator`) is a great choice for convenient dynamic code generation, however it does come with some limitations.
+Because it generates the gRPC Swift stubs as part of the build it has the requirement that `protoc` must be available 
+at compile time. This requirements means it is not a good fit for library authors who do not have
+direct control over this.
+
+The build plugin detects `.proto` files in the source tree and invokes `protoc` once for each file 
+(caching results and performing the generation as necessary).
+
+### Adoption
+You must adopt Swift Package Manager build plugins on a per-target basis by modifying your package manifest 
+(`Package.swift` file). To do this, declare the grpc-swift-protobuf package as a dependency and add the plugin 
+to your desired targets.
+
+For example, to make use of the plugin for generating gRPC Swift stubs as part of the 
+`echo-server` target:
+```swift
+targets: [
+   .executableTarget(
+     name: "echo-server",
+     dependencies: [
+       // ...
+     ],
+     plugins: [
+       .plugin(name: "GRPCProtobufGenerator", package: "grpc-swift-protobuf")
+     ]
+   )
+ ]
+```
+Once this is done you need to ensure that that the `.proto` files to be used for generation 
+are included in the target's source directory and that you have defined at least one configuration file.
+
+### Configuration
+
+You must provide a configuration file in the directory which encloses all .proto files (in the same directory or a parent). 
+Configuration files, written in JSON, tell the build plugin about the options used for protoc invocations. 
+You must name the file grpc-swift-proto-generator-config.json and structure it in the following format:
+```json
+{
+  "generate": {
+    "clients": true,
+    "servers": true,
+    "messages": true,
+  },
+  "generatedSource": {
+    "accessLevelOnImports": false,
+    "accessLevel": "internal",
+  }
+  "protoc": {
+    "executablePath": "/opt/homebrew/bin/protoc"
+    "importPaths": [
+      "../directory_1",
+    ],
+  },
+}
+```
+
+The options do not need to be specified and each have default values.
+
+| Name                                   | Possible Values                            | Default      | Description                                         |
+|----------------------------------------|--------------------------------------------|--------------|-----------------------------------------------------|
+| `generate.servers`                     | `true`, `false`                            | `true`       | Generate server stubs                               |
+| `generate.clients`                     | `true`, `false`                            | `true`       | Generate client stubs                               |
+| `generate.messages`                    | `true`, `false`                            | `true`       | Generate message stubs                              |
+| `generatedSource.accessLevelOnImports` | `true`, `false`                            | `false`      | Whether imports should have explicit access levels  |
+| `generatedSource.accessLevel`          | `"public"`, `"package"`, `"internal"`      | `"internal"` | Access level for generated stubs                    |
+| `protoc.executablePath`                | N/A                                        | null†        | Path to the `protoc` executable                     |
+| `protoc.importPaths`                   | N/A                                        | null‡        | Import paths passed to `protoc`                     |
+
+† The Swift Package Manager build plugin infrastructure will attempt to discover the executable's location if you don't provide one.
+
+‡ If you don't provide any import paths then the path to the configuration file will be used on a per-source-file basis. 
+
+Many of these map to `protoc-gen-grpc-swift` and `protoc-gen-swift` options.
+
+If you require greater flexibility you may specify more than one configuration file.
+Configuration files apply to all `.proto` files equal to or below it in the file hierarchy. A configuration file
+lower in the file hierarchy supersedes one above it.
 
 ### Using protoc
 
@@ -91,83 +171,3 @@ swift build --product protoc-gen-grpc-swift
 
 This command will build the plugin into `.build/debug` directory. You can get the full path using
 `swift build --show-bin-path`.
-
-## Using the build plugin
-
-The build plugin (`GRPCProtobufGenerator`) is a great choice for convenient dynamic code generation, however it does come with some limitations.
-Because it generates the gRPC Swift stubs as part of the build it has the requirement that `protoc` must be guaranteed
-to be available at compile time. Also because of a limitation of Swift Package Manager build plugins, the plugin
-will only be invoked when applied to the source contained in a leaf package, so it is not useful for generating code for
-library authors.
-
-The build plugin will detect `.proto` files in the source tree and perform one invocation of `protoc` for each file 
-(caching results and performing the generation as necessary).
-
-### Adoption
-Swift Package Manager build plugins must be adopted on a per-target basis, you can do this by modifying your 
-package manifest (`Package.swift` file). You will need to declare the `grpc-swift-protobuf` package as a package
-dependency and then add the plugin to any desired targets.
-
-For example, to make use of the plugin for generating gRPC Swift stubs as part of the 
-`plugin-adopter` target:
-```swift
-targets: [
-   .executableTarget(
-     name: "plugin-adopter",
-     dependencies: [
-       // ...
-     ],
-     plugins: [
-       .plugin(name: "GRPCProtobufGenerator", package: "grpc-swift-protobuf")
-     ]
-   )
- ]
-```
-Once this is done you need to ensure that that the `.proto` files to be used for generation 
-are included in the target's source directory (below relevant the `Source` directory) and that you have 
-defined at least one configuration file.
-
-### Configuration
-
-The build plugin requires a configuration file to be present in a directory which encloses all `.proto` files 
-(in the same directory or a parent).
-Configuration files are JSON which tells the build plugin about the options which will be used in the
-invocations of `protoc`. Configuration files must be named `grpc-swift-proto-generator-config.json`
-and have the following format:
-```json
-{
-  "generate": {
-    "clients": true,
-    "servers": true,
-    "messages": true,
-  },
-  "generatedSource": {
-    "accessLevelOnImports": false,
-    "accessLevel": "internal",
-  }
-  "protoc": {
-    "executablePath": "/opt/homebrew/bin/protoc"
-    "importPaths": [
-      "../directory_1",
-    ],
-  },
-}
-```
-
-The options do not need to be specified and each have default values.
-
-| Name                                   | Possible Values                            | Default                              | Description                                              |
-|----------------------------------------|--------------------------------------------|--------------------------------------|----------------------------------------------------------|
-| `generate.servers`                     | `true`, `false`                            | `True`                               | Generate server stubs                                    |
-| `generate.clients`                     | `true`, `false`                            | `True`                               | Generate client stubs                                    |
-| `generate.messages`                    | `true`, `false`                            | `True`                               | Generate message stubs                                   |
-| `generatedSource.accessLevelOnImports` | `true`, `false`                            | `false`                              | Whether imports should have explicit access levels       |
-| `generatedSource.accessLevel`          | `public`, `package`, `internal`            | `internal`                           | Access level for generated stubs                         |
-| `protoc.executablePath`                | N/A                                        | N/A (attempted discovery)            | Path to the `protoc` executable                          |
-| `protoc.importPaths`                   | N/A                                        | Directory containing the config file | Access level for generated stubs                         |
-
-Many of these map to `protoc-gen-grpc-swift` and `protoc-gen-swift` options.
-
-If you require greater flexibility you may specify more than one configuration file.
-Configuration files apply to all `.proto` files equal to or below it in the file hierarchy. A configuration file
-lower in the file hierarchy supersedes one above it.
