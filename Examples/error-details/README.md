@@ -14,6 +14,10 @@ Guide](https://grpc.io/docs/guides/error/) and is made available via the
 
 You must have the Protocol Buffers compiler (`protoc`) installed. You can find
 the instructions for doing this in the [gRPC Swift Protobuf documentation][0].
+The `swift` commands below are all prefixed with `PROTOC_PATH=$(which protoc)`,
+this is to let the build system know where `protoc` is located so that it can
+generate stubs for you. You can read more about it in the [gRPC Swift Protobuf
+documentation][1].
 
 ## Usage
 
@@ -31,3 +35,4 @@ Error details:
 ```
 
 [0]: https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc
+[1]: https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/generating-stubs
