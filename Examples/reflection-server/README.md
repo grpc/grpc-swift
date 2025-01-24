@@ -23,6 +23,11 @@ protoc --descriptor_set_out=path/to/output.pb path/to/input.proto \
   --include_imports
 ```
 
+## Prerequisites
+
+You must have the Protocol Buffers compiler (`protoc`) installed. You can find
+the instructions for doing this in the [gRPC Swift Protobuf documentation][0].
+
 ## Usage
 
 Build and run the server using the CLI:
@@ -59,3 +64,5 @@ $ grpcurl -plaintext -d '{ "text": "Hello" }' 127.0.0.1:31415 echo.Echo.Get
   "text": "Hello"
 }
 ```
+
+[0]: https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc

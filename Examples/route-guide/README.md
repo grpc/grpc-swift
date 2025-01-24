@@ -15,19 +15,24 @@ HTTP/2 transport.
 This example has an accompanying tutorial hosted on the [Swift Package
 Index](https://swiftpackageindex.com/grpc/grpc-swift/main/tutorials/grpccore/route-guide).
 
+## Prerequisites
+
+You must have the Protocol Buffers compiler (`protoc`) installed. You can find
+the instructions for doing this in the [gRPC Swift Protobuf documentation][0].
+
 ## Usage
 
 Build and run the server using the CLI:
 
 ```console
-$ swift run route-guide serve
+$ PROTOC_PATH=$(which protoc) swift run route-guide serve
 server listening on [ipv4]127.0.0.1:31415
 ```
 
 Use the CLI to interrogate the different RPCs you can call:
 
 ```console
-$ swift run route-guide --help
+$ PROTOC_PATH=$(which protoc) swift run route-guide --help
 USAGE: route-guide <subcommand>
 
 OPTIONS:
@@ -42,3 +47,5 @@ SUBCOMMANDS:
 
   See 'route-guide help <subcommand>' for detailed help.
 ```
+
+[0]: https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc
