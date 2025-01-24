@@ -58,7 +58,7 @@ are included in the target's source directory and that you have defined at least
 ### Configuration
 
 You must provide a configuration file in the directory which encloses all `.proto` files (in the same directory or a parent). 
-Configuration files, written in JSON, tell the build plugin about the options used for protoc invocations. 
+Configuration files, written in JSON, tell the build plugin about the options used for `protoc` invocations. 
 You must name the file grpc-swift-proto-generator-config.json and structure it in the following format:
 ```json
 {
