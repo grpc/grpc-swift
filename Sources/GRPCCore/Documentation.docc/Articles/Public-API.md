@@ -7,10 +7,10 @@ made by the maintainers.
 
 The gRPC Swift project uses [Semantic Versioning 2.0.0][0] which requires
 projects to declare their public API. This document describes what is and isn't
-part of the public API; commitments the maintainers make relating to the API;
+part of the public API; commitments the maintainers make relating to the API,
 and guidelines for users.
 
-For clarity the project is comprised of the following Swift packages:
+For clarity, the project is comprised of the following Swift packages:
 
 - [grpc/grpc-swift][1],
 - [grpc/grpc-swift-nio-transport][2],
@@ -21,7 +21,7 @@ For clarity the project is comprised of the following Swift packages:
 
 ### Library targets
 
-All library targets made available as package products as considered to be
+All library targets made available as package products are considered to be
 public API. Examples of these include `GRPCCore` and `GRPCProtobuf`.
 
 > Exceptions:
