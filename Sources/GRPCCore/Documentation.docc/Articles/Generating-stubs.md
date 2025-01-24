@@ -8,19 +8,10 @@ If you've used Protocol Buffers before then generating gRPC Swift stubs should b
 unfamiliar with Protocol Buffers then you should get comfortable with the concepts before
 continuing; the [Protocol Buffers website](https://protobuf.dev/) is a great place to start.
 
-The [`grpc-swift-protobuf`](https://github.com/grpc/grpc-swift-protobuf) package provides
-`protoc-gen-grpc-swift`, a program which is a plugin for the Protocol Buffers compiler, `protoc`.
-
 You can use the protoc plugin from the command line directly, or you can make use of a 
  [Swift Package Manager build plugin](https://github.com/swiftlang/swift-package-manager/blob/main/Documentation/Plugins.md) 
 convenience which adds the stub generation to the Swift build graph.
 You may use the build plugin either from the command line or from Xcode.
-
-
-> `protoc-gen-grpc-swift` only generates gRPC stubs, it doesn't generate messages. You must use
-> `protoc-gen-swift` to generate messages in addition to gRPC Stubs.
-
-
 
 ## Using the build plugin
 
@@ -104,12 +95,17 @@ lower in the file hierarchy supersedes one above it.
 
 ### Using protoc
 
+The [`grpc-swift-protobuf`](https://github.com/grpc/grpc-swift-protobuf) package provides
+`protoc-gen-grpc-swift`, a program which is a plugin for the Protocol Buffers compiler, `protoc`.
 To generate gRPC stubs for your `.proto` files directly you must run the `protoc` command with
 the `--grpc-swift_out=<DIRECTORY>` option:
 
 ```console
 protoc --grpc-swift_out=. my-service.proto
 ```
+
+> `protoc-gen-grpc-swift` only generates gRPC stubs, it doesn't generate messages. You must use
+> `protoc-gen-swift` to generate messages in addition to gRPC Stubs.
 
 The presence of `--grpc-swift_out` tells `protoc` to use the `protoc-gen-grpc-swift` plugin. By
 default it'll look for the plugin in your `PATH`. You can also specify the path to the plugin
