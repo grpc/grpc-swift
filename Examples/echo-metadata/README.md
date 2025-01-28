@@ -2,19 +2,20 @@
 
 This example demonstrates how to interact with `Metadata` on RPCs: how to set and read it on unary 
 and streaming requests, as well as how to set and read both initial and trailing metadata on unary 
-and streaming responses. This is done using a simple 'echo' server and client and the Swift NIO 
+and streaming responses. This is done using a simple 'echo' server and client and the SwiftNIO 
 based HTTP/2 transport.
 
 ## Overview
 
-An `echo-metadata` command line tool that uses generated stubs for an 'echo' service
-which allows you to start a server and to make requests against it. The client will automatically
-run a unary request followed by a bidirectional streaming request. In both cases, no message will
-be sent as part of the request: only the metadata provided as arguments to the executable will be
-included.
-The server will then echo back all metadata key-value pairs that begin with "echo-". No message 
-will be included in the responses, and the echoed values will be included in both the initial and
-the trailing metadata.
+An `echo-metadata` command line tool that uses generated stubs for an 'echo-metadata' service
+which allows you to start a server and to make requests against it. 
+
+You can use any of the client's subcommands (`get`, `collect`, `expand` and `update`) to send the
+provided `message` as both the request's message, and as the value for the `echo-message` key in
+the request's metadata.
+
+The server will then echo back the message and the metadata's `echo-message` key-value pair sent
+by the client. The request's metadata will be echoed both in the initial and the trailing metadata.
 
 The tool uses the [SwiftNIO](https://github.com/grpc/grpc-swift-nio-transport) HTTP/2 transport.
 
@@ -36,16 +37,15 @@ $ PROTOC_PATH=$(which protoc) swift run echo-metadata serve
 Echo-Metadata listening on [ipv4]127.0.0.1:1234
 ```
 
-Use the CLI to run the client and make a unary request followed by a bidirectional streaming one:
+Use the CLI to run the client and make a `get` (unary) request:
 
 ```console
-$ PROTOC_PATH=$(which protoc) swift run echo-metadata echo --metadata "echo-key=value" --metadata "another-key=value"
-unary → [("echo-key", value)]
-unary ← Initial metadata: [("echo-key", value)]
-unary ← Trailing metadata: [("echo-key", value)]
-bidirectional → [("echo-key", value)]
-bidirectional ← Initial metadata: [("echo-key", value)]
-bidirectional ← Trailing metadata: [("echo-key", value)]
+$ PROTOC_PATH=$(which protoc) swift run echo-metadata get --message "hello"
+get → metadata: [("echo-message", "hello")]
+get → message: hello
+get ← initial metadata: [("echo-message", "hello")]
+get ← message: hello
+get ← trailing metadata: [("echo-message", "hello")]
 ```
 
 Get help with the CLI by running:

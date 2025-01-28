@@ -21,9 +21,9 @@ struct EchoService: Echo_Echo.ServiceProtocol {
     request: ServerRequest<Echo_EchoRequest>,
     context: ServerContext
   ) async throws -> ServerResponse<Echo_EchoResponse> {
-    let responseMetadata = request.metadata.echoPairs
+    let responseMetadata = Metadata(request.metadata.filter({ $0.key.starts(with: "echo-") }))
     return ServerResponse(
-      message: .init(),
+      message: .with { $0.text = request.message.text },
       metadata: responseMetadata,
       trailingMetadata: responseMetadata
     )
@@ -33,9 +33,12 @@ struct EchoService: Echo_Echo.ServiceProtocol {
     request: StreamingServerRequest<Echo_EchoRequest>,
     context: ServerContext
   ) async throws -> ServerResponse<Echo_EchoResponse> {
-    let responseMetadata = request.metadata.echoPairs
+    let responseMetadata = Metadata(request.metadata.filter({ $0.key.starts(with: "echo-") }))
+    let messages = try await request.messages.reduce(into: []) { $0.append($1.text) }
+    let joined = messages.joined(separator: " ")
+
     return ServerResponse(
-      message: .init(),
+      message: .with { $0.text = joined },
       metadata: responseMetadata,
       trailingMetadata: responseMetadata
     )
@@ -45,31 +48,26 @@ struct EchoService: Echo_Echo.ServiceProtocol {
     request: ServerRequest<Echo_EchoRequest>,
     context: ServerContext
   ) async throws -> StreamingServerResponse<Echo_EchoResponse> {
-    let responseMetadata = request.metadata.echoPairs
-    return StreamingServerResponse(
-      single: ServerResponse(
-        message: .init(),
-        metadata: responseMetadata,
-        trailingMetadata: responseMetadata
-      )
-    )
+    let responseMetadata = Metadata(request.metadata.filter({ $0.key.starts(with: "echo-") }))
+    let parts = request.message.text.split(separator: " ")
+    let messages = parts.map { part in Echo_EchoResponse.with { $0.text = String(part) } }
+
+    return StreamingServerResponse(metadata: responseMetadata) { writer in
+      try await writer.write(contentsOf: messages)
+      return responseMetadata
+    }
   }
 
   func update(
     request: StreamingServerRequest<Echo_EchoRequest>,
     context: ServerContext
   ) async throws -> StreamingServerResponse<Echo_EchoResponse> {
-    for try await _ in request.messages {
-      // Wait for request to be done
+    let responseMetadata = Metadata(request.metadata.filter({ $0.key.starts(with: "echo-") }))
+    return StreamingServerResponse(metadata: responseMetadata) { writer in
+      for try await message in request.messages {
+        try await writer.write(.with { $0.text = message.text })
+      }
+      return responseMetadata
     }
-
-    let responseMetadata = request.metadata.echoPairs
-    return StreamingServerResponse(
-      single: ServerResponse(
-        message: .init(),
-        metadata: responseMetadata,
-        trailingMetadata: responseMetadata
-      )
-    )
   }
 }

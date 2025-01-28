@@ -23,9 +23,9 @@ struct ClientArguments: ParsableArguments {
 
   @Option(
     help:
-      "Metadata 'key=value' pair to send to the server. Key must begin with 'echo-' to be echoed back."
+      "Message to send to the server. It will also be sent in the request's metadata as the value for `echo-message`."
   )
-  var metadata: [String]
+  var message: String
 }
 
 extension ClientArguments {

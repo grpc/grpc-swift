@@ -22,12 +22,6 @@ struct EchoMetadata: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "echo-metadata",
     abstract: "A multi-tool to run an echo-metadata server and execute RPCs against it.",
-    subcommands: [Serve.self, Echo.self]
+    subcommands: [Serve.self, Get.self, Collect.self, Update.self, Expand.self]
   )
-}
-
-extension Metadata {
-  var echoPairs: Self {
-    Metadata(self.filter({ $0.key.starts(with: "echo-") }))
-  }
 }
