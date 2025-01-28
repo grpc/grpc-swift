@@ -106,6 +106,11 @@ final class ClientResponseTests: XCTestCase {
     } errorHandler: {
       XCTAssertEqual($0, error)
     }
+    await XCTAssertThrowsRPCErrorAsync {
+      try response.bodyParts
+    } errorHandler: {
+      XCTAssertEqual($0, error)
+    }
   }
 
   func testStreamToSingleConversionForValidStream() async throws {
