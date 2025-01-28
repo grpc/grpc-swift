@@ -53,7 +53,7 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertEqual(response.trailingMetadata, ["bar": "baz"])
   }
 
-  func testAcceptedStreamResponseConvenienceMethods() async throws {
+  func testAcceptedStreamResponseConvenienceMethods_Messages() async throws {
     let response = StreamingClientResponse(
       of: String.self,
       metadata: ["foo": "bar"],
@@ -71,6 +71,29 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertEqual(response.metadata, ["foo": "bar"])
     let messages = try await response.messages.collect()
     XCTAssertEqual(messages, ["foo", "bar", "baz"])
+  }
+
+  func testAcceptedStreamResponseConvenienceMethods_BodyParts() async throws {
+    let response = StreamingClientResponse(
+      of: String.self,
+      metadata: ["foo": "bar"],
+      bodyParts: RPCAsyncSequence(
+        wrapping: AsyncThrowingStream {
+          $0.yield(.message("foo"))
+          $0.yield(.message("bar"))
+          $0.yield(.message("baz"))
+          $0.yield(.trailingMetadata(["baz": "baz"]))
+          $0.finish()
+        }
+      )
+    )
+
+    XCTAssertEqual(response.metadata, ["foo": "bar"])
+    let bodyParts = try await response.bodyParts.collect()
+    XCTAssertEqual(
+      bodyParts,
+      [.message("foo"), .message("bar"), .message("baz"), .trailingMetadata(["baz": "baz"])]
+    )
   }
 
   func testRejectedStreamResponseConvenienceMethods() async throws {
@@ -179,6 +202,24 @@ final class ClientResponseTests: XCTestCase {
     let single = await ClientResponse(stream: stream)
     XCTAssertThrowsRPCError(try single.message) { error in
       XCTAssertEqual(error.code, .unknown)
+    }
+  }
+}
+
+extension StreamingClientResponse.Contents.BodyPart: Equatable where Message: Equatable {
+  static func == (
+    lhs: StreamingClientResponse.Contents.BodyPart,
+    rhs: StreamingClientResponse.Contents.BodyPart
+  ) -> Bool {
+    switch (lhs, rhs) {
+    case (.message(let lhsMessage), .message(let rhsMessage)):
+      return lhsMessage == rhsMessage
+
+    case (.trailingMetadata(let lhsMetadata), .trailingMetadata(let rhsMetadata)):
+      return lhsMetadata == rhsMetadata
+
+    default:
+      return false
     }
   }
 }

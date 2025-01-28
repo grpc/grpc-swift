@@ -382,4 +382,13 @@ extension StreamingClientResponse {
       return RPCAsyncSequence.throwing(error)
     }
   }
+
+  /// Returns the body parts (i.e. `messages` and `trailingMetadata`) returned from the server.
+  ///
+  /// For rejected RPCs (in other words, where ``accepted`` is `failure`), this method throws an `RPCError`.
+  public var bodyParts: RPCAsyncSequence<Contents.BodyPart, any Error> {
+    get throws {
+      try self.accepted.get().bodyParts
+    }
+  }
 }
