@@ -107,7 +107,7 @@ final class ClientResponseTests: XCTestCase {
       XCTAssertEqual($0, error)
     }
     await XCTAssertThrowsRPCErrorAsync {
-      try response.bodyParts
+      try await response.bodyParts.collect()
     } errorHandler: {
       XCTAssertEqual($0, error)
     }
@@ -207,24 +207,6 @@ final class ClientResponseTests: XCTestCase {
     let single = await ClientResponse(stream: stream)
     XCTAssertThrowsRPCError(try single.message) { error in
       XCTAssertEqual(error.code, .unknown)
-    }
-  }
-}
-
-extension StreamingClientResponse.Contents.BodyPart: Equatable where Message: Equatable {
-  static func == (
-    lhs: StreamingClientResponse.Contents.BodyPart,
-    rhs: StreamingClientResponse.Contents.BodyPart
-  ) -> Bool {
-    switch (lhs, rhs) {
-    case (.message(let lhsMessage), .message(let rhsMessage)):
-      return lhsMessage == rhsMessage
-
-    case (.trailingMetadata(let lhsMetadata), .trailingMetadata(let rhsMetadata)):
-      return lhsMetadata == rhsMetadata
-
-    default:
-      return false
     }
   }
 }
