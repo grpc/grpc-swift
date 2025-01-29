@@ -322,7 +322,7 @@ struct MetadataTests {
       let metadata: Metadata = [
         "key1": "value1",
         "key2": "value2",
-        "key-bin": .binary([1,2,3]),
+        "key-bin": .binary([1, 2, 3]),
       ]
       #expect("\(metadata)" == #"["key1": "value1", "key2": "value2", "key-bin": [1, 2, 3]]"#)
     }
