@@ -494,7 +494,15 @@ extension Metadata.Value: ExpressibleByArrayLiteral {
 
 extension Metadata: CustomStringConvertible {
   public var description: String {
-    String(describing: self.map({ ($0.key.description, $0.value.description) }))
+    var description = "["
+    description = self.dropLast().reduce(into: description) { partialResult, nextPair in
+      partialResult += "\"\(nextPair.key)\": \(nextPair.value), "
+    }
+    if let lastElement = self.last {
+      description += "\"\(lastElement.key)\": \(lastElement.value)"
+    }
+    description += "]"
+    return description
   }
 }
 
@@ -502,7 +510,7 @@ extension Metadata.Value: CustomStringConvertible {
   public var description: String {
     switch self {
     case .string(let stringValue):
-      return stringValue
+      return "\"\(stringValue)\""
     case .binary(let binaryValue):
       return String(describing: binaryValue)
     }
