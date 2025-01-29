@@ -40,13 +40,13 @@ struct Get: AsyncParsableCommand {
       print("get → metadata: \(requestMetadata)")
       print("get → message: \(message.text)")
       try await echo.get(message, metadata: requestMetadata) { response in
-        print(
-          "get ← initial metadata: \(Metadata(response.metadata.filter({ $0.key.starts(with: "echo-") })))"
-        )
+        let initialMetadata = Metadata(response.metadata.filter({ $0.key.starts(with: "echo-") }))
+        print("get ← initial metadata: \(initialMetadata)")
         print("get ← message: \(try response.message.text)")
-        print(
-          "get ← trailing metadata: \(Metadata(response.trailingMetadata.filter({ $0.key.starts(with: "echo-") })))"
+        let trailingMetadata = Metadata(
+          response.trailingMetadata.filter({ $0.key.starts(with: "echo-") })
         )
+        print("get ← trailing metadata: \(trailingMetadata)")
       }
     }
   }

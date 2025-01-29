@@ -43,18 +43,20 @@ struct Expand: AsyncParsableCommand {
       try await echo.expand(message, metadata: requestMetadata) { response in
         let responseContents = try response.accepted.get()
 
-        print(
-          "expand ← initial metadata: \(Metadata(responseContents.metadata.filter({ $0.key.starts(with: "echo-") })))"
+        let initialMetadata = Metadata(
+          responseContents.metadata.filter({ $0.key.starts(with: "echo-") })
         )
+        print("expand ← initial metadata: \(initialMetadata)")
         for try await part in responseContents.bodyParts {
           switch part {
           case .message(let message):
             print("expand ← message: \(message.text)")
 
           case .trailingMetadata(let trailingMetadata):
-            print(
-              "expand ← trailing metadata: \(Metadata(trailingMetadata.filter({ $0.key.starts(with: "echo-") })))"
+            let trailingMetadata = Metadata(
+              trailingMetadata.filter({ $0.key.starts(with: "echo-") })
             )
+            print("expand ← trailing metadata: \(trailingMetadata)")
           }
         }
       }

@@ -43,11 +43,15 @@ struct Collect: AsyncParsableCommand {
           try await writer.write(.with { $0.text = String(part) })
         }
       } onResponse: { response in
-        print(
-          "collect ← initial metadata: \(response.metadata.filter({ $0.key.starts(with: "echo-") }))"
-        )
+        let initialMetadata = Metadata(response.metadata.filter({ $0.key.starts(with: "echo-") }))
+        print("collect ← initial metadata: \(initialMetadata)")
+
         print("collect ← message: \(try response.message.text)")
-        print("collect ← trailing metadata: \(response.trailingMetadata)")
+
+        let trailingMetadata = Metadata(
+          response.trailingMetadata.filter({ $0.key.starts(with: "echo-") })
+        )
+        print("collect ← trailing metadata: \(trailingMetadata)")
       }
     }
   }

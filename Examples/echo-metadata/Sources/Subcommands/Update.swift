@@ -45,18 +45,20 @@ struct Update: AsyncParsableCommand {
       } onResponse: { response in
         let responseContents = try response.accepted.get()
 
-        print(
-          "update ← initial metadata: \(Metadata(responseContents.metadata.filter({ $0.key.starts(with: "echo-") })))"
+        let initialMetadata = Metadata(
+          responseContents.metadata.filter({ $0.key.starts(with: "echo-") })
         )
+        print("update ← initial metadata: \(initialMetadata)")
         for try await part in responseContents.bodyParts {
           switch part {
           case .message(let message):
             print("update ← message: \(message.text)")
 
           case .trailingMetadata(let trailingMetadata):
-            print(
-              "update ← trailing metadata: \(Metadata(trailingMetadata.filter({ $0.key.starts(with: "echo-") })))"
+            let trailingMetadata = Metadata(
+              trailingMetadata.filter({ $0.key.starts(with: "echo-") })
             )
+            print("update ← trailing metadata: \(trailingMetadata)")
           }
         }
       }
