@@ -317,17 +317,20 @@ struct MetadataTests {
 
   @Suite("Description")
   struct Description {
+    let metadata = Metadata([
+      "key1": "value1",
+      "key2": "value2",
+      "key-bin": .binary([1, 2, 3]),
+    ])
+
     @Test("Metadata")
     func describeMetadata() async throws {
-      let metadata: Metadata = [
-        "key1": "value1",
-        "key2": "value2",
-        "key-bin": .binary([1, 2, 3]),
-      ]
+      #expect("\(self.metadata)" == #"["key1": "value1", "key2": "value2", "key-bin": [1, 2, 3]]"#)
+    }
 
-      #expect("\(metadata)" == #"["key1": "value1", "key2": "value2", "key-bin": [1, 2, 3]]"#)
-
-      for (key, value) in metadata {
+    @Test("Metadata.Value")
+    func describeMetadataValue() async throws {
+      for (key, value) in self.metadata {
         switch key {
         case "key1":
           #expect("\(value)" == "value1")

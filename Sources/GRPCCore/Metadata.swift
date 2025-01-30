@@ -508,7 +508,7 @@ extension Metadata.Value: CustomStringConvertible {
   public var description: String {
     switch self {
     case .string(let stringValue):
-      return stringValue
+      return String(describing: stringValue)
     case .binary(let binaryValue):
       return String(describing: binaryValue)
     }
@@ -519,9 +519,9 @@ extension Metadata.Value: CustomDebugStringConvertible {
   public var debugDescription: String {
     switch self {
     case .string(let stringValue):
-      return "\"\(stringValue)\""
+      return String(reflecting: stringValue)
     case .binary(let binaryValue):
-      return String(describing: binaryValue)
+      return String(reflecting: binaryValue)
     }
   }
 }
