@@ -497,7 +497,7 @@ extension Metadata: CustomStringConvertible {
     if self.isEmpty {
       return "[:]"
     } else {
-      let elements = self.map { "\(String(reflecting: $0.key)): \(String(reflecting: $0.value))"}
+      let elements = self.map { "\(String(reflecting: $0.key)): \(String(reflecting: $0.value))" }
         .joined(separator: ", ")
       return "[\(elements)]"
     }
