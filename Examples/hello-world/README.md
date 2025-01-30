@@ -10,25 +10,37 @@ service which allows you to start a server and to make requests against it.
 The tool uses the [SwiftNIO](https://github.com/grpc/grpc-swift-nio-transport)
 HTTP/2 transport.
 
+## Prerequisites
+
+You must have the Protocol Buffers compiler (`protoc`) installed. You can find
+the instructions for doing this in the [gRPC Swift Protobuf documentation][0].
+The `swift` commands below are all prefixed with `PROTOC_PATH=$(which protoc)`,
+this is to let the build system know where `protoc` is located so that it can
+generate stubs for you. You can read more about it in the [gRPC Swift Protobuf
+documentation][1].
+
 ## Usage
 
 Build and run the server using the CLI:
 
 ```console
-$ swift run hello-world serve
+$ PROTOC_PATH=$(which protoc) swift run hello-world serve
 Greeter listening on [ipv4]127.0.0.1:31415
 ```
 
 Use the CLI to send a request to the service:
 
 ```console
-$ swift run hello-world greet
+$ PROTOC_PATH=$(which protoc) swift run hello-world greet
 Hello, stranger
 ```
 
 Send the name of the greetee in the request by specifying a `--name`:
 
 ```console
-$ swift run hello-world greet --name "PanCakes 🐶"
+$ PROTOC_PATH=$(which protoc) swift run hello-world greet --name "PanCakes 🐶"
 Hello, PanCakes 🐶
 ```
+
+[0]: https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc
+[1]: https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/generating-stubs

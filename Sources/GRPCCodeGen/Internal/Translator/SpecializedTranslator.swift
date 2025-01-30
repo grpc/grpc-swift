@@ -19,7 +19,7 @@
 protocol SpecializedTranslator {
 
   /// The ``SourceGenerator.Config.AccessLevel`` object used to represent the visibility level used in the generated code.
-  var accessLevel: SourceGenerator.Config.AccessLevel { get }
+  var accessLevel: CodeGenerator.Config.AccessLevel { get }
 
   /// Generates an array of ``CodeBlock`` elements that will be part of the ``StructuredSwiftRepresentation`` object
   /// created by the ``Translator``.

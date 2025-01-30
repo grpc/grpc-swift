@@ -143,7 +143,7 @@ extension StructuredSwiftTests {
         methods: [
           .init(
             documentation: "",
-            name: .init(base: "Foo", generatedUpperCase: "Foo", generatedLowerCase: "foo"),
+            name: MethodName(identifyingName: "Foo", typeName: "Foo", functionName: "foo"),
             isInputStreaming: false,
             isOutputStreaming: false,
             inputType: "FooInput",
@@ -201,7 +201,7 @@ extension StructuredSwiftTests {
         methods: [
           .init(
             documentation: "",
-            name: .init(base: "Bar", generatedUpperCase: "Bar", generatedLowerCase: "bar"),
+            name: MethodName(identifyingName: "Bar", typeName: "Bar", functionName: "bar"),
             isInputStreaming: false,
             isOutputStreaming: false,
             inputType: "BarInput",

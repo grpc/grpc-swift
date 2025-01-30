@@ -236,12 +236,12 @@ extension EnumDescription {
     // Add a namespace for each method.
     let methodNamespaces: [Declaration] = methods.map { method in
       return .commentable(
-        .doc("Namespace for \"\(method.name.base)\" metadata."),
+        .doc("Namespace for \"\(method.name.typeName)\" metadata."),
         .enum(
           .methodNamespace(
             accessModifier: accessModifier,
-            name: method.name.base,
-            literalMethod: method.name.base,
+            name: method.name.typeName,
+            literalMethod: method.name.identifyingName,
             literalFullyQualifiedService: literalFullyQualifiedService,
             inputType: method.inputType,
             outputType: method.outputType
@@ -254,7 +254,7 @@ extension EnumDescription {
     // Add an array of method descriptors
     let methodDescriptorsArray: VariableDescription = .methodDescriptorsArray(
       accessModifier: accessModifier,
-      methodNamespaceNames: methods.map { $0.name.base }
+      methodNamespaceNames: methods.map { $0.name.typeName }
     )
     description.members.append(
       .commentable(
@@ -329,14 +329,14 @@ extension [CodeBlock] {
 
     let serviceNamespace: EnumDescription = .serviceNamespace(
       accessModifier: accessModifier,
-      name: service.namespacedGeneratedName,
-      literalFullyQualifiedService: service.fullyQualifiedName,
+      name: service.name.typeName,
+      literalFullyQualifiedService: service.name.identifyingName,
       methods: service.methods
     )
     blocks.append(
       CodeBlock(
         comment: .doc(
-          "Namespace containing generated types for the \"\(service.fullyQualifiedName)\" service."
+          "Namespace containing generated types for the \"\(service.name.identifyingName)\" service."
         ),
         item: .declaration(.enum(serviceNamespace))
       )
@@ -344,8 +344,8 @@ extension [CodeBlock] {
 
     let descriptorExtension: ExtensionDescription = .serviceDescriptor(
       accessModifier: accessModifier,
-      propertyName: service.namespacedServicePropertyName,
-      literalFullyQualifiedService: service.fullyQualifiedName
+      propertyName: service.name.propertyName,
+      literalFullyQualifiedService: service.name.identifyingName
     )
     blocks.append(CodeBlock(item: .declaration(.extension(descriptorExtension))))
 

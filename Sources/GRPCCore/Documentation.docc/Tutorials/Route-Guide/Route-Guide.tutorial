@@ -20,6 +20,17 @@
     Before we can write any code we need to create a new Swift Package and configure it
     to depend on gRPC Swift.
 
+    As a prerequisite you must have the Protocol Buffers compiler (`protoc`) installed. You can
+    find the instructions for doing this in the [gRPC Swift Protobuf
+    documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/installing-protoc).
+    The remainder of this tutorial assumes you installed `protoc` and it's available in
+    your `$PATH`.
+
+    You may notice that the `swift` commands are all prefixed with `PROTOC_PATH=$(which protoc)`,
+    this is to let the build system know where `protoc` is located so that it can generate stubs
+    for you. You can read more about it in the  [gRPC Swift Protobuf
+    documentation](https://swiftpackageindex.com/grpc/grpc-swift-protobuf/documentation/grpcprotobuf/generating-stubs).
+
     @Steps {
       @Step {
         Create a new directory called for the package called `RouteGuide`.
@@ -84,6 +95,24 @@
 
         @Code(name: "Package.swift", file: "route-guide-sec01-step08-description.swift")
       }
+
+      @Step {
+        We'll also add a build plugin. This allows the build system to generate gRPC code at build
+        time rather than having to generate it with separate tooling.
+
+        @Code(name: "Package.swift", file: "route-guide-sec01-step09-plugin.swift")
+      }
+
+      @Step {
+        A configuration file is required so that the plugin knows what to generate. Create
+        a JSON file in the `Sources/Protos` directory called `grpc-swift-proto-generator-config.json`
+        with this content.
+
+        The name of the file (`grpc-swift-proto-generator-config.json`) is important: the plugin
+        looks for files matching this name in the source directory of your target.
+
+        @Code(name: "Sources/Protos/grpc-swift-proto-generator-config.json", file: "route-guide-sec01-step10-plugin-config.json")
+      }
     }
   }
 
@@ -93,16 +122,26 @@
 
     @Steps {
       @Step {
-        Create a new empty file in the `Protos` directory called `route_guide.proto`. We'll use
-        the "proto3" syntax and our service will be part of the "routeguide" package.
+        Create a new directory in the `Sources/Protos` directory called `routeguide`
+        using `mkdir Sources/Protos/routeguide`.
+      }
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step01-import.proto")
+      @Step {
+        Create a new empty file in the `Sources/Protos/routeguide` directory
+        called `route_guide.proto`. We'll use the "proto3" syntax and our service will be part of
+        the "routeguide" package.
+
+        It's good practice to organize your `.proto` files according to the package they are
+        declared in, that's why we created the `routeguide` directory to match the "routeguide"
+        package name.
+
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step01-import.proto")
       }
 
       @Step {
         To define a service we create a named `service` in the `.proto` file.
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step02-service.proto")
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step02-service.proto")
       }
 
       @Step {
@@ -113,7 +152,7 @@
         A *unary RPC* where the client sends a request to the server using the stub
         and waits for a response to come back, just like a normal function call.
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step03-unary.proto")
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step03-unary.proto")
       }
 
       @Step {
@@ -123,7 +162,7 @@
         example, you specify a server-side streaming method by placing the `stream`
         keyword before the *response* type.
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step04-server-streaming.proto")
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step04-server-streaming.proto")
       }
 
       @Step {
@@ -133,7 +172,7 @@
         and return its response. You specify a client-side streaming method by placing
         the `stream` keyword before the *request* type.
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step05-client-streaming.proto")
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step05-client-streaming.proto")
       }
 
       @Step {
@@ -146,53 +185,30 @@
         stream is preserved. You specify this type of method by placing the `stream`
         keyword before both the request and the response.
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step06-bidi-streaming.proto")
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step06-bidi-streaming.proto")
       }
 
       @Step {
         The `.proto` file also contains the Protocol Buffers message type definitions for all
         request and response messages used by the service.
 
-        @Code(name: "Protos/route_guide.proto", file: "route-guide-sec02-step07-messages.proto")
+        @Code(name: "Sources/Protos/routeguide/route_guide.proto", file: "route-guide-sec02-step07-messages.proto")
       }
     }
   }
 
   @Section(title: "Generating client and server code") {
     Next we need to generate the gRPC client and server interfaces from our `.proto`
-    service definition. We do this using the Protocol Buffer compiler, `protoc`, with
-    two plugins: one with support for Swift (via [Swift Protobuf](https://github.com/apple/swift-protobuf))
-    and the other for gRPC. This section assumes you already have `protoc` installed.
+    service definition. As we're using the build plugin we just need to build our project.
 
     To learn more about generating code check out the <doc:Generating-stubs> article.
 
     @Steps {
       @Step {
-        First we need to build the two plugins for `protoc`, `protoc-gen-swift` and
-        `protoc-gen-grpc-swift`.
+        Build the project using `PROTOC_PATH=$(which protoc) swift build`.
 
-        @Code(name: "Console", file: "route-guide-sec03-step01-protoc-plugins.txt")
-      }
-
-      @Step {
-        We'll generate the code into a separate directory within `Sources` called `Generated` which
-        we need to create first.
-
-        @Code(name: "Console", file: "route-guide-sec03-step02-mkdir.txt")
-      }
-
-      @Step {
-        Now run `protoc` to generate the messages. This will create
-        `Sources/Generated/route_guide.pb.swift`.
-
-        @Code(name: "Console", file: "route-guide-sec03-step03-gen-messages.txt")
-      }
-
-      @Step {
-        Run `protoc` again to generate the service code. This will create
-        `Sources/Generated/route_guide.grpc.swift`.
-
-        @Code(name: "Console", file: "route-guide-sec03-step04-gen-grpc.txt")
+        If you are using Xcode or another IDE then you'll need to set the environment variable
+        appropriately.
       }
     }
   }
@@ -464,13 +480,13 @@
 
     @Steps {
       @Step {
-        In one terminal run `swift run RouteGuide --server` to start the server.
+        In one terminal run `PROTOC_PATH=$(which protoc) swift run RouteGuide --server` to start the server.
 
         @Code(name: "Console", file: "route-guide-sec07-step01-server.txt")
       }
 
       @Step {
-        In another terminal run `swift run RouteGuide` to run the client program.
+        In another terminal run `PROTOC_PATH=$(which protoc) swift run RouteGuide` to run the client program.
 
         @Code(name: "Console", file: "route-guide-sec07-step02-client.txt")
       }

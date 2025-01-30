@@ -24,7 +24,7 @@ struct ClientCodeTranslatorSnippetBasedTests {
   func translate() {
     let method = MethodDescriptor(
       documentation: "/// Documentation for MethodA",
-      name: Name(base: "MethodA", generatedUpperCase: "MethodA", generatedLowerCase: "methodA"),
+      name: MethodName(identifyingName: "MethodA", typeName: "MethodA", functionName: "methodA"),
       isInputStreaming: false,
       isOutputStreaming: false,
       inputType: "NamespaceA_ServiceARequest",
@@ -33,8 +33,11 @@ struct ClientCodeTranslatorSnippetBasedTests {
 
     let service = ServiceDescriptor(
       documentation: "/// Documentation for ServiceA",
-      name: Name(base: "ServiceA", generatedUpperCase: "ServiceA", generatedLowerCase: ""),
-      namespace: Name(base: "namespaceA", generatedUpperCase: "NamespaceA", generatedLowerCase: ""),
+      name: ServiceName(
+        identifyingName: "namespaceA.ServiceA",
+        typeName: "NamespaceA_ServiceA",
+        propertyName: ""
+      ),
       methods: [method]
     )
 
