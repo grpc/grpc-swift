@@ -363,7 +363,7 @@ extension StreamingClientResponse {
 
   /// Returns the messages received from the server.
   ///
-  /// For rejected RPCs the `RPCAsyncSequence` throws a `RPCError``.
+  /// For rejected RPCs (in other words, where ``accepted`` is `failure`), the `RPCAsyncSequence` throws a ``RPCError``.
   public var messages: RPCAsyncSequence<Message, any Error> {
     switch self.accepted {
     case let .success(contents):
@@ -382,4 +382,19 @@ extension StreamingClientResponse {
       return RPCAsyncSequence.throwing(error)
     }
   }
+
+  /// Returns the body parts (i.e. `messages` and `trailingMetadata`) returned from the server.
+  ///
+  /// For rejected RPCs (in other words, where ``accepted`` is `failure`), the `RPCAsyncSequence` throws a ``RPCError``.
+  public var bodyParts: RPCAsyncSequence<Contents.BodyPart, any Error> {
+    switch self.accepted {
+    case let .success(contents):
+      return contents.bodyParts
+
+    case let .failure(error):
+      return RPCAsyncSequence.throwing(error)
+    }
+  }
 }
+
+extension StreamingClientResponse.Contents.BodyPart: Equatable where Message: Equatable {}
