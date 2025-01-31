@@ -314,4 +314,34 @@ struct MetadataTests {
       )
     }
   }
+
+  @Suite("Description")
+  struct Description {
+    let metadata: Metadata = [
+      "key1": "value1",
+      "key2": "value2",
+      "key-bin": .binary([1, 2, 3]),
+    ]
+
+    @Test("Metadata")
+    func describeMetadata() async throws {
+      #expect("\(self.metadata)" == #"["key1": "value1", "key2": "value2", "key-bin": [1, 2, 3]]"#)
+    }
+
+    @Test("Metadata.Value")
+    func describeMetadataValue() async throws {
+      for (key, value) in self.metadata {
+        switch key {
+        case "key1":
+          #expect("\(value)" == "value1")
+        case "key2":
+          #expect("\(value)" == "value2")
+        case "key-bin":
+          #expect("\(value)" == "[1, 2, 3]")
+        default:
+          Issue.record("Should not have reached this point")
+        }
+      }
+    }
+  }
 }
