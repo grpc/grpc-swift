@@ -53,7 +53,7 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertEqual(response.trailingMetadata, ["bar": "baz"])
   }
 
-  func testAcceptedStreamResponseConvenienceMethods() async throws {
+  func testAcceptedStreamResponseConvenienceMethods_Messages() async throws {
     let response = StreamingClientResponse(
       of: String.self,
       metadata: ["foo": "bar"],
@@ -73,6 +73,29 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertEqual(messages, ["foo", "bar", "baz"])
   }
 
+  func testAcceptedStreamResponseConvenienceMethods_BodyParts() async throws {
+    let response = StreamingClientResponse(
+      of: String.self,
+      metadata: ["foo": "bar"],
+      bodyParts: RPCAsyncSequence(
+        wrapping: AsyncThrowingStream {
+          $0.yield(.message("foo"))
+          $0.yield(.message("bar"))
+          $0.yield(.message("baz"))
+          $0.yield(.trailingMetadata(["baz": "baz"]))
+          $0.finish()
+        }
+      )
+    )
+
+    XCTAssertEqual(response.metadata, ["foo": "bar"])
+    let bodyParts = try await response.bodyParts.collect()
+    XCTAssertEqual(
+      bodyParts,
+      [.message("foo"), .message("bar"), .message("baz"), .trailingMetadata(["baz": "baz"])]
+    )
+  }
+
   func testRejectedStreamResponseConvenienceMethods() async throws {
     let error = RPCError(code: .aborted, message: "error message", metadata: ["bar": "baz"])
     let response = StreamingClientResponse(of: String.self, error: error)
@@ -80,6 +103,11 @@ final class ClientResponseTests: XCTestCase {
     XCTAssertEqual(response.metadata, [:])
     await XCTAssertThrowsRPCErrorAsync {
       try await response.messages.collect()
+    } errorHandler: {
+      XCTAssertEqual($0, error)
+    }
+    await XCTAssertThrowsRPCErrorAsync {
+      try await response.bodyParts.collect()
     } errorHandler: {
       XCTAssertEqual($0, error)
     }
