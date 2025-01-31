@@ -317,11 +317,11 @@ struct MetadataTests {
 
   @Suite("Description")
   struct Description {
-    let metadata = Metadata([
+    let metadata: Metadata = [
       "key1": "value1",
       "key2": "value2",
       "key-bin": .binary([1, 2, 3]),
-    ])
+    ]
 
     @Test("Metadata")
     func describeMetadata() async throws {
