@@ -22,15 +22,9 @@ extension ServiceDescriptor {
     self.init(
       documentation: "",
       name: .init(
-        base: service.name,
-        generatedUpperCase: service.name,
-        generatedLowerCase: service.name
-      ),
-      // Namespaces aren't supported.
-      namespace: .init(
-        base: "",
-        generatedUpperCase: "",
-        generatedLowerCase: ""
+        identifyingName: service.name,
+        typeName: service.name,
+        propertyName: service.name
       ),
       methods: service.methods.map {
         MethodDescriptor($0)
@@ -45,9 +39,9 @@ extension MethodDescriptor {
     self.init(
       documentation: "",
       name: .init(
-        base: method.name,
-        generatedUpperCase: method.name,
-        generatedLowerCase: method.name
+        identifyingName: method.name,
+        typeName: method.name,
+        functionName: method.name
       ),
       isInputStreaming: method.kind.streamsInput,
       isOutputStreaming: method.kind.streamsOutput,
@@ -57,7 +51,7 @@ extension MethodDescriptor {
   }
 }
 
-extension SourceGenerator.Config.AccessLevel {
+extension CodeGenerator.Config.AccessLevel {
   init(_ level: GeneratorConfig.AccessLevel) {
     switch level {
     case .internal:
@@ -68,10 +62,10 @@ extension SourceGenerator.Config.AccessLevel {
   }
 }
 
-extension SourceGenerator.Config {
+extension CodeGenerator.Config {
   init(_ config: GeneratorConfig) {
     self.init(
-      accessLevel: SourceGenerator.Config.AccessLevel(config.accessLevel),
+      accessLevel: CodeGenerator.Config.AccessLevel(config.accessLevel),
       accessLevelOnImports: config.accessLevelOnImports,
       client: config.generateClient,
       server: config.generateServer,

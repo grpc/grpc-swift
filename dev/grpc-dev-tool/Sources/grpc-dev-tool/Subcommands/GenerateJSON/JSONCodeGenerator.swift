@@ -81,7 +81,7 @@ struct JSONCodeGenerator {
     """
 
   func generate(request: JSONCodeGeneratorRequest) throws -> SourceFile {
-    let generator = SourceGenerator(config: SourceGenerator.Config(request.config))
+    let generator = CodeGenerator(config: CodeGenerator.Config(request.config))
 
     let codeGenRequest = CodeGenerationRequest(
       fileName: request.service.name + ".swift",
@@ -104,8 +104,8 @@ struct JSONCodeGenerator {
         ),
       ],
       services: [ServiceDescriptor(request.service)],
-      lookupSerializer: { type in "JSONSerializer<\(type)>()" },
-      lookupDeserializer: { type in "JSONDeserializer<\(type)>()" }
+      makeSerializerCodeSnippet: { type in "JSONSerializer<\(type)>()" },
+      makeDeserializerCodeSnippet: { type in "JSONDeserializer<\(type)>()" }
     )
 
     var sourceFile = try generator.generate(codeGenRequest)
