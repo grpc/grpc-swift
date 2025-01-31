@@ -75,8 +75,7 @@
       }
 
       @Step {
-        We need to add a dependency on the gRPC Swift and Swift Protobuf packages. As gRPC Swift v2
-        hasn't yet been released the dependencies must use the `-beta` tags.
+        We need to add a dependency on the gRPC Swift and Swift Protobuf packages.
 
         Note that we also add `.macOS(.v15)` to platforms, this is the earliest macOS version supported by
         gRPC Swift v2.

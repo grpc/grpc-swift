@@ -21,9 +21,9 @@ let package = Package(
   name: "hello-world",
   platforms: [.macOS("15.0")],
   dependencies: [
-    .package(url: "https://github.com/grpc/grpc-swift.git", exact: "2.0.0-rc.1"),
-    .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", exact: "2.0.0-rc.1"),
-    .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", exact: "1.0.0-rc.1"),
+    .package(url: "https://github.com/grpc/grpc-swift.git", from: "2.0.0"),
+    .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", from: "1.0.0"),
+    .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
   ],
   targets: [

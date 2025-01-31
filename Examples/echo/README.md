@@ -1,7 +1,7 @@
 # Echo
 
 This example demonstrates all four RPC types using a simple 'echo' service and
-client and the Swift NIO based HTTP/2 transport.
+client and the SwiftNIO based HTTP/2 transport.
 
 ## Overview
 

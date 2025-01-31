@@ -3,11 +3,6 @@
 This repository contains a gRPC implementation for Swift. You can read more
 about gRPC on the [gRPC project's website][grpcio].
 
-> gRPC Swift v2.x is under active development on the `main` branch and takes
-> full advantage of Swift's native concurrency features.
->
-> v1.x is still supported and maintained on the `release/1.x` branch.
-
 - 📚 **Documentation** and **tutorials** are available on the [Swift Package Index][spi-grpc-swift]
 - 💻 **Examples** are available in the [Examples](Examples) directory
 - 🚀 **Contributions** are welcome, please see [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -29,16 +24,16 @@ the SwiftNIO based transport and SwiftProtobuf serialization:
 import PackageDescription
 
 let package = Package(
-    name: "foo-package",
+    name: "Application",
     platforms: [.macOS("15.0")],
     dependencies: [
-        .package(url: "https://github.com/grpc/grpc-swift.git", from: "2.0.0-rc.1"),
-        .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0-rc.1"),
-        .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", from: "1.0.0-rc.1"),
+        .package(url: "https://github.com/grpc/grpc-swift.git", from: "2.0.0"),
+        .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0"),
+        .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", from: "1.0.0"),
     ],
     targets: [
         .executableTarget(
-            name: "bar-target",
+            name: "Server",
             dependencies: [
                 .product(name: "GRPCCore", package: "grpc-swift"),
                 .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
