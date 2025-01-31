@@ -2,9 +2,6 @@
 
 A gRPC library for Swift written natively in Swift.
 
-> 🚧 This module is part of gRPC Swift v2 which is under active development and in the pre-release
-> stage.
-
 ## Overview
 
 ### Package structure
