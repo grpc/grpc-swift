@@ -16,8 +16,6 @@
 set -euo pipefail
 
 log() { printf -- "** %s\n" "$*" >&2; }
-error() { printf -- "** ERROR: %s\n" "$*" >&2; }
-fatal() { error "$@"; exit 1; }
 
 here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 root="${here}/.."
