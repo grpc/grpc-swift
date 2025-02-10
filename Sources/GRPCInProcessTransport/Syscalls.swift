@@ -15,11 +15,11 @@
  */
 
 #if canImport(Darwin)
-import Darwin
+private import Darwin
 #elseif canImport(Glibc)
-import Glibc
+private import Glibc
 #elseif canImport(Musl)
-import Musl
+private import Musl
 #endif
 
 enum System {

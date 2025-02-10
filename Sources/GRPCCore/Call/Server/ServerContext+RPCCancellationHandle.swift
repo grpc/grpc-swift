@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import Synchronization
+private import Synchronization
 
 extension ServerContext {
   @TaskLocal

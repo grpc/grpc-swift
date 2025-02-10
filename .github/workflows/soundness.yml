@@ -35,3 +35,17 @@ jobs:
       - name: Run soundness checks
         run: |
           ./dev/check-generated-code.sh
+
+  check-imports:
+    name: Check imports have access level
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Mark the workspace as safe
+        run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
+      - name: Check import access level
+        run: |
+          ./dev/check-imports.sh
