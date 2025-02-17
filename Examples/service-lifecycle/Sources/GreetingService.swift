@@ -30,7 +30,7 @@ final class GreetingService {
     "你好",
     "नमस्ते",
     "Hola",
-    "French",
+    "Bonjour",
     "Olá",
     "Здравствуйте",
     "こんにちは",

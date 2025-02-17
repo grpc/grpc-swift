@@ -28,7 +28,7 @@ $ PROTOC_PATH=$(which protoc) swift run service-lifecycle
 Здравствуйте, request-1!
 नमस्ते, request-2!
 你好, request-3!
-French, request-4!
+Bonjour, request-4!
 Olá, request-5!
 Hola, request-6!
 Hello, request-7!
