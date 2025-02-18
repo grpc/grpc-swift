@@ -34,7 +34,7 @@ To make the migration easier a script is available to automate a number of
 steps. You should download it now using:
 
 ```sh
-curl https://raw.githubusercontent.com/grpc/grpc-swift/refs/heads/main/dev/v1-to-v2/v1_to_v2 -o v1_to_v2
+curl https://raw.githubusercontent.com/grpc/grpc-swift/refs/heads/main/dev/v1-to-v2/v1_to_v2.sh -o v1_to_v2
 ```
 
 You'll also need to make the `v1_to_v2` script executable:
