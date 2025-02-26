@@ -169,7 +169,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       accessLevel: accessLevel,
       accessLevelOnImports: true,
       client: false,
-      server: server
+      server: server,
+      grpcCoreModuleName: "GRPCCore"
     )
     let renderer = TextBasedRenderer.default
     let sourceFile = try renderer.render(structured: structuredSwift)
@@ -197,7 +198,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) {
       error in
@@ -244,7 +246,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) {
       error in
@@ -279,7 +282,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) {
       error in
@@ -325,7 +329,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .internal,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) { error in
       XCTAssertEqual(
@@ -369,7 +374,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) { error in
       XCTAssertEqual(
@@ -429,7 +435,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) { error in
       XCTAssertEqual(
@@ -482,7 +489,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) {
       error in
@@ -528,7 +536,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevel: .public,
         accessLevelOnImports: true,
         client: true,
-        server: true
+        server: true,
+        grpcCoreModuleName: "GRPCCore"
       )
     ) {
       error in
