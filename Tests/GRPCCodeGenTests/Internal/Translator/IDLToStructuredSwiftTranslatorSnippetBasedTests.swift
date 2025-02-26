@@ -139,6 +139,83 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     )
   }
 
+  func testGenerateWithDifferentModuleName() throws {
+    let service = ServiceDescriptor(
+      documentation: "/// Documentation for FooService\n",
+      name: ServiceName(
+        identifyingName: "foo.FooService",
+        typeName: "Foo_FooService",
+        propertyName: "foo_FooService"
+      ),
+      methods: [
+        MethodDescriptor(
+          documentation: "",
+          name: MethodName(
+            identifyingName: "Unary",
+            typeName: "Unary",
+            functionName: "unary"
+          ),
+          isInputStreaming: false,
+          isOutputStreaming: false,
+          inputType: "Foo",
+          outputType: "Bar"
+        ),
+        MethodDescriptor(
+          documentation: "",
+          name: MethodName(
+            identifyingName: "ClientStreaming",
+            typeName: "ClientStreaming",
+            functionName: "clientStreaming"
+          ),
+          isInputStreaming: true,
+          isOutputStreaming: false,
+          inputType: "Foo",
+          outputType: "Bar"
+        ),
+        MethodDescriptor(
+          documentation: "",
+          name: MethodName(
+            identifyingName: "ServerStreaming",
+            typeName: "ServerStreaming",
+            functionName: "serverStreaming"
+          ),
+          isInputStreaming: false,
+          isOutputStreaming: true,
+          inputType: "Foo",
+          outputType: "Bar"
+        ),
+        MethodDescriptor(
+          documentation: "",
+          name: MethodName(
+            identifyingName: "BidiStreaming",
+            typeName: "BidiStreaming",
+            functionName: "bidiStreaming"
+          ),
+          isInputStreaming: true,
+          isOutputStreaming: true,
+          inputType: "Foo",
+          outputType: "Bar"
+        ),
+      ]
+    )
+
+    let request = makeCodeGenerationRequest(services: [service])
+    let translator = IDLToStructuredSwiftTranslator()
+    let structuredSwift = try translator.translate(
+      codeGenerationRequest: request,
+      accessLevel: .internal,
+      accessLevelOnImports: false,
+      client: true,
+      server: true,
+      grpcCoreModuleName: String("GRPCCore".reversed())
+    )
+    let renderer = TextBasedRenderer.default
+    let sourceFile = try renderer.render(structured: structuredSwift)
+    let contents = sourceFile.contents
+
+    XCTAssertFalse(contents.contains("GRPCCore"))
+  }
+
   func testEmptyFileGeneration() throws {
     let expectedSwift =
       """
@@ -161,7 +238,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
     codeGenerationRequest: CodeGenerationRequest,
     expectedSwift: String,
     accessLevel: CodeGenerator.Config.AccessLevel,
-    server: Bool = false
+    server: Bool = false,
+    grpcCoreModuleName: String = "GRPCCore"
   ) throws {
     let translator = IDLToStructuredSwiftTranslator()
     let structuredSwift = try translator.translate(
@@ -170,7 +248,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       accessLevelOnImports: true,
       client: false,
       server: server,
-      grpcCoreModuleName: "GRPCCore"
+      grpcCoreModuleName: grpcCoreModuleName
     )
     let renderer = TextBasedRenderer.default
     let sourceFile = try renderer.render(structured: structuredSwift)

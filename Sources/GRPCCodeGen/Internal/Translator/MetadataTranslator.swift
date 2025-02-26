@@ -19,8 +19,9 @@ struct MetadataTranslator {
 
   func translate(
     accessModifier: AccessModifier,
-    service: ServiceDescriptor
+    service: ServiceDescriptor,
+    namer: Namer = Namer()
   ) -> [CodeBlock] {
-    .serviceMetadata(accessModifier: accessModifier, service: service)
+    .serviceMetadata(accessModifier: accessModifier, service: service, namer: namer)
   }
 }

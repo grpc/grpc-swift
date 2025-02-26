@@ -46,7 +46,8 @@ extension FunctionSignatureDescription {
     streamingInput: Bool,
     streamingOutput: Bool,
     includeDefaults: Bool,
-    includeSerializers: Bool
+    includeSerializers: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     var signature = FunctionSignatureDescription(
       accessModifier: accessLevel,
@@ -61,7 +62,7 @@ extension FunctionSignatureDescription {
     signature.parameters.append(
       ParameterDescription(
         label: "request",
-        type: .clientRequest(forType: input, streaming: streamingInput)
+        type: namer.clientRequest(forType: input, streaming: streamingInput)
       )
     )
 
@@ -70,14 +71,14 @@ extension FunctionSignatureDescription {
         ParameterDescription(
           label: "serializer",
           // Type is optional, so be explicit about which 'some' to use
-          type: ExistingTypeDescription.some(.serializer(forType: input))
+          type: ExistingTypeDescription.some(namer.serializer(forType: input))
         )
       )
       signature.parameters.append(
         ParameterDescription(
           label: "deserializer",
           // Type is optional, so be explicit about which 'some' to use
-          type: ExistingTypeDescription.some(.deserializer(forType: output))
+          type: ExistingTypeDescription.some(namer.deserializer(forType: output))
         )
       )
     }
@@ -85,7 +86,7 @@ extension FunctionSignatureDescription {
     signature.parameters.append(
       ParameterDescription(
         label: "options",
-        type: .callOptions,
+        type: namer.callOptions,
         defaultValue: includeDefaults ? .memberAccess(.dot("defaults")) : nil
       )
     )
@@ -98,7 +99,7 @@ extension FunctionSignatureDescription {
           ClosureSignatureDescription(
             parameters: [
               ParameterDescription(
-                type: .clientResponse(forType: output, streaming: streamingOutput)
+                type: namer.clientResponse(forType: output, streaming: streamingOutput)
               )
             ],
             keywords: [.async, .throws],
@@ -141,7 +142,8 @@ extension FunctionDescription {
     streamingInput: Bool,
     streamingOutput: Bool,
     serializer: Expression,
-    deserializer: Expression
+    deserializer: Expression,
+    namer: Namer = Namer()
   ) -> Self {
     FunctionDescription(
       signature: .clientMethod(
@@ -152,7 +154,8 @@ extension FunctionDescription {
         streamingInput: streamingInput,
         streamingOutput: streamingOutput,
         includeDefaults: true,
-        includeSerializers: false
+        includeSerializers: false,
+        namer: namer
       ),
       body: [
         .expression(
@@ -202,7 +205,8 @@ extension ProtocolDescription {
   static func clientProtocol(
     accessLevel: AccessModifier? = nil,
     name: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
     ProtocolDescription(
       accessModifier: accessLevel,
@@ -219,7 +223,8 @@ extension ProtocolDescription {
               streamingInput: method.isInputStreaming,
               streamingOutput: method.isOutputStreaming,
               includeDefaults: false,
-              includeSerializers: true
+              includeSerializers: true,
+              namer: namer
             )
           )
         )
@@ -245,6 +250,7 @@ extension ExtensionDescription {
     accessLevel: AccessModifier? = nil,
     name: String,
     methods: [MethodDescriptor],
+    namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
   ) -> Self {
@@ -262,7 +268,8 @@ extension ExtensionDescription {
               streamingInput: method.isInputStreaming,
               streamingOutput: method.isOutputStreaming,
               serializer: .identifierPattern(serializer(method.inputType)),
-              deserializer: .identifierPattern(deserializer(method.outputType))
+              deserializer: .identifierPattern(deserializer(method.outputType)),
+              namer: namer
             )
           )
         )
@@ -288,7 +295,8 @@ extension FunctionSignatureDescription {
     input: String,
     output: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     var signature = FunctionSignatureDescription(
       accessModifier: accessLevel,
@@ -310,7 +318,7 @@ extension FunctionSignatureDescription {
     signature.parameters.append(
       ParameterDescription(
         label: "metadata",
-        type: .metadata,
+        type: namer.metadata,
         defaultValue: .literal(.dictionary([]))
       )
     )
@@ -319,7 +327,7 @@ extension FunctionSignatureDescription {
     signature.parameters.append(
       ParameterDescription(
         label: "options",
-        type: .callOptions,
+        type: namer.callOptions,
         defaultValue: .dot("defaults")
       )
     )
@@ -331,7 +339,7 @@ extension FunctionSignatureDescription {
           name: "producer",
           type: .closure(
             ClosureSignatureDescription(
-              parameters: [ParameterDescription(type: .rpcWriter(forType: input))],
+              parameters: [ParameterDescription(type: namer.rpcWriter(forType: input))],
               keywords: [.async, .throws],
               returnType: .identifierPattern("Void"),
               sendable: true,
@@ -350,7 +358,7 @@ extension FunctionSignatureDescription {
           ClosureSignatureDescription(
             parameters: [
               ParameterDescription(
-                type: .clientResponse(forType: output, streaming: streamingOutput)
+                type: namer.clientResponse(forType: output, streaming: streamingOutput)
               )
             ],
             keywords: [.async, .throws],
@@ -382,7 +390,8 @@ extension [CodeBlock] {
   static func clientMethodExploded(
     name: String,
     input: String,
-    streamingInput: Bool
+    streamingInput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     func arguments(streaming: Bool) -> [FunctionArgumentDescription] {
       let metadata = FunctionArgumentDescription(
@@ -414,7 +423,7 @@ extension [CodeBlock] {
             left: .identifierPattern("request"),
             right: .functionCall(
               calledExpression: .identifierType(
-                .clientRequest(forType: input, streaming: streamingInput)
+                namer.clientRequest(forType: input, streaming: streamingInput)
               ),
               arguments: arguments(streaming: streamingInput)
             )
@@ -471,7 +480,8 @@ extension FunctionDescription {
     input: String,
     output: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     FunctionDescription(
       signature: .clientMethodExploded(
@@ -480,9 +490,15 @@ extension FunctionDescription {
         input: input,
         output: output,
         streamingInput: streamingInput,
-        streamingOutput: streamingOutput
+        streamingOutput: streamingOutput,
+        namer: namer
       ),
-      body: .clientMethodExploded(name: name, input: input, streamingInput: streamingInput)
+      body: .clientMethodExploded(
+        name: name,
+        input: input,
+        streamingInput: streamingInput,
+        namer: namer
+      )
     )
   }
 }
@@ -496,7 +512,8 @@ extension ExtensionDescription {
   static func explodedClientMethods(
     accessLevel: AccessModifier? = nil,
     on extensionName: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> ExtensionDescription {
     return ExtensionDescription(
       onType: extensionName,
@@ -510,7 +527,8 @@ extension ExtensionDescription {
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
-              streamingOutput: method.isOutputStreaming
+              streamingOutput: method.isOutputStreaming,
+              namer: namer
             )
           )
         )
@@ -539,7 +557,8 @@ extension FunctionDescription {
     serviceEnum: String,
     methodEnum: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     let underlyingMethod: String
     switch (streamingInput, streamingOutput) {
@@ -560,21 +579,21 @@ extension FunctionDescription {
       parameters: [
         ParameterDescription(
           label: "request",
-          type: .clientRequest(forType: input, streaming: streamingInput)
+          type: namer.clientRequest(forType: input, streaming: streamingInput)
         ),
         ParameterDescription(
           label: "serializer",
           // Be explicit: 'type' is optional and '.some' resolves to Optional.some by default.
-          type: ExistingTypeDescription.some(.serializer(forType: input))
+          type: ExistingTypeDescription.some(namer.serializer(forType: input))
         ),
         ParameterDescription(
           label: "deserializer",
           // Be explicit: 'type' is optional and '.some' resolves to Optional.some by default.
-          type: ExistingTypeDescription.some(.deserializer(forType: output))
+          type: ExistingTypeDescription.some(namer.deserializer(forType: output))
         ),
         ParameterDescription(
           label: "options",
-          type: .callOptions,
+          type: namer.callOptions,
           defaultValue: .dot("defaults")
         ),
         ParameterDescription(
@@ -584,7 +603,7 @@ extension FunctionDescription {
             ClosureSignatureDescription(
               parameters: [
                 ParameterDescription(
-                  type: .clientResponse(forType: output, streaming: streamingOutput)
+                  type: namer.clientResponse(forType: output, streaming: streamingOutput)
                 )
               ],
               keywords: [.async, .throws],
@@ -660,30 +679,31 @@ extension StructDescription {
     name: String,
     serviceEnum: String,
     clientProtocol: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
-    StructDescription(
+    return StructDescription(
       accessModifier: accessLevel,
       name: name,
       generics: [.member("Transport")],
       conformances: [clientProtocol],
       whereClause: WhereClause(
-        requirements: [.conformance("Transport", "GRPCCore.ClientTransport")]
+        requirements: [.conformance("Transport", namer.literalNamespacedType("ClientTransport"))]
       ),
       members: [
         .variable(
           accessModifier: .private,
           kind: .let,
           left: "client",
-          type: .grpcClient(genericOver: "Transport")
+          type: namer.grpcClient(genericOver: "Transport")
         ),
         .commentable(
           .preFormatted(
             """
-            /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+            /// Creates a new client wrapping the provided `\(namer.literalNamespacedType("GRPCClient"))`.
             ///
             /// - Parameters:
-            ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
+            ///   - client: A `\(namer.literalNamespacedType("GRPCClient"))` providing a communication channel to the service.
             """
           ),
           .function(
@@ -693,7 +713,7 @@ extension StructDescription {
               ParameterDescription(
                 label: "wrapping",
                 name: "client",
-                type: .grpcClient(
+                type: namer.grpcClient(
                   genericOver: "Transport"
                 )
               )
@@ -722,7 +742,8 @@ extension StructDescription {
                 serviceEnum: serviceEnum,
                 methodEnum: method.name.typeName,
                 streamingInput: method.isInputStreaming,
-                streamingOutput: method.isOutputStreaming
+                streamingOutput: method.isOutputStreaming,
+                namer: namer
               )
             )
           )

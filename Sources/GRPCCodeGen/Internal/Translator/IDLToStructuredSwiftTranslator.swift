@@ -36,6 +36,8 @@ package struct IDLToStructuredSwiftTranslator {
     let serverTranslator = ServerCodeTranslator()
     let clientTranslator = ClientCodeTranslator()
 
+    let namer = Namer(grpcCore: grpcCoreModuleName)
+
     for service in codeGenerationRequest.services {
       codeBlocks.append(
         CodeBlock(comment: .mark("\(service.name.identifyingName)", sectionBreak: true))
@@ -43,7 +45,8 @@ package struct IDLToStructuredSwiftTranslator {
 
       let metadata = metadataTranslator.translate(
         accessModifier: accessModifier,
-        service: service
+        service: service,
+        namer: namer
       )
       codeBlocks.append(contentsOf: metadata)
 
@@ -55,6 +58,7 @@ package struct IDLToStructuredSwiftTranslator {
         let blocks = serverTranslator.translate(
           accessModifier: accessModifier,
           service: service,
+          namer: namer,
           serializer: codeGenerationRequest.makeSerializerCodeSnippet,
           deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
         )
@@ -68,6 +72,7 @@ package struct IDLToStructuredSwiftTranslator {
         let blocks = clientTranslator.translate(
           accessModifier: accessModifier,
           service: service,
+          namer: namer,
           serializer: codeGenerationRequest.makeSerializerCodeSnippet,
           deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
         )

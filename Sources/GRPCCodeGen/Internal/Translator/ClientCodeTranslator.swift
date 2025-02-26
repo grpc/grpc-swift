@@ -81,6 +81,7 @@ struct ClientCodeTranslator {
   func translate(
     accessModifier: AccessModifier,
     service: ServiceDescriptor,
+    namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
   ) -> [CodeBlock] {
@@ -101,7 +102,8 @@ struct ClientCodeTranslator {
             .clientProtocol(
               accessLevel: accessModifier,
               name: "ClientProtocol",
-              methods: service.methods
+              methods: service.methods,
+              namer: namer
             )
           )
         ),
@@ -110,7 +112,10 @@ struct ClientCodeTranslator {
         .commentable(
           .preFormatted(
             Docs.suffix(
-              self.clientDocs(serviceName: service.name.identifyingName),
+              self.clientDocs(
+                serviceName: service.name.identifyingName,
+                moduleName: namer.grpcCore
+              ),
               withDocs: service.documentation
             )
           ),
@@ -120,7 +125,8 @@ struct ClientCodeTranslator {
               name: "Client",
               serviceEnum: service.name.typeName,
               clientProtocol: "ClientProtocol",
-              methods: service.methods
+              methods: service.methods,
+              namer: namer
             )
           )
         ),
@@ -132,6 +138,7 @@ struct ClientCodeTranslator {
       accessLevel: accessModifier,
       name: "\(service.name.typeName).ClientProtocol",
       methods: service.methods,
+      namer: namer,
       serializer: serializer,
       deserializer: deserializer
     )
@@ -145,7 +152,8 @@ struct ClientCodeTranslator {
     let extensionWithExplodedAPI: ExtensionDescription = .explodedClientMethods(
       accessLevel: accessModifier,
       on: "\(service.name.typeName).ClientProtocol",
-      methods: service.methods
+      methods: service.methods,
+      namer: namer
     )
     blocks.append(
       CodeBlock(
@@ -166,12 +174,12 @@ struct ClientCodeTranslator {
       """
   }
 
-  private func clientDocs(serviceName: String) -> String {
+  private func clientDocs(serviceName: String, moduleName: String) -> String {
     return """
       /// Generated client for the "\(serviceName)" service.
       ///
       /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
-      /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+      /// a `\(moduleName).GRPCCClient`. The underlying `GRPCClient` provides the long-lived
       /// means of communication with the remote peer.
       """
   }

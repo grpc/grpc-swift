@@ -27,7 +27,8 @@ extension FunctionSignatureDescription {
     input: String,
     output: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     return FunctionSignatureDescription(
       accessModifier: accessLevel,
@@ -35,12 +36,12 @@ extension FunctionSignatureDescription {
       parameters: [
         ParameterDescription(
           label: "request",
-          type: .serverRequest(forType: input, streaming: streamingInput)
+          type: namer.serverRequest(forType: input, streaming: streamingInput)
         ),
-        ParameterDescription(label: "context", type: .serverContext),
+        ParameterDescription(label: "context", type: namer.serverContext),
       ],
       keywords: [.async, .throws],
-      returnType: .identifierType(.serverResponse(forType: output, streaming: streamingOutput))
+      returnType: .identifierType(namer.serverResponse(forType: output, streaming: streamingOutput))
     )
   }
 }
@@ -54,7 +55,8 @@ extension ProtocolDescription {
   static func streamingService(
     accessLevel: AccessModifier? = nil,
     name: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
     func docs(for method: MethodDescriptor) -> String {
       let summary = """
@@ -77,7 +79,7 @@ extension ProtocolDescription {
     return ProtocolDescription(
       accessModifier: accessLevel,
       name: name,
-      conformances: ["GRPCCore.RegistrableRPCService"],
+      conformances: [namer.literalNamespacedType("RegistrableRPCService")],
       members: methods.map { method in
         .commentable(
           .preFormatted(docs(for: method)),
@@ -87,7 +89,8 @@ extension ProtocolDescription {
               input: method.inputType,
               output: method.outputType,
               streamingInput: true,
-              streamingOutput: true
+              streamingOutput: true,
+              namer: namer
             )
           )
         )
@@ -109,6 +112,7 @@ extension ExtensionDescription {
     on extensionName: String,
     serviceNamespace: String,
     methods: [MethodDescriptor],
+    namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
   ) -> Self {
@@ -120,6 +124,7 @@ extension ExtensionDescription {
             accessLevel: accessLevel,
             serviceNamespace: serviceNamespace,
             methods: methods,
+            namer: namer,
             serializer: serializer,
             deserializer: deserializer
           )
@@ -139,7 +144,8 @@ extension ProtocolDescription {
     accessLevel: AccessModifier? = nil,
     name: String,
     streamingProtocol: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
     func docs(for method: MethodDescriptor) -> String {
       let summary = """
@@ -186,7 +192,8 @@ extension ProtocolDescription {
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
-              streamingOutput: method.isOutputStreaming
+              streamingOutput: method.isOutputStreaming,
+              namer: namer
             )
           )
         )
@@ -305,6 +312,7 @@ extension FunctionDescription {
     accessLevel: AccessModifier? = nil,
     serviceNamespace: String,
     methods: [MethodDescriptor],
+    namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
   ) -> Self {
@@ -316,13 +324,13 @@ extension FunctionDescription {
         ParameterDescription(
           label: "with",
           name: "router",
-          type: .rpcRouter(genericOver: "Transport"),
+          type: namer.rpcRouter(genericOver: "Transport"),
           `inout`: true
         )
       ],
       whereClause: WhereClause(
         requirements: [
-          .conformance("Transport", "GRPCCore.ServerTransport")
+          .conformance("Transport", namer.literalNamespacedType("ServerTransport"))
         ]
       ),
       body: methods.map { method in
@@ -359,7 +367,8 @@ extension FunctionDescription {
     input: String,
     output: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> FunctionDescription {
     let signature: FunctionSignatureDescription = .serverMethod(
       accessLevel: accessLevel,
@@ -368,7 +377,8 @@ extension FunctionDescription {
       output: output,
       // This method converts from the fully streamed version to the specified version.
       streamingInput: true,
-      streamingOutput: true
+      streamingOutput: true,
+      namer: namer
     )
 
     // Call the underlying function.
@@ -385,7 +395,9 @@ extension FunctionDescription {
           expression: streamingInput
             ? .identifierPattern("request")
             : .functionCall(
-              calledExpression: .identifierType(.serverRequest(forType: nil, streaming: false)),
+              calledExpression: .identifierType(
+                namer.serverRequest(forType: nil, streaming: false)
+              ),
               arguments: [
                 FunctionArgumentDescription(
                   label: "stream",
@@ -420,7 +432,7 @@ extension FunctionDescription {
       expression: streamingOutput
         ? .identifierPattern("response")
         : .functionCall(
-          calledExpression: .identifierType(.serverResponse(forType: nil, streaming: true)),
+          calledExpression: .identifierType(namer.serverResponse(forType: nil, streaming: true)),
           arguments: [
             FunctionArgumentDescription(
               label: "single",
@@ -456,7 +468,8 @@ extension ExtensionDescription {
   static func streamingServiceProtocolDefaultImplementation(
     accessModifier: AccessModifier? = nil,
     on extensionName: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
     return ExtensionDescription(
       onType: extensionName,
@@ -472,7 +485,8 @@ extension ExtensionDescription {
             input: method.inputType,
             output: method.outputType,
             streamingInput: method.isInputStreaming,
-            streamingOutput: method.isOutputStreaming
+            streamingOutput: method.isOutputStreaming,
+            namer: namer
           )
         )
       }
@@ -501,20 +515,26 @@ extension FunctionSignatureDescription {
     input: String,
     output: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     var parameters: [ParameterDescription] = [
       ParameterDescription(
         label: "request",
-        type: streamingInput ? .rpcAsyncSequence(forType: input) : .member(input)
+        type: streamingInput ? namer.rpcAsyncSequence(forType: input) : .member(input)
       )
     ]
 
     if streamingOutput {
-      parameters.append(ParameterDescription(label: "response", type: .rpcWriter(forType: output)))
+      parameters.append(
+        ParameterDescription(
+          label: "response",
+          type: namer.rpcWriter(forType: output)
+        )
+      )
     }
 
-    parameters.append(ParameterDescription(label: "context", type: .serverContext))
+    parameters.append(ParameterDescription(label: "context", type: namer.serverContext))
 
     return FunctionSignatureDescription(
       accessModifier: accessLevel,
@@ -536,7 +556,8 @@ extension ProtocolDescription {
     accessModifier: AccessModifier? = nil,
     name: String,
     serviceProtocol: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
     func docs(for method: MethodDescriptor) -> String {
       let summary = """
@@ -591,7 +612,8 @@ extension ProtocolDescription {
               input: method.inputType,
               output: method.outputType,
               streamingInput: method.isInputStreaming,
-              streamingOutput: method.isOutputStreaming
+              streamingOutput: method.isOutputStreaming,
+              namer: namer
             )
           )
         )
@@ -666,7 +688,8 @@ extension FunctionDescription {
     input: String,
     output: String,
     streamingInput: Bool,
-    streamingOutput: Bool
+    streamingOutput: Bool,
+    namer: Namer = Namer()
   ) -> Self {
     func makeUnaryOutputArguments() -> [FunctionArgumentDescription] {
       return [
@@ -719,14 +742,15 @@ extension FunctionDescription {
         input: input,
         output: output,
         streamingInput: streamingInput,
-        streamingOutput: streamingOutput
+        streamingOutput: streamingOutput,
+        namer: namer
       ),
       body: [
         .expression(
           .functionCall(
             calledExpression: .return(
               .identifierType(
-                .serverResponse(forType: output, streaming: streamingOutput)
+                namer.serverResponse(forType: output, streaming: streamingOutput)
               )
             ),
             arguments: streamingOutput ? makeStreamingOutputArguments() : makeUnaryOutputArguments()
@@ -746,7 +770,8 @@ extension ExtensionDescription {
   static func serviceProtocolDefaultImplementation(
     accessModifier: AccessModifier? = nil,
     on extensionName: String,
-    methods: [MethodDescriptor]
+    methods: [MethodDescriptor],
+    namer: Namer = Namer()
   ) -> Self {
     ExtensionDescription(
       onType: extensionName,
@@ -758,7 +783,8 @@ extension ExtensionDescription {
             input: method.inputType,
             output: method.outputType,
             streamingInput: method.isInputStreaming,
-            streamingOutput: method.isOutputStreaming
+            streamingOutput: method.isOutputStreaming,
+            namer: namer
           )
         )
       }
