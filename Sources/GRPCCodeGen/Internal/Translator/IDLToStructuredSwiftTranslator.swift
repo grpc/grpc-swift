@@ -17,7 +17,7 @@
 /// Creates a representation for the server and client code, as well as for the enums containing useful type aliases and properties.
 /// The representation is generated based on the ``CodeGenerationRequest`` object and user specifications,
 /// using types from ``StructuredSwiftRepresentation``.
-package struct IDLToStructuredSwiftTranslator: Translator {
+package struct IDLToStructuredSwiftTranslator {
   package init() {}
 
   func translate(
@@ -25,7 +25,8 @@ package struct IDLToStructuredSwiftTranslator: Translator {
     accessLevel: CodeGenerator.Config.AccessLevel,
     accessLevelOnImports: Bool,
     client: Bool,
-    server: Bool
+    server: Bool,
+    grpcCoreModuleName: String
   ) throws -> StructuredSwiftRepresentation {
     try self.validateInput(codeGenerationRequest)
     let accessModifier = AccessModifier(accessLevel)
@@ -35,6 +36,8 @@ package struct IDLToStructuredSwiftTranslator: Translator {
     let serverTranslator = ServerCodeTranslator()
     let clientTranslator = ClientCodeTranslator()
 
+    let namer = Namer(grpcCore: grpcCoreModuleName)
+
     for service in codeGenerationRequest.services {
       codeBlocks.append(
         CodeBlock(comment: .mark("\(service.name.identifyingName)", sectionBreak: true))
@@ -42,7 +45,8 @@ package struct IDLToStructuredSwiftTranslator: Translator {
 
       let metadata = metadataTranslator.translate(
         accessModifier: accessModifier,
-        service: service
+        service: service,
+        namer: namer
       )
       codeBlocks.append(contentsOf: metadata)
 
@@ -54,6 +58,7 @@ package struct IDLToStructuredSwiftTranslator: Translator {
         let blocks = serverTranslator.translate(
           accessModifier: accessModifier,
           service: service,
+          namer: namer,
           serializer: codeGenerationRequest.makeSerializerCodeSnippet,
           deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
         )
@@ -67,6 +72,7 @@ package struct IDLToStructuredSwiftTranslator: Translator {
         let blocks = clientTranslator.translate(
           accessModifier: accessModifier,
           service: service,
+          namer: namer,
           serializer: codeGenerationRequest.makeSerializerCodeSnippet,
           deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
         )
@@ -84,7 +90,8 @@ package struct IDLToStructuredSwiftTranslator: Translator {
       imports = try self.makeImports(
         dependencies: codeGenerationRequest.dependencies,
         accessLevel: accessLevel,
-        accessLevelOnImports: accessLevelOnImports
+        accessLevelOnImports: accessLevelOnImports,
+        grpcCoreModuleName: grpcCoreModuleName
       )
     }
 
@@ -102,13 +109,14 @@ package struct IDLToStructuredSwiftTranslator: Translator {
   package func makeImports(
     dependencies: [Dependency],
     accessLevel: CodeGenerator.Config.AccessLevel,
-    accessLevelOnImports: Bool
+    accessLevelOnImports: Bool,
+    grpcCoreModuleName: String
   ) throws -> [ImportDescription] {
     var imports: [ImportDescription] = []
     imports.append(
       ImportDescription(
         accessLevel: accessLevelOnImports ? AccessModifier(accessLevel) : nil,
-        moduleName: "GRPCCore"
+        moduleName: grpcCoreModuleName
       )
     )
 

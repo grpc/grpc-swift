@@ -107,7 +107,8 @@ extension StructuredSwiftTests {
       let imports = try StructuredSwiftTests.Import.translator.makeImports(
         dependencies: dependencies,
         accessLevel: accessLevel,
-        accessLevelOnImports: true
+        accessLevelOnImports: true,
+        grpcCoreModuleName: "GRPCCore"
       )
 
       #expect(render(imports) == expected)
@@ -157,7 +158,8 @@ extension StructuredSwiftTests {
       let imports = try StructuredSwiftTests.Import.translator.makeImports(
         dependencies: dependencies,
         accessLevel: accessLevel,
-        accessLevelOnImports: true
+        accessLevelOnImports: true,
+        grpcCoreModuleName: "GRPCCore"
       )
 
       #expect(render(imports) == expected)
@@ -191,11 +193,29 @@ extension StructuredSwiftTests {
       let imports = try StructuredSwiftTests.Import.translator.makeImports(
         dependencies: dependencies,
         accessLevel: accessLevel,
-        accessLevelOnImports: true
+        accessLevelOnImports: true,
+        grpcCoreModuleName: "GRPCCore"
       )
 
       #expect(render(imports) == expected)
     }
 
+    @Test("gRPC module name")
+    func grpcModuleName() throws {
+      let translator = IDLToStructuredSwiftTranslator()
+      let imports = try translator.makeImports(
+        dependencies: [],
+        accessLevel: .public,
+        accessLevelOnImports: true,
+        grpcCoreModuleName: "GRPCCoreFoo"
+      )
+
+      let expected =
+        """
+        public import GRPCCoreFoo
+        """
+
+      #expect(render(imports) == expected)
+    }
   }
 }

@@ -63,6 +63,7 @@ struct ServerCodeTranslator {
   func translate(
     accessModifier: AccessModifier,
     service: ServiceDescriptor,
+    namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
   ) -> [CodeBlock] {
@@ -83,7 +84,8 @@ struct ServerCodeTranslator {
             .streamingService(
               accessLevel: accessModifier,
               name: "StreamingServiceProtocol",
-              methods: service.methods
+              methods: service.methods,
+              namer: namer
             )
           )
         ),
@@ -101,7 +103,8 @@ struct ServerCodeTranslator {
               accessLevel: accessModifier,
               name: "ServiceProtocol",
               streamingProtocol: "\(service.name.typeName).StreamingServiceProtocol",
-              methods: service.methods
+              methods: service.methods,
+              namer: namer
             )
           )
         ),
@@ -119,7 +122,8 @@ struct ServerCodeTranslator {
               accessModifier: accessModifier,
               name: "SimpleServiceProtocol",
               serviceProtocol: "\(service.name.typeName).ServiceProtocol",
-              methods: service.methods
+              methods: service.methods,
+              namer: namer
             )
           )
         ),
@@ -133,6 +137,7 @@ struct ServerCodeTranslator {
       on: "\(service.name.typeName).StreamingServiceProtocol",
       serviceNamespace: service.name.typeName,
       methods: service.methods,
+      namer: namer,
       serializer: serializer,
       deserializer: deserializer
     )
@@ -148,7 +153,8 @@ struct ServerCodeTranslator {
       .streamingServiceProtocolDefaultImplementation(
         accessModifier: accessModifier,
         on: "\(service.name.typeName).ServiceProtocol",
-        methods: service.methods
+        methods: service.methods,
+        namer: namer
       )
     blocks.append(
       CodeBlock(
@@ -163,7 +169,8 @@ struct ServerCodeTranslator {
     let serviceDefaultImplExtension: ExtensionDescription = .serviceProtocolDefaultImplementation(
       accessModifier: accessModifier,
       on: "\(service.name.typeName).SimpleServiceProtocol",
-      methods: service.methods
+      methods: service.methods,
+      namer: namer
     )
     blocks.append(
       CodeBlock(

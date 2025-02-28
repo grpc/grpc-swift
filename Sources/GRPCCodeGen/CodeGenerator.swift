@@ -40,6 +40,8 @@ public struct CodeGenerator: Sendable {
     public var client: Bool
     /// Whether or not server code should be generated.
     public var server: Bool
+    /// The name of the core gRPC module.
+    public var grpcCoreModuleName: String
 
     /// Creates a new configuration.
     ///
@@ -61,6 +63,7 @@ public struct CodeGenerator: Sendable {
       self.indentation = indentation
       self.client = client
       self.server = server
+      self.grpcCoreModuleName = "GRPCCore"
     }
 
     /// The possible access levels for the generated code.
@@ -96,7 +99,8 @@ public struct CodeGenerator: Sendable {
       accessLevel: self.config.accessLevel,
       accessLevelOnImports: self.config.accessLevelOnImports,
       client: self.config.client,
-      server: self.config.server
+      server: self.config.server,
+      grpcCoreModuleName: self.config.grpcCoreModuleName
     )
 
     let sourceFile = try textRenderer.render(structured: structuredSwiftRepresentation)
