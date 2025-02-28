@@ -47,25 +47,40 @@ package struct Namer: Sendable, Hashable {
     return self.grpcCore + "." + type
   }
 
-  func serverRequest(forType type: String?, streaming: Bool) -> ExistingTypeDescription {
-    return self.requestResponse(for: type, isRequest: true, isStreaming: streaming, isClient: false)
-  }
-
-  func serverResponse(forType type: String?, streaming: Bool) -> ExistingTypeDescription {
+  func serverRequest(forType type: String?, isStreaming: Bool) -> ExistingTypeDescription {
     return self.requestResponse(
       for: type,
-      isRequest: false,
-      isStreaming: streaming,
+      isRequest: true,
+      isStreaming: isStreaming,
       isClient: false
     )
   }
 
-  func clientRequest(forType type: String?, streaming: Bool) -> ExistingTypeDescription {
-    return self.requestResponse(for: type, isRequest: true, isStreaming: streaming, isClient: true)
+  func serverResponse(forType type: String?, isStreaming: Bool) -> ExistingTypeDescription {
+    return self.requestResponse(
+      for: type,
+      isRequest: false,
+      isStreaming: isStreaming,
+      isClient: false
+    )
   }
 
-  func clientResponse(forType type: String?, streaming: Bool) -> ExistingTypeDescription {
-    return self.requestResponse(for: type, isRequest: false, isStreaming: streaming, isClient: true)
+  func clientRequest(forType type: String?, isStreaming: Bool) -> ExistingTypeDescription {
+    return self.requestResponse(
+      for: type,
+      isRequest: true,
+      isStreaming: isStreaming,
+      isClient: true
+    )
+  }
+
+  func clientResponse(forType type: String?, isStreaming: Bool) -> ExistingTypeDescription {
+    return self.requestResponse(
+      for: type,
+      isRequest: false,
+      isStreaming: isStreaming,
+      isClient: true
+    )
   }
 
   var serverContext: ExistingTypeDescription {

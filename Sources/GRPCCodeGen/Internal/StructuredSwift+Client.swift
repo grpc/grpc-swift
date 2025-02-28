@@ -62,7 +62,7 @@ extension FunctionSignatureDescription {
     signature.parameters.append(
       ParameterDescription(
         label: "request",
-        type: namer.clientRequest(forType: input, streaming: streamingInput)
+        type: namer.clientRequest(forType: input, isStreaming: streamingInput)
       )
     )
 
@@ -99,7 +99,7 @@ extension FunctionSignatureDescription {
           ClosureSignatureDescription(
             parameters: [
               ParameterDescription(
-                type: namer.clientResponse(forType: output, streaming: streamingOutput)
+                type: namer.clientResponse(forType: output, isStreaming: streamingOutput)
               )
             ],
             keywords: [.async, .throws],
@@ -358,7 +358,7 @@ extension FunctionSignatureDescription {
           ClosureSignatureDescription(
             parameters: [
               ParameterDescription(
-                type: namer.clientResponse(forType: output, streaming: streamingOutput)
+                type: namer.clientResponse(forType: output, isStreaming: streamingOutput)
               )
             ],
             keywords: [.async, .throws],
@@ -423,7 +423,7 @@ extension [CodeBlock] {
             left: .identifierPattern("request"),
             right: .functionCall(
               calledExpression: .identifierType(
-                namer.clientRequest(forType: input, streaming: streamingInput)
+                namer.clientRequest(forType: input, isStreaming: streamingInput)
               ),
               arguments: arguments(streaming: streamingInput)
             )
@@ -579,7 +579,7 @@ extension FunctionDescription {
       parameters: [
         ParameterDescription(
           label: "request",
-          type: namer.clientRequest(forType: input, streaming: streamingInput)
+          type: namer.clientRequest(forType: input, isStreaming: streamingInput)
         ),
         ParameterDescription(
           label: "serializer",
@@ -603,7 +603,7 @@ extension FunctionDescription {
             ClosureSignatureDescription(
               parameters: [
                 ParameterDescription(
-                  type: namer.clientResponse(forType: output, streaming: streamingOutput)
+                  type: namer.clientResponse(forType: output, isStreaming: streamingOutput)
                 )
               ],
               keywords: [.async, .throws],

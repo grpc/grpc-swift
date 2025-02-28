@@ -36,12 +36,14 @@ extension FunctionSignatureDescription {
       parameters: [
         ParameterDescription(
           label: "request",
-          type: namer.serverRequest(forType: input, streaming: streamingInput)
+          type: namer.serverRequest(forType: input, isStreaming: streamingInput)
         ),
         ParameterDescription(label: "context", type: namer.serverContext),
       ],
       keywords: [.async, .throws],
-      returnType: .identifierType(namer.serverResponse(forType: output, streaming: streamingOutput))
+      returnType: .identifierType(
+        namer.serverResponse(forType: output, isStreaming: streamingOutput)
+      )
     )
   }
 }
@@ -396,7 +398,7 @@ extension FunctionDescription {
             ? .identifierPattern("request")
             : .functionCall(
               calledExpression: .identifierType(
-                namer.serverRequest(forType: nil, streaming: false)
+                namer.serverRequest(forType: nil, isStreaming: false)
               ),
               arguments: [
                 FunctionArgumentDescription(
@@ -432,7 +434,7 @@ extension FunctionDescription {
       expression: streamingOutput
         ? .identifierPattern("response")
         : .functionCall(
-          calledExpression: .identifierType(namer.serverResponse(forType: nil, streaming: true)),
+          calledExpression: .identifierType(namer.serverResponse(forType: nil, isStreaming: true)),
           arguments: [
             FunctionArgumentDescription(
               label: "single",
@@ -750,7 +752,7 @@ extension FunctionDescription {
           .functionCall(
             calledExpression: .return(
               .identifierType(
-                namer.serverResponse(forType: output, streaming: streamingOutput)
+                namer.serverResponse(forType: output, isStreaming: streamingOutput)
               )
             ),
             arguments: streamingOutput ? makeStreamingOutputArguments() : makeUnaryOutputArguments()
