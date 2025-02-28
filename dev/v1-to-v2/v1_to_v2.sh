@@ -27,16 +27,19 @@ function checkout_v1 {
   grpc_checkout_dir="$(realpath "$1")"
   # The path of the checkout.
   grpc_checkout_path="${grpc_checkout_dir}/grpc-swift-v1"
-  # Version of grpc-swift to checkout.
-  grpc_v1_tag="1.24.2"
 
   # Clone the repo.
-  log "Cloning v${grpc_v1_tag} to ${grpc_checkout_path}"
+  log "Cloning grpc-swift to ${grpc_checkout_path}"
   git clone \
-    --depth 1 \
-    --branch "$grpc_v1_tag" \
+    --quiet \
     https://github.com/grpc/grpc-swift.git \
     "${grpc_checkout_path}"
+
+  # Get the latest version of 1.x.y.
+  local -r version=$(git -C "${grpc_checkout_path}" tag --list | grep '1.\([0-9]\+\).\([0-9]\+\)$' | sort -V | tail -n 1)
+
+  log "Checking out $version"
+  git -C "${grpc_checkout_path}" checkout --quiet "$version"
 
   # Remove the git bits.
   log "Removing ${grpc_checkout_path}/.git"
@@ -61,7 +64,7 @@ function checkout_v1 {
     -exec sed -i '' 's/protoc-gen-grpc-swift/protoc-gen-grpc-swift-v1/g' {} +
 
   # Update the path of the protoc plugin so it aligns with the target name.
-  log "Updating direcotry name for protoc-gen-grpc-swift-v1"
+  log "Updating directory name for protoc-gen-grpc-swift-v1"
   mv "${grpc_checkout_path}/Sources/protoc-gen-grpc-swift" "${grpc_checkout_path}/Sources/protoc-gen-grpc-swift-v1"
 
   log "Cloned and patched v1 to: ${grpc_checkout_path}"

@@ -12,9 +12,9 @@ from 1.x to 2.x. You'll use the following strategy:
 
 1. Setup your package so it depends on a local copy of gRPC Swift 1.x and the
    upstream version of 2.x.
-2. Generate code for 2.x to alongside generated 1.x code.
+2. Generate code for 2.x alongside generated 1.x code.
 3. Incrementally migrate targets to 2.x.
-4. Remove the code generated for, and the dependency on 1.x.
+4. Remove the code generated for, and the dependency on, 1.x.
 
 You'll do this migration incrementally by staging in a local copy of gRPC Swift
 1.x and migrating client and service code on a per service basis. This approach
@@ -284,7 +284,7 @@ Repeat this until you've done all services in your package.
 If you're reading this section then you're likely relying on metadata in your
 service. This means you need to implement the `ServiceProtocol` instead of the
 `SimpleServiceProtocol` and the transformations you need to apply are
-aren't well suited automation. The best approach is to conform your
+aren't well suited for automation. The best approach is to conform your
 service to the 1.x protocol and the 2.x protocol. Add conformance to the
 `{Service}.ServiceProtocol` where `{Service}` is the namespaced name of your
 service (if your service is called `Baz` and declared in the `foo.bar` Protocol
@@ -297,7 +297,9 @@ and return a `ServerResponse` or `StreamingServerResponse`. Request metadata is
 available on the request object. For single responses you can set initial and
 trailing metadata when you create the response. For streaming responses you can
 set initial metadata in the initializer and return trailing metadata from the
-closure you provide to the initializer.
+closure you provide to the initializer. This is demonstrated in the
+['echo-metadata'](https://github.com/grpc/grpc-swift/tree/main/Examples/echo-metadata)
+example.
 
 One important difference between this approach and the `SimpleServiceProtocol`
 (and 1.x) is that responses aren't completed until the body of the response has
@@ -384,18 +386,13 @@ Change the body of the function using the 1.x client to just `fatalError()`.
 Later you'll remove this function altogether.
 
 If the generated client is a stored type then add a new computed property
-returning an instance of it, the body can just call `fatalError()` for now:
+returning an instance of it. the body can just call `fatalError()` for now:
 
 ```swift
 var client: Foo_Bar_Baz.Client {
   fatalError("TODO")
 }
 ```
-
-If a generated client is passed into the function then duplicate the function
-and replace the body of the new version with a `fatalError()`. You can also mark
-it as deprecated to help you find usages of the function. You'll now have two
-versions of the same function.
 
 Now you need to update the function to use the new client. For unary calls the API
 is very similar, so you may not have to change any code. An important change to
