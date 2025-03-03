@@ -386,7 +386,7 @@ Change the body of the function using the 1.x client to just `fatalError()`.
 Later you'll remove this function altogether.
 
 If the generated client is a stored type then add a new computed property
-returning an instance of it. the body can just call `fatalError()` for now:
+returning an instance of it. The body can just call `fatalError()` for now:
 
 ```swift
 var client: Foo_Bar_Baz.Client {
