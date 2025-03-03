@@ -55,6 +55,7 @@ as tutorials.
 
 - <doc:Compatibility>
 - <doc:Public-API>
+- <doc:Migration-guide>
 
 ### Getting involved
 
