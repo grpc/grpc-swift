@@ -15,8 +15,12 @@
  */
 #if canImport(Darwin)
 public import Darwin  // should be @usableFromInline
-#else
+#elseif canImport(Glibc)
 public import Glibc  // should be @usableFromInline
+#elseif canImport(Musl)
+public import Musl  // should be @usableFromInline
+#else
+#error("Unsupported OS")
 #endif
 
 @usableFromInline

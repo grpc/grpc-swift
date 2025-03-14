@@ -17,9 +17,11 @@
 #if canImport(Darwin)
 private import Darwin
 #elseif canImport(Glibc)
-private import Glibc
+private import Glibc  // should be @usableFromInline
 #elseif canImport(Musl)
-private import Musl
+private import Musl  // should be @usableFromInline
+#else
+#error("Unsupported OS")
 #endif
 
 enum System {
