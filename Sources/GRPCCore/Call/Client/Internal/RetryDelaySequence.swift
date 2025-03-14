@@ -15,6 +15,8 @@
  */
 #if canImport(Darwin)
 public import Darwin  // should be @usableFromInline
+#elseif canImport(Android)
+public import Android  // should be @usableFromInline
 #elseif canImport(Glibc)
 public import Glibc  // should be @usableFromInline
 #elseif canImport(Musl)
