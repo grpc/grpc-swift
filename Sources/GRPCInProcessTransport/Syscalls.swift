@@ -16,6 +16,8 @@
 
 #if canImport(Darwin)
 private import Darwin
+#elseif canImport(Android)
+private import Android  // should be @usableFromInline
 #elseif canImport(Glibc)
 private import Glibc  // should be @usableFromInline
 #elseif canImport(Musl)
@@ -28,6 +30,9 @@ enum System {
   static func pid() -> Int {
     #if canImport(Darwin)
     let pid = Darwin.getpid()
+    return Int(pid)
+    #elseif canImport(Android)
+    let pid = Android.getpid()
     return Int(pid)
     #elseif canImport(Glibc)
     let pid = Glibc.getpid()
