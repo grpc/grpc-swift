@@ -374,4 +374,23 @@ final class ServerRPCExecutorTests: XCTestCase {
       )
     }
   }
+
+  func testInterceptorErrorConversion() async throws {
+    struct CustomError: RPCErrorConvertible, Error {
+      var rpcErrorCode: RPCError.Code { .alreadyExists }
+      var rpcErrorMessage: String { "foobar" }
+      var rpcErrorMetadata: Metadata { ["error": "yes"] }
+    }
+
+    let harness = ServerRPCExecutorTestHarness(interceptors: [.throwError(CustomError())])
+    try await harness.execute(handler: .throwing(CustomError())) { inbound in
+      try await inbound.write(.metadata(["foo": "bar"]))
+      await inbound.finish()
+    } consumer: { outbound in
+      let parts = try await outbound.collect()
+      let status = Status(code: .alreadyExists, message: "foobar")
+      let metadata: Metadata = ["error": "yes"]
+      XCTAssertEqual(parts, [.status(status, metadata)])
+    }
+  }
 }

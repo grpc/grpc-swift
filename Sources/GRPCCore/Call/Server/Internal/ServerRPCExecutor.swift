@@ -330,6 +330,8 @@ extension ServerRPCExecutor {
         }
       } catch let error as RPCError {
         return StreamingServerResponse(error: error)
+      } catch let error as RPCErrorConvertible {
+        return StreamingServerResponse(error: RPCError(error))
       } catch let other {
         let error = RPCError(code: .unknown, message: "", cause: other)
         return StreamingServerResponse(error: error)
