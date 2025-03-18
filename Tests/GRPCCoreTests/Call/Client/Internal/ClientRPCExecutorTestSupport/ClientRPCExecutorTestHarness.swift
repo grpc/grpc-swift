@@ -29,6 +29,7 @@ struct ClientRPCExecutorTestHarness {
   private let server: ServerStreamHandler
   private let clientTransport: StreamCountingClientTransport
   private let serverTransport: StreamCountingServerTransport
+  private let interceptors: [any ClientInterceptor]
 
   var clientStreamsOpened: Int {
     self.clientTransport.streamsOpened
@@ -42,8 +43,13 @@ struct ClientRPCExecutorTestHarness {
     self.serverTransport.acceptedStreamsCount
   }
 
-  init(transport: Transport = .inProcess, server: ServerStreamHandler) {
+  init(
+    transport: Transport = .inProcess,
+    server: ServerStreamHandler,
+    interceptors: [any ClientInterceptor] = []
+  ) {
     self.server = server
+    self.interceptors = interceptors
 
     switch transport {
     case .inProcess:
@@ -141,7 +147,7 @@ struct ClientRPCExecutorTestHarness {
         serializer: serializer,
         deserializer: deserializer,
         transport: self.clientTransport,
-        interceptors: [],
+        interceptors: self.interceptors,
         handler: handler
       )
 
