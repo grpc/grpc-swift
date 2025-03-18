@@ -24,3 +24,7 @@ jobs:
       benchmark_package_path: "IntegrationTests/Benchmarks"
       linux_5_9_enabled: false
       linux_5_10_enabled: false
+
+  static-sdk:
+    name: Static SDK
+    uses: apple/swift-nio/.github/workflows/static_sdk.yml@main
