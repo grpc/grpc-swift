@@ -89,7 +89,11 @@ public final class GRPCClient<Transport: ClientTransport>: Sendable {
       case .stopping, .stopped:
         throw RuntimeError(
           code: .clientIsStopped,
-          message: "The client has stopped and can only be started once."
+          message: """
+            Can't call 'runConnections()' as the client is stopped (or is stopping). \
+            This can happen if the you call 'runConnections()' after shutting the \
+            client down or if you used 'withGRPCClient' with an empty body.
+            """
         )
       }
     }
