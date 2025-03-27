@@ -42,6 +42,7 @@ struct ClientCodeTranslatorSnippetBasedTests {
     )
 
     let expectedSwift = """
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA {
           /// Generated client protocol for the "namespaceA.ServiceA" service.
           ///
@@ -132,6 +133,7 @@ struct ClientCodeTranslatorSnippetBasedTests {
           }
       }
       // Helpers providing default arguments to 'ClientProtocol' methods.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           /// Call the "MethodA" method.
           ///
@@ -163,6 +165,7 @@ struct ClientCodeTranslatorSnippetBasedTests {
           }
       }
       // Helpers providing sugared APIs for 'ClientProtocol' methods.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ClientProtocol {
           /// Call the "MethodA" method.
           ///
@@ -208,7 +211,11 @@ struct ClientCodeTranslatorSnippetBasedTests {
     service: ServiceDescriptor
   ) -> String {
     let translator = ClientCodeTranslator()
-    let codeBlocks = translator.translate(accessModifier: accessLevel, service: service) {
+    let codeBlocks = translator.translate(
+      accessModifier: accessLevel,
+      service: service,
+      availability: .macOS15Aligned
+    ) {
       "GRPCProtobuf.ProtobufSerializer<\($0)>()"
     } deserializer: {
       "GRPCProtobuf.ProtobufDeserializer<\($0)>()"

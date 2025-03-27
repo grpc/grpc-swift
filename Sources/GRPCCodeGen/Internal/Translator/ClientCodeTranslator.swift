@@ -81,6 +81,7 @@ struct ClientCodeTranslator {
   func translate(
     accessModifier: AccessModifier,
     service: ServiceDescriptor,
+    availability: AvailabilityDescription,
     namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
@@ -132,7 +133,7 @@ struct ClientCodeTranslator {
         ),
       ]
     )
-    blocks.append(.declaration(.extension(`extension`)))
+    blocks.append(.declaration(.guarded(availability, .extension(`extension`))))
 
     let extensionWithDefaults: ExtensionDescription = .clientMethodSignatureWithDefaults(
       accessLevel: accessModifier,
@@ -145,7 +146,7 @@ struct ClientCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .inline("Helpers providing default arguments to 'ClientProtocol' methods."),
-        item: .declaration(.extension(extensionWithDefaults))
+        item: .declaration(.guarded(availability, .extension(extensionWithDefaults)))
       )
     )
 
@@ -158,7 +159,7 @@ struct ClientCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .inline("Helpers providing sugared APIs for 'ClientProtocol' methods."),
-        item: .declaration(.extension(extensionWithExplodedAPI))
+        item: .declaration(.guarded(availability, .extension(extensionWithExplodedAPI)))
       )
     )
 

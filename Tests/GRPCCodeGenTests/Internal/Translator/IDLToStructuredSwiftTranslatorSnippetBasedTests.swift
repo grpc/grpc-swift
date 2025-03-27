@@ -56,6 +56,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       // MARK: - namespaceA.ServiceA
 
       /// Namespace containing generated types for the "namespaceA.ServiceA" service.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       public enum NamespaceA_ServiceA {
           /// Service descriptor for the "namespaceA.ServiceA" service.
           public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
@@ -66,6 +67,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
           }
       }
 
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension GRPCCore.ServiceDescriptor {
           /// Service descriptor for the "namespaceA.ServiceA" service.
           public static let namespaceA_ServiceA = GRPCCore.ServiceDescriptor(fullyQualifiedService: "namespaceA.ServiceA")
@@ -73,6 +75,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
 
       // MARK: namespaceA.ServiceA (server)
 
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA {
           /// Streaming variant of the service protocol for the "namespaceA.ServiceA" service.
           ///
@@ -116,15 +119,18 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       }
 
       // Default implementation of 'registerMethods(with:)'.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
           public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {}
       }
 
       // Default implementation of streaming methods from 'StreamingServiceProtocol'.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ServiceProtocol {
       }
 
       // Default implementation of methods from 'ServiceProtocol'.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.SimpleServiceProtocol {
       }
       """
@@ -207,7 +213,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       accessLevelOnImports: false,
       client: true,
       server: true,
-      grpcCoreModuleName: String("GRPCCore".reversed())
+      grpcCoreModuleName: String("GRPCCore".reversed()),
+      availability: .macOS15Aligned
     )
     let renderer = TextBasedRenderer.default
     let sourceFile = try renderer.render(structured: structuredSwift)
@@ -248,7 +255,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
       accessLevelOnImports: true,
       client: false,
       server: server,
-      grpcCoreModuleName: grpcCoreModuleName
+      grpcCoreModuleName: grpcCoreModuleName,
+      availability: .macOS15Aligned
     )
     let renderer = TextBasedRenderer.default
     let sourceFile = try renderer.render(structured: structuredSwift)
@@ -277,7 +285,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) {
       error in
@@ -325,7 +334,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) {
       error in
@@ -361,7 +371,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) {
       error in
@@ -408,7 +419,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) { error in
       XCTAssertEqual(
@@ -453,7 +465,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) { error in
       XCTAssertEqual(
@@ -514,7 +527,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) { error in
       XCTAssertEqual(
@@ -568,7 +582,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) {
       error in
@@ -615,7 +630,8 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
         accessLevelOnImports: true,
         client: true,
         server: true,
-        grpcCoreModuleName: "GRPCCore"
+        grpcCoreModuleName: "GRPCCore",
+        availability: .macOS15Aligned
       )
     ) {
       error in

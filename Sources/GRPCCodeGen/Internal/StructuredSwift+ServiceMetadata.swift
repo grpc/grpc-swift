@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
+extension AvailabilityDescription {
+  package static let macOS15Aligned = AvailabilityDescription(
+    osVersions: [
+      OSVersion(os: .macOS, version: "15.0"),
+      OSVersion(os: .iOS, version: "18.0"),
+      OSVersion(os: .watchOS, version: "11.0"),
+      OSVersion(os: .tvOS, version: "18.0"),
+      OSVersion(os: .visionOS, version: "2.0"),
+    ]
+  )
+}
+
 extension TypealiasDescription {
   /// `typealias Input = <name>`
   package static func methodInput(
@@ -341,6 +353,7 @@ extension [CodeBlock] {
   package static func serviceMetadata(
     accessModifier: AccessModifier? = nil,
     service: ServiceDescriptor,
+    availability: AvailabilityDescription,
     namer: Namer = Namer()
   ) -> Self {
     var blocks: [CodeBlock] = []
@@ -357,7 +370,7 @@ extension [CodeBlock] {
         comment: .doc(
           "Namespace containing generated types for the \"\(service.name.identifyingName)\" service."
         ),
-        item: .declaration(.enum(serviceNamespace))
+        item: .declaration(.guarded(availability, .enum(serviceNamespace)))
       )
     )
 
@@ -367,7 +380,9 @@ extension [CodeBlock] {
       literalFullyQualifiedService: service.name.identifyingName,
       namer: namer
     )
-    blocks.append(CodeBlock(item: .declaration(.extension(descriptorExtension))))
+    blocks.append(
+      CodeBlock(item: .declaration(.guarded(availability, .extension(descriptorExtension))))
+    )
 
     return blocks
   }

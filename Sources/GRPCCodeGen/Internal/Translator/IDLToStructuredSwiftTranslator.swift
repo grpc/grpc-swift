@@ -26,7 +26,8 @@ package struct IDLToStructuredSwiftTranslator {
     accessLevelOnImports: Bool,
     client: Bool,
     server: Bool,
-    grpcCoreModuleName: String
+    grpcCoreModuleName: String,
+    availability: AvailabilityDescription
   ) throws -> StructuredSwiftRepresentation {
     try self.validateInput(codeGenerationRequest)
     let accessModifier = AccessModifier(accessLevel)
@@ -46,6 +47,7 @@ package struct IDLToStructuredSwiftTranslator {
       let metadata = metadataTranslator.translate(
         accessModifier: accessModifier,
         service: service,
+        availability: availability,
         namer: namer
       )
       codeBlocks.append(contentsOf: metadata)
@@ -58,6 +60,7 @@ package struct IDLToStructuredSwiftTranslator {
         let blocks = serverTranslator.translate(
           accessModifier: accessModifier,
           service: service,
+          availability: availability,
           namer: namer,
           serializer: codeGenerationRequest.makeSerializerCodeSnippet,
           deserializer: codeGenerationRequest.makeDeserializerCodeSnippet
@@ -72,6 +75,7 @@ package struct IDLToStructuredSwiftTranslator {
         let blocks = clientTranslator.translate(
           accessModifier: accessModifier,
           service: service,
+          availability: availability,
           namer: namer,
           serializer: codeGenerationRequest.makeSerializerCodeSnippet,
           deserializer: codeGenerationRequest.makeDeserializerCodeSnippet

@@ -63,6 +63,7 @@ struct ServerCodeTranslator {
   func translate(
     accessModifier: AccessModifier,
     service: ServiceDescriptor,
+    availability: AvailabilityDescription,
     namer: Namer = Namer(),
     serializer: (String) -> String,
     deserializer: (String) -> String
@@ -129,7 +130,7 @@ struct ServerCodeTranslator {
         ),
       ]
     )
-    blocks.append(.declaration(.extension(`extension`)))
+    blocks.append(.declaration(.guarded(availability, .extension(`extension`))))
 
     // extension <Service>.StreamingServiceProtocol> { ... }
     let registerExtension: ExtensionDescription = .registrableRPCServiceDefaultImplementation(
@@ -144,7 +145,7 @@ struct ServerCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .inline("Default implementation of 'registerMethods(with:)'."),
-        item: .declaration(.extension(registerExtension))
+        item: .declaration(.guarded(availability, .extension(registerExtension)))
       )
     )
 
@@ -161,7 +162,7 @@ struct ServerCodeTranslator {
         comment: .inline(
           "Default implementation of streaming methods from 'StreamingServiceProtocol'."
         ),
-        item: .declaration(.extension(streamingServiceDefaultImplExtension))
+        item: .declaration(.guarded(availability, .extension(streamingServiceDefaultImplExtension)))
       )
     )
 
@@ -175,7 +176,7 @@ struct ServerCodeTranslator {
     blocks.append(
       CodeBlock(
         comment: .inline("Default implementation of methods from 'ServiceProtocol'."),
-        item: .declaration(.extension(serviceDefaultImplExtension))
+        item: .declaration(.guarded(availability, .extension(serviceDefaultImplExtension)))
       )
     )
 
