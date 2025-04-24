@@ -17,6 +17,10 @@ import Logging
 import NIOCore
 import NIOPosix
 
+#if canImport(Network)
+import NIOTransportServices
+#endif
+
 import struct Foundation.UUID
 
 public enum GRPCChannelPool {
@@ -191,6 +195,8 @@ extension GRPCChannelPool {
         return SwiftLogNoOpLogHandler()
       }
     )
+
+    public var transportServices: TransportServices = .defaults
   }
 }
 
@@ -298,6 +304,39 @@ extension GRPCChannelPool.Configuration {
     public var reservationLoadThreshold: Double = 0.9
   }
 }
+
+#if canImport(Network)
+extension GRPCChannelPool.Configuration {
+  public struct TransportServices: Sendable {
+    /// Default transport services configuration.
+    public static let defaults = Self()
+
+    @inlinable
+    public static func with(_ configure: (inout Self) -> Void) -> Self {
+      var configuration = Self.defaults
+      configure(&configuration)
+      return configuration
+    }
+
+    // TODO: write docs
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var clientBootstrapNWParametersConfigurator: (
+      @Sendable (NIOTSConnectionBootstrap) -> Void
+    )? {
+      get {
+        return self._clientBootstrapNWParametersConfigurator as! (
+          @Sendable (NIOTSConnectionBootstrap) -> Void
+        )?
+      }
+      set {
+        self._clientBootstrapNWParametersConfigurator = newValue
+      }
+    }
+
+    private var _clientBootstrapNWParametersConfigurator: (any Sendable)?
+  }
+}
+#endif // canImport(Network)
 
 /// The ID of a connection in the connection pool.
 public struct GRPCConnectionID: Hashable, Sendable, CustomStringConvertible {

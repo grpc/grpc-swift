@@ -24,8 +24,13 @@ import NIOPosix
 import NIOSSL
 import XCTest
 
+#if canImport(Network)
+import Network
+import NIOTransportServices
+#endif
+
 final class GRPCChannelPoolTests: GRPCTestCase {
-  private var group: MultiThreadedEventLoopGroup!
+  private var group: (any EventLoopGroup)!
   private var server: Server?
   private var channel: GRPCChannel?
 
@@ -618,5 +623,24 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     XCTAssertGreaterThan(statsEvents.count, 0)
   }
+
+  #if canImport(Network)
+  func testNWParametersConfigurator() {
+    let counter = NIOLockedValueBox(0)
+    self.group = NIOTSEventLoopGroup()
+    self.startServer(withTLS: false)
+    self.startChannel(withTLS: false) { configuration in
+      configuration.transportServices.clientBootstrapNWParametersConfigurator = { _ in
+        counter.withLockedValue { $0 += 1 }
+      }
+    }
+
+    // Execute an RPC to make sure a channel gets created/activated and the parameters configurator run.
+    let rpc = self.echo.get(.with { $0.text = "" })
+    XCTAssertNoThrow(try rpc.status.wait())
+
+    XCTAssertEqual(1, counter.withLockedValue({ $0 }))
+  }
+  #endif // canImport(Network)
 }
 #endif  // canImport(NIOSSL)

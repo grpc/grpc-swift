@@ -469,6 +469,24 @@ extension ClientConnection {
     @preconcurrency
     public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
 
+    #if canImport(Network)
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var clientBootstrapNWParametersConfigurator: (
+      @Sendable (NIOTSConnectionBootstrap) -> Void
+    )? {
+      get {
+        return self._clientBootstrapNWParametersConfigurator as! (
+          @Sendable (NIOTSConnectionBootstrap) -> Void
+        )?
+      }
+      set {
+        self._clientBootstrapNWParametersConfigurator = newValue
+      }
+    }
+
+    private var _clientBootstrapNWParametersConfigurator: (any Sendable)?
+    #endif
+
     #if canImport(NIOSSL)
     /// Create a `Configuration` with some pre-defined defaults. Prefer using
     /// `ClientConnection.secure(group:)` to build a connection secured with TLS or

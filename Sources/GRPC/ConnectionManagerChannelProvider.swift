@@ -72,6 +72,56 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   @usableFromInline
   internal var debugChannelInitializer: Optional<(Channel) -> EventLoopFuture<Void>>
 
+  #if canImport(Network)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+  @usableFromInline
+  internal var clientBootstrapNWParametersConfigurator: (
+    @Sendable (NIOTSConnectionBootstrap) -> Void
+  )? {
+    get {
+      return self._clientBootstrapNWParametersConfigurator as! (
+        @Sendable (NIOTSConnectionBootstrap) -> Void
+      )?
+    }
+    set {
+      self._clientBootstrapNWParametersConfigurator = newValue
+    }
+  }
+
+  private var _clientBootstrapNWParametersConfigurator: (any Sendable)?
+  #endif
+
+  #if canImport(Network)
+  @inlinable
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+  internal init(
+    connectionTarget: ConnectionTarget,
+    connectionKeepalive: ClientConnectionKeepalive,
+    connectionIdleTimeout: TimeAmount,
+    tlsMode: TLSMode,
+    tlsConfiguration: GRPCTLSConfiguration?,
+    httpTargetWindowSize: Int,
+    httpMaxFrameSize: Int,
+    errorDelegate: ClientErrorDelegate?,
+    debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?,
+    clientBootstrapNWParametersConfigurator: (@Sendable (NIOTSConnectionBootstrap) -> Void)?
+  ) {
+    self.init(
+      connectionTarget: connectionTarget,
+      connectionKeepalive: connectionKeepalive,
+      connectionIdleTimeout: connectionIdleTimeout,
+      tlsMode: tlsMode,
+      tlsConfiguration: tlsConfiguration,
+      httpTargetWindowSize: httpTargetWindowSize,
+      httpMaxFrameSize: httpMaxFrameSize,
+      errorDelegate: errorDelegate,
+      debugChannelInitializer: debugChannelInitializer
+    )
+
+    self.clientBootstrapNWParametersConfigurator = clientBootstrapNWParametersConfigurator
+  }
+  #endif
+
   @inlinable
   internal init(
     connectionTarget: ConnectionTarget,
@@ -133,6 +183,12 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )
+
+    #if canImport(Network)
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *) {
+      self.clientBootstrapNWParametersConfigurator = configuration.clientBootstrapNWParametersConfigurator
+    }
+    #endif
   }
 
   private var serverHostname: String? {
@@ -209,6 +265,14 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
         } catch {
           return channel.eventLoop.makeFailedFuture(error)
         }
+
+        #if canImport(Network)
+        if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+           let configurator = self.clientBootstrapNWParametersConfigurator,
+           let niotsBootstrap = bootstrap as? NIOTSConnectionBootstrap {
+          configurator(niotsBootstrap)
+        }
+        #endif
 
         // Run the debug initializer, if there is one.
         if let debugInitializer = self.debugChannelInitializer {

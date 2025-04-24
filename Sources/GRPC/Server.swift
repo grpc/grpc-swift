@@ -127,6 +127,12 @@ public final class Server: @unchecked Sendable {
         _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
       }
     }
+
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+       let nwParametersConfigurator = configuration.serverBootstrapNWParametersConfigurator,
+       let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
+        nwParametersConfigurator(transportServicesBootstrap)
+    }
     #endif  // canImport(Network)
 
     return
@@ -383,6 +389,24 @@ extension Server {
     /// This is how gRPC consumes the service providers internally. Caching this as stored data avoids
     /// the need to recalculate this dictionary each time we receive an rpc.
     internal var serviceProvidersByName: [Substring: CallHandlerProvider]
+
+    #if canImport(Network)
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var serverBootstrapNWParametersConfigurator: (
+      @Sendable (NIOTSListenerBootstrap) -> Void
+    )? {
+      get {
+        return self._serverBootstrapNWParametersConfigurator as! (
+          @Sendable (NIOTSListenerBootstrap) -> Void
+        )?
+      }
+      set {
+        self._serverBootstrapNWParametersConfigurator = newValue
+      }
+    }
+
+    private var _serverBootstrapNWParametersConfigurator: (any Sendable)?
+    #endif
 
     /// CORS configuration for gRPC-Web support.
     public var webCORS = Configuration.CORS()

@@ -20,6 +20,12 @@ import NIOEmbedded
 import NIOHTTP2
 import XCTest
 
+#if canImport(Network)
+import NIOConcurrencyHelpers
+import NIOTransportServices
+import Network
+#endif
+
 @testable import GRPC
 
 class ConnectionManagerTests: GRPCTestCase {
@@ -1412,6 +1418,54 @@ extension ConnectionManagerTests {
       XCTAssert(error is DoomedChannelError)
     }
   }
+
+  #if canImport(Network)
+  func testDefaultChannelProvider_NWParametersConfigurator() throws {
+    let counter = NIOLockedValueBox(0)
+    let group = NIOTSEventLoopGroup(loopCount: 1)
+    var configuration = ClientConnection.Configuration.default(
+      target: .unixDomainSocket("/ignored"),
+      eventLoopGroup: group
+    )
+    configuration.clientBootstrapNWParametersConfigurator = { _ in
+      counter.withLockedValue { $0 += 1 }
+    }
+
+    // We need to trigger the connection to apply the parameters configurator.
+    // However, we don't actually care about establishing the connection: only triggering it.
+    // In other tests, we used mocked channel providers to simply return completed futures when "creating"
+    // the channels. However, in this test we want to make sure that the `DefaultChannelProvider`,
+    // which is the one we actually use, correctly sets and executes the configurator.
+    // For this reason, we can wait on a promise that is succeeded after the configurator has been called,
+    // in the debug channel initializer. This promise will always succeed regardless of the actual
+    // connection being established. And because this closure is executed after the parameters configurator,
+    // we know the counter should be updated by the time the promise has been completed.
+    let promise = group.next().makePromise(of: Void.self)
+    configuration.debugChannelInitializer = { channel in
+      promise.succeed()
+      return promise.futureResult
+    }
+
+    let manager = ConnectionManager(
+      configuration: configuration,
+      connectivityDelegate: self.monitor,
+      idleBehavior: .closeWhenIdleTimeout,
+      logger: self.logger
+    )
+
+    // Start connecting. We don't care about the actual result of the connection.
+    _ = manager.getHTTP2Multiplexer()
+
+    // Wait until the configurator has been called.
+    try promise.futureResult.wait()
+
+    XCTAssertEqual(1, counter.withLockedValue({ $0 }))
+
+    try group.syncShutdownGracefully()
+  }
+  #endif
+
+  // TODO: add test using the default channel provider that uses the parameter configurator and make sure it gets called
 }
 
 internal struct Change: Hashable, CustomStringConvertible {
