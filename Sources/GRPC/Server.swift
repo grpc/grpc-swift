@@ -129,10 +129,17 @@ public final class Server: @unchecked Sendable {
     }
 
     if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-      let configurator = configuration.nwParametersConfigurator,
+      let configurator = configuration.listenerNWParametersConfigurator,
       let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
     {
       _ = transportServicesBootstrap.configureNWParameters(configurator)
+    }
+
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+       let configurator = configuration.childChannelNWParametersConfigurator,
+       let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
+    {
+      _ = transportServicesBootstrap.configureChildNWParameters(configurator)
     }
     #endif  // canImport(Network)
 
@@ -392,18 +399,31 @@ extension Server {
     internal var serviceProvidersByName: [Substring: CallHandlerProvider]
 
     #if canImport(Network)
-    /// A closure allowing to customise the `NWParameters` used when establising a connection using NIOTransportServices.
+    /// A closure allowing to customise the listener's `NWParameters` used when establishing a connection using `NIOTransportServices`.
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-    public var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+    public var listenerNWParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
       get {
-        self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+        self._listenerNWParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
       }
       set {
-        self._nwParametersConfigurator = newValue
+        self._listenerNWParametersConfigurator = newValue
       }
     }
 
-    private var _nwParametersConfigurator: (any Sendable)?
+    private var _listenerNWParametersConfigurator: (any Sendable)?
+
+    /// A closure allowing to customise the child channels' `NWParameters` used when establishing connections using `NIOTransportServices`.
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var childChannelNWParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+      get {
+        self._childChannelNWParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+      }
+      set {
+        self._childChannelNWParametersConfigurator = newValue
+      }
+    }
+
+    private var _childChannelNWParametersConfigurator: (any Sendable)?
     #endif
 
     /// CORS configuration for gRPC-Web support.
