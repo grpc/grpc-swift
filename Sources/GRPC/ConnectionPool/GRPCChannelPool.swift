@@ -197,6 +197,8 @@ extension GRPCChannelPool {
     )
 
     #if canImport(Network)
+    /// `TransportServices` related configuration. This will be ignored unless an appropriate event loop group
+    /// (e.g. `NIOTSEventLoopGroup`) is used.
     public var transportServices: TransportServices = .defaults
     #endif
   }
