@@ -471,20 +471,20 @@ extension ClientConnection {
 
     #if canImport(Network)
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-    public var clientBootstrapNWParametersConfigurator: (
+    public var nwParametersConfigurator: (
       @Sendable (NIOTSConnectionBootstrap) -> Void
     )? {
       get {
-        return self._clientBootstrapNWParametersConfigurator as! (
+        return self._nwParametersConfigurator as! (
           @Sendable (NIOTSConnectionBootstrap) -> Void
         )?
       }
       set {
-        self._clientBootstrapNWParametersConfigurator = newValue
+        self._nwParametersConfigurator = newValue
       }
     }
 
-    private var _clientBootstrapNWParametersConfigurator: (any Sendable)?
+    private var _nwParametersConfigurator: (any Sendable)?
     #endif
 
     #if canImport(NIOSSL)

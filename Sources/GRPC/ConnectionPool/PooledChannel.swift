@@ -92,7 +92,7 @@ internal final class PooledChannel: GRPCChannel {
         httpMaxFrameSize: configuration.http2.maxFrameSize,
         errorDelegate: configuration.errorDelegate,
         debugChannelInitializer: configuration.debugChannelInitializer,
-        clientBootstrapNWParametersConfigurator: configuration.transportServices.clientBootstrapNWParametersConfigurator
+        nwParametersConfigurator: configuration.transportServices.nwParametersConfigurator
       )
     } else {
       provider = DefaultChannelProvider(

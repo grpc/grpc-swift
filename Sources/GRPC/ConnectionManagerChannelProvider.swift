@@ -75,20 +75,20 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   #if canImport(Network)
   @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   @usableFromInline
-  internal var clientBootstrapNWParametersConfigurator: (
+  internal var nwParametersConfigurator: (
     @Sendable (NIOTSConnectionBootstrap) -> Void
   )? {
     get {
-      return self._clientBootstrapNWParametersConfigurator as! (
+      return self._nwParametersConfigurator as! (
         @Sendable (NIOTSConnectionBootstrap) -> Void
       )?
     }
     set {
-      self._clientBootstrapNWParametersConfigurator = newValue
+      self._nwParametersConfigurator = newValue
     }
   }
 
-  private var _clientBootstrapNWParametersConfigurator: (any Sendable)?
+  private var _nwParametersConfigurator: (any Sendable)?
   #endif
 
   #if canImport(Network)
@@ -104,7 +104,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     httpMaxFrameSize: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?,
-    clientBootstrapNWParametersConfigurator: (@Sendable (NIOTSConnectionBootstrap) -> Void)?
+    nwParametersConfigurator: (@Sendable (NIOTSConnectionBootstrap) -> Void)?
   ) {
     self.init(
       connectionTarget: connectionTarget,
@@ -118,7 +118,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       debugChannelInitializer: debugChannelInitializer
     )
 
-    self.clientBootstrapNWParametersConfigurator = clientBootstrapNWParametersConfigurator
+    self.nwParametersConfigurator = nwParametersConfigurator
   }
   #endif
 
@@ -186,7 +186,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
     #if canImport(Network)
     if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *) {
-      self.clientBootstrapNWParametersConfigurator = configuration.clientBootstrapNWParametersConfigurator
+      self.nwParametersConfigurator = configuration.nwParametersConfigurator
     }
     #endif
   }
@@ -268,7 +268,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
         #if canImport(Network)
         if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-           let configurator = self.clientBootstrapNWParametersConfigurator,
+           let configurator = self.nwParametersConfigurator,
            let niotsBootstrap = bootstrap as? NIOTSConnectionBootstrap {
           configurator(niotsBootstrap)
         }

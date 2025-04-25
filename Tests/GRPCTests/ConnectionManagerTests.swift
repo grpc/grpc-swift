@@ -1427,7 +1427,7 @@ extension ConnectionManagerTests {
       target: .unixDomainSocket("/ignored"),
       eventLoopGroup: group
     )
-    configuration.clientBootstrapNWParametersConfigurator = { _ in
+    configuration.nwParametersConfigurator = { _ in
       counter.withLockedValue { $0 += 1 }
     }
 

@@ -630,7 +630,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     self.group = NIOTSEventLoopGroup()
     self.startServer(withTLS: false)
     self.startChannel(withTLS: false) { configuration in
-      configuration.transportServices.clientBootstrapNWParametersConfigurator = { _ in
+      configuration.transportServices.nwParametersConfigurator = { _ in
         counter.withLockedValue { $0 += 1 }
       }
     }
