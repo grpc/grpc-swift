@@ -79,7 +79,36 @@ internal final class PooledChannel: GRPCChannel {
 
     self._scheme = scheme
 
-    let provider = DefaultChannelProvider(
+    let provider: DefaultChannelProvider
+    #if canImport(Network)
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *) {
+      provider = DefaultChannelProvider(
+        connectionTarget: configuration.target,
+        connectionKeepalive: configuration.keepalive,
+        connectionIdleTimeout: configuration.idleTimeout,
+        tlsMode: tlsMode,
+        tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
+        httpTargetWindowSize: configuration.http2.targetWindowSize,
+        httpMaxFrameSize: configuration.http2.maxFrameSize,
+        errorDelegate: configuration.errorDelegate,
+        debugChannelInitializer: configuration.debugChannelInitializer,
+        nwParametersConfigurator: configuration.transportServices.nwParametersConfigurator
+      )
+    } else {
+      provider = DefaultChannelProvider(
+        connectionTarget: configuration.target,
+        connectionKeepalive: configuration.keepalive,
+        connectionIdleTimeout: configuration.idleTimeout,
+        tlsMode: tlsMode,
+        tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
+        httpTargetWindowSize: configuration.http2.targetWindowSize,
+        httpMaxFrameSize: configuration.http2.maxFrameSize,
+        errorDelegate: configuration.errorDelegate,
+        debugChannelInitializer: configuration.debugChannelInitializer
+      )
+    }
+    #else
+    provider = DefaultChannelProvider(
       connectionTarget: configuration.target,
       connectionKeepalive: configuration.keepalive,
       connectionIdleTimeout: configuration.idleTimeout,
@@ -90,6 +119,7 @@ internal final class PooledChannel: GRPCChannel {
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )
+    #endif
 
     self._pool = PoolManager.makeInitializedPoolManager(
       using: configuration.eventLoopGroup,

@@ -40,7 +40,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-nio-transport-services.git",
-    from: "1.15.0"
+    from: "1.24.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-extras.git",

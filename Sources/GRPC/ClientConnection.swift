@@ -33,6 +33,10 @@ import Foundation
 import NIOSSL
 #endif
 
+#if canImport(Network)
+import Network
+#endif
+
 /// Provides a single, managed connection to a server which is guaranteed to always use the same
 /// `EventLoop`.
 ///
@@ -468,6 +472,21 @@ extension ClientConnection {
     /// - Warning: The initializer closure may be invoked *multiple times*.
     @preconcurrency
     public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
+
+    #if canImport(Network)
+    /// A closure allowing to customise the `NWParameters` used when establishing a connection using `NIOTransportServices`.
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+      get {
+        self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+      }
+      set {
+        self._nwParametersConfigurator = newValue
+      }
+    }
+
+    private var _nwParametersConfigurator: (any Sendable)?
+    #endif
 
     #if canImport(NIOSSL)
     /// Create a `Configuration` with some pre-defined defaults. Prefer using

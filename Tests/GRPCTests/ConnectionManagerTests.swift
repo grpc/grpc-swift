@@ -22,6 +22,12 @@ import XCTest
 
 @testable import GRPC
 
+#if canImport(Network)
+import NIOConcurrencyHelpers
+import NIOTransportServices
+import Network
+#endif
+
 class ConnectionManagerTests: GRPCTestCase {
   private let loop = EmbeddedEventLoop()
   private let recorder = RecordingConnectivityDelegate()
@@ -1412,6 +1418,52 @@ extension ConnectionManagerTests {
       XCTAssert(error is DoomedChannelError)
     }
   }
+
+  #if canImport(Network)
+  func testDefaultChannelProvider_NWParametersConfigurator() throws {
+    // For this test, we want an actual connection to be established, since otherwise the parameters
+    // configurator won't be run: NIOTS will only apply the parameters on the NWConnection at the
+    // point of activating it.
+
+    // Start a server
+    let serverConfig = Server.Configuration.default(
+      target: .hostAndPort("localhost", 0),
+      eventLoopGroup: NIOTSEventLoopGroup.singleton,
+      serviceProviders: []
+    )
+    let server = try Server.start(configuration: serverConfig).wait()
+    defer {
+      try? server.close().wait()
+    }
+
+    // Create a connection manager, and configure it to increase a counter in its NWParameters
+    // configurator closure.
+    let counter = NIOLockedValueBox(0)
+    let group = NIOTSEventLoopGroup.singleton
+    var configuration = ClientConnection.Configuration.default(
+      target: .socketAddress(server.channel.localAddress!),
+      eventLoopGroup: group
+    )
+    configuration.nwParametersConfigurator = { _ in
+      counter.withLockedValue { $0 += 1 }
+    }
+    let manager = ConnectionManager(
+      configuration: configuration,
+      connectivityDelegate: self.monitor,
+      idleBehavior: .closeWhenIdleTimeout,
+      logger: self.logger
+    )
+    defer {
+      try? manager.shutdown().wait()
+    }
+
+    // Wait for the connection to be established.
+    _ = try manager.getHTTP2Multiplexer().wait()
+
+    // At this point, the configurator must have been called.
+    XCTAssertEqual(1, counter.withLockedValue({ $0 }))
+  }
+  #endif
 }
 
 internal struct Change: Hashable, CustomStringConvertible {
