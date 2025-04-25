@@ -137,7 +137,7 @@ func withDeadline<Result: Sendable>(
   return await withTaskGroup(of: _DeadlineChildTaskResult<Result>.self) { group in
     group.addTask {
       do {
-        try await Task.sleep(until: deadline)
+        try await Task.sleep(until: deadline, tolerance: .zero)
         return .deadlinePassed
       } catch {
         return .timeoutCancelled

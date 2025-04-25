@@ -40,7 +40,7 @@ final class GRPCClientTests: XCTestCase {
         transport: inProcess.client,
         interceptorPipeline: interceptorPipeline
       ) { client in
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
         try await body(client, server)
       }
     }
@@ -341,7 +341,7 @@ final class GRPCClientTests: XCTestCase {
       let task = Task {
         try await client.clientStreaming(
           request: StreamingClientRequest { writer in
-            try await Task.sleep(for: .seconds(5))
+            try await Task.sleep(for: .seconds(5), tolerance: .zero)
           },
           descriptor: BinaryEcho.Methods.collect,
           serializer: IdentitySerializer(),
@@ -382,7 +382,7 @@ final class GRPCClientTests: XCTestCase {
     // Run the client.
     let task = Task { try await client.runConnections() }
     // Make sure the client is run for the first time here.
-    try await Task.sleep(for: .milliseconds(10))
+    try await Task.sleep(for: .milliseconds(10), tolerance: .zero)
 
     // Client is already running, should throw an error.
     await XCTAssertThrowsErrorAsync(ofType: RuntimeError.self) {
@@ -545,7 +545,7 @@ struct ClientTests {
       }
 
       // Make sure both server and client are running
-      try await Task.sleep(for: .milliseconds(100))
+      try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
       try await body(client, server)
       client.beginGracefulShutdown()
       server.beginGracefulShutdown()

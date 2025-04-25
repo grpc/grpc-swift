@@ -62,7 +62,7 @@ final class InProcessClientTransportTests: XCTestCase {
         try await client.connect()
       }
       group.addTask {
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
       }
 
       try await group.next()
@@ -97,7 +97,7 @@ final class InProcessClientTransportTests: XCTestCase {
         try await client.connect()
       }
       group.addTask {
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
       }
 
       try await group.next()
@@ -121,7 +121,7 @@ final class InProcessClientTransportTests: XCTestCase {
       group.addTask {
         // Add a sleep to make sure connection happens after `withStream` has been called,
         // to test pending streams are handled correctly.
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
         try await client.connect()
       }
 
@@ -171,7 +171,7 @@ final class InProcessClientTransportTests: XCTestCase {
       }
 
       group.addTask {
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
         client.beginGracefulShutdown()
       }
 
@@ -252,18 +252,18 @@ final class InProcessClientTransportTests: XCTestCase {
 
       group.addTask {
         try await client.withStream(descriptor: .testTest, options: .defaults) { stream, _ in
-          try await Task.sleep(for: .milliseconds(100))
+          try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
         }
       }
 
       group.addTask {
         try await client.withStream(descriptor: .testTest, options: .defaults) { stream, _ in
-          try await Task.sleep(for: .milliseconds(100))
+          try await Task.sleep(for: .milliseconds(100), tolerance: .zero)
         }
       }
 
       group.addTask {
-        try await Task.sleep(for: .milliseconds(50))
+        try await Task.sleep(for: .milliseconds(50), tolerance: .zero)
         client.beginGracefulShutdown()
       }
 
