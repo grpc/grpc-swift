@@ -128,16 +128,15 @@ extension Generator {
   }
 
   internal var methodMakeFunctionCallName: String {
-    let name: String
+    return "make\(methodComposableName)Call"
+  }
 
-    if self.options.keepMethodCasing {
-      name = self.method.name
-    } else {
-      name = NamingUtils.toUpperCamelCase(self.method.name)
+  internal var methodComposableName: String {
+    var name = method.name
+    if !options.keepMethodCasing {
+      name = name.prefix(1).uppercased() + name.dropFirst()
     }
-
-    let fnName = "make\(name)Call"
-    return self.sanitize(fieldName: fnName)
+    return name
   }
 
   internal func sanitize(fieldName string: String) -> String {
@@ -156,7 +155,7 @@ extension Generator {
   }
 
   internal var methodInterceptorFactoryName: String {
-    return "make\(self.method.name)Interceptors"
+    return "make\(methodComposableName)Interceptors"
   }
 
   internal var servicePath: String {
