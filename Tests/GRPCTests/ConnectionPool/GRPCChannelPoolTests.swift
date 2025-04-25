@@ -55,8 +55,22 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     super.tearDown()
   }
 
-  private func configureEventLoopGroup(threads: Int = System.coreCount) {
-    self.group = MultiThreadedEventLoopGroup(numberOfThreads: threads)
+  private enum TestEventLoopGroupType {
+    case multiThreadedEventLoopGroup
+    case transportServicesEventLoopGroup
+  }
+
+  private func configureEventLoopGroup(
+    threads: Int = System.coreCount,
+    eventLoopGroupType: TestEventLoopGroupType = .multiThreadedEventLoopGroup
+  ) {
+    switch eventLoopGroupType {
+    case .multiThreadedEventLoopGroup:
+      self.group = MultiThreadedEventLoopGroup(numberOfThreads: threads)
+
+    case .transportServicesEventLoopGroup:
+      self.group = NIOTSEventLoopGroup(loopCount: threads)
+    }
   }
 
   private func makeServerBuilder(withTLS: Bool) -> Server.Builder {
@@ -627,7 +641,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
   #if canImport(Network)
   func testNWParametersConfigurator() {
     let counter = NIOLockedValueBox(0)
-    self.group = NIOTSEventLoopGroup()
+    self.configureEventLoopGroup(threads: 1, eventLoopGroupType: .transportServicesEventLoopGroup)
     self.startServer(withTLS: false)
     self.startChannel(withTLS: false) { configuration in
       configuration.transportServices.nwParametersConfigurator = { _ in

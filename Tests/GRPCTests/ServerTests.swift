@@ -37,8 +37,10 @@ class ServerTests: GRPCTestCase {
       counter.withLockedValue { $0 += 1 }
     }
 
-    _ = try Server.start(configuration: serverConfiguration).wait()
+    let server = try Server.start(configuration: serverConfiguration).wait()
     XCTAssertEqual(1, counter.withLockedValue({ $0 }))
+
+    try? server.close().wait()
   }
   #endif
 }

@@ -1422,7 +1422,7 @@ extension ConnectionManagerTests {
   #if canImport(Network)
   func testDefaultChannelProvider_NWParametersConfigurator() throws {
     let counter = NIOLockedValueBox(0)
-    let group = NIOTSEventLoopGroup(loopCount: 1)
+    let group = NIOTSEventLoopGroup.singleton
     var configuration = ClientConnection.Configuration.default(
       target: .unixDomainSocket("/ignored"),
       eventLoopGroup: group
@@ -1460,8 +1460,6 @@ extension ConnectionManagerTests {
     try promise.futureResult.wait()
 
     XCTAssertEqual(1, counter.withLockedValue({ $0 }))
-
-    try group.syncShutdownGracefully()
   }
   #endif
 
