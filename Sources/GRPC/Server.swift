@@ -129,8 +129,9 @@ public final class Server: @unchecked Sendable {
     }
 
     if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-       let configurator = configuration.nwParametersConfigurator,
-       let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
+      let configurator = configuration.nwParametersConfigurator,
+      let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
+    {
       _ = transportServicesBootstrap.configureNWParameters(configurator)
     }
     #endif  // canImport(Network)

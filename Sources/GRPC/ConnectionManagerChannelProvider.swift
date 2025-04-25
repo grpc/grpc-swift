@@ -280,8 +280,9 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
     #if canImport(Network)
     if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-       let configurator = self.nwParametersConfigurator,
-       let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
+      let configurator = self.nwParametersConfigurator,
+      let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap
+    {
       _ = transportServicesBootstrap.configureNWParameters(configurator)
     }
     #endif

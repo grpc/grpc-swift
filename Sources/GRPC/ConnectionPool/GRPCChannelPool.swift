@@ -17,11 +17,11 @@ import Logging
 import NIOCore
 import NIOPosix
 
+import struct Foundation.UUID
+
 #if canImport(Network)
 import Network
 #endif
-
-import struct Foundation.UUID
 
 public enum GRPCChannelPool {
   /// Make a new ``GRPCChannel`` on which calls may be made to gRPC services.
@@ -336,7 +336,7 @@ extension GRPCChannelPool.Configuration {
     private var _nwParametersConfigurator: (any Sendable)?
   }
 }
-#endif // canImport(Network)
+#endif  // canImport(Network)
 
 /// The ID of a connection in the connection pool.
 public struct GRPCConnectionID: Hashable, Sendable, CustomStringConvertible {

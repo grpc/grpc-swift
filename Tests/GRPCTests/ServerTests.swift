@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+import GRPC
+import NIOConcurrencyHelpers
 import NIOTransportServices
 import XCTest
-import NIOConcurrencyHelpers
-import GRPC
 
 #if canImport(Network)
 import Network

@@ -20,13 +20,13 @@ import NIOEmbedded
 import NIOHTTP2
 import XCTest
 
+@testable import GRPC
+
 #if canImport(Network)
 import NIOConcurrencyHelpers
 import NIOTransportServices
 import Network
 #endif
-
-@testable import GRPC
 
 class ConnectionManagerTests: GRPCTestCase {
   private let loop = EmbeddedEventLoop()

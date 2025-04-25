@@ -646,7 +646,8 @@ final class GRPCChannelPoolTests: GRPCTestCase {
   #if canImport(Network)
   func testNWParametersConfigurator() throws {
     let counter = NIOLockedValueBox(0)
-    self.setUpClientAndServer(withTLS: false, eventLoopGroupType: .transportServicesEventLoopGroup) { configuration in
+    self.setUpClientAndServer(withTLS: false, eventLoopGroupType: .transportServicesEventLoopGroup)
+    { configuration in
       configuration.transportServices.nwParametersConfigurator = { _ in
         counter.withLockedValue { $0 += 1 }
       }
@@ -657,6 +658,6 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     XCTAssertEqual(1, counter.withLockedValue({ $0 }))
   }
-  #endif // canImport(Network)
+  #endif  // canImport(Network)
 }
 #endif  // canImport(NIOSSL)
