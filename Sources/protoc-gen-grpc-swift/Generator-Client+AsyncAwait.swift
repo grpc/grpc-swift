@@ -95,48 +95,78 @@ extension Generator {
         self.method = method
 
         let rpcType = streamingType(self.method)
-        let callType = Types.call(for: rpcType)
-        let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
-
-        switch rpcType {
-        case .unary, .serverStreaming:
-          self.printFunction(
-            name: self.methodMakeFunctionCallName,
-            arguments: [
-              "_ request: \(self.methodInputName)",
-              "callOptions: \(Types.clientCallOptions)? = nil",
-            ],
-            returnType: "\(callType)<\(self.methodInputName), \(self.methodOutputName)>",
-            access: self.access
-          ) {
-            self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
-              self.println("path: \(self.methodPathUsingClientMetadata),")
-              self.println("request: request,")
-              self.println("callOptions: callOptions ?? self.defaultCallOptions,")
-              self.println(
-                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
-              )
-            }
-          }
-
-        case .clientStreaming, .bidirectionalStreaming:
-          self.printFunction(
-            name: self.methodMakeFunctionCallName,
-            arguments: ["callOptions: \(Types.clientCallOptions)? = nil"],
-            returnType: "\(callType)<\(self.methodInputName), \(self.methodOutputName)>",
-            access: self.access
-          ) {
-            self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
-              self.println("path: \(self.methodPathUsingClientMetadata),")
-              self.println("callOptions: callOptions ?? self.defaultCallOptions,")
-              self.println(
-                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
-              )
-            }
-          }
-        }
+        printRpcFunctionImplementation(rpcType: rpcType)
+        printRpcFunctionWrapper(rpcType: rpcType)
       }
     }
+  }
+
+  private func printRpcFunctionImplementation(rpcType: StreamingType) {
+    let argumentsBuilder: (() -> Void)?
+    switch rpcType {
+    case .unary, .serverStreaming:
+      argumentsBuilder = {
+        self.println("request: request,")
+      }
+    default:
+      argumentsBuilder = nil
+    }
+    let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
+    printRpcFunction(rpcType: rpcType, name: self.methodMakeFunctionCallName) {
+      self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
+        self.println("path: \(self.methodPathUsingClientMetadata),")
+        argumentsBuilder?()
+        self.println("callOptions: callOptions ?? self.defaultCallOptions,")
+        self.println(
+          "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
+        )
+      }
+    }
+  }
+
+  private func printRpcFunctionWrapper(rpcType: StreamingType) {
+    let functionName = methodMakeFunctionCallName
+    let functionWrapperName = methodMakeFunctionCallWrapperName
+    guard functionName != functionWrapperName else { return }
+    self.println()
+
+    let argumentsBuilder: (() -> Void)?
+    switch rpcType {
+    case .unary, .serverStreaming:
+      argumentsBuilder = {
+        self.println("request,")
+      }
+    default:
+      argumentsBuilder = nil
+    }
+    printRpcFunction(rpcType: rpcType, name: functionWrapperName) {
+      self.withIndentation("return self.\(functionName)", braces: .round) {
+        argumentsBuilder?()
+        self.println("callOptions: callOptions")
+      }
+    }
+  }
+
+  private func printRpcFunction(rpcType: StreamingType, name: String, bodyBuilder: (() -> Void)?) {
+    let callType = Types.call(for: rpcType)
+    self.printFunction(
+      name: name,
+      arguments: rpcFunctionArguments(rpcType: rpcType),
+      returnType: "\(callType)<\(self.methodInputName), \(self.methodOutputName)>",
+      access: self.access,
+      bodyBuilder: bodyBuilder
+    )
+  }
+
+  private func rpcFunctionArguments(rpcType: StreamingType) -> [String] {
+    var arguments = ["callOptions: \(Types.clientCallOptions)? = nil"]
+    switch rpcType {
+    case .unary, .serverStreaming:
+      arguments.insert("_ request: \(self.methodInputName)", at: .zero)
+    default:
+      break
+    }
+    return arguments
   }
 }
 

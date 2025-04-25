@@ -128,6 +128,18 @@ extension Generator {
   }
 
   internal var methodMakeFunctionCallName: String {
+    let name: String
+    if self.options.keepMethodCasing {
+      name = self.method.name
+    } else {
+      name = NamingUtils.toUpperCamelCase(self.method.name)
+    }
+
+    let fnName = "make\(name)Call"
+    return self.sanitize(fieldName: fnName)
+  }
+
+  internal var methodMakeFunctionCallWrapperName: String {
     return "make\(methodComposableName)Call"
   }
 
@@ -155,7 +167,7 @@ extension Generator {
   }
 
   internal var methodInterceptorFactoryName: String {
-    return "make\(methodComposableName)Interceptors"
+    return "make\(self.method.name)Interceptors"
   }
 
   internal var servicePath: String {
