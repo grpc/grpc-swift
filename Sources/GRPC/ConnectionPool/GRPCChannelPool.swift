@@ -18,7 +18,7 @@ import NIOCore
 import NIOPosix
 
 #if canImport(Network)
-import NIOTransportServices
+import Network
 #endif
 
 import struct Foundation.UUID
@@ -322,13 +322,9 @@ extension GRPCChannelPool.Configuration {
 
     /// A closure allowing to customise the `NWParameters` used when establising a connection using NIOTransportServices.
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-    public var nwParametersConfigurator: (
-      @Sendable (NIOTSConnectionBootstrap) -> Void
-    )? {
+    public var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
       get {
-        return self._nwParametersConfigurator as! (
-          @Sendable (NIOTSConnectionBootstrap) -> Void
-        )?
+        self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
       }
       set {
         self._nwParametersConfigurator = newValue

@@ -22,6 +22,10 @@ import NIOTransportServices
 import NIOSSL
 #endif
 
+#if canImport(Network)
+import Network
+#endif
+
 @usableFromInline
 internal protocol ConnectionManagerChannelProvider {
   /// Make an `EventLoopFuture<Channel>`.
@@ -75,13 +79,9 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   #if canImport(Network)
   @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   @usableFromInline
-  internal var nwParametersConfigurator: (
-    @Sendable (NIOTSConnectionBootstrap) -> Void
-  )? {
+  internal var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
     get {
-      return self._nwParametersConfigurator as! (
-        @Sendable (NIOTSConnectionBootstrap) -> Void
-      )?
+      self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
     }
     set {
       self._nwParametersConfigurator = newValue
@@ -104,7 +104,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     httpMaxFrameSize: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?,
-    nwParametersConfigurator: (@Sendable (NIOTSConnectionBootstrap) -> Void)?
+    nwParametersConfigurator: (@Sendable (NWParameters) -> Void)?
   ) {
     self.init(
       connectionTarget: connectionTarget,
@@ -269,8 +269,8 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
         #if canImport(Network)
         if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
            let configurator = self.nwParametersConfigurator,
-           let niotsBootstrap = bootstrap as? NIOTSConnectionBootstrap {
-          configurator(niotsBootstrap)
+           let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
+          _ = transportServicesBootstrap.configureNWParameters(configurator)
         }
         #endif
 

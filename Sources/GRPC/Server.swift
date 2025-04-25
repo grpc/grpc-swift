@@ -129,9 +129,9 @@ public final class Server: @unchecked Sendable {
     }
 
     if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-       let nwParametersConfigurator = configuration.nwParametersConfigurator,
+       let configurator = configuration.nwParametersConfigurator,
        let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
-        nwParametersConfigurator(transportServicesBootstrap)
+      _ = transportServicesBootstrap.configureNWParameters(configurator)
     }
     #endif  // canImport(Network)
 
@@ -393,13 +393,9 @@ extension Server {
     #if canImport(Network)
     /// A closure allowing to customise the `NWParameters` used when establising a connection using NIOTransportServices.
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-    public var nwParametersConfigurator: (
-      @Sendable (NIOTSListenerBootstrap) -> Void
-    )? {
+    public var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
       get {
-        return self._nwParametersConfigurator as! (
-          @Sendable (NIOTSListenerBootstrap) -> Void
-        )?
+        self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
       }
       set {
         self._nwParametersConfigurator = newValue
