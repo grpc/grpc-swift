@@ -470,6 +470,7 @@ extension ClientConnection {
     public var debugChannelInitializer: (@Sendable (Channel) -> EventLoopFuture<Void>)?
 
     #if canImport(Network)
+    /// A closure allowing to customise the `NWParameters` used when establising a connection using NIOTransportServices.
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
     public var nwParametersConfigurator: (
       @Sendable (NIOTSConnectionBootstrap) -> Void
