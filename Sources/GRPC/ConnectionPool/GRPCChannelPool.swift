@@ -196,7 +196,9 @@ extension GRPCChannelPool {
       }
     )
 
+    #if canImport(Network)
     public var transportServices: TransportServices = .defaults
+    #endif
   }
 }
 
