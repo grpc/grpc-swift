@@ -129,7 +129,7 @@ public final class Server: @unchecked Sendable {
     }
 
     if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-       let nwParametersConfigurator = configuration.serverBootstrapNWParametersConfigurator,
+       let nwParametersConfigurator = configuration.nwParametersConfigurator,
        let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
         nwParametersConfigurator(transportServicesBootstrap)
     }
@@ -392,20 +392,20 @@ extension Server {
 
     #if canImport(Network)
     @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-    public var serverBootstrapNWParametersConfigurator: (
+    public var nwParametersConfigurator: (
       @Sendable (NIOTSListenerBootstrap) -> Void
     )? {
       get {
-        return self._serverBootstrapNWParametersConfigurator as! (
+        return self._nwParametersConfigurator as! (
           @Sendable (NIOTSListenerBootstrap) -> Void
         )?
       }
       set {
-        self._serverBootstrapNWParametersConfigurator = newValue
+        self._nwParametersConfigurator = newValue
       }
     }
 
-    private var _serverBootstrapNWParametersConfigurator: (any Sendable)?
+    private var _nwParametersConfigurator: (any Sendable)?
     #endif
 
     /// CORS configuration for gRPC-Web support.

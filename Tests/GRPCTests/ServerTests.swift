@@ -33,7 +33,7 @@ class ServerTests: GRPCTestCase {
       eventLoopGroup: serverEventLoopGroup,
       serviceProviders: []
     )
-    serverConfiguration.serverBootstrapNWParametersConfigurator = { _ in
+    serverConfiguration.nwParametersConfigurator = { _ in
       counter.withLockedValue { $0 += 1 }
     }
 
