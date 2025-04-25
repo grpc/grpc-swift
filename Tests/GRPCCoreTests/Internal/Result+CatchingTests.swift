@@ -21,7 +21,7 @@ import XCTest
 final class ResultCatchingTests: XCTestCase {
   func testResultCatching() async {
     let result = await Result {
-      try? await Task.sleep(nanoseconds: 1)
+      try? await Task.sleep(for: .nanoseconds(1), tolerance: .zero)
       throw RPCError(code: .unknown, message: "foo")
     }
 

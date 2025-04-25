@@ -112,7 +112,7 @@ extension ClientRPCExecutorTestHarness.ServerStreamHandler {
 
   static func sleepFor(duration: Duration, then handler: Self) -> Self {
     return Self { stream in
-      try await Task.sleep(until: .now.advanced(by: duration), clock: .continuous)
+      try await Task.sleep(until: .now.advanced(by: duration), tolerance: .zero, clock: .continuous)
       try await handler.handle(stream: stream)
     }
   }

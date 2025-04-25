@@ -83,7 +83,7 @@ extension ClientRPCExecutor.HedgingExecutor {
       if let deadline = self.deadline {
         group.addTask {
           let result = await Result {
-            try await Task.sleep(until: deadline, clock: .continuous)
+            try await Task.sleep(until: deadline, tolerance: .zero, clock: .continuous)
           }
           return .timedOut(result)
         }
@@ -533,7 +533,7 @@ extension ClientRPCExecutor.HedgingExecutor {
       self._isPushback = pushback
       self._handle = group.addCancellableTask {
         do {
-          try await Task.sleep(for: delay, clock: .continuous)
+          try await Task.sleep(for: delay, tolerance: .zero, clock: .continuous)
           return .scheduledAttemptFired(.ran)
         } catch {
           return .scheduledAttemptFired(.cancelled)

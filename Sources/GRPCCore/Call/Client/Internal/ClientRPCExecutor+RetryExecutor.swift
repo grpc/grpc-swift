@@ -92,7 +92,7 @@ extension ClientRPCExecutor.RetryExecutor {
       if let deadline = self.deadline {
         group.addTask {
           let result = await Result {
-            try await Task.sleep(until: deadline, clock: .continuous)
+            try await Task.sleep(until: deadline, tolerance: .zero, clock: .continuous)
           }
           return .timedOut(result)
         }
@@ -155,11 +155,16 @@ extension ClientRPCExecutor.RetryExecutor {
                   // If the delay is overridden with server pushback then reset the iterator for the
                   // next retry.
                   delayIterator = delaySequence.makeIterator()
-                  try? await Task.sleep(until: .now.advanced(by: delayOverride), clock: .continuous)
+                  try? await Task.sleep(
+                    until: .now.advanced(by: delayOverride),
+                    tolerance: .zero,
+                    clock: .continuous
+                  )
                 } else {
                   // The delay iterator never terminates.
                   try? await Task.sleep(
                     until: .now.advanced(by: delayIterator.next()!),
+                    tolerance: .zero,
                     clock: .continuous
                   )
                 }

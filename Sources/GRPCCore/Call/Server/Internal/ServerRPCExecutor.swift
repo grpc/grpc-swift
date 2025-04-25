@@ -123,7 +123,7 @@ struct ServerRPCExecutor {
     await withTaskGroup(of: Void.self) { group in
       group.addTask {
         do {
-          try await Task.sleep(for: timeout, clock: .continuous)
+          try await Task.sleep(for: timeout, tolerance: .zero, clock: .continuous)
           context.cancellation.cancel()
         } catch {
           ()  // Only cancel the RPC if the timeout completes.
