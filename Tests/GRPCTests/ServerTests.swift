@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+import EchoImplementation
+import EchoModel
 import GRPC
 import NIOConcurrencyHelpers
 import NIOTransportServices
 import XCTest
-import EchoModel
-import EchoImplementation
 
 #if canImport(Network)
 import Network
