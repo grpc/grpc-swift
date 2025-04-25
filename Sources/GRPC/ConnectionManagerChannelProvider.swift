@@ -266,14 +266,6 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
           return channel.eventLoop.makeFailedFuture(error)
         }
 
-        #if canImport(Network)
-        if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
-           let configurator = self.nwParametersConfigurator,
-           let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
-          _ = transportServicesBootstrap.configureNWParameters(configurator)
-        }
-        #endif
-
         // Run the debug initializer, if there is one.
         if let debugInitializer = self.debugChannelInitializer {
           return debugInitializer(channel)
@@ -285,6 +277,14 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     if let connectTimeout = connectTimeout {
       _ = bootstrap.connectTimeout(connectTimeout)
     }
+
+    #if canImport(Network)
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+       let configurator = self.nwParametersConfigurator,
+       let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
+      _ = transportServicesBootstrap.configureNWParameters(configurator)
+    }
+    #endif
 
     return bootstrap.connect(to: self.connectionTarget)
   }

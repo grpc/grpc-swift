@@ -1421,49 +1421,49 @@ extension ConnectionManagerTests {
 
   #if canImport(Network)
   func testDefaultChannelProvider_NWParametersConfigurator() throws {
+    // For this test, we want an actual connection to be established, since otherwise the parameters
+    // configurator won't be run: NIOTS will only apply the parameters on the NWConnection at the
+    // point of activating it.
+
+    // Start a server
+    let serverConfig = Server.Configuration.default(
+      target: .hostAndPort("localhost", 0),
+      eventLoopGroup: NIOTSEventLoopGroup.singleton,
+      serviceProviders: []
+    )
+    let server = try Server.start(configuration: serverConfig).wait()
+    defer {
+      try? server.close().wait()
+    }
+
+    // Create a connection manager, and configure it to increase a counter in its NWParameters
+    // configurator closure.
     let counter = NIOLockedValueBox(0)
     let group = NIOTSEventLoopGroup.singleton
     var configuration = ClientConnection.Configuration.default(
-      target: .unixDomainSocket("/ignored"),
+      target: .socketAddress(server.channel.localAddress!),
       eventLoopGroup: group
     )
     configuration.nwParametersConfigurator = { _ in
       counter.withLockedValue { $0 += 1 }
     }
-
-    // We need to trigger the connection to apply the parameters configurator.
-    // However, we don't actually care about establishing the connection: only triggering it.
-    // In other tests, we used mocked channel providers to simply return completed futures when "creating"
-    // the channels. However, in this test we want to make sure that the `DefaultChannelProvider`,
-    // which is the one we actually use, correctly sets and executes the configurator.
-    // For this reason, we can wait on a promise that is succeeded after the configurator has been called,
-    // in the debug channel initializer. This promise will always succeed regardless of the actual
-    // connection being established. And because this closure is executed after the parameters configurator,
-    // we know the counter should be updated by the time the promise has been completed.
-    let promise = group.next().makePromise(of: Void.self)
-    configuration.debugChannelInitializer = { channel in
-      promise.succeed()
-      return promise.futureResult
-    }
-
     let manager = ConnectionManager(
       configuration: configuration,
       connectivityDelegate: self.monitor,
       idleBehavior: .closeWhenIdleTimeout,
       logger: self.logger
     )
+    defer {
+      try? manager.shutdown().wait()
+    }
 
-    // Start connecting. We don't care about the actual result of the connection.
-    _ = manager.getHTTP2Multiplexer()
+    // Wait for the connection to be established.
+    _ = try manager.getHTTP2Multiplexer().wait()
 
-    // Wait until the configurator has been called.
-    try promise.futureResult.wait()
-
+    // At this point, the configurator must have been called.
     XCTAssertEqual(1, counter.withLockedValue({ $0 }))
   }
   #endif
-
-  // TODO: add test using the default channel provider that uses the parameter configurator and make sure it gets called
 }
 
 internal struct Change: Hashable, CustomStringConvertible {
