@@ -70,6 +70,8 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   internal var httpTargetWindowSize: Int
   @usableFromInline
   internal var httpMaxFrameSize: Int
+  @usableFromInline
+  internal var httpMaxResetStreams: Int
 
   @usableFromInline
   internal var errorDelegate: Optional<ClientErrorDelegate>
@@ -102,6 +104,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
     httpMaxFrameSize: Int,
+    httpMaxResetStreams: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?,
     nwParametersConfigurator: (@Sendable (NWParameters) -> Void)?
@@ -114,6 +117,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       tlsConfiguration: tlsConfiguration,
       httpTargetWindowSize: httpTargetWindowSize,
       httpMaxFrameSize: httpMaxFrameSize,
+      httpMaxResetStreams: httpMaxResetStreams,
       errorDelegate: errorDelegate,
       debugChannelInitializer: debugChannelInitializer
     )
@@ -131,6 +135,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
     httpMaxFrameSize: Int,
+    httpMaxResetStreams: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
   ) {
@@ -143,6 +148,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
     self.httpTargetWindowSize = httpTargetWindowSize
     self.httpMaxFrameSize = httpMaxFrameSize
+    self.httpMaxResetStreams = httpMaxResetStreams
 
     self.errorDelegate = errorDelegate
     self.debugChannelInitializer = debugChannelInitializer
@@ -180,6 +186,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       tlsConfiguration: configuration.tlsConfiguration,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
       httpMaxFrameSize: configuration.httpMaxFrameSize,
+      httpMaxResetStreams: configuration.httpMaxResetStreams,
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )
@@ -259,6 +266,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
             connectionIdleTimeout: self.connectionIdleTimeout,
             httpTargetWindowSize: self.httpTargetWindowSize,
             httpMaxFrameSize: self.httpMaxFrameSize,
+            httpMaxResetStreams: self.httpMaxResetStreams,
             errorDelegate: self.errorDelegate,
             logger: logger
           )

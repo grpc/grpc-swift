@@ -79,27 +79,27 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
 
   /// Makes an HTTP/2 handler.
   private func makeHTTP2Handler() -> NIOHTTP2Handler {
-    return .init(
-      mode: .server,
-      initialSettings: [
-        HTTP2Setting(
-          parameter: .maxConcurrentStreams,
-          value: self.configuration.httpMaxConcurrentStreams
-        ),
-        HTTP2Setting(
-          parameter: .maxHeaderListSize,
-          value: HPACKDecoder.defaultMaxHeaderListSize
-        ),
-        HTTP2Setting(
-          parameter: .maxFrameSize,
-          value: self.configuration.httpMaxFrameSize
-        ),
-        HTTP2Setting(
-          parameter: .initialWindowSize,
-          value: self.configuration.httpTargetWindowSize
-        ),
-      ]
-    )
+    var configuration = NIOHTTP2Handler.ConnectionConfiguration()
+    configuration.initialSettings = [
+      HTTP2Setting(
+        parameter: .maxConcurrentStreams,
+        value: self.configuration.httpMaxConcurrentStreams
+      ),
+      HTTP2Setting(
+        parameter: .maxHeaderListSize,
+        value: HPACKDecoder.defaultMaxHeaderListSize
+      ),
+      HTTP2Setting(
+        parameter: .maxFrameSize,
+        value: self.configuration.httpMaxFrameSize
+      ),
+      HTTP2Setting(
+        parameter: .initialWindowSize,
+        value: self.configuration.httpTargetWindowSize
+      ),
+    ]
+    configuration.maximumRecentlyResetStreams = self.configuration.httpMaxResetStreams
+    return NIOHTTP2Handler(mode: .server, connectionConfiguration: configuration)
   }
 
   /// Makes an HTTP/2 multiplexer suitable handling gRPC requests.
