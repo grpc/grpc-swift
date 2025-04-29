@@ -90,6 +90,7 @@ internal final class PooledChannel: GRPCChannel {
         tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
         httpTargetWindowSize: configuration.http2.targetWindowSize,
         httpMaxFrameSize: configuration.http2.maxFrameSize,
+        httpMaxResetStreams: configuration.http2.maxResetStreams,
         errorDelegate: configuration.errorDelegate,
         debugChannelInitializer: configuration.debugChannelInitializer,
         nwParametersConfigurator: configuration.transportServices.nwParametersConfigurator
@@ -103,6 +104,7 @@ internal final class PooledChannel: GRPCChannel {
         tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
         httpTargetWindowSize: configuration.http2.targetWindowSize,
         httpMaxFrameSize: configuration.http2.maxFrameSize,
+        httpMaxResetStreams: configuration.http2.maxResetStreams,
         errorDelegate: configuration.errorDelegate,
         debugChannelInitializer: configuration.debugChannelInitializer
       )
@@ -116,6 +118,7 @@ internal final class PooledChannel: GRPCChannel {
       tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
       httpTargetWindowSize: configuration.http2.targetWindowSize,
       httpMaxFrameSize: configuration.http2.maxFrameSize,
+      httpMaxResetStreams: configuration.http2.maxResetStreams,
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )

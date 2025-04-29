@@ -379,6 +379,13 @@ extension Server {
       }
     }
 
+    /// The HTTP/2 max number of reset streams. Defaults to 32. Must be non-negative.
+    public var httpMaxResetStreams: Int = 32 {
+      willSet {
+        precondition(newValue >= 0, "httpMaxResetStreams must be non-negative")
+      }
+    }
+
     /// The root server logger. Accepted connections will branch from this logger and RPCs on
     /// each connection will use a logger branched from the connections logger. This logger is made
     /// available to service providers via `context`. Defaults to a no-op logger.

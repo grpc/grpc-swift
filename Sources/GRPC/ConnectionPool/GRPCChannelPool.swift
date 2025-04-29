@@ -261,6 +261,13 @@ extension GRPCChannelPool.Configuration {
         self.maxFrameSize = self.maxFrameSize.clamped(to: Self.allowedMaxFrameSizes)
       }
     }
+
+    /// The HTTP/2 max number of reset streams. Defaults to 32. Must be non-negative.
+    public var maxResetStreams: Int = 32 {
+      willSet {
+        precondition(newValue >= 0, "maxResetStreams must be non-negative")
+      }
+    }
   }
 }
 
