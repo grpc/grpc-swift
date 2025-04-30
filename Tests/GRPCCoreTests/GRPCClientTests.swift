@@ -431,7 +431,7 @@ struct ClientTests {
         deserializer: IdentityDeserializer(),
         options: .defaults
       ) { response in
-        let message = try #require(try response.message)
+        let message = try response.message
         #expect(message == Array("hello".utf8))
       }
 
@@ -449,7 +449,7 @@ struct ClientTests {
         deserializer: IdentityDeserializer(),
         options: .defaults
       ) { response in
-        let message = try #require(try response.message)
+        let message = try response.message
         #expect(message == Array("Hello, Swift!".utf8))
       }
 
@@ -494,7 +494,7 @@ struct ClientTests {
         deserializer: IdentityDeserializer(),
         options: .defaults
       ) { response in
-        let message = try #require(try response.message)
+        let message = try response.message
         #expect(message == Array("hello".utf8))
       }
 
@@ -512,7 +512,7 @@ struct ClientTests {
         deserializer: IdentityDeserializer(),
         options: .defaults
       ) { response in
-        let message = try #require(try response.message)
+        let message = try response.message
         #expect(message == Array("hello".utf8))
       }
 
