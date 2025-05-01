@@ -43,6 +43,7 @@ struct MethodConfigCodingTests {
         (MethodConfig.Name(service: "", method: ""), #"{"method":"","service":""}"#),
       ] as [(MethodConfig.Name, String)]
     )
+    @available(gRPCSwift 2.0, *)
     func methodConfigName(name: MethodConfig.Name, expected: String) throws {
       let json = try self.encodeToJSON(name)
       #expect(json == expected)
@@ -56,6 +57,7 @@ struct MethodConfigCodingTests {
         (.milliseconds(100_123), #""100.123s""#),
       ] as [(Duration, String)]
     )
+    @available(gRPCSwift 2.0, *)
     func protobufDuration(duration: Duration, expected: String) throws {
       let json = try self.encodeToJSON(GoogleProtobufDuration(duration: duration))
       #expect(json == expected)
@@ -83,12 +85,14 @@ struct MethodConfigCodingTests {
         (.unauthenticated, #""UNAUTHENTICATED""#),
       ] as [(Status.Code, String)]
     )
+    @available(gRPCSwift 2.0, *)
     func rpcCode(code: Status.Code, expected: String) throws {
       let json = try self.encodeToJSON(GoogleRPCCode(code: code))
       #expect(json == expected)
     }
 
     @Test("RetryPolicy")
+    @available(gRPCSwift 2.0, *)
     func retryPolicy() throws {
       let policy = RetryPolicy(
         maxAttempts: 3,
@@ -105,6 +109,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("HedgingPolicy")
+    @available(gRPCSwift 2.0, *)
     func hedgingPolicy() throws {
       let policy = HedgingPolicy(
         maxAttempts: 3,
@@ -174,6 +179,7 @@ struct MethodConfigCodingTests {
         ("method_config.name.empty", MethodConfig.Name(service: "", method: "")),
       ] as [(String, MethodConfig.Name)]
     )
+    @available(gRPCSwift 2.0, *)
     func name(_ fileName: String, expected: MethodConfig.Name) throws {
       let decoded = try self.decodeFromFile(fileName, as: MethodConfig.Name.self)
       #expect(decoded == expected)
@@ -190,6 +196,7 @@ struct MethodConfigCodingTests {
         ("100.123s", .milliseconds(100_123)),
       ] as [(String, Duration)]
     )
+    @available(gRPCSwift 2.0, *)
     func googleProtobufDuration(duration: String, expectedDuration: Duration) throws {
       let json = "\"\(duration)\""
       let decoded = try self.decodeFromJSONString(json, as: GoogleProtobufDuration.self)
@@ -206,6 +213,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("Invalid GoogleProtobufDuration", arguments: ["1", "1ss", "1S", "1.0S"])
+    @available(gRPCSwift 2.0, *)
     func googleProtobufDuration(invalidDuration: String) throws {
       let json = "\"\(invalidDuration)\""
       #expect {
@@ -217,6 +225,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("GoogleRPCCode from case name", arguments: zip(Self.codeNames, Status.Code.all))
+    @available(gRPCSwift 2.0, *)
     func rpcCode(name: String, expected: Status.Code) throws {
       let json = "\"\(name)\""
       let decoded = try self.decodeFromJSONString(json, as: GoogleRPCCode.self)
@@ -224,6 +233,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("GoogleRPCCode from rawValue", arguments: zip(0 ... 16, Status.Code.all))
+    @available(gRPCSwift 2.0, *)
     func rpcCode(rawValue: Int, expected: Status.Code) throws {
       let json = "\(rawValue)"
       let decoded = try self.decodeFromJSONString(json, as: GoogleRPCCode.self)
@@ -231,6 +241,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("RetryPolicy")
+    @available(gRPCSwift 2.0, *)
     func retryPolicy() throws {
       let decoded = try self.decodeFromFile("method_config.retry_policy", as: RetryPolicy.self)
       let expected = RetryPolicy(
@@ -253,6 +264,7 @@ struct MethodConfigCodingTests {
         "method_config.retry_policy.invalid.retryable_status_codes",
       ]
     )
+    @available(gRPCSwift 2.0, *)
     func invalidRetryPolicy(fileName: String) throws {
       #expect(throws: RuntimeError.self) {
         try self.decodeFromFile(fileName, as: RetryPolicy.self)
@@ -260,6 +272,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("HedgingPolicy")
+    @available(gRPCSwift 2.0, *)
     func hedgingPolicy() throws {
       let decoded = try self.decodeFromFile("method_config.hedging_policy", as: HedgingPolicy.self)
       let expected = HedgingPolicy(
@@ -276,6 +289,7 @@ struct MethodConfigCodingTests {
         "method_config.hedging_policy.invalid.max_attempts"
       ]
     )
+    @available(gRPCSwift 2.0, *)
     func invalidHedgingPolicy(fileName: String) throws {
       #expect(throws: RuntimeError.self) {
         try self.decodeFromFile(fileName, as: HedgingPolicy.self)
@@ -283,6 +297,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("MethodConfig")
+    @available(gRPCSwift 2.0, *)
     func methodConfig() throws {
       let expected = MethodConfig(
         names: [
@@ -302,6 +317,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("MethodConfig with hedging")
+    @available(gRPCSwift 2.0, *)
     func methodConfigWithHedging() throws {
       let expected = MethodConfig(
         names: [
@@ -328,6 +344,7 @@ struct MethodConfigCodingTests {
     }
 
     @Test("MethodConfig with retries")
+    @available(gRPCSwift 2.0, *)
     func methodConfigWithRetries() throws {
       let expected = MethodConfig(
         names: [
@@ -406,6 +423,7 @@ struct MethodConfigCodingTests {
         "method_config.with_hedging",
       ]
     )
+    @available(gRPCSwift 2.0, *)
     func roundTripCodingAndDecoding(fileName: String) throws {
       try self.roundTrip(type: MethodConfig.self, fileName: fileName)
     }

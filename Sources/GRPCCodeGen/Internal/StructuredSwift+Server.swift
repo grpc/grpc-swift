@@ -48,6 +48,7 @@ extension FunctionSignatureDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ProtocolDescription {
   /// ```
   /// protocol <Name>: GRPCCore.RegistrableRPCService {
@@ -101,6 +102,7 @@ extension ProtocolDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ExtensionDescription {
   /// ```
   /// extension <ExtensionName> {
@@ -136,6 +138,7 @@ extension ExtensionDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ProtocolDescription {
   /// ```
   /// protocol <Name>: <StreamingProtocol> {
@@ -304,6 +307,7 @@ extension FunctionCallDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension FunctionDescription {
   /// ```
   /// func registerMethods(with router: inout GRPCCore.RPCRouter) {
@@ -451,6 +455,7 @@ extension FunctionDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ExtensionDescription {
   /// ```
   /// extension <ExtensionName> {
@@ -548,6 +553,7 @@ extension FunctionSignatureDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ProtocolDescription {
   /// ```
   /// protocol SimpleServiceProtocol: <ServiceProtocol> {
@@ -763,6 +769,7 @@ extension FunctionDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ExtensionDescription {
   /// ```
   /// extension ServiceProtocol {

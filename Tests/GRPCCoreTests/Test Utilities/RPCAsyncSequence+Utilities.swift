@@ -15,6 +15,7 @@
  */
 import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 extension RPCAsyncSequence where Failure == any Error {
   static func elements(_ elements: Element...) -> Self {
     return .elements(elements)

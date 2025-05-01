@@ -17,6 +17,7 @@
 /// Configuration values for executing an RPC.
 ///
 /// See also: https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto
+@available(gRPCSwift 2.0, *)
 public struct MethodConfig: Hashable, Sendable {
   /// The name of a method to which the method config applies.
   public struct Name: Sendable, Hashable {
@@ -145,6 +146,7 @@ public struct MethodConfig: Hashable, Sendable {
 }
 
 /// Whether an RPC should be retried or hedged.
+@available(gRPCSwift 2.0, *)
 public struct RPCExecutionPolicy: Hashable, Sendable {
   @usableFromInline
   enum Wrapped: Hashable, Sendable {
@@ -214,6 +216,7 @@ public struct RPCExecutionPolicy: Hashable, Sendable {
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A6-client-retries.md).
+@available(gRPCSwift 2.0, *)
 public struct RetryPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -331,6 +334,7 @@ public struct RetryPolicy: Hashable, Sendable {
 ///
 /// For more information see [gRFC A6 Client
 /// Retries](https://github.com/grpc/proposal/blob/0e1807a6e30a1a915c0dcadc873bca92b9fa9720/A6-client-retries.md).
+@available(gRPCSwift 2.0, *)
 public struct HedgingPolicy: Hashable, Sendable {
   /// The maximum number of RPC attempts, including the original attempt.
   ///
@@ -384,6 +388,7 @@ public struct HedgingPolicy: Hashable, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 private func validateMaxAttempts(_ value: Int) throws -> Int {
   guard value > 1 else {
     throw RuntimeError(
@@ -395,6 +400,7 @@ private func validateMaxAttempts(_ value: Int) throws -> Int {
   return min(value, 5)
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case name
@@ -453,6 +459,7 @@ extension MethodConfig: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodConfig.Name: Codable {
   private enum CodingKeys: String, CodingKey {
     case service
@@ -478,6 +485,7 @@ extension MethodConfig.Name: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RetryPolicy: Codable {
   private enum CodingKeys: String, CodingKey {
     case maxAttempts
@@ -525,6 +533,7 @@ extension RetryPolicy: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension HedgingPolicy: Codable {
   private enum CodingKeys: String, CodingKey {
     case maxAttempts
@@ -556,6 +565,7 @@ extension HedgingPolicy: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct GoogleProtobufDuration: Codable {
   var duration: Duration
 
@@ -593,6 +603,7 @@ struct GoogleProtobufDuration: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct GoogleRPCCode: Codable {
   var code: Status.Code
 
@@ -625,6 +636,7 @@ struct GoogleRPCCode: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status.Code {
   fileprivate init?(googleRPCCode code: String) {
     switch code {

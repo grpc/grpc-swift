@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 internal final class AsyncSequenceOfOneTests: XCTestCase {
   func testSuccessPath() async throws {
     let sequence = RPCAsyncSequence<String, any Error>.one("foo")

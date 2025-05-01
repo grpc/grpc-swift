@@ -22,6 +22,7 @@
 ///
 /// Serializers are used frequently and implementations should take care to ensure that
 /// serialization is as cheap as possible.
+@available(gRPCSwift 2.0, *)
 public protocol MessageSerializer<Message>: Sendable {
   /// The type of message this serializer can serialize.
   associatedtype Message
@@ -41,6 +42,7 @@ public protocol MessageSerializer<Message>: Sendable {
 ///
 /// Deserializers are used frequently and implementations should take care to ensure that
 /// deserialization is as cheap as possible.
+@available(gRPCSwift 2.0, *)
 public protocol MessageDeserializer<Message>: Sendable {
   /// The type of message this deserializer can deserialize.
   associatedtype Message

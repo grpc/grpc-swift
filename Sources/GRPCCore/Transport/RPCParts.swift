@@ -15,6 +15,7 @@
  */
 
 /// Part of a request sent from a client to a server in a stream.
+@available(gRPCSwift 2.0, *)
 public enum RPCRequestPart<Bytes: GRPCContiguousBytes> {
   /// Key-value pairs sent at the start of a request stream. Only one ``metadata(_:)`` value may
   /// be sent to the server.
@@ -26,11 +27,15 @@ public enum RPCRequestPart<Bytes: GRPCContiguousBytes> {
   case message(Bytes)
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCRequestPart: Sendable where Bytes: Sendable {}
+@available(gRPCSwift 2.0, *)
 extension RPCRequestPart: Hashable where Bytes: Hashable {}
+@available(gRPCSwift 2.0, *)
 extension RPCRequestPart: Equatable where Bytes: Equatable {}
 
 /// Part of a response sent from a server to a client in a stream.
+@available(gRPCSwift 2.0, *)
 public enum RPCResponsePart<Bytes: GRPCContiguousBytes> {
   /// Key-value pairs sent at the start of the response stream. At most one ``metadata(_:)`` value
   /// may be sent to the client. If the server sends ``metadata(_:)`` it must be the first part in
@@ -48,6 +53,9 @@ public enum RPCResponsePart<Bytes: GRPCContiguousBytes> {
   case status(Status, Metadata)
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCResponsePart: Sendable where Bytes: Sendable {}
+@available(gRPCSwift 2.0, *)
 extension RPCResponsePart: Hashable where Bytes: Hashable {}
+@available(gRPCSwift 2.0, *)
 extension RPCResponsePart: Equatable where Bytes: Equatable {}

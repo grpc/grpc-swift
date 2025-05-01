@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 struct ServerRPCExecutor {
   /// Executes an RPC using the provided handler.
@@ -290,6 +291,7 @@ struct ServerRPCExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServerRPCExecutor {
   @inlinable
   static func _intercept<Input, Output>(

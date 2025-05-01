@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class BroadcastAsyncSequenceTests: XCTestCase {
   func testSingleSubscriberToEmptyStream() async throws {
     let (stream, source) = BroadcastAsyncSequence.makeStream(of: Int.self, bufferSize: 16)

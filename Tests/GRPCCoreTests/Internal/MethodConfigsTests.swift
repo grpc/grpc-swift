@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class MethodConfigsTests: XCTestCase {
   func testGetConfigurationForKnownMethod() async throws {
     let policy = HedgingPolicy(

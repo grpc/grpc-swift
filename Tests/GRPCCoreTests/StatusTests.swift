@@ -22,6 +22,7 @@ struct StatusTests {
   @Suite("Code")
   struct Code {
     @Test("rawValue", arguments: zip(Status.Code.all, 0 ... 16))
+    @available(gRPCSwift 2.0, *)
     func rawValueOfStatusCodes(code: Status.Code, expected: Int) {
       #expect(code.rawValue == expected)
     }
@@ -33,28 +34,33 @@ struct StatusTests {
         Status.Code.all.dropFirst()  // Drop '.ok', there is no '.ok' error code.
       )
     )
+    @available(gRPCSwift 2.0, *)
     func initFromRPCErrorCode(errorCode: RPCError.Code, expected: Status.Code) {
       #expect(Status.Code(errorCode) == expected)
     }
 
     @Test("Initialize from rawValue", arguments: zip(0 ... 16, Status.Code.all))
+    @available(gRPCSwift 2.0, *)
     func initFromRawValue(rawValue: Int, expected: Status.Code) {
       #expect(Status.Code(rawValue: rawValue) == expected)
     }
 
     @Test("Initialize from invalid rawValue", arguments: [-1, 17, 100, .max])
+    @available(gRPCSwift 2.0, *)
     func initFromInvalidRawValue(rawValue: Int) {
       #expect(Status.Code(rawValue: rawValue) == nil)
     }
   }
 
   @Test("CustomStringConvertible conformance")
+  @available(gRPCSwift 2.0, *)
   func customStringConvertible() {
     #expect("\(Status(code: .ok, message: ""))" == #"ok: """#)
     #expect("\(Status(code: .dataLoss, message: "oh no"))" == #"dataLoss: "oh no""#)
   }
 
   @Test("Equatable conformance")
+  @available(gRPCSwift 2.0, *)
   func equatable() {
     let ok = Status(code: .ok, message: "")
     let okWithMessage = Status(code: .ok, message: "message")
@@ -66,6 +72,7 @@ struct StatusTests {
   }
 
   @Test("Fits in existential container")
+  @available(gRPCSwift 2.0, *)
   func fitsInExistentialContainer() {
     #expect(MemoryLayout<Status>.size <= 24)
   }
@@ -84,6 +91,7 @@ struct StatusTests {
       (418, Status(code: .unknown, message: "HTTP 418")),
     ]
   )
+  @available(gRPCSwift 2.0, *)
   func convertFromHTTPStatusCode(code: Int, expected: Status) {
     let status = Status(httpStatusCode: code)
     #expect(status == expected)

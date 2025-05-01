@@ -26,6 +26,7 @@ extension StructuredSwiftTests {
       arguments: AccessModifier.allCases,
       RPCKind.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func serverMethodSignature(access: AccessModifier, kind: RPCKind) {
       let decl: FunctionSignatureDescription = .serverMethod(
         accessLevel: access,
@@ -73,6 +74,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("protocol StreamingServiceProtocol { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func serverStreamingServiceProtocol(access: AccessModifier) {
       let decl: ProtocolDescription = .streamingService(
         accessLevel: access,
@@ -115,6 +117,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("protocol ServiceProtocol { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func serverServiceProtocol(access: AccessModifier) {
       let decl: ProtocolDescription = .service(
         accessLevel: access,
@@ -158,6 +161,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("{ router, context in try await self.<Method>(...) }")
+    @available(gRPCSwift 2.0, *)
     func routerHandlerInvokingRPC() {
       let expression: ClosureInvocationDescription = .routerHandlerInvokingRPC(method: "foo")
       let expected = """
@@ -172,6 +176,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("router.registerHandler(...) { ... }")
+    @available(gRPCSwift 2.0, *)
     func registerMethodsWithRouter() {
       let expression: FunctionCallDescription = .registerWithRouter(
         serviceNamespace: "FooService",
@@ -199,6 +204,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("func registerMethods(router:)", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func registerMethods(access: AccessModifier) {
       let expression: FunctionDescription = .registerMethods(
         accessLevel: access,
@@ -243,6 +249,7 @@ extension StructuredSwiftTests {
       arguments: AccessModifier.allCases,
       RPCKind.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func serverStreamingMethodsCallingMethod(access: AccessModifier, kind: RPCKind) {
       let expression: FunctionDescription = .serverStreamingMethodsCallingMethod(
         accessLevel: access,
@@ -314,6 +321,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("extension FooService_ServiceProtocol { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func streamingServiceProtocolDefaultImplementation(access: AccessModifier) {
       let decl: ExtensionDescription = .streamingServiceProtocolDefaultImplementation(
         accessModifier: access,
@@ -362,6 +370,7 @@ extension StructuredSwiftTests {
       arguments: AccessModifier.allCases,
       RPCKind.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func simpleServerMethod(access: AccessModifier, kind: RPCKind) {
       let decl: FunctionSignatureDescription = .simpleServerMethod(
         accessLevel: access,
@@ -413,6 +422,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("protocol SimpleServiceProtocol { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func simpleServiceProtocol(access: AccessModifier) {
       let decl: ProtocolDescription = .simpleServiceProtocol(
         accessModifier: access,

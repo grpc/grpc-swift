@@ -111,6 +111,7 @@ extension TextBasedRenderer: Sendable {}
 
 /// A renderer that uses string interpolation and concatenation
 /// to convert the provided structure code into raw string form.
+@available(gRPCSwift 2.0, *)
 struct TextBasedRenderer: RendererProtocol {
 
   func render(
@@ -1207,6 +1208,7 @@ extension String {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension TextBasedRenderer {
 
   /// Returns the provided expression rendered as a string.

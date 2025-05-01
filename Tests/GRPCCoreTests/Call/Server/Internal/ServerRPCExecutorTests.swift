@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class ServerRPCExecutorTests: XCTestCase {
   func testEchoNoMessages() async throws {
     let harness = ServerRPCExecutorTestHarness()

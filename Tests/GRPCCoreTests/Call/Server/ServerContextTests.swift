@@ -22,6 +22,7 @@ struct ServerContextTests {
   @Suite("CancellationHandle")
   struct CancellationHandle {
     @Test("Is cancelled")
+    @available(gRPCSwift 2.0, *)
     func isCancelled() async throws {
       await withServerContextRPCCancellationHandle { handle in
         #expect(!handle.isCancelled)
@@ -31,6 +32,7 @@ struct ServerContextTests {
     }
 
     @Test("Wait for cancellation")
+    @available(gRPCSwift 2.0, *)
     func waitForCancellation() async throws {
       await withServerContextRPCCancellationHandle { handle in
         await withTaskGroup(of: Void.self) { group in
@@ -44,6 +46,7 @@ struct ServerContextTests {
     }
 
     @Test("Binds task local")
+    @available(gRPCSwift 2.0, *)
     func bindsTaskLocal() async throws {
       await withServerContextRPCCancellationHandle { handle in
         let signal = AsyncStream.makeStream(of: Void.self)

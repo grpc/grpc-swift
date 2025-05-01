@@ -16,6 +16,7 @@
 
 public import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 public struct InProcessTransport: Sendable {
   public let server: Self.Server
   public let client: Self.Client

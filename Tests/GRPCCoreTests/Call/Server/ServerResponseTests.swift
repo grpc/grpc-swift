@@ -20,6 +20,7 @@ import Testing
 @Suite("ServerResponse")
 struct ServerResponseTests {
   @Test("ServerResponse(message:metadata:trailingMetadata:)")
+  @available(gRPCSwift 2.0, *)
   func responseInitSuccess() throws {
     let response = ServerResponse(
       message: "message",
@@ -34,6 +35,7 @@ struct ServerResponseTests {
   }
 
   @Test("ServerResponse(of:error:)")
+  @available(gRPCSwift 2.0, *)
   func responseInitError() throws {
     let error = RPCError(code: .aborted, message: "Aborted")
     let response = ServerResponse(of: String.self, error: error)
@@ -46,6 +48,7 @@ struct ServerResponseTests {
   }
 
   @Test("StreamingServerResponse(of:metadata:producer:)")
+  @available(gRPCSwift 2.0, *)
   func streamingResponseInitSuccess() async throws {
     let response = StreamingServerResponse(
       of: String.self,
@@ -62,6 +65,7 @@ struct ServerResponseTests {
   }
 
   @Test("StreamingServerResponse(of:error:)")
+  @available(gRPCSwift 2.0, *)
   func streamingResponseInitError() async throws {
     let error = RPCError(code: .aborted, message: "Aborted")
     let response = StreamingServerResponse(of: String.self, error: error)
@@ -74,6 +78,7 @@ struct ServerResponseTests {
   }
 
   @Test("StreamingServerResponse(single:) (accepted)")
+  @available(gRPCSwift 2.0, *)
   func singleToStreamConversionForSuccessfulResponse() async throws {
     let single = ServerResponse(
       message: "foo",
@@ -100,6 +105,7 @@ struct ServerResponseTests {
   }
 
   @Test("StreamingServerResponse(single:) (rejected)")
+  @available(gRPCSwift 2.0, *)
   func singleToStreamConversionForFailedResponse() async throws {
     let error = RPCError(code: .aborted, message: "aborted")
     let single = ServerResponse(of: String.self, error: error)
@@ -114,6 +120,7 @@ struct ServerResponseTests {
   }
 
   @Test("Mutate metadata on response", arguments: [true, false])
+  @available(gRPCSwift 2.0, *)
   func mutateMetadataOnResponse(accepted: Bool) {
     var response: ServerResponse<String>
     if accepted {
@@ -127,6 +134,7 @@ struct ServerResponseTests {
   }
 
   @Test("Mutate metadata on streaming response", arguments: [true, false])
+  @available(gRPCSwift 2.0, *)
   func mutateMetadataOnStreamingResponse(accepted: Bool) {
     var response: StreamingServerResponse<String>
     if accepted {

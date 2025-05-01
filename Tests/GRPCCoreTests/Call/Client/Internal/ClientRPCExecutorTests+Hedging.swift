@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutorTests {
   func testHedgingWhenAllAttemptsResultInNonFatalCodes() async throws {
     let harness = ClientRPCExecutorTestHarness(
@@ -185,6 +186,7 @@ extension ClientRPCExecutorTests {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CallOptions {
   fileprivate static func hedge(
     maxAttempts: Int = 5,

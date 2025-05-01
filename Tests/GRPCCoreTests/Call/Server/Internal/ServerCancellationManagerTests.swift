@@ -20,12 +20,14 @@ import Testing
 @Suite
 struct ServerCancellationManagerTests {
   @Test("Isn't cancelled after init")
+  @available(gRPCSwift 2.0, *)
   func isNotCancelled() {
     let manager = ServerCancellationManager()
     #expect(!manager.isRPCCancelled)
   }
 
   @Test("Is cancelled")
+  @available(gRPCSwift 2.0, *)
   func isCancelled() {
     let manager = ServerCancellationManager()
     manager.cancelRPC()
@@ -33,6 +35,7 @@ struct ServerCancellationManagerTests {
   }
 
   @Test("Cancellation handler runs")
+  @available(gRPCSwift 2.0, *)
   func addCancellationHandler() async throws {
     let manager = ServerCancellationManager()
     let signal = AsyncStream.makeStream(of: Void.self)
@@ -48,6 +51,7 @@ struct ServerCancellationManagerTests {
   }
 
   @Test("Cancellation handler runs immediately when already cancelled")
+  @available(gRPCSwift 2.0, *)
   func addCancellationHandlerAfterCancelled() async throws {
     let manager = ServerCancellationManager()
     let signal = AsyncStream.makeStream(of: Void.self)
@@ -63,6 +67,7 @@ struct ServerCancellationManagerTests {
   }
 
   @Test("Remove cancellation handler")
+  @available(gRPCSwift 2.0, *)
   func removeCancellationHandler() async throws {
     let manager = ServerCancellationManager()
 
@@ -76,6 +81,7 @@ struct ServerCancellationManagerTests {
   }
 
   @Test("Wait for cancellation")
+  @available(gRPCSwift 2.0, *)
   func waitForCancellation() async throws {
     let manager = ServerCancellationManager()
     try await withThrowingTaskGroup(of: Void.self) { group in

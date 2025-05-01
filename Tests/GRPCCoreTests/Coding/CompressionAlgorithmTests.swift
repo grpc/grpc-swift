@@ -17,6 +17,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class CompressionAlgorithmTests: XCTestCase {
   func testCompressionAlgorithmSetContains() {
     var algorithms = CompressionAlgorithmSet()

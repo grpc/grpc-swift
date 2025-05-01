@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import CompilerPluginSupport
 import PackageDescription
 
 let products: [Product] = [
@@ -45,12 +46,28 @@ let dependencies: [Package.Dependency] = [
   ),
 ]
 
-let defaultSwiftSettings: [SwiftSetting] = [
-  .swiftLanguageMode(.v6),
-  .enableUpcomingFeature("ExistentialAny"),
-  .enableUpcomingFeature("InternalImportsByDefault"),
-  .enableUpcomingFeature("MemberImportVisibility"),
-]
+// -------------------------------------------------------------------------------------------------
+
+// This adds some build settings which allow us to map "@available(gRPCSwift 2.x, *)" to
+// the appropriate OS platforms.
+let nextMinorVersion = 2
+let availabilitySettings: [SwiftSetting] = (0 ... nextMinorVersion).map { minor in
+  let name = "gRPCSwift"
+  let version = "2.\(minor)"
+  let platforms = "macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0"
+  let setting = "AvailabilityMacro=\(name) \(version):\(platforms)"
+  return .enableExperimentalFeature(setting)
+}
+
+let defaultSwiftSettings: [SwiftSetting] =
+  availabilitySettings + [
+    .swiftLanguageMode(.v6),
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("InternalImportsByDefault"),
+    .enableUpcomingFeature("MemberImportVisibility"),
+  ]
+
+// -------------------------------------------------------------------------------------------------
 
 let targets: [Target] = [
   // Runtime serialization components
@@ -107,13 +124,6 @@ let targets: [Target] = [
 
 let package = Package(
   name: "grpc-swift",
-  platforms: [
-    .macOS(.v15),
-    .iOS(.v18),
-    .tvOS(.v18),
-    .watchOS(.v11),
-    .visionOS(.v2),
-  ],
   products: products,
   dependencies: dependencies,
   targets: targets

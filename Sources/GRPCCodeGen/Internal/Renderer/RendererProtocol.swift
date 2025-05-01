@@ -31,6 +31,7 @@
 /// into Swift files.
 ///
 /// Rendering is the last phase of the generator pipeline.
+@available(gRPCSwift 2.0, *)
 protocol RendererProtocol {
 
   /// Renders the specified structured code into a raw Swift file.

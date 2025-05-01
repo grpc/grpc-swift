@@ -194,6 +194,7 @@ extension FunctionDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ProtocolDescription {
   /// ```
   /// protocol <Name>: Sendable {
@@ -233,6 +234,7 @@ extension ProtocolDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ExtensionDescription {
   /// ```
   /// extension <Name> {
@@ -503,6 +505,7 @@ extension FunctionDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ExtensionDescription {
   /// ```
   /// extension <Name> {
@@ -662,6 +665,7 @@ extension FunctionDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension StructDescription {
   /// ```
   /// struct <Name><Transport>: <ClientProtocol> where Transport: GRPCCore.ClientTransport {
@@ -752,6 +756,7 @@ extension StructDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 private func docs(
   for method: MethodDescriptor,
   serializers includeSerializers: Bool = true
@@ -793,6 +798,7 @@ private func docs(
   return Docs.interposeDocs(method.documentation, between: summary, and: allParameters)
 }
 
+@available(gRPCSwift 2.0, *)
 private func explodedDocs(for method: MethodDescriptor) -> String {
   let summary = "/// Call the \"\(method.name.identifyingName)\" method."
   var parameters = """

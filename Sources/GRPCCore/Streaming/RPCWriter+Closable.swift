@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension RPCWriter {
   public struct Closable: ClosableRPCWriterProtocol {
     @usableFromInline

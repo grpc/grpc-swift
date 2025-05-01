@@ -19,6 +19,7 @@ import GRPCInProcessTransport
 import Testing
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class GRPCClientTests: XCTestCase {
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
@@ -398,6 +399,7 @@ final class GRPCClientTests: XCTestCase {
 @Suite("GRPC Client Tests")
 struct ClientTests {
   @Test("Interceptors are applied only to specified services")
+  @available(gRPCSwift 2.0, *)
   func testInterceptorsAreAppliedToSpecifiedServices() async throws {
     let onlyBinaryEchoCounter = AtomicCounter()
     let allServicesCounter = AtomicCounter()
@@ -461,6 +463,7 @@ struct ClientTests {
   }
 
   @Test("Interceptors are applied only to specified methods")
+  @available(gRPCSwift 2.0, *)
   func testInterceptorsAreAppliedToSpecifiedMethods() async throws {
     let onlyBinaryEchoGetCounter = AtomicCounter()
     let onlyBinaryEchoCollectCounter = AtomicCounter()
@@ -523,6 +526,7 @@ struct ClientTests {
     }
   }
 
+  @available(gRPCSwift 2.0, *)
   func withInProcessConnectedClient(
     services: [any RegistrableRPCService],
     interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>] = [],

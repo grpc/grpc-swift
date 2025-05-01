@@ -20,6 +20,7 @@ import XCTest
 
 @testable import GRPCCodeGen
 
+@available(gRPCSwift 2.0, *)
 final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
   func testGeneration() throws {
     var dependencies = [Dependency]()

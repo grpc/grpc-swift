@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension RPCAsyncSequence {
   /// Returns an ``RPCAsyncSequence`` containing just the given element.
   @inlinable
@@ -32,6 +33,7 @@ extension RPCAsyncSequence {
 
 /// An `AsyncSequence` of a single value.
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct AsyncSequenceOfOne<Element: Sendable, Failure: Error>: AsyncSequence, Sendable {
   @usableFromInline
   let result: Result<Element, Failure>
