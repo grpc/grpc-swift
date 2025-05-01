@@ -16,6 +16,10 @@
 
 /// Additional information about an RPC handled by a server.
 public struct ServerContext: Sendable {
+
+  /// Protocol used to help identify transport specific context fields
+  public protocol TransportSpecific: Sendable {}
+
   /// A description of the method being called.
   public var descriptor: MethodDescriptor
 
@@ -52,7 +56,7 @@ public struct ServerContext: Sendable {
   ///
   /// An example of what this field can be used for, would be to store
   /// things like a peer certificate from a mTLS connection
-  public var transportSpecific: (any Sendable)?
+  public var transportSpecific: (any TransportSpecific)?
 
   /// A handle for checking the cancellation status of an RPC.
   public var cancellation: RPCCancellationHandle
