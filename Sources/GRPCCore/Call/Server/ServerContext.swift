@@ -51,7 +51,7 @@ public struct ServerContext: Sendable {
   /// value this field will contain, if any.
   ///
   /// An example of what this field can be used for, would be to store
-  /// things like a peerCertificate from a mTLS connection
+  /// things like a peer certificate from a mTLS connection
   public var transportSpecific: (any Sendable)?
 
   /// A handle for checking the cancellation status of an RPC.
