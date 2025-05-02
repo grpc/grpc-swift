@@ -27,7 +27,7 @@ struct ServerResponseTests {
       trailingMetadata: ["metadata": "trailing"]
     )
 
-    let contents = try #require(try response.accepted.get())
+    let contents = try response.accepted.get()
     #expect(contents.message == "message")
     #expect(contents.metadata == ["metadata": "initial"])
     #expect(contents.trailingMetadata == ["metadata": "trailing"])
@@ -55,7 +55,7 @@ struct ServerResponseTests {
       return ["metadata": "trailing"]
     }
 
-    let contents = try #require(try response.accepted.get())
+    let contents = try response.accepted.get()
     #expect(contents.metadata == ["metadata": "initial"])
     let trailingMetadata = try await contents.producer(.failTestOnWrite())
     #expect(trailingMetadata == ["metadata": "trailing"])
