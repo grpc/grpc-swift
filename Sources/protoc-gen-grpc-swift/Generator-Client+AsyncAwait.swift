@@ -95,13 +95,13 @@ extension Generator {
         self.method = method
 
         let rpcType = streamingType(self.method)
-        printRpcFunctionImplementation(rpcType: rpcType)
-        printRpcFunctionWrapper(rpcType: rpcType)
+        printRPCFunctionImplementation(rpcType: rpcType)
+        printRPCFunctionWrapper(rpcType: rpcType)
       }
     }
   }
 
-  private func printRpcFunctionImplementation(rpcType: StreamingType) {
+  private func printRPCFunctionImplementation(rpcType: StreamingType) {
     let argumentsBuilder: (() -> Void)?
     switch rpcType {
     case .unary, .serverStreaming:
@@ -112,7 +112,7 @@ extension Generator {
       argumentsBuilder = nil
     }
     let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
-    printRpcFunction(rpcType: rpcType, name: self.methodMakeFunctionCallName) {
+    printRPCFunction(rpcType: rpcType, name: self.methodMakeFunctionCallName) {
       self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
         self.println("path: \(self.methodPathUsingClientMetadata),")
         argumentsBuilder?()
@@ -124,7 +124,7 @@ extension Generator {
     }
   }
 
-  private func printRpcFunctionWrapper(rpcType: StreamingType) {
+  private func printRPCFunctionWrapper(rpcType: StreamingType) {
     let functionName = methodMakeFunctionCallName
     let functionWrapperName = methodMakeFunctionCallWrapperName
     guard functionName != functionWrapperName else { return }
@@ -139,7 +139,7 @@ extension Generator {
     default:
       argumentsBuilder = nil
     }
-    printRpcFunction(rpcType: rpcType, name: functionWrapperName) {
+    printRPCFunction(rpcType: rpcType, name: functionWrapperName) {
       self.withIndentation("return self.\(functionName)", braces: .round) {
         argumentsBuilder?()
         self.println("callOptions: callOptions")
@@ -147,7 +147,7 @@ extension Generator {
     }
   }
 
-  private func printRpcFunction(rpcType: StreamingType, name: String, bodyBuilder: (() -> Void)?) {
+  private func printRPCFunction(rpcType: StreamingType, name: String, bodyBuilder: (() -> Void)?) {
     let callType = Types.call(for: rpcType)
     self.printFunction(
       name: name,
