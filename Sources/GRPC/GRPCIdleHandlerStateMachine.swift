@@ -465,6 +465,13 @@ struct GRPCIdleHandlerStateMachine {
     return operations
   }
 
+  /// The connection has reached it's max allowable age. Let existing RPCs continue, but don't
+  /// allow any new ones.
+  mutating func reachedMaxAge() -> Operations {
+    // Treat this as if the other side sent us a GOAWAY: gently shutdown the connection.
+    self.receiveGoAway()
+  }
+
   /// We've received a GOAWAY frame from the remote peer. Either the remote peer wants to close the
   /// connection or they're responding to us shutting down the connection.
   mutating func receiveGoAway() -> Operations {

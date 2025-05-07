@@ -1299,6 +1299,7 @@ extension ChannelController: ConnectionManagerChannelProvider {
       connectionManager: connectionManager,
       multiplexer: multiplexer,
       idleTimeout: .minutes(5),
+      maxAge: nil,
       keepalive: ClientConnectionKeepalive(),
       logger: logger
     )

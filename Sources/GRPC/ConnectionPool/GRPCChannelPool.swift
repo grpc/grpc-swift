@@ -156,6 +156,14 @@ extension GRPCChannelPool {
     /// If a connection becomes idle, starting a new RPC will automatically create a new connection.
     public var idleTimeout = TimeAmount.minutes(30)
 
+    /// The maximum allowed age of a connection.
+    ///
+    /// If set, no new RPCs will be started on the connection after the connection has been opened
+    /// for this period of time. Existing RPCs will be allowed to continue and the connection will
+    /// close once all RPCs on the connection have finished. If this isn't set then connections have
+    /// no limit on their lifetime.
+    public var maxConnectionAge: TimeAmount? = nil
+
     /// The connection keepalive configuration.
     public var keepalive = ClientConnectionKeepalive()
 

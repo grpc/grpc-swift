@@ -60,6 +60,8 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   internal var connectionKeepalive: ClientConnectionKeepalive
   @usableFromInline
   internal var connectionIdleTimeout: TimeAmount
+  @usableFromInline
+  internal var connectionMaxAge: TimeAmount?
 
   @usableFromInline
   internal var tlsMode: TLSMode
@@ -100,6 +102,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     connectionTarget: ConnectionTarget,
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
+    connectionMaxAge: TimeAmount?,
     tlsMode: TLSMode,
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
@@ -113,6 +116,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       connectionTarget: connectionTarget,
       connectionKeepalive: connectionKeepalive,
       connectionIdleTimeout: connectionIdleTimeout,
+      connectionMaxAge: connectionMaxAge,
       tlsMode: tlsMode,
       tlsConfiguration: tlsConfiguration,
       httpTargetWindowSize: httpTargetWindowSize,
@@ -131,6 +135,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     connectionTarget: ConnectionTarget,
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
+    connectionMaxAge: TimeAmount?,
     tlsMode: TLSMode,
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
@@ -142,6 +147,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     self.connectionTarget = connectionTarget
     self.connectionKeepalive = connectionKeepalive
     self.connectionIdleTimeout = connectionIdleTimeout
+    self.connectionMaxAge = connectionMaxAge
 
     self.tlsMode = tlsMode
     self.tlsConfiguration = tlsConfiguration
@@ -182,6 +188,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       connectionTarget: configuration.target,
       connectionKeepalive: configuration.connectionKeepalive,
       connectionIdleTimeout: configuration.connectionIdleTimeout,
+      connectionMaxAge: configuration.connectionMaxAge,
       tlsMode: tlsMode,
       tlsConfiguration: configuration.tlsConfiguration,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
@@ -264,6 +271,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
             connectionManager: connectionManager,
             connectionKeepalive: self.connectionKeepalive,
             connectionIdleTimeout: self.connectionIdleTimeout,
+            connectionMaxAge: self.connectionMaxAge,
             httpTargetWindowSize: self.httpTargetWindowSize,
             httpMaxFrameSize: self.httpMaxFrameSize,
             httpMaxResetStreams: self.httpMaxResetStreams,
