@@ -19,6 +19,10 @@ import NIOPosix
 
 import struct Foundation.UUID
 
+#if canImport(Network)
+import Network
+#endif
+
 public enum GRPCChannelPool {
   /// Make a new ``GRPCChannel`` on which calls may be made to gRPC services.
   ///
@@ -191,6 +195,12 @@ extension GRPCChannelPool {
         return SwiftLogNoOpLogHandler()
       }
     )
+
+    #if canImport(Network)
+    /// `TransportServices` related configuration. This will be ignored unless an appropriate event loop group
+    /// (e.g. `NIOTSEventLoopGroup`) is used.
+    public var transportServices: TransportServices = .defaults
+    #endif
   }
 }
 
@@ -251,6 +261,13 @@ extension GRPCChannelPool.Configuration {
         self.maxFrameSize = self.maxFrameSize.clamped(to: Self.allowedMaxFrameSizes)
       }
     }
+
+    /// The HTTP/2 max number of reset streams. Defaults to 32. Must be non-negative.
+    public var maxResetStreams: Int = 32 {
+      willSet {
+        precondition(newValue >= 0, "maxResetStreams must be non-negative")
+      }
+    }
   }
 }
 
@@ -298,6 +315,35 @@ extension GRPCChannelPool.Configuration {
     public var reservationLoadThreshold: Double = 0.9
   }
 }
+
+#if canImport(Network)
+extension GRPCChannelPool.Configuration {
+  public struct TransportServices: Sendable {
+    /// Default transport services configuration.
+    public static let defaults = Self()
+
+    @inlinable
+    public static func with(_ configure: (inout Self) -> Void) -> Self {
+      var configuration = Self.defaults
+      configure(&configuration)
+      return configuration
+    }
+
+    /// A closure allowing to customise the `NWParameters` used when establishing a connection using `NIOTransportServices`.
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+      get {
+        self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+      }
+      set {
+        self._nwParametersConfigurator = newValue
+      }
+    }
+
+    private var _nwParametersConfigurator: (any Sendable)?
+  }
+}
+#endif  // canImport(Network)
 
 /// The ID of a connection in the connection pool.
 public struct GRPCConnectionID: Hashable, Sendable, CustomStringConvertible {

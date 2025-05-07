@@ -127,6 +127,20 @@ public final class Server: @unchecked Sendable {
         _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
       }
     }
+
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+      let configurator = configuration.listenerNWParametersConfigurator,
+      let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
+    {
+      _ = transportServicesBootstrap.configureNWParameters(configurator)
+    }
+
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+      let configurator = configuration.childChannelNWParametersConfigurator,
+      let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap
+    {
+      _ = transportServicesBootstrap.configureChildNWParameters(configurator)
+    }
     #endif  // canImport(Network)
 
     return
@@ -365,6 +379,13 @@ extension Server {
       }
     }
 
+    /// The HTTP/2 max number of reset streams. Defaults to 32. Must be non-negative.
+    public var httpMaxResetStreams: Int = 32 {
+      willSet {
+        precondition(newValue >= 0, "httpMaxResetStreams must be non-negative")
+      }
+    }
+
     /// The root server logger. Accepted connections will branch from this logger and RPCs on
     /// each connection will use a logger branched from the connections logger. This logger is made
     /// available to service providers via `context`. Defaults to a no-op logger.
@@ -383,6 +404,34 @@ extension Server {
     /// This is how gRPC consumes the service providers internally. Caching this as stored data avoids
     /// the need to recalculate this dictionary each time we receive an rpc.
     internal var serviceProvidersByName: [Substring: CallHandlerProvider]
+
+    #if canImport(Network)
+    /// A closure allowing to customise the listener's `NWParameters` used when establishing a connection using `NIOTransportServices`.
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var listenerNWParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+      get {
+        self._listenerNWParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+      }
+      set {
+        self._listenerNWParametersConfigurator = newValue
+      }
+    }
+
+    private var _listenerNWParametersConfigurator: (any Sendable)?
+
+    /// A closure allowing to customise the child channels' `NWParameters` used when establishing connections using `NIOTransportServices`.
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+    public var childChannelNWParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+      get {
+        self._childChannelNWParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+      }
+      set {
+        self._childChannelNWParametersConfigurator = newValue
+      }
+    }
+
+    private var _childChannelNWParametersConfigurator: (any Sendable)?
+    #endif
 
     /// CORS configuration for gRPC-Web support.
     public var webCORS = Configuration.CORS()

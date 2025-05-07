@@ -24,8 +24,13 @@ import NIOPosix
 import NIOSSL
 import XCTest
 
+#if canImport(Network)
+import Network
+import NIOTransportServices
+#endif
+
 final class GRPCChannelPoolTests: GRPCTestCase {
-  private var group: MultiThreadedEventLoopGroup!
+  private var group: (any EventLoopGroup)!
   private var server: Server?
   private var channel: GRPCChannel?
 
@@ -50,8 +55,26 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     super.tearDown()
   }
 
-  private func configureEventLoopGroup(threads: Int = System.coreCount) {
-    self.group = MultiThreadedEventLoopGroup(numberOfThreads: threads)
+  private enum TestEventLoopGroupType {
+    case multiThreadedEventLoopGroup
+    case transportServicesEventLoopGroup
+  }
+
+  private func configureEventLoopGroup(
+    threads: Int = System.coreCount,
+    eventLoopGroupType: TestEventLoopGroupType = .multiThreadedEventLoopGroup
+  ) {
+    switch eventLoopGroupType {
+    case .multiThreadedEventLoopGroup:
+      self.group = MultiThreadedEventLoopGroup(numberOfThreads: threads)
+
+    case .transportServicesEventLoopGroup:
+      #if canImport(Network)
+      self.group = NIOTSEventLoopGroup(loopCount: threads)
+      #else
+      fatalError("NIOTS is not available on this platform.")
+      #endif
+    }
   }
 
   private func makeServerBuilder(withTLS: Bool) -> Server.Builder {
@@ -108,9 +131,10 @@ final class GRPCChannelPoolTests: GRPCTestCase {
   private func setUpClientAndServer(
     withTLS tls: Bool,
     threads: Int = System.coreCount,
+    eventLoopGroupType: TestEventLoopGroupType = .multiThreadedEventLoopGroup,
     _ configure: (inout GRPCChannelPool.Configuration) -> Void = { _ in }
   ) {
-    self.configureEventLoopGroup(threads: threads)
+    self.configureEventLoopGroup(threads: threads, eventLoopGroupType: eventLoopGroupType)
     self.startServer(withTLS: tls)
     self.startChannel(withTLS: tls) {
       // We'll allow any number of waiters since we immediately fire off a bunch of RPCs and don't
@@ -618,5 +642,22 @@ final class GRPCChannelPoolTests: GRPCTestCase {
 
     XCTAssertGreaterThan(statsEvents.count, 0)
   }
+
+  #if canImport(Network)
+  func testNWParametersConfigurator() throws {
+    let counter = NIOLockedValueBox(0)
+    self.setUpClientAndServer(withTLS: false, eventLoopGroupType: .transportServicesEventLoopGroup)
+    { configuration in
+      configuration.transportServices.nwParametersConfigurator = { _ in
+        counter.withLockedValue { $0 += 1 }
+      }
+    }
+
+    // Execute an RPC to make sure a channel gets created/activated and the parameters configurator run.
+    try self.doTestUnaryRPCs(count: 1)
+
+    XCTAssertEqual(1, counter.withLockedValue({ $0 }))
+  }
+  #endif  // canImport(Network)
 }
 #endif  // canImport(NIOSSL)

@@ -22,6 +22,10 @@ import NIOTransportServices
 import NIOSSL
 #endif
 
+#if canImport(Network)
+import Network
+#endif
+
 @usableFromInline
 internal protocol ConnectionManagerChannelProvider {
   /// Make an `EventLoopFuture<Channel>`.
@@ -66,11 +70,61 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   internal var httpTargetWindowSize: Int
   @usableFromInline
   internal var httpMaxFrameSize: Int
+  @usableFromInline
+  internal var httpMaxResetStreams: Int
 
   @usableFromInline
   internal var errorDelegate: Optional<ClientErrorDelegate>
   @usableFromInline
   internal var debugChannelInitializer: Optional<(Channel) -> EventLoopFuture<Void>>
+
+  #if canImport(Network)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+  @usableFromInline
+  internal var nwParametersConfigurator: (@Sendable (NWParameters) -> Void)? {
+    get {
+      self._nwParametersConfigurator as! (@Sendable (NWParameters) -> Void)?
+    }
+    set {
+      self._nwParametersConfigurator = newValue
+    }
+  }
+
+  private var _nwParametersConfigurator: (any Sendable)?
+  #endif
+
+  #if canImport(Network)
+  @inlinable
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
+  internal init(
+    connectionTarget: ConnectionTarget,
+    connectionKeepalive: ClientConnectionKeepalive,
+    connectionIdleTimeout: TimeAmount,
+    tlsMode: TLSMode,
+    tlsConfiguration: GRPCTLSConfiguration?,
+    httpTargetWindowSize: Int,
+    httpMaxFrameSize: Int,
+    httpMaxResetStreams: Int,
+    errorDelegate: ClientErrorDelegate?,
+    debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?,
+    nwParametersConfigurator: (@Sendable (NWParameters) -> Void)?
+  ) {
+    self.init(
+      connectionTarget: connectionTarget,
+      connectionKeepalive: connectionKeepalive,
+      connectionIdleTimeout: connectionIdleTimeout,
+      tlsMode: tlsMode,
+      tlsConfiguration: tlsConfiguration,
+      httpTargetWindowSize: httpTargetWindowSize,
+      httpMaxFrameSize: httpMaxFrameSize,
+      httpMaxResetStreams: httpMaxResetStreams,
+      errorDelegate: errorDelegate,
+      debugChannelInitializer: debugChannelInitializer
+    )
+
+    self.nwParametersConfigurator = nwParametersConfigurator
+  }
+  #endif
 
   @inlinable
   internal init(
@@ -81,6 +135,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
     httpMaxFrameSize: Int,
+    httpMaxResetStreams: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
   ) {
@@ -93,6 +148,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
     self.httpTargetWindowSize = httpTargetWindowSize
     self.httpMaxFrameSize = httpMaxFrameSize
+    self.httpMaxResetStreams = httpMaxResetStreams
 
     self.errorDelegate = errorDelegate
     self.debugChannelInitializer = debugChannelInitializer
@@ -130,9 +186,16 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       tlsConfiguration: configuration.tlsConfiguration,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
       httpMaxFrameSize: configuration.httpMaxFrameSize,
+      httpMaxResetStreams: configuration.httpMaxResetStreams,
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )
+
+    #if canImport(Network)
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *) {
+      self.nwParametersConfigurator = configuration.nwParametersConfigurator
+    }
+    #endif
   }
 
   private var serverHostname: String? {
@@ -203,6 +266,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
             connectionIdleTimeout: self.connectionIdleTimeout,
             httpTargetWindowSize: self.httpTargetWindowSize,
             httpMaxFrameSize: self.httpMaxFrameSize,
+            httpMaxResetStreams: self.httpMaxResetStreams,
             errorDelegate: self.errorDelegate,
             logger: logger
           )
@@ -221,6 +285,15 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     if let connectTimeout = connectTimeout {
       _ = bootstrap.connectTimeout(connectTimeout)
     }
+
+    #if canImport(Network)
+    if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *),
+      let configurator = self.nwParametersConfigurator,
+      let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap
+    {
+      _ = transportServicesBootstrap.configureNWParameters(configurator)
+    }
+    #endif
 
     return bootstrap.connect(to: self.connectionTarget)
   }

@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.10
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -36,11 +36,11 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
-    from: "1.32.0"
+    from: "1.36.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-transport-services.git",
-    from: "1.15.0"
+    from: "1.24.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-extras.git",
