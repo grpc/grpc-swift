@@ -87,7 +87,7 @@ public struct CodeGenerator: Sendable {
       public static var `package`: Self { Self(level: .`package`) }
     }
 
-    // The availability that generated code is annotated generated with.
+    // The availability that generated code is annotated with.
     public struct AvailabilityAnnotations: Sendable, Hashable {
       public struct Platform: Sendable, Hashable {
         /// The name of the OS, e.g. 'macOS'.
