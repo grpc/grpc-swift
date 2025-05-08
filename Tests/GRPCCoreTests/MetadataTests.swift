@@ -308,7 +308,7 @@ struct MetadataTests {
       metadata.add(contentsOf: otherMetadata)
 
       #expect(
-        self.metadata == [
+        metadata == [
           "key1": "value1-1",
           "key2": "value2",
           "key3": "value3",
