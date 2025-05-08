@@ -189,7 +189,7 @@ final class MaxAgeTests: XCTestCase {
 
   func testRPCContinuesAfterQuiescing() throws {
     // Check that an in-flight RPC can continue to run after the connection is quiescing as a result
-    // or aging out.
+    // of aging out.
 
     // The pool creates one sub-pool per event loop. Use a single loop to simplify connection
     // counting.
