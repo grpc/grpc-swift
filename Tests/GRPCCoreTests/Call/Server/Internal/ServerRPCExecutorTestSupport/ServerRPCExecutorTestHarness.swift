@@ -17,6 +17,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct ServerRPCExecutorTestHarness {
   struct ServerHandler<Input: Sendable, Output: Sendable>: Sendable {
     let fn:
@@ -148,6 +149,7 @@ struct ServerRPCExecutorTestHarness {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServerRPCExecutorTestHarness.ServerHandler where Input == Output {
   static var echo: Self {
     return Self { request, context in

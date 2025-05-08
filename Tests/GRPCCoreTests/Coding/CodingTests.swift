@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class CodingTests: XCTestCase {
   func testJSONRoundtrip() throws {
     // This test just demonstrates that the API is suitable.

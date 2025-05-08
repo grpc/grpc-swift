@@ -15,6 +15,7 @@
  */
 import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct BinaryEcho: RegistrableRPCService {
   static let serviceDescriptor = ServiceDescriptor(package: "echo", service: "Echo")
 

@@ -16,6 +16,7 @@
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct StreamCountingClientTransport: ClientTransport, Sendable {
   typealias Bytes = [UInt8]
 
@@ -75,6 +76,7 @@ struct StreamCountingClientTransport: ClientTransport, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct StreamCountingServerTransport: ServerTransport, Sendable {
   typealias Bytes = [UInt8]
 

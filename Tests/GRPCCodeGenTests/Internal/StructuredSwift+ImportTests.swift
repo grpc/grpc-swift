@@ -18,18 +18,21 @@ import GRPCCodeGen
 import Testing
 
 extension StructuredSwiftTests {
+  @available(gRPCSwift 2.0, *)
+  static let translator = IDLToStructuredSwiftTranslator()
+
+  @available(gRPCSwift 2.0, *)
+  static let allAccessLevels: [CodeGenerator.Config.AccessLevel] = [
+    .internal, .public, .package,
+  ]
+
   @Suite("Import")
   struct Import {
-    static let translator = IDLToStructuredSwiftTranslator()
-
-    static let allAccessLevels: [CodeGenerator.Config.AccessLevel] = [
-      .internal, .public, .package,
-    ]
-
     @Test(
       "import rendering",
       arguments: allAccessLevels
     )
+    @available(gRPCSwift 2.0, *)
     func imports(accessLevel: CodeGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(Dependency(module: "Foo", accessLevel: .public))
@@ -104,7 +107,7 @@ extension StructuredSwiftTests {
         package import func Foo.Bak
         """
 
-      let imports = try StructuredSwiftTests.Import.translator.makeImports(
+      let imports = try StructuredSwiftTests.translator.makeImports(
         dependencies: dependencies,
         accessLevel: accessLevel,
         accessLevelOnImports: true,
@@ -116,8 +119,9 @@ extension StructuredSwiftTests {
 
     @Test(
       "preconcurrency import rendering",
-      arguments: allAccessLevels
+      arguments: StructuredSwiftTests.allAccessLevels
     )
+    @available(gRPCSwift 2.0, *)
     func preconcurrencyImports(accessLevel: CodeGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(
@@ -155,7 +159,7 @@ extension StructuredSwiftTests {
         #endif
         """
 
-      let imports = try StructuredSwiftTests.Import.translator.makeImports(
+      let imports = try StructuredSwiftTests.translator.makeImports(
         dependencies: dependencies,
         accessLevel: accessLevel,
         accessLevelOnImports: true,
@@ -167,8 +171,9 @@ extension StructuredSwiftTests {
 
     @Test(
       "SPI import rendering",
-      arguments: allAccessLevels
+      arguments: StructuredSwiftTests.allAccessLevels
     )
+    @available(gRPCSwift 2.0, *)
     func spiImports(accessLevel: CodeGenerator.Config.AccessLevel) throws {
       var dependencies = [Dependency]()
       dependencies.append(
@@ -190,7 +195,7 @@ extension StructuredSwiftTests {
         @_spi(Secret) internal import enum Foo.Bar
         """
 
-      let imports = try StructuredSwiftTests.Import.translator.makeImports(
+      let imports = try StructuredSwiftTests.translator.makeImports(
         dependencies: dependencies,
         accessLevel: accessLevel,
         accessLevelOnImports: true,
@@ -201,6 +206,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("gRPC module name")
+    @available(gRPCSwift 2.0, *)
     func grpcModuleName() throws {
       let translator = IDLToStructuredSwiftTranslator()
       let imports = try translator.makeImports(

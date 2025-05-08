@@ -17,6 +17,7 @@
 import GRPCCore
 import GRPCInProcessTransport
 
+@available(gRPCSwift 2.0, *)
 extension InProcessTransport.Server {
   func spawnClientTransport(
     throttle: RetryThrottle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)

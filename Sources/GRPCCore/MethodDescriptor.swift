@@ -15,6 +15,7 @@
  */
 
 /// A description of a method on a service.
+@available(gRPCSwift 2.0, *)
 public struct MethodDescriptor: Sendable, Hashable {
   /// A description of the service, including its package name.
   public var service: ServiceDescriptor
@@ -53,6 +54,7 @@ public struct MethodDescriptor: Sendable, Hashable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodDescriptor: CustomStringConvertible {
   public var description: String {
     self.fullyQualifiedMethod

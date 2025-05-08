@@ -15,9 +15,11 @@
  */
 
 /// Additional information about an RPC handled by a server.
+@available(gRPCSwift 2.0, *)
 public struct ServerContext: Sendable {
 
   /// Protocol used to help identify transport specific context fields
+  @available(gRPCSwift 2.2, *)
   public protocol TransportSpecific: Sendable {}
 
   /// A description of the method being called.
@@ -56,6 +58,7 @@ public struct ServerContext: Sendable {
   ///
   /// An example of what this field can be used for, would be to store
   /// things like a peer certificate from a mTLS connection
+  @available(gRPCSwift 2.2, *)
   public var transportSpecific: (any TransportSpecific)?
 
   /// A handle for checking the cancellation status of an RPC.

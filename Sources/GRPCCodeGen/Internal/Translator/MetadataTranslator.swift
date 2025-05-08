@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 struct MetadataTranslator {
   init() {}
 

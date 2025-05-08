@@ -15,6 +15,7 @@
  */
 
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct MapRPCWriter<
   Value: Sendable,
   Mapped: Sendable,
@@ -46,6 +47,7 @@ struct MapRPCWriter<
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCWriter {
   @inlinable
   static func map<Mapped>(

@@ -21,6 +21,7 @@ import Testing
 @Suite
 final class ServerCodeTranslatorSnippetBasedTests {
   @Test
+  @available(gRPCSwift 2.0, *)
   func translate() {
     let method = MethodDescriptor(
       documentation: "/// Documentation for unaryMethod",
@@ -191,6 +192,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
     #expect(rendered == expectedSwift)
   }
 
+  @available(gRPCSwift 2.0, *)
   private func render(
     accessLevel: AccessModifier,
     service: ServiceDescriptor

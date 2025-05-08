@@ -16,6 +16,7 @@
 
 /// Describes the services, dependencies and trivia from an IDL file,
 /// and the IDL itself through its specific serializer and deserializer.
+@available(gRPCSwift 2.0, *)
 public struct CodeGenerationRequest {
   /// The name of the source file containing the IDL, including the extension if applicable.
   public var fileName: String
@@ -81,6 +82,7 @@ public struct CodeGenerationRequest {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CodeGenerationRequest {
   @available(*, deprecated, renamed: "makeSerializerSnippet")
   public var lookupSerializer: (_ messageType: String) -> String {
@@ -120,6 +122,7 @@ extension CodeGenerationRequest {
 }
 
 /// Represents an import: a module or a specific item from a module.
+@available(gRPCSwift 2.0, *)
 public struct Dependency: Equatable {
   /// If the dependency is an item, the property's value is the item representation.
   /// If the dependency is a module, this property is nil.
@@ -261,6 +264,7 @@ public struct Dependency: Equatable {
 }
 
 /// Represents a service described in an IDL file.
+@available(gRPCSwift 2.0, *)
 public struct ServiceDescriptor: Hashable {
   /// Documentation from comments above the IDL service description.
   /// It is already formatted, meaning it contains  "///" and new lines.
@@ -285,6 +289,7 @@ public struct ServiceDescriptor: Hashable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceDescriptor {
   @available(*, deprecated, renamed: "init(documentation:name:methods:)")
   public init(
@@ -317,6 +322,7 @@ extension ServiceDescriptor {
 }
 
 /// Represents a method described in an IDL file.
+@available(gRPCSwift 2.0, *)
 public struct MethodDescriptor: Hashable {
   /// Documentation from comments above the IDL method description.
   /// It is already formatted, meaning it contains  "///" and new lines.
@@ -357,6 +363,7 @@ public struct MethodDescriptor: Hashable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodDescriptor {
   @available(*, deprecated, message: "Use MethodName instead of Name")
   public init(
@@ -380,6 +387,7 @@ extension MethodDescriptor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 public struct ServiceName: Hashable {
   /// The identifying name as used in the service/method descriptors including any namespace.
   ///
@@ -414,6 +422,7 @@ public struct ServiceName: Hashable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 public struct MethodName: Hashable {
   /// The identifying name as used in the service/method descriptors.
   ///
@@ -445,6 +454,7 @@ public struct MethodName: Hashable {
 
 /// Represents the name associated with a namespace, service or a method, in three different formats.
 @available(*, deprecated, message: "Use ServiceName/MethodName instead.")
+@available(gRPCSwift 2.0, *)
 public struct Name: Hashable {
   /// The base name is the name used for the namespace/service/method in the IDL file, so it should follow
   /// the specific casing of the IDL.
@@ -473,6 +483,7 @@ public struct Name: Hashable {
 }
 
 @available(*, deprecated, message: "Use ServiceName/MethodName instead.")
+@available(gRPCSwift 2.0, *)
 extension Name {
   /// The base name replacing occurrences of "." with "_".
   ///

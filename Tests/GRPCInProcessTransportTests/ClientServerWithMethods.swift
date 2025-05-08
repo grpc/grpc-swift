@@ -21,6 +21,7 @@ import Testing
 @Suite("withGRPCServer / withGRPCClient")
 struct WithMethods {
   @Test("Actor isolation")
+  @available(gRPCSwift 2.0, *)
   func actorIsolation() async throws {
     let testActor = TestActor()
     #expect(await !testActor.hasRun)
@@ -29,6 +30,7 @@ struct WithMethods {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 fileprivate actor TestActor {
   private(set) var hasRun = false
 

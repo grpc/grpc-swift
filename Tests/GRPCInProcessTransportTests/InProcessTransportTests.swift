@@ -22,6 +22,7 @@ import Testing
 struct InProcessTransportTests {
   private static let cancellationModes = ["await-cancelled", "with-cancellation-handler"]
 
+  @available(gRPCSwift 2.0, *)
   private func withTestServerAndClient(
     execute: (
       GRPCServer<InProcessTransport.Server>,
@@ -46,6 +47,7 @@ struct InProcessTransportTests {
   }
 
   @Test("RPC cancelled by graceful shutdown", arguments: Self.cancellationModes)
+  @available(gRPCSwift 2.0, *)
   func cancelledByGracefulShutdown(mode: String) async throws {
     try await self.withTestServerAndClient { server, client in
       try await client.serverStreaming(
@@ -69,6 +71,7 @@ struct InProcessTransportTests {
   }
 
   @Test("Peer info")
+  @available(gRPCSwift 2.0, *)
   func peerInfo() async throws {
     try await self.withTestServerAndClient { server, client in
       defer {
@@ -91,6 +94,7 @@ struct InProcessTransportTests {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 private struct TestService: RegistrableRPCService {
   func cancellation(
     request: ServerRequest<String>,
@@ -154,6 +158,7 @@ private struct TestService: RegistrableRPCService {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodDescriptor {
   fileprivate static let testCancellation = Self(
     fullyQualifiedService: "test",
@@ -171,12 +176,14 @@ private struct PeerInfo: Codable {
   var remote: String
 }
 
+@available(gRPCSwift 2.0, *)
 private struct UTF8Serializer: MessageSerializer {
   func serialize<Bytes: GRPCContiguousBytes>(_ message: String) throws -> Bytes {
     Bytes(message.utf8)
   }
 }
 
+@available(gRPCSwift 2.0, *)
 private struct UTF8Deserializer: MessageDeserializer {
   func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> String {
     serializedMessageBytes.withUnsafeBytes {
@@ -185,12 +192,14 @@ private struct UTF8Deserializer: MessageDeserializer {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 private struct VoidSerializer: MessageSerializer {
   func serialize<Bytes: GRPCContiguousBytes>(_ message: Void) throws -> Bytes {
     Bytes(repeating: 0, count: 0)
   }
 }
 
+@available(gRPCSwift 2.0, *)
 private struct VoidDeserializer: MessageDeserializer {
   func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws {
   }

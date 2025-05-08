@@ -19,6 +19,7 @@ import XCTest
 @testable import GRPCCore
 @testable import GRPCInProcessTransport
 
+@available(gRPCSwift 2.0, *)
 final class InProcessServerTransportTests: XCTestCase {
   func testStartListening() async throws {
     let transport = InProcessTransport.Server(peer: "in-process:1234")

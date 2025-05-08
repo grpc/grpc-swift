@@ -15,6 +15,7 @@
  */
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct AnyClientTransport: ClientTransport, Sendable {
   typealias Bytes = [UInt8]
 
@@ -78,6 +79,7 @@ struct AnyClientTransport: ClientTransport, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct AnyServerTransport: ServerTransport, Sendable {
   typealias Bytes = [UInt8]
 

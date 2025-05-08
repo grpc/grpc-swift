@@ -15,6 +15,7 @@
  */
 
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct MessageToRPCResponsePartWriter<
   Serializer: MessageSerializer,
   Bytes: GRPCContiguousBytes & Sendable
@@ -48,6 +49,7 @@ struct MessageToRPCResponsePartWriter<
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCWriter {
   @inlinable
   static func serializingToRPCResponsePart<Bytes: GRPCContiguousBytes>(

@@ -15,6 +15,7 @@
  */
 
 /// A context passed to the client containing additional information about the RPC.
+@available(gRPCSwift 2.0, *)
 public struct ClientContext: Sendable {
   /// A description of the method being called.
   public var descriptor: MethodDescriptor

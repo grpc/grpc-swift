@@ -15,6 +15,7 @@
  */
 
 /// A request received at the server containing a single message.
+@available(gRPCSwift 2.0, *)
 public struct ServerRequest<Message: Sendable>: Sendable {
   /// Metadata received from the client at the start of the RPC.
   ///
@@ -37,6 +38,7 @@ public struct ServerRequest<Message: Sendable>: Sendable {
 }
 
 /// A request received at the server containing a stream of messages.
+@available(gRPCSwift 2.0, *)
 public struct StreamingServerRequest<Message: Sendable>: Sendable {
   /// Metadata received from the client at the start of the RPC.
   ///
@@ -62,12 +64,14 @@ public struct StreamingServerRequest<Message: Sendable>: Sendable {
 
 // MARK: - Conversion
 
+@available(gRPCSwift 2.0, *)
 extension StreamingServerRequest {
   public init(single request: ServerRequest<Message>) {
     self.init(metadata: request.metadata, messages: .one(request.message))
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServerRequest {
   public init(stream request: StreamingServerRequest<Message>) async throws {
     var iterator = request.messages.makeAsyncIterator()

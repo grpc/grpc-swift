@@ -19,6 +19,7 @@
 /// This protocol is used by the transport protocols (``ClientTransport`` and ``ServerTransport``)
 /// with the serialization protocols (``MessageSerializer`` and ``MessageDeserializer``) so that
 /// messages don't have to be copied to a fixed intermediate bag-of-bytes types.
+@available(gRPCSwift 2.0, *)
 public protocol GRPCContiguousBytes {
   /// Initialize the bytes to a repeated value.
   ///
@@ -55,4 +56,5 @@ public protocol GRPCContiguousBytes {
   ) rethrows -> R
 }
 
+@available(gRPCSwift 2.0, *)
 extension [UInt8]: GRPCContiguousBytes {}

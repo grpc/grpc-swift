@@ -17,6 +17,7 @@
 /// An error representing the outcome of an RPC.
 ///
 /// See also ``Status``.
+@available(gRPCSwift 2.0, *)
 public struct RPCError: Sendable, Hashable, Error {
   /// A code representing the high-level domain of the error.
   public var code: Code
@@ -116,6 +117,7 @@ public struct RPCError: Sendable, Hashable, Error {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCError: CustomStringConvertible {
   public var description: String {
     if let cause = self.cause {
@@ -126,6 +128,7 @@ extension RPCError: CustomStringConvertible {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCError {
   public struct Code: Hashable, Sendable, CustomStringConvertible {
     /// The numeric value of the error code.
@@ -173,6 +176,7 @@ extension RPCError {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCError.Code {
   /// The operation was cancelled (typically by the caller).
   public static let cancelled = Self(code: .cancelled)
@@ -282,6 +286,7 @@ extension RPCError.Code {
 ///
 /// You can conform types to this protocol to have more control over the status codes and
 /// error information provided to clients when a service throws an error.
+@available(gRPCSwift 2.0, *)
 public protocol RPCErrorConvertible {
   /// The error code to terminate the RPC with.
   var rpcErrorCode: RPCError.Code { get }
@@ -301,6 +306,7 @@ public protocol RPCErrorConvertible {
   var rpcErrorCause: (any Error)? { get }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCErrorConvertible {
   /// Metadata associated with the error.
   ///
@@ -318,6 +324,7 @@ extension RPCErrorConvertible {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCErrorConvertible where Self: Error {
   /// The original error which led to this error being thrown.
   public var rpcErrorCause: (any Error)? {
@@ -325,6 +332,7 @@ extension RPCErrorConvertible where Self: Error {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCError {
   /// Create a new error by converting the given value.
   public init(_ convertible: some RPCErrorConvertible) {

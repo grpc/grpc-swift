@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class ClientRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
     let (messages, continuation) = AsyncStream.makeStream(of: String.self)

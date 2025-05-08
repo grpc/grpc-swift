@@ -23,6 +23,7 @@ internal import Dispatch
 ///
 /// Timeouts must be positive and at most 8-digits long.
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct Timeout: CustomStringConvertible, Hashable, Sendable {
   /// Possible units for a ``Timeout``.
   internal enum Unit: Character {
@@ -181,6 +182,7 @@ extension Int64 {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Duration {
   /// Construct a `Duration` given a number of minutes represented as an `Int64`.
   ///

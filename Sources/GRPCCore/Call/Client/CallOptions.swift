@@ -21,6 +21,7 @@
 ///
 /// You can create the default set of options, which defers all possible
 /// configuration to the transport, by using ``CallOptions/defaults``.
+@available(gRPCSwift 2.0, *)
 public struct CallOptions: Sendable {
   /// The default timeout for the RPC.
   ///
@@ -107,6 +108,7 @@ public struct CallOptions: Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CallOptions {
   /// Default call options.
   ///
@@ -123,6 +125,7 @@ extension CallOptions {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CallOptions {
   package mutating func formUnion(with methodConfig: MethodConfig?) {
     guard let methodConfig = methodConfig else { return }

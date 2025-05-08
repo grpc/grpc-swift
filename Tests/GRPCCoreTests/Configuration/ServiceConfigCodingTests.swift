@@ -19,6 +19,7 @@ import GRPCCore
 import SwiftProtobuf
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class ServiceConfigCodingTests: XCTestCase {
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()

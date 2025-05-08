@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class RPCPartsTests: XCTestCase {
   func testPartsFitInExistentialContainer() {
     XCTAssertLessThanOrEqual(MemoryLayout<RPCRequestPart<[UInt8]>>.size, 24)

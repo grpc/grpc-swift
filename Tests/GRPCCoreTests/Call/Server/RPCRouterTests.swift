@@ -17,6 +17,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class RPCRouterTests: XCTestCase {
   func testEmptyRouter() async throws {
     var router = RPCRouter<NoServerTransport>()
@@ -64,6 +65,7 @@ final class RPCRouterTests: XCTestCase {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct NoServerTransport: ServerTransport {
   typealias Bytes = [UInt8]
 

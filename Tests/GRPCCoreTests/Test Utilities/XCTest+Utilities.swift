@@ -65,6 +65,7 @@ func XCTAssertThrowsErrorAsync<T, E: Error>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertThrowsRPCError<T>(
   _ expression: @autoclosure () throws -> T,
   _ errorHandler: (RPCError) -> Void
@@ -78,6 +79,7 @@ func XCTAssertThrowsRPCError<T>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertThrowsRPCErrorAsync<T>(
   _ expression: () async throws -> T,
   errorHandler: (RPCError) -> Void
@@ -92,6 +94,7 @@ func XCTAssertThrowsRPCErrorAsync<T>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertRejected<T>(
   _ response: StreamingClientResponse<T>,
   errorHandler: (RPCError) -> Void
@@ -104,6 +107,7 @@ func XCTAssertRejected<T>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertRejected<T>(
   _ response: ClientResponse<T>,
   errorHandler: (RPCError) -> Void
@@ -116,6 +120,7 @@ func XCTAssertRejected<T>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertMetadata<Bytes: GRPCContiguousBytes>(
   _ part: RPCResponsePart<Bytes>?,
   metadataHandler: (Metadata) -> Void = { _ in }
@@ -128,6 +133,7 @@ func XCTAssertMetadata<Bytes: GRPCContiguousBytes>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertMetadata<Bytes: GRPCContiguousBytes>(
   _ part: RPCRequestPart<Bytes>?,
   metadataHandler: (Metadata) async throws -> Void = { _ in }
@@ -140,6 +146,7 @@ func XCTAssertMetadata<Bytes: GRPCContiguousBytes>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertMessage<Bytes: GRPCContiguousBytes>(
   _ part: RPCResponsePart<Bytes>?,
   messageHandler: (Bytes) -> Void = { _ in }
@@ -152,6 +159,7 @@ func XCTAssertMessage<Bytes: GRPCContiguousBytes>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertMessage<Bytes: GRPCContiguousBytes>(
   _ part: RPCRequestPart<Bytes>?,
   messageHandler: (Bytes) async throws -> Void = { _ in }
@@ -164,6 +172,7 @@ func XCTAssertMessage<Bytes: GRPCContiguousBytes>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 func XCTAssertStatus<Bytes: GRPCContiguousBytes>(
   _ part: RPCResponsePart<Bytes>?,
   statusHandler: (Status, Metadata) -> Void = { _, _ in }

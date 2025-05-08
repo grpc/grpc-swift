@@ -16,6 +16,7 @@
 
 import Synchronization
 
+@available(gRPCSwift 2.0, *)
 final class AtomicCounter: Sendable {
   private let counter: Atomic<Int>
 

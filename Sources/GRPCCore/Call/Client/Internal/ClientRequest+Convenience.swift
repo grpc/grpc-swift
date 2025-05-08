@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension StreamingClientRequest {
   internal init(single request: ClientRequest<Message>) {
     self.init(metadata: request.metadata) {

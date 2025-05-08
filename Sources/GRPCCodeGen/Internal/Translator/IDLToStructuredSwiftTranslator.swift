@@ -17,6 +17,7 @@
 /// Creates a representation for the server and client code, as well as for the enums containing useful type aliases and properties.
 /// The representation is generated based on the ``CodeGenerationRequest`` object and user specifications,
 /// using types from ``StructuredSwiftRepresentation``.
+@available(gRPCSwift 2.0, *)
 package struct IDLToStructuredSwiftTranslator {
   package init() {}
 
@@ -136,6 +137,7 @@ package struct IDLToStructuredSwiftTranslator {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension AccessModifier {
   init(_ accessLevel: CodeGenerator.Config.AccessLevel) {
     switch accessLevel.level {
@@ -146,6 +148,7 @@ extension AccessModifier {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension IDLToStructuredSwiftTranslator {
   private func translateImport(
     dependency: Dependency,

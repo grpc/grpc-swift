@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class ResultCatchingTests: XCTestCase {
   func testResultCatching() async {
     let result = await Result {

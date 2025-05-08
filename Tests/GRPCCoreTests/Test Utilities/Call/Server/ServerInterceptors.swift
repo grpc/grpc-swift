@@ -16,6 +16,7 @@
 
 import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 extension ServerInterceptor where Self == RejectAllServerInterceptor {
   static func rejectAll(with error: RPCError) -> Self {
     return RejectAllServerInterceptor(reject: error)
@@ -26,6 +27,7 @@ extension ServerInterceptor where Self == RejectAllServerInterceptor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServerInterceptor where Self == RequestCountingServerInterceptor {
   static func requestCounter(_ counter: AtomicCounter) -> Self {
     RequestCountingServerInterceptor(counter: counter)
@@ -33,6 +35,7 @@ extension ServerInterceptor where Self == RequestCountingServerInterceptor {
 }
 
 /// Rejects all RPCs with the provided error.
+@available(gRPCSwift 2.0, *)
 struct RejectAllServerInterceptor: ServerInterceptor {
   enum Mode: Sendable {
     /// Throw the error rather.
@@ -68,6 +71,7 @@ struct RejectAllServerInterceptor: ServerInterceptor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct RequestCountingServerInterceptor: ServerInterceptor {
   /// The number of requests made.
   let counter: AtomicCounter

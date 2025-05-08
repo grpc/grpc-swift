@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension BroadcastAsyncSequence.Source: ClosableRPCWriterProtocol {
   @inlinable
   func write(contentsOf elements: some Sequence<Element>) async throws {

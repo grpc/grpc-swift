@@ -17,6 +17,7 @@
 private import Synchronization
 
 /// Stores cancellation state for an RPC on the server .
+@available(gRPCSwift 2.0, *)
 package final class ServerCancellationManager: Sendable {
   private let state: Mutex<State>
 
@@ -104,6 +105,7 @@ package final class ServerCancellationManager: Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServerCancellationManager {
   enum CancellationSource {
     case rpc

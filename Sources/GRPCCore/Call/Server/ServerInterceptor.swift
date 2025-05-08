@@ -60,6 +60,7 @@
 /// ```
 ///
 /// For client-side interceptors see ``ClientInterceptor``.
+@available(gRPCSwift 2.0, *)
 public protocol ServerInterceptor: Sendable {
   /// Intercept a request object.
   ///

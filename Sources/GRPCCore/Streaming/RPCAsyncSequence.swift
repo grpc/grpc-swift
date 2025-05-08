@@ -15,6 +15,7 @@
  */
 
 /// A type-erasing `AsyncSequence`.
+@available(gRPCSwift 2.0, *)
 public struct RPCAsyncSequence<
   Element: Sendable,
   Failure: Error

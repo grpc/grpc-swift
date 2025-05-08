@@ -32,6 +32,7 @@ public import Synchronization  // should be @usableFromInline
 /// The expectation is that the number of subscribers will be low; for retries there will be at most
 /// one subscriber at a time, for hedging there may be at most five subscribers at a time.
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct BroadcastAsyncSequence<Element: Sendable>: Sendable, AsyncSequence {
   @usableFromInline
   let _storage: _BroadcastSequenceStorage<Element>
@@ -85,6 +86,7 @@ struct BroadcastAsyncSequence<Element: Sendable>: Sendable, AsyncSequence {
 
 // MARK: - AsyncIterator
 
+@available(gRPCSwift 2.0, *)
 extension BroadcastAsyncSequence {
   @usableFromInline
   struct AsyncIterator: AsyncIteratorProtocol {
@@ -111,6 +113,7 @@ extension BroadcastAsyncSequence {
 
 // MARK: - Continuation
 
+@available(gRPCSwift 2.0, *)
 extension BroadcastAsyncSequence {
   @usableFromInline
   struct Source: Sendable {
@@ -145,6 +148,7 @@ extension BroadcastAsyncSequence {
 }
 
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 enum BroadcastAsyncSequenceError: Error {
   /// The consumer was too slow.
   case consumingTooSlow
@@ -155,6 +159,7 @@ enum BroadcastAsyncSequenceError: Error {
 // MARK: - Storage
 
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
   @usableFromInline
   let _state: Mutex<_BroadcastSequenceStateMachine<Element>>
@@ -326,6 +331,7 @@ final class _BroadcastSequenceStorage<Element: Sendable>: Sendable {
 // MARK: - State machine
 
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   @usableFromInline
   typealias ConsumerContinuation = CheckedContinuation<Element?, any Error>
@@ -1376,6 +1382,7 @@ struct _BroadcastSequenceStateMachine<Element: Sendable>: Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension _BroadcastSequenceStateMachine {
   /// A collection of elements tagged with an identifier.
   ///
@@ -1530,6 +1537,7 @@ extension _BroadcastSequenceStateMachine {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension _BroadcastSequenceStateMachine {
   /// A collection of subscriptions.
   @usableFromInline
@@ -1793,6 +1801,7 @@ extension _BroadcastSequenceStateMachine {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension _BroadcastSequenceStateMachine {
   // TODO: tiny array
   @usableFromInline

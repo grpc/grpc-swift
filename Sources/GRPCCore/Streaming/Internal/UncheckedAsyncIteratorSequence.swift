@@ -16,8 +16,9 @@
 
 public import Synchronization  // should be @usableFromInline
 
-@usableFromInline
 /// An `AsyncSequence` which wraps an existing async iterator.
+@available(gRPCSwift 2.0, *)
+@usableFromInline
 final class UncheckedAsyncIteratorSequence<
   Base: AsyncIteratorProtocol
 >: AsyncSequence, @unchecked Sendable {

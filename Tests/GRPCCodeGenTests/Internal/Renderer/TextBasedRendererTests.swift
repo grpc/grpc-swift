@@ -30,8 +30,8 @@ import XCTest
 
 @testable import GRPCCodeGen
 
+@available(gRPCSwift 2.0, *)
 final class Test_TextBasedRenderer: XCTestCase {
-
   func testComment() throws {
     try _test(
       .inline(
@@ -1029,6 +1029,7 @@ final class Test_TextBasedRenderer: XCTestCase {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Test_TextBasedRenderer {
   func _test<Input>(
     _ input: Input,

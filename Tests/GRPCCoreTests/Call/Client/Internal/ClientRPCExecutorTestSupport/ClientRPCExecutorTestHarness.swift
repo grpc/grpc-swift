@@ -25,6 +25,7 @@ import XCTest
 /// of the server to allow for flexible testing scenarios with minimal boilerplate. The harness
 /// also tracks how many streams the client has opened, how many streams the server accepted, and
 /// how many streams the client failed to open.
+@available(gRPCSwift 2.0, *)
 struct ClientRPCExecutorTestHarness {
   private let server: ServerStreamHandler
   private let clientTransport: StreamCountingClientTransport

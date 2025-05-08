@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class RetryThrottleTests: XCTestCase {
   func testThrottleOnInit() {
     let throttle = RetryThrottle(maxTokens: 10, tokenRatio: 0.1)

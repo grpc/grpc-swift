@@ -34,6 +34,7 @@
 /// 1. Remove individual methods by calling ``removeHandler(forMethod:)``, or
 /// 2. Implement ``RegistrableRPCService/registerMethods(with:)`` to register only the methods you
 ///    want to be served.
+@available(gRPCSwift 2.0, *)
 public struct RPCRouter<Transport: ServerTransport>: Sendable {
   @usableFromInline
   struct RPCHandler: Sendable {
@@ -168,6 +169,7 @@ public struct RPCRouter<Transport: ServerTransport>: Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCRouter {
   internal func handle(
     stream: RPCStream<
@@ -187,6 +189,7 @@ extension RPCRouter {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status {
   fileprivate static let rpcNotImplemented = Status(
     code: .unimplemented,

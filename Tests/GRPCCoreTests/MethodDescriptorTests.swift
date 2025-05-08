@@ -19,6 +19,7 @@ import Testing
 @Suite
 struct MethodDescriptorTests {
   @Test("Fully qualified name")
+  @available(gRPCSwift 2.0, *)
   func testFullyQualifiedName() {
     let descriptor = MethodDescriptor(fullyQualifiedService: "foo.bar", method: "Baz")
     #expect(descriptor.service == ServiceDescriptor(fullyQualifiedService: "foo.bar"))
@@ -27,6 +28,7 @@ struct MethodDescriptorTests {
   }
 
   @Test("CustomStringConvertible")
+  @available(gRPCSwift 2.0, *)
   func description() {
     let descriptor = MethodDescriptor(
       service: ServiceDescriptor(fullyQualifiedService: "foo.Foo"),

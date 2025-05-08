@@ -29,6 +29,7 @@
 
 extension UInt8 {
   @inlinable
+  @available(gRPCSwift 2.0, *)
   var isASCII: Bool {
     return self <= 127
   }
@@ -40,6 +41,7 @@ extension String.UTF8View {
   /// - Parameter bytes: The string constant in the form of a collection of `UInt8`
   /// - Returns: Whether the collection contains **EXACTLY** this array or no, but by ignoring case.
   @inlinable
+  @available(gRPCSwift 2.0, *)
   func compareCaseInsensitiveASCIIBytes(to other: String.UTF8View) -> Bool {
     // fast path: we can get the underlying bytes of both
     let maybeMaybeResult = self.withContiguousStorageIfAvailable { lhsBuffer -> Bool? in
@@ -67,6 +69,7 @@ extension String.UTF8View {
 
   @inlinable
   @inline(never)
+  @available(gRPCSwift 2.0, *)
   func _compareCaseInsensitiveASCIIBytesSlowPath(to other: String.UTF8View) -> Bool {
     return self.elementsEqual(other, by: { return (($0 & 0xdf) == ($1 & 0xdf) && $0.isASCII) })
   }
@@ -74,6 +77,7 @@ extension String.UTF8View {
 
 extension String {
   @inlinable
+  @available(gRPCSwift 2.0, *)
   func isEqualCaseInsensitiveASCIIBytes(to: String) -> Bool {
     return self.utf8.compareCaseInsensitiveASCIIBytes(to: to.utf8)
   }

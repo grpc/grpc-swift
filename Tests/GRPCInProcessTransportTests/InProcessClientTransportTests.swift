@@ -18,6 +18,7 @@ import GRPCCore
 import GRPCInProcessTransport
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class InProcessClientTransportTests: XCTestCase {
   struct FailTest: Error {}
 
@@ -271,6 +272,7 @@ final class InProcessClientTransportTests: XCTestCase {
     }
   }
 
+  @available(gRPCSwift 2.0, *)
   func makeClient(
     server: InProcessTransport.Server = InProcessTransport.Server(peer: "in-process:1234")
   ) -> InProcessTransport.Client {
@@ -299,6 +301,7 @@ final class InProcessClientTransportTests: XCTestCase {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodDescriptor {
   static let testTest = Self(fullyQualifiedService: "test", method: "test")
 }

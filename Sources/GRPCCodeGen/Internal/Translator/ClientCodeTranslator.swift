@@ -75,6 +75,7 @@
 ///   }
 /// }
 ///```
+@available(gRPCSwift 2.0, *)
 struct ClientCodeTranslator {
   init() {}
 

@@ -54,6 +54,7 @@ private import Synchronization
 /// more abruptly you can cancel the task running your client. If your application requires
 /// additional resources that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
+@available(gRPCSwift 2.0, *)
 public final class GRPCClient<Transport: ClientTransport>: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
   private let transport: Transport
@@ -397,6 +398,7 @@ public final class GRPCClient<Transport: ClientTransport>: Sendable {
 ///       code is nonisolated.
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
+@available(gRPCSwift 2.0, *)
 public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
   transport: Transport,
   interceptors: [any ClientInterceptor] = [],
@@ -425,6 +427,7 @@ public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
 /// - Returns: The result of the `handleClient` closure.
+@available(gRPCSwift 2.0, *)
 public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
   transport: Transport,
   interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>],

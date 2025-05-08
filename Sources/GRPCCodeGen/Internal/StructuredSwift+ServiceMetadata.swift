@@ -185,6 +185,7 @@ extension VariableDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension EnumDescription {
   /// ```
   /// enum <Method> {
@@ -340,6 +341,7 @@ extension EnumDescription {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension [CodeBlock] {
   /// ```
   /// enum <Service> {

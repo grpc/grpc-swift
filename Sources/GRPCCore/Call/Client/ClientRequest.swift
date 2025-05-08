@@ -28,6 +28,7 @@
 /// print(request.metadata)  // prints '[:]'
 /// print(request.message)  // prints 'Hello, gRPC!'
 /// ```
+@available(gRPCSwift 2.0, *)
 public struct ClientRequest<Message: Sendable>: Sendable {
   /// Caller-specified metadata to send to the server at the start of the RPC.
   ///
@@ -61,6 +62,7 @@ public struct ClientRequest<Message: Sendable>: Sendable {
 ///
 /// See ``ClientRequest`` for single-message requests and ``StreamingServerRequest`` for the
 /// servers representation of a streaming-message request.
+@available(gRPCSwift 2.0, *)
 public struct StreamingClientRequest<Message: Sendable>: Sendable {
   /// Caller-specified metadata sent to the server at the start of the RPC.
   ///

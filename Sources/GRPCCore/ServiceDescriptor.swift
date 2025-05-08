@@ -15,6 +15,7 @@
  */
 
 /// A description of a service.
+@available(gRPCSwift 2.0, *)
 public struct ServiceDescriptor: Sendable, Hashable {
   /// The name of the package the service belongs to. For example, "helloworld".
   /// An empty string means that the service does not belong to any package.
@@ -60,6 +61,7 @@ public struct ServiceDescriptor: Sendable, Hashable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceDescriptor: CustomStringConvertible {
   public var description: String {
     self.fullyQualifiedService

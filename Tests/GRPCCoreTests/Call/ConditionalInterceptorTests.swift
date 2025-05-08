@@ -39,6 +39,7 @@ struct ConditionalInterceptorTests {
       ),
     ] as [(ConditionalInterceptor<any Sendable>.Subject, [MethodDescriptor], [MethodDescriptor])]
   )
+  @available(gRPCSwift 2.0, *)
   func appliesTo(
     target: ConditionalInterceptor<any Sendable>.Subject,
     applicableMethods: [MethodDescriptor],
@@ -54,6 +55,7 @@ struct ConditionalInterceptorTests {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension MethodDescriptor {
   fileprivate static let fooBar = Self(fullyQualifiedService: "pkg.foo", method: "bar")
   fileprivate static let fooBaz = Self(fullyQualifiedService: "pkg.foo", method: "baz")

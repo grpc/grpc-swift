@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor {
   @usableFromInline
   struct RetryExecutor<
@@ -59,6 +60,7 @@ extension ClientRPCExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor.RetryExecutor {
   @inlinable
   func execute<R: Sendable>(
@@ -310,6 +312,7 @@ extension ClientRPCExecutor.RetryExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 enum _RetryExecutorTask<R: Sendable>: Sendable {
   case timedOut(Result<Void, any Error>)

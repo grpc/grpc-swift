@@ -79,6 +79,7 @@
 /// - Note: Binary values are encoded as base64 strings when they are sent over the wire, so keys with
 /// the "-bin" suffix may have string values (rather than binary). These are deserialized automatically when
 /// using ``subscript(binaryValues:)``.
+@available(gRPCSwift 2.0, *)
 public struct Metadata: Sendable, Hashable {
 
   /// A metadata value. It can either be a simple string, or binary data.
@@ -262,6 +263,7 @@ public struct Metadata: Sendable, Hashable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata: RandomAccessCollection {
   public typealias Element = (key: String, value: Value)
 
@@ -302,6 +304,7 @@ extension Metadata: RandomAccessCollection {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata {
   /// A sequence of metadata values for a given key.
   public struct Values: Sequence, Sendable {
@@ -349,8 +352,8 @@ extension Metadata {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata {
-
   /// A sequence of metadata string values for a given key.
   public struct StringValues: Sequence, Sendable {
     /// An iterator for all string values associated with a given key.
@@ -399,6 +402,7 @@ extension Metadata {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata {
   /// A sequence of metadata binary values for a given key.
   public struct BinaryValues: Sequence, Sendable {
@@ -460,30 +464,35 @@ extension Metadata {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata: ExpressibleByDictionaryLiteral {
   public init(dictionaryLiteral elements: (String, Value)...) {
     self.elements = elements.map { KeyValuePair(key: $0, value: $1) }
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata: ExpressibleByArrayLiteral {
   public init(arrayLiteral elements: (String, Value)...) {
     self.elements = elements.map { KeyValuePair(key: $0, value: $1) }
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata.Value: ExpressibleByStringLiteral {
   public init(stringLiteral value: StringLiteralType) {
     self = .string(value)
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata.Value: ExpressibleByStringInterpolation {
   public init(stringInterpolation: DefaultStringInterpolation) {
     self = .string(String(stringInterpolation: stringInterpolation))
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata.Value: ExpressibleByArrayLiteral {
   public typealias ArrayLiteralElement = UInt8
 
@@ -492,6 +501,7 @@ extension Metadata.Value: ExpressibleByArrayLiteral {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata: CustomStringConvertible {
   public var description: String {
     if self.isEmpty {
@@ -504,6 +514,7 @@ extension Metadata: CustomStringConvertible {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata.Value: CustomStringConvertible {
   public var description: String {
     switch self {
@@ -515,6 +526,7 @@ extension Metadata.Value: CustomStringConvertible {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata.Value: CustomDebugStringConvertible {
   public var debugDescription: String {
     switch self {

@@ -67,6 +67,7 @@
 ///   print("RPC failed with code '\(error.code)'")
 /// }
 /// ```
+@available(gRPCSwift 2.0, *)
 public struct ClientResponse<Message: Sendable>: Sendable {
   /// The contents of an accepted response with a single message.
   public struct Contents: Sendable {
@@ -198,6 +199,7 @@ public struct ClientResponse<Message: Sendable>: Sendable {
 ///   print("RPC failed with code '\(error.code)'")
 /// }
 /// ```
+@available(gRPCSwift 2.0, *)
 public struct StreamingClientResponse<Message: Sendable>: Sendable {
   public struct Contents: Sendable {
     /// Metadata received from the server at the beginning of the response.
@@ -254,6 +256,7 @@ public struct StreamingClientResponse<Message: Sendable>: Sendable {
 
 // MARK: - Convenience API
 
+@available(gRPCSwift 2.0, *)
 extension ClientResponse {
   /// Creates a new accepted response.
   ///
@@ -324,6 +327,7 @@ extension ClientResponse {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension StreamingClientResponse {
   /// Creates a new accepted response.
   ///
@@ -386,6 +390,7 @@ extension StreamingClientResponse {
   /// Returns the body parts (i.e. `messages` and `trailingMetadata`) returned from the server.
   ///
   /// For rejected RPCs (in other words, where ``accepted`` is `failure`), the `RPCAsyncSequence` throws a ``RPCError``.
+  @available(gRPCSwift 2.1, *)
   public var bodyParts: RPCAsyncSequence<Contents.BodyPart, any Error> {
     switch self.accepted {
     case let .success(contents):
@@ -397,4 +402,5 @@ extension StreamingClientResponse {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension StreamingClientResponse.Contents.BodyPart: Equatable where Message: Equatable {}

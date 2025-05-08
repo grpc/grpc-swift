@@ -20,6 +20,7 @@ import Testing
 @Suite("Metadata")
 struct MetadataTests {
   @Test("Initialize from Sequence")
+  @available(gRPCSwift 2.0, *)
   func initFromSequence() {
     let elements: [Metadata.Element] = [
       (key: "key1", value: "value1"),
@@ -33,6 +34,7 @@ struct MetadataTests {
   }
 
   @Test("Add string Value")
+  @available(gRPCSwift 2.0, *)
   func addStringValue() {
     var metadata = Metadata()
     #expect(metadata.isEmpty)
@@ -47,6 +49,7 @@ struct MetadataTests {
   }
 
   @Test("Add binary value")
+  @available(gRPCSwift 2.0, *)
   func addBinaryValue() {
     var metadata = Metadata()
     #expect(metadata.isEmpty)
@@ -61,6 +64,7 @@ struct MetadataTests {
   }
 
   @Test("Initialize from dictionary literal")
+  @available(gRPCSwift 2.0, *)
   func initFromDictionaryLiteral() {
     let metadata: Metadata = [
       "testKey": "stringValue",
@@ -83,52 +87,52 @@ struct MetadataTests {
   struct ReplaceOrAdd {
     @Suite("String")
     struct StringValues {
-      var metadata: Metadata = [
-        "key1": "value1",
-        "key1": "value2",
-      ]
-
       @Test("Add different key")
+      @available(gRPCSwift 2.0, *)
       mutating func addNewKey() async throws {
-        self.metadata.replaceOrAddString("value3", forKey: "key2")
-        #expect(Array(self.metadata[stringValues: "key1"]) == ["value1", "value2"])
-        #expect(Array(self.metadata[stringValues: "key2"]) == ["value3"])
-        #expect(self.metadata.count == 3)
+        var metadata: Metadata = ["key1": "value1", "key1": "value2"]
+        metadata.replaceOrAddString("value3", forKey: "key2")
+        #expect(Array(metadata[stringValues: "key1"]) == ["value1", "value2"])
+        #expect(Array(metadata[stringValues: "key2"]) == ["value3"])
+        #expect(metadata.count == 3)
       }
 
       @Test("Replace values for existing key")
+      @available(gRPCSwift 2.0, *)
       mutating func replaceValues() async throws {
-        self.metadata.replaceOrAddString("value3", forKey: "key1")
-        #expect(Array(self.metadata[stringValues: "key1"]) == ["value3"])
-        #expect(self.metadata.count == 1)
+        var metadata: Metadata = ["key1": "value1", "key1": "value2"]
+        metadata.replaceOrAddString("value3", forKey: "key1")
+        #expect(Array(metadata[stringValues: "key1"]) == ["value3"])
+        #expect(metadata.count == 1)
       }
     }
 
     @Suite("Binary")
     struct BinaryValues {
-      var metadata: Metadata = [
-        "key1-bin": [0],
-        "key1-bin": [1],
-      ]
 
       @Test("Add different key")
+      @available(gRPCSwift 2.0, *)
       mutating func addNewKey() async throws {
-        self.metadata.replaceOrAddBinary([2], forKey: "key2-bin")
-        #expect(Array(self.metadata[binaryValues: "key1-bin"]) == [[0], [1]])
-        #expect(Array(self.metadata[binaryValues: "key2-bin"]) == [[2]])
-        #expect(self.metadata.count == 3)
+        var metadata: Metadata = ["key1-bin": [0], "key1-bin": [1]]
+        metadata.replaceOrAddBinary([2], forKey: "key2-bin")
+        #expect(Array(metadata[binaryValues: "key1-bin"]) == [[0], [1]])
+        #expect(Array(metadata[binaryValues: "key2-bin"]) == [[2]])
+        #expect(metadata.count == 3)
       }
 
       @Test("Replace values for existing key")
+      @available(gRPCSwift 2.0, *)
       mutating func replaceValues() async throws {
-        self.metadata.replaceOrAddBinary([2], forKey: "key1-bin")
-        #expect(Array(self.metadata[binaryValues: "key1-bin"]) == [[2]])
-        #expect(self.metadata.count == 1)
+        var metadata: Metadata = ["key1-bin": [0], "key1-bin": [1]]
+        metadata.replaceOrAddBinary([2], forKey: "key1-bin")
+        #expect(Array(metadata[binaryValues: "key1-bin"]) == [[2]])
+        #expect(metadata.count == 1)
       }
     }
   }
 
   @Test("Reserve more capacity increases capacity")
+  @available(gRPCSwift 2.0, *)
   func reserveMoreCapacity() {
     var metadata = Metadata()
     #expect(metadata.capacity == 0)
@@ -138,6 +142,7 @@ struct MetadataTests {
   }
 
   @Test("Reserve less capacity doesn't reduce capacity")
+  @available(gRPCSwift 2.0, *)
   func reserveCapacity() {
     var metadata = Metadata()
     #expect(metadata.capacity == 0)
@@ -148,6 +153,7 @@ struct MetadataTests {
   }
 
   @Test("Iterate over all values for a key")
+  @available(gRPCSwift 2.0, *)
   func iterateOverValuesForKey() {
     let metadata: Metadata = [
       "key-bin": "1",
@@ -162,6 +168,7 @@ struct MetadataTests {
   }
 
   @Test("Iterate over string values for a key")
+  @available(gRPCSwift 2.0, *)
   func iterateOverStringsForKey() {
     let metadata: Metadata = [
       "key-bin": "1",
@@ -176,6 +183,7 @@ struct MetadataTests {
   }
 
   @Test("Iterate over binary values for a key")
+  @available(gRPCSwift 2.0, *)
   func iterateOverBinaryForKey() {
     let metadata: Metadata = [
       "key-bin": "1",
@@ -190,6 +198,7 @@ struct MetadataTests {
   }
 
   @Test("Iterate over base64 encoded binary values for a key")
+  @available(gRPCSwift 2.0, *)
   func iterateOverBase64BinaryEncodedValuesForKey() {
     let metadata: Metadata = [
       "key-bin": "c3RyaW5nMQ==",
@@ -213,6 +222,7 @@ struct MetadataTests {
   }
 
   @Test("Subscripts are case-insensitive")
+  @available(gRPCSwift 2.0, *)
   func subscriptIsCaseInsensitive() {
     let metadata: Metadata = [
       "key1": "value1",
@@ -228,50 +238,57 @@ struct MetadataTests {
 
   @Suite("Remove all")
   struct RemoveAll {
-    var metadata: Metadata = [
-      "key1": "value1",
-      "key2": "value2",
-      "key3": "value1",
-    ]
-
     @Test("Where value matches")
+    @available(gRPCSwift 2.0, *)
     mutating func removeAllWhereValueMatches() async throws {
-      self.metadata.removeAll { _, value in
+      var metadata: Metadata = ["key1": "value1", "key2": "value2", "key3": "value1"]
+      metadata.removeAll { _, value in
         value == "value1"
       }
 
-      #expect(self.metadata == ["key2": "value2"])
+      #expect(metadata == ["key2": "value2"])
     }
 
     @Test("Where key matches")
+    @available(gRPCSwift 2.0, *)
     mutating func removeAllWhereKeyMatches() async throws {
-      self.metadata.removeAll { key, _ in
+      var metadata: Metadata = ["key1": "value1", "key2": "value2", "key3": "value1"]
+      metadata.removeAll { key, _ in
         key == "key2"
       }
 
-      #expect(self.metadata == ["key1": "value1", "key3": "value1"])
+      #expect(metadata == ["key1": "value1", "key3": "value1"])
     }
   }
 
   @Suite("Merge")
   struct Merge {
-    var metadata: Metadata = [
-      "key1": "value1-1",
-      "key2": "value2",
-      "key3": "value3",
-    ]
-    var otherMetadata: Metadata = [
-      "key4": "value4",
-      "key5": "value5",
-    ]
+    @available(gRPCSwift 2.0, *)
+    var metadata: Metadata {
+      [
+        "key1": "value1-1",
+        "key2": "value2",
+        "key3": "value3",
+      ]
+    }
+    @available(gRPCSwift 2.0, *)
+    var otherMetadata: Metadata {
+      [
+        "key4": "value4",
+        "key5": "value5",
+      ]
+    }
 
     @Test("Where key is already present with a different value")
+    @available(gRPCSwift 2.0, *)
     mutating func mergeWhereKeyIsAlreadyPresentWithDifferentValue() async throws {
-      self.otherMetadata.addString("value1-2", forKey: "key1")
-      self.metadata.add(contentsOf: self.otherMetadata)
+      var otherMetadata = self.otherMetadata
+      otherMetadata.addString("value1-2", forKey: "key1")
+      var metadata = metadata
+      metadata.add(contentsOf: otherMetadata)
 
       #expect(
-        self.metadata == [
+        metadata == [
           "key1": "value1-1",
           "key2": "value2",
           "key3": "value3",
@@ -283,12 +300,15 @@ struct MetadataTests {
     }
 
     @Test("Where key is already present with same value")
+    @available(gRPCSwift 2.0, *)
     mutating func mergeWhereKeyIsAlreadyPresentWithSameValue() async throws {
-      self.otherMetadata.addString("value1-1", forKey: "key1")
-      self.metadata.add(contentsOf: self.otherMetadata)
+      var otherMetadata = otherMetadata
+      otherMetadata.addString("value1-1", forKey: "key1")
+      var metadata = metadata
+      metadata.add(contentsOf: otherMetadata)
 
       #expect(
-        self.metadata == [
+        metadata == [
           "key1": "value1-1",
           "key2": "value2",
           "key3": "value3",
@@ -300,11 +320,13 @@ struct MetadataTests {
     }
 
     @Test("Where key is not already present")
+    @available(gRPCSwift 2.0, *)
     mutating func mergeWhereKeyIsNotAlreadyPresent() async throws {
-      self.metadata.add(contentsOf: self.otherMetadata)
+      var metadata = self.metadata
+      metadata.add(contentsOf: self.otherMetadata)
 
       #expect(
-        self.metadata == [
+        metadata == [
           "key1": "value1-1",
           "key2": "value2",
           "key3": "value3",
@@ -317,18 +339,23 @@ struct MetadataTests {
 
   @Suite("Description")
   struct Description {
-    let metadata: Metadata = [
-      "key1": "value1",
-      "key2": "value2",
-      "key-bin": .binary([1, 2, 3]),
-    ]
+    @available(gRPCSwift 2.0, *)
+    var metadata: Metadata {
+      [
+        "key1": "value1",
+        "key2": "value2",
+        "key-bin": .binary([1, 2, 3]),
+      ]
+    }
 
     @Test("Metadata")
+    @available(gRPCSwift 2.0, *)
     func describeMetadata() async throws {
       #expect("\(self.metadata)" == #"["key1": "value1", "key2": "value2", "key-bin": [1, 2, 3]]"#)
     }
 
     @Test("Metadata.Value")
+    @available(gRPCSwift 2.0, *)
     func describeMetadataValue() async throws {
       for (key, value) in self.metadata {
         switch key {

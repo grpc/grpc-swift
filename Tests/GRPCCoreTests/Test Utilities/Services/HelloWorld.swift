@@ -16,6 +16,7 @@
 import Foundation
 import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct HelloWorld: RegistrableRPCService {
   static let serviceDescriptor = ServiceDescriptor(package: "helloworld", service: "HelloWorld")
 

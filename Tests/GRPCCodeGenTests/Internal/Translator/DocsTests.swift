@@ -20,6 +20,7 @@ import Testing
 @Suite("Docs tests")
 struct DocsTests {
   @Test("Suffix with additional docs")
+  @available(gRPCSwift 2.0, *)
   func suffixWithAdditional() {
     let foo = """
       /// Foo
@@ -42,6 +43,7 @@ struct DocsTests {
   }
 
   @Test("Suffix with empty additional docs")
+  @available(gRPCSwift 2.0, *)
   func suffixWithEmptyAdditional() {
     let foo = """
       /// Foo
@@ -52,6 +54,7 @@ struct DocsTests {
   }
 
   @Test("Interpose additional docs")
+  @available(gRPCSwift 2.0, *)
   func interposeDocs() {
     let header = """
       /// Header
@@ -81,6 +84,7 @@ struct DocsTests {
   }
 
   @Test("Interpose empty additional docs")
+  @available(gRPCSwift 2.0, *)
   func interposeEmpty() {
     let header = """
       /// Header

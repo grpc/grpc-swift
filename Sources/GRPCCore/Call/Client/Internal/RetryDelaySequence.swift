@@ -25,6 +25,7 @@ public import Musl  // should be @usableFromInline
 #error("Unsupported OS")
 #endif
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 struct RetryDelaySequence: Sequence {
   @usableFromInline

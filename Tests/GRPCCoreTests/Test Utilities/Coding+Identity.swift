@@ -15,12 +15,14 @@
  */
 import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct IdentitySerializer: MessageSerializer {
   func serialize<Bytes: GRPCContiguousBytes>(_ message: [UInt8]) throws -> Bytes {
     return Bytes(message)
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct IdentityDeserializer: MessageDeserializer {
   func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> [UInt8] {
     return serializedMessageBytes.withUnsafeBytes {

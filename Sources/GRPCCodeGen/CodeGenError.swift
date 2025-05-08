@@ -15,6 +15,7 @@
  */
 
 /// A error thrown by the ``SourceGenerator`` to signal errors in the ``CodeGenerationRequest`` object.
+@available(gRPCSwift 2.0, *)
 public struct CodeGenError: Error, Hashable, Sendable {
   /// The code indicating the domain of the error.
   public var code: Code
@@ -33,6 +34,7 @@ public struct CodeGenError: Error, Hashable, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CodeGenError {
   public struct Code: Hashable, Sendable {
     private enum Value {
@@ -63,6 +65,7 @@ extension CodeGenError {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CodeGenError: CustomStringConvertible {
   public var description: String {
     return "\(self.code): \"\(self.message)\""

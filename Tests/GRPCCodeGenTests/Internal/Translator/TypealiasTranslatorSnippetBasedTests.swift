@@ -21,6 +21,7 @@ import Testing
 @Suite
 struct TypealiasTranslatorSnippetBasedTests {
   @Test
+  @available(gRPCSwift 2.0, *)
   func testTypealiasTranslator() throws {
     let method = MethodDescriptor(
       documentation: "Documentation for MethodA",
@@ -77,6 +78,7 @@ struct TypealiasTranslatorSnippetBasedTests {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension TypealiasTranslatorSnippetBasedTests {
   func render(
     accessLevel: CodeGenerator.Config.AccessLevel,
