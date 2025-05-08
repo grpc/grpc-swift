@@ -116,7 +116,7 @@ internal final class PooledChannel: GRPCChannel {
       connectionTarget: configuration.target,
       connectionKeepalive: configuration.keepalive,
       connectionIdleTimeout: configuration.idleTimeout,
-      connectionMaxAge: configuration.maxAge,
+      connectionMaxAge: configuration.maxConnectionAge,
       tlsMode: tlsMode,
       tlsConfiguration: configuration.transportSecurity.tlsConfiguration,
       httpTargetWindowSize: configuration.http2.targetWindowSize,
