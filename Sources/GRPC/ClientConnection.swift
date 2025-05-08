@@ -423,6 +423,14 @@ extension ClientConnection {
     /// Defaults to 30 minutes.
     public var connectionIdleTimeout: TimeAmount = .minutes(30)
 
+    /// The maximum allowed age of a connection.
+    ///
+    /// If set, no new RPCs will be started on the connection after the connection has been opened
+    /// for this period of time. Existing RPCs will be allowed to continue and the connection will
+    /// close once all RPCs on the connection have finished. If this isn't set then connections have
+    /// no limit on their lifetime.
+    public var connectionMaxAge: TimeAmount? = nil
+
     /// The behavior used to determine when an RPC should start. That is, whether it should wait for
     /// an active connection or fail quickly if no connection is currently available.
     ///
@@ -635,6 +643,7 @@ extension ChannelPipeline.SynchronousOperations {
     connectionManager: ConnectionManager,
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
+    connectionMaxAge: TimeAmount?,
     httpTargetWindowSize: Int,
     httpMaxFrameSize: Int,
     httpMaxResetStreams: Int,
@@ -672,6 +681,7 @@ extension ChannelPipeline.SynchronousOperations {
         connectionManager: connectionManager,
         multiplexer: h2Multiplexer,
         idleTimeout: connectionIdleTimeout,
+        maxAge: connectionMaxAge,
         keepalive: connectionKeepalive,
         logger: logger
       )

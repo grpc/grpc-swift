@@ -27,11 +27,18 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   /// If nil, then we shouldn't schedule idle tasks.
   private let idleTimeout: TimeAmount?
 
+  /// The maximum amount of time the connection is allowed to live before quiescing.
+  private let maxAge: TimeAmount?
+
   /// The ping handler.
   private var pingHandler: PingHandler
 
+  /// The scheduled task which will close the connection gently after the max connection age
+  /// has been reached.
+  private var scheduledMaxAgeClose: Scheduled<Void>?
+
   /// The scheduled task which will close the connection after the keep-alive timeout has expired.
-  private var scheduledClose: Scheduled<Void>?
+  private var scheduledKeepAliveClose: Scheduled<Void>?
 
   /// The scheduled task which will ping.
   private var scheduledPing: RepeatedTask?
@@ -75,6 +82,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     connectionManager: ConnectionManager,
     multiplexer: HTTP2StreamMultiplexer,
     idleTimeout: TimeAmount,
+    maxAge: TimeAmount?,
     keepalive configuration: ClientConnectionKeepalive,
     logger: Logger
   ) {
@@ -95,6 +103,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       minimumSentPingIntervalWithoutData: configuration.minimumSentPingIntervalWithoutData
     )
     self.creationTime = .now()
+    self.maxAge = maxAge
   }
 
   init(
@@ -116,6 +125,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       maximumPingStrikes: configuration.maximumPingStrikes
     )
     self.creationTime = .now()
+    self.maxAge = nil
   }
 
   private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
@@ -218,8 +228,8 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       )
 
     case .cancelScheduledTimeout:
-      self.scheduledClose?.cancel()
-      self.scheduledClose = nil
+      self.scheduledKeepAliveClose?.cancel()
+      self.scheduledKeepAliveClose = nil
 
     case let .schedulePing(delay, timeout):
       self.schedulePing(in: delay, timeout: timeout)
@@ -267,7 +277,7 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   }
 
   private func scheduleClose(in timeout: TimeAmount) {
-    self.scheduledClose = self.context?.eventLoop.scheduleTask(in: timeout) {
+    self.scheduledKeepAliveClose = self.context?.eventLoop.scheduleTask(in: timeout) {
       self.stateMachine.logger.debug("keepalive timer expired")
       self.perform(operations: self.stateMachine.shutdownNow())
     }
@@ -334,6 +344,16 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       remote: context.remoteAddress
     )
 
+    // If a max age has been set then start a timer. This will only be cancelled when it fires or when
+    // the channel eventually becomes inactive.
+    if let maxAge = self.maxAge {
+      assert(self.scheduledMaxAgeClose == nil)
+      self.scheduledMaxAgeClose = context.eventLoop.scheduleTask(in: maxAge) {
+        let operations = self.stateMachine.reachedMaxAge()
+        self.perform(operations: operations)
+      }
+    }
+
     // No state machine action here.
     switch self.mode {
     case let .client(connectionManager, multiplexer):
@@ -341,15 +361,18 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     case .server:
       ()
     }
+
     context.fireChannelActive()
   }
 
   func channelInactive(context: ChannelHandlerContext) {
     self.perform(operations: self.stateMachine.channelInactive())
     self.scheduledPing?.cancel()
-    self.scheduledClose?.cancel()
+    self.scheduledKeepAliveClose?.cancel()
+    self.scheduledMaxAgeClose?.cancel()
     self.scheduledPing = nil
-    self.scheduledClose = nil
+    self.scheduledKeepAliveClose = nil
+    self.scheduledMaxAgeClose = nil
     context.fireChannelInactive()
   }
 

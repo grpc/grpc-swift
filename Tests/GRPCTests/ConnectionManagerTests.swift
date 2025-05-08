@@ -165,6 +165,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -217,6 +218,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -273,6 +275,7 @@ extension ConnectionManagerTests {
           inboundStreamInitializer: nil
         ),
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -322,6 +325,7 @@ extension ConnectionManagerTests {
           inboundStreamInitializer: nil
         ),
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -350,6 +354,7 @@ extension ConnectionManagerTests {
           inboundStreamInitializer: nil
         ),
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -391,6 +396,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -464,6 +470,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -536,6 +543,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -654,6 +662,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -730,6 +739,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -807,6 +817,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: firstH2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -855,6 +866,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: secondH2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -905,6 +917,7 @@ extension ConnectionManagerTests {
         connectionManager: manager,
         multiplexer: h2mux,
         idleTimeout: .minutes(5),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.logger
       )
@@ -1063,6 +1076,7 @@ extension ConnectionManagerTests {
           connectionManager: manager,
           multiplexer: h2mux,
           idleTimeout: .minutes(5),
+          maxAge: nil,
           keepalive: .init(),
           logger: self.logger
         )
@@ -1120,6 +1134,7 @@ extension ConnectionManagerTests {
           connectionManager: manager,
           multiplexer: h2mux,
           idleTimeout: .minutes(5),
+          maxAge: nil,
           keepalive: .init(),
           logger: self.logger
         )
@@ -1201,6 +1216,7 @@ extension ConnectionManagerTests {
           connectionManager: manager,
           multiplexer: multiplexer,
           idleTimeout: .minutes(5),
+          maxAge: nil,
           keepalive: ClientConnectionKeepalive(),
           logger: self.logger
         )
@@ -1314,6 +1330,7 @@ extension ConnectionManagerTests {
         connectionManager: connectionManager,
         multiplexer: multiplexer,
         idleTimeout: .minutes(60),
+        maxAge: nil,
         keepalive: .init(),
         logger: self.clientLogger
       )
