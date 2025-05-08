@@ -42,6 +42,8 @@ public struct CodeGenerator: Sendable {
     public var server: Bool
     /// The name of the core gRPC module.
     public var grpcCoreModuleName: String
+    /// The availability annotations to use on the generated code.
+    public var availability: AvailabilityAnnotations = .default
 
     /// Creates a new configuration.
     ///
@@ -84,6 +86,50 @@ public struct CodeGenerator: Sendable {
       /// The generated code will have `package` access level.
       public static var `package`: Self { Self(level: .`package`) }
     }
+
+    // The availability that generated code is annotated with.
+    public struct AvailabilityAnnotations: Sendable, Hashable {
+      public struct Platform: Sendable, Hashable {
+        /// The name of the OS, e.g. 'macOS'.
+        public var os: String
+        /// The version of the OS, e.g. '15.0'.
+        public var version: String
+
+        public init(os: String, version: String) {
+          self.os = os
+          self.version = version
+        }
+      }
+
+      fileprivate enum Wrapped: Sendable, Hashable {
+        case macOS15Aligned
+        case custom([Platform])
+      }
+
+      fileprivate var wrapped: Wrapped
+
+      private init(_ wrapped: Wrapped) {
+        self.wrapped = wrapped
+      }
+
+      /// Use the default availability.
+      ///
+      /// The default platform availability is:
+      /// - macOS 15.0
+      /// - iOS 18.0
+      /// - tvOS 18.0
+      /// - watchOS 11.0
+      /// - visionOS 2.0
+      public static var `default`: Self {
+        Self(.macOS15Aligned)
+      }
+
+      /// Use a custom set of availability attributes.
+      /// - Parameter platforms: Availability requirements.
+      public static func custom(_ platforms: [Platform]) -> Self {
+        Self(.custom(platforms))
+      }
+    }
   }
 
   /// Transforms a ``CodeGenerationRequest`` object  into a ``SourceFile`` object containing
@@ -100,11 +146,25 @@ public struct CodeGenerator: Sendable {
       accessLevelOnImports: self.config.accessLevelOnImports,
       client: self.config.client,
       server: self.config.server,
-      grpcCoreModuleName: self.config.grpcCoreModuleName
+      grpcCoreModuleName: self.config.grpcCoreModuleName,
+      availability: AvailabilityDescription(self.config.availability)
     )
 
     let sourceFile = try textRenderer.render(structured: structuredSwiftRepresentation)
 
     return sourceFile
+  }
+}
+
+extension AvailabilityDescription {
+  init(_ availability: CodeGenerator.Config.AvailabilityAnnotations) throws {
+    switch availability.wrapped {
+    case .macOS15Aligned:
+      self = .macOS15Aligned
+    case .custom(let platforms):
+      self.osVersions = platforms.map {
+        .init(os: .init(name: $0.os), version: $0.version)
+      }
+    }
   }
 }

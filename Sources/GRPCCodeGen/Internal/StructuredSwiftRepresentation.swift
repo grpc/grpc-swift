@@ -797,6 +797,9 @@ indirect enum Declaration: Equatable, Codable, Sendable {
   /// A declaration that adds a comment on top of the provided declaration.
   case deprecated(DeprecationDescription, Declaration)
 
+  /// A declaration that adds an availability guard on top of the provided declaration.
+  case guarded(AvailabilityDescription, Declaration)
+
   /// A variable declaration.
   case variable(VariableDescription)
 
@@ -837,18 +840,18 @@ struct DeprecationDescription: Equatable, Codable, Sendable {
 /// A description of an availability guard.
 ///
 /// For example: `@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)`
-struct AvailabilityDescription: Equatable, Codable, Sendable {
+package struct AvailabilityDescription: Equatable, Codable, Sendable {
   /// The array of OSes and versions which are specified in the availability guard.
-  var osVersions: [OSVersion]
-  init(osVersions: [OSVersion]) {
+  package var osVersions: [OSVersion]
+  package init(osVersions: [OSVersion]) {
     self.osVersions = osVersions
   }
 
   /// An OS and its version.
-  struct OSVersion: Equatable, Codable, Sendable {
-    var os: OS
-    var version: String
-    init(os: OS, version: String) {
+  package struct OSVersion: Equatable, Codable, Sendable {
+    package var os: OS
+    package var version: String
+    package init(os: OS, version: String) {
       self.os = os
       self.version = version
     }
@@ -856,18 +859,18 @@ struct AvailabilityDescription: Equatable, Codable, Sendable {
 
   /// One of the possible OSes.
   // swift-format-ignore: DontRepeatTypeInStaticProperties
-  struct OS: Equatable, Codable, Sendable {
-    var name: String
+  package struct OS: Equatable, Codable, Sendable {
+    package var name: String
 
-    init(name: String) {
+    package init(name: String) {
       self.name = name
     }
 
-    static let macOS = Self(name: "macOS")
-    static let iOS = Self(name: "iOS")
-    static let watchOS = Self(name: "watchOS")
-    static let tvOS = Self(name: "tvOS")
-    static let visionOS = Self(name: "visionOS")
+    package static let macOS = Self(name: "macOS")
+    package static let iOS = Self(name: "iOS")
+    package static let watchOS = Self(name: "watchOS")
+    package static let tvOS = Self(name: "tvOS")
+    package static let visionOS = Self(name: "visionOS")
   }
 }
 
@@ -1873,6 +1876,7 @@ extension Declaration {
       switch self {
       case .commentable(_, let declaration): return declaration.accessModifier
       case .deprecated(_, let declaration): return declaration.accessModifier
+      case .guarded(_, let declaration): return declaration.accessModifier
       case .variable(let variableDescription): return variableDescription.accessModifier
       case .extension(let extensionDescription): return extensionDescription.accessModifier
       case .struct(let structDescription): return structDescription.accessModifier
@@ -1891,6 +1895,9 @@ extension Declaration {
       case .deprecated(let deprecationDescription, var declaration):
         declaration.accessModifier = newValue
         self = .deprecated(deprecationDescription, declaration)
+      case .guarded(let availability, var declaration):
+        declaration.accessModifier = newValue
+        self = .guarded(availability, declaration)
       case .variable(var variableDescription):
         variableDescription.accessModifier = newValue
         self = .variable(variableDescription)

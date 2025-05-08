@@ -42,6 +42,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
     )
 
     let expectedSwift = """
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA {
           /// Streaming variant of the service protocol for the "namespaceA.AlongNameForServiceA" service.
           ///
@@ -138,6 +139,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
           }
       }
       // Default implementation of 'registerMethods(with:)'.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.StreamingServiceProtocol {
           public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
               router.registerHandler(
@@ -154,6 +156,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
           }
       }
       // Default implementation of streaming methods from 'StreamingServiceProtocol'.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.ServiceProtocol {
           public func unary(
               request: GRPCCore.StreamingServerRequest<NamespaceA_ServiceARequest>,
@@ -167,6 +170,7 @@ final class ServerCodeTranslatorSnippetBasedTests {
           }
       }
       // Default implementation of methods from 'ServiceProtocol'.
+      @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
       extension NamespaceA_ServiceA.SimpleServiceProtocol {
           public func unary(
               request: GRPCCore.ServerRequest<NamespaceA_ServiceARequest>,
@@ -192,7 +196,11 @@ final class ServerCodeTranslatorSnippetBasedTests {
     service: ServiceDescriptor
   ) -> String {
     let translator = ServerCodeTranslator()
-    let codeBlocks = translator.translate(accessModifier: accessLevel, service: service) {
+    let codeBlocks = translator.translate(
+      accessModifier: accessLevel,
+      service: service,
+      availability: .macOS15Aligned
+    ) {
       "GRPCProtobuf.ProtobufSerializer<\($0)>()"
     } deserializer: {
       "GRPCProtobuf.ProtobufDeserializer<\($0)>()"
