@@ -32,7 +32,7 @@ let includeNIOSSL = ProcessInfo.processInfo.environment["GRPC_NO_NIO_SSL"] == ni
 let packageDependencies: [Package.Dependency] = [
   .package(
     url: "https://github.com/apple/swift-nio.git",
-    from: "2.65.0"
+    from: "2.82.0"
   ),
   .package(
     url: "https://github.com/apple/swift-nio-http2.git",
@@ -48,7 +48,7 @@ let packageDependencies: [Package.Dependency] = [
   ),
   .package(
     url: "https://github.com/apple/swift-collections.git",
-    from: "1.0.5"
+    from: "1.1.0"
   ),
   .package(
     url: "https://github.com/apple/swift-atomics.git",
