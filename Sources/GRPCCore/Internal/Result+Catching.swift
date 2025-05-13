@@ -19,6 +19,7 @@ extension Result {
   ///
   /// - Parameter body: An `async` closure to catch the result of.
   @inlinable
+  @available(gRPCSwift 2.0, *)
   init(catching body: () async throws(Failure) -> Success) async {
     do {
       self = .success(try await body())
@@ -35,6 +36,7 @@ extension Result {
   ///   - errorType: The type of error to cast to.
   ///   - buildError: A closure which constructs the desired error if the cast fails.
   @inlinable
+  @available(gRPCSwift 2.0, *)
   func castError<NewError: Error>(
     to errorType: NewError.Type = NewError.self,
     or buildError: (any Error) -> NewError

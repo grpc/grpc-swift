@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor {
   /// An executor for requests which doesn't apply retries or hedging. The request has just one
   /// attempt at execution.
@@ -53,6 +54,7 @@ extension ClientRPCExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
   func execute<R: Sendable>(
@@ -88,6 +90,7 @@ extension ClientRPCExecutor.OneShotExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor.OneShotExecutor {
   @inlinable
   func _execute<R: Sendable>(
@@ -129,6 +132,7 @@ extension ClientRPCExecutor.OneShotExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 @inlinable
 func withDeadline<Result: Sendable>(
   _ deadline: ContinuousClock.Instant,
@@ -169,6 +173,7 @@ func withDeadline<Result: Sendable>(
   }
 }
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 enum _DeadlineChildTaskResult<Value: Sendable>: Sendable {
   case deadlinePassed

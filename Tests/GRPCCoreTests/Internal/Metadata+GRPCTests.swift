@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class MetadataGRPCTests: XCTestCase {
   func testPreviousRPCAttemptsValidValues() {
     let testData = [("0", 0), ("1", 1), ("-1", -1)]

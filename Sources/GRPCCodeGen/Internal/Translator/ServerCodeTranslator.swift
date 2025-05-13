@@ -57,6 +57,7 @@
 ///   }
 /// }
 ///```
+@available(gRPCSwift 2.0, *)
 struct ServerCodeTranslator {
   init() {}
 

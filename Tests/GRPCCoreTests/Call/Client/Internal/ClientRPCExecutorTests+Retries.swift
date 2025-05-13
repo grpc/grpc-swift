@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutorTests {
   fileprivate func makeHarnessForRetries(
     rejectUntilAttempt firstSuccessfulAttempt: Int,
@@ -288,6 +289,7 @@ extension ClientRPCExecutorTests {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CallOptions {
   fileprivate static func retry(
     _ policy: RetryPolicy

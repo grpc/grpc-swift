@@ -29,6 +29,7 @@ struct ServiceDescriptorTests {
       ("", "", ""),
     ]
   )
+  @available(gRPCSwift 2.0, *)
   func packageAndService(fullyQualified: String, package: String, service: String) {
     let descriptor = ServiceDescriptor(fullyQualifiedService: fullyQualified)
     #expect(descriptor.fullyQualifiedService == fullyQualified)
@@ -37,6 +38,7 @@ struct ServiceDescriptorTests {
   }
 
   @Test("CustomStringConvertible")
+  @available(gRPCSwift 2.0, *)
   func description() {
     let descriptor = ServiceDescriptor(fullyQualifiedService: "foo.Foo")
     #expect(String(describing: descriptor) == "foo.Foo")

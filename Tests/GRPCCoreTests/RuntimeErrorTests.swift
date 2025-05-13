@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class RuntimeErrorTests: XCTestCase {
   func testCopyOnWrite() {
     // RuntimeError has a heap based storage, so check CoW semantics are correctly implemented.

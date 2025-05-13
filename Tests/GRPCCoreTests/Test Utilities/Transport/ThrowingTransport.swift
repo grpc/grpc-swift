@@ -15,6 +15,7 @@
  */
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 struct ThrowOnStreamCreationTransport: ClientTransport {
   typealias Bytes = [UInt8]
 
@@ -49,6 +50,7 @@ struct ThrowOnStreamCreationTransport: ClientTransport {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct ThrowOnRunServerTransport: ServerTransport {
   typealias Bytes = [UInt8]
 
@@ -69,6 +71,7 @@ struct ThrowOnRunServerTransport: ServerTransport {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct ThrowOnSignalServerTransport: ServerTransport {
   typealias Bytes = [UInt8]
 

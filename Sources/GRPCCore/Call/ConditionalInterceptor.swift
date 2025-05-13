@@ -23,6 +23,7 @@
 ///
 /// - SeeAlso: ``ClientInterceptor`` and ``ServerInterceptor`` for more information on client and
 ///   server interceptors, respectively.
+@available(gRPCSwift 2.0, *)
 public struct ConditionalInterceptor<Interceptor: Sendable>: Sendable {
   public struct Subject: Sendable {
     internal enum Wrapped: Sendable {
@@ -85,6 +86,7 @@ public struct ConditionalInterceptor<Interceptor: Sendable>: Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ConditionalInterceptor where Interceptor == any ClientInterceptor {
   /// Create an operation, specifying which ``ClientInterceptor`` to apply and to which ``Subject``.
   /// - Parameters:
@@ -98,6 +100,7 @@ extension ConditionalInterceptor where Interceptor == any ClientInterceptor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ConditionalInterceptor where Interceptor == any ServerInterceptor {
   /// Create an operation, specifying which ``ServerInterceptor`` to apply and to which ``Subject``.
   /// - Parameters:

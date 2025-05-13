@@ -16,6 +16,7 @@
 
 public import Synchronization  // would be internal but for usableFromInline
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor {
   @usableFromInline
   struct HedgingExecutor<
@@ -61,6 +62,7 @@ extension ClientRPCExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor.HedgingExecutor {
   @inlinable
   func execute<R: Sendable>(
@@ -543,6 +545,7 @@ extension ClientRPCExecutor.HedgingExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 enum _HedgingTaskResult<R: Sendable>: Sendable {
   case rpcHandled(Result<R, any Error>)
@@ -550,6 +553,7 @@ enum _HedgingTaskResult<R: Sendable>: Sendable {
   case timedOut(Result<Void, any Error>)
 }
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 enum _HedgingAttemptTaskResult<R: Sendable, Output: Sendable>: Sendable {
   case attemptPicked(Bool)

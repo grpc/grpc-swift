@@ -22,6 +22,7 @@
 /// gRPC provides an in-process transport in the `GRPCInProcessTransport` module and HTTP/2
 /// transport built on top of SwiftNIO in the https://github.com/grpc/grpc-swift-nio-transport
 /// package.
+@available(gRPCSwift 2.0, *)
 public protocol ServerTransport<Bytes>: Sendable {
   /// The bag-of-bytes type used by the transport.
   associatedtype Bytes: GRPCContiguousBytes & Sendable

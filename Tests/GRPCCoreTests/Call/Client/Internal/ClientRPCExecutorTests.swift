@@ -18,6 +18,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class ClientRPCExecutorTests: XCTestCase {
   func testUnaryEcho() async throws {
     let tester = ClientRPCExecutorTestHarness(server: .echo)

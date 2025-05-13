@@ -17,6 +17,7 @@
 public import GRPCCore
 private import Synchronization
 
+@available(gRPCSwift 2.0, *)
 extension InProcessTransport {
   /// An in-process implementation of a `ClientTransport`.
   ///

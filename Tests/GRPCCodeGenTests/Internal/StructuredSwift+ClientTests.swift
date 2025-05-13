@@ -26,6 +26,7 @@ extension StructuredSwiftTests {
       arguments: AccessModifier.allCases,
       RPCKind.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func clientMethodSignature(access: AccessModifier, kind: RPCKind) {
       let decl: FunctionSignatureDescription = .clientMethod(
         accessLevel: access,
@@ -59,6 +60,7 @@ extension StructuredSwiftTests {
       arguments: AccessModifier.allCases,
       [true, false]
     )
+    @available(gRPCSwift 2.0, *)
     func clientMethodSignatureWithDefaults(access: AccessModifier, streamsOutput: Bool) {
       let decl: FunctionSignatureDescription = .clientMethod(
         accessLevel: access,
@@ -96,6 +98,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("protocol Foo_ClientProtocol: Sendable { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func clientProtocol(access: AccessModifier) {
       let decl: ProtocolDescription = .clientProtocol(
         accessLevel: access,
@@ -143,6 +146,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("func foo(...) { try await self.foo(...) }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func clientMethodFunctionWithDefaults(access: AccessModifier) {
       let decl: FunctionDescription = .clientMethodWithDefaults(
         accessLevel: access,
@@ -180,6 +184,7 @@ extension StructuredSwiftTests {
       "extension Foo_ClientProtocol { ... } (methods with defaults)",
       arguments: AccessModifier.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func extensionWithDefaultClientMethods(access: AccessModifier) {
       let decl: ExtensionDescription = .clientMethodSignatureWithDefaults(
         accessLevel: access,
@@ -235,6 +240,7 @@ extension StructuredSwiftTests {
       arguments: AccessModifier.allCases,
       RPCKind.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func explodedClientMethodSignature(access: AccessModifier, kind: RPCKind) {
       let decl: FunctionSignatureDescription = .clientMethodExploded(
         accessLevel: access,
@@ -296,6 +302,7 @@ extension StructuredSwiftTests {
       "func foo<Result>(_:metadata:options:onResponse:) -> Result (exploded body)",
       arguments: [true, false]
     )
+    @available(gRPCSwift 2.0, *)
     func explodedClientMethodBody(streamingInput: Bool) {
       let blocks: [CodeBlock] = .clientMethodExploded(
         name: "foo",
@@ -335,6 +342,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("extension Foo_ClientProtocol { ... } (exploded)", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func explodedClientMethodExtension(access: AccessModifier) {
       let decl: ExtensionDescription = .explodedClientMethods(
         accessLevel: access,
@@ -393,6 +401,7 @@ extension StructuredSwiftTests {
       "func foo(request:serializer:deserializer:options:onResponse:) (client method impl.)",
       arguments: AccessModifier.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func clientMethodImplementation(access: AccessModifier) {
       let decl: FunctionDescription = .clientMethod(
         accessLevel: access,
@@ -430,6 +439,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("struct FooClient: Foo_ClientProtocol { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func client(access: AccessModifier) {
       let decl: StructDescription = .client(
         accessLevel: access,

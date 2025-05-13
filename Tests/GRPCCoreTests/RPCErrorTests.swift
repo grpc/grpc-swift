@@ -19,6 +19,7 @@ import Testing
 @Suite("RPCError Tests")
 struct RPCErrorTests {
   @Test("Custom String Convertible")
+  @available(gRPCSwift 2.0, *)
   func testCustomStringConvertible() {
     #expect(String(describing: RPCError(code: .dataLoss, message: "")) == #"dataLoss: """#)
     #expect(
@@ -36,6 +37,7 @@ struct RPCErrorTests {
   }
 
   @Test("Error from Status")
+  @available(gRPCSwift 2.0, *)
   func testErrorFromStatus() throws {
     var status = Status(code: .ok, message: "")
     // ok isn't an error
@@ -77,11 +79,13 @@ struct RPCErrorTests {
       (Status.Code.unauthenticated, RPCError.Code.unauthenticated),
     ]
   )
+  @available(gRPCSwift 2.0, *)
   func testErrorCodeFromStatusCode(statusCode: Status.Code, rpcErrorCode: RPCError.Code?) throws {
     #expect(RPCError.Code(statusCode) == rpcErrorCode)
   }
 
   @Test("Equatable Conformance")
+  @available(gRPCSwift 2.0, *)
   func testEquatableConformance() {
     #expect(
       RPCError(code: .cancelled, message: "")
@@ -135,11 +139,13 @@ struct RPCErrorTests {
       (.unauthenticated, 16),
     ]
   )
+  @available(gRPCSwift 2.0, *)
   func testStatusCodeRawValues(statusCode: RPCError.Code, rawValue: Int) {
     #expect(statusCode.rawValue == rawValue, "\(statusCode) had unexpected raw value")
   }
 
   @Test("Flatten causes with same status code")
+  @available(gRPCSwift 2.0, *)
   func testFlattenCausesWithSameStatusCode() {
     let error1 = RPCError(code: .unknown, message: "Error 1.")
     let error2 = RPCError(code: .unknown, message: "Error 2.", cause: error1)
@@ -162,6 +168,7 @@ struct RPCErrorTests {
   }
 
   @Test("Causes of errors with different status codes aren't flattened")
+  @available(gRPCSwift 2.0, *)
   func testDifferentStatusCodeAreNotFlattened() throws {
     let error1 = RPCError(code: .unknown, message: "Error 1.")
     let error2 = RPCError(code: .dataLoss, message: "Error 2.", cause: error1)
@@ -191,6 +198,7 @@ struct RPCErrorTests {
   }
 
   @Test("Convert type to RPCError")
+  @available(gRPCSwift 2.0, *)
   func convertTypeUsingRPCErrorConvertible() {
     struct Cause: Error {}
     struct ConvertibleError: RPCErrorConvertible {
@@ -208,6 +216,7 @@ struct RPCErrorTests {
   }
 
   @Test("Convert type to RPCError with defaults")
+  @available(gRPCSwift 2.0, *)
   func convertTypeUsingRPCErrorConvertibleDefaults() {
     struct ConvertibleType: RPCErrorConvertible {
       var rpcErrorCode: RPCError.Code { .unknown }
@@ -222,6 +231,7 @@ struct RPCErrorTests {
   }
 
   @Test("Convert error to RPCError with defaults")
+  @available(gRPCSwift 2.0, *)
   func convertErrorUsingRPCErrorConvertibleDefaults() {
     struct ConvertibleType: RPCErrorConvertible, Error {
       var rpcErrorCode: RPCError.Code { .unknown }

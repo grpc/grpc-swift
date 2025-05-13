@@ -20,6 +20,7 @@ import struct Foundation.Data
 import class Foundation.JSONDecoder
 import class Foundation.JSONEncoder
 
+@available(gRPCSwift 2.0, *)
 struct JSONSerializer<Message: Codable>: MessageSerializer {
   func serialize<Bytes: GRPCContiguousBytes>(_ message: Message) throws -> Bytes {
     do {
@@ -32,6 +33,7 @@ struct JSONSerializer<Message: Codable>: MessageSerializer {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 struct JSONDeserializer<Message: Codable>: MessageDeserializer {
   func deserialize<Bytes: GRPCContiguousBytes>(_ serializedMessageBytes: Bytes) throws -> Message {
     do {

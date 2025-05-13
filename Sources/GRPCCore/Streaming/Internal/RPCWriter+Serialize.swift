@@ -15,6 +15,7 @@
  */
 
 @usableFromInline
+@available(gRPCSwift 2.0, *)
 struct SerializingRPCWriter<
   Base: RPCWriterProtocol<Bytes>,
   Bytes: GRPCContiguousBytes,
@@ -49,6 +50,7 @@ struct SerializingRPCWriter<
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RPCWriter {
   @inlinable
   static func serializing(

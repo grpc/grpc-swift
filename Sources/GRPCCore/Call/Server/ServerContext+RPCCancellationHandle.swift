@@ -16,6 +16,7 @@
 
 private import Synchronization
 
+@available(gRPCSwift 2.0, *)
 extension ServerContext {
   @TaskLocal
   internal static var rpcCancellation: RPCCancellationHandle?
@@ -73,6 +74,7 @@ extension ServerContext {
 ///   - handler: The handler which is invoked when the RPC is cancelled.
 /// - Throws: Any error thrown by the `operation` closure.
 /// - Returns: The result of the `operation` closure.
+@available(gRPCSwift 2.0, *)
 public func withRPCCancellationHandler<Result, Failure: Error>(
   operation: () async throws(Failure) -> Result,
   onCancelRPC handler: @Sendable @escaping () -> Void
@@ -102,6 +104,7 @@ public func withRPCCancellationHandler<Result, Failure: Error>(
 /// use ``withRPCCancellationHandler(operation:onCancelRPC:)``.
 ///
 /// - Parameter operation: The operation to execute with the handle.
+@available(gRPCSwift 2.0, *)
 public func withServerContextRPCCancellationHandle<Success, Failure: Error>(
   _ operation: (ServerContext.RPCCancellationHandle) async throws(Failure) -> Success
 ) async throws(Failure) -> Success {

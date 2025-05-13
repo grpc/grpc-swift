@@ -16,6 +16,7 @@
 import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 extension RPCWriter {
   /// Returns a writer which calls `XCTFail(_:)` on every write.
   static func failTestOnWrite(elementType: Element.Type = Element.self) -> Self {

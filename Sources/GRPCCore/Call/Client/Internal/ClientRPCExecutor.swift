@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 enum ClientRPCExecutor {
   /// Execute the request and handle its response.
@@ -99,6 +100,7 @@ enum ClientRPCExecutor {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ClientRPCExecutor {
   /// Executes a request on a given stream processor.
   ///

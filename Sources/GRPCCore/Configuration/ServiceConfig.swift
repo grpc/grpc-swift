@@ -22,6 +22,7 @@
 /// The schema is described by [`grpc/service_config/service_config.proto`](https://github.com/grpc/grpc-proto/blob/0b30c8c05277ab78ec72e77c9cbf66a26684673d/grpc/service_config/service_config.proto)
 /// in the `grpc/grpc-proto` GitHub repository although gRPC uses it in its JSON form rather than
 /// the Protobuf form.
+@available(gRPCSwift 2.0, *)
 public struct ServiceConfig: Hashable, Sendable {
   /// Per-method configuration.
   public var methodConfig: [MethodConfig]
@@ -67,6 +68,7 @@ public struct ServiceConfig: Hashable, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case methodConfig
@@ -103,6 +105,7 @@ extension ServiceConfig: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceConfig {
   /// Configuration used by clients for load-balancing.
   public struct LoadBalancingConfig: Hashable, Sendable {
@@ -168,6 +171,7 @@ extension ServiceConfig {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceConfig.LoadBalancingConfig {
   /// Configuration for the pick-first load balancing policy.
   public struct PickFirst: Hashable, Sendable, Codable {
@@ -195,6 +199,7 @@ extension ServiceConfig.LoadBalancingConfig {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceConfig.LoadBalancingConfig: Codable {
   private enum CodingKeys: String, CodingKey {
     case roundRobin = "round_robin"
@@ -225,6 +230,7 @@ extension ServiceConfig.LoadBalancingConfig: Codable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServiceConfig {
   public struct RetryThrottling: Hashable, Sendable, Codable {
     /// The initial, and maximum number of tokens.

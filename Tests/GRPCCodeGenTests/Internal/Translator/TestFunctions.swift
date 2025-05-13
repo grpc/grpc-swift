@@ -71,6 +71,7 @@ internal func XCTAssertEqualWithDiff(
   )
 }
 
+@available(gRPCSwift 2.0, *)
 internal func makeCodeGenerationRequest(
   services: [ServiceDescriptor] = [],
   dependencies: [Dependency] = []

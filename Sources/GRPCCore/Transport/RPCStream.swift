@@ -15,6 +15,7 @@
  */
 
 /// A bidirectional communication channel between a client and server for a given method.
+@available(gRPCSwift 2.0, *)
 public struct RPCStream<
   Inbound: AsyncSequence & Sendable,
   Outbound: ClosableRPCWriterProtocol & Sendable

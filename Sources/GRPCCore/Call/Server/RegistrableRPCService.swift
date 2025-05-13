@@ -22,6 +22,7 @@
 /// generated conformance by implementing ``registerMethods(with:)`` manually by calling
 /// ``RPCRouter/registerHandler(forMethod:deserializer:serializer:handler:)`` for each method
 /// you want to register with the router.
+@available(gRPCSwift 2.0, *)
 public protocol RegistrableRPCService: Sendable {
   /// Registers methods to server with the provided ``RPCRouter``.
   ///

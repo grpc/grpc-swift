@@ -15,6 +15,7 @@
  */
 
 /// A type-erasing ``RPCWriterProtocol``.
+@available(gRPCSwift 2.0, *)
 public struct RPCWriter<Element: Sendable>: Sendable, RPCWriterProtocol {
   private let writer: any RPCWriterProtocol<Element>
 

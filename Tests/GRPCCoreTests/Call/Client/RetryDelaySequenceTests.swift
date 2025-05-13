@@ -17,6 +17,7 @@ import XCTest
 
 @testable import GRPCCore
 
+@available(gRPCSwift 2.0, *)
 final class RetryDelaySequenceTests: XCTestCase {
   func testSequence() {
     let policy = RetryPolicy(

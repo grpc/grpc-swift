@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension Metadata {
   @inlinable
   var previousRPCAttempts: Int? {
@@ -51,6 +52,7 @@ extension Metadata {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata {
   @usableFromInline
   enum GRPCKey: String, Sendable, Hashable {
@@ -75,6 +77,7 @@ extension Metadata {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Metadata {
   @usableFromInline
   enum RetryPushback: Hashable, Sendable {

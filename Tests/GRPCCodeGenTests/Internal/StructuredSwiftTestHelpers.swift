@@ -22,24 +22,28 @@ import Testing
 @Suite("Structured Swift")
 struct StructuredSwiftTests {}
 
+@available(gRPCSwift 2.0, *)
 func render(_ declaration: Declaration) -> String {
   let renderer = TextBasedRenderer(indentation: 2)
   renderer.renderDeclaration(declaration)
   return renderer.renderedContents()
 }
 
+@available(gRPCSwift 2.0, *)
 func render(_ expression: Expression) -> String {
   let renderer = TextBasedRenderer(indentation: 2)
   renderer.renderExpression(expression)
   return renderer.renderedContents()
 }
 
+@available(gRPCSwift 2.0, *)
 func render(_ blocks: [CodeBlock]) -> String {
   let renderer = TextBasedRenderer(indentation: 2)
   renderer.renderCodeBlocks(blocks)
   return renderer.renderedContents()
 }
 
+@available(gRPCSwift 2.0, *)
 func render(_ imports: [ImportDescription]) -> String {
   let renderer = TextBasedRenderer(indentation: 2)
   renderer.renderImports(imports)

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 package enum Docs {
   package static func suffix(_ header: String, withDocs footer: String) -> String {
     if footer.isEmpty {

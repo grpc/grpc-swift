@@ -19,6 +19,7 @@ import GRPCInProcessTransport
 import Testing
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class GRPCServerTests: XCTestCase {
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
@@ -378,6 +379,7 @@ final class GRPCServerTests: XCTestCase {
 @Suite("GRPC Server Tests")
 struct ServerTests {
   @Test("Interceptors are applied only to specified services")
+  @available(gRPCSwift 2.0, *)
   func testInterceptorsAreAppliedToSpecifiedServices() async throws {
     let onlyBinaryEchoCounter = AtomicCounter()
     let allServicesCounter = AtomicCounter()
@@ -465,6 +467,7 @@ struct ServerTests {
   }
 
   @Test("Interceptors are applied only to specified methods")
+  @available(gRPCSwift 2.0, *)
   func testInterceptorsAreAppliedToSpecifiedMethods() async throws {
     let onlyBinaryEchoGetCounter = AtomicCounter()
     let onlyBinaryEchoCollectCounter = AtomicCounter()
@@ -551,6 +554,7 @@ struct ServerTests {
     }
   }
 
+  @available(gRPCSwift 2.0, *)
   func withInProcessClientConnectedToServer(
     services: [any RegistrableRPCService],
     interceptorPipeline: [ConditionalInterceptor<any ServerInterceptor>] = [],
@@ -578,6 +582,7 @@ struct ServerTests {
     }
   }
 
+  @available(gRPCSwift 2.0, *)
   func assertMetadata<Bytes: GRPCContiguousBytes>(
     _ part: RPCResponsePart<Bytes>?,
     metadataHandler: (Metadata) -> Void = { _ in }
@@ -590,6 +595,7 @@ struct ServerTests {
     }
   }
 
+  @available(gRPCSwift 2.0, *)
   func assertMessage<Bytes: GRPCContiguousBytes>(
     _ part: RPCResponsePart<Bytes>?,
     messageHandler: (Bytes) -> Void = { _ in }
@@ -602,6 +608,7 @@ struct ServerTests {
     }
   }
 
+  @available(gRPCSwift 2.0, *)
   func assertStatus<Bytes: GRPCContiguousBytes>(
     _ part: RPCResponsePart<Bytes>?,
     statusHandler: (Status, Metadata) -> Void = { _, _ in }

@@ -16,6 +16,7 @@
 
 /// Representation of the file to be created by the code generator, that contains the
 /// generated Swift source code.
+@available(gRPCSwift 2.0, *)
 public struct SourceFile: Sendable, Hashable {
   /// The base name of the file.
   public var name: String

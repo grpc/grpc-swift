@@ -22,6 +22,7 @@ extension StructuredSwiftTests {
   @Suite("Metadata")
   struct Metadata {
     @Test("typealias Input = <Name>", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func methodInputTypealias(access: AccessModifier) {
       let decl: TypealiasDescription = .methodInput(accessModifier: access, name: "Foo")
       let expected = "\(access) typealias Input = Foo"
@@ -29,6 +30,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("typealias Output = <Name>", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func methodOutputTypealias(access: AccessModifier) {
       let decl: TypealiasDescription = .methodOutput(accessModifier: access, name: "Foo")
       let expected = "\(access) typealias Output = Foo"
@@ -39,6 +41,7 @@ extension StructuredSwiftTests {
       "static let descriptor = GRPCCore.MethodDescriptor(...)",
       arguments: AccessModifier.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func staticMethodDescriptorProperty(access: AccessModifier) {
       let decl: VariableDescription = .methodDescriptor(
         accessModifier: access,
@@ -59,6 +62,7 @@ extension StructuredSwiftTests {
       "static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService:)",
       arguments: AccessModifier.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func staticServiceDescriptorProperty(access: AccessModifier) {
       let decl: VariableDescription = .serviceDescriptor(
         accessModifier: access,
@@ -72,6 +76,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("extension GRPCCore.ServiceDescriptor { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func staticServiceDescriptorPropertyExtension(access: AccessModifier) {
       let decl: ExtensionDescription = .serviceDescriptor(
         accessModifier: access,
@@ -92,6 +97,7 @@ extension StructuredSwiftTests {
       "static let descriptors: [GRPCCore.MethodDescriptor] = [...]",
       arguments: AccessModifier.allCases
     )
+    @available(gRPCSwift 2.0, *)
     func staticMethodDescriptorsArray(access: AccessModifier) {
       let decl: VariableDescription = .methodDescriptorsArray(
         accessModifier: access,
@@ -109,6 +115,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("enum <Method> { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func methodNamespaceEnum(access: AccessModifier) {
       let decl: EnumDescription = .methodNamespace(
         accessModifier: access,
@@ -136,6 +143,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("enum Method { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func methodsNamespaceEnum(access: AccessModifier) {
       let decl: EnumDescription = .methodsNamespace(
         accessModifier: access,
@@ -176,6 +184,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("enum Method { ... } (no methods)", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func methodsNamespaceEnumNoMethods(access: AccessModifier) {
       let decl: EnumDescription = .methodsNamespace(
         accessModifier: access,
@@ -193,6 +202,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("enum <Service> { ... }", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func serviceNamespaceEnum(access: AccessModifier) {
       let decl: EnumDescription = .serviceNamespace(
         accessModifier: access,
@@ -239,6 +249,7 @@ extension StructuredSwiftTests {
     }
 
     @Test("enum <Service> { ... } (no methods)", arguments: AccessModifier.allCases)
+    @available(gRPCSwift 2.0, *)
     func serviceNamespaceEnumNoMethods(access: AccessModifier) {
       let decl: EnumDescription = .serviceNamespace(
         accessModifier: access,

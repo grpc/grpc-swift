@@ -16,6 +16,7 @@
 @_spi(Testing) import GRPCCore
 import XCTest
 
+@available(gRPCSwift 2.0, *)
 final class ServerRequestTests: XCTestCase {
   func testSingleToStreamConversion() async throws {
     let single = ServerRequest(metadata: ["bar": "baz"], message: "foo")

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 struct UnsafeTransfer<Wrapped> {
   @usableFromInline
@@ -25,4 +26,5 @@ struct UnsafeTransfer<Wrapped> {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension UnsafeTransfer: @unchecked Sendable {}

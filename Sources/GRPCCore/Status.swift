@@ -24,6 +24,7 @@
 /// ``Status`` represents the raw outcome of an RPC whether it was successful or not; ``RPCError``
 /// is similar to ``Status`` but only represents error cases, in other words represents all status
 /// codes apart from ``Code-swift.struct/ok``.
+@available(gRPCSwift 2.0, *)
 public struct Status: @unchecked Sendable, Hashable {
   // @unchecked because it relies on heap allocated storage and 'isKnownUniquelyReferenced'
 
@@ -75,12 +76,14 @@ public struct Status: @unchecked Sendable, Hashable {
   internal static let ok = Status(storage: Storage(code: .ok, message: ""))
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status: CustomStringConvertible {
   public var description: String {
     "\(self.code): \"\(self.message)\""
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status {
   private final class Storage: Hashable {
     var code: Status.Code
@@ -106,6 +109,7 @@ extension Status {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status {
   /// Status codes for gRPC operations.
   ///
@@ -189,6 +193,7 @@ extension Status {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status.Code {
   /// The operation completed successfully.
   public static let ok = Self(code: .ok)
@@ -297,6 +302,7 @@ extension Status.Code {
   public static let unauthenticated = Self(code: .unauthenticated)
 }
 
+@available(gRPCSwift 2.0, *)
 extension Status {
   /// Create a status from an HTTP status code for a response which didn't include a gRPC status.
   ///

@@ -20,6 +20,7 @@ import Testing
 
 struct TimeoutTests {
   @Test("Initialize from invalid String value", arguments: ["", "H", "123", "100000000S", "123j"])
+  @available(gRPCSwift 2.0, *)
   func initFromStringWithInvalidValue(_ value: String) throws {
     #expect(Timeout(decoding: value) == nil)
   }
@@ -35,6 +36,7 @@ struct TimeoutTests {
       ("123n", .nanoseconds(123)),
     ] as [(String, Duration)]
   )
+  @available(gRPCSwift 2.0, *)
   func initFromString(_ value: String, expected: Duration) throws {
     let timeout = try #require(Timeout(decoding: value))
     #expect(timeout.duration == expected)
@@ -51,6 +53,7 @@ struct TimeoutTests {
       .nanoseconds(100),
     ] as [Duration]
   )
+  @available(gRPCSwift 2.0, *)
   func initFromDuration(_ value: Duration) {
     let timeout = Timeout(duration: value)
     #expect(timeout.duration == value)
@@ -77,6 +80,7 @@ struct TimeoutTests {
       (Duration(secondsComponent: 1, attosecondsComponent: Int64(1e11)), .seconds(1)),
     ] as [(Duration, Duration)]
   )
+  @available(gRPCSwift 2.0, *)
   func initFromDurationWithLossOfPrecision(original: Duration, rounded: Duration) {
     let timeout = Timeout(duration: original)
     #expect(timeout.duration == rounded)

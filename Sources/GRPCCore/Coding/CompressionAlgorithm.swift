@@ -15,6 +15,7 @@
  */
 
 /// Message compression algorithms.
+@available(gRPCSwift 2.0, *)
 public struct CompressionAlgorithm: Hashable, Sendable {
   package enum Value: UInt8, Hashable, Sendable, CaseIterable {
     case none = 0
@@ -45,6 +46,7 @@ public struct CompressionAlgorithm: Hashable, Sendable {
 }
 
 /// A set of compression algorithms.
+@available(gRPCSwift 2.0, *)
 public struct CompressionAlgorithmSet: OptionSet, Hashable, Sendable {
   public var rawValue: UInt32
 
@@ -84,6 +86,7 @@ public struct CompressionAlgorithmSet: OptionSet, Hashable, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension CompressionAlgorithmSet {
   /// A sequence of ``CompressionAlgorithm`` values present in the set.
   public var elements: Elements {

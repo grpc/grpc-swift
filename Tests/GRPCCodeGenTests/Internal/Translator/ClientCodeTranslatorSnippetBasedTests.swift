@@ -21,6 +21,7 @@ import Testing
 @Suite
 struct ClientCodeTranslatorSnippetBasedTests {
   @Test
+  @available(gRPCSwift 2.0, *)
   func translate() {
     let method = MethodDescriptor(
       documentation: "/// Documentation for MethodA",
@@ -206,6 +207,7 @@ struct ClientCodeTranslatorSnippetBasedTests {
     #expect(rendered == expectedSwift)
   }
 
+  @available(gRPCSwift 2.0, *)
   private func render(
     accessLevel: AccessModifier,
     service: ServiceDescriptor

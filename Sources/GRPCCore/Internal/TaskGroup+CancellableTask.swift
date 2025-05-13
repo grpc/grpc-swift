@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@available(gRPCSwift 2.0, *)
 extension TaskGroup {
   /// Adds a child task to the group which is individually cancellable.
   ///
@@ -63,6 +64,7 @@ extension TaskGroup {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 @usableFromInline
 struct CancellableTaskHandle: Sendable {
   @usableFromInline

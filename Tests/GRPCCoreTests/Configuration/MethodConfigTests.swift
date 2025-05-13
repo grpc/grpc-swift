@@ -19,6 +19,7 @@ import Testing
 
 struct MethodConfigTests {
   @Test("RetryPolicy clamps max attempts")
+  @available(gRPCSwift 2.0, *)
   func retryPolicyClampsMaxAttempts() {
     var policy = RetryPolicy(
       maxAttempts: 10,
@@ -36,6 +37,7 @@ struct MethodConfigTests {
   }
 
   @Test("HedgingPolicy clamps max attempts")
+  @available(gRPCSwift 2.0, *)
   func hedgingPolicyClampsMaxAttempts() {
     var policy = HedgingPolicy(
       maxAttempts: 10,

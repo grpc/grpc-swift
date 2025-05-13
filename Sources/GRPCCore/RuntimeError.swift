@@ -18,6 +18,7 @@
 ///
 /// In contrast to ``RPCError``, the ``RuntimeError`` represents errors which happen at a scope
 /// wider than an individual RPC. For example, passing invalid configuration values.
+@available(gRPCSwift 2.0, *)
 public struct RuntimeError: Error, Hashable, Sendable {
   /// The code indicating the domain of the error.
   public var code: Code
@@ -51,6 +52,7 @@ public struct RuntimeError: Error, Hashable, Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RuntimeError: CustomStringConvertible {
   public var description: String {
     if let cause = self.cause {
@@ -61,6 +63,7 @@ extension RuntimeError: CustomStringConvertible {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RuntimeError {
   public struct Code: Hashable, Sendable {
     private enum Value {
@@ -109,6 +112,7 @@ extension RuntimeError {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension RuntimeError.Code: CustomStringConvertible {
   public var description: String {
     String(describing: self.value)

@@ -66,6 +66,7 @@
 ///   print("RPC failed with code '\(error.code)'")
 /// }
 /// ```
+@available(gRPCSwift 2.0, *)
 public struct ServerResponse<Message: Sendable>: Sendable {
   /// An accepted RPC with a successful outcome.
   public struct Contents: Sendable {
@@ -168,6 +169,7 @@ public struct ServerResponse<Message: Sendable>: Sendable {
 ///   return ["goodbye": "trailing metadata"]
 /// }
 /// ```
+@available(gRPCSwift 2.0, *)
 public struct StreamingServerResponse<Message: Sendable>: Sendable {
   /// The contents of a response to a request which has been accepted for processing.
   public struct Contents: Sendable {
@@ -219,6 +221,7 @@ public struct StreamingServerResponse<Message: Sendable>: Sendable {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension ServerResponse {
   /// Creates a new accepted response.
   ///
@@ -288,6 +291,7 @@ extension ServerResponse {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension StreamingServerResponse {
   /// Creates a new accepted response.
   ///
@@ -336,6 +340,7 @@ extension StreamingServerResponse {
   }
 }
 
+@available(gRPCSwift 2.0, *)
 extension StreamingServerResponse {
   public init(single response: ServerResponse<Message>) {
     switch response.accepted {
