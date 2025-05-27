@@ -76,6 +76,7 @@ private import Synchronization
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle) and the
 /// `GRPCServiceLifecycle` module provided by [gRPC Swift Extras](https://github.com/grpc/grpc-swift-extras).
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public final class GRPCServer<Transport: ServerTransport>: Sendable {
   typealias Stream = RPCStream<Transport.Inbound, Transport.Outbound>
 
@@ -259,6 +260,7 @@ public final class GRPCServer<Transport: ServerTransport>: Sendable {
 ///       server is shutdown gracefully.
 /// - Returns: The result of the `handleServer` closure.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
   transport: Transport,
   services: [any RegistrableRPCService],
@@ -291,6 +293,7 @@ public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
 ///       server is shutdown gracefully.
 /// - Returns: The result of the `handleServer` closure.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public func withGRPCServer<Transport: ServerTransport, Result: Sendable>(
   transport: Transport,
   services: [any RegistrableRPCService],

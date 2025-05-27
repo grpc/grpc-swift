@@ -80,6 +80,7 @@
 /// the "-bin" suffix may have string values (rather than binary). These are deserialized automatically when
 /// using ``subscript(binaryValues:)``.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public struct Metadata: Sendable, Hashable {
 
   /// A metadata value. It can either be a simple string, or binary data.
