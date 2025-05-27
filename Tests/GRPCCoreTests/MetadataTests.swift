@@ -221,6 +221,18 @@ struct MetadataTests {
     #expect(Array(metadata[binaryValues: "key-bin"]) == expected)
   }
 
+  @Test("Iterate over unpadded base64 encoded binary values for a key")
+  @available(gRPCSwift 2.0, *)
+  func iterateOverUnpaddedBase64BinaryEncodedValuesForKey() {
+    let metadata: Metadata = [
+      "key-bin": "YQ==",
+      "key-bin": "YQ",
+    ]
+
+    let expected: [[UInt8]] = [[UInt8(ascii: "a")], [UInt8(ascii: "a")]]
+    #expect(Array(metadata[binaryValues: "key-bin"]) == expected)
+  }
+
   @Test("Subscripts are case-insensitive")
   @available(gRPCSwift 2.0, *)
   func subscriptIsCaseInsensitive() {
