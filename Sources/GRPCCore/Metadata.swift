@@ -423,7 +423,7 @@ extension Metadata {
           switch value {
           case .string(let stringValue):
             do {
-              return try Base64.decode(string: stringValue)
+              return try Base64.decode(string: stringValue, options: [.omitPaddingCharacter])
             } catch {
               continue
             }

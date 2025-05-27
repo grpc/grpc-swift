@@ -1,7 +1,3 @@
 {
-  "mallocCountTotal" : 2000,
-  "memoryLeaked" : 0,
-  "releaseCount" : 7001,
-  "retainCount" : 3000,
-  "syscalls" : 0
+  "mallocCountTotal": 1000
 }
