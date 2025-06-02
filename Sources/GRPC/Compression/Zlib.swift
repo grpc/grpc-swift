@@ -265,6 +265,12 @@ enum Zlib {
     /// - Returns: The number of bytes written into `output`.
     @discardableResult
     func inflate(_ input: inout ByteBuffer, into output: inout ByteBuffer) throws -> Int {
+      if input.readableBytes == 0 {
+        // Zero length compressed messages are always empty messages. Skip the inflate step
+        // below and just return the number of bytes we wrote.
+        return 0
+      }
+
       return try input.readWithUnsafeMutableReadableBytes { inputPointer -> (Int, Int) in
         // Setup the input buffer.
         self.stream.availableInputBytes = inputPointer.count
