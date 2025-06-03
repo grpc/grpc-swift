@@ -21,7 +21,8 @@ protoc=$(which protoc)
 
 # Checkout and build the plugins.
 build_dir=$(mktemp -d)
-git clone https://github.com/grpc/grpc-swift-protobuf --depth 1 "$build_dir"
+git clone -b 1.3.0 https://github.com/grpc/grpc-swift-protobuf --depth 1 "$build_dir"
+
 swift build --package-path "$build_dir" --product protoc-gen-swift
 swift build --package-path "$build_dir" --product protoc-gen-grpc-swift
 

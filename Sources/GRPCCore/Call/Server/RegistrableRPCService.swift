@@ -23,6 +23,7 @@
 /// ``RPCRouter/registerHandler(forMethod:deserializer:serializer:handler:)`` for each method
 /// you want to register with the router.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public protocol RegistrableRPCService: Sendable {
   /// Registers methods to server with the provided ``RPCRouter``.
   ///

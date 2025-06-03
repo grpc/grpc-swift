@@ -23,6 +23,7 @@
 /// transport built on top of SwiftNIO in the https://github.com/grpc/grpc-swift-nio-transport
 /// package.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public protocol ServerTransport<Bytes>: Sendable {
   /// The bag-of-bytes type used by the transport.
   associatedtype Bytes: GRPCContiguousBytes & Sendable

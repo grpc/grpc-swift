@@ -55,6 +55,7 @@ private import Synchronization
 /// additional resources that need their lifecycles managed you should consider using [Swift Service
 /// Lifecycle](https://github.com/swift-server/swift-service-lifecycle).
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public final class GRPCClient<Transport: ClientTransport>: Sendable {
   /// The transport which provides a bidirectional communication channel with the server.
   private let transport: Transport
@@ -399,6 +400,7 @@ public final class GRPCClient<Transport: ClientTransport>: Sendable {
 ///   - handleClient: A closure which is called with the client. When the closure returns, the
 ///       client is shutdown gracefully.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
   transport: Transport,
   interceptors: [any ClientInterceptor] = [],
@@ -428,6 +430,7 @@ public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
 ///       client is shutdown gracefully.
 /// - Returns: The result of the `handleClient` closure.
 @available(gRPCSwift 2.0, *)
+@available(*, deprecated, message: "See https://forums.swift.org/t/80177")
 public func withGRPCClient<Transport: ClientTransport, Result: Sendable>(
   transport: Transport,
   interceptorPipeline: [ConditionalInterceptor<any ClientInterceptor>],
