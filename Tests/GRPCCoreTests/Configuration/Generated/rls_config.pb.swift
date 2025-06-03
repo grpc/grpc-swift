@@ -587,17 +587,20 @@ extension Grpc_Lookup_V1_HttpKeyBuilder: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Grpc_Lookup_V1_RouteLookupConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RouteLookupConfig"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "http_keybuilders"),
-    2: .standard(proto: "grpc_keybuilders"),
-    3: .standard(proto: "lookup_service"),
-    4: .standard(proto: "lookup_service_timeout"),
-    5: .standard(proto: "max_age"),
-    6: .standard(proto: "stale_age"),
-    7: .standard(proto: "cache_size_bytes"),
-    8: .standard(proto: "valid_targets"),
-    9: .standard(proto: "default_target"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(
+      reservedNames: ["request_processing_strategy"],
+      reservedRanges: [10..<11],
+      numberNameMappings: [
+        1: .standard(proto: "http_keybuilders"),
+        2: .standard(proto: "grpc_keybuilders"),
+        3: .standard(proto: "lookup_service"),
+        4: .standard(proto: "lookup_service_timeout"),
+        5: .standard(proto: "max_age"),
+        6: .standard(proto: "stale_age"),
+        7: .standard(proto: "cache_size_bytes"),
+        8: .standard(proto: "valid_targets"),
+        9: .standard(proto: "default_target"),
+  ])
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {

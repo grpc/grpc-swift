@@ -134,13 +134,16 @@ fileprivate let _protobuf_package = "grpc.lookup.v1"
 
 extension Grpc_Lookup_V1_RouteLookupRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RouteLookupRequest"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    3: .standard(proto: "target_type"),
-    5: .same(proto: "reason"),
-    6: .standard(proto: "stale_header_data"),
-    4: .standard(proto: "key_map"),
-    7: .same(proto: "extensions"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(
+      reservedNames: ["server", "path"],
+      reservedRanges: [1..<3],
+      numberNameMappings: [
+        3: .standard(proto: "target_type"),
+        5: .same(proto: "reason"),
+        6: .standard(proto: "stale_header_data"),
+        4: .standard(proto: "key_map"),
+        7: .same(proto: "extensions"),
+  ])
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -198,11 +201,14 @@ extension Grpc_Lookup_V1_RouteLookupRequest.Reason: SwiftProtobuf._ProtoNameProv
 
 extension Grpc_Lookup_V1_RouteLookupResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RouteLookupResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    3: .same(proto: "targets"),
-    2: .standard(proto: "header_data"),
-    4: .same(proto: "extensions"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(
+      reservedNames: ["target"],
+      reservedRanges: [1..<2],
+      numberNameMappings: [
+        3: .same(proto: "targets"),
+        2: .standard(proto: "header_data"),
+        4: .same(proto: "extensions"),
+  ])
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
