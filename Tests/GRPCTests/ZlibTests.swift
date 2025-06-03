@@ -207,4 +207,16 @@ class ZlibTests: GRPCTestCase {
     let ratio: DecompressionLimit = .ratio(2)
     XCTAssertEqual(ratio.maximumDecompressedSize(compressedSize: 10), 20)
   }
+
+  func testDecompressEmptyPayload() throws {
+    for limit in [DecompressionLimit.ratio(1), .absolute(1)] {
+      for format in [Zlib.CompressionFormat.deflate, .gzip] {
+        var compressed = self.allocator.buffer(capacity: 0)
+        let inflate = Zlib.Inflate(format: format, limit: limit)
+        var output = self.allocator.buffer(capacity: 0)
+        XCTAssertEqual(try inflate.inflate(&compressed, into: &output), 0)
+        XCTAssertEqual(output.readableBytes, 0)
+      }
+    }
+  }
 }
