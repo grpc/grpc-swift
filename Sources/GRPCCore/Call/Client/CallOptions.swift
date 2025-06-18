@@ -40,7 +40,7 @@ public struct CallOptions: Sendable {
   /// Whether RPCs for this method should wait until the connection is ready.
   ///
   /// If `false` the RPC will abort immediately if there is a transient failure connecting to
-  /// the server. Otherwise gRPC will attempt to connect until the deadline is exceeded.
+  /// the server. Otherwise, gRPC will attempt to connect until the deadline is exceeded.
   public var waitForReady: Bool?
 
   /// The maximum allowed payload size in bytes for an individual request message.

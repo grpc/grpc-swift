@@ -87,7 +87,7 @@ extension StreamingClientResponse {
   /// Creates a streaming response from the given status and metadata.
   ///
   /// If the ``Status`` has code ``Status/Code-swift.struct/ok`` then an accepted stream is created
-  /// containing only the provided metadata. Otherwise a failed response is returned with an error
+  /// containing only the provided metadata. Otherwise, a failed response is returned with an error
   /// created from the status and metadata.
   ///
   /// - Parameters:

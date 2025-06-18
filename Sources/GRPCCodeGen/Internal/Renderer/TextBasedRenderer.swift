@@ -43,7 +43,7 @@ final class StringCodeWriter {
   internal let indentation: Int
 
   /// Whether the next call to `writeLine` will continue writing to the last
-  /// stored line. Otherwise a new line is appended.
+  /// stored line. Otherwise, a new line is appended.
   private var nextWriteAppendsToLastLine: Bool = false
 
   /// Creates a new empty writer.
