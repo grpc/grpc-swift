@@ -110,7 +110,7 @@ public struct Metadata: Sendable, Hashable {
     /// - Parameters:
     ///   - key: The key for the key-value pair.
     ///   - value: The value to be associated to the given key. If it's a binary value, then the associated
-    ///   key must end in "-bin", otherwise, this method will produce an assertion failure.
+    ///   key must end in "-bin"; otherwise, this method will produce an assertion failure.
     init(key: String, value: Value) {
       if case .binary = value {
         assert(key.hasSuffix("-bin"), "Keys for binary values must end in -bin")
