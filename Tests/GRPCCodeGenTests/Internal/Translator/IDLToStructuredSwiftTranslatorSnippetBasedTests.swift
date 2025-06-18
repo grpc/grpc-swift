@@ -99,7 +99,7 @@ final class IDLToStructuredSwiftTranslatorSnippetBasedTests: XCTestCase {
           /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
           /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
           /// trailing response metadata. If you don't need these then consider using
-          /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+          /// the ``SimpleServiceProtocol``. If you need fine-grained control over your RPCs then
           /// use ``StreamingServiceProtocol``.
           ///
           /// > Source IDL Documentation:

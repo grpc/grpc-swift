@@ -71,7 +71,7 @@
 
     @Steps {
       @Step {
-        Open `HelloWorld.proto` in to see how the service is defined.
+        Open `HelloWorld.proto` to see how the service is defined.
 
         @Code(name: "HelloWorld.proto", file: "hello-world-sec03-step01.proto")
       }

@@ -442,7 +442,7 @@ public struct MethodName: Hashable {
 
   /// The name as used as a property.
   ///
-  /// This value typically starts with an lowercase character, for example "get".
+  /// This value typically starts with a lowercase character, for example "get".
   public var functionName: String
 
   public init(identifyingName: String, typeName: String, functionName: String) {

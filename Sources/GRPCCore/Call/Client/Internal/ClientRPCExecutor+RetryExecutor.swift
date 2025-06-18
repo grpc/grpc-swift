@@ -288,7 +288,7 @@ extension ClientRPCExecutor.RetryExecutor {
         // subscriber and maximises the chances that 'isKnownSafeForNextSubscriber' will
         // return true.
         //
-        // Note: this must only be called if we should retry, otherwise we may cancel a
+        // Note: this must only be called if we should retry; otherwise, we may cancel a
         // subscriber for an accepted request.
         retryStream.invalidateAllSubscriptions()
 

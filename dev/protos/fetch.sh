@@ -28,7 +28,7 @@ git clone --depth 1 https://github.com/googleapis/googleapis.git "$checkouts/goo
 # Remove the old protos.
 rm -rf "$upstream"
 
-# Create new directories to poulate. These are based on proto package name
+# Create new directories to populate. These are based on proto package name
 # rather than source repository name.
 mkdir -p "$upstream/google"
 mkdir -p "$upstream/grpc/core"

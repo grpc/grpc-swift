@@ -140,7 +140,7 @@ public struct ClientResponse<Message: Sendable>: Sendable {
 ///
 /// A stream response captures every part of the response stream over time and distinguishes
 /// accepted and rejected requests via the ``accepted`` property. An "accepted" request is one
-/// where the the server responds with initial metadata and attempts to process the request. A
+/// where the server responds with initial metadata and attempts to process the request. A
 /// "rejected" request is one where the server responds with a status as the first and only
 /// response part and doesn't process the request body.
 ///

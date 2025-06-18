@@ -230,7 +230,7 @@ extension Status.Code {
   /// The caller does not have permission to execute the specified operation.
   /// ``permissionDenied`` must not be used for rejections caused by exhausting
   /// some resource (use ``resourceExhausted`` instead for those errors).
-  /// ``permissionDenied`` must not be used if the caller can not be identified
+  /// ``permissionDenied`` must not be used if the caller cannot be identified
   /// (use ``unauthenticated`` instead for those errors).
   public static let permissionDenied = Self(code: .permissionDenied)
 
