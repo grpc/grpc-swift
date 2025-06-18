@@ -26,7 +26,7 @@ internal enum ClientStreamExecutor {
   ///   - attempt: The attempt number for the RPC that will be executed.
   ///   - serializer: A request serializer.
   ///   - deserializer: A response deserializer.
-  ///   - stream: The stream to excecute the RPC on.
+  ///   - stream: The stream to execute the RPC on.
   /// - Returns: A streamed response.
   @inlinable
   static func execute<Input: Sendable, Output: Sendable, Bytes: GRPCContiguousBytes>(

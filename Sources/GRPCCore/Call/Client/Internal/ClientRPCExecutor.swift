@@ -112,7 +112,7 @@ extension ClientRPCExecutor {
   ///   - deserializer: A deserializer to convert bytes to output messages.
   ///   - interceptors: An array of interceptors which the request and response pass through. The
   ///       interceptors will be called in the order of the array.
-  ///   - stream: The stream to excecute the RPC on.
+  ///   - stream: The stream to execute the RPC on.
   /// - Returns: The deserialized response.
   @inlinable  // would be private
   static func _execute<Input: Sendable, Output: Sendable, Bytes: GRPCContiguousBytes>(
