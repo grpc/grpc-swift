@@ -54,7 +54,7 @@ public struct ServiceConfig: Hashable, Sendable {
   ///
   /// - Parameters:
   ///   - methodConfig: Per-method configuration.
-  ///   - loadBalancingConfig: Load balancing policies. Clients use the the first supported
+  ///   - loadBalancingConfig: Load balancing policies. Clients use the first supported
   ///       policy when iterating the list in order.
   ///   - retryThrottling: Policy for throttling retries.
   public init(
