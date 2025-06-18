@@ -880,10 +880,10 @@ final class Test_TextBasedRenderer: XCTestCase {
 
   func testProtocol() throws {
     try _test(
-      .init(name: "Protocoly"),
+      .init(name: "Protocolly"),
       renderedBy: { $0.renderProtocol(_:) },
       rendersAs: #"""
-        protocol Protocoly {}
+        protocol Protocolly {}
         """#
     )
   }
