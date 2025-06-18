@@ -352,7 +352,7 @@ protocol ServiceName.ClientProtocol {
 ```
 
 Each method takes a request appropriate for its RPC type, a serializer, a
-deserializer, a set of options and a handler for processing the response. The
+deserializer, a set of options, and a handler for processing the response. The
 function doesn't return until the response handler has returned and all
 resources associated with the RPC have been cleaned up.
 
