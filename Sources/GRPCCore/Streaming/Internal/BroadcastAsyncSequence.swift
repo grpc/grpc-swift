@@ -1575,7 +1575,7 @@ extension _BroadcastSequenceStateMachine {
       @usableFromInline
       var nextElementID: _BroadcastSequenceStateMachine<Element>.Elements.ID
 
-      /// A continuation which which will be resumed when the next element becomes available.
+      /// A continuation which will be resumed when the next element becomes available.
       @usableFromInline
       var continuation: ConsumerContinuation?
 
