@@ -163,7 +163,7 @@ enum Base64 {
     case (true, 1):
       throw DecodingError.invalidLength
     default:
-      // everythin alright so far
+      // everything alright so far
       break
     }
 
