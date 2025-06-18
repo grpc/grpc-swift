@@ -41,7 +41,7 @@ struct JSONDeserializer<Message: Codable>: MessageDeserializer {
       let data = serializedMessageBytes.withUnsafeBytes { Data($0) }
       return try jsonDecoder.decode(Message.self, from: data)
     } catch {
-      throw RPCError(code: .internalError, message: "Can't deserialze message from JSON. \(error)")
+      throw RPCError(code: .internalError, message: "Can't deserialize message from JSON. \(error)")
     }
   }
 }
