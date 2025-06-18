@@ -26,7 +26,7 @@ public struct MethodDescriptor: Sendable, Hashable {
   /// The fully qualified method name in the format "package.service/method".
   ///
   /// For example, the fully qualified name of the "SayHello" method of the "Greeter" service in
-  /// "helloworld" package is "helloworld.Greeter/SayHelllo".
+  /// "helloworld" package is "helloworld.Greeter/SayHello".
   public var fullyQualifiedMethod: String {
     "\(self.service)/\(self.method)"
   }
