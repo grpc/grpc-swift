@@ -1592,7 +1592,7 @@ extension _BroadcastSequenceStateMachine {
 
       /// Returns and sets the continuation to `nil` if one exists.
       ///
-      /// The next element ID is advanced if a contination exists.
+      /// The next element ID is advanced if a continuation exists.
       ///
       /// - Returns: The continuation, if one existed.
       @inlinable
