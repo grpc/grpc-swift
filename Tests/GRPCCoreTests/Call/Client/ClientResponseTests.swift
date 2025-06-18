@@ -164,7 +164,7 @@ final class ClientResponseTests: XCTestCase {
   func testStreamToSingleConversionForInvalidStream() async throws {
     let bodies: [[StreamingClientResponse<String>.Contents.BodyPart]] = [
       [],  // Empty stream
-      [.trailingMetadata([:]), .trailingMetadata([:])],  // Multiple metadatas
+      [.trailingMetadata([:]), .trailingMetadata([:])],  // Multiple metadata
       [.trailingMetadata([:]), .message("")],  // Metadata then message
     ]
 
