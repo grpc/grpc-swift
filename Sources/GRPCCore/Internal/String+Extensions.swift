@@ -36,7 +36,7 @@ extension UInt8 {
 }
 
 extension String.UTF8View {
-  /// Compares two UTF8 strings as case insensitive ASCII bytes.
+  /// Compares two UTF8 strings as case-insensitive ASCII bytes.
   ///
   /// - Parameter bytes: The string constant in the form of a collection of `UInt8`
   /// - Returns: Whether the collection contains **EXACTLY** this array or no, but by ignoring case.
