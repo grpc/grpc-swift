@@ -26,8 +26,11 @@ jobs:
       matrix:
         include:
           - image: swift:6.1
+            swift-build-flags: -c release
           - image: swift:6.0-jammy
+            swift-build-flags: -c release
           - image: swift:5.10.1-noble
+            swift-build-flags: -c release
     name: Build and Test on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
