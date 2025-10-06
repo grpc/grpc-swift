@@ -25,11 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:6.2
+            swift-build-flags: -c release
           - image: swift:6.1
-            swift-build-flags: -c release
-          - image: swift:6.0-jammy
-            swift-build-flags: -c release
-          - image: swift:5.10.1-noble
             swift-build-flags: -c release
     name: Build and Test on ${{ matrix.image }}
     runs-on: ubuntu-latest
@@ -48,30 +46,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:6.2
+            swift-version: '6.2'
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
           - image: swift:6.1
             swift-version: '6.1'
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:6.0-jammy
-            swift-version: '6.0'
-            env:
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
-              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 110000
-              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 65000
-              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 61000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 163000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_client: 170000
-              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong_interceptors_server: 170000
-          - image: swift:5.10.1-noble
-            swift-version: '5.10'
             env:
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 323000
               MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 161000
@@ -96,12 +83,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: swift:6.2
+            swift-tools-version: '6.2'
           - image: swift:6.1
             swift-tools-version: '6.1'
-          - image: swift:6.0-jammy
-            swift-tools-version: '6.0'
-          - image: swift:5.10.1-noble
-            swift-tools-version: '5.10'
     name: Integration Tests on ${{ matrix.image }}
     runs-on: ubuntu-latest
     container:
