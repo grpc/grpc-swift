@@ -252,7 +252,7 @@ struct Grpc_Reflection_V1_ServerReflectionResponse: Sendable {
 /// Serialized FileDescriptorProto messages sent by the server answering
 /// a file_by_filename, file_containing_symbol, or file_containing_extension
 /// request.
-struct Grpc_Reflection_V1_FileDescriptorResponse: @unchecked Sendable {
+struct Grpc_Reflection_V1_FileDescriptorResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -338,14 +338,7 @@ fileprivate let _protobuf_package = "grpc.reflection.v1"
 
 extension Grpc_Reflection_V1_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ServerReflectionRequest"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "host"),
-    3: .standard(proto: "file_by_filename"),
-    4: .standard(proto: "file_containing_symbol"),
-    5: .standard(proto: "file_containing_extension"),
-    6: .standard(proto: "all_extension_numbers_of_type"),
-    7: .standard(proto: "list_services"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}host\0\u{4}\u{2}file_by_filename\0\u{3}file_containing_symbol\0\u{3}file_containing_extension\0\u{3}all_extension_numbers_of_type\0\u{3}list_services\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -448,10 +441,7 @@ extension Grpc_Reflection_V1_ServerReflectionRequest: SwiftProtobuf.Message, Swi
 
 extension Grpc_Reflection_V1_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ExtensionRequest"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "containing_type"),
-    2: .standard(proto: "extension_number"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}containing_type\0\u{3}extension_number\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -486,14 +476,7 @@ extension Grpc_Reflection_V1_ExtensionRequest: SwiftProtobuf.Message, SwiftProto
 
 extension Grpc_Reflection_V1_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ServerReflectionResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "valid_host"),
-    2: .standard(proto: "original_request"),
-    4: .standard(proto: "file_descriptor_response"),
-    5: .standard(proto: "all_extension_numbers_response"),
-    6: .standard(proto: "list_services_response"),
-    7: .standard(proto: "error_response"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}valid_host\0\u{3}original_request\0\u{4}\u{2}file_descriptor_response\0\u{3}all_extension_numbers_response\0\u{3}list_services_response\0\u{3}error_response\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -604,9 +587,7 @@ extension Grpc_Reflection_V1_ServerReflectionResponse: SwiftProtobuf.Message, Sw
 
 extension Grpc_Reflection_V1_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FileDescriptorResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "file_descriptor_proto"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}file_descriptor_proto\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -636,10 +617,7 @@ extension Grpc_Reflection_V1_FileDescriptorResponse: SwiftProtobuf.Message, Swif
 
 extension Grpc_Reflection_V1_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ExtensionNumberResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "base_type_name"),
-    2: .standard(proto: "extension_number"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}base_type_name\0\u{3}extension_number\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -674,9 +652,7 @@ extension Grpc_Reflection_V1_ExtensionNumberResponse: SwiftProtobuf.Message, Swi
 
 extension Grpc_Reflection_V1_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ListServiceResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "service"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}service\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -706,9 +682,7 @@ extension Grpc_Reflection_V1_ListServiceResponse: SwiftProtobuf.Message, SwiftPr
 
 extension Grpc_Reflection_V1_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ServiceResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "name"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -738,10 +712,7 @@ extension Grpc_Reflection_V1_ServiceResponse: SwiftProtobuf.Message, SwiftProtob
 
 extension Grpc_Reflection_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ErrorResponse"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "error_code"),
-    2: .standard(proto: "error_message"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}error_code\0\u{3}error_message\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
