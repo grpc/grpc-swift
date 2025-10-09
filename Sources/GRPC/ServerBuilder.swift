@@ -79,6 +79,24 @@ extension Server {
       self.configuration.tlsConfiguration = self.maybeTLS
       return Server.start(configuration: self.configuration)
     }
+
+    /// Create a gRPC server from the file descriptor of an already accepted TCP connection.
+    ///
+    /// - Parameter handle: The handle to the accepted socket.
+    /// - Important: This is only supported with `NIOPosix` (i.e. when using a
+    ///   `MultiThreadedEventLoopGroup` or one of its loops and TLS configured via `NIOSSL`).
+    /// - Warning: By calling this function you hand responsibility of the socket to gRPC.
+    ///   Crucially you must **not** close the socket directly after calling this function, gRPC
+    ///   will do it for you.
+    /// - Returns: A configured gRPC server.
+    public func fromAcceptedConnection(
+      takingOwnershipOf handle: NIOBSDSocket.Handle
+    ) -> EventLoopFuture<Server> {
+      self.configuration.target = .connectedSocket(handle)
+      self.configuration.connectedSocketTargetIsAcceptedConnection = true
+      self.configuration.tlsConfiguration = self.maybeTLS
+      return Server.start(configuration: self.configuration)
+    }
   }
 }
 
