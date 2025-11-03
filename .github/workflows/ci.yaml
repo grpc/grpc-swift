@@ -1,4 +1,7 @@
 name: CI
+
+permissions:
+  contents: read
 on:
   push:
     branches: ["release/1.x"]
