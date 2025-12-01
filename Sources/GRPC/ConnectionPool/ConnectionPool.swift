@@ -760,6 +760,7 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
       assert(hadActiveConnection)
       if let removed = self._connections.removeValue(forKey: manager.id) {
         removed.manager.sync.http2Delegate = nil
+        removed.manager.sync.shutdownNow()  // Manager may have internal state to tear down.
         self.delegate?.connectionClosed(id: .init(removed.manager.id), error: nil)
         self.delegate?.connectionRemoved(id: .init(removed.manager.id))
       }

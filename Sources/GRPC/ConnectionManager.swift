@@ -1218,6 +1218,11 @@ extension ConnectionManager {
     internal func startConnecting() {
       self.manager.startConnecting()
     }
+
+    /// Shutdown the manager now.
+    internal func shutdownNow() {
+      self.manager._shutdown(mode: .forceful, promise: self.manager.eventLoop.makePromise())
+    }
   }
 }
 
