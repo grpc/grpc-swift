@@ -99,42 +99,42 @@ struct GRPCSwiftPlugin {
   ///   - tool: The tool method from the context.
   /// - Returns: The build commands configured based on the arguments.
   func createBuildCommands(
-    pluginWorkDirectory: PathLike,
+    pluginWorkDirectory: URL,
     sourceFiles: FileList,
     tool: (String) throws -> PackagePlugin.PluginContext.Tool
   ) throws -> [Command] {
-    let maybeConfigFile = sourceFiles.map { PathLike($0) }.first {
-      $0.lastComponent == Self.configurationFileName
+    let maybeConfigFile = sourceFiles.map { $0.url }.first {
+      $0.lastPathComponent == Self.configurationFileName
     }
 
     guard let configurationFilePath = maybeConfigFile else {
       throw PluginError.noConfigFound(Self.configurationFileName)
     }
 
-    let data = try Data(contentsOf: URL(configurationFilePath))
+    let data = try Data(contentsOf: configurationFilePath)
     let configuration = try JSONDecoder().decode(Configuration.self, from: data)
 
     try self.validateConfiguration(configuration)
 
-    let targetDirectory = configurationFilePath.removingLastComponent()
-    var importPaths: [PathLike] = [targetDirectory]
+    let targetDirectory = configurationFilePath.deletingLastPathComponent()
+    var importPaths: [URL] = [targetDirectory]
     if let configuredImportPaths = configuration.importPaths {
-      importPaths.append(contentsOf: configuredImportPaths.map { PathLike($0) })
+      importPaths.append(contentsOf: configuredImportPaths.map { URL(fileURLWithPath: $0) })
     }
 
     // We need to find the path of protoc and protoc-gen-grpc-swift
-    let protocPath: PathLike
+    let protocPath: URL
     if let configuredProtocPath = configuration.protocPath {
-      protocPath = PathLike(configuredProtocPath)
+      protocPath = URL(fileURLWithPath: configuredProtocPath)
     } else if let environmentPath = ProcessInfo.processInfo.environment["PROTOC_PATH"] {
       // The user set the env variable, so let's take that
-      protocPath = PathLike(environmentPath)
+      protocPath = URL(fileURLWithPath: environmentPath)
     } else {
       // The user didn't set anything so let's try see if SPM can find a binary for us
-      protocPath = try PathLike(tool("protoc"))
+      protocPath = try tool("protoc").url
     }
 
-    let protocGenGRPCSwiftPath = try PathLike(tool("protoc-gen-grpc-swift"))
+    let protocGenGRPCSwiftPath = try tool("protoc-gen-grpc-swift").url
 
     return configuration.invocations.map { invocation in
       self.invokeProtoc(
@@ -159,22 +159,22 @@ struct GRPCSwiftPlugin {
   ///   - importPaths: List of paths to pass with "-I <path>" to `protoc`.
   /// - Returns: The build command configured based on the arguments
   private func invokeProtoc(
-    directory: PathLike,
+    directory: URL,
     invocation: Configuration.Invocation,
-    protocPath: PathLike,
-    protocGenGRPCSwiftPath: PathLike,
-    outputDirectory: PathLike,
-    importPaths: [PathLike]
+    protocPath: URL,
+    protocGenGRPCSwiftPath: URL,
+    outputDirectory: URL,
+    importPaths: [URL]
   ) -> Command {
     // Construct the `protoc` arguments.
     var protocArgs = [
-      "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath)",
-      "--grpc-swift_out=\(outputDirectory)",
+      "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath.path())",
+      "--grpc-swift_out=\(outputDirectory.path())",
     ]
 
     importPaths.forEach { path in
       protocArgs.append("-I")
-      protocArgs.append("\(path)")
+      protocArgs.append(path.path())
     }
 
     if let visibility = invocation.visibility {
@@ -201,20 +201,20 @@ struct GRPCSwiftPlugin {
       protocArgs.append("--grpc-swift_opt=_V2=\(v2)")
     }
 
-    var inputFiles = [PathLike]()
-    var outputFiles = [PathLike]()
+    var inputFiles = [URL]()
+    var outputFiles = [URL]()
 
     for var file in invocation.protoFiles {
       // Append the file to the protoc args so that it is used for generating
       protocArgs.append(file)
-      inputFiles.append(directory.appending(file))
+      inputFiles.append(directory.appending(path: file, directoryHint: .notDirectory))
 
       // The name of the output file is based on the name of the input file.
       // We validated in the beginning that every file has the suffix of .proto
       // This means we can just drop the last 5 elements and append the new suffix
       file.removeLast(5)
       file.append("grpc.swift")
-      let protobufOutputPath = outputDirectory.appending(file)
+      let protobufOutputPath = outputDirectory.appending(path: file, directoryHint: .notDirectory)
 
       // Add the outputPath as an output file
       outputFiles.append(protobufOutputPath)
@@ -223,7 +223,10 @@ struct GRPCSwiftPlugin {
         // Remove .swift extension and add .reflection extension
         file.removeLast(5)
         file.append("reflection")
-        let reflectionOutputPath = outputDirectory.appending(file)
+        let reflectionOutputPath = outputDirectory.appending(
+          path: file,
+          directoryHint: .notDirectory
+        )
         outputFiles.append(reflectionOutputPath)
       }
     }
@@ -231,7 +234,7 @@ struct GRPCSwiftPlugin {
     // Construct the command. Specifying the input and output paths lets the build
     // system know when to invoke the command. The output paths are passed on to
     // the rule engine in the build system.
-    return Command.buildCommand(
+    return .buildCommand(
       displayName: "Generating gRPC Swift files from proto files",
       executable: protocPath,
       arguments: protocArgs,
@@ -261,82 +264,13 @@ extension GRPCSwiftPlugin: BuildToolPlugin {
       throw PluginError.invalidTarget("\(type(of: target))")
     }
 
-    let workDirectory = PathLike(context.pluginWorkDirectory)
+    let workDirectory = context.pluginWorkDirectoryURL
 
     return try self.createBuildCommands(
       pluginWorkDirectory: workDirectory,
       sourceFiles: swiftTarget.sourceFiles,
       tool: context.tool
     )
-  }
-}
-
-// 'Path' was effectively deprecated in Swift 6 in favour of URL. ('Effectively' because all
-// methods, properties, and conformances have been deprecated but the type hasn't.) This type wraps
-// either depending on the compiler version.
-struct PathLike: CustomStringConvertible {
-  typealias Value = Path
-
-  private(set) var value: Value
-
-  init(_ value: Value) {
-    self.value = value
-  }
-
-  init(_ path: String) {
-    self.value = Path(path)
-  }
-
-  init(_ element: FileList.Element) {
-    self.value = element.path
-  }
-
-  init(_ element: PluginContext.Tool) {
-    self.value = element.path
-  }
-
-  var description: String {
-    return String(describing: self.value)
-  }
-
-  var lastComponent: String {
-    return self.value.lastComponent
-  }
-
-  func removingLastComponent() -> Self {
-    var copy = self
-    copy.value = self.value.removingLastComponent()
-    return copy
-  }
-
-  func appending(_ path: String) -> Self {
-    var copy = self
-    copy.value = self.value.appending(path)
-    return copy
-  }
-}
-
-extension Command {
-  static func buildCommand(
-    displayName: String?,
-    executable: PathLike,
-    arguments: [String],
-    inputFiles: [PathLike],
-    outputFiles: [PathLike]
-  ) -> PackagePlugin.Command {
-    return Self.buildCommand(
-      displayName: displayName,
-      executable: executable.value,
-      arguments: arguments,
-      inputFiles: inputFiles.map { $0.value },
-      outputFiles: outputFiles.map { $0.value }
-    )
-  }
-}
-
-extension URL {
-  init(_ pathLike: PathLike) {
-    self = URL(fileURLWithPath: "\(pathLike.value)")
   }
 }
 
@@ -348,7 +282,7 @@ extension GRPCSwiftPlugin: XcodeBuildToolPlugin {
     context: XcodePluginContext,
     target: XcodeTarget
   ) throws -> [Command] {
-    let workDirectory = PathLike(context.pluginWorkDirectory)
+    let workDirectory = context.pluginWorkDirectoryURL
 
     return try self.createBuildCommands(
       pluginWorkDirectory: workDirectory,
