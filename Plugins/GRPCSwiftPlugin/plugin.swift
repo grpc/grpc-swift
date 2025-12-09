@@ -223,7 +223,10 @@ struct GRPCSwiftPlugin {
         // Remove .swift extension and add .reflection extension
         file.removeLast(5)
         file.append("reflection")
-        let reflectionOutputPath = outputDirectory.appending(path: file, directoryHint: .notDirectory)
+        let reflectionOutputPath = outputDirectory.appending(
+          path: file,
+          directoryHint: .notDirectory
+        )
         outputFiles.append(reflectionOutputPath)
       }
     }
