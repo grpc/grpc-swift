@@ -168,13 +168,13 @@ struct GRPCSwiftPlugin {
   ) -> Command {
     // Construct the `protoc` arguments.
     var protocArgs = [
-      "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath)",
-      "--grpc-swift_out=\(outputDirectory)",
+      "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath.path())",
+      "--grpc-swift_out=\(outputDirectory.path())",
     ]
 
     importPaths.forEach { path in
       protocArgs.append("-I")
-      protocArgs.append("\(path)")
+      protocArgs.append(path.path())
     }
 
     if let visibility = invocation.visibility {
