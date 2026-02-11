@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Foundation
 import NIOCore
 import NIOHTTP1
 import NIOHTTP2
@@ -133,6 +134,12 @@ extension GRPCStatus: CustomStringConvertible {
     case (.none, .none):
       return "\(self.code)"
     }
+  }
+}
+
+extension GRPCStatus: LocalizedError {
+  public var errorDescription: String? {
+    return self.description
   }
 }
 
