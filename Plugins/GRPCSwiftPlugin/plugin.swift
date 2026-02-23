@@ -168,8 +168,8 @@ struct GRPCSwiftPlugin {
   ) -> Command {
     // Construct the `protoc` arguments.
     var protocArgs = [
-      "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath.path())",
       "--grpc-swift_out=\(outputDirectory.path())",
+      "--plugin=protoc-gen-grpc-swift=\(protocGenGRPCSwiftPath.fileSystemPath)",
     ]
 
     importPaths.forEach { path in
@@ -252,6 +252,16 @@ struct GRPCSwiftPlugin {
         }
       }
     }
+  }
+}
+
+private extension URL {
+  var fileSystemPath: String {
+    #if canImport(Darwin)
+    return self.path(percentEncoded: false)
+    #else
+    return self.path()
+    #endif
   }
 }
 
