@@ -316,7 +316,8 @@ class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
 class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
-    observerFactory: @escaping (UnaryResponseCallContext<String>)
+    observerFactory:
+      @escaping (UnaryResponseCallContext<String>)
       -> EventLoopFuture<(StreamEvent<String>) -> Void>
   ) -> ClientStreamingServerHandler<StringSerializer, StringDeserializer> {
     return ClientStreamingServerHandler(
@@ -569,7 +570,8 @@ class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
-    userFunction: @escaping (String, StreamingResponseCallContext<String>)
+    userFunction:
+      @escaping (String, StreamingResponseCallContext<String>)
       -> EventLoopFuture<GRPCStatus>
   ) -> ServerStreamingServerHandler<StringSerializer, StringDeserializer> {
     return ServerStreamingServerHandler(
@@ -787,7 +789,8 @@ class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
 class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
-    observerFactory: @escaping (StreamingResponseCallContext<String>)
+    observerFactory:
+      @escaping (StreamingResponseCallContext<String>)
       -> EventLoopFuture<(StreamEvent<String>) -> Void>
   ) -> BidirectionalStreamingServerHandler<StringSerializer, StringDeserializer> {
     return BidirectionalStreamingServerHandler(

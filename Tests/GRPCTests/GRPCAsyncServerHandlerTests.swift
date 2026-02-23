@@ -62,11 +62,12 @@ class AsyncServerHandlerTests: GRPCTestCase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     callType: GRPCCallType = .bidirectionalStreaming,
-    observer: @escaping @Sendable (
-      GRPCAsyncRequestStream<String>,
-      GRPCAsyncResponseStreamWriter<String>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Void
+    observer:
+      @escaping @Sendable (
+        GRPCAsyncRequestStream<String>,
+        GRPCAsyncResponseStreamWriter<String>,
+        GRPCAsyncServerCallContext
+      ) async throws -> Void
   ) -> AsyncServerHandler<StringSerializer, StringDeserializer, String, String> {
     return AsyncServerHandler(
       context: self.makeCallHandlerContext(encoding: encoding),

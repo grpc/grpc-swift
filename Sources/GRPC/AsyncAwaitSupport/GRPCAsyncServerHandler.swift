@@ -62,7 +62,8 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping unary: @escaping @Sendable (Request, GRPCAsyncServerCallContext) async throws
+    wrapping unary:
+      @escaping @Sendable (Request, GRPCAsyncServerCallContext) async throws
       -> Response
   ) {
     self._handler = .init(
@@ -88,10 +89,11 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping clientStreaming: @escaping @Sendable (
-      GRPCAsyncRequestStream<Request>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Response
+    wrapping clientStreaming:
+      @escaping @Sendable (
+        GRPCAsyncRequestStream<Request>,
+        GRPCAsyncServerCallContext
+      ) async throws -> Response
   ) {
     self._handler = .init(
       context: context,
@@ -112,11 +114,12 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping serverStreaming: @escaping @Sendable (
-      Request,
-      GRPCAsyncResponseStreamWriter<Response>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Void
+    wrapping serverStreaming:
+      @escaping @Sendable (
+        Request,
+        GRPCAsyncResponseStreamWriter<Response>,
+        GRPCAsyncServerCallContext
+      ) async throws -> Void
   ) {
     self._handler = .init(
       context: context,
@@ -140,11 +143,12 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping bidirectional: @escaping @Sendable (
-      GRPCAsyncRequestStream<Request>,
-      GRPCAsyncResponseStreamWriter<Response>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Void
+    wrapping bidirectional:
+      @escaping @Sendable (
+        GRPCAsyncRequestStream<Request>,
+        GRPCAsyncResponseStreamWriter<Response>,
+        GRPCAsyncServerCallContext
+      ) async throws -> Void
   ) {
     self._handler = .init(
       context: context,
@@ -265,11 +269,12 @@ internal final class AsyncServerHandler<
     responseSerializer: Serializer,
     callType: GRPCCallType,
     interceptors: [ServerInterceptor<Request, Response>],
-    userHandler: @escaping @Sendable (
-      GRPCAsyncRequestStream<Request>,
-      GRPCAsyncResponseStreamWriter<Response>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Void
+    userHandler:
+      @escaping @Sendable (
+        GRPCAsyncRequestStream<Request>,
+        GRPCAsyncResponseStreamWriter<Response>,
+        GRPCAsyncServerCallContext
+      ) async throws -> Void
   ) {
     self.serializer = responseSerializer
     self.deserializer = requestDeserializer
