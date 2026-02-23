@@ -255,7 +255,7 @@ struct GRPCSwiftPlugin {
   }
 }
 
-private extension URL {
+fileprivate extension URL {
   var fileSystemPath: String {
     #if canImport(Darwin)
     return self.path(percentEncoded: false)
