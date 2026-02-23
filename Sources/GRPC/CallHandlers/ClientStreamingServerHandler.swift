@@ -77,7 +77,8 @@ public final class ClientStreamingServerHandler<
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    observerFactory: @escaping (UnaryResponseCallContext<Response>)
+    observerFactory:
+      @escaping (UnaryResponseCallContext<Response>)
       -> EventLoopFuture<(StreamEvent<Request>) -> Void>
   ) {
     self.serializer = responseSerializer

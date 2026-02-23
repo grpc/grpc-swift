@@ -61,21 +61,21 @@ public struct Routeguide_Rectangle: Sendable {
 
   /// One corner of the rectangle.
   public var lo: Routeguide_Point {
-    get {return _lo ?? Routeguide_Point()}
+    get {_lo ?? Routeguide_Point()}
     set {_lo = newValue}
   }
   /// Returns true if `lo` has been explicitly set.
-  public var hasLo: Bool {return self._lo != nil}
+  public var hasLo: Bool {self._lo != nil}
   /// Clears the value of `lo`. Subsequent reads from it will return its default value.
   public mutating func clearLo() {self._lo = nil}
 
   /// The other corner of the rectangle.
   public var hi: Routeguide_Point {
-    get {return _hi ?? Routeguide_Point()}
+    get {_hi ?? Routeguide_Point()}
     set {_hi = newValue}
   }
   /// Returns true if `hi` has been explicitly set.
-  public var hasHi: Bool {return self._hi != nil}
+  public var hasHi: Bool {self._hi != nil}
   /// Clears the value of `hi`. Subsequent reads from it will return its default value.
   public mutating func clearHi() {self._hi = nil}
 
@@ -100,11 +100,11 @@ public struct Routeguide_Feature: Sendable {
 
   /// The point where the feature is detected.
   public var location: Routeguide_Point {
-    get {return _location ?? Routeguide_Point()}
+    get {_location ?? Routeguide_Point()}
     set {_location = newValue}
   }
   /// Returns true if `location` has been explicitly set.
-  public var hasLocation: Bool {return self._location != nil}
+  public var hasLocation: Bool {self._location != nil}
   /// Clears the value of `location`. Subsequent reads from it will return its default value.
   public mutating func clearLocation() {self._location = nil}
 
@@ -123,11 +123,11 @@ public struct Routeguide_RouteNote: Sendable {
 
   /// The location from which the message is sent.
   public var location: Routeguide_Point {
-    get {return _location ?? Routeguide_Point()}
+    get {_location ?? Routeguide_Point()}
     set {_location = newValue}
   }
   /// Returns true if `location` has been explicitly set.
-  public var hasLocation: Bool {return self._location != nil}
+  public var hasLocation: Bool {self._location != nil}
   /// Clears the value of `location`. Subsequent reads from it will return its default value.
   public mutating func clearLocation() {self._location = nil}
 

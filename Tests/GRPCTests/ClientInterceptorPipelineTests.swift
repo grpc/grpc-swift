@@ -301,7 +301,8 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 // MARK: - Test Interceptors
 
 /// A simple interceptor which records and then forwards and request and response parts it sees.
-class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Response>, @unchecked
+class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Response>,
+  @unchecked
   Sendable
 {
   var requestParts: [GRPCClientRequestPart<Request>] = []

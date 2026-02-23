@@ -76,7 +76,8 @@ public final class BidirectionalStreamingServerHandler<
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    observerFactory: @escaping (StreamingResponseCallContext<Response>)
+    observerFactory:
+      @escaping (StreamingResponseCallContext<Response>)
       -> EventLoopFuture<(StreamEvent<Request>) -> Void>
   ) {
     self.serializer = responseSerializer

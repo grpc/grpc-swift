@@ -173,11 +173,11 @@ public struct Grpc_Reflection_V1alpha_ServerReflectionResponse: Sendable {
   public var validHost: String = String()
 
   public var originalRequest: Grpc_Reflection_V1alpha_ServerReflectionRequest {
-    get {return _originalRequest ?? Grpc_Reflection_V1alpha_ServerReflectionRequest()}
+    get {_originalRequest ?? Grpc_Reflection_V1alpha_ServerReflectionRequest()}
     set {_originalRequest = newValue}
   }
   /// Returns true if `originalRequest` has been explicitly set.
-  public var hasOriginalRequest: Bool {return self._originalRequest != nil}
+  public var hasOriginalRequest: Bool {self._originalRequest != nil}
   /// Clears the value of `originalRequest`. Subsequent reads from it will return its default value.
   public mutating func clearOriginalRequest() {self._originalRequest = nil}
 

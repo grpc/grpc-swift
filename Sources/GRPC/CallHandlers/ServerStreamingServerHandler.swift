@@ -73,7 +73,8 @@ public final class ServerStreamingServerHandler<
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    userFunction: @escaping (Request, StreamingResponseCallContext<Response>)
+    userFunction:
+      @escaping (Request, StreamingResponseCallContext<Response>)
       -> EventLoopFuture<GRPCStatus>
   ) {
     self.serializer = responseSerializer

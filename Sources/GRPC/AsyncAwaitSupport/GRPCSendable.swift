@@ -21,5 +21,6 @@ public typealias GRPCSendable = Swift.Sendable
 @preconcurrency
 public protocol GRPCPreconcurrencySendable: Sendable {}
 
-@preconcurrency public typealias GRPCChannelInitializer = @Sendable (Channel)
+@preconcurrency public typealias GRPCChannelInitializer =
+  @Sendable (Channel)
   -> EventLoopFuture<Void>
