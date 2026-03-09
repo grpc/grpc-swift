@@ -287,6 +287,7 @@ internal final class GRPCClientChannelHandler {
   private let logger: Logger
   private var stateMachine: GRPCClientStateMachine
   private let maximumReceiveMessageLength: Int
+  private let holdWritesUntilEOS: Bool
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
   ///
@@ -304,12 +305,16 @@ internal final class GRPCClientChannelHandler {
     switch callType {
     case .unary:
       self.stateMachine = .init(requestArity: .one, responseArity: .one)
+      self.holdWritesUntilEOS = true
     case .clientStreaming:
       self.stateMachine = .init(requestArity: .many, responseArity: .one)
+      self.holdWritesUntilEOS = false
     case .serverStreaming:
       self.stateMachine = .init(requestArity: .one, responseArity: .many)
+      self.holdWritesUntilEOS = true
     case .bidirectionalStreaming:
       self.stateMachine = .init(requestArity: .many, responseArity: .many)
+      self.holdWritesUntilEOS = false
     }
   }
 }
@@ -564,11 +569,25 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
 
     case .end:
       // About to send end: write any outbound messages first.
-      while let (result, promise) = self.stateMachine.nextRequest() {
+      var next = self.stateMachine.nextRequest()
+      var wroteEOS = false
+
+      while let (result, bufferedPromise) = next {
+        next = self.stateMachine.nextRequest()
+
         switch result {
         case let .success(buffer):
+          // Write EOS if this is the final frame.
+          let setEOS = next == nil
+          var effectivePromise = bufferedPromise
+
+          if setEOS {
+            effectivePromise.setOrCascade(to: promise)
+          }
+
+          wroteEOS = wroteEOS || setEOS
           let framePayload: HTTP2Frame.FramePayload = .data(
-            .init(data: .byteBuffer(buffer), endStream: false)
+            .init(data: .byteBuffer(buffer), endStream: setEOS)
           )
 
           self.logger.trace(
@@ -576,10 +595,10 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
             metadata: [
               MetadataKey.h2Payload: "DATA",
               MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
-              MetadataKey.h2EndStream: "false",
+              MetadataKey.h2EndStream: "\(setEOS)",
             ]
           )
-          context.write(self.wrapOutboundOut(framePayload), promise: promise)
+          context.write(self.wrapOutboundOut(framePayload), promise: effectivePromise)
 
         case let .failure(error):
           context.fireErrorCaught(error)
@@ -590,8 +609,9 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
 
       // Okay: can we close the request stream?
       switch self.stateMachine.sendEndOfRequestStream() {
-      case .success:
-        // We can. Send an empty DATA frame with end-stream set.
+      case .success where !wroteEOS:
+        // EOS wasn't included in any buffered DATA frame above; send an empty DATA frame with
+        // end-stream set.
         let empty = context.channel.allocator.buffer(capacity: 0)
         let framePayload: HTTP2Frame.FramePayload = .data(
           .init(data: .byteBuffer(empty), endStream: true)
@@ -606,6 +626,10 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
           ]
         )
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
+
+      case .success:
+        // EOS was already included in the final buffered DATA frame; nothing more to send.
+        break
 
       case let .failure(error):
         // Why can't we close the request stream?
@@ -628,28 +652,31 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
   }
 
   func flush(context: ChannelHandlerContext) {
-    // Drain any requests.
-    while let (result, promise) = self.stateMachine.nextRequest() {
-      switch result {
-      case let .success(buffer):
-        let framePayload: HTTP2Frame.FramePayload = .data(
-          .init(data: .byteBuffer(buffer), endStream: false)
-        )
+    // Drain any requests unless holding them until EOS (so that end stream isn't emitted in a
+    // separate frame).
+    if !self.holdWritesUntilEOS {
+      while let (result, promise) = self.stateMachine.nextRequest() {
+        switch result {
+        case let .success(buffer):
+          let framePayload: HTTP2Frame.FramePayload = .data(
+            .init(data: .byteBuffer(buffer), endStream: false)
+          )
 
-        self.logger.trace(
-          "writing HTTP2 frame",
-          metadata: [
-            MetadataKey.h2Payload: "DATA",
-            MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
-            MetadataKey.h2EndStream: "false",
-          ]
-        )
-        context.write(self.wrapOutboundOut(framePayload), promise: promise)
+          self.logger.trace(
+            "writing HTTP2 frame",
+            metadata: [
+              MetadataKey.h2Payload: "DATA",
+              MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
+              MetadataKey.h2EndStream: "false",
+            ]
+          )
+          context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
-      case let .failure(error):
-        context.fireErrorCaught(error)
-        promise?.fail(error)
-        return
+        case let .failure(error):
+          context.fireErrorCaught(error)
+          promise?.fail(error)
+          return
+        }
       }
     }
 
