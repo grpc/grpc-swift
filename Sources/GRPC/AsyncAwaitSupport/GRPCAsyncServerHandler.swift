@@ -394,6 +394,7 @@ internal final class AsyncServerHandler<
       self.responseWriter?.sendEnd(status: .processingError, trailers: [:], promise: nil)
       fallthrough
     case .nilOutInterceptorPipeline:
+      self.interceptors?.close()
       self.interceptors = nil
       self.responseWriter = nil
     case .none:

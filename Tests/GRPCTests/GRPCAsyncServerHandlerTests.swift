@@ -62,6 +62,7 @@ class AsyncServerHandlerTests: GRPCTestCase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     callType: GRPCCallType = .bidirectionalStreaming,
+    interceptors: [ServerInterceptor<String, String>] = [],
     observer: @escaping @Sendable (
       GRPCAsyncRequestStream<String>,
       GRPCAsyncResponseStreamWriter<String>,
@@ -73,7 +74,7 @@ class AsyncServerHandlerTests: GRPCTestCase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       callType: callType,
-      interceptors: [],
+      interceptors: interceptors,
       userHandler: observer
     )
   }
@@ -519,6 +520,79 @@ class AsyncServerHandlerTests: GRPCTestCase {
     await responseStream.next().assertStatus { status, _ in
       XCTAssertEqual(status.code, .internalError)
     }
+  }
+
+  func testInterceptorPipelineClosedOnFinishBeforeMetadata() async throws {
+    // Cancel path: finish() called before any metadata is received (idle handler state).
+    let handler = self.makeHandler(
+      interceptors: [ServerInterceptor<String, String>()],
+      observer: Self.neverCalled(requests:responseStreamWriter:context:)
+    )
+    let pipeline = handler.interceptors!
+
+    self.loop.execute {
+      handler.finish()
+    }
+
+    let responseStream = self.recorder.responseSequence.makeAsyncIterator()
+    await responseStream.next().assertStatus()
+    await responseStream.next().assertNil()
+
+    let isOpen = try self.loop.submit { pipeline._isOpen }.wait()
+    XCTAssertFalse(isOpen)
+  }
+
+  func testInterceptorPipelineClosedOnErrorAfterMetadata() async throws {
+    // Cancel path: receiveError() after metadata has been received and the handler is running.
+    let handler = self.makeHandler(
+      interceptors: [ServerInterceptor<String, String>()],
+      observer: Self.neverReceivesMessage(requests:responseStreamWriter:context:)
+    )
+    let pipeline = handler.interceptors!
+
+    self.loop.execute {
+      handler.receiveMetadata([:])
+      handler.receiveError(CancellationError())
+    }
+
+    let responseStream = self.recorder.responseSequence.makeAsyncIterator()
+    await responseStream.next().assertStatus { status, _ in
+      XCTAssertEqual(status.code, .unavailable)
+    }
+    await responseStream.next().assertNil()
+
+    let isOpen = try self.loop.submit { pipeline._isOpen }.wait()
+    XCTAssertFalse(isOpen)
+  }
+
+  func testInterceptorPipelineClosedOnFinishAfterMessage() async throws {
+    // Cancel path: finish() after messages have been exchanged (response stream is writing).
+    let handler = self.makeHandler(
+      interceptors: [ServerInterceptor<String, String>()],
+      observer: Self.echo(requests:responseStreamWriter:context:)
+    )
+    let pipeline = handler.interceptors!
+
+    self.loop.execute {
+      handler.receiveMetadata([:])
+      handler.receiveMessage(ByteBuffer(string: "hello"))
+    }
+
+    let responseStream = self.recorder.responseSequence.makeAsyncIterator()
+    await responseStream.next().assertMetadata()
+    await responseStream.next().assertMessage()
+
+    self.loop.execute {
+      handler.finish()
+    }
+
+    await responseStream.next().assertStatus { status, _ in
+      XCTAssertEqual(status.code, .internalError)
+    }
+    await responseStream.next().assertNil()
+
+    let isOpen = try self.loop.submit { pipeline._isOpen }.wait()
+    XCTAssertFalse(isOpen)
   }
 }
 

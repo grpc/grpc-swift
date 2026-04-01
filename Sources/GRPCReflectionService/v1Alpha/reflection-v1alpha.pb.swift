@@ -26,7 +26,11 @@
 // Warning: this entire file is deprecated. Use this instead:
 // https://github.com/grpc/grpc-proto/blob/master/grpc/reflection/v1/reflection.proto
 
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
 import Foundation
+#endif
 import SwiftProtobuf
 
 // If the compiler emits an error on this type, it is because this file
