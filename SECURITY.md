@@ -39,7 +39,7 @@ with the [details usually included with bug reports][issue-template].
   and the [SSWG][sswg] will announce the vulnerability on the [Swift
   forums][swift-forums-sec].
 
-[issue-template]: https://github.com/grpc/grpc-swift/blob/main/.github/ISSUE_TEMPLATE/BUG_REPORT.md
+[issue-template]: https://github.com/grpc/grpc-swift/blob/release/1.x/.github/ISSUE_TEMPLATE/BUG_REPORT.md
 [sswg]: https://github.com/swift-server/sswg
 [sswg-security]: https://github.com/swift-server/sswg/blob/main/process/incubation.md#security-best-practices
 [swift-forums-sec]: https://forums.swift.org/c/server/security-updates/

@@ -110,19 +110,14 @@ Some of the examples are accompanied by tutorials, including:
 - Support for Apple Platforms and NIO Transport Services in
   [`docs/apple-platforms.md`][docs-apple]
 
-[docs-apple]: https://github.com/grpc/grpc-swift/tree/main/docs/apple-platforms.md
-[docs-plugin]: https://github.com/grpc/grpc-swift/tree/main/docs/plugin.md
-[docs-quickstart]: https://github.com/grpc/grpc-swift/tree/main/docs/quick-start.md
-[docs-tls]: https://github.com/grpc/grpc-swift/tree/main/docs/tls.md
-[docs-keepalive]: https://github.com/grpc/grpc-swift/tree/main/docs/keepalive.md
-[docs-tutorial]: https://github.com/grpc/grpc-swift/tree/main/docs/basic-tutorial.md
-[docs-interceptors-tutorial]: https://github.com/grpc/grpc-swift/tree/main/docs/interceptors-tutorial.md
-[grpc]: https://github.com/grpc/grpc
+[docs-apple]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/apple-platforms.md
+[docs-plugin]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/plugin.md
+[docs-quickstart]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/quick-start.md
+[docs-tls]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/tls.md
+[docs-keepalive]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/keepalive.md
+[docs-tutorial]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/basic-tutorial.md
+[docs-interceptors-tutorial]: https://github.com/grpc/grpc-swift/tree/release/1.x/docs/interceptors-tutorial.md
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [swift-nio-platforms]: https://github.com/apple/swift-nio#supported-platforms
-[swift-nio]: https://github.com/apple/swift-nio
 [swift-protobuf]: https://github.com/apple/swift-protobuf
-[xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
-[branch-new]: https://github.com/grpc/grpc-swift/tree/main
-[branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
-[examples]: https://github.com/grpc/grpc-swift/tree/main/Examples/v1
+[examples]: https://github.com/grpc/grpc-swift/tree/release/1.x/Examples/v1

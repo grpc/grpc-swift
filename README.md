@@ -2,6 +2,7 @@
 
 This repository contains a gRPC code generator and runtime libraries for Swift.
 You can read more about gRPC on the [gRPC project's website][grpcio].
+Documentation is available on the [Swift Package Index][spi-grpc-swift].
 
 > [!IMPORTANT]  
 >  
@@ -39,4 +40,4 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 
 [gh-grpc]: https://github.com/grpc/grpc
 [grpcio]: https://grpc.io
-[spi-grpc-swift-main]: https://swiftpackageindex.com/grpc/grpc-swift/main/documentation/grpccore
+[spi-grpc-swift]: https://swiftpackageindex.com/grpc/grpc-swift/release-1.x/documentation

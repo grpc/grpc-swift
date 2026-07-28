@@ -610,5 +610,4 @@ Follow the instructions in the Route Guide example directory
 [routeguide-readme]: ../Examples/v1/RouteGuide/README.md
 [routeguide-source]: ../Examples/v1/RouteGuide
 [run-protoc]: ../Protos/generate.sh
-[swift-protobuf-guide]: https://github.com/apple/swift-protobuf/blob/main/Documentation/API.md
 [swift-protobuf]: https://github.com/apple/swift-protobuf

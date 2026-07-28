@@ -90,6 +90,6 @@ a `String` using by using the UTF8 view on the string with the
 Refer to the [certificate][nio-ref-tlscert] or [private
 key][nio-ref-privatekey] documentation for more information.
 
-[nio-ref-privatekey]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLPrivateKey.html
-[nio-ref-tlscert]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLCertificate.html
-[nio-ref-tlsconfig]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Structs/TLSConfiguration.html
+[nio-ref-privatekey]: https://swiftpackageindex.com/apple/swift-nio-ssl/documentation/niossl/niosslprivatekey
+[nio-ref-tlscert]: https://swiftpackageindex.com/apple/swift-nio-ssl/documentation/niossl/niosslcertificate
+[nio-ref-tlsconfig]: https://swiftpackageindex.com/apple/swift-nio-ssl/documentation/niossl/tlsconfiguration

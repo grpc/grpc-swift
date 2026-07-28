@@ -217,11 +217,10 @@ Note that when specifying a service, a method or a symbol, we have to use the fu
 [grpcurl-setup]: https://github.com/fullstorydev/grpcurl#grpcurl
 [grpcurl]: https://github.com/fullstorydev/grpcurl
 [grpc-cli]: https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
-[v1]: ../v1/reflection-v1.proto
-[v1alpha]: ../v1Alpha/reflection-v1alpha.proto
-[reflection-server]: ../../Examples/v1/ReflectionService/ReflectionServer.swift
+[v1]: ../../../Protos/upstream/grpc/reflection/v1/reflection.proto
+[v1alpha]: ../../../Protos/upstream/grpc/reflection/v1alpha/reflection.proto
+[reflection-server]: ../../../Examples/v1/ReflectionService/ReflectionServer.swift
 [helloworld-proto]: ../../Examples/v1/HelloWorld/Model/helloworld.proto
-[echo-proto]: ../../Examples/v1/Echo/Model/echo.proto
 [grpcurl-v188]: https://github.com/fullstorydev/grpcurl/releases/tag/v1.8.8
-[swiftpm-resources]: https://github.com/apple/swift-package-manager/blob/main/Documentation/PackageDescription.md#resource
+[swiftpm-resources]: https://github.com/swiftlang/swift-package-manager/blob/main/Sources/Runtimes/PackageDescription/PackageDescription.docc/PackageDescription.md
 [spm-plugin]: ../../protoc-gen-grpc-swift/Docs.docc/spm-plugin.md
