@@ -41,13 +41,13 @@ import SwiftProtobuf
 // incompatible with the version of SwiftProtobuf to which you are linking.
 // Please ensure that you are building against the same version of the API
 // that was used to generate this file.
-fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
+fileprivate nonisolated struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
   struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
   typealias Version = _2
 }
 
 /// The message sent by the client when calling ServerReflectionInfo method.
-public struct Grpc_Reflection_V1_ServerReflectionRequest: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ServerReflectionRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -120,7 +120,7 @@ public struct Grpc_Reflection_V1_ServerReflectionRequest: Sendable {
   /// To use reflection service, the client should set one of the following
   /// fields in message_request. The server distinguishes requests by their
   /// defined field and then handles them using corresponding methods.
-  public enum OneOf_MessageRequest: Equatable, Sendable {
+  public nonisolated enum OneOf_MessageRequest: Equatable, Sendable {
     /// Find a proto file by the file name.
     case fileByFilename(String)
     /// Find the proto file that declares the given fully-qualified symbol name.
@@ -150,7 +150,7 @@ public struct Grpc_Reflection_V1_ServerReflectionRequest: Sendable {
 
 /// The type name and extension number sent by the client when requesting
 /// file_containing_extension.
-public struct Grpc_Reflection_V1_ExtensionRequest: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ExtensionRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -166,7 +166,7 @@ public struct Grpc_Reflection_V1_ExtensionRequest: Sendable {
 }
 
 /// The message sent by the server to answer ServerReflectionInfo method.
-public struct Grpc_Reflection_V1_ServerReflectionResponse: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ServerReflectionResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -231,7 +231,7 @@ public struct Grpc_Reflection_V1_ServerReflectionResponse: Sendable {
 
   /// The server sets one of the following fields according to the message_request
   /// in the request.
-  public enum OneOf_MessageResponse: Equatable, Sendable {
+  public nonisolated enum OneOf_MessageResponse: Equatable, Sendable {
     /// This message is used to answer file_by_filename, file_containing_symbol,
     /// file_containing_extension requests with transitive dependencies.
     /// As the repeated label is not allowed in oneof fields, we use a
@@ -256,7 +256,7 @@ public struct Grpc_Reflection_V1_ServerReflectionResponse: Sendable {
 /// Serialized FileDescriptorProto messages sent by the server answering
 /// a file_by_filename, file_containing_symbol, or file_containing_extension
 /// request.
-public struct Grpc_Reflection_V1_FileDescriptorResponse: Sendable {
+public nonisolated struct Grpc_Reflection_V1_FileDescriptorResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -273,7 +273,7 @@ public struct Grpc_Reflection_V1_FileDescriptorResponse: Sendable {
 
 /// A list of extension numbers sent by the server answering
 /// all_extension_numbers_of_type request.
-public struct Grpc_Reflection_V1_ExtensionNumberResponse: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ExtensionNumberResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -290,7 +290,7 @@ public struct Grpc_Reflection_V1_ExtensionNumberResponse: Sendable {
 }
 
 /// A list of ServiceResponse sent by the server answering list_services request.
-public struct Grpc_Reflection_V1_ListServiceResponse: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ListServiceResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -306,7 +306,7 @@ public struct Grpc_Reflection_V1_ListServiceResponse: Sendable {
 
 /// The information of a single service used by ListServiceResponse to answer
 /// list_services request.
-public struct Grpc_Reflection_V1_ServiceResponse: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ServiceResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -321,7 +321,7 @@ public struct Grpc_Reflection_V1_ServiceResponse: Sendable {
 }
 
 /// The error code and error message sent by the server when an error occurs.
-public struct Grpc_Reflection_V1_ErrorResponse: Sendable {
+public nonisolated struct Grpc_Reflection_V1_ErrorResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -338,9 +338,9 @@ public struct Grpc_Reflection_V1_ErrorResponse: Sendable {
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
-fileprivate let _protobuf_package = "grpc.reflection.v1"
+fileprivate nonisolated let _protobuf_package = "grpc.reflection.v1"
 
-extension Grpc_Reflection_V1_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ServerReflectionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ServerReflectionRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}host\0\u{4}\u{2}file_by_filename\0\u{3}file_containing_symbol\0\u{3}file_containing_extension\0\u{3}all_extension_numbers_of_type\0\u{3}list_services\0")
 
@@ -443,7 +443,7 @@ extension Grpc_Reflection_V1_ServerReflectionRequest: SwiftProtobuf.Message, Swi
   }
 }
 
-extension Grpc_Reflection_V1_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ExtensionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ExtensionRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}containing_type\0\u{3}extension_number\0")
 
@@ -478,7 +478,7 @@ extension Grpc_Reflection_V1_ExtensionRequest: SwiftProtobuf.Message, SwiftProto
   }
 }
 
-extension Grpc_Reflection_V1_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ServerReflectionResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ServerReflectionResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}valid_host\0\u{3}original_request\0\u{4}\u{2}file_descriptor_response\0\u{3}all_extension_numbers_response\0\u{3}list_services_response\0\u{3}error_response\0")
 
@@ -589,7 +589,7 @@ extension Grpc_Reflection_V1_ServerReflectionResponse: SwiftProtobuf.Message, Sw
   }
 }
 
-extension Grpc_Reflection_V1_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_FileDescriptorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".FileDescriptorResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}file_descriptor_proto\0")
 
@@ -619,7 +619,7 @@ extension Grpc_Reflection_V1_FileDescriptorResponse: SwiftProtobuf.Message, Swif
   }
 }
 
-extension Grpc_Reflection_V1_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ExtensionNumberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ExtensionNumberResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}base_type_name\0\u{3}extension_number\0")
 
@@ -654,7 +654,7 @@ extension Grpc_Reflection_V1_ExtensionNumberResponse: SwiftProtobuf.Message, Swi
   }
 }
 
-extension Grpc_Reflection_V1_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ListServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ListServiceResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}service\0")
 
@@ -684,7 +684,7 @@ extension Grpc_Reflection_V1_ListServiceResponse: SwiftProtobuf.Message, SwiftPr
   }
 }
 
-extension Grpc_Reflection_V1_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ServiceResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ServiceResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0")
 
@@ -714,7 +714,7 @@ extension Grpc_Reflection_V1_ServiceResponse: SwiftProtobuf.Message, SwiftProtob
   }
 }
 
-extension Grpc_Reflection_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Grpc_Reflection_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ErrorResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}error_code\0\u{3}error_message\0")
 
