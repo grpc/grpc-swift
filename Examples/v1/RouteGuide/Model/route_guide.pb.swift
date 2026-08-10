@@ -29,7 +29,7 @@ import SwiftProtobuf
 // incompatible with the version of SwiftProtobuf to which you are linking.
 // Please ensure that you are building against the same version of the API
 // that was used to generate this file.
-fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
+fileprivate nonisolated struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
   struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
   typealias Version = _2
 }
@@ -38,7 +38,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 /// (degrees multiplied by 10**7 and rounded to the nearest integer).
 /// Latitudes should be in the range +/- 90 degrees and longitude should be in
 /// the range +/- 180 degrees (inclusive).
-public struct Routeguide_Point: Sendable {
+public nonisolated struct Routeguide_Point: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -54,7 +54,7 @@ public struct Routeguide_Point: Sendable {
 
 /// A latitude-longitude rectangle, represented as two diagonally opposite
 /// points "lo" and "hi".
-public struct Routeguide_Rectangle: Sendable {
+public nonisolated struct Routeguide_Rectangle: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -90,7 +90,7 @@ public struct Routeguide_Rectangle: Sendable {
 /// A feature names something at a given point.
 ///
 /// If a feature could not be named, the name is empty.
-public struct Routeguide_Feature: Sendable {
+public nonisolated struct Routeguide_Feature: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -116,7 +116,7 @@ public struct Routeguide_Feature: Sendable {
 }
 
 /// A RouteNote is a message sent while at a given point.
-public struct Routeguide_RouteNote: Sendable {
+public nonisolated struct Routeguide_RouteNote: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -146,7 +146,7 @@ public struct Routeguide_RouteNote: Sendable {
 /// It contains the number of individual points received, the number of
 /// detected features, and the total distance covered as the cumulative sum of
 /// the distance between each point.
-public struct Routeguide_RouteSummary: Sendable {
+public nonisolated struct Routeguide_RouteSummary: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -170,9 +170,9 @@ public struct Routeguide_RouteSummary: Sendable {
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
-fileprivate let _protobuf_package = "routeguide"
+fileprivate nonisolated let _protobuf_package = "routeguide"
 
-extension Routeguide_Point: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Routeguide_Point: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Point"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}latitude\0\u{1}longitude\0")
 
@@ -207,7 +207,7 @@ extension Routeguide_Point: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
   }
 }
 
-extension Routeguide_Rectangle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Routeguide_Rectangle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Rectangle"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}lo\0\u{1}hi\0")
 
@@ -246,7 +246,7 @@ extension Routeguide_Rectangle: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
   }
 }
 
-extension Routeguide_Feature: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Routeguide_Feature: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Feature"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}location\0")
 
@@ -285,7 +285,7 @@ extension Routeguide_Feature: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
   }
 }
 
-extension Routeguide_RouteNote: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Routeguide_RouteNote: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".RouteNote"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}location\0\u{1}message\0")
 
@@ -324,7 +324,7 @@ extension Routeguide_RouteNote: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
   }
 }
 
-extension Routeguide_RouteSummary: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Routeguide_RouteSummary: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".RouteSummary"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}point_count\0\u{3}feature_count\0\u{1}distance\0\u{3}elapsed_time\0")
 
