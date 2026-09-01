@@ -33,7 +33,7 @@ extension Generator {
       braces: .curly
     ) {
       self.println("static var serviceDescriptor: GRPCServiceDescriptor { get }")
-      self.println("var interceptors: \(self.serverInterceptorProtocolName)? { get }")
+      self.println("var interceptors: (any \(self.serverInterceptorProtocolName))? { get }")
 
       for method in service.methods {
         self.method = method
@@ -120,7 +120,7 @@ extension Generator {
 
       // Default nil interceptor factory.
       self.withIndentation(
-        "\(self.access) var interceptors: \(self.serverInterceptorProtocolName)?",
+        "\(self.access) var interceptors: (any \(self.serverInterceptorProtocolName))?",
         braces: .curly
       ) {
         self.println("return nil")
@@ -134,7 +134,7 @@ extension Generator {
           "method name: Substring",
           "context: CallHandlerContext",
         ],
-        returnType: "GRPCServerHandlerProtocol?",
+        returnType: "(any GRPCServerHandlerProtocol)?",
         access: self.access
       ) {
         self.println("switch name {")

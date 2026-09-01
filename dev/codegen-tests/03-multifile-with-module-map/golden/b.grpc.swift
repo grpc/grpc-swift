@@ -13,7 +13,7 @@ import SwiftProtobuf
 /// Usage: instantiate `B_ServiceBClient`, then call methods of this protocol to make API calls.
 internal protocol B_ServiceBClientProtocol: GRPCClient {
   var serviceName: String { get }
-  var interceptors: B_ServiceBClientInterceptorFactoryProtocol? { get }
+  var interceptors: (any B_ServiceBClientInterceptorFactoryProtocol)? { get }
 
   func callServiceB(
     _ request: B_MessageB,
@@ -52,9 +52,9 @@ internal protocol B_ServiceBClientInterceptorFactoryProtocol {
 }
 
 internal final class B_ServiceBClient: B_ServiceBClientProtocol {
-  internal let channel: GRPCChannel
+  internal let channel: any GRPCChannel
   internal var defaultCallOptions: CallOptions
-  internal var interceptors: B_ServiceBClientInterceptorFactoryProtocol?
+  internal var interceptors: (any B_ServiceBClientInterceptorFactoryProtocol)?
 
   /// Creates a client for the b.ServiceB service.
   ///
@@ -63,9 +63,9 @@ internal final class B_ServiceBClient: B_ServiceBClientProtocol {
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
   ///   - interceptors: A factory providing interceptors for each RPC.
   internal init(
-    channel: GRPCChannel,
+    channel: any GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: B_ServiceBClientInterceptorFactoryProtocol? = nil
+    interceptors: (any B_ServiceBClientInterceptorFactoryProtocol)? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -75,7 +75,7 @@ internal final class B_ServiceBClient: B_ServiceBClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol B_ServiceBProvider: CallHandlerProvider {
-  var interceptors: B_ServiceBServerInterceptorFactoryProtocol? { get }
+  var interceptors: (any B_ServiceBServerInterceptorFactoryProtocol)? { get }
 
   func callServiceB(request: B_MessageB, context: StatusOnlyCallContext) -> EventLoopFuture<SwiftProtobuf.Google_Protobuf_Empty>
 }
@@ -88,7 +88,7 @@ extension B_ServiceBProvider {
   internal func handle(
     method name: Substring,
     context: CallHandlerContext
-  ) -> GRPCServerHandlerProtocol? {
+  ) -> (any GRPCServerHandlerProtocol)? {
     switch name {
     case "CallServiceB":
       return UnaryServerHandler(

@@ -30,7 +30,7 @@ extension Generator {
     self.println("\(self.access) protocol \(self.asyncClientProtocolName): GRPCClient {")
     self.withIndentation {
       self.println("static var serviceDescriptor: GRPCServiceDescriptor { get }")
-      self.println("var interceptors: \(self.clientInterceptorProtocolName)? { get }")
+      self.println("var interceptors: (any \(self.clientInterceptorProtocolName))? { get }")
 
       for method in service.methods {
         self.println()
@@ -83,7 +83,7 @@ extension Generator {
 
       // Interceptor factory.
       self.withIndentation(
-        "\(self.access) var interceptors: \(self.clientInterceptorProtocolName)?",
+        "\(self.access) var interceptors: (any \(self.clientInterceptorProtocolName))?",
         braces: .curly
       ) {
         self.println("return nil")
@@ -253,16 +253,16 @@ extension Generator {
       "\(self.access) struct \(self.asyncClientStructName): \(self.asyncClientProtocolName)",
       braces: .curly
     ) {
-      self.println("\(self.access) var channel: GRPCChannel")
+      self.println("\(self.access) var channel: any GRPCChannel")
       self.println("\(self.access) var defaultCallOptions: CallOptions")
-      self.println("\(self.access) var interceptors: \(self.clientInterceptorProtocolName)?")
+      self.println("\(self.access) var interceptors: (any \(self.clientInterceptorProtocolName))?")
       self.println()
 
       self.println("\(self.access) init(")
       self.withIndentation {
-        self.println("channel: GRPCChannel,")
+        self.println("channel: any GRPCChannel,")
         self.println("defaultCallOptions: CallOptions = CallOptions(),")
-        self.println("interceptors: \(self.clientInterceptorProtocolName)? = nil")
+        self.println("interceptors: (any \(self.clientInterceptorProtocolName))? = nil")
       }
       self.println(") {")
       self.withIndentation {
