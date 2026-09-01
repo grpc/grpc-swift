@@ -13,7 +13,7 @@ import SwiftProtobuf
 /// Usage: instantiate `Codegentest_FooClient`, then call methods of this protocol to make API calls.
 internal protocol Codegentest_FooClientProtocol: GRPCClient {
   var serviceName: String { get }
-  var interceptors: Codegentest_FooClientInterceptorFactoryProtocol? { get }
+  var interceptors: (any Codegentest_FooClientInterceptorFactoryProtocol)? { get }
 
   func get(
     _ request: Codegentest_FooMessage,
@@ -52,9 +52,9 @@ internal protocol Codegentest_FooClientInterceptorFactoryProtocol {
 }
 
 internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
-  internal let channel: GRPCChannel
+  internal let channel: any GRPCChannel
   internal var defaultCallOptions: CallOptions
-  internal var interceptors: Codegentest_FooClientInterceptorFactoryProtocol?
+  internal var interceptors: (any Codegentest_FooClientInterceptorFactoryProtocol)?
 
   /// Creates a client for the codegentest.Foo service.
   ///
@@ -63,9 +63,9 @@ internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
   ///   - interceptors: A factory providing interceptors for each RPC.
   internal init(
-    channel: GRPCChannel,
+    channel: any GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Codegentest_FooClientInterceptorFactoryProtocol? = nil
+    interceptors: (any Codegentest_FooClientInterceptorFactoryProtocol)? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -75,7 +75,7 @@ internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Codegentest_FooProvider: CallHandlerProvider {
-  var interceptors: Codegentest_FooServerInterceptorFactoryProtocol? { get }
+  var interceptors: (any Codegentest_FooServerInterceptorFactoryProtocol)? { get }
 
   func get(request: Codegentest_FooMessage, context: StatusOnlyCallContext) -> EventLoopFuture<Codegentest_FooMessage>
 }
@@ -88,7 +88,7 @@ extension Codegentest_FooProvider {
   internal func handle(
     method name: Substring,
     context: CallHandlerContext
-  ) -> GRPCServerHandlerProtocol? {
+  ) -> (any GRPCServerHandlerProtocol)? {
     switch name {
     case "Get":
       return UnaryServerHandler(

@@ -13,16 +13,16 @@ import SwiftProtobuf
 internal final class Codegentest_FooTestClient: Codegentest_FooClientProtocol {
   private let fakeChannel: FakeChannel
   internal var defaultCallOptions: CallOptions
-  internal var interceptors: Codegentest_FooClientInterceptorFactoryProtocol?
+  internal var interceptors: (any Codegentest_FooClientInterceptorFactoryProtocol)?
 
-  internal var channel: GRPCChannel {
+  internal var channel: any GRPCChannel {
     return self.fakeChannel
   }
 
   internal init(
     fakeChannel: FakeChannel = FakeChannel(),
     defaultCallOptions callOptions: CallOptions = CallOptions(),
-    interceptors: Codegentest_FooClientInterceptorFactoryProtocol? = nil
+    interceptors: (any Codegentest_FooClientInterceptorFactoryProtocol)? = nil
   ) {
     self.fakeChannel = fakeChannel
     self.defaultCallOptions = callOptions
@@ -53,4 +53,3 @@ internal final class Codegentest_FooTestClient: Codegentest_FooClientProtocol {
     return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/codegentest.Foo/Bar")
   }
 }
-

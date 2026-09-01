@@ -13,7 +13,7 @@ import SwiftProtobuf
 /// Usage: instantiate `Echo_EchoClient`, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoClientProtocol: GRPCClient {
   var serviceName: String { get }
-  var interceptors: Echo_EchoClientInterceptorFactoryProtocol? { get }
+  var interceptors: (any Echo_EchoClientInterceptorFactoryProtocol)? { get }
 
   func get(
     _ request: Echo_EchoRequest,
@@ -136,9 +136,9 @@ internal protocol Echo_EchoClientInterceptorFactoryProtocol {
 }
 
 internal final class Echo_EchoClient: Echo_EchoClientProtocol {
-  internal let channel: GRPCChannel
+  internal let channel: any GRPCChannel
   internal var defaultCallOptions: CallOptions
-  internal var interceptors: Echo_EchoClientInterceptorFactoryProtocol?
+  internal var interceptors: (any Echo_EchoClientInterceptorFactoryProtocol)?
 
   /// Creates a client for the echo.Echo service.
   ///
@@ -147,9 +147,9 @@ internal final class Echo_EchoClient: Echo_EchoClientProtocol {
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
   ///   - interceptors: A factory providing interceptors for each RPC.
   internal init(
-    channel: GRPCChannel,
+    channel: any GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Echo_EchoClientInterceptorFactoryProtocol? = nil
+    interceptors: (any Echo_EchoClientInterceptorFactoryProtocol)? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -159,7 +159,7 @@ internal final class Echo_EchoClient: Echo_EchoClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider: CallHandlerProvider {
-  var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { get }
+  var interceptors: (any Echo_EchoServerInterceptorFactoryProtocol)? { get }
 
   /// Immediately returns an echo of a request.
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>
@@ -182,7 +182,7 @@ extension Echo_EchoProvider {
   internal func handle(
     method name: Substring,
     context: CallHandlerContext
-  ) -> GRPCServerHandlerProtocol? {
+  ) -> (any GRPCServerHandlerProtocol)? {
     switch name {
     case "Get":
       return UnaryServerHandler(

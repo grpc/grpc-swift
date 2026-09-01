@@ -123,7 +123,7 @@ extension Generator {
     self.println("\(self.access) protocol \(self.clientProtocolName): GRPCClient {")
     self.withIndentation {
       self.println("var serviceName: String { get }")
-      self.println("var interceptors: \(self.clientInterceptorProtocolName)? { get }")
+      self.println("var interceptors: (any \(self.clientInterceptorProtocolName))? { get }")
 
       for method in service.methods {
         self.println()
@@ -197,16 +197,16 @@ extension Generator {
     self.withIndentation {
       println("private let lock = Lock()")
       println("private var _defaultCallOptions: CallOptions")
-      println("private var _interceptors: \(clientInterceptorProtocolName)?")
+      println("private var _interceptors: (any \(clientInterceptorProtocolName))?")
 
-      println("\(access) let channel: GRPCChannel")
+      println("\(access) let channel: any GRPCChannel")
       println("\(access) var defaultCallOptions: CallOptions {")
       self.withIndentation {
         println("get { self.lock.withLock { return self._defaultCallOptions } }")
         println("set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }")
       }
       self.println("}")
-      println("\(access) var interceptors: \(clientInterceptorProtocolName)? {")
+      println("\(access) var interceptors: (any \(clientInterceptorProtocolName))? {")
       self.withIndentation {
         println("get { self.lock.withLock { return self._interceptors } }")
         println("set { self.lock.withLockVoid { self._interceptors = newValue } }")
@@ -223,9 +223,9 @@ extension Generator {
       println("///   - interceptors: A factory providing interceptors for each RPC.")
       println("\(access) init(")
       self.withIndentation {
-        println("channel: GRPCChannel,")
+        println("channel: any GRPCChannel,")
         println("defaultCallOptions: CallOptions = CallOptions(),")
-        println("interceptors: \(clientInterceptorProtocolName)? = nil")
+        println("interceptors: (any \(clientInterceptorProtocolName))? = nil")
       }
       self.println(") {")
       self.withIndentation {
@@ -241,9 +241,9 @@ extension Generator {
   private func printStructBackedServiceClientImplementation() {
     println("\(access) struct \(clientStructName): \(clientProtocolName) {")
     self.withIndentation {
-      println("\(access) var channel: GRPCChannel")
+      println("\(access) var channel: any GRPCChannel")
       println("\(access) var defaultCallOptions: CallOptions")
-      println("\(access) var interceptors: \(clientInterceptorProtocolName)?")
+      println("\(access) var interceptors: (any \(clientInterceptorProtocolName))?")
       println()
       println("/// Creates a client for the \(servicePath) service.")
       println("///")
@@ -255,9 +255,9 @@ extension Generator {
       println("///   - interceptors: A factory providing interceptors for each RPC.")
       println("\(access) init(")
       self.withIndentation {
-        println("channel: GRPCChannel,")
+        println("channel: any GRPCChannel,")
         println("defaultCallOptions: CallOptions = CallOptions(),")
-        println("interceptors: \(clientInterceptorProtocolName)? = nil")
+        println("interceptors: (any \(clientInterceptorProtocolName))? = nil")
       }
       self.println(") {")
       self.withIndentation {
@@ -546,9 +546,9 @@ extension Generator {
     self.withIndentation {
       self.println("private let fakeChannel: FakeChannel")
       self.println("\(access) var defaultCallOptions: CallOptions")
-      self.println("\(access) var interceptors: \(clientInterceptorProtocolName)?")
+      self.println("\(access) var interceptors: (any \(clientInterceptorProtocolName))?")
       self.println()
-      self.println("\(self.access) var channel: GRPCChannel {")
+      self.println("\(self.access) var channel: any GRPCChannel {")
       self.withIndentation {
         self.println("return self.fakeChannel")
       }
@@ -559,7 +559,7 @@ extension Generator {
       self.withIndentation {
         self.println("fakeChannel: FakeChannel = FakeChannel(),")
         self.println("defaultCallOptions callOptions: CallOptions = CallOptions(),")
-        self.println("interceptors: \(clientInterceptorProtocolName)? = nil")
+        self.println("interceptors: (any \(clientInterceptorProtocolName))? = nil")
       }
       self.println(") {")
       self.withIndentation {

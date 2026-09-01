@@ -45,7 +45,7 @@ extension Generator {
     println("/// To build a server, implement a class that conforms to this protocol.")
     println("\(access) protocol \(providerName): CallHandlerProvider {")
     self.withIndentation {
-      println("var interceptors: \(self.serverInterceptorProtocolName)? { get }")
+      println("var interceptors: (any \(self.serverInterceptorProtocolName))? { get }")
       for method in service.methods {
         self.method = method
         self.println()
@@ -95,7 +95,7 @@ extension Generator {
           "method name: Substring",
           "context: CallHandlerContext",
         ],
-        returnType: "GRPCServerHandlerProtocol?",
+        returnType: "(any GRPCServerHandlerProtocol)?",
         access: self.access
       ) {
         self.println("switch name {")
